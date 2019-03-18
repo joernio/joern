@@ -1,20 +1,11 @@
-package org.example
+package io.shiftleft
 
-import javax.script.ScriptEngineManager
+import io.shiftleft.cpgloading.tinkergraph.CpgLoader
 
 object Main extends App {
-  /*
-  val cpg = CpgLoader.loadCodePropertyGraph("path/to/cpg.bin.zip", runEnhancements = true)
+  val cpg = CpgLoader.loadCodePropertyGraph(args(0), runEnhancements = true)
 
   // Print all methods starting with "<operator>"
-  cpg.method.name("<operator>.*").p
-
-  // Store all methods in local list for further processing.
-  val someMethods = cpg.method.l
-  */
-
-  val scriptEngine = new ScriptEngineManager().getEngineByName("scala")
-  scriptEngine.eval("val a = 19")
-  scriptEngine.eval("println(a/0)")
+  cpg.method.p
 
 }
