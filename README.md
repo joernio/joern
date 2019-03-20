@@ -1,8 +1,8 @@
-# Create and query a Code Property Graph (CPG)
+# Joern: an open-source code analysis platform for C/C++
 
 ## Building
 
-As prerequisites to building please install: 
+To build joern, please install the following: 
 
 * Python3
   - Link: https://www.python.org/downloads/
@@ -11,14 +11,14 @@ As prerequisites to building please install:
 * Scala build tool (sbt)
   - Link: https://www.scala-sbt.org/
   
-With those dependencies installed you run `./build.sh` which will
-build fuzzyc2cpg and the Joern program used to query a CPG.
+With those dependencies installed, run `./build.sh`, which will
+build the code property graph generator for C/C++ and a querying component.
 
 ## CPG Creation
 
 The CPG is an open and language agnostic
-[format](https://github.com/ShiftLeftSecurity/codepropertygraph#base-schema-for-the-code-property-graph)
-, you can either provide your own CPG or use our
+[format](https://github.com/ShiftLeftSecurity/codepropertygraph#base-schema-for-the-code-property-graph).
+You can either use your own CPG generators or use our
 open source C/C++ frontend [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg)
 to create a CPG for any C/C++ program.
 
