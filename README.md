@@ -31,9 +31,7 @@ By default Joern only queries the CPG for a all methods defined in the
 CPG but you can run your own queries by modifing
 [src/main/scala/io/shiftleft/Main.scala], rebuilding and executing Joern again.
 
-## Warm Up
-
-Let's warm up a bit with a small example that violates the coding standard.
+Let's warm up a bit with a small and simple example:
 
 ```c
 #include <stdlib.h>
@@ -41,18 +39,16 @@ struct node {
     int value;
     struct node *next;
 };
-void free_list(struct node *head) {
-    for (struct node *p = head; p != NULL; p = p->next) {
-        free(p);
-    }
+
+void free_list(struct node *head) { 
+  struct node *q;
+  for (struct node *p = head; p != NULL; p = q) { 
+    q = p->next;
+    free(p);
+    } 
 }
 ```
 
-The small snippet is a clasic example from Kernighan and Ritchie [Kernighan 1988]. 
-Note that the flaw is intentionally incorporated in their book ;)
-
-The problem here is that ```p```
-is freed before ```p->next``` is executed. 
 The snipped can be found under `./tests/free`
 
 We fire up our frontend to build the CPG:
@@ -83,6 +79,7 @@ package io.shiftleft
 
 import io.shiftleft.cpgloading.tinkergraph.CpgLoader
 import io.shiftleft.queryprimitives.steps.Implicits._
+import io.shiftleft.passes.dataflows._
 
 object Main extends App {
   val cpg = CpgLoader.loadCodePropertyGraph(args(0), runEnhancements = true)
@@ -111,14 +108,14 @@ Now fire up  `./joern.sh cpg.bin.zip` and you will see the new output:
 
 ```
 ------ METHODS -----
-<operator>.assignment
+free
 free_list
+<operator>.assignment
 <operator>.notEquals
 <operator>.indirectMemberAccess
-free
 ```
 Obviously, there is some information we don't want to see.
-Let's filter it to get only those methods that start with `free`.
+Let's filter it to get only those functions that start with `free`.
 
 Open up your *Main.scala* file and the followng lines:
 
@@ -126,13 +123,125 @@ Open up your *Main.scala* file and the followng lines:
   println("----- Filtered -----")
   cpg.method.name("free.*").l.foreach(m => println(m.fullName)
 ```
-
 Againg do:
 
 1. *sbt stage*
 2. *./joern.sh cpg.bin.zip*
 
-This should give us the desired output.
+This should give us the desired output:
+
+```
+----- Filtered -----
+free
+free_list
+```
+
+Let's add another function to our snippet.
+
+```c
+int flow(int p0) {
+  int a = p0;
+  int b=a;
+  int c=0x31;
+  int z = b + c;
+  z++;
+  int x = z;
+  return x;
+  }
+```
+
+We'll look at the flows later. For now we are interested in the locals, i.e. local variables.
+
+Add this to your *Main.scala*:
+
+```scala
+  println("----- Locals -----")
+  val locals = cpg.local.l
+  println(locals.foreach(local => println(local.name)))
+```
+
+Here we collect all local variables over all functions into a list (*locals*). These locals are represented by an object, so we print out each name. We should get the following lines at the end of the output:
+
+```
+----- Locals -----
+a
+b
+c
+z
+x
+q
+p
+```
+
+The queries we defined so far are a little inconvenient.
+In fact, it is not the Joern way to do it.
+A reformulation of the query above which conforms more to the Joern way looks like this:
+
+```scala
+cpg.local.name.p
+```
+
+Much better isn't it? ;)
+
+It will give us the same output. The `p` suffix prints out the name of each local variable.
+
+This also works for our filter we defined earlier:
+
+```scala
+ println("----- Filtered -----")
+ cpg.method.name("free.*").name.p
+```
+
+Joern allows us to filter locals function wise:
+
+```scala
+  println("----- local vars flow -----")
+  cpg.method.name("flow").local.name.p
+
+  println("----- local vars free_list -----")
+  cpg.method.name("free_list").local.name.p
+```
+
+Note that we just added `.name(regex)` to our `method` query.
+
+We can also filter for variables we are interested in:
+
+```scala
+cpg.method.local.name("a*").name.p
+```
+
+will give us variables which start with `a`.
+
+Want to know where it comes from?
+
+```scala
+cpg.local.name("a*").file.name.p
+```
+
+Let's add some type information to our query:
+
+```scala
+cpg.local.map(l => (l.name, l.typeFullName)).p
+```
+This adds the following lines to our output:
+
+```
+(a,int)
+(b,int)
+(c,int)
+(z,int)
+(x,int)
+(q,struct node *)
+(p,struct node *)
+```
+
+Now let's look for function signatures:
+
+```scala
+cpg.method.signature(".*struct.*").name.p
+```
+
+This query gives us all functions that have a `struct` in their signature which in our case is `free_list`.
 
 <h1> Time to see some flows </h1>
 
@@ -263,6 +372,120 @@ Here we explicitly filter for the our `p != NULL` case in the `free_list` functi
 
 ```
 
-It shows us the flow of p into the sanitizer of the for loop.
+It shows us the flow of `p` into the sanitizer of the for loop.
 
 
+Let's have a look at our `flow` function. Say, we want to track the flow from each return value to each data dependent identifier.
+A query can look like follows:
+
+```scala
+ val source3 = cpg.identifier
+ val sink3 = cpg.method.name("flow").methodReturn
+ println(sink3.reachableByFlows(source3).p)
+```
+
+methodReturn gives us the formal return value of the function, i.e.,
+each return value is connected to the object we obtain through methodReturn.
+
+Our output:
+
+```
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | a = par  | 8         | flow  | tests/free2/free.c|
+ | b=a      | 9         | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | b=a      | 9         | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | c=0x31   | 10        | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+```
+
+Again the outputs shows you each stage during the traversal.
+Since we defined the source to be all identifiers, the engine outputs each hit to
+an indentifier it finds along its paths backwards starting from the sinks.
+
+We can restrict the flows to stop at each `z` the engine encounters:
+
+```scala
+ val source4 = cpg.identifier.name("z")
+ val sink4 = cpg.method.name("flow").methodReturn
+ println(sink4.reachableByFlows(source4).p)
+```
+
+produces the following output:
+
+```
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+```
+
+
+# CVE-2016-6480
+
+## TODO
