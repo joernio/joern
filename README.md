@@ -55,12 +55,12 @@ The problem here is that ```p```
 is freed before ```p->next``` is executed. 
 The snipped can be found under `./tests/free`
 
-We fire up our frontend to build the CPG:
+We fire up our C/C++ language frontend to build the CPG:
 
 `./fuzzyc2cpg.sh tests/free `
 
-This gives us a ```cpg.bin.zip``` in our local folder.
-Now fire up `./joern.sh cpg.bin.zip`. Well, this doens't give us much right? 
+This creates a code property graph named ```cpg.bin.zip``` in our local folder.
+Now launch `./joern.sh cpg.bin.zip`. Well, this doens't give us much right?
 
 What you should see are all the methods in a rather low level representation.
 
@@ -72,7 +72,7 @@ Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment 
 ...
 ```
 
-We can lighten this up a little bit by the beauty of our Scala like DSL.  
+We can shed light on this using our beautiful Scala-based DSL for code analysis.
 
 Open [src/main/scala/io/shiftleft/Main.scala], 
 
@@ -87,13 +87,13 @@ import io.shiftleft.queryprimitives.steps.Implicits._
 object Main extends App {
   val cpg = CpgLoader.loadCodePropertyGraph(args(0), runEnhancements = true)
 
-  // Print all methods starting with "<operator>"
+  // Print all methods
   cpg.method.p
 }
 ```
 
 
-Now add the following lines to after `cpg.method.p`:
+Now add the following lines after `cpg.method.p`:
 
 ```scala
 println("------ METHODS -----")
@@ -107,7 +107,7 @@ Now all you need to do is:
 
 `sbt stage` in the local `joern` folder. This will build our new script for Joern to process.
 
-Now fire up  `./joern.sh cpg.bin.zip` and you will see the new output:
+Now launch `./joern.sh cpg.bin.zip` and you will see the new output:
 
 ```
 ------ METHODS -----
@@ -117,8 +117,7 @@ free_list
 <operator>.indirectMemberAccess
 free
 ```
-Obviously, there is some information we don't want to see.
-Let's filter it to get only those methods that start with `free`.
+As there are many methods in the code, let's try filtering them to determine only those methods that start with `free`.
 
 Open up your *Main.scala* file and the followng lines:
 
