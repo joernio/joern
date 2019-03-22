@@ -235,7 +235,7 @@ This adds the following lines to our output:
 (p,struct node *)
 ```
 
-Now let's look for function signatures:
+Function signatures:
 
 ```scala
 cpg.method.signature(".*struct.*").name.p
@@ -255,7 +255,7 @@ Open up your *Main.scala* file and add:
   println(sink.reachableByFlows(source).p)
 ```
 
-Here we define the source to be an **identifier**; identifiers. Think of it as an unique object that represents a variable at that specific program point where it is used or defined.
+Here we define the source to be the set of  **identifiers**. Think of an identifier a an unique object that represents a variable at that specific program point where it is used or defined.
 
 A thorough description on the concept of the CPG schema and its query primitives can be found at:
 
@@ -280,9 +280,18 @@ This should give the us the following output:
 free(p)
 ```
 
+We introduced the query to go into call a little bit.
+However, a better way to formulate our sink is by its arguments it receives.
+Replace our `val sink` with:
+
+```scala
+val sink = cpg.method("free").parameter.argument
+```
+
+It will give us the same output, but is more consistent in what we want to achieve, i.e., track the data dependency of the arguments.
+
 Don't forget to `sbt stage` before you run joern on the cpg.
-For a faster compile process you can run *sbt* in your local folder. This will open a
-sbt shell. For each change you make in your *Main.scala* file you can now run `stage` in the sbt shell. This will speed up the process of experimenting with joern.
+For a faster compile process you can run *sbt* in your local folder. This will open a sbt shell. For each change you make in your *Main.scala* file you can now run `stage` in the sbt shell. This will speed up the process of experimenting with joern.
 
 Back to our flow problem:
 
@@ -291,37 +300,47 @@ running ```sink.reachableByFlows(source)``` will basically traverse the flow of 
 If we run this script we get the following output:
 
 ```
- _____________________________________________________
- | tracked  | lineNumber| method   | file             |
- |====================================================|
- | *p = head| 7         | free_list| tests/free/free.c|
- | free(p)  | 8         | free_list| tests/free/free.c|
+ ________________________________________________________
+ | tracked  | lineNumber| method   | file              |
+ |=====================================================|
+ | *p = head| 19        | free_list| tests/free2/free.c|
+ | free(p)  | 21        | free_list| tests/free2/free.c|
 
- _______________________________________________________
- | tracked    | lineNumber| method   | file             |
- |======================================================|
- | *p = head  | 7         | free_list| tests/free/free.c|
- | p->next    | 7         | free_list| tests/free/free.c|
- | p = p->next| 7         | free_list| tests/free/free.c|
- | free(p)    | 8         | free_list| tests/free/free.c|
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | *p = head  | 19        | free_list| tests/free2/free.c|
+ | p->next    | 20        | free_list| tests/free2/free.c|
+ | q = p->next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
 
- _______________________________________________________
- | tracked    | lineNumber| method   | file             |
- |======================================================|
- | p->next    | 7         | free_list| tests/free/free.c|
- | p = p->next| 7         | free_list| tests/free/free.c|
- | free(p)    | 8         | free_list| tests/free/free.c|
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | p->next    | 20        | free_list| tests/free2/free.c|
+ | q = p->next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
 
- _______________________________________________________
- | tracked    | lineNumber| method   | file             |
- |======================================================|
- | p = p->next| 7         | free_list| tests/free/free.c|
- | free(p)    | 8         | free_list| tests/free/free.c|
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | q = p->next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
 
- ___________________________________________________
- | tracked| lineNumber| method   | file             |
- |==================================================|
- | free(p)| 8         | free_list| tests/free/free.c|
+ ____________________________________________________
+ | tracked| lineNumber| method   | file              |
+ |===================================================|
+ | p = q  | 19        | free_list| tests/free2/free.c|
+ | free(p)| 21        | free_list| tests/free2/free.c|
+
+ ____________________________________________________
+ | tracked| lineNumber| method   | file              |
+ |===================================================|
+ | free(p)| 21        | free_list| tests/free2/free.c|
+
 ```
 
 This outputs shows you each stage during the traversal starting from `free(p)` itself.
@@ -486,6 +505,129 @@ produces the following output:
 ```
 
 
-# CVE-2016-6480
+# CVE-2016-6480 / Still Open
 
-## TODO
+## Description
+- Race condition in the ioctl_send_fib function in drivers/scsi/aacraid/commctrl.c
+
+## TODO: describe kernel fetch; checkout etc.
+
+Let's see if any data from user space to kernel space is copied:
+
+```scala
+ cpg.call.name("copy_from_user").code.p
+```
+
+We should get the following output:
+
+```
+copy_from_user(&qd, arg, sizeof (struct aac_query_disk))
+copy_from_user(&dd, arg, sizeof (struct aac_delete_disk))
+copy_from_user(&dd, arg, sizeof (struct aac_delete_disk))
+copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
+copy_from_user(kfib, arg, size)
+copy_from_user((void *)&f, arg, sizeof(struct fib_ioctl))
+copy_from_user(&fibsize, &user_srb->count,sizeof(u32))
+copy_from_user(user_srbcmd, user_srb,fibsize)
+copy_from_user(p,sg_user[i],upsg->sg[i].count)
+copy_from_user(p,sg_user[i],upsg->sg[i].count)
+copy_from_user(p,sg_user[i],usg->sg[i].count)
+copy_from_user(p, sg_user[i],\n\t\t\t\t\t\t\tupsg->sg[i].count)
+```
+
+This doesn't look so bad.
+
+Get some flows from `copy_from_user`:
+
+```scala
+val sinkArguments = pg.method.name("copy_from_user").parameter.argument
+println(sinkArguments.reachableByFlows(cpg.identifier).p)
+```
+
+Ok, this gives us a lot of information back. The following query gives us the 
+number.
+
+```scala
+println(sinkArguments.reachableByFlows(cpg.identifier).l.size)
+```
+
+should be 302. 
+
+Let's look for something which doesn't overwhelm us.
+It would be interesting to have an estimate if the arguments of `copy_from_user`
+are sanitized.
+
+Since we don't have direct definitions at if expressions, we do not get any reaching def information from them. But we get information that flows into if expressions.
+
+Maybe we can work our way around this. Fire up your *Main.scala* and the following lines:
+
+```scala
+val reachingDefs1 = cpg.method
+                       .name("copy_from_user")
+                       .parameter
+                       .argument
+                       .reachableBy
+                       .toSet
+```
+
+So far we have used `reachableByFlows` to construct and print out our flows.
+Sometimes we do not want that much of a detail. 
+With `reachableBy` we tell the engine that we not interested in the details of the data flow paths, but rather want to know which of our *sources* are hit. 
+
+At the end of the query we collect the sources that are hit into a set.
+
+```scala
+val reachingDefs2 = cpg.method
+                       .name(".*less.*")
+                       .parameter
+                       .argument
+                       .reachableBy(cpg.identifier)
+                       .toSet
+```
+
+Let's take a break and dismantle this query:
+
+-  We restrict the flows running to expressions that involve the *less* keyword. Note that internally each binary operation (+,-,>,< etc.) is also treated as a function. So we look for its arguments.
+-  Data dependency is tracked back to each identifier it hits and collected into a set.
+  
+Now we can check if we have an intersection between these two sets which
+gives us an estimate on what arguments of `copy_from_user` might be sanitized.
+
+
+```scala
+reachingDefs1.intersect(reachingDefs2).foreach(elem => println(elem.code))
+```
+
+should give us:
+
+```
+kmalloc(fibsize, GFP_KERNEL)
+kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+user_srbcmd->sg
+kfib->header
+size = le16_to_cpu(kfib->header.Size) + sizeof(struct aac_fibhdr)
+actual_fibsize = sizeof(struct aac_srb) - sizeof(struct sgentry) +\n\t\t((user_srbcmd->sg.count & 0xff) * sizeof(struct sgentry))
+* upsg = (struct user_sgmap64*)&user_srbcmd->sg
+i = 0
+user_srbcmd->sg
+usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+user_srbcmd->sg
+* upsg = &user_srbcmd->sg
+user_srbcmd = kmalloc(fibsize, GFP_KERNEL)
+i = 0
+fibsize = 0
+aac_fib_alloc(dev)
+user_srbcmd->sg.count
+kfib = fibptr->hw_fib_va
+kfib->header.Size
+actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap)
+fibptr = aac_fib_alloc(dev)
+i = 0
+fibptr->hw_fib_va
+i = 0
+
+```
+
+This is actually quite nice; we can see that most *potential* checks some kind of a *size* element (as we might expect). 
+
+
