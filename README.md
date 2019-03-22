@@ -628,6 +628,6 @@ i = 0
 
 ```
 
-This is actually quite nice; we can see that most *potential* checks some kind of a *size* element (as we might expect). 
+This is actually quite nice; we can see that most *potential* checks involve some kind of a *size* element (as we might expect). 
 
 
