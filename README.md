@@ -557,7 +557,7 @@ Let's look for something which doesn't overwhelm us.
 It would be interesting to have an estimate if the arguments of `copy_from_user`
 are sanitized.
 
-Since we don't have direct definitions at if expressions, we do not get any reaching def information from them. But we get information that flows into if expressions.
+Since we don't have direct definitions at if expressions, we do not get any reaching definition information out of them. But we get information that flows into if expressions.
 
 Maybe we can work our way around this. Fire up your *Main.scala* and the following lines:
 
