@@ -58,6 +58,7 @@ We fire up our frontend to build the CPG:
 This gives us a ```cpg.bin.zip``` in our local folder.
 Now fire up `./joern.sh cpg.bin.zip`. Well, this doens't give us much right? 
 
+
 What you should see are all the methods in a rather low level representation.
 
 ```
@@ -68,7 +69,7 @@ Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment 
 ...
 ```
 
-We can lighten this up a little bit by the beauty of our Scala like DSL.  
+We can shed light on this using our beautiful Scala-based DSL for code analysis.
 
 Open [src/main/scala/io/shiftleft/Main.scala], 
 
@@ -84,13 +85,12 @@ import io.shiftleft.passes.dataflows._
 object Main extends App {
   val cpg = CpgLoader.loadCodePropertyGraph(args(0), runEnhancements = true)
 
-  // Print all methods starting with "<operator>"
+  // Print all methods
   cpg.method.p
 }
 ```
 
-
-Now add the following lines to after `cpg.method.p`:
+Now add the following lines after `cpg.method.p`:
 
 ```scala
 println("------ METHODS -----")
