@@ -505,7 +505,7 @@ produces the following output:
 ```
 
 
-# CVE-2016-6480 / Still Open
+# CVE-2016-6480 
 
 ## Description
 - Race condition in the ioctl_send_fib function in drivers/scsi/aacraid/commctrl.c
@@ -559,22 +559,19 @@ are sanitized.
 
 Since we don't have direct definitions at if expressions, we do not get any reaching definition information out of them. But we get information that flows into if expressions.
 
-Maybe we can work our way around this. Fire up your *Main.scala* and the following lines:
+Maybe we can work our way around this. Fire up your *Main.scala* and add the following lines:
 
 ```scala
 val reachingDefs1 = cpg.method
                        .name("copy_from_user")
                        .parameter
                        .argument
-                       .reachableBy
+                       .reachableBy(cpg.identifier)
                        .toSet
 ```
 
 So far we have used `reachableByFlows` to construct and print out our flows.
-Sometimes we do not want that much of a detail. 
-With `reachableBy` we tell the engine that we not interested in the details of the data flow paths, but rather want to know which of our *sources* are hit. 
-
-At the end of the query we collect the sources that are hit into a set.
+Sometimes we do not want that much of a detail. With `reachableBy` we tell the engine that we are not interested in the details of the data flow paths, but rather want to know which of our *sources* are hit. At the end of the query we collect the sources that are hit into a set.
 
 ```scala
 val reachingDefs2 = cpg.method
@@ -630,4 +627,54 @@ i = 0
 
 This is actually quite nice; we can see that most *potential* checks involve some kind of a *size* element (as we might expect). 
 
+At the beginning of this section we saw some `copy_from_user` outputs.
+Let's look at those that have `kfib` as their first argument. This decision is not made randomly.
+If we look at the output above we see that kfib is an interesting pointer which gives us access
+to an header and its size seems to be checked: `kfib->header.Size`.
 
+We can cofirm this in the source code as well:
+
+```c
+size = le16_to_cpu(kfib->header.Size) + sizeof(struct aac_fibhdr);
+if (size < le16_to_cpu(kfib->header.SenderSize))
+                      ........
+```
+
+We use the following query to filter for `copy_from_user` looking for `kfib` as an argument:
+
+```scala 
+cpg.call.name("copy_from_user").code(".*kfib.*").l
+```
+we could also do:
+
+```scala
+ cpg.call.name("copy_from_user").filter(call => call.argument.code(".*kfib.*")).l
+```
+
+Let's print them out:
+
+```
+cpg.call.name("copy_from_user").filter(call => call.argument.code(".*kfib.*")).l.foreach(call => println(call.code))
+```
+
+Output:
+
+```
+copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
+copy_from_user(kfib, arg, size)
+```
+
+Nice we have two of them. If we find flows from these sinks to a common ancestor which defines `kfib` and there is no other definition of `kfib` along our way we might have a double fetch.
+
+```scala
+
+```
+
+```scala
+val reachingDefs1 = cpg.method
+                       .name("copy_from_user")
+                       .parameter
+                       .argument
+                       .reachableBy
+                       .toSet
+```
