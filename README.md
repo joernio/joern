@@ -192,6 +192,13 @@ This also works for our filter we defined earlier:
  cpg.method.name("free.*").name.p
 ```
 
+At the beginning of this section we queried for all functions and printed them; we can reformulate it as well to conform more to the Joern way:
+
+```scala
+println("------ METHODS -----")
+cpg.method.name.p
+```
+
 Joern allows us to filter locals function wise:
 
 ```scala
