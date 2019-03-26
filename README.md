@@ -810,7 +810,7 @@ Output:
 We only have two entries. By looking into the source, we see that 
 the first one at `89` is the one that is used to specifiy the size.
 The second one at `129` is used **without any checks**.  
-Note that the inenumbers in the output of Joern do not necessarily match the linenumbers of the source code, but as you see they are close to the real ones.
+Note that the line numbers in the output of Joern do not necessarily match the linenumbers of the source code, but as you see they are close to the real ones.
 
 Let's have a look into the source code [`commctrl.c`:121::132]:
 
