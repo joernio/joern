@@ -353,7 +353,7 @@ val sink2 = cpg.method.name("free_list").callOut.code("p != NULL")
 println(sink2.reachableByFlows(source2).p))
 ```
 
-Here we explicitly filter for the our `p != NULL` case in the `free_list` function.
+Here we explicitly filter for the `p != NULL` case in the `free_list` function.
 
 
 ```
@@ -472,7 +472,7 @@ Our output:
 
 ```
 
-Again the outputs shows you each stage during the traversal.
+Again the outputs show you each stage during the traversal.
 Since we defined the source to be all identifiers, the engine outputs each hit to
 an indentifier it finds along its paths backwards starting from the sinks.
 
