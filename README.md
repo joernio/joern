@@ -507,12 +507,29 @@ produces the following output:
 
 # CVE-2016-6480 
 
-## Description
+### Description
 - Race condition in the ioctl_send_fib function in drivers/scsi/aacraid/commctrl.c
 
-## TODO: describe kernel fetch; checkout etc.
 
-Let's see if any data from user space to kernel space is copied:
+Here we show how Joern helps you in the process of code auditing. The CVE bug concerns version 4.7 of the Linux Kernel.
+
+### Setup
+```bash
+$ git clone https://github.com/torvalds/linux`
+$ cd linux
+$ git checkout v4.7
+```
+
+This setup give us access to the vulnerable driver.
+
+Build the CPG for the driver:
+
+`./fuzzyc2cpg.sh path/to/kernel/linux/drivers/scsi/aacraid`
+
+
+### Analysis
+
+The first thing which comes to mind is the interaction from user to kernel space. This is usually done with `copy_from_user`. Let's see if any data from user space to kernel space is copied:
 
 ```scala
  cpg.call.name("copy_from_user").code.p
@@ -575,7 +592,7 @@ Sometimes we do not want that much of a detail. With `reachableBy` we tell the e
 
 ```scala
 val reachingDefs2 = cpg.method
-                       .name(".*less.*")
+                       .name(".*less.*", ".*greater.*")
                        .parameter
                        .argument
                        .reachableBy(cpg.identifier)
@@ -584,7 +601,7 @@ val reachingDefs2 = cpg.method
 
 Let's take a break and dismantle this query:
 
--  We restrict the flows running to expressions that involve the *less* keyword. Note that internally each binary operation (+,-,>,< etc.) is also treated as a function. So we look for its arguments.
+-  We restrict the flows running to expressions that involve the *less* **or** *greater* keyword. Note that internally each binary operation (+,-,>,< etc.) is also treated as a function. So we look for its arguments.
 -  Data dependency is tracked back to each identifier it hits and collected into a set.
   
 Now we can check if we have an intersection between these two sets which
@@ -628,11 +645,10 @@ i = 0
 This is actually quite nice; we can see that most *potential* checks involve some kind of a *size* element (as we might expect). 
 
 At the beginning of this section we saw some `copy_from_user` outputs.
-Let's look at those that have `kfib` as their first argument. This decision is not made randomly.
-If we look at the output above we see that kfib is an interesting pointer which gives us access
-to an header and its size seems to be checked: `kfib->header.Size`.
+Let's look at those that have `kfib` as their first argument. This decision is not made randomly. If we look at the output above we see that `kfib` is an interesting pointer which gives us access to an header and its size seems to have an involvement in a check: 
+`kfib->header.Size`.
 
-We can cofirm this in the source code as well:
+We can cofirm this in the source code (`commctrl.c:90)`:
 
 ```c
 size = le16_to_cpu(kfib->header.Size) + sizeof(struct aac_fibhdr);
@@ -654,7 +670,10 @@ we could also do:
 Let's print them out:
 
 ```
-cpg.call.name("copy_from_user").filter(call => call.argument.code(".*kfib.*")).l.foreach(call => println(call.code))
+cpg.call.name("copy_from_user")
+.filter(call => call.argument.code(".*kfib.*"))
+.l
+.foreach(call => println(call.code))
 ```
 
 Output:
@@ -664,17 +683,144 @@ copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
 copy_from_user(kfib, arg, size)
 ```
 
-Nice we have two of them. If we find flows from these sinks to a common ancestor which defines `kfib` and there is no other definition of `kfib` along our way we might have a double fetch.
+Nice, we have two of them. If we find flows from these sinks to a common ancestor which defines `kfib` and there is no other definition of `kfib` along our way we might have a double fetch.
 
 ```scala
+ val cfu1 = cpg.call.name("copy_from_user")
+   .code(".*kfib.*")
+   .l
+   .head
+   .start
+   .reachableBy(cpg.identifier)
+   .toSet
+
+  val cfu2 = cpg.call.name("copy_from_user")
+    .code(".*kfib.*")
+    .l
+    .last
+    .start
+    .reachableBy(cpg.identifier)
+    .toSet
+    .intersect(cfu1)
+
+
+   cfu2.foreach(elem => println(elem.code, elem.lineNumber.get))
+```
+
+This is a similar pattern as we did above with our reaching definitions to sanitizers.
+You might wonder what the `start` does here. It basically tells our engine to start a 
+fresh traversal *starting* at the given node. In this case we filtered with *head* and
+*last* to get those nodes. Play around with this to grasp the idea.
+
+Our output:
 
 ```
+(aac_fib_alloc(dev),71)
+(kfib = fibptr->hw_fib_va,76)
+(fibptr = aac_fib_alloc(dev),71)
+(fibptr->hw_fib_va,76)
+```
+
+
+We see that both `copy_from_user` calls indeed have a common ancestor which defines 
+our `kfib` pointer:
+
+`kfib = fibptr->hw_fib_va,76` (*line 76/77 in the source code*)
+
+
+Now we can define a query that shows us flows to this specific sink:
 
 ```scala
-val reachingDefs1 = cpg.method
-                       .name("copy_from_user")
-                       .parameter
-                       .argument
-                       .reachableBy
-                       .toSet
+val cfu4 = cpg.call.name("copy_from_user")
+    .code(".*kfib.*")
+    .l
+    .last
+    .start
+    .reachableByFlows(cpg.call.code("kfib = fibptr->hw_fib_va"))
+
+println(cfu4.p)
 ```
+
+Output:
+
+```
+| tracked                                    | lineNumber| method        | file                                  |
+ |===============================================================================================================|
+ | kfib = fibptr->hw_fib_va                   | 76        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib->header                               | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib->header.SenderSize                    | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | le16_to_cpu(kfib->header.SenderSize)       | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | size = le16_to_cpu(kfib->header.SenderSize)| 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | copy_from_user(kfib, arg, size)            | 115       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+
+
+ __________________________________________________________________________________________________________________________
+ | tracked                                             | lineNumber| method        | file                                 |
+ |========================================================================================================================|
+ | kfib = fibptr->hw_fib_va                            | 76        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib->header                                        | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib->header.SenderSize                             | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | le16_to_cpu(kfib->header.SenderSize)                | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | size = le16_to_cpu(kfib->header.SenderSize)         | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | pci_alloc_consistent(dev->pdev, size, &daddr)       | 100       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib = pci_alloc_consistent(dev->pdev, size, &daddr)| 100       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | copy_from_user(kfib, arg, size)                     | 115       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+
+
+                                                                        .......
+
+```
+The second output shows us that there is a definition in between, but the first output reveals that we can reach our goal. 
+
+Cool! We have a **double fetch**. Let's see if we can make this work in our favor.
+
+Our output above shows that the issue is in the `ioctl_send_fib` function. Let's query for local variables in this function:
+
+```scala
+val localsFib = cpg.method.name("ioctl_send_fib").local.l 
+localsFib.foreach(localVar => println(localVar.code))
+```
+
+Output:
+
+```
+hw_fib
+fibptr
+kfib
+retval
+size
+daddr
+```
+
+We have seen that `size` is sanitized and dependent on `kfib->header.Size`.
+The next query sheds light on this:
+
+```scala
+ val header = cpg.call.code("kfib->header.Size").l
+ header.foreach(element => println(element.code, element.lineNumber.get))
+```
+
+Output:
+
+```
+(kfib->header.Size,89)
+(kfib->header.Size,129)
+```
+
+We only have two entries. By looking into the source, we see that 
+the first one at `89` is the one that is used to specifiy the size.
+The second one at `129` is used **without any checks**.  
+Note that the inenumbers in the output of Joern do not necessarily match the linenumbers of the source code, but as you see they are close to the real ones.
+
+Let's have a look into the source code [`commctrl.c`:121::132]:
+
+``` scala
+if (kfib->header.Command == cpu_to_le16(TakeABreakPt)) {
+ .....
+} else {
+    retval = aac_fib_send(le16_to_cpu(kfib->header.Command), fibptr,
+            le16_to_cpu(kfib->header.Size) , FsaNormal,
+            1, 1, NULL, NULL);
+```
+
+In fact this is the racing bug which is specified in the CVE description. :)
