@@ -198,7 +198,6 @@ At the beginning of this section we queried for all functions and printed them; 
 println("------ METHODS -----")
 cpg.method.name.p
 ```
-=======
 
 Joern allows us to filter locals function wise:
 
