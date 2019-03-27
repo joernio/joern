@@ -810,7 +810,7 @@ This doesn't look so bad.
 Get some flows from `copy_from_user`:
 
 ```scala
-val sinkArguments = pg.method.name("copy_from_user").parameter.argument
+val sinkArguments = cpg.method.name("copy_from_user").parameter.argument
 println(sinkArguments.reachableByFlows(cpg.identifier).p)
 ```
 
