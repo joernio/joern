@@ -768,7 +768,7 @@ Here we show how Joern helps you in the process of code auditing. The CVE bug co
 
 ### Setup
 ```bash
-$ git clone https://github.com/torvalds/linux`
+$ git clone https://github.com/torvalds/linux
 $ cd linux
 $ git checkout v4.7
 ```
