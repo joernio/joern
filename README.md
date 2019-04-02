@@ -42,7 +42,7 @@ You can either use your own CPG generators or use our
 open source C/C++ frontend [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg)
 to create a CPG for any C/C++ program.
 
-Run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>` in order generate a CPG (filename must be appended). If you leave the ```--out``` the CPG is generated in the local folder.
+Run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>` in order generate a CPG. If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.
 
 ## CPG Querying
 
