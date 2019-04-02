@@ -34,15 +34,15 @@ To build joern, please install the following:
 With those dependencies installed, run `./build.sh`, which will
 build the code property graph generator for C/C++ and a querying component.
 
-## CPG Creation
+## Code Property Graph Creation
 
-The CPG is an open and language agnostic
-[format](https://github.com/ShiftLeftSecurity/codepropertygraph#base-schema-for-the-code-property-graph).
-You can either use your own CPG generators or use our
-open source C/C++ frontend [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg)
-to create a CPG for any C/C++ program.
+Joern includes [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg), a fuzzy C/C++ language module, which allows code property graphs to be created from C/C++ code. To use it, run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>`. If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.
 
-Run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>` in order generate a CPG. If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.
+As an example, run
+```
+./fuzzyc2cpg.sh tests/free
+```
+to create a CPG for the test project `free`.
 
 ## CPG Querying
 
