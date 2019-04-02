@@ -14,6 +14,12 @@ The core features of Joern are:
 * **Intelligent Search Queries.** Joern offers a stronly-typed Scala-based extensible query language for code analysis based on Gremlin-Scala. This language can be used to manually formulate search queries for vulnerabilities as well as automatically infer them using machine learning techniques.
 * **Extendable via CPG passes.** Semantic code property graphs multi-layered, offering information about code on different levels of abstraction. Joern comes with many default passes, but also allows users to add passes to include additional information in the graph, and extend the query language accordingly.
 
+Joern bundles the following components into a distribution:
+
+* FuzzyC2CPG fuzzy parser for C/C++: https://github.com/ShiftLeftSecurity/fuzzyc2cpg
+* ShiftLeft Tinkergraph: https://github.com/ShiftLeftSecurity/tinkergraph-gremlin
+* Semantic code property graph and query language: https://github.com/ShiftLeftSecurity/codepropertygraph
+
 ## Building
 
 To build joern, please install the following: 
