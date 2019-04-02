@@ -44,12 +44,11 @@ As an example, run
 ```
 to create a CPG for the test project `free`.
 
-## CPG Querying
+## Querying the graph
 
-Run `./joern.sh <path/to/cpg>` to query the CPG.
-By default Joern only queries the CPG for a all methods defined in the
-CPG but you can run your own queries by modifing
-[src/main/scala/io/shiftleft/Main.scala], rebuilding and executing Joern again.
+Run `./joern.sh <path/to/cpg>` to query the CPG. This will run the script in [src/main/scala/io/shiftleft/Main.scala], which, by default, queries the CPG for all methods. You can modify this script to run other queries.
+
+## Examples
 
 Let's warm up a bit with a small and simple example:
 
