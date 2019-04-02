@@ -129,10 +129,9 @@ free_list
 <operator>.notEquals
 <operator>.indirectMemberAccess
 ```
-Obviously, there is some information we don't want to see.
-Let's filter it to get only those functions that start with `free`.
+Let's filter only for methods that start with `free`.
 
-Open up your *Main.scala* file and the followng lines:
+Open up the *Main.scala* file again and add the following lines:
 
 ```scala
   println("----- Filtered -----")
@@ -143,13 +142,15 @@ Againg do:
 1. *sbt stage*
 2. *./joern.sh cpg.bin.zip*
 
-This should give us the desired output:
+This should give us the following output:
 
 ```
 ----- Filtered -----
 free
 free_list
 ```
+
+## Querying for locals
 
 Let's add another function to our snippet.
 
