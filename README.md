@@ -119,7 +119,7 @@ Now all you need to do is:
 
 `sbt stage` in the local `joern` folder. This will build our new script for Joern to process.
 
-Now fire up  `./joern.sh cpg.bin.zip` and you will see the new output:
+Now run `./joern.sh cpg.bin.zip` and you will see the new output:
 
 ```
 ------ METHODS -----
@@ -189,8 +189,7 @@ q
 p
 ```
 
-The queries we defined so far are a little inconvenient.
-In fact, it is not the Joern way to do it.
+The queries we defined so far are a little inconvenient. In fact, it is not the Joern way to do it.
 A reformulation of the query above which conforms more to the Joern way looks like this:
 
 ```scala
@@ -266,7 +265,7 @@ cpg.method.signature(".*struct.*").name.p
 
 This query gives us all functions that have a `struct` in their signature which in our case is `free_list`.
 
-<h1> Time to see some flows </h1>
+## Time to see some flows
 
 Our example doesn't give us much space for serious flows. We'll look at some more complex cases later. But for now, let's use our  it.
 
@@ -528,13 +527,11 @@ produces the following output:
 ```
 
 
-# CVE-2016-6480 
+# An example vulnerability: CVE-2016-6480 
 
 ### Description
-- Race condition in the ioctl_send_fib function in drivers/scsi/aacraid/commctrl.c
 
-
-Here we show how Joern helps you in the process of code auditing. The CVE bug concerns version 4.7 of the Linux Kernel.
+A race condition exists in the Linux Kernel in version 4.7 in the ioctl_send_fib in drivers/scsi/aacraid/commctrl.c.
 
 ### Setup
 ```bash
@@ -543,12 +540,8 @@ $ cd linux
 $ git checkout v4.7
 ```
 
-This setup give us access to the vulnerable driver.
-
-Build the CPG for the driver:
-
+We build the code property graph for the vulnerable driver as follows:
 `./fuzzyc2cpg.sh path/to/kernel/linux/drivers/scsi/aacraid`
-
 
 ### Analysis
 
