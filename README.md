@@ -50,7 +50,7 @@ Run `./joern.sh <path/to/cpg>` to query the CPG. This will run the script in [sr
 
 ## Examples
 
-Let's warm up a bit with a small and simple example:
+We begin with a small example of a use-after-free condition. Consider the snippet below
 
 ```c
 #include <stdlib.h>
@@ -68,32 +68,28 @@ void free_list(struct node *head) {
 }
 ```
 
-The snipped can be found under `./tests/free`
-
-We fire up our frontend to build the CPG:
+which you can find under `./tests/free`. We create a CPG for this code as follows:
 
 `./fuzzyc2cpg.sh tests/free `
 
-This gives us a ```cpg.bin.zip``` in our local folder.
-Now fire up `./joern.sh cpg.bin.zip`. Well, this doens't give us much right? 
-
-
-What you should see are all the methods in a rather low level representation.
+This produces a ```cpg.bin.zip``` in our local folder.
+Now launch
+```
+./joern.sh cpg.bin.zip
+```
+which gives you all methods in a rather raw representation:
 
 ```
 ...
-
 Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment signature,NAMESPACE_BLOCK,<global>,None,None,None,None)
-
 ...
 ```
 
-We can shed light on this using our beautiful Scala-based DSL for code analysis.
+We can shed light on this using our Scala-based DSL for code analysis.
 
-Open [src/main/scala/io/shiftleft/Main.scala], 
+Next, let's edit [src/main/scala/io/shiftleft/Main.scala] to run different queries,
 
-your code should look like this:
-
+You should see the following content before editing:
 ```scala
 package io.shiftleft
 
