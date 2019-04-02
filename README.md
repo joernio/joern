@@ -48,7 +48,7 @@ to create a CPG for the test project `free`.
 
 Run `./joern.sh <path/to/cpg>` to query the CPG. This will run the script in [src/main/scala/io/shiftleft/Main.scala], which, by default, queries the CPG for all methods. You can modify this script to run other queries.
 
-## Examples
+## Running your first query ("hello-cpg")
 
 We begin with a small example of a use-after-free condition. Consider the snippet below
 
@@ -85,7 +85,7 @@ Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment 
 ...
 ```
 
-We can shed light on this using our Scala-based DSL for code analysis.
+## Running more queries
 
 Next, let's edit [src/main/scala/io/shiftleft/Main.scala] to run different queries,
 
