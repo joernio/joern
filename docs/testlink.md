@@ -1,3 +1,3 @@
 Testlink
 
-{% link test.md %}
+[Foo]({% link test.md %})
