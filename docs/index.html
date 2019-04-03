@@ -1,0 +1,992 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Introduction · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter active" data-level="1.1" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="." >Introduction</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="joern-an-open-source-code-analysis-platform-for-cc">Joern: an open-source code analysis platform for C/C++</h1>
+<p>Joern is a platform for robust analysis of C/C++ code. It generates
+semantic code property graphs, a graph representation of code for
+cross-language code analysis. Semantic code property graphs are stored
+in an in-memory graph database. This allows code to be mined using
+search queries formulated in a domain-specific query language based on
+the graph traversal language Gremlin.</p>
+<p>The core features of Joern are:</p>
+<ul>
+<li><strong>Fuzzy Parsing of C/C++.</strong> Joern employs a fuzzy parser for C/C++ based on the concept of Island grammars. The parser enables importing arbitrary code even if a working build environment cannot be supplied or parts of the code are missing.</li>
+<li><strong>Semantic Code Property Graphs.</strong> Joern creates semantic code property graphs from the fuzzy parser output and stores them in an in-memory graph database. SCPGs are a language-agnostic intermediate representation of code designed for query-based code analysis. For background information on code property graphs, we strongly encourage you to read the original paper on the topic (<a href="https://fabs.codeminers.org/papers/2014-ieeesp.pdf" target="_blank">https://fabs.codeminers.org/papers/2014-ieeesp.pdf</a>) and the specification of the semantic CPG at <a href="https://github.com/ShiftLeftSecurity/codepropertygraph" target="_blank">https://github.com/ShiftLeftSecurity/codepropertygraph</a> .</li>
+<li><strong>Intelligent Search Queries.</strong> Joern offers a stronly-typed Scala-based extensible query language for code analysis based on Gremlin-Scala. This language can be used to manually formulate search queries for vulnerabilities as well as automatically infer them using machine learning techniques.</li>
+<li><strong>Extendable via CPG passes.</strong> Semantic code property graphs multi-layered, offering information about code on different levels of abstraction. Joern comes with many default passes, but also allows users to add passes to include additional information in the graph, and extend the query language accordingly.</li>
+</ul>
+<p>Joern bundles the following components into a distribution:</p>
+<ul>
+<li>FuzzyC2CPG fuzzy parser for C/C++: <a href="https://github.com/ShiftLeftSecurity/fuzzyc2cpg" target="_blank">https://github.com/ShiftLeftSecurity/fuzzyc2cpg</a></li>
+<li>ShiftLeft Tinkergraph: <a href="https://github.com/ShiftLeftSecurity/tinkergraph-gremlin" target="_blank">https://github.com/ShiftLeftSecurity/tinkergraph-gremlin</a></li>
+<li>Semantic code property graph and query language: <a href="https://github.com/ShiftLeftSecurity/codepropertygraph" target="_blank">https://github.com/ShiftLeftSecurity/codepropertygraph</a></li>
+</ul>
+<h2 id="building">Building</h2>
+<p>To build joern, please install the following: </p>
+<ul>
+<li>Python3<ul>
+<li>Link: <a href="https://www.python.org/downloads/" target="_blank">https://www.python.org/downloads/</a></li>
+</ul>
+</li>
+<li>Java runtime 8<ul>
+<li>Link: <a href="http://openjdk.java.net/install/" target="_blank">http://openjdk.java.net/install/</a></li>
+</ul>
+</li>
+<li>Scala build tool (sbt)<ul>
+<li>Link: <a href="https://www.scala-sbt.org/" target="_blank">https://www.scala-sbt.org/</a></li>
+</ul>
+</li>
+</ul>
+<p>With those dependencies installed, run <code>./build.sh</code>, which will
+build the code property graph generator for C/C++ and a querying component.</p>
+<h2 id="code-property-graph-creation">Code Property Graph Creation</h2>
+<p>Joern includes <a href="https://github.com/ShiftLeftSecurity/fuzzyc2cpg" target="_blank">fuzzyc2cpg</a>, a fuzzy C/C++ language module, which allows code property graphs to be created from C/C++ code. To use it, run <code>./fuzzyc2cpg.sh &lt;path/to/directory&gt; --out &lt;path/to/cpg/cpg_name&gt;</code>. If you ommit the <code>--out</code> flag, the CPG is named <code>cpg.bin.zip</code> and stored in the local folder.</p>
+<p>As an example, run</p>
+<pre><code>./fuzzyc2cpg.sh tests/free
+</code></pre><p>to create a CPG for the test project <code>free</code>.</p>
+<h2 id="querying-the-graph">Querying the graph</h2>
+<p>Run <code>./joern.sh &lt;path/to/cpg&gt;</code> to query the CPG. This will run the script in [src/main/scala/io/shiftleft/Main.scala], which, by default, queries the CPG for all methods. You can modify this script to run other queries.</p>
+<h2 id="running-your-first-query-hello-cpg">Running your first query (&quot;hello-cpg&quot;)</h2>
+<p>We begin with a small example of a use-after-free condition. Consider the snippet below</p>
+<pre><code class="lang-c"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-keyword">struct</span> node {
+    <span class="hljs-keyword">int</span> value;
+    <span class="hljs-keyword">struct</span> node *next;
+};
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">free_list</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> node *head)</span> </span>{ 
+  <span class="hljs-keyword">struct</span> node *q;
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">struct</span> node *p = head; p != <span class="hljs-literal">NULL</span>; p = q) { 
+    q = p-&gt;next;
+    <span class="hljs-built_in">free</span>(p);
+    } 
+}
+</code></pre>
+<p>which you can find under <code>./tests/free</code>. We create a CPG for this code as follows:</p>
+<p><code>./fuzzyc2cpg.sh tests/free</code></p>
+<p>This produces a <code>cpg.bin.zip</code> in our local folder.
+Now launch</p>
+<pre><code>./joern.sh cpg.bin.zip
+</code></pre><p>which gives you all methods in a rather raw representation:</p>
+<pre><code>...
+Method(Some(v[258]),&lt;operator&gt;.assignment,&lt;operator&gt;.assignment,TODO assignment signature,NAMESPACE_BLOCK,&lt;global&gt;,None,None,None,None)
+...
+</code></pre><h2 id="running-more-queries">Running more queries</h2>
+<p>Next, let&apos;s edit [src/main/scala/io/shiftleft/Main.scala] to run different queries,</p>
+<p>You should see the following content before editing:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">package</span> io.shiftleft
+
+<span class="hljs-keyword">import</span> io.shiftleft.cpgloading.tinkergraph.<span class="hljs-type">CpgLoader</span>
+<span class="hljs-keyword">import</span> io.shiftleft.queryprimitives.steps.<span class="hljs-type">Implicits</span>._
+<span class="hljs-keyword">import</span> io.shiftleft.passes.dataflows._
+
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Main</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">App</span> </span>{
+  <span class="hljs-keyword">val</span> cpg = <span class="hljs-type">CpgLoader</span>.loadCodePropertyGraph(args(<span class="hljs-number">0</span>), runEnhancements = <span class="hljs-literal">true</span>)
+
+  <span class="hljs-comment">// Print all methods</span>
+  cpg.method.p
+}
+</code></pre>
+<p>Now add the following lines after <code>cpg.method.p</code>:</p>
+<pre><code class="lang-scala">println(<span class="hljs-string">&quot;------ METHODS -----&quot;</span>)
+cpg.method.l.foreach(m =&gt; println(m.fullName))
+</code></pre>
+<p>The <code>.l.foreach</code> construct returns a List collection on which we can directly operate with <code>foreach</code>. This construct runs over each
+<code>Method</code> Object of our CPG and prints the <em>fullname</em> of it.</p>
+<p>Now all you need to do is:</p>
+<p><code>sbt stage</code> in the local <code>joern</code> folder. This will build our new script for Joern to process.</p>
+<p>Now run <code>./joern.sh cpg.bin.zip</code> and you will see the new output:</p>
+<pre><code>------ METHODS -----
+free
+free_list
+&lt;operator&gt;.assignment
+&lt;operator&gt;.notEquals
+&lt;operator&gt;.indirectMemberAccess
+</code></pre><p>Let&apos;s filter only for methods that start with <code>free</code>.</p>
+<p>Open up the <em>Main.scala</em> file again and add the following lines:</p>
+<pre><code class="lang-scala">  println(<span class="hljs-string">&quot;----- Filtered -----&quot;</span>)
+  cpg.method.name(<span class="hljs-string">&quot;free.*&quot;</span>).l.foreach(m =&gt; println(m.fullName)
+</code></pre>
+<p>Againg do:</p>
+<ol>
+<li><em>sbt stage</em></li>
+<li><em>./joern.sh cpg.bin.zip</em></li>
+</ol>
+<p>This should give us the following output:</p>
+<pre><code>----- Filtered -----
+free
+free_list
+</code></pre><h2 id="querying-for-locals">Querying for locals</h2>
+<p>Let&apos;s add another function to our snippet.</p>
+<pre><code class="lang-c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">flow</span><span class="hljs-params">(<span class="hljs-keyword">int</span> p0)</span> </span>{
+  <span class="hljs-keyword">int</span> a = p0;
+  <span class="hljs-keyword">int</span> b=a;
+  <span class="hljs-keyword">int</span> c=<span class="hljs-number">0x31</span>;
+  <span class="hljs-keyword">int</span> z = b + c;
+  z++;
+  <span class="hljs-keyword">int</span> x = z;
+  <span class="hljs-keyword">return</span> x;
+  }
+</code></pre>
+<p>We&apos;ll look at the flows later. For now we are interested in the locals, i.e. local variables.</p>
+<p>Add this to your <em>Main.scala</em>:</p>
+<pre><code class="lang-scala">  println(<span class="hljs-string">&quot;----- Locals -----&quot;</span>)
+  <span class="hljs-keyword">val</span> locals = cpg.local.l
+  println(locals.foreach(local =&gt; println(local.name)))
+</code></pre>
+<p>Here we collect all local variables over all functions into a list (<em>locals</em>). These locals are represented by an object, so we print out each name. We should get the following lines at the end of the output:</p>
+<pre><code>----- Locals -----
+a
+b
+c
+z
+x
+q
+p
+</code></pre><p>The queries we defined so far are a little inconvenient. In fact, it is not the Joern way to do it.
+A reformulation of the query above which conforms more to the Joern way looks like this:</p>
+<pre><code class="lang-scala">cpg.local.name.p
+</code></pre>
+<p>Much better isn&apos;t it? ;)</p>
+<p>It will give us the same output. The <code>p</code> suffix prints out the name of each local variable.</p>
+<p>This also works for our filter we defined earlier:</p>
+<pre><code class="lang-scala"> println(<span class="hljs-string">&quot;----- Filtered -----&quot;</span>)
+ cpg.method.name(<span class="hljs-string">&quot;free.*&quot;</span>).name.p
+</code></pre>
+<p>At the beginning of this section we queried for all functions and printed them; we can reformulate it as well to conform more to the Joern way:</p>
+<pre><code class="lang-scala">println(<span class="hljs-string">&quot;------ METHODS -----&quot;</span>)
+cpg.method.name.p
+</code></pre>
+<p>Joern allows us to filter locals function wise:</p>
+<pre><code class="lang-scala">  println(<span class="hljs-string">&quot;----- local vars flow -----&quot;</span>)
+  cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).local.name.p
+
+  println(<span class="hljs-string">&quot;----- local vars free_list -----&quot;</span>)
+  cpg.method.name(<span class="hljs-string">&quot;free_list&quot;</span>).local.name.p
+</code></pre>
+<p>Note that we just added <code>.name(regex)</code> to our <code>method</code> query.</p>
+<p>We can also filter for variables we are interested in:</p>
+<pre><code class="lang-scala">cpg.method.local.name(<span class="hljs-string">&quot;a*&quot;</span>).name.p
+</code></pre>
+<p>will give us variables which start with <code>a</code>.</p>
+<p>Want to know where it comes from?</p>
+<pre><code class="lang-scala">cpg.local.name(<span class="hljs-string">&quot;a*&quot;</span>).file.name.p
+</code></pre>
+<p>Let&apos;s add some type information to our query:</p>
+<pre><code class="lang-scala">cpg.local.map(l =&gt; (l.name, l.typeFullName)).p
+</code></pre>
+<p>This adds the following lines to our output:</p>
+<pre><code>(a,int)
+(b,int)
+(c,int)
+(z,int)
+(x,int)
+(q,struct node *)
+(p,struct node *)
+</code></pre><p>Function signatures:</p>
+<pre><code class="lang-scala">cpg.method.signature(<span class="hljs-string">&quot;.*struct.*&quot;</span>).name.p
+</code></pre>
+<p>This query gives us all functions that have a <code>struct</code> in their signature which in our case is <code>free_list</code>.</p>
+<h2 id="time-to-see-some-flows">Time to see some flows</h2>
+<p>Our example doesn&apos;t give us much space for serious flows. We&apos;ll look at some more complex cases later. But for now, let&apos;s use our  it.</p>
+<p>Open up your <em>Main.scala</em> file and add:</p>
+<pre><code class="lang-scala">  <span class="hljs-keyword">val</span> source = cpg.identifier
+  <span class="hljs-keyword">val</span> sink = cpg.call.name(<span class="hljs-string">&quot;free&quot;</span>)
+  println(sink.reachableByFlows(source).p)
+</code></pre>
+<p>Here we define the source to be the set of  <strong>identifiers</strong>. Think of an identifier a an unique object that represents a variable at that specific program point where it is used or defined.</p>
+<p>A thorough description on the concept of the CPG schema and its query primitives can be found at:</p>
+<ul>
+<li><a href="https://github.com/ShiftLeftSecurity/codepropertygraph" target="_blank">https://github.com/ShiftLeftSecurity/codepropertygraph</a></li>
+<li><a href="https://ocular.shiftleft.io/api/io/shiftleft/queryprimitives/index.html" target="_blank">https://ocular.shiftleft.io/api/io/shiftleft/queryprimitives/index.html</a></li>
+</ul>
+<p>With  <code>cpg.call.name(&quot;free&quot;)</code>  we query for
+all <code>free</code> methods that are actually called. Think of a <strong>CALL</strong> objects as a unique representative for each specific call to <em>free</em>. Apparantly we would get more call objects for our query if there were more calls to free.</p>
+<p>Add this to your <em>Main.scala</em>:</p>
+<pre><code class="lang-scala"> println(<span class="hljs-string">&quot;----- Call to free ----&quot;</span>)
+ cpg.call.name(<span class="hljs-string">&quot;free&quot;</span>).l.foreach(call =&gt; println(call.code))
+</code></pre>
+<p>This should give the us the following output:</p>
+<pre><code>----- Call to free ----
+free(p)
+</code></pre><p>We introduced the query to go into call a little bit.
+However, a better way to formulate our sink is by its arguments it receives.
+Replace our <code>val sink</code> with:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> sink = cpg.method(<span class="hljs-string">&quot;free&quot;</span>).parameter.argument
+</code></pre>
+<p>It will give us the same output, but is more consistent in what we want to achieve, i.e., track the data dependency of the arguments.</p>
+<p>Don&apos;t forget to <code>sbt stage</code> before you run joern on the cpg.
+For a faster compile process you can run <em>sbt</em> in your local folder. This will open a sbt shell. For each change you make in your <em>Main.scala</em> file you can now run <code>stage</code> in the sbt shell. This will speed up the process of experimenting with joern.</p>
+<p>Back to our flow problem:</p>
+<p>running <code>sink.reachableByFlows(source)</code> will basically traverse the flow of data dependency back to each source that we provided. In this case all <em>identifiers</em>.</p>
+<p>If we run this script we get the following output:</p>
+<pre><code> ________________________________________________________
+ | tracked  | lineNumber| method   | file              |
+ |=====================================================|
+ | *p = head| 19        | free_list| tests/free2/free.c|
+ | free(p)  | 21        | free_list| tests/free2/free.c|
+
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | *p = head  | 19        | free_list| tests/free2/free.c|
+ | p-&gt;next    | 20        | free_list| tests/free2/free.c|
+ | q = p-&gt;next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
+
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | p-&gt;next    | 20        | free_list| tests/free2/free.c|
+ | q = p-&gt;next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
+
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | q = p-&gt;next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
+
+ ____________________________________________________
+ | tracked| lineNumber| method   | file              |
+ |===================================================|
+ | p = q  | 19        | free_list| tests/free2/free.c|
+ | free(p)| 21        | free_list| tests/free2/free.c|
+
+ ____________________________________________________
+ | tracked| lineNumber| method   | file              |
+ |===================================================|
+ | free(p)| 21        | free_list| tests/free2/free.c|
+</code></pre><p>This outputs shows you each stage during the traversal starting from <code>free(p)</code> itself.</p>
+<p>What about the <code>p != NULL</code>?  Let&apos;s check this with:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> source2 = cpg.identifier
+<span class="hljs-keyword">val</span> sink2 = cpg.method.name(<span class="hljs-string">&quot;free_list&quot;</span>).callOut.code(<span class="hljs-string">&quot;p != NULL&quot;</span>)
+println(sink2.reachableByFlows(source2).p))
+</code></pre>
+<p>Here we explicitly filter for the <code>p != NULL</code> case in the <code>free_list</code> function.</p>
+<pre><code> _____________________________________________________
+ | tracked  | lineNumber| method   | file             |
+ |====================================================|
+ | *p = head| 7         | free_list| tests/free/free.c|
+ | p != NULL| 7         | free_list| tests/free/free.c|
+
+ _______________________________________________________
+ | tracked    | lineNumber| method   | file             |
+ |======================================================|
+ | *p = head  | 7         | free_list| tests/free/free.c|
+ | p-&gt;next    | 7         | free_list| tests/free/free.c|
+ | p = p-&gt;next| 7         | free_list| tests/free/free.c|
+ | p != NULL  | 7         | free_list| tests/free/free.c|
+
+ _______________________________________________________
+ | tracked    | lineNumber| method   | file             |
+ |======================================================|
+ | p-&gt;next    | 7         | free_list| tests/free/free.c|
+ | p = p-&gt;next| 7         | free_list| tests/free/free.c|
+ | p != NULL  | 7         | free_list| tests/free/free.c|
+
+ _______________________________________________________
+ | tracked    | lineNumber| method   | file             |
+ |======================================================|
+ | p = p-&gt;next| 7         | free_list| tests/free/free.c|
+ | p != NULL  | 7         | free_list| tests/free/free.c|
+
+ _____________________________________________________
+ | tracked  | lineNumber| method   | file             |
+ |====================================================|
+ | p != NULL| 7         | free_list| tests/free/free.c|
+</code></pre><p>It shows us the flow of <code>p</code> into the sanitizer of the for loop.</p>
+<p>Let&apos;s have a look at our <code>flow</code> function. Say, we want to track the flow from each return value to each data dependent identifier.
+A query can look like follows:</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> source3 = cpg.identifier
+ <span class="hljs-keyword">val</span> sink3 = cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).methodReturn
+ println(sink3.reachableByFlows(source3).p)
+</code></pre>
+<p>methodReturn gives us the formal return value of the function, i.e.,
+each return value is connected to the object we obtain through methodReturn.</p>
+<p>Our output:</p>
+<pre><code> ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | a = par  | 8         | flow  | tests/free2/free.c|
+ | b=a      | 9         | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | b=a      | 9         | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | c=0x31   | 10        | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+</code></pre><p>Again the outputs show you each stage during the traversal.
+Since we defined the source to be all identifiers, the engine outputs each hit to
+an indentifier it finds along its paths backwards starting from the sinks.</p>
+<p>We can restrict the flows to stop at each <code>z</code> the engine encounters:</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> source4 = cpg.identifier.name(<span class="hljs-string">&quot;z&quot;</span>)
+ <span class="hljs-keyword">val</span> sink4 = cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).methodReturn
+ println(sink4.reachableByFlows(source4).p)
+</code></pre>
+<p>produces the following output:</p>
+<pre><code> ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+</code></pre><h1 id="an-example-vulnerability-cve-2016-6480">An example vulnerability: CVE-2016-6480</h1>
+<h3 id="description">Description</h3>
+<p>A race condition exists in the Linux Kernel in version 4.7 in the ioctl_send_fib in drivers/scsi/aacraid/commctrl.c.</p>
+<h3 id="setup">Setup</h3>
+<pre><code class="lang-bash">$ git <span class="hljs-built_in">clone</span> https://github.com/torvalds/linux`
+$ <span class="hljs-built_in">cd</span> linux
+$ git checkout v4.7
+</code></pre>
+<p>We build the code property graph for the vulnerable driver as follows:
+<code>./fuzzyc2cpg.sh path/to/kernel/linux/drivers/scsi/aacraid</code></p>
+<h3 id="analysis">Analysis</h3>
+<p>The first thing which comes to mind is the interaction from user to kernel space. This is usually done with <code>copy_from_user</code>. Let&apos;s see if any data from user space to kernel space is copied:</p>
+<pre><code class="lang-scala"> cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).code.p
+</code></pre>
+<p>We should get the following output:</p>
+<pre><code>copy_from_user(&amp;qd, arg, sizeof (struct aac_query_disk))
+copy_from_user(&amp;dd, arg, sizeof (struct aac_delete_disk))
+copy_from_user(&amp;dd, arg, sizeof (struct aac_delete_disk))
+copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
+copy_from_user(kfib, arg, size)
+copy_from_user((void *)&amp;f, arg, sizeof(struct fib_ioctl))
+copy_from_user(&amp;fibsize, &amp;user_srb-&gt;count,sizeof(u32))
+copy_from_user(user_srbcmd, user_srb,fibsize)
+copy_from_user(p,sg_user[i],upsg-&gt;sg[i].count)
+copy_from_user(p,sg_user[i],upsg-&gt;sg[i].count)
+copy_from_user(p,sg_user[i],usg-&gt;sg[i].count)
+copy_from_user(p, sg_user[i],\n\t\t\t\t\t\t\tupsg-&gt;sg[i].count)
+</code></pre><p>This doesn&apos;t look so bad.</p>
+<p>Get some flows from <code>copy_from_user</code>:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> sinkArguments = pg.method.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).parameter.argument
+println(sinkArguments.reachableByFlows(cpg.identifier).p)
+</code></pre>
+<p>Ok, this gives us a lot of information back. The following query gives us the 
+number.</p>
+<pre><code class="lang-scala">println(sinkArguments.reachableByFlows(cpg.identifier).l.size)
+</code></pre>
+<p>should be 302. </p>
+<p>Let&apos;s look for something which doesn&apos;t overwhelm us.
+It would be interesting to have an estimate if the arguments of <code>copy_from_user</code>
+are sanitized.</p>
+<p>Since we don&apos;t have direct definitions at if expressions, we do not get any reaching definition information out of them. But we get information that flows into if expressions.</p>
+<p>Maybe we can work our way around this. Fire up your <em>Main.scala</em> and add the following lines:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> reachingDefs1 = cpg.method
+                       .name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+                       .parameter
+                       .argument
+                       .reachableBy(cpg.identifier)
+                       .toSet
+</code></pre>
+<p>So far we have used <code>reachableByFlows</code> to construct and print out our flows.
+Sometimes we do not want that much of a detail. With <code>reachableBy</code> we tell the engine that we are not interested in the details of the data flow paths, but rather want to know which of our <em>sources</em> are hit. At the end of the query we collect the sources that are hit into a set.</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> reachingDefs2 = cpg.method
+                       .name(<span class="hljs-string">&quot;.*less.*&quot;</span>, <span class="hljs-string">&quot;.*greater.*&quot;</span>)
+                       .parameter
+                       .argument
+                       .reachableBy(cpg.identifier)
+                       .toSet
+</code></pre>
+<p>Let&apos;s take a break and dismantle this query:</p>
+<ul>
+<li>We restrict the flows running to expressions that involve the <em>less</em> <strong>or</strong> <em>greater</em> keyword. Note that internally each binary operation (+,-,&gt;,&lt; etc.) is also treated as a function. So we look for its arguments.</li>
+<li>Data dependency is tracked back to each identifier it hits and collected into a set.</li>
+</ul>
+<p>Now we can check if we have an intersection between these two sets which
+gives us an estimate on what arguments of <code>copy_from_user</code> might be sanitized.</p>
+<pre><code class="lang-scala">reachingDefs1.intersect(reachingDefs2).foreach(elem =&gt; println(elem.code))
+</code></pre>
+<p>should give us:</p>
+<pre><code>kmalloc(fibsize, GFP_KERNEL)
+kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+user_srbcmd-&gt;sg
+kfib-&gt;header
+size = le16_to_cpu(kfib-&gt;header.Size) + sizeof(struct aac_fibhdr)
+actual_fibsize = sizeof(struct aac_srb) - sizeof(struct sgentry) +\n\t\t((user_srbcmd-&gt;sg.count &amp; 0xff) * sizeof(struct sgentry))
+* upsg = (struct user_sgmap64*)&amp;user_srbcmd-&gt;sg
+i = 0
+user_srbcmd-&gt;sg
+usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+user_srbcmd-&gt;sg
+* upsg = &amp;user_srbcmd-&gt;sg
+user_srbcmd = kmalloc(fibsize, GFP_KERNEL)
+i = 0
+fibsize = 0
+aac_fib_alloc(dev)
+user_srbcmd-&gt;sg.count
+kfib = fibptr-&gt;hw_fib_va
+kfib-&gt;header.Size
+actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap)
+fibptr = aac_fib_alloc(dev)
+i = 0
+fibptr-&gt;hw_fib_va
+i = 0
+</code></pre><p>This is actually quite nice; we can see that most <em>potential</em> checks involve some kind of a <em>size</em> element (as we might expect). </p>
+<p>At the beginning of this section we saw some <code>copy_from_user</code> outputs.
+Let&apos;s look at those that have <code>kfib</code> as their first argument. This decision is not made randomly. If we look at the output above we see that <code>kfib</code> is an interesting pointer which gives us access to an header and its size seems to have an involvement in a check: 
+<code>kfib-&gt;header.Size</code>.</p>
+<p>We can cofirm this in the source code (<code>commctrl.c:90)</code>:</p>
+<pre><code class="lang-c">size = le16_to_cpu(kfib-&gt;header.Size) + <span class="hljs-keyword">sizeof</span>(<span class="hljs-keyword">struct</span> aac_fibhdr);
+<span class="hljs-keyword">if</span> (size &lt; le16_to_cpu(kfib-&gt;header.SenderSize))
+                      ........
+</code></pre>
+<p>We use the following query to filter for <code>copy_from_user</code> looking for <code>kfib</code> as an argument:</p>
+<pre><code class="lang-scala">cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>).l
+</code></pre>
+<p>we could also do:</p>
+<pre><code class="lang-scala"> cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).filter(call =&gt; call.argument.code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)).l
+</code></pre>
+<p>Let&apos;s print them out:</p>
+<pre><code>cpg.call.name(&quot;copy_from_user&quot;)
+.filter(call =&gt; call.argument.code(&quot;.*kfib.*&quot;))
+.l
+.foreach(call =&gt; println(call.code))
+</code></pre><p>Output:</p>
+<pre><code>copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
+copy_from_user(kfib, arg, size)
+</code></pre><p>Nice, we have two of them. If we find flows from these sinks to a common ancestor which defines <code>kfib</code> and there is no other definition of <code>kfib</code> along our way we might have a double fetch.</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> cfu1 = cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+   .code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)
+   .l
+   .head
+   .start
+   .reachableBy(cpg.identifier)
+   .toSet
+
+  <span class="hljs-keyword">val</span> cfu2 = cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+    .code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)
+    .l
+    .last
+    .start
+    .reachableBy(cpg.identifier)
+    .toSet
+    .intersect(cfu1)
+
+
+   cfu2.foreach(elem =&gt; println(elem.code, elem.lineNumber.get))
+</code></pre>
+<p>This is a similar pattern as we did above with our reaching definitions to sanitizers.
+You might wonder what the <code>start</code> does here. It basically tells our engine to start a 
+fresh traversal <em>starting</em> at the given node. In this case we filtered with <em>head</em> and
+<em>last</em> to get those nodes. Play around with this to grasp the idea.</p>
+<p>Our output:</p>
+<pre><code>(aac_fib_alloc(dev),71)
+(kfib = fibptr-&gt;hw_fib_va,76)
+(fibptr = aac_fib_alloc(dev),71)
+(fibptr-&gt;hw_fib_va,76)
+</code></pre><p>=======</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> source4 = cpg.identifier.name(<span class="hljs-string">&quot;z&quot;</span>)
+ <span class="hljs-keyword">val</span> sink4 = cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).methodReturn
+ println(sink4.reachableByFlows(source4).p)
+</code></pre>
+<p>produces the following output:</p>
+<pre><code> ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+</code></pre><h1 id="cve-2016-6480">CVE-2016-6480</h1>
+<h3 id="description">Description</h3>
+<ul>
+<li>Race condition in the ioctl_send_fib function in drivers/scsi/aacraid/commctrl.c</li>
+</ul>
+<p>Here we show how Joern helps you in the process of code auditing. The CVE bug concerns version 4.7 of the Linux Kernel.</p>
+<h3 id="setup">Setup</h3>
+<pre><code class="lang-bash">$ git <span class="hljs-built_in">clone</span> https://github.com/torvalds/linux
+$ <span class="hljs-built_in">cd</span> linux
+$ git checkout v4.7
+</code></pre>
+<p>This setup give us access to the vulnerable driver.</p>
+<p>Build the CPG for the driver:</p>
+<p><code>./fuzzyc2cpg.sh path/to/kernel/linux/drivers/scsi/aacraid</code></p>
+<h3 id="analysis">Analysis</h3>
+<p>The first thing which comes to mind is the interaction from user to kernel space. This is usually done with <code>copy_from_user</code>. Let&apos;s see if any data from user space to kernel space is copied:</p>
+<pre><code class="lang-scala"> cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).code.p
+</code></pre>
+<p>We should get the following output:</p>
+<pre><code>copy_from_user(&amp;qd, arg, sizeof (struct aac_query_disk))
+copy_from_user(&amp;dd, arg, sizeof (struct aac_delete_disk))
+copy_from_user(&amp;dd, arg, sizeof (struct aac_delete_disk))
+copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
+copy_from_user(kfib, arg, size)
+copy_from_user((void *)&amp;f, arg, sizeof(struct fib_ioctl))
+copy_from_user(&amp;fibsize, &amp;user_srb-&gt;count,sizeof(u32))
+copy_from_user(user_srbcmd, user_srb,fibsize)
+copy_from_user(p,sg_user[i],upsg-&gt;sg[i].count)
+copy_from_user(p,sg_user[i],upsg-&gt;sg[i].count)
+copy_from_user(p,sg_user[i],usg-&gt;sg[i].count)
+copy_from_user(p, sg_user[i],\n\t\t\t\t\t\t\tupsg-&gt;sg[i].count)
+</code></pre><p>This doesn&apos;t look so bad.</p>
+<p>Get some flows from <code>copy_from_user</code>:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> sinkArguments = cpg.method.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).parameter.argument
+println(sinkArguments.reachableByFlows(cpg.identifier).p)
+</code></pre>
+<p>Ok, this gives us a lot of information back. The following query gives us the 
+number.</p>
+<pre><code class="lang-scala">println(sinkArguments.reachableByFlows(cpg.identifier).l.size)
+</code></pre>
+<p>should be 302. </p>
+<p>Let&apos;s look for something which doesn&apos;t overwhelm us.
+It would be interesting to have an estimate if the arguments of <code>copy_from_user</code>
+are sanitized.</p>
+<p>Since we don&apos;t have direct definitions at if expressions, we do not get any reaching definition information out of them. But we get information that flows into if expressions.</p>
+<p>Maybe we can work our way around this. Fire up your <em>Main.scala</em> and add the following lines:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> reachingDefs1 = cpg.method
+                       .name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+                       .parameter
+                       .argument
+                       .reachableBy(cpg.identifier)
+                       .toSet
+</code></pre>
+<p>So far we have used <code>reachableByFlows</code> to construct and print out our flows.
+Sometimes we do not want that much of a detail. With <code>reachableBy</code> we tell the engine that we are not interested in the details of the data flow paths, but rather want to know which of our <em>sources</em> are hit. At the end of the query we collect the sources that are hit into a set.</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> reachingDefs2 = cpg.method
+                       .name(<span class="hljs-string">&quot;.*less.*&quot;</span>, <span class="hljs-string">&quot;.*greater.*&quot;</span>)
+                       .parameter
+                       .argument
+                       .reachableBy(cpg.identifier)
+                       .toSet
+</code></pre>
+<p>Let&apos;s take a break and dismantle this query:</p>
+<ul>
+<li>We restrict the flows running to expressions that involve the <em>less</em> <strong>or</strong> <em>greater</em> keyword. Note that internally each binary operation (+,-,&gt;,&lt; etc.) is also treated as a function. So we look for its arguments.</li>
+<li>Data dependency is tracked back to each identifier it hits and collected into a set.</li>
+</ul>
+<p>Now we can check if we have an intersection between these two sets which
+gives us an estimate on what arguments of <code>copy_from_user</code> might be sanitized.</p>
+<pre><code class="lang-scala">reachingDefs1.intersect(reachingDefs2).foreach(elem =&gt; println(elem.code))
+</code></pre>
+<p>should give us:</p>
+<pre><code>kmalloc(fibsize, GFP_KERNEL)
+kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+user_srbcmd-&gt;sg
+kfib-&gt;header
+size = le16_to_cpu(kfib-&gt;header.Size) + sizeof(struct aac_fibhdr)
+actual_fibsize = sizeof(struct aac_srb) - sizeof(struct sgentry) +\n\t\t((user_srbcmd-&gt;sg.count &amp; 0xff) * sizeof(struct sgentry))
+* upsg = (struct user_sgmap64*)&amp;user_srbcmd-&gt;sg
+i = 0
+user_srbcmd-&gt;sg
+usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+user_srbcmd-&gt;sg
+* upsg = &amp;user_srbcmd-&gt;sg
+user_srbcmd = kmalloc(fibsize, GFP_KERNEL)
+i = 0
+fibsize = 0
+aac_fib_alloc(dev)
+user_srbcmd-&gt;sg.count
+kfib = fibptr-&gt;hw_fib_va
+kfib-&gt;header.Size
+actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap)
+fibptr = aac_fib_alloc(dev)
+i = 0
+fibptr-&gt;hw_fib_va
+i = 0
+</code></pre><p>This is actually quite nice; we can see that most <em>potential</em> checks involve some kind of a <em>size</em> element (as we might expect). </p>
+<p>At the beginning of this section we saw some <code>copy_from_user</code> outputs.
+Let&apos;s look at those that have <code>kfib</code> as their first argument. This decision is not made randomly. If we look at the output above we see that <code>kfib</code> is an interesting pointer which gives us access to an header and its size seems to have an involvement in a check: 
+<code>kfib-&gt;header.Size</code>.</p>
+<p>We can cofirm this in the source code (<code>commctrl.c:90)</code>:</p>
+<pre><code class="lang-c">size = le16_to_cpu(kfib-&gt;header.Size) + <span class="hljs-keyword">sizeof</span>(<span class="hljs-keyword">struct</span> aac_fibhdr);
+<span class="hljs-keyword">if</span> (size &lt; le16_to_cpu(kfib-&gt;header.SenderSize))
+                      ........
+</code></pre>
+<p>We use the following query to filter for <code>copy_from_user</code> looking for <code>kfib</code> as an argument:</p>
+<pre><code class="lang-scala">cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>).l
+</code></pre>
+<p>we could also do:</p>
+<pre><code class="lang-scala"> cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>).filter(call =&gt; call.argument.code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)).l
+</code></pre>
+<p>Let&apos;s print them out:</p>
+<pre><code>cpg.call.name(&quot;copy_from_user&quot;)
+.filter(call =&gt; call.argument.code(&quot;.*kfib.*&quot;))
+.l
+.foreach(call =&gt; println(call.code))
+</code></pre><p>Output:</p>
+<pre><code>copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
+copy_from_user(kfib, arg, size)
+</code></pre><p>Nice, we have two of them. If we find flows from these sinks to a common ancestor which defines <code>kfib</code> and there is no other definition of <code>kfib</code> along our way we might have a double fetch.</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> cfu1 = cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+   .code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)
+   .l
+   .head
+   .start
+   .reachableBy(cpg.identifier)
+   .toSet
+
+  <span class="hljs-keyword">val</span> cfu2 = cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+    .code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)
+    .l
+    .last
+    .start
+    .reachableBy(cpg.identifier)
+    .toSet
+    .intersect(cfu1)
+
+
+   cfu2.foreach(elem =&gt; println(elem.code, elem.lineNumber.get))
+</code></pre>
+<p>This is a similar pattern as we did above with our reaching definitions to sanitizers.
+You might wonder what the <code>start</code> does here. It basically tells our engine to start a 
+fresh traversal <em>starting</em> at the given node. In this case we filtered with <em>head</em> and
+<em>last</em> to get those nodes. Play around with this to grasp the idea.</p>
+<p>Our output:</p>
+<pre><code>(aac_fib_alloc(dev),71)
+(kfib = fibptr-&gt;hw_fib_va,76)
+(fibptr = aac_fib_alloc(dev),71)
+(fibptr-&gt;hw_fib_va,76)
+</code></pre><p>We see that both <code>copy_from_user</code> calls indeed have a common ancestor which defines 
+our <code>kfib</code> pointer:</p>
+<p><code>kfib = fibptr-&gt;hw_fib_va,76</code> (<em>line 76/77 in the source code</em>)</p>
+<p>Now we can define a query that shows us flows to this specific sink:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> cfu4 = cpg.call.name(<span class="hljs-string">&quot;copy_from_user&quot;</span>)
+    .code(<span class="hljs-string">&quot;.*kfib.*&quot;</span>)
+    .l
+    .last
+    .start
+    .reachableByFlows(cpg.call.code(<span class="hljs-string">&quot;kfib = fibptr-&gt;hw_fib_va&quot;</span>))
+
+println(cfu4.p)
+</code></pre>
+<p>Output:</p>
+<pre><code>| tracked                                    | lineNumber| method        | file                                  |
+ |===============================================================================================================|
+ | kfib = fibptr-&gt;hw_fib_va                   | 76        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib-&gt;header                               | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib-&gt;header.SenderSize                    | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | le16_to_cpu(kfib-&gt;header.SenderSize)       | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | size = le16_to_cpu(kfib-&gt;header.SenderSize)| 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | copy_from_user(kfib, arg, size)            | 115       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+
+
+ __________________________________________________________________________________________________________________________
+ | tracked                                             | lineNumber| method        | file                                 |
+ |========================================================================================================================|
+ | kfib = fibptr-&gt;hw_fib_va                            | 76        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib-&gt;header                                        | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib-&gt;header.SenderSize                             | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | le16_to_cpu(kfib-&gt;header.SenderSize)                | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | size = le16_to_cpu(kfib-&gt;header.SenderSize)         | 91        | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | pci_alloc_consistent(dev-&gt;pdev, size, &amp;daddr)       | 100       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | kfib = pci_alloc_consistent(dev-&gt;pdev, size, &amp;daddr)| 100       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+ | copy_from_user(kfib, arg, size)                     | 115       | ioctl_send_fib| linux/drivers/scsi/aacraid/commctrl.c|
+
+
+                                                                        .......
+</code></pre><p>The second output shows us that there is a definition in between, but the first output reveals that we can reach our goal. </p>
+<p>Cool! We have a <strong>double fetch</strong>. Let&apos;s see if we can make this work in our favor.</p>
+<p>Our output above shows that the issue is in the <code>ioctl_send_fib</code> function. Let&apos;s query for local variables in this function:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> localsFib = cpg.method.name(<span class="hljs-string">&quot;ioctl_send_fib&quot;</span>).local.l 
+localsFib.foreach(localVar =&gt; println(localVar.code))
+</code></pre>
+<p>Output:</p>
+<pre><code>hw_fib
+fibptr
+kfib
+retval
+size
+daddr
+</code></pre><p>We have seen that <code>size</code> is sanitized and dependent on <code>kfib-&gt;header.Size</code>.
+The next query sheds light on this:</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> header = cpg.call.code(<span class="hljs-string">&quot;kfib-&gt;header.Size&quot;</span>).l
+ header.foreach(element =&gt; println(element.code, element.lineNumber.get))
+</code></pre>
+<p>Output:</p>
+<pre><code>(kfib-&gt;header.Size,89)
+(kfib-&gt;header.Size,129)
+</code></pre><p>We only have two entries. By looking into the source, we see that 
+the first one at <code>89</code> is the one that is used to specifiy the size.
+The second one at <code>129</code> is used <strong>without any checks</strong>.<br>Note that the line numbers in the output of Joern do not necessarily match the linenumbers of the source code, but as you see they are close to the real ones.</p>
+<p>Let&apos;s have a look into the source code [<code>commctrl.c</code>:121::132]:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">if</span> (kfib-&gt;header.<span class="hljs-type">Command</span> == cpu_to_le16(<span class="hljs-type">TakeABreakPt</span>)) {
+ .....
+} <span class="hljs-keyword">else</span> {
+    retval = aac_fib_send(le16_to_cpu(kfib-&gt;header.<span class="hljs-type">Command</span>), fibptr,
+            le16_to_cpu(kfib-&gt;header.<span class="hljs-type">Size</span>) , <span class="hljs-type">FsaNormal</span>,
+            <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-type">NULL</span>, <span class="hljs-type">NULL</span>);
+</code></pre>
+<p>In fact this is the racing bug which is specified in the CVE description. :)</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Introduction","level":"1.1","depth":1,"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"README.md","mtime":"2019-04-03T10:33:00.280Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-04-03T13:07:56.862Z"},"basePath":".","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="gitbook/gitbook.js"></script>
+    <script src="gitbook/theme.js"></script>
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
