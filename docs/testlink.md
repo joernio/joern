@@ -1,4 +1,3 @@
 Testlink
 
-[[test]]
-[Some Link]({% post_url test %})
+[Name of Link]({{ site.baseurl }}{% post_url test %})
