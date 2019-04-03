@@ -7,6 +7,19 @@ in an in-memory graph database. This allows code to be mined using
 search queries formulated in a domain-specific query language based on
 the graph traversal language Gremlin.
 
+The core features of Joern are:
+
+* **Fuzzy Parsing of C/C++.** Joern employs a fuzzy parser for C/C++ based on the concept of Island grammars. The parser enables importing arbitrary code even if a working build environment cannot be supplied or parts of the code are missing.
+* **Semantic Code Property Graphs.** Joern creates semantic code property graphs from the fuzzy parser output and stores them in an in-memory graph database. SCPGs are a language-agnostic intermediate representation of code designed for query-based code analysis. For background information on code property graphs, we strongly encourage you to read the original paper on the topic (https://fabs.codeminers.org/papers/2014-ieeesp.pdf) and the specification of the semantic CPG at https://github.com/ShiftLeftSecurity/codepropertygraph .
+* **Intelligent Search Queries.** Joern offers a stronly-typed Scala-based extensible query language for code analysis based on Gremlin-Scala. This language can be used to manually formulate search queries for vulnerabilities as well as automatically infer them using machine learning techniques.
+* **Extendable via CPG passes.** Semantic code property graphs multi-layered, offering information about code on different levels of abstraction. Joern comes with many default passes, but also allows users to add passes to include additional information in the graph, and extend the query language accordingly.
+
+Joern bundles the following components into a distribution:
+
+* FuzzyC2CPG fuzzy parser for C/C++: https://github.com/ShiftLeftSecurity/fuzzyc2cpg
+* ShiftLeft Tinkergraph: https://github.com/ShiftLeftSecurity/tinkergraph-gremlin
+* Semantic code property graph and query language: https://github.com/ShiftLeftSecurity/codepropertygraph
+
 ## Building
 
 To build joern, please install the following: 
@@ -21,24 +34,23 @@ To build joern, please install the following:
 With those dependencies installed, run `./build.sh`, which will
 build the code property graph generator for C/C++ and a querying component.
 
-## CPG Creation
+## Code Property Graph Creation
 
-The CPG is an open and language agnostic
-[format](https://github.com/ShiftLeftSecurity/codepropertygraph#base-schema-for-the-code-property-graph).
-You can either use your own CPG generators or use our
-open source C/C++ frontend [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg)
-to create a CPG for any C/C++ program.
+Joern includes [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg), a fuzzy C/C++ language module, which allows code property graphs to be created from C/C++ code. To use it, run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>`. If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.
 
-Run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>` in order generate a CPG (filename must be appended). If you leave the ```--out``` the CPG is generated in the local folder.
+As an example, run
+```
+./fuzzyc2cpg.sh tests/free
+```
+to create a CPG for the test project `free`.
 
-## CPG Querying
+## Querying the graph
 
-Run `./joern.sh <path/to/cpg>` to query the CPG.
-By default Joern only queries the CPG for a all methods defined in the
-CPG but you can run your own queries by modifing
-[src/main/scala/io/shiftleft/Main.scala], rebuilding and executing Joern again.
+Run `./joern.sh <path/to/cpg>` to query the CPG. This will run the script in [src/main/scala/io/shiftleft/Main.scala], which, by default, queries the CPG for all methods. You can modify this script to run other queries.
 
-Let's warm up a bit with a small and simple example:
+## Running your first query ("hello-cpg")
+
+We begin with a small example of a use-after-free condition. Consider the snippet below
 
 ```c
 #include <stdlib.h>
@@ -56,32 +68,28 @@ void free_list(struct node *head) {
 }
 ```
 
-The snipped can be found under `./tests/free`
-
-We fire up our frontend to build the CPG:
+which you can find under `./tests/free`. We create a CPG for this code as follows:
 
 `./fuzzyc2cpg.sh tests/free `
 
-This gives us a ```cpg.bin.zip``` in our local folder.
-Now fire up `./joern.sh cpg.bin.zip`. Well, this doens't give us much right? 
-
-
-What you should see are all the methods in a rather low level representation.
+This produces a ```cpg.bin.zip``` in our local folder.
+Now launch
+```
+./joern.sh cpg.bin.zip
+```
+which gives you all methods in a rather raw representation:
 
 ```
 ...
-
 Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment signature,NAMESPACE_BLOCK,<global>,None,None,None,None)
-
 ...
 ```
 
-We can shed light on this using our beautiful Scala-based DSL for code analysis.
+## Running more queries
 
-Open [src/main/scala/io/shiftleft/Main.scala], 
+Next, let's edit [src/main/scala/io/shiftleft/Main.scala] to run different queries,
 
-your code should look like this:
-
+You should see the following content before editing:
 ```scala
 package io.shiftleft
 
@@ -111,7 +119,7 @@ Now all you need to do is:
 
 `sbt stage` in the local `joern` folder. This will build our new script for Joern to process.
 
-Now fire up  `./joern.sh cpg.bin.zip` and you will see the new output:
+Now run `./joern.sh cpg.bin.zip` and you will see the new output:
 
 ```
 ------ METHODS -----
@@ -121,10 +129,9 @@ free_list
 <operator>.notEquals
 <operator>.indirectMemberAccess
 ```
-Obviously, there is some information we don't want to see.
-Let's filter it to get only those functions that start with `free`.
+Let's filter only for methods that start with `free`.
 
-Open up your *Main.scala* file and the followng lines:
+Open up the *Main.scala* file again and add the following lines:
 
 ```scala
   println("----- Filtered -----")
@@ -135,13 +142,15 @@ Againg do:
 1. *sbt stage*
 2. *./joern.sh cpg.bin.zip*
 
-This should give us the desired output:
+This should give us the following output:
 
 ```
 ----- Filtered -----
 free
 free_list
 ```
+
+## Querying for locals
 
 Let's add another function to our snippet.
 
@@ -180,8 +189,7 @@ q
 p
 ```
 
-The queries we defined so far are a little inconvenient.
-In fact, it is not the Joern way to do it.
+The queries we defined so far are a little inconvenient. In fact, it is not the Joern way to do it.
 A reformulation of the query above which conforms more to the Joern way looks like this:
 
 ```scala
@@ -257,7 +265,7 @@ cpg.method.signature(".*struct.*").name.p
 
 This query gives us all functions that have a `struct` in their signature which in our case is `free_list`.
 
-<h1> Time to see some flows </h1>
+## Time to see some flows
 
 Our example doesn't give us much space for serious flows. We'll look at some more complex cases later. But for now, let's use our  it.
 
@@ -519,13 +527,11 @@ produces the following output:
 ```
 
 
-# CVE-2016-6480 
+# An example vulnerability: CVE-2016-6480 
 
 ### Description
-- Race condition in the ioctl_send_fib function in drivers/scsi/aacraid/commctrl.c
 
-
-Here we show how Joern helps you in the process of code auditing. The CVE bug concerns version 4.7 of the Linux Kernel.
+A race condition exists in the Linux Kernel in version 4.7 in the ioctl_send_fib in drivers/scsi/aacraid/commctrl.c.
 
 ### Setup
 ```bash
@@ -534,12 +540,8 @@ $ cd linux
 $ git checkout v4.7
 ```
 
-This setup give us access to the vulnerable driver.
-
-Build the CPG for the driver:
-
+We build the code property graph for the vulnerable driver as follows:
 `./fuzzyc2cpg.sh path/to/kernel/linux/drivers/scsi/aacraid`
-
 
 ### Analysis
 
