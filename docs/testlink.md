@@ -1,3 +1,3 @@
 Testlink
 
-[Foo]({% link test.md %})
+[Foo]({{ site.baseurl }}{% link test.md %})
