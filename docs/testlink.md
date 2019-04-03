@@ -1,3 +1,3 @@
 Testlink
 
-{% link test %}
+{% link test.md %}
