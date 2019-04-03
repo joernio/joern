@@ -20,20 +20,6 @@ Joern bundles the following components into a distribution:
 * ShiftLeft Tinkergraph: https://github.com/ShiftLeftSecurity/tinkergraph-gremlin
 * Semantic code property graph and query language: https://github.com/ShiftLeftSecurity/codepropertygraph
 
-## Building
-
-To build joern, please install the following: 
-
-* Python3
-  - Link: https://www.python.org/downloads/
-* Java runtime 8
-  - Link: http://openjdk.java.net/install/
-* Scala build tool (sbt)
-  - Link: https://www.scala-sbt.org/
-  
-With those dependencies installed, run `./build.sh`, which will
-build the code property graph generator for C/C++ and a querying component.
-
 ## Code Property Graph Creation
 
 Joern includes [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg), a fuzzy C/C++ language module, which allows code property graphs to be created from C/C++ code. To use it, run `./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>`. If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.

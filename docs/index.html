@@ -57,7 +57,7 @@
     <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
 
     
-    <link rel="next" href="kernelexamples.html" />
+    <link rel="next" href="building.html" />
     
     
 
@@ -100,7 +100,20 @@
             
         </li>
     
-        <li class="chapter " data-level="1.2" data-path="kernelexamples.html">
+        <li class="chapter " data-level="1.2" data-path="building.html">
+            
+                <a href="building.html">
+            
+                    
+                    Building
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="kernelexamples.html">
             
                 <a href="kernelexamples.html">
             
@@ -178,24 +191,6 @@ the graph traversal language Gremlin.</p>
 <li>ShiftLeft Tinkergraph: <a href="https://github.com/ShiftLeftSecurity/tinkergraph-gremlin" target="_blank">https://github.com/ShiftLeftSecurity/tinkergraph-gremlin</a></li>
 <li>Semantic code property graph and query language: <a href="https://github.com/ShiftLeftSecurity/codepropertygraph" target="_blank">https://github.com/ShiftLeftSecurity/codepropertygraph</a></li>
 </ul>
-<h2 id="building">Building</h2>
-<p>To build joern, please install the following: </p>
-<ul>
-<li>Python3<ul>
-<li>Link: <a href="https://www.python.org/downloads/" target="_blank">https://www.python.org/downloads/</a></li>
-</ul>
-</li>
-<li>Java runtime 8<ul>
-<li>Link: <a href="http://openjdk.java.net/install/" target="_blank">http://openjdk.java.net/install/</a></li>
-</ul>
-</li>
-<li>Scala build tool (sbt)<ul>
-<li>Link: <a href="https://www.scala-sbt.org/" target="_blank">https://www.scala-sbt.org/</a></li>
-</ul>
-</li>
-</ul>
-<p>With those dependencies installed, run <code>./build.sh</code>, which will
-build the code property graph generator for C/C++ and a querying component.</p>
 <h2 id="code-property-graph-creation">Code Property Graph Creation</h2>
 <p>Joern includes <a href="https://github.com/ShiftLeftSecurity/fuzzyc2cpg" target="_blank">fuzzyc2cpg</a>, a fuzzy C/C++ language module, which allows code property graphs to be created from C/C++ code. To use it, run <code>./fuzzyc2cpg.sh &lt;path/to/directory&gt; --out &lt;path/to/cpg/cpg_name&gt;</code>. If you ommit the <code>--out</code> flag, the CPG is named <code>cpg.bin.zip</code> and stored in the local folder.</p>
 <p>As an example, run</p>
@@ -576,7 +571,7 @@ an indentifier it finds along its paths backwards starting from the sinks.</p>
             
                 
                 
-                <a href="kernelexamples.html" class="navigation navigation-next navigation-unique" aria-label="Next page: Example: Linux Kernel CVE-2016-6480">
+                <a href="building.html" class="navigation navigation-next navigation-unique" aria-label="Next page: Building">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -587,7 +582,7 @@ an indentifier it finds along its paths backwards starting from the sinks.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introduction","level":"1.1","depth":1,"next":{"title":"Example: Linux Kernel CVE-2016-6480","level":"1.2","depth":1,"path":"kernelexamples.md","ref":"kernelexamples.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"README.md","mtime":"2019-04-03T13:35:50.101Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-04-03T13:59:44.548Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Introduction","level":"1.1","depth":1,"next":{"title":"Building","level":"1.2","depth":1,"path":"building.md","ref":"building.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"README.md","mtime":"2019-04-03T14:26:51.365Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-04-03T14:28:14.229Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>
