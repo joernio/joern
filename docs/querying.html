@@ -1,0 +1,645 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Querying · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="kernelexamples.html" />
+    
+    
+    <link rel="prev" href="creation.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="building.html">
+            
+                <a href="building.html">
+            
+                    
+                    Building
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="creation.html">
+            
+                <a href="creation.html">
+            
+                    
+                    Creating CPGs
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.4" data-path="querying.html">
+            
+                <a href="querying.html">
+            
+                    
+                    Querying
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="kernelexamples.html">
+            
+                <a href="kernelexamples.html">
+            
+                    
+                    Example: Linux Kernel CVE-2016-6480
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" >
+            
+                <a target="_blank" href="https://ocular.shiftleft.io/api/io/shiftleft/queryprimitives/index.html">
+            
+                    
+                    API documentation
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="." >Querying</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="querying-the-graph">Querying the graph</h1>
+<p>Run <code>./joern.sh &lt;path/to/cpg&gt;</code> to query the CPG. This will run the script in [src/main/scala/io/shiftleft/Main.scala], which, by default, queries the CPG for all methods. You can modify this script to run other queries.</p>
+<h1 id="running-your-first-query-hello-cpg">Running your first query (&quot;hello-cpg&quot;)</h1>
+<p>We begin with a small example of a use-after-free condition. Consider the snippet below</p>
+<pre><code class="lang-c"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-keyword">struct</span> node {
+    <span class="hljs-keyword">int</span> value;
+    <span class="hljs-keyword">struct</span> node *next;
+};
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">free_list</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> node *head)</span> </span>{ 
+  <span class="hljs-keyword">struct</span> node *q;
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">struct</span> node *p = head; p != <span class="hljs-literal">NULL</span>; p = q) { 
+    q = p-&gt;next;
+    <span class="hljs-built_in">free</span>(p);
+    } 
+}
+</code></pre>
+<p>which you can find under <code>./tests/free</code>. We create a CPG for this code as follows:</p>
+<p><code>./fuzzyc2cpg.sh tests/free</code></p>
+<p>This produces a <code>cpg.bin.zip</code> in our local folder.
+Now launch</p>
+<pre><code>./joern.sh cpg.bin.zip
+</code></pre><p>which gives you all methods in a rather raw representation:</p>
+<pre><code>...
+Method(Some(v[258]),&lt;operator&gt;.assignment,&lt;operator&gt;.assignment,TODO assignment signature,NAMESPACE_BLOCK,&lt;global&gt;,None,None,None,None)
+...
+</code></pre><h2 id="running-more-queries">Running more queries</h2>
+<p>Next, let&apos;s edit [src/main/scala/io/shiftleft/Main.scala] to run different queries,</p>
+<p>You should see the following content before editing:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">package</span> io.shiftleft
+
+<span class="hljs-keyword">import</span> io.shiftleft.cpgloading.tinkergraph.<span class="hljs-type">CpgLoader</span>
+<span class="hljs-keyword">import</span> io.shiftleft.queryprimitives.steps.<span class="hljs-type">Implicits</span>._
+<span class="hljs-keyword">import</span> io.shiftleft.passes.dataflows._
+
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Main</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">App</span> </span>{
+  <span class="hljs-keyword">val</span> cpg = <span class="hljs-type">CpgLoader</span>.loadCodePropertyGraph(args(<span class="hljs-number">0</span>), runEnhancements = <span class="hljs-literal">true</span>)
+
+  <span class="hljs-comment">// Print all methods</span>
+  cpg.method.p
+}
+</code></pre>
+<p>Now add the following lines after <code>cpg.method.p</code>:</p>
+<pre><code class="lang-scala">println(<span class="hljs-string">&quot;------ METHODS -----&quot;</span>)
+cpg.method.l.foreach(m =&gt; println(m.fullName))
+</code></pre>
+<p>The <code>.l.foreach</code> construct returns a List collection on which we can directly operate with <code>foreach</code>. This construct runs over each
+<code>Method</code> Object of our CPG and prints the <em>fullname</em> of it.</p>
+<p>Now all you need to do is:</p>
+<p><code>sbt stage</code> in the local <code>joern</code> folder. This will build our new script for Joern to process.</p>
+<p>Now run <code>./joern.sh cpg.bin.zip</code> and you will see the new output:</p>
+<pre><code>------ METHODS -----
+free
+free_list
+&lt;operator&gt;.assignment
+&lt;operator&gt;.notEquals
+&lt;operator&gt;.indirectMemberAccess
+</code></pre><p>Let&apos;s filter only for methods that start with <code>free</code>.</p>
+<p>Open up the <em>Main.scala</em> file again and add the following lines:</p>
+<pre><code class="lang-scala">  println(<span class="hljs-string">&quot;----- Filtered -----&quot;</span>)
+  cpg.method.name(<span class="hljs-string">&quot;free.*&quot;</span>).l.foreach(m =&gt; println(m.fullName)
+</code></pre>
+<p>Againg do:</p>
+<ol>
+<li><em>sbt stage</em></li>
+<li><em>./joern.sh cpg.bin.zip</em></li>
+</ol>
+<p>This should give us the following output:</p>
+<pre><code>----- Filtered -----
+free
+free_list
+</code></pre><h2 id="querying-for-locals">Querying for locals</h2>
+<p>Let&apos;s add another function to our snippet.</p>
+<pre><code class="lang-c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">flow</span><span class="hljs-params">(<span class="hljs-keyword">int</span> p0)</span> </span>{
+  <span class="hljs-keyword">int</span> a = p0;
+  <span class="hljs-keyword">int</span> b=a;
+  <span class="hljs-keyword">int</span> c=<span class="hljs-number">0x31</span>;
+  <span class="hljs-keyword">int</span> z = b + c;
+  z++;
+  <span class="hljs-keyword">int</span> x = z;
+  <span class="hljs-keyword">return</span> x;
+  }
+</code></pre>
+<p>We&apos;ll look at the flows later. For now we are interested in the locals, i.e. local variables.</p>
+<p>Add this to your <em>Main.scala</em>:</p>
+<pre><code class="lang-scala">  println(<span class="hljs-string">&quot;----- Locals -----&quot;</span>)
+  <span class="hljs-keyword">val</span> locals = cpg.local.l
+  println(locals.foreach(local =&gt; println(local.name)))
+</code></pre>
+<p>Here we collect all local variables over all functions into a list (<em>locals</em>). These locals are represented by an object, so we print out each name. We should get the following lines at the end of the output:</p>
+<pre><code>----- Locals -----
+a
+b
+c
+z
+x
+q
+p
+</code></pre><p>The queries we defined so far are a little inconvenient. In fact, it is not the Joern way to do it.
+A reformulation of the query above which conforms more to the Joern way looks like this:</p>
+<pre><code class="lang-scala">cpg.local.name.p
+</code></pre>
+<p>Much better isn&apos;t it? ;)</p>
+<p>It will give us the same output. The <code>p</code> suffix prints out the name of each local variable.</p>
+<p>This also works for our filter we defined earlier:</p>
+<pre><code class="lang-scala"> println(<span class="hljs-string">&quot;----- Filtered -----&quot;</span>)
+ cpg.method.name(<span class="hljs-string">&quot;free.*&quot;</span>).name.p
+</code></pre>
+<p>At the beginning of this section we queried for all functions and printed them; we can reformulate it as well to conform more to the Joern way:</p>
+<pre><code class="lang-scala">println(<span class="hljs-string">&quot;------ METHODS -----&quot;</span>)
+cpg.method.name.p
+</code></pre>
+<p>Joern allows us to filter locals function wise:</p>
+<pre><code class="lang-scala">  println(<span class="hljs-string">&quot;----- local vars flow -----&quot;</span>)
+  cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).local.name.p
+
+  println(<span class="hljs-string">&quot;----- local vars free_list -----&quot;</span>)
+  cpg.method.name(<span class="hljs-string">&quot;free_list&quot;</span>).local.name.p
+</code></pre>
+<p>Note that we just added <code>.name(regex)</code> to our <code>method</code> query.</p>
+<p>We can also filter for variables we are interested in:</p>
+<pre><code class="lang-scala">cpg.method.local.name(<span class="hljs-string">&quot;a*&quot;</span>).name.p
+</code></pre>
+<p>will give us variables which start with <code>a</code>.</p>
+<p>Want to know where it comes from?</p>
+<pre><code class="lang-scala">cpg.local.name(<span class="hljs-string">&quot;a*&quot;</span>).file.name.p
+</code></pre>
+<p>Let&apos;s add some type information to our query:</p>
+<pre><code class="lang-scala">cpg.local.map(l =&gt; (l.name, l.typeFullName)).p
+</code></pre>
+<p>This adds the following lines to our output:</p>
+<pre><code>(a,int)
+(b,int)
+(c,int)
+(z,int)
+(x,int)
+(q,struct node *)
+(p,struct node *)
+</code></pre><p>Function signatures:</p>
+<pre><code class="lang-scala">cpg.method.signature(<span class="hljs-string">&quot;.*struct.*&quot;</span>).name.p
+</code></pre>
+<p>This query gives us all functions that have a <code>struct</code> in their signature which in our case is <code>free_list</code>.</p>
+<h2 id="time-to-see-some-flows">Time to see some flows</h2>
+<p>Our example doesn&apos;t give us much space for serious flows. We&apos;ll look at some more complex cases later. But for now, let&apos;s use our  it.</p>
+<p>Open up your <em>Main.scala</em> file and add:</p>
+<pre><code class="lang-scala">  <span class="hljs-keyword">val</span> source = cpg.identifier
+  <span class="hljs-keyword">val</span> sink = cpg.call.name(<span class="hljs-string">&quot;free&quot;</span>)
+  println(sink.reachableByFlows(source).p)
+</code></pre>
+<p>Here we define the source to be the set of  <strong>identifiers</strong>. Think of an identifier a an unique object that represents a variable at that specific program point where it is used or defined.</p>
+<p>A thorough description on the concept of the CPG schema and its query primitives can be found at:</p>
+<ul>
+<li><a href="https://github.com/ShiftLeftSecurity/codepropertygraph" target="_blank">https://github.com/ShiftLeftSecurity/codepropertygraph</a></li>
+<li><a href="https://ocular.shiftleft.io/api/io/shiftleft/queryprimitives/index.html" target="_blank">https://ocular.shiftleft.io/api/io/shiftleft/queryprimitives/index.html</a></li>
+</ul>
+<p>With  <code>cpg.call.name(&quot;free&quot;)</code>  we query for
+all <code>free</code> methods that are actually called. Think of a <strong>CALL</strong> objects as a unique representative for each specific call to <em>free</em>. Apparantly we would get more call objects for our query if there were more calls to free.</p>
+<p>Add this to your <em>Main.scala</em>:</p>
+<pre><code class="lang-scala"> println(<span class="hljs-string">&quot;----- Call to free ----&quot;</span>)
+ cpg.call.name(<span class="hljs-string">&quot;free&quot;</span>).l.foreach(call =&gt; println(call.code))
+</code></pre>
+<p>This should give the us the following output:</p>
+<pre><code>----- Call to free ----
+free(p)
+</code></pre><p>We introduced the query to go into call a little bit.
+However, a better way to formulate our sink is by its arguments it receives.
+Replace our <code>val sink</code> with:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> sink = cpg.method(<span class="hljs-string">&quot;free&quot;</span>).parameter.argument
+</code></pre>
+<p>It will give us the same output, but is more consistent in what we want to achieve, i.e., track the data dependency of the arguments.</p>
+<p>Don&apos;t forget to <code>sbt stage</code> before you run joern on the cpg.
+For a faster compile process you can run <em>sbt</em> in your local folder. This will open a sbt shell. For each change you make in your <em>Main.scala</em> file you can now run <code>stage</code> in the sbt shell. This will speed up the process of experimenting with joern.</p>
+<p>Back to our flow problem:</p>
+<p>running <code>sink.reachableByFlows(source)</code> will basically traverse the flow of data dependency back to each source that we provided. In this case all <em>identifiers</em>.</p>
+<p>If we run this script we get the following output:</p>
+<pre><code> ________________________________________________________
+ | tracked  | lineNumber| method   | file              |
+ |=====================================================|
+ | *p = head| 19        | free_list| tests/free2/free.c|
+ | free(p)  | 21        | free_list| tests/free2/free.c|
+
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | *p = head  | 19        | free_list| tests/free2/free.c|
+ | p-&gt;next    | 20        | free_list| tests/free2/free.c|
+ | q = p-&gt;next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
+
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | p-&gt;next    | 20        | free_list| tests/free2/free.c|
+ | q = p-&gt;next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
+
+ ________________________________________________________
+ | tracked    | lineNumber| method   | file              |
+ |=======================================================|
+ | q = p-&gt;next| 20        | free_list| tests/free2/free.c|
+ | p = q      | 19        | free_list| tests/free2/free.c|
+ | free(p)    | 21        | free_list| tests/free2/free.c|
+
+ ____________________________________________________
+ | tracked| lineNumber| method   | file              |
+ |===================================================|
+ | p = q  | 19        | free_list| tests/free2/free.c|
+ | free(p)| 21        | free_list| tests/free2/free.c|
+
+ ____________________________________________________
+ | tracked| lineNumber| method   | file              |
+ |===================================================|
+ | free(p)| 21        | free_list| tests/free2/free.c|
+</code></pre><p>This outputs shows you each stage during the traversal starting from <code>free(p)</code> itself.</p>
+<p>What about the <code>p != NULL</code>?  Let&apos;s check this with:</p>
+<pre><code class="lang-scala"><span class="hljs-keyword">val</span> source2 = cpg.identifier
+<span class="hljs-keyword">val</span> sink2 = cpg.method.name(<span class="hljs-string">&quot;free_list&quot;</span>).callOut.code(<span class="hljs-string">&quot;p != NULL&quot;</span>)
+println(sink2.reachableByFlows(source2).p))
+</code></pre>
+<p>Here we explicitly filter for the <code>p != NULL</code> case in the <code>free_list</code> function.</p>
+<pre><code> _____________________________________________________
+ | tracked  | lineNumber| method   | file             |
+ |====================================================|
+ | *p = head| 7         | free_list| tests/free/free.c|
+ | p != NULL| 7         | free_list| tests/free/free.c|
+
+ _______________________________________________________
+ | tracked    | lineNumber| method   | file             |
+ |======================================================|
+ | *p = head  | 7         | free_list| tests/free/free.c|
+ | p-&gt;next    | 7         | free_list| tests/free/free.c|
+ | p = p-&gt;next| 7         | free_list| tests/free/free.c|
+ | p != NULL  | 7         | free_list| tests/free/free.c|
+
+ _______________________________________________________
+ | tracked    | lineNumber| method   | file             |
+ |======================================================|
+ | p-&gt;next    | 7         | free_list| tests/free/free.c|
+ | p = p-&gt;next| 7         | free_list| tests/free/free.c|
+ | p != NULL  | 7         | free_list| tests/free/free.c|
+
+ _______________________________________________________
+ | tracked    | lineNumber| method   | file             |
+ |======================================================|
+ | p = p-&gt;next| 7         | free_list| tests/free/free.c|
+ | p != NULL  | 7         | free_list| tests/free/free.c|
+
+ _____________________________________________________
+ | tracked  | lineNumber| method   | file             |
+ |====================================================|
+ | p != NULL| 7         | free_list| tests/free/free.c|
+</code></pre><p>It shows us the flow of <code>p</code> into the sanitizer of the for loop.</p>
+<p>Let&apos;s have a look at our <code>flow</code> function. Say, we want to track the flow from each return value to each data dependent identifier.
+A query can look like follows:</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> source3 = cpg.identifier
+ <span class="hljs-keyword">val</span> sink3 = cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).methodReturn
+ println(sink3.reachableByFlows(source3).p)
+</code></pre>
+<p>methodReturn gives us the formal return value of the function, i.e.,
+each return value is connected to the object we obtain through methodReturn.</p>
+<p>Our output:</p>
+<pre><code> ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | a = par  | 8         | flow  | tests/free2/free.c|
+ | b=a      | 9         | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | b=a      | 9         | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | c=0x31   | 10        | flow  | tests/free2/free.c|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | b + c    | 11        | flow  | tests/free2/free.c|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+</code></pre><p>Again the outputs show you each stage during the traversal.
+Since we defined the source to be all identifiers, the engine outputs each hit to
+an indentifier it finds along its paths backwards starting from the sinks.</p>
+<p>We can restrict the flows to stop at each <code>z</code> the engine encounters:</p>
+<pre><code class="lang-scala"> <span class="hljs-keyword">val</span> source4 = cpg.identifier.name(<span class="hljs-string">&quot;z&quot;</span>)
+ <span class="hljs-keyword">val</span> sink4 = cpg.method.name(<span class="hljs-string">&quot;flow&quot;</span>).methodReturn
+ println(sink4.reachableByFlows(source4).p)
+</code></pre>
+<p>produces the following output:</p>
+<pre><code> ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | z = b + c| 11        | flow  | tests/free2/free.c|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+
+ ___________________________________________________
+ | tracked  | lineNumber| method| file              |
+ |==================================================|
+ | x = z    | 13        | flow  | tests/free2/free.c|
+ | return x;| 14        | flow  | tests/free2/free.c|
+ | RET      | 7         | flow  | tests/free2/free.c|
+</code></pre>
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="creation.html" class="navigation navigation-prev " aria-label="Previous page: Creating CPGs">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="kernelexamples.html" class="navigation navigation-next " aria-label="Next page: Example: Linux Kernel CVE-2016-6480">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Querying","level":"1.4","depth":1,"next":{"title":"Example: Linux Kernel CVE-2016-6480","level":"1.5","depth":1,"path":"kernelexamples.md","ref":"kernelexamples.md","articles":[]},"previous":{"title":"Creating CPGs","level":"1.3","depth":1,"path":"creation.md","ref":"creation.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["livereload"],"pluginsConfig":{"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"querying.md","mtime":"2019-04-04T09:37:44.747Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-04-04T09:45:02.097Z"},"basePath":".","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="gitbook/gitbook.js"></script>
+    <script src="gitbook/theme.js"></script>
+    
+        
+        <script src="gitbook/gitbook-plugin-livereload/plugin.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
