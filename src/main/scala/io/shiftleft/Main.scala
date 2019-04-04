@@ -9,11 +9,10 @@ object Main extends App {
   val cpg = CpgLoader.loadCodePropertyGraph(args(0))
   implicit val graph = cpg.graph
 
-  // Print all methods
-  cpg.method.p
+  println("------------------")
 
   // Print all method names
-  cpg.method.name.p
+  println(cpg.method.name.p)
 
 }
 
