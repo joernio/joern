@@ -1,4 +1,4 @@
-baseURL = "/"
+baseURL = "/docs/"
 
 languageCode = "en-us"
 DefaultContentLanguage = "en"
