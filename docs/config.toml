@@ -2,7 +2,7 @@ baseURL = "/docs/"
 
 languageCode = "en-us"
 DefaultContentLanguage = "en"
-title = "DocDock Documentation"
+title = "Joern Documentation"
 theme = "hugo-theme-docdock-master"
 themesdir = "themes"
 pygmentsCodeFences = true
