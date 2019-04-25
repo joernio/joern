@@ -1,10 +1,20 @@
 +++
 title="Querying the graph"
+weight=3
 +++
 
-Run `./joern.sh <path/to/cpg>` to query the CPG. This will run the script in [src/main/scala/io/shiftleft/Main.scala], which, by default, queries the CPG for all methods. You can modify this script to run other queries.
+To query a CPG stored at `path/to/cpg`, run
+```
+./joern.sh <path/to/cpg>
+```
 
-# Running your first query ("hello-cpg")
+This will run the script in
+```
+src/main/scala/io/shiftleft/Main.scala
+```
+which, by default, queries the CPG for all methods. You can modify this script to run other queries. In the following, we will go through a few examples to get you acquainted with joern.
+
+### Running your first query ("hello-cpg")
 
 We begin with a small example of a use-after-free condition. Consider the snippet below
 
@@ -40,9 +50,9 @@ which gives you all methods in a rather raw representation:
 Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment signature,NAMESPACE_BLOCK,<global>,None,None,None,None)
 ...
 ```
-## Running more queries
+### Modifying queries
 
-Next, let's edit [src/main/scala/io/shiftleft/Main.scala] to run different queries,
+Next, let's edit `src/main/scala/io/shiftleft/Main.scala` to run different queries,
 
 You should see the following content before editing:
 ```scala
@@ -68,14 +78,19 @@ println("------ METHODS -----")
 cpg.method.l.foreach(m => println(m.fullName))
 ```
 
-The `.l.foreach` construct returns a List collection on which we can directly operate with `foreach`. This construct runs over each
-`Method` Object of our CPG and prints the *fullname* of it.
+The `.l.foreach` construct returns a List collection on which we can
+directly operate with `foreach`. This construct runs over each
+`Method` Object of our CPG and prints the *full name* of it.
 
-Now all you need to do is:
-
-`sbt stage` in the local `joern` folder. This will build our new script for Joern to process.
-
-Now run `./joern.sh cpg.bin.zip` and you will see the new output:
+We recompile `Main.scala` by issuing the command
+```
+sbt stage
+```
+in joern's top-level directory. We can then run the newly created program via 
+```
+./joern.sh cpg.bin.zip
+```
+which will produce the following output:
 
 ```
 ------ METHODS -----
@@ -95,8 +110,10 @@ Open up the *Main.scala* file again and add the following lines:
 ```
 Again do:
 
-1. *sbt stage*
-2. *./joern.sh cpg.bin.zip*
+```
+sbt stage
+./joern.sh cpg.bin.zip
+```
 
 This should give us the following output:
 

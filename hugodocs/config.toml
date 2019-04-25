@@ -3,8 +3,8 @@ baseURL = "/"
 languageCode = "en-us"
 DefaultContentLanguage = "en"
 title = "DocDock Documentation"
-theme = "hugo-theme-docdock"
-themesdir = "../.."
+theme = "hugo-theme-docdock-master"
+themesdir = "themes"
 pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
 
