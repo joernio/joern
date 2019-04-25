@@ -3,7 +3,7 @@
 FUZZYC2CPG_DIR="fuzzyc2cpg"
 
 if [ ! -d $FUZZYC2CPG_DIR ]; then
-  git clone git@github.com:ShiftLeftSecurity/fuzzyc2cpg.git
+  git clone https://github.com/ShiftLeftSecurity/fuzzyc2cpg.git
 else
   DIR=$(pwd)
   cd $FUZZYC2CPG_DIR
