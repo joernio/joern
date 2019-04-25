@@ -91,7 +91,7 @@ Open up the *Main.scala* file again and add the following lines:
   println("----- Filtered -----")
   cpg.method.name("free.*").l.foreach(m => println(m.fullName)
 ```
-Againg do:
+Again do:
 
 1. *sbt stage*
 2. *./joern.sh cpg.bin.zip*
