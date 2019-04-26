@@ -3,7 +3,7 @@ title="Querying the graph"
 weight=3
 +++
 
-One you have [created a code property graph](/creation) stored at
+One you have [created a code property graph](/docs/creation) stored at
 `path/to/cpg`, you can load and query it as follows:
 
 ```
