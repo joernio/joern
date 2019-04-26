@@ -1,0 +1,13 @@
+<operator>.assignment, 1
+<operator>.assignmentAnd, 1
+<operators>.assignmentArithmeticShiftRight, 1
+<operator>.assignmentDivision, 1
+<operators>.assignmentExponentiation, 1
+<operators>.assignmentLogicalShifRight, 1
+<operator>.assignmentMinus, 1
+<operators>.assignmentModulo, 1
+<operator>.assignmentMultiplication, 1
+<operators>.assignmentOr, 1
+<operator>.assignmentPlus, 1
+<operators>.assignmentShiftLeft, 1
+<operators>.assignmentXor, 1
