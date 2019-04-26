@@ -3,7 +3,9 @@ title="Querying the graph"
 weight=3
 +++
 
-To query a CPG stored at `path/to/cpg`, run
+One you have [created a code property graph](/creation) stored at
+`path/to/cpg`, you can load and query it as follows:
+
 ```
 ./joern.sh <path/to/cpg>
 ```
