@@ -1,4 +1,4 @@
-baseURL = "/docs/"
+baseURL = "https://joern.io/docs/"
 
 languageCode = "en-us"
 DefaultContentLanguage = "en"
