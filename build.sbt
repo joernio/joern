@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" % "query-primitives" % cpgVersion,
   "io.shiftleft" % "enhancements" % cpgVersion,
   "io.shiftleft" % "semanticcpg" % cpgVersion,
+  "io.shiftleft" % "dataflowengine" % cpgVersion,
 )
 
 enablePlugins(JavaAppPackaging)
