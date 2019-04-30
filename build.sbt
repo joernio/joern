@@ -2,7 +2,7 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.7"
 
-val cpgVersion = "0.9.141"
+val cpgVersion = "0.9.147"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % cpgVersion,
