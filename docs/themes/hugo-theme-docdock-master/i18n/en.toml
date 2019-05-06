@@ -35,7 +35,7 @@ other = "Woops. Looks like this page doesn't exist."
 other = "Go to homepage"
 
 [Edit-this-page]
-other = "Improve this page"
+other = "Edit on GitHub"
 
 [Expand-title]
 other = "Expand me..."
