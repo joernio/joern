@@ -63,6 +63,13 @@
         <script type="text/javascript" src="{{"js/search.js" | relURL}}"></script>
       </div>
     {{- end}}
-    
+
+    {{ if .Site.Params.editURL }}
+    <div class="github-link">
+      <a href="{{ .Site.Params.editURL }}{{ replace .File.Dir "\\" "/" }}{{ .File.LogicalName }}" target="blank"><i class="fa fa-code-fork"></i>
+        {{T "Edit-this-page"}}</a>
+    </div>
+    {{end}}
+
 
     {{if not .IsHome}}<h1>{{.Title}}</h1>{{end}}

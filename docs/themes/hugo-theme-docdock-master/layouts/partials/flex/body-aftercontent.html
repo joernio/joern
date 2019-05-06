@@ -28,12 +28,6 @@
     </div>
     {{end}}
 
-    {{ if .Site.Params.editURL }}
-    <div class="github-link">
-      <a href="{{ .Site.Params.editURL }}{{ replace .File.Dir "\\" "/" }}{{ .File.LogicalName }}" target="blank"><i class="fa fa-code-fork"></i>
-        {{T "Edit-this-page"}}</a>
-    </div>
-    {{end}}
   </div>
 
 
@@ -44,7 +38,7 @@
 {{else}}
   {{ if .Site.GetPage "page" "_footer.md" }}
     {{(.Site.GetPage "page" "_footer.md").Content}}
-  {{else}}
+{{else}}
     {{ T "create-footer-md" }}
   {{end}}
 {{end}}
