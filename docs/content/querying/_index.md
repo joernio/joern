@@ -60,16 +60,11 @@ You should see the following content before editing:
 ```scala
 package io.shiftleft
 
-import io.shiftleft.cpgloading.tinkergraph.CpgLoader
-import io.shiftleft.queryprimitives.steps.Implicits._
-import io.shiftleft.passes.dataflows.Implicits._
-import io.shiftleft.passes.dataflows.steps._
+import io.shiftleft.joern.CpgLoader
 
 object Main extends App {
-  val cpg = CpgLoader.loadCodePropertyGraph(args(0), runEnhancements = true)
-
-  // Print all methods
-  cpg.method.p
+ val cpg = CpgLoader.load(args(0))
+  println(cpg.method.name.p)
 }
 ```
 
