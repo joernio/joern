@@ -1,6 +1,4 @@
-package io.shiftleft
-
-import io.shiftleft.joern.CpgLoader
+package io.shiftleft.joern
 
 object Main extends App {
  val cpg = CpgLoader.load(args(0))
