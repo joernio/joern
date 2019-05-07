@@ -2,7 +2,7 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.8"
 
-val cpgVersion = "0.9.157"
+val cpgVersion = "0.9.163"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % cpgVersion,
@@ -10,8 +10,12 @@ libraryDependencies ++= Seq(
   "io.shiftleft" % "enhancements" % cpgVersion,
   "io.shiftleft" % "semanticcpg" % cpgVersion,
   "io.shiftleft" % "dataflowengine" % cpgVersion,
+
+  "io.shiftleft" % "cpgqueryingtests" % cpgVersion % Test,
+  "org.scalatest" %% "scalatest" % "3.0.3" % Test
 )
 
+resolvers += Resolver.mavenLocal
 resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
 enablePlugins(JavaAppPackaging)

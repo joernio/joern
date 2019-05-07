@@ -12,7 +12,7 @@ One you have [created a code property graph](/docs/creation) stored at
 
 This will run the script in
 ```
-src/main/scala/io/shiftleft/Main.scala
+src/main/scala/io/shiftleft/joern/Main.scala
 ```
 which, by default, queries the CPG for all methods. You can modify this script to run other queries. In the following, we will go through a few examples to get you acquainted with joern.
 
@@ -54,7 +54,7 @@ Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment 
 ```
 ### Modifying queries
 
-Next, let's edit `src/main/scala/io/shiftleft/Main.scala` to run different queries,
+Next, let's edit `src/main/scala/io/shiftleft/joern/Main.scala` to run different queries,
 
 You should see the following content before editing:
 ```scala
