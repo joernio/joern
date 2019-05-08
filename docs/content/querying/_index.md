@@ -20,25 +20,11 @@ which, by default, queries the CPG for all methods. You can modify this script t
 
 We begin with a small example of a use-after-free condition. Consider the snippet below
 
-```c
-#include <stdlib.h>
-struct node {
-    int value;
-    struct node *next;
-};
+{{<snippet file="src/test/resources/testcode/free/free.c" language="c">}}
 
-void free_list(struct node *head) { 
-  struct node *q;
-  for (struct node *p = head; p != NULL; p = q) { 
-    q = p->next;
-    free(p);
-    } 
-}
-```
+which you can find under `src/test/resources/testcode/free`. We create a CPG for this code as follows:
 
-which you can find under `./tests/free`. We create a CPG for this code as follows:
-
-`./fuzzyc2cpg.sh tests/free `
+`./fuzzyc2cpg.sh src/test/resources/testcode/free/ `
 
 This produces a ```cpg.bin.zip``` in our local folder.
 Now launch
@@ -57,16 +43,7 @@ Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment 
 Next, let's edit `src/main/scala/io/shiftleft/joern/Main.scala` to run different queries,
 
 You should see the following content before editing:
-```scala
-package io.shiftleft
-
-import io.shiftleft.joern.CpgLoader
-
-object Main extends App {
- val cpg = CpgLoader.load(args(0))
-  println(cpg.method.name.p)
-}
-```
+{{<snippet file="src/main/scala/io/shiftleft/joern/Main.scala" language="scala">}}
 
 Now add the following lines after `cpg.method.p`:
 
