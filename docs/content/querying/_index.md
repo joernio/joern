@@ -43,7 +43,7 @@ Method(Some(v[258]),<operator>.assignment,<operator>.assignment,TODO assignment 
 Next, let's edit `src/main/scala/io/shiftleft/joern/Main.scala` to run different queries,
 
 You should see the following content before editing:
-{{<snippet file="src/main/scala/io/shiftleft/joern/Main.scala" language="scala">}}
+
 
 Now add the following lines after `cpg.method.p`:
 

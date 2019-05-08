@@ -1,17 +1,9 @@
 +++
-title="Building the Code"
+title="Installation"
 weight=1
 +++
 
-Joern combines the following components to provide a fully functional code analysis platform for C/C++:
-
-* FuzzyC2CPG fuzzy parser for C/C++: https://github.com/ShiftLeftSecurity/fuzzyc2cpg
-* ShiftLeft Tinkergraph: https://github.com/ShiftLeftSecurity/tinkergraph-gremlin
-* Semantic code property graph and query language: https://github.com/ShiftLeftSecurity/codepropertygraph
-
-These components are automatically fetched during the build and do
-*NOT* have to be installed manually. Instead, all that is required are
-the following three dependencies:
+## Prerequisites
 
 * Python3
   - Link: https://www.python.org/downloads/
@@ -29,17 +21,20 @@ https://www.scala-sbt.org/download.html
 Any 1.x version of sbt works as sbt downloads the correct version for
 building joern as part of the build process.
 
+## Building the code
+
 Once the dependencies are installed, run
+
 ```
-./build.sh
+git clone https://github.com/ShiftLeftSecurity/joern.git
+cd joern
+sbt stage
 ```
-This will build both the C/C++ language frontend `fuzzyc2cpg` and the
-`codepropertygraph`, along with its query language.
+
+## A Test Run
 
 To test if the build was successful, you can run
 ```
-./fuzzyc2cpg.sh src/test/resources/testcode/free
+./joern-parse src/test/resources/testcode/free
 ```
-This command will create a code property graph for the sample program
-in the directory `src/test/resources/testcode/free`, and store the graph in the file
-`cpg.bin.zip`.
+This command will create a code property graph for the sample program in the directory `src/test/resources/testcode/free`, and store the graph in the file `cpg.bin.zip`.
