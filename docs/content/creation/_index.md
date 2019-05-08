@@ -9,20 +9,20 @@ C/C++ language module, which allows code property graphs to be created
 from C/C++ code. To use it, run
 
 ```
-./fuzzyc2cpg.sh <path/to/directory> --out <path/to/cpg/cpg_name>
+./joern-parse <path/to/directory> --out <path/to/cpg/cpg_name>
 ```
 
 If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.
 
 As an example, run
 ```
-./fuzzyc2cpg.sh tests/free
+./joern-parse tests/free
 ```
 to create a CPG for the test project `free`.
 
 To view all options offered by `fuzzyc2cpg`, simply run
 ```
-./fuzzyc2cpg.sh
+./joern-parse
 ```
 
 You can also programmatically create CPGs as demonstrated by the following test.

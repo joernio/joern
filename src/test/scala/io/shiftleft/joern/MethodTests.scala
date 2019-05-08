@@ -8,16 +8,6 @@ import org.scalatest.{Matchers, WordSpec}
   * */
 class MethodTests extends WordSpec with Matchers {
 
-  // Sample code used for all tests below
-  val code =
-    """
-       int main(int argc, char **argv) { }
-    """
-
-  val semantics = "src/main/resources/default.semantics"
-  val cpgFactory = new CpgFactory(LanguageFrontend.Fuzzyc, semantics)
-  val cpg = cpgFactory.buildCpg(code)
-
   "should return correct function/method name" in {
     cpg.method.name.toSet shouldBe Set("main")
   }
@@ -25,7 +15,6 @@ class MethodTests extends WordSpec with Matchers {
   "should have correct type signature" in {
     cpg.method.signature.toSet shouldBe Set("int(int,char * *)")
   }
-
 
   "should return correct number of parameters" in {
     cpg.parameter.name.toSet shouldBe Set("argc", "argv")
@@ -46,5 +35,15 @@ class MethodTests extends WordSpec with Matchers {
   "should return a filename for method 'main'" in {
     cpg.method.name("main").file.name.l should not be empty
   }
+
+  // Sample code used for all tests below
+  val code =
+    """
+       int main(int argc, char **argv) { }
+    """
+
+  val semantics = "src/main/resources/default.semantics"
+  val cpgFactory = new CpgFactory(LanguageFrontend.Fuzzyc, semantics)
+  val cpg = cpgFactory.buildCpg(code)
 
 }

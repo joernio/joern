@@ -1,8 +1,8 @@
 +++
-title = "Kernel examples"
+Title="More examples"
 +++
 
-## Example - CVE-2016-6480 
+## Example - CVE-2016-6480 (Linux Kernel)
 
 A race condition exists in the Linux Kernel in version 4.7 in the ioctl_send_fib in `drivers/scsi/aacraid/commctrl.c`.
 
