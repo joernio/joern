@@ -38,8 +38,8 @@ This will build both the C/C++ language frontend `fuzzyc2cpg` and the
 
 To test if the build was successful, you can run
 ```
-./fuzzyc2cpg.sh tests/free
+./fuzzyc2cpg.sh src/test/resources/testcode/free
 ```
 This command will create a code property graph for the sample program
-in the directory `tests/free`, and store the graph in the file
+in the directory `src/test/resources/testcode/free`, and store the graph in the file
 `cpg.bin.zip`.
