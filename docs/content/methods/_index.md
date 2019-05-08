@@ -1,6 +1,6 @@
 +++
 title="Exploring Methods"
-weight=2
+weight=3
 +++
 
-{{<snippet file="src/test/scala/io/shiftleft/joern/MethodTests.scala" language="c">}}
+{{<snippet file="src/test/scala/io/shiftleft/joern/MethodTests.scala" language="scala">}}

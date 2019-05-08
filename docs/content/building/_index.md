@@ -25,7 +25,7 @@ building joern as part of the build process.
 
 Once the dependencies are installed, run
 
-```
+```bash
 git clone https://github.com/ShiftLeftSecurity/joern.git
 cd joern
 sbt stage
