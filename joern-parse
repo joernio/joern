@@ -1,0 +1,8 @@
+#!/bin/sh
+
+SCRIPT_ABS_PATH=$(readlink -f "$0")
+SCRIPT_ABS_DIR=$(dirname $SCRIPT_ABS_PATH)
+
+LOG4J_FILENAME="$SCRIPT_ABS_DIR/src/main/resources/log4j2.xml"
+export JAVA_OPTS="-Dlog4j.configurationFile=$LOG4J_FILENAME $JAVA_OPTS"
+$SCRIPT_ABS_DIR/target/universal/stage/bin/joern-parse $@
