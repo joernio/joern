@@ -13,6 +13,8 @@ libraryDependencies ++= Seq(
   "io.shiftleft" % "dataflowengine" % cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % fuzzycVersion,
 
+  "com.github.scopt"   %% "scopt"          % "3.7.0",
+
   "io.shiftleft" % "cpgqueryingtests" % cpgVersion % Test,
   "org.scalatest" %% "scalatest" % "3.0.3" % Test
 )
