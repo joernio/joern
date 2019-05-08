@@ -24,3 +24,7 @@ To view all options offered by `fuzzyc2cpg`, simply run
 ```
 ./fuzzyc2cpg.sh
 ```
+
+You can also programmatically create CPGs as demonstrated by the following test.
+
+{{<snippet file="src/test/scala/io/shiftleft/joern/GenerationTests.scala" language="scala">}}

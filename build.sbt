@@ -2,7 +2,8 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.8"
 
-val cpgVersion = "0.9.164"
+val cpgVersion = "0.9.165"
+val fuzzycVersion = "0.1.47"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % cpgVersion,
@@ -10,6 +11,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" % "enhancements" % cpgVersion,
   "io.shiftleft" % "semanticcpg" % cpgVersion,
   "io.shiftleft" % "dataflowengine" % cpgVersion,
+  "io.shiftleft" %% "fuzzyc2cpg" % fuzzycVersion,
 
   "io.shiftleft" % "cpgqueryingtests" % cpgVersion % Test,
   "org.scalatest" %% "scalatest" % "3.0.3" % Test
