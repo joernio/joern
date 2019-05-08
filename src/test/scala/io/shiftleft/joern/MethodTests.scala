@@ -16,7 +16,6 @@ class MethodTests extends WordSpec with Matchers {
     cpg.method.signature.toSet shouldBe Set("int(int,char * *)")
   }
 
-
   "should return correct number of parameters" in {
     cpg.parameter.name.toSet shouldBe Set("argc", "argv")
     cpg.method.name("main").parameter.name.toSet shouldBe Set("argc", "argv")
