@@ -1,27 +1,47 @@
 package io.shiftleft.joern
 
+import better.files.File
 import javax.script.ScriptEngineManager
 
 object JoernQuery extends App {
 
   parseConfig.foreach {config =>
     val e = new ScriptEngineManager().getEngineByName("scala");
-    val script =
-      s"""
-        | import io.shiftleft.joern.CpgLoader
-        | import io.shiftleft.queryprimitives.steps.starters.Cpg
-        | val cpg : Cpg = CpgLoader.load("${config.cpgFilename}")
-        | val result = ${config.query}
-        | result.toString
-      """.stripMargin
 
-    println(e.eval(script));
+    val cpgLoadingCode =
+    s"""
+      | import io.shiftleft.joern.CpgLoader
+      | import io.shiftleft.queryprimitives.steps.starters.Cpg
+      | val cpg : Cpg = CpgLoader.load("${config.cpgFilename}")
+      |""".stripMargin
+
+    val context = e.getContext
+    e.eval(cpgLoadingCode, context)
+
+    if (config.isFile) {
+      val reader = File(config.query).fileReader
+      reader.foreach{ r =>
+        println(e.eval(r, context))
+      }
+    } else {
+      val script = s"""
+           | val result = ${config.query}
+           | result.toString
+           | """.stripMargin
+      println(e.eval(script, context))
+    }
   }
 
-  case class Config(cpgFilename : String, query : String)
+  case class Config(cpgFilename : String, query : String, isFile : Boolean = false)
   def parseConfig : Option[Config] = new scopt.OptionParser[Config]("joern-query") {
-    arg[String]("<cpg>").action((x, c) => c.copy(cpgFilename = x))
-    arg[String]("<query>").action((x, c) => c.copy(query = x))
+    arg[String]("<cpg>")
+      .text("the code property graph to run queries on")
+      .action((x, c) => c.copy(cpgFilename = x))
+    arg[String]("<query|filename>")
+      .text("query to execute, or script file to execute if -f is set")
+      .action((x, c) => c.copy(query = x))
+    opt[Unit]('f', "isFile").text("if specified, the second parameter is assumed to be a script file")
+      .action((_,c) => c.copy(isFile = true))
   }.parse(args, Config("", ""))
 
 }

@@ -14,6 +14,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "fuzzyc2cpg" % fuzzycVersion,
 
   "com.github.scopt"   %% "scopt"          % "3.7.0",
+  "com.github.pathikrit" %% "better-files"  % "3.1.0",
 
   "io.shiftleft" % "cpgqueryingtests" % cpgVersion % Test,
   "org.scalatest" %% "scalatest" % "3.0.3" % Test
