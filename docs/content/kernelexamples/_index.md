@@ -1,5 +1,6 @@
 +++
 Title="More examples"
+weight=7
 +++
 
 ## Example - CVE-2016-6480 (Linux Kernel)
