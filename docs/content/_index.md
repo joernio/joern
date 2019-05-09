@@ -2,14 +2,6 @@
 title="Joern: open-source query-based code analysis for C/C++"
 +++
 
-<script>
-  ((window.gitter = {}).chat = {}).options = {
-    room: 'joern-code-analyzer/community'
-  };
-</script>
-<script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
-
-
 <img src="/docs/images/logo_design_v01_R01.png" style="background-color:black;">
 
 
