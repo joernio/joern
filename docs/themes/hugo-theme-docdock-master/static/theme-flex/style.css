@@ -219,7 +219,8 @@ section ul {
   list-style-type: square; }
 
 section a {
-  color: #2980b9; }
+    color: #39ff14;
+}
 
 section strong {
   font-weight: 500; }
@@ -298,6 +299,8 @@ article {
   margin-top: 3.5rem; }
 
 article section.page {
+    background-color: black;
+    color: white;
   -webkit-box-flex: 1;
   -ms-flex: 1;
   flex: 1;
@@ -309,15 +312,20 @@ article section.page {
     margin: 3rem 0rem;
     font-family: "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
     text-align: center;
-    color: #060606;
+    color: white;
     font-weight: 200;
     font-size: 2.25rem;
     line-height: 2.7rem;
   }
   article section.page h1 {
-    margin-top: 4rem; }
+      margin-top: 4rem;
+      color: white;
+  }
   article section.page h2 {
-    margin-top: 3rem; }
+      margin-top: 3rem;
+      color: white;
+  }
+  
   article section.page table {
     width: 100%;
     margin-bottom: 2em;
