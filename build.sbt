@@ -2,7 +2,7 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.8"
 
-val cpgVersion = "0.9.167"
+val cpgVersion = "0.9.170"
 val fuzzycVersion = "0.1.47"
 
 libraryDependencies ++= Seq(

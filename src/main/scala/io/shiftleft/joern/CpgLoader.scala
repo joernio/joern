@@ -1,7 +1,7 @@
 package io.shiftleft.joern
 
 import io.shiftleft.cpgloading.CpgLoaderConfig
-import io.shiftleft.queryprimitives.steps.starters.Cpg
+import io.shiftleft.codepropertygraph.Cpg
 
 /**
   * Thin wrapper around `codepropertygraph`'s CpgLoader
