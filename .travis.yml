@@ -4,9 +4,9 @@ branches:
     only:
     - master
 stages:
-    - name: test
-    - name: release
-    if: branch = master AND type = push
+- name: test
+- name: release
+  if: branch = master AND type = push
 jobs:
     include:
         - stage: test
