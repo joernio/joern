@@ -2,7 +2,7 @@
 title="Joern: open-source query-based code analysis for C/C++"
 +++
 
-# Welcome to Joern's Documentation
+<img src="/docs/images/logo_design_v01_R01.png" style="background-color:black;">
 
 
 ```
