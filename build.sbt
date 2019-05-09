@@ -95,3 +95,9 @@ generateScaladocs := {
 
   out
 }
+
+scmInfo := Some(ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"),
+                     "scm:git@github.com:ShiftLeftSecurity/joern.git"
+                     ))
+homepage := Some(url("https://github.com/ShiftLeftSecurity/joern/"))
+licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
