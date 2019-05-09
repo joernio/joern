@@ -9,7 +9,7 @@ A race condition exists in the Linux Kernel in version 4.7 in the ioctl_send_fib
 
 ### Setup
 ```bash
-$ git clone https://github.com/torvalds/linux`
+$ git clone https://github.com/torvalds/linux
 $ cd linux
 $ git checkout v4.7
 ```
