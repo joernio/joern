@@ -1,0 +1,12 @@
+only:
+    - behrad/playground
+stages:
+    - name: test
+    - name: release
+    if: branch = behrad/playground AND type = push
+jobs:
+    include:
+        - stage: test
+          script: sbt +test
+        - stage: release
+          script: sbt stage
