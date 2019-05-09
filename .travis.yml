@@ -1,9 +1,9 @@
 only:
-    - behrad/playground
+    - master
 stages:
     - name: test
     - name: release
-    if: branch = behrad/playground AND type = push
+    if: branch = master AND type = push
 jobs:
     include:
         - stage: test
