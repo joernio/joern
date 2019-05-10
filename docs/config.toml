@@ -36,7 +36,7 @@ identifier = "ds"
 url = "https://github.com/shiftleftsecurity/joern/"
 weight = 10
 
-# [[menu.shortcuts]]
-# name = "<i class='fa fa-bullhorn'></i> <label>Credits</label>"
-# url = "/credits"
-# weight = 30
+[[menu.shortcuts]]
+name = "<i class='fa fa-bullhorn'></i> <label>Chat on Gitter</label>"
+url = "https://gitter.im/joern-code-analyzer/community?source=orgpage"
+weight = 30
