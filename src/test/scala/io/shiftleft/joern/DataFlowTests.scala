@@ -1,6 +1,5 @@
 package io.shiftleft.joern
 
-import io.shiftleft.cpgqueryingtests.codepropertygraph.{CpgFactory, LanguageFrontend}
 import org.scalatest.{Matchers, WordSpec}
 
 class DataFlowTests extends WordSpec with Matchers {
@@ -153,8 +152,6 @@ class DataFlowTests extends WordSpec with Matchers {
     """.stripMargin
 
 
-  val semantics = "src/main/resources/default.semantics"
-  val cpgFactory = new CpgFactory(LanguageFrontend.Fuzzyc, semantics)
-  val cpg = cpgFactory.buildCpg(code)
+  val cpg = createTestCpg(code)
 
 }
