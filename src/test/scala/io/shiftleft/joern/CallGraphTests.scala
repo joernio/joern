@@ -1,6 +1,5 @@
 package io.shiftleft.joern
 
-import io.shiftleft.cpgqueryingtests.codepropertygraph.{CpgFactory, LanguageFrontend}
 import io.shiftleft.queryprimitives.steps.NoResolve
 import org.scalatest.{Matchers, WordSpec}
 
@@ -35,17 +34,13 @@ class CallGraphTests extends WordSpec with Matchers {
 
   val code =
     """
-       int add(int x, int y) {
-        return x + y;
-       }
-       int main(int argc, char **argv) {
-        printf("%d\n", add((1+2), 3));
-       }
-    """.stripMargin
+   int add(int x, int y) {
+    return x + y;
+   }
+   int main(int argc, char **argv) {
+    printf("%d\n", add((1+2), 3));
+   }
+  """
 
-  val semantics = "src/main/resources/default.semantics"
-  val cpgFactory = new CpgFactory(LanguageFrontend.Fuzzyc, semantics)
-  val cpg = cpgFactory.buildCpg(code)
-
-
+  val cpg = createTestCpg(code)
 }

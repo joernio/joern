@@ -1,6 +1,5 @@
 package io.shiftleft.joern
 
-import io.shiftleft.cpgqueryingtests.codepropertygraph._
 import org.scalatest.{Matchers, WordSpec}
 
 /**
@@ -42,8 +41,5 @@ class MethodTests extends WordSpec with Matchers {
        int main(int argc, char **argv) { }
     """
 
-  val semantics = "src/main/resources/default.semantics"
-  val cpgFactory = new CpgFactory(LanguageFrontend.Fuzzyc, semantics)
-  val cpg = cpgFactory.buildCpg(code)
-
+  val cpg = createTestCpg(code)
 }
