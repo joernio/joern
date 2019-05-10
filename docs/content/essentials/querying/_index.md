@@ -1,5 +1,5 @@
 +++
-title="Querying the graph"
+title="Querying Graphs"
 weight=2
 +++
 

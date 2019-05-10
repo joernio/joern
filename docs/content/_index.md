@@ -6,6 +6,7 @@ title="Joern: open-source query-based code analysis for C/C++"
 
 
 ```
+# Quick start
 git clone https://github.com/ShiftLeftSecurity/joern.git
 cd joern
 sbt stage
