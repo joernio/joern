@@ -11,7 +11,7 @@ object JoernQuery extends App {
     val cpgLoadingCode =
       s"""
       | import io.shiftleft.joern.CpgLoader
-      | import io.shiftleft.queryprimitives.steps.starters.Cpg
+      | import io.shiftleft.codepropertygraph.Cpg
       | val cpg : Cpg = CpgLoader.load("${config.cpgFilename}")
       |""".stripMargin
 
