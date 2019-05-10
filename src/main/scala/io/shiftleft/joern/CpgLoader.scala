@@ -13,7 +13,7 @@ object CpgLoader {
     * @param filename name of the file that stores the cpg
     * @param config loader configuration. If not specified, use default + default semantics
     * */
-  def load(filename : String, config : CpgLoaderConfig = CpgLoaderConfig.default) : Cpg = {
+  def load(filename: String, config: CpgLoaderConfig = CpgLoaderConfig.default): Cpg = {
     val config = CpgLoaderConfig.default
     if (config.semanticsFilename.isEmpty) {
       config.semanticsFilename = Some("src/main/resources/default.semantics")

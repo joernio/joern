@@ -5,11 +5,11 @@ import javax.script.ScriptEngineManager
 
 object JoernQuery extends App {
 
-  parseConfig.foreach {config =>
+  parseConfig.foreach { config =>
     val e = new ScriptEngineManager().getEngineByName("scala");
 
     val cpgLoadingCode =
-    s"""
+      s"""
       | import io.shiftleft.joern.CpgLoader
       | import io.shiftleft.queryprimitives.steps.starters.Cpg
       | val cpg : Cpg = CpgLoader.load("${config.cpgFilename}")
@@ -20,7 +20,7 @@ object JoernQuery extends App {
 
     if (config.isFile) {
       val reader = File(config.query).fileReader
-      reader.foreach{ r =>
+      reader.foreach { r =>
         println(e.eval(r, context))
       }
     } else {
@@ -29,16 +29,18 @@ object JoernQuery extends App {
     }
   }
 
-  case class Config(cpgFilename : String, query : String, isFile : Boolean = false)
-  def parseConfig : Option[Config] = new scopt.OptionParser[Config]("joern-query") {
-    opt[String]('c', "cpg")
-      .text("the code property graph to run queries on (default: cpg.bin.zip)")
-      .action((x, c) => c.copy(cpgFilename = x))
-    arg[String]("<query|filename>")
-      .text("query to execute, or script file to execute if -f is set")
-      .action((x, c) => c.copy(query = x))
-    opt[Unit]('f', "isFile").text("if specified, the second parameter is assumed to be a script file")
-      .action((_,c) => c.copy(isFile = true))
-  }.parse(args, Config("cpg.bin.zip", ""))
+  case class Config(cpgFilename: String, query: String, isFile: Boolean = false)
+  def parseConfig: Option[Config] =
+    new scopt.OptionParser[Config]("joern-query") {
+      opt[String]('c', "cpg")
+        .text("the code property graph to run queries on (default: cpg.bin.zip)")
+        .action((x, c) => c.copy(cpgFilename = x))
+      arg[String]("<query|filename>")
+        .text("query to execute, or script file to execute if -f is set")
+        .action((x, c) => c.copy(query = x))
+      opt[Unit]('f', "isFile")
+        .text("if specified, the second parameter is assumed to be a script file")
+        .action((_, c) => c.copy(isFile = true))
+    }.parse(args, Config("cpg.bin.zip", ""))
 
 }
