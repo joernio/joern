@@ -151,7 +151,6 @@ class DataFlowTests extends WordSpec with Matchers {
        |    }
     """.stripMargin
 
-
   val cpg = createTestCpg(code)
 
 }

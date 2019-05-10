@@ -12,13 +12,11 @@ class LocalsTests extends WordSpec with Matchers {
   }
 
   "should allow to query for all locals in method `free_list`" in {
-    cpg.method.name("free_list")
-      .local.name.toSet shouldBe Set("q", "p")
+    cpg.method.name("free_list").local.name.toSet shouldBe Set("q", "p")
   }
 
   "should prove correct (name, type) pairs for locals" in {
-    cpg.method.name("free_list")
-      .local.map(l => (l.name, l.typeFullName)).toSet shouldBe
+    cpg.method.name("free_list").local.map(l => (l.name, l.typeFullName)).toSet shouldBe
       Set(("q", "struct node *"), ("p", "struct node *"))
   }
 
@@ -52,7 +50,6 @@ class LocalsTests extends WordSpec with Matchers {
        |    return x;
        |    }
     """.stripMargin
-
 
   val cpg = createTestCpg(code)
 
