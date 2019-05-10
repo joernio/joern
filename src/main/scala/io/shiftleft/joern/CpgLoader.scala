@@ -11,9 +11,8 @@ object CpgLoader {
   /**
     * Load code property graph
     * @param filename name of the file that stores the cpg
-    * @param semanticsFilename file from which semantics are loaded. If not provided defaults are loaded.
     * */
-  def load(filename: String, semanticsFilename: Option[String] = None): Cpg = {
+  def load(filename: String): Cpg = {
     val config = CpgLoaderConfig.default
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
   }
