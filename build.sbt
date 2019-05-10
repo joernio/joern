@@ -2,8 +2,8 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.8"
 
-val cpgVersion = "0.9.175"
-val fuzzycVersion = "0.1.48"
+val cpgVersion = "0.9.176"
+val fuzzycVersion = "0.1.50"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % cpgVersion,
