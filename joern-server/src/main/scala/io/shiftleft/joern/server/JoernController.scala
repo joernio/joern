@@ -1,9 +1,12 @@
 package io.shiftleft.joern.server
 
+import javax.servlet.http.HttpServletRequest
 import org.scalatra._
 import org.scalatra.swagger._
 import org.scalatra.json._
-import org.json4s.{DefaultFormats, Formats}
+import org.json4s.{DefaultFormats, Formats, JValue}
+
+import scala.util.Try
 
 class JoernController(implicit val swagger: Swagger)
     extends ScalatraServlet
@@ -12,6 +15,15 @@ class JoernController(implicit val swagger: Swagger)
 
   protected implicit val jsonFormats: Formats = DefaultFormats
   protected val applicationDescription = "Joern-Server REST API"
+
+  override def readJsonFromBody(bd: String): JValue = {
+    val json = Try(super.readJsonFromBody(bd))
+    if (json.isFailure) {
+      halt(400, "error parsing json")
+    } else {
+      json.get
+    }
+  }
 
   before() {
     contentType = formats("json")
@@ -23,9 +35,12 @@ class JoernController(implicit val swagger: Swagger)
       tags ""
       parameter queryParam[List[String]]("filenames").description("File/Directory names"))
 
-  post("/create", operation(create)) {
-    val filenames = parsedBody.extract[List[String]]
-    filenames.foreach(println(_))
+  post("/create" //, operation(create)
+  ) {
+    val filenames = Try[List[String]](parsedBody.extract[List[String]]).getOrElse(List())
+    if (filenames.isEmpty) {
+      halt(400, "`filenames` not given or invalid")
+    }
   }
 
   val findBySlug =

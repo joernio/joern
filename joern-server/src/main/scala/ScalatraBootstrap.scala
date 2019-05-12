@@ -7,7 +7,7 @@ class ScalatraBootstrap extends LifeCycle {
   implicit val swagger = new JoernSwagger
 
   override def init(context: ServletContext) {
-    context.mount(new JoernController, "/", "root")
+    context.mount(new JoernController, "/*")
     context.mount(new ResourcesApp, "/api-docs")
   }
 }
