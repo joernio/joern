@@ -5,6 +5,8 @@ version := "0.1.0-SNAPSHOT"
 
 resolvers += Classpaths.typesafeReleases
 
+dependsOn(Projects.joerncli)
+
 libraryDependencies ++= Seq(
   "org.scalatra" %% "scalatra" % ScalatraVersion,
   "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
