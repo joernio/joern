@@ -1,12 +1,7 @@
 val ScalatraVersion = "2.6.5"
-
 organization := "io.shiftleft"
-
 name := "Joern Server"
-
 version := "0.1.0-SNAPSHOT"
-
-scalaVersion := "2.12.6"
 
 resolvers += Classpaths.typesafeReleases
 
