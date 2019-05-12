@@ -9,7 +9,7 @@ package object joern {
     * @param code string containing C code
     * */
   def createTestCpg(code: String) = {
-    val semanticFilename = "src/main/resources/default.semantics"
+    val semanticFilename = "joern-cli/src/main/resources/default.semantics"
     new CpgFactory(LanguageFrontend.Fuzzyc, semanticFilename).buildCpg(code)
   }
 
