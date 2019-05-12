@@ -5,8 +5,10 @@ import org.scalatra.swagger._
 import org.scalatra.json._
 import org.json4s.{DefaultFormats, Formats}
 
-class JoernController(implicit val swagger: Swagger) extends ScalatraServlet
-  with NativeJsonSupport with SwaggerSupport  {
+class JoernController(implicit val swagger: Swagger)
+    extends ScalatraServlet
+    with NativeJsonSupport
+    with SwaggerSupport {
 
   protected implicit val jsonFormats: Formats = DefaultFormats
   protected val applicationDescription = "Joern-Server REST API"
@@ -15,20 +17,16 @@ class JoernController(implicit val swagger: Swagger) extends ScalatraServlet
     contentType = formats("json")
   }
 
-  val getFlowers =
-    (apiOperation[List[Flower]]("getFlowers")
-      summary "Show all flowers"
-      tags "Flowers"
-      notes "Shows all the flowers in the flower shop. You can search it too."
-      parameter queryParam[Option[String]]("name").description("A name to search for"))
+  val create =
+    (apiOperation[List[Flower]]("create")
+      summary "Create a code property graph"
+      tags ""
+      parameter queryParam[List[String]]("filenames").description("File/Directory names"))
 
-  get("/", operation(getFlowers)){
-    params.get("name") match {
-      case Some(name) => FlowerData.all filter (_.name.toLowerCase contains name.toLowerCase())
-      case None => FlowerData.all
-    }
+  post("/create", operation(create)) {
+    val filenames = parsedBody.extract[List[String]]
+    filenames.foreach(println(_))
   }
-
 
   val findBySlug =
     (apiOperation[Flower]("findBySlug")
@@ -40,7 +38,7 @@ class JoernController(implicit val swagger: Swagger) extends ScalatraServlet
   get("/:slug", operation(findBySlug)) {
     FlowerData.all find (_.slug == params("slug")) match {
       case Some(b) => b
-      case None => halt(404)
+      case None    => halt(404)
     }
   }
 }
@@ -50,10 +48,8 @@ case class Flower(slug: String, name: String)
 object FlowerData {
 
   /**
-   * Some fake flowers data so we can simulate retrievals.
-   */
-  var all = List(
-    Flower("yellow-tulip", "Yellow Tulip"),
-    Flower("red-rose", "Red Rose"),
-    Flower("black-rose", "Black Rose"))
+    * Some fake flowers data so we can simulate retrievals.
+    */
+  var all =
+    List(Flower("yellow-tulip", "Yellow Tulip"), Flower("red-rose", "Red Rose"), Flower("black-rose", "Black Rose"))
 }
