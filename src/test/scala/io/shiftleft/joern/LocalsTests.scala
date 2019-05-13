@@ -7,26 +7,7 @@ import org.scalatest.{Matchers, WordSpec}
   * */
 class LocalsTests extends WordSpec with Matchers {
 
-  "should allow to query for all locals" in {
-    cpg.local.name.toSet shouldBe Set("a", "b", "c", "z", "x", "q", "p")
-  }
-
-  "should allow to query for all locals in method `free_list`" in {
-    cpg.method.name("free_list").local.name.toSet shouldBe Set("q", "p")
-  }
-
-  "should prove correct (name, type) pairs for locals" in {
-    cpg.method.name("free_list").local.map(l => (l.name, l.typeFullName)).toSet shouldBe
-      Set(("q", "struct node *"), ("p", "struct node *"))
-  }
-
-  "should allow finding filenames by local regex" in {
-    val filename = cpg.local.name("a*").file.name.headOption()
-    filename should not be empty
-    filename.head.endsWith(".c") shouldBe true
-  }
-
-  val code =
+  new TestCpg(
     """| #include <stdlib.h>
        | struct node {
        | int value;
@@ -50,7 +31,24 @@ class LocalsTests extends WordSpec with Matchers {
        |    return x;
        |    }
     """.stripMargin
+  ) {
+    "should allow to query for all locals" in {
+      cpg.local.name.toSet shouldBe Set("a", "b", "c", "z", "x", "q", "p")
+    }
 
-  val cpg = createTestCpg(code)
+    "should allow to query for all locals in method `free_list`" in {
+      cpg.method.name("free_list").local.name.toSet shouldBe Set("q", "p")
+    }
 
+    "should prove correct (name, type) pairs for locals" in {
+      cpg.method.name("free_list").local.map(l => (l.name, l.typeFullName)).toSet shouldBe
+        Set(("q", "struct node *"), ("p", "struct node *"))
+    }
+
+    "should allow finding filenames by local regex" in {
+      val filename = cpg.local.name("a*").file.name.headOption()
+      filename should not be empty
+      filename.head.endsWith(".c") shouldBe true
+    }
+  }
 }
