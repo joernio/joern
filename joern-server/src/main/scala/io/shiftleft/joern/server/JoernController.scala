@@ -1,20 +1,27 @@
 package io.shiftleft.joern.server
 
-import javax.servlet.http.HttpServletRequest
+import akka.actor.ActorSystem
+import io.shiftleft.codepropertygraph.Cpg
 import org.scalatra._
 import org.scalatra.swagger._
 import org.scalatra.json._
 import org.json4s.{DefaultFormats, Formats, JValue}
 
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-class JoernController(implicit val swagger: Swagger)
+class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
     extends ScalatraServlet
     with NativeJsonSupport
-    with SwaggerSupport {
+    with SwaggerSupport
+    with FutureSupport {
 
   protected implicit val jsonFormats: Formats = DefaultFormats
   protected val applicationDescription = "Joern-Server REST API"
+  protected implicit def executor: ExecutionContext = system.dispatcher
+
+  private val cpgs : ListBuffer[Cpg] = ListBuffer()
 
   override def readJsonFromBody(bd: String): JValue = {
     val json = Try(super.readJsonFromBody(bd))
@@ -30,41 +37,18 @@ class JoernController(implicit val swagger: Swagger)
   }
 
   val create =
-    (apiOperation[List[Flower]]("create")
+    (apiOperation[Unit]("create")
       summary "Create a code property graph"
       tags ""
       parameter queryParam[List[String]]("filenames").description("File/Directory names"))
 
-  post("/create" //, operation(create)
-  ) {
+  post("/create", operation(create)) {
     val filenames = Try[List[String]](parsedBody.extract[List[String]]).getOrElse(List())
     if (filenames.isEmpty) {
       halt(400, "`filenames` not given or invalid")
     }
+    response.setHeader("Location", s"/cpg/${cpgs.size}")
+    202
   }
 
-  val findBySlug =
-    (apiOperation[Flower]("findBySlug")
-      summary "Find by a flower by its slug"
-      tags "Flowers"
-      parameters pathParam[String]("slug").description("Slug of flower that needs to be fetched")
-      responseMessage ResponseMessage(404, "Slug Not Found"))
-
-  get("/:slug", operation(findBySlug)) {
-    FlowerData.all find (_.slug == params("slug")) match {
-      case Some(b) => b
-      case None    => halt(404)
-    }
-  }
-}
-
-case class Flower(slug: String, name: String)
-
-object FlowerData {
-
-  /**
-    * Some fake flowers data so we can simulate retrievals.
-    */
-  var all =
-    List(Flower("yellow-tulip", "Yellow Tulip"), Flower("red-rose", "Red Rose"), Flower("black-rose", "Black Rose"))
 }

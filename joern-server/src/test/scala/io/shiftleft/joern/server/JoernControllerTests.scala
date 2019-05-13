@@ -1,5 +1,6 @@
 package io.shiftleft.joern.server
 
+import akka.actor.ActorSystem
 import org.json4s._
 import org.json4s.JsonAST.JString
 import org.json4s.native.JsonMethods._
@@ -8,7 +9,8 @@ import org.scalatra.test.scalatest._
 class JoernControllerTests extends ScalatraFunSuite {
 
   implicit val swagger = new JoernSwagger
-  val controller = new JoernController
+  val system = ActorSystem()
+  val controller = new JoernController(system)
   addServlet(controller, "/*")
 
   def postJson[A](uri: String, body: JValue, headers: Map[String, String])(f: => A): A =
