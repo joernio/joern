@@ -24,6 +24,7 @@ resolvers += Resolver.mavenLocal
 resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(HugoPlugin)
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
@@ -101,3 +102,6 @@ scmInfo := Some(ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"),
                      ))
 homepage := Some(url("https://joern.io/"))
 licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
+sourceDirectory in Hugo := new java.io.File("docs")
+baseURL in Hugo := uri("https://joern.io/docs")
