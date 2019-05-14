@@ -98,7 +98,7 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
     def runQuery(query: String): AsyncResult =
       new AsyncResult {
         val is = Future {
-          Try({
+          Try {
             logger.info("Running query")
             import javax.script.ScriptEngineManager
             val e = new ScriptEngineManager().getEngineByName("scala")
@@ -108,11 +108,10 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
               | val cpg = aCpg.asInstanceOf[io.shiftleft.codepropertygraph.Cpg]
               | $query
             """.stripMargin).toString
-          }) match {
+          } match {
             case Success(v)         => queryResult = Some(v)
-            case Failure(exception) => println(exception)
+            case Failure(exception) => queryResult = Some(exception.toString)
           }
-
         }
       }
   }
