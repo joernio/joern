@@ -12,7 +12,8 @@ snippet containing only an empty main function.
 
 {{<snippet file="src/test/scala/io/shiftleft/joern/SampleDocuTest.scala" language="scala">}}
 
-The test contains a definition of the sample code in `code` and the
-corresponding code property graph in `cpg`. It then specifies that
-`cpg.method.name.toSet` should return the set `Set("main")`, that is,
-"main" is the only method in the graph.
+The test contains a definition of the sample code as a first argument
+to the constructor `TestCpg`, and the corresponding code property
+graph in `cpg`. It then specifies that `cpg.method.name.toSet` should
+return the set `Set("main")`, that is, "main" is the only method in
+the graph.
