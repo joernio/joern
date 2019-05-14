@@ -10,14 +10,18 @@ object JoernParse extends App {
 
   parseConfig.foreach { config =>
     try {
-      new Fuzzyc2Cpg(config.outputPath).runAndOutput(config.inputPaths.toArray)
-      Cpg2Scpg.run(config.outputPath)
+      parse(config.inputPaths.toArray, config.outputPath)
     } catch {
       case exception: Exception =>
         logger.error("Failed to generate CPG.", exception)
         System.exit(1)
     }
     System.exit(0)
+  }
+
+  def parse(inputPaths: Array[String], outputPath: String): Unit = {
+    new Fuzzyc2Cpg(outputPath).runAndOutput(inputPaths)
+    Cpg2Scpg.run(outputPath)
   }
 
   case class Config(inputPaths: Seq[String], outputPath: String)
