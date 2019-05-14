@@ -1,6 +1,7 @@
 package io.shiftleft.joern.server
 
 import akka.actor.ActorSystem
+import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.joern.{CpgLoader, JoernParse}
 import org.json4s.ParserUtil.ParseException
@@ -12,6 +13,8 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+
+case class CreateCpgRequest(filenames: List[String])
 
 class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
     extends ScalatraServlet
@@ -51,25 +54,36 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
       parameter queryParam[List[String]]("filenames").description("File/Directory names"))
 
   post("/create", operation(create)) {
-    val filenames = Try[List[String]](parsedBody.extract[List[String]]).getOrElse(List())
-    if (filenames.isEmpty) {
-      halt(400, "`filenames` not given or invalid")
+    Try(parsedBody.extract[CreateCpgRequest]) match {
+      case Success(v) => {
+        val filenames = v.filenames
+        if (filenames.isEmpty) {
+          halt(400, "`filenames` not given or invalid")
+        }
+        if (filenames.count(File(_).exists) != filenames.size) {
+          halt(400, "Not all specified files exist")
+        }
+        createCpg(filenames)
+        response.setHeader("Location", s"/cpg")
+        202
+      }
+      case Failure(exception) => {
+        println(exception)
+        logger.warn(s"Invalid create request: $exception")
+        400
+      }
     }
+  }
 
+  private def createCpg(filenames: List[String]): AsyncResult =
     new AsyncResult {
-      val is = createCpg(filenames)
+      val is = Future {
+        val cpgFilename = "/tmp/cpg.bin.zip"
+        logger.info(s"Attempting to create CPG for: ${filenames.mkString(",")}")
+        JoernParse.parse(filenames.toArray, cpgFilename)
+        cpg = Some(CpgLoader.load(cpgFilename))
+        logger.info("CPG is ready")
+      }
     }
-
-    response.setHeader("Location", s"/cpg")
-    202
-  }
-
-  private def createCpg(filenames: List[String]): Future[Unit] = Future {
-    val cpgFilename = "/tmp/cpg.bin.zip"
-    logger.info(s"Attempting to create CPG for: ${filenames.mkString(",")}")
-    JoernParse.parse(filenames.toArray, cpgFilename)
-    cpg = Some(CpgLoader.load(cpgFilename))
-    logger.info("CPG is ready")
-  }
 
 }
