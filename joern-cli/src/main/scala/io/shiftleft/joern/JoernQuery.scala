@@ -6,7 +6,7 @@ import javax.script.ScriptEngineManager
 object JoernQuery extends App {
 
   parseConfig.foreach { config =>
-    val e = new ScriptEngineManager().getEngineByName("scala");
+    val e = new ScriptEngineManager().getEngineByName("scala")
 
     val cpgLoadingCode =
       s"""

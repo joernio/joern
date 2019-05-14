@@ -13,19 +13,19 @@ class JoernControllerTests extends ScalatraFunSuite {
   val controller = new JoernController(system)
   addServlet(controller, "/*")
 
-  def postJson[A](uri: String, body: JValue, headers: Map[String, String])(f: => A): A =
+  def postJson[A](uri: String, body: JValue = JString(""), headers: Map[String, String] = Map())(f: => A): A =
     post(uri, compact(render(body)).getBytes("utf-8"), Map("Content-Type" -> "application/json") ++ headers)(f)
 
   test("string to create should give 400") {
     val filenames = JString("foo")
-    postJson("/create", filenames, Map()) {
+    postJson("/create", filenames) {
       status should equal(400)
     }
   }
 
   test("should respond with 400 when file does not exist") {
     val msg = JObject(JField("filenames", JArray(List(JString("foo")))))
-    postJson("/create", msg, Map()) {
+    postJson("/create", msg) {
       status should equal(400)
     }
   }
