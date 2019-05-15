@@ -2,10 +2,10 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.8"
 
-val cpgVersion = "0.9.184"
+val cpgVersion = "0.9.185"
 val fuzzyc2cpgVersion = "0.1.50"
-resolvers += Resolver.mavenLocal
-resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+ThisBuild / resolvers += Resolver.mavenLocal
+ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
 scmInfo := Some(ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"),
                      "scm:git@github.com:ShiftLeftSecurity/joern.git"

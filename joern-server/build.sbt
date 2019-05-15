@@ -2,7 +2,6 @@ val ScalatraVersion = "2.6.5"
 organization := "io.shiftleft"
 name := "Joern Server"
 
-resolvers += Resolver.mavenLocal
 resolvers += Classpaths.typesafeReleases
 
 dependsOn(Projects.joerncli)
