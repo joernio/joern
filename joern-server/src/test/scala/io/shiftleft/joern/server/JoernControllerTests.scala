@@ -30,4 +30,25 @@ class JoernControllerTests extends ScalatraFunSuite {
     }
   }
 
+  test("/status should return 200") {
+    get("/status") {
+      status should equal(200)
+    }
+  }
+
+  test("/queryresult should return 202") {
+    get("/queryresult") {
+      status should equal(202)
+    }
+  }
+
+  test("createCpg should work") {
+    println("foo: " + new java.io.File(".").getCanonicalPath())
+    controller.createCpg(List("joern-cli/src/test/resources/testcode/free"))
+    controller.cpg.isDefined shouldBe true
+  }
+
+  // TODO we are currently missing a test for `query` because of
+  // https://github.com/scala/bug/issues/10058
+
 }

@@ -32,8 +32,8 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
   protected val applicationDescription = "Joern-Server REST API"
   protected implicit def executor: ExecutionContext = system.dispatcher
 
-  private var cpg: Option[Cpg] = None
-  private var queryResult: Option[String] = None
+  var cpg: Option[Cpg] = None
+  var queryResult: Option[String] = None
 
   before() {
     contentType = formats("json")
@@ -54,21 +54,22 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
       if (filenames.count(File(_).exists) != filenames.size) {
         halt(400, "Not all specified files exist")
       }
-      createCpg(filenames)
+      new AsyncResult {
+        val is = Future {
+          createCpg(filenames)
+        }
+      }
       response.setHeader("Location", s"/status")
       Accepted()
     }
+  }
 
-    def createCpg(filenames: List[String]): AsyncResult =
-      new AsyncResult {
-        val is = Future {
-          val cpgFilename = "/tmp/cpg.bin.zip"
-          logger.info(s"Attempting to create CPG for: ${filenames.mkString(",")}")
-          JoernParse.parse(filenames.toArray, cpgFilename)
-          cpg = Some(CpgLoader.load(cpgFilename))
-          logger.info("CPG is ready")
-        }
-      }
+  def createCpg(filenames: List[String]): Unit = {
+    val cpgFilename = "/tmp/cpg.bin.zip"
+    logger.info(s"Attempting to create CPG for: ${filenames.mkString(",")}")
+    JoernParse.parse(filenames.toArray, cpgFilename)
+    cpg = Some(CpgLoader.load(cpgFilename))
+    logger.info("CPG is ready")
   }
 
   private val statusBuilder = (apiOperation[String]("status")
@@ -85,35 +86,36 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
 
   post("/query", operation(queryBuilder)) {
     handleOrReportAsInvalid[QueryRequest] { v =>
-      if (!cpg.isDefined) {
+      if (cpg.isEmpty) {
         BadRequest("CPG is not loaded")
       } else {
         val query = v.query
         logger.info(s"received query: $query")
-        runQuery(query)
+        new AsyncResult {
+          val is = Future { runQuery(query) }
+        }
         Accepted()
       }
     }
+  }
 
-    def runQuery(query: String): AsyncResult =
-      new AsyncResult {
-        val is = Future {
-          Try {
-            logger.info("Running query")
-            import javax.script.ScriptEngineManager
-            val e = new ScriptEngineManager().getEngineByName("scala")
-            e.put("aCpg", cpg.get)
-            e.eval(s"""
-                import io.shiftleft.codepropertygraph.Cpg
-              | val cpg = aCpg.asInstanceOf[io.shiftleft.codepropertygraph.Cpg]
-              | $query
-            """.stripMargin).toString
-          } match {
-            case Success(v)         => queryResult = Some(v)
-            case Failure(exception) => queryResult = Some(exception.toString)
-          }
-        }
+  def runQuery(query: String): Unit = {
+    Try {
+      logger.info("Running query")
+      val e = new ScriptEngineManager(null).getEngineByName("scala")
+      if (e == null) {
+        throw new RuntimeException("Error: cannot initialize script engine")
       }
+      e.put("aCpg", cpg.get)
+      e.eval(s"""
+                import io.shiftleft.codepropertygraph.Cpg
+                | val cpg = aCpg.asInstanceOf[io.shiftleft.codepropertygraph.Cpg]
+                | $query
+            """.stripMargin).toString
+    } match {
+      case Success(v)         => queryResult = Some(v)
+      case Failure(exception) => queryResult = Some(exception.toString)
+    }
   }
 
   val queryResultBuilder = (apiOperation[String]("queryresult")
