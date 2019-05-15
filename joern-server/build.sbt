@@ -1,13 +1,14 @@
 val ScalatraVersion = "2.6.5"
 organization := "io.shiftleft"
 name := "Joern Server"
-version := "0.1.0-SNAPSHOT"
 
 resolvers += Classpaths.typesafeReleases
 
 dependsOn(Projects.joerncli)
 
 libraryDependencies ++= Seq(
+  "io.shiftleft" % "cpg-server" % Versions.cpgVersion,
+
   "org.scalatra" %% "scalatra" % ScalatraVersion,
   "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
   "org.scalatra" %% "scalatra-json" % ScalatraVersion,
