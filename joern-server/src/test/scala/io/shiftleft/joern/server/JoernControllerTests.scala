@@ -1,7 +1,7 @@
 package io.shiftleft.joern.server
 
 import akka.actor.ActorSystem
-import org.json4s._
+import org.json4s.{JBool, _}
 import org.json4s.JsonAST.JString
 import org.json4s.native.JsonMethods._
 import org.scalatra.test.scalatest._
@@ -36,8 +36,14 @@ class JoernControllerTests extends ScalatraFunSuite {
     }
   }
 
-  test("/queryresult should return 202") {
+  test("/queryresult should return correct response") {
     get("/queryresult") {
+      val response = parse(body)
+      val isCompleted = for {
+        JObject(child) <- response
+        JField("isQueryCompleted", JBool(isQueryCompleted)) <- child
+      } yield isQueryCompleted
+      isCompleted.head shouldBe false
       status should equal(202)
     }
   }

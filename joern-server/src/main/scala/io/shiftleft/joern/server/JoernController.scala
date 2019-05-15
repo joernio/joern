@@ -19,7 +19,7 @@ case class CreateCpgRequest(filenames: List[String])
 case class QueryRequest(query: String)
 
 case class StatusResponse(isCpgLoaded: Boolean)
-case class QueryResponse(response: String)
+case class QueryResponse(response: String, isQueryCompleted: Boolean)
 
 class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
     extends ScalatraServlet
@@ -124,11 +124,11 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
 
   get("/queryresult", operation(queryResultBuilder)) {
     if (queryResult.isDefined) {
-      val result = queryResult.get
+      val result = QueryResponse(queryResult.get, isQueryCompleted = true)
       queryResult = None
       Ok(result)
     } else {
-      Accepted("Query still in progress")
+      Accepted(QueryResponse("", isQueryCompleted = false))
     }
   }
 
