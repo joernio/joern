@@ -1,9 +1,8 @@
-package io.shiftleft.joern.server
+package io.shiftleft.cpgserver
 
 import akka.actor.ActorSystem
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.joern.{CpgLoader, JoernParse}
 import javax.script.ScriptEngineManager
 import org.json4s.ParserUtil.ParseException
 import org.scalatra._
@@ -15,13 +14,13 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
+
 case class CreateCpgRequest(filenames: List[String])
 case class QueryRequest(query: String)
-
 case class StatusResponse(isCpgLoaded: Boolean)
 case class QueryResponse(response: String, isQueryCompleted: Boolean)
 
-class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
+class CpgServerController(impl : ServerImpl, system: ActorSystem = ActorSystem())(implicit val swagger: Swagger)
     extends ScalatraServlet
     with NativeJsonSupport
     with SwaggerSupport
@@ -29,10 +28,10 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
 
   val logger = LoggerFactory.getLogger(getClass)
   protected implicit val jsonFormats: Formats = DefaultFormats
-  protected val applicationDescription = "Joern-Server REST API"
+  protected val applicationDescription = "CPG-Server REST API"
   protected implicit def executor: ExecutionContext = system.dispatcher
 
-  var cpg: Option[Cpg] = None
+  def cpg : Option[Cpg] = impl.cpg
   var queryResult: Option[String] = None
 
   before() {
@@ -56,20 +55,12 @@ class JoernController(system: ActorSystem)(implicit val swagger: Swagger)
       }
       new AsyncResult {
         val is = Future {
-          createCpg(filenames)
+          impl.createCpg(filenames)
         }
       }
       response.setHeader("Location", s"/status")
       Accepted()
     }
-  }
-
-  def createCpg(filenames: List[String]): Unit = {
-    val cpgFilename = "/tmp/cpg.bin.zip"
-    logger.info(s"Attempting to create CPG for: ${filenames.mkString(",")}")
-    JoernParse.parse(filenames.toArray, cpgFilename)
-    cpg = Some(CpgLoader.load(cpgFilename))
-    logger.info("CPG is ready")
   }
 
   private val statusBuilder = (apiOperation[String]("status")

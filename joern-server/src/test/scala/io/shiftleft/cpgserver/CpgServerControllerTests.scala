@@ -1,16 +1,17 @@
-package io.shiftleft.joern.server
+package io.shiftleft.cpgserver
 
 import akka.actor.ActorSystem
-import org.json4s.{JBool, _}
 import org.json4s.JsonAST.JString
 import org.json4s.native.JsonMethods._
+import org.json4s.{JBool, _}
 import org.scalatra.test.scalatest._
 
-class JoernControllerTests extends ScalatraFunSuite {
+class CpgServerControllerTests extends ScalatraFunSuite {
 
-  implicit val swagger = new JoernSwagger
+  implicit val swagger = new CpgServerSwagger
   val system = ActorSystem()
-  val controller = new JoernController(system)
+  val impl = new NullServerImpl
+  val controller = new CpgServerController(impl)
   addServlet(controller, "/*")
 
   def postJson[A](uri: String, body: JValue = JString(""), headers: Map[String, String] = Map())(f: => A): A =
@@ -47,13 +48,5 @@ class JoernControllerTests extends ScalatraFunSuite {
       status should equal(202)
     }
   }
-
-  test("createCpg should work") {
-    controller.createCpg(List("joern-cli/src/test/resources/testcode/free"))
-    controller.cpg.isDefined shouldBe true
-  }
-
-  // TODO we are currently missing a test for `query` because of
-  // https://github.com/scala/bug/issues/10058
 
 }

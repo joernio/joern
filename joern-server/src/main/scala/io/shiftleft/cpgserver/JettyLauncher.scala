@@ -1,4 +1,4 @@
-package io.shiftleft.joern.server
+package io.shiftleft.cpgserver
 
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
