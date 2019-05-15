@@ -10,7 +10,7 @@ import org.scalatest.{Matchers, WordSpec}
 class GenerationTests extends WordSpec with Matchers {
 
   "should generate and load CPG for example code" in {
-    val inputFilenames = Array("src/test/resources/testcode/free/")
+    val inputFilenames = Array("joern-cli/src/test/resources/testcode/free/")
     val outputFilename = "/tmp/cpg.bin.zip"
 
     val fuzzyc2Cpg = new Fuzzyc2Cpg(outputFilename)

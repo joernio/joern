@@ -18,7 +18,7 @@ object CpgLoader {
   def load(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
     val config = CpgLoaderConfig.default
     val cpg = io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
-    val semanticsFilename = semanticsFilenameOpt.getOrElse("src/main/resources/default.semantics")
+    val semanticsFilename = semanticsFilenameOpt.getOrElse("joern-cli/src/main/resources/default.semantics")
     val semantics = new SemanticsLoader(semanticsFilename).load
     new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
     cpg

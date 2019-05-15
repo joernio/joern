@@ -8,6 +8,6 @@ import io.shiftleft.cpgqueryingtests.codepropertygraph.{CpgFactory, LanguageFron
   * @param code string containing C code
   * */
 class TestCpg(code: String) {
-  private val semanticFilename = "src/main/resources/default.semantics"
+  private val semanticFilename = "joern-cli/src/main/resources/default.semantics"
   val cpg: Cpg = new CpgFactory(LanguageFrontend.Fuzzyc, semanticFilename).buildCpg(code)
 }
