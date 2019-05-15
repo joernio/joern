@@ -49,7 +49,6 @@ class JoernControllerTests extends ScalatraFunSuite {
   }
 
   test("createCpg should work") {
-    println("foo: " + new java.io.File(".").getCanonicalPath())
     controller.createCpg(List("joern-cli/src/test/resources/testcode/free"))
     controller.cpg.isDefined shouldBe true
   }
