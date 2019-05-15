@@ -1,5 +1,7 @@
 name := "joern-cli"
 
+resolvers += Resolver.mavenLocal
+
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" % "query-primitives" % Versions.cpgVersion,

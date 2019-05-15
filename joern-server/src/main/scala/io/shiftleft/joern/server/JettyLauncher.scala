@@ -1,4 +1,4 @@
-package io.shiftleft.cpgserver
+package io.shiftleft.joern.server
 
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
@@ -6,7 +6,7 @@ import org.eclipse.jetty.webapp.WebAppContext
 import org.scalatra.servlet.ScalatraListener
 
 /**
-  * Launcher to enable running of joern-server as a
+  * Launcher to enable running of cpg-server as a
   * standalone program
   * */
 object JettyLauncher extends App {
