@@ -35,6 +35,6 @@ sbt stage
 
 To test if the build was successful, you can run
 ```
-./joern-parse src/test/resources/testcode/free
+./joern-parse joern-cli/src/test/resources/testcode/free
 ```
 This command will create a code property graph for the sample program in the directory `src/test/resources/testcode/free`, and store the graph in the file `cpg.bin.zip`.
