@@ -6,14 +6,13 @@ import org.apache.tinkerpop.gremlin.structure.Direction
 import io.shiftleft.queryprimitives.steps.Implicits.JavaIteratorDeco
 import javax.script.ScriptEngineManager
 
-
 /** Some helper functions: adapted from ReachingDefPass.scala in codeproperty graph repo */
 def vertexToStr(vertex: Vertex): String = {
   try {
-    val methodVertex = vertex.vertices(Direction.IN, "AST").nextChecked
-    val fileName = ExpandTo.methodToFile(methodVertex) match {
-      case Some(objFile) => objFile.value2(NodeKeys.NAME)
-      case None          => "NA"
+    val methodVertex = vertex.vertices(Direction.IN, "CONTAINS").nextChecked
+    val fileName = methodVertex.vertices(Direction.IN, "CONTAINS").nextChecked match {
+      case file: nodes.File => file.asInstanceOf[nodes.File].name
+      case _ => "NA"
     }
 
     s"${Paths.get(fileName).getFileName.toString}: ${vertex.value2(NodeKeys.LINE_NUMBER).toString} ${vertex.value2(NodeKeys.CODE)}"
