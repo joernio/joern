@@ -1,6 +1,6 @@
 package io.shiftleft.joern
 
-import better.files.File
+import java.io.FileReader
 import javax.script.ScriptEngineManager
 
 object JoernQuery extends App {
@@ -19,10 +19,8 @@ object JoernQuery extends App {
     e.eval(cpgLoadingCode, context)
 
     if (config.isFile) {
-      val reader = File(config.query).fileReader
-      reader.foreach { r =>
-        println(e.eval(r, context))
-      }
+      val reader = new FileReader(config.query)
+      println(e.eval(reader, context))
     } else {
       val script = config.query + ".l.mkString(\"\\n\")"
       println(e.eval(script, context))
