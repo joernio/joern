@@ -38,3 +38,13 @@ To test if the build was successful, you can run
 ./joern-parse joern-cli/src/test/resources/testcode/free
 ```
 This command will create a code property graph for the sample program in the directory `src/test/resources/testcode/free`, and store the graph in the file `cpg.bin.zip`.
+
+## Configuring the JVM for Optimal Performance
+
+Code analysis can require lots of memory, and unfortunately, the JVM does not pick up the available amount of memory by itself. While tuning Java memory usage is a discipline in its own right, it is usually sufficient to specify the maximum available amount of heap memory using the JVM's -Xmx flag. The easiest way to achieve this globally is by setting the environment variable _JAVA_OPTS as follows:
+
+```
+export _JAVA_OPTS="-Xmx$NG"
+```
+
+where $N is the amount of memory in gigabytes. You can add this line to your shell startup script, e.g., ~/.bashrc or ~/.zshrc.
