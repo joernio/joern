@@ -31,6 +31,8 @@ cd joern
 sbt stage
 ```
 
+This builds the Joern Java library and Joern server.
+
 ## A Test Run
 
 To test if the build was successful, you can run
@@ -48,3 +50,15 @@ export _JAVA_OPTS="-Xmx$NG"
 ```
 
 where $N is the amount of memory in gigabytes. You can add this line to your shell startup script, e.g., ~/.bashrc or ~/.zshrc.
+
+# Installing the Python interface
+
+Joern can be scripted using the local REST API. The Python 3 library `cpgclientlib` serves as a reference implementation for a CPG client library, and enables scripting of Joern with Python. The library can be installed as follows.
+
+
+```
+pip install cpgclientlib
+```
+
+Documentation on `cpgclientlib` is available at:
+https://github.com/ShiftLeftSecurity/codepropertygraph/tree/master/cpgclientlib
