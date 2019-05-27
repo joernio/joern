@@ -48,14 +48,14 @@ Get some flows from `copy_from_user`:
 
 ```scala
 val sinkArguments = cpg.method.name("copy_from_user").parameter.argument
-println(sinkArguments.reachableByFlows(cpg.identifier).p)
+sinkArguments.reachableBy(cpg.identifier).flows.p
 ```
 
 Ok, this gives us a lot of information back. The following query gives us the 
 number.
 
 ```scala
-println(sinkArguments.reachableByFlows(cpg.identifier).l.size)
+sinkArguments.reachableBy(cpg.identifier).flows.l.size 
 ```
 
 should be 302. 
