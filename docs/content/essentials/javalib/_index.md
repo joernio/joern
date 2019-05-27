@@ -3,7 +3,7 @@ title="Using Joern as a Java Library"
 weight=2
 +++
 
-Joern and Ocular offer a Java API that can be used from JVM-based languages such as Java, Scala, Groovy, Jython, or Kotlin. This interface is best if you are looking to build a standalone analyzer based on Joern and need control over graph loading and task scheduling. In contrast to the REST API, this API provides greater type safety and does not require communication with a local HTTP server. Instead, Joern can be fully embedded in your application.
+Joern and Ocular offer a Java API that can be used from JVM-based languages such as Java, Scala, Groovy, Jython, or Kotlin. This interface is best if you are looking to build a standalone analyzer based on Joern and need control over graph loading and task scheduling. In comparison to the REST API, this API provides greater type safety and does not require communication with a local HTTP server. Instead, Joern can be fully embedded in your application.
 
 For code property graph creation, Joern includes
 [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg), a fuzzy
