@@ -15,7 +15,7 @@ sbt stage
 Joern is a platform for robust analysis of C/C++ code. It generates
 semantic code property graphs, a graph representation of code for
 cross-language code analysis. Semantic code property graphs are stored
-in an in-memory graph database. This allows code to be mined using
+in a custom graph database. This allows code to be mined using
 search queries formulated in a domain-specific query language based on
 the graph traversal language Gremlin.
 
