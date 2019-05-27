@@ -18,7 +18,9 @@ class GenerationTests extends WordSpec with Matchers {
     // Link CPG fragments and enhance to create semantic CPG
     Cpg2Scpg.run(outputFilename)
 
+    // Load the CPG
     val cpg = CpgLoader.load(outputFilename)
+    // Query to retrieve all method names
     cpg.method.name.l should not be empty
   }
 }
