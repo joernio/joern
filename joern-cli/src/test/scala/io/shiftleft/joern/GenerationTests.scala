@@ -8,16 +8,17 @@ import org.scalatest.{Matchers, WordSpec}
   * generated using the FuzzyC language frontend
   * */
 class GenerationTests extends WordSpec with Matchers {
-
   "should generate and load CPG for example code" in {
     val inputFilenames = Array("joern-cli/src/test/resources/testcode/free/")
     val outputFilename = "/tmp/cpg.bin.zip"
 
+    // Create a CPG using the C/C++ fuzzy parser
     val fuzzyc2Cpg = new Fuzzyc2Cpg(outputFilename)
     fuzzyc2Cpg.runAndOutput(inputFilenames)
+    // Link CPG fragments and enhance to create semantic CPG
+    Cpg2Scpg.run(outputFilename)
 
     val cpg = CpgLoader.load(outputFilename)
     cpg.method.name.l should not be empty
   }
-
 }
