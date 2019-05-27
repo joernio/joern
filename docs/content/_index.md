@@ -17,7 +17,7 @@ semantic code property graphs, a graph representation of code for
 cross-language code analysis. Semantic code property graphs are stored
 in a custom graph database. This allows code to be mined using
 search queries formulated in a domain-specific query language based on
-the graph traversal language Gremlin.
+the graph traversal language Gremlin. Joern provides a peek into the underlying technology that powers the commercial code analyzer [Ocular](https://ocular.shiftleft.io/).
 
 The core features of Joern are:
 
