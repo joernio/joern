@@ -33,8 +33,15 @@ You should see the following:
 
 ## The Python library `cpgclientlib`
 
-As a reference implementation for a REST-based client library, we provide the Python 3 library `cpgclientlib`. This library makes it possible to script Joern with Python 3. The following sample scripts shows how to create and query a CPG using Python. It is assumed that you have installed `cpgclientlib` via `pip install cpgclientlib`.
+As a reference implementation for a REST-based client library, we provide the Python 3 library `cpgclientlib`. This library makes it possible to script Joern with Python 3.
 
+The Python library can be installed with the command:
+
+```
+pip install cpgclientlib
+```
+
+The following sample scripts shows how to create and query a CPG using Python.
 
 ```python
 #!/usr/bin/env python3
@@ -48,6 +55,10 @@ client.create_cpg('/path/to/cpg')
 methods = client.query('cpg.method.toJson')
 print(methods)
 ```
+
+For more information on the Python interface, please refer to
+
+https://github.com/ShiftLeftSecurity/codepropertygraph/tree/master/cpgclientlib .
 
 ## Creating and loading CPGs with `cpg-create`
 
