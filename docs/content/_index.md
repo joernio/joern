@@ -5,13 +5,6 @@ title="Joern: open-source query-based code analysis for C/C++"
 <img src="/docs/images/logo_design_v01_R01.png" style="background-color:black;">
 
 
-```
-# Quick start
-git clone https://github.com/ShiftLeftSecurity/joern.git
-cd joern
-sbt stage
-```
-
 Joern is a platform for robust analysis of C/C++ code. It generates
 semantic code property graphs, a graph representation of code for
 cross-language code analysis. Semantic code property graphs are stored
