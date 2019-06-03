@@ -10,7 +10,7 @@ object JoernParse extends App {
 
   parseConfig.foreach { config =>
     try {
-      parse(config.inputPaths.toArray, config.outputPath)
+      parse(config.inputPaths.toArray, config.outputPath, config.enhance)
     } catch {
       case exception: Exception =>
         logger.error("Failed to generate CPG.", exception)
@@ -19,12 +19,14 @@ object JoernParse extends App {
     System.exit(0)
   }
 
-  def parse(inputPaths: Array[String], outputPath: String): Unit = {
+  def parse(inputPaths: Array[String], outputPath: String, enhance : Boolean = true): Unit = {
     new Fuzzyc2Cpg(outputPath).runAndOutput(inputPaths)
-    Cpg2Scpg.run(outputPath)
+    if (enhance){
+      Cpg2Scpg.run(outputPath)
+    }
   }
 
-  case class Config(inputPaths: Seq[String], outputPath: String)
+  case class Config(inputPaths: Seq[String], outputPath: String, enhance : Boolean)
   def parseConfig: Option[Config] =
     new scopt.OptionParser[Config](getClass.getSimpleName) {
       arg[String]("<input-dir>")
@@ -34,7 +36,10 @@ object JoernParse extends App {
       opt[String]("out")
         .text("output filename")
         .action((x, c) => c.copy(outputPath = x))
+      opt[Boolean]("noenhance")
+        .text("run language frontend but do not enhance the CPG to create an SCPG")
+        .action((x,c) => c.copy(enhance = false))
 
-    }.parse(args, Config(List(), DEFAULT_CPG_OUT_FILE))
+    }.parse(args, Config(List(), DEFAULT_CPG_OUT_FILE, true))
 
 }
