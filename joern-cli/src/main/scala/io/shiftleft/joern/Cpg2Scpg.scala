@@ -2,8 +2,33 @@ package io.shiftleft.joern
 
 import io.shiftleft.SerializedCpg
 import io.shiftleft.layers.EnhancementRunner
+import org.slf4j.LoggerFactory
 
-object Cpg2Scpg {
+object Cpg2Scpg extends App {
+
+  val DEFAULT_CPG_IN_FILE = "cpg.bin.zip"
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  parseConfig.foreach { config =>
+    try {
+      run(config.inputPath)
+    } catch {
+      case exception: Exception =>
+        logger.error("Failed to generate CPG.", exception)
+        System.exit(1)
+    }
+    System.exit(0)
+  }
+
+  case class Config(inputPath: String)
+  def parseConfig: Option[Config] =
+    new scopt.OptionParser[Config](getClass.getSimpleName) {
+      arg[String]("<cpg>")
+        .text("CPG to enhance")
+        .action((x, c) => c.copy(inputPath = x))
+
+    }.parse(args, Config(DEFAULT_CPG_IN_FILE))
 
   /**
     * Load the CPG at `cpgFilename` and add enhancements,
