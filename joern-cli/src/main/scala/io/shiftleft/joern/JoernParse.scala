@@ -13,7 +13,7 @@ object JoernParse extends App {
       parse(config.inputPaths.toArray, config.outputPath, config.enhance)
     } catch {
       case exception: Exception =>
-        logger.error("Failed to generate CPG.", exception)
+        logger.error("Failed to enhance CPG.", exception)
         System.exit(1)
     }
     System.exit(0)
