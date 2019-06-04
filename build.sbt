@@ -4,6 +4,11 @@ scalaVersion := "2.12.8"
 
 val cpgVersion = "0.9.231"
 val fuzzyc2cpgVersion = "0.1.54"
+
+ThisBuild / excludeDependencies ++= Seq(
+  ExclusionRule("org.slf4j", "slf4j-simple"), //avoid `slf4j multiple bindings` error
+)
+
 ThisBuild / resolvers += Resolver.mavenLocal
 ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
