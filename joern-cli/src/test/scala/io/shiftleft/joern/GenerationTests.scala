@@ -1,6 +1,6 @@
 package io.shiftleft.joern
 
-import io.shiftleft.fuzzyc2cpg.Fuzzyc2Cpg
+import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 import org.scalatest.{Matchers, WordSpec}
 
 /**
@@ -13,7 +13,7 @@ class GenerationTests extends WordSpec with Matchers {
     val outputFilename = "/tmp/cpg.bin.zip"
 
     // Create a CPG using the C/C++ fuzzy parser
-    val fuzzyc2Cpg = new Fuzzyc2Cpg(outputFilename)
+    val fuzzyc2Cpg = new FuzzyC2Cpg(outputFilename)
     fuzzyc2Cpg.runAndOutput(inputFilenames)
     // Link CPG fragments and enhance to create semantic CPG
     Cpg2Scpg.run(outputFilename)
