@@ -36,7 +36,7 @@ object JoernParse extends App {
       opt[String]("out")
         .text("output filename")
         .action((x, c) => c.copy(outputPath = x))
-      opt[Boolean]("noenhance")
+      opt[Unit]("noenhance")
         .text("run language frontend but do not enhance the CPG to create an SCPG")
         .action((x,c) => c.copy(enhance = false))
 
