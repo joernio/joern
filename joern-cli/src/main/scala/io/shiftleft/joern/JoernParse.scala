@@ -1,6 +1,6 @@
 package io.shiftleft.joern
 
-import io.shiftleft.fuzzyc2cpg.Fuzzyc2Cpg
+import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 import org.slf4j.LoggerFactory
 
 object JoernParse extends App {
@@ -20,7 +20,7 @@ object JoernParse extends App {
   }
 
   def parse(inputPaths: Array[String], outputPath: String, enhance : Boolean = true): Unit = {
-    new Fuzzyc2Cpg(outputPath).runAndOutput(inputPaths)
+    new FuzzyC2Cpg(outputPath).runAndOutput(inputPaths)
     if (enhance){
       Cpg2Scpg.run(outputPath)
     }
