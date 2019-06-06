@@ -36,7 +36,7 @@ object Cpg2Scpg extends App {
     * @param cpgFilename the filename of the cpg
     * */
   def run(cpgFilename: String): Unit = {
-    val cpg = CpgLoader.load(cpgFilename)
+    val cpg = CpgLoader.loadWithoutSemantics(cpgFilename)
     val serializedCpg = new SerializedCpg(cpgFilename)
     new EnhancementRunner().run(cpg, serializedCpg)
     serializedCpg.close
