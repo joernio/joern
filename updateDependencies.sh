@@ -24,4 +24,4 @@ function update {
 }
 
 update cpg git@github.com:ShiftLeftSecurity/codepropertygraph.git
-update fuzzyc git@github.com:ShiftLeftSecurity/fuzzyc2cpg.git
+update fuzzyc2cpg git@github.com:ShiftLeftSecurity/fuzzyc2cpg.git
