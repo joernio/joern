@@ -4,42 +4,45 @@ import org.scalatest.{Matchers, WordSpec}
 
 class DataFlowTests extends WordSpec with Matchers {
 
-  new TestCpg(
-    """| #include <stdlib.h>
-       | struct node {
-       | int value;
-       | struct node *next;
-       | };
-       |
-       | void free_list(struct node *head) {
-       | struct node *q;
-       | for (struct node *p = head; p != NULL; p = q) {
-       |    q = p->next;
-       |    free(p);
-       |    }
-       | }
-       | int flow(int p0) {
-       |    int a = p0;
-       |    int b=a;
-       |    int c=0x31;
-       |    int z = b + c;
-       |    z++;
-       |    int x = z;
-       |    return x;
-       |    }
-    """.stripMargin
-  ) {
-    "should identify all calls to `free`" in {
+  val code = """| #include <stdlib.h>
+                | struct node {
+                | int value;
+                | struct node *next;
+                | };
+                |
+                | void free_list(struct node *head) {
+                | struct node *q;
+                | for (struct node *p = head; p != NULL; p = q) {
+                |    q = p->next;
+                |    free(p);
+                |    }
+                | }
+                | int flow(int p0) {
+                |    int a = p0;
+                |    int b=a;
+                |    int c=0x31;
+                |    int z = b + c;
+                |    z++;
+                |    int x = z;
+                |    return x;
+                |    }
+             """.stripMargin
+
+  "should identify all calls to `free`" in {
+    new TestCpg().buildCpg(code) { cpg =>
       cpg.call.name("free").code.toSet shouldBe Set("free(p)")
     }
+  }
 
-    "should find flows to arguments of `free`" in {
+  "should find flows to arguments of `free`" in
+    new TestCpg().buildCpg(code) { cpg =>
       val source = cpg.identifier
       val sink = cpg.method.name("free").parameter.argument
       sink.reachableByFlows(source).l.size shouldBe 5
     }
 
-    "should find flows to `free`" in {
+  "should find flows to `free`" in
+    new TestCpg().buildCpg(code) { cpg =>
       val source = cpg.identifier
       val sink = cpg.call.name("free")
       sink.reachableByFlows(source).l.size shouldBe 5
@@ -80,7 +83,8 @@ class DataFlowTests extends WordSpec with Matchers {
 )"""
     }
 
-    "should find flows from identifiers to return values of `flow`" in {
+  "should find flows from identifiers to return values of `flow`" in
+    new TestCpg().buildCpg(code) { cpg =>
       val source = cpg.identifier
       val sink = cpg.method.name("flow").methodReturn
       sink.reachableByFlows(source).l.size shouldBe 7
@@ -145,11 +149,11 @@ class DataFlowTests extends WordSpec with Matchers {
     """
     }
 
-    "find flows from z to method returns of flow" in {
+  "find flows from z to method returns of flow" in
+    new TestCpg().buildCpg(code) { cpg =>
       val source = cpg.identifier.name("z")
       val sink = cpg.method.name("flow").methodReturn
       sink.reachableByFlows(source).l.size shouldBe 2
     }
-  }
 
 }
