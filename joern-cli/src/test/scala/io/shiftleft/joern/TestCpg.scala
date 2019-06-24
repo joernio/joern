@@ -7,7 +7,12 @@ import io.shiftleft.cpgqueryingtests.codepropertygraph.{CpgFactory, LanguageFron
   * Base class for creating a test CPG with default semantics.
   * @param code string containing C code
   * */
-class TestCpg(code: String) {
+class TestCpg[T] {
+
   private val semanticFilename = "joern-cli/src/main/resources/default.semantics"
-  val cpg: Cpg = new CpgFactory(LanguageFrontend.Fuzzyc, semanticFilename).buildCpg(code)
+
+  def buildCpg(code: String)(test: Cpg => T): T = {
+    new CpgFactory(LanguageFrontend.Fuzzyc, semanticFilename).buildCpg(code)(test)
+  }
+
 }
