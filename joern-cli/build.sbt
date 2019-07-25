@@ -3,7 +3,6 @@ name := "joern-cli"
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" % "query-primitives" % Versions.cpgVersion,
-  "io.shiftleft" % "enhancements" % Versions.cpgVersion,
   "io.shiftleft" % "semanticcpg" % Versions.cpgVersion,
   "io.shiftleft" % "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
