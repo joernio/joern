@@ -2,8 +2,8 @@ name := "joern"
 organization := "io.shiftleft"
 scalaVersion := "2.12.8"
 
-val cpgVersion = "0.9.291"
-val fuzzyc2cpgVersion = "0.1.70"
+val cpgVersion = "0.9.307"
+val fuzzyc2cpgVersion = "0.1.73"
 ThisBuild / resolvers += Resolver.mavenLocal
 ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
