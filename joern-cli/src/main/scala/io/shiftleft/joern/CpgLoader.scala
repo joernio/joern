@@ -29,7 +29,7 @@ object CpgLoader {
     * */
 
   def loadWithoutSemantics(filename : String) : Cpg = {
-    val config = CpgLoaderConfig.default
+    val config = CpgLoaderConfig()
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
   }
 
