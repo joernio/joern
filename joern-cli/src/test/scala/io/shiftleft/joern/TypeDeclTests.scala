@@ -1,6 +1,7 @@
 package io.shiftleft.joern
 
 import org.scalatest.{Matchers, WordSpec}
+import io.shiftleft.semanticcpg.language._
 
 class TypeDeclTests extends WordSpec with Matchers {
 

@@ -2,18 +2,14 @@ name := "joern-cli"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % Versions.cpgVersion,
-  "io.shiftleft" % "query-primitives" % Versions.cpgVersion,
   "io.shiftleft" % "semanticcpg" % Versions.cpgVersion,
   "io.shiftleft" % "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
-
   "com.github.scopt"   %% "scopt"          % "3.7.0",
   "com.github.pathikrit" %% "better-files"  % "3.1.0",
-
-  "io.shiftleft" % "cpgqueryingtests" % Versions.cpgVersion % Test,
+  // "io.shiftleft" % "cpgqueryingtests" % Versions.cpgVersion % Test,
   "org.scalatest" %% "scalatest" % "3.0.3" % Test
 )
-
 
 enablePlugins(JavaAppPackaging)
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
@@ -49,7 +45,6 @@ generateScaladocs := {
    /* extract sources-jar dependencies */
   List(
     "codepropertygraph",
-    "query-primitives",
     "enhancements",
     "semanticcpg"
   ).foreach { projectName =>
@@ -57,7 +52,6 @@ generateScaladocs := {
       SbtHelper.findJar(projectName, updateReport, SbtHelper.JarClassifier.Sources),
       inputFiles.toJava)
   }
-
 
   // slightly adapted from sbt's Default.scala `docTaskSettings`
   val srcs: Seq[JFile] =

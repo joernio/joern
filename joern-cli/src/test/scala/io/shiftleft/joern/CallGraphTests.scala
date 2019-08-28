@@ -1,6 +1,6 @@
 package io.shiftleft.joern
 
-import io.shiftleft.queryprimitives.steps.NoResolve
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.{Matchers, WordSpec}
 
 class CallGraphTests extends WordSpec with Matchers {

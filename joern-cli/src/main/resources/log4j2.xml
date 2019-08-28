@@ -2,11 +2,12 @@
 <Configuration>
   <Appenders>
     <Console name="STDOUT" target="SYSTEM_OUT">
-      <PatternLayout pattern="%m%n"/>
+      <PatternLayout pattern="[%-5p] %m%n" />
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="error">
+    <Logger name="org.apache.tinkerpop.gremlin.tinkergraph" level="trace"/>
+    <Root level="debug">
       <AppenderRef ref="STDOUT"/>
     </Root>
   </Loggers>

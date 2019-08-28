@@ -1,5 +1,7 @@
 package io.shiftleft.joern
 
+import io.shiftleft.dataflowengine.language._
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.{Matchers, WordSpec}
 
 class DataFlowTests extends WordSpec with Matchers {

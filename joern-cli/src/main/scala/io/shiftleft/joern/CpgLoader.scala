@@ -3,8 +3,8 @@ package io.shiftleft.joern
 import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
-import io.shiftleft.layers.DataFlowRunner
-import io.shiftleft.semanticsloader.SemanticsLoader
+import io.shiftleft.dataflowengine.passes.dataflows.DataFlowRunner
+import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 
 /**
   * Thin wrapper around `codepropertygraph`'s CpgLoader

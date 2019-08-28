@@ -1,5 +1,6 @@
 package io.shiftleft.joern
 
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.{Matchers, WordSpec}
 
 /**

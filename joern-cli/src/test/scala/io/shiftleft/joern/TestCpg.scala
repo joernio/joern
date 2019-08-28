@@ -2,6 +2,7 @@ package io.shiftleft.joern
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.cpgqueryingtests.codepropertygraph.{CpgFactory, LanguageFrontend}
+// import io.shiftleft.semanticcpg.testfixtures.LanguageFrontend
 
 /**
   * Base class for creating a test CPG with default semantics.
