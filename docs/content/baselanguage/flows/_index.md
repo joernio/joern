@@ -3,4 +3,4 @@ title="Exploring Data Flows"
 weight=6
 +++
 
-{{<snippet file="src/test/scala/io/shiftleft/joern/DataFlowTests.scala" language="scala">}}
+{{<snippet file="codepropertygraph/dataflowengine/src/test/scala/io/shiftleft/dataflowengine/language/CDataFlowTests.scala" language="scala">}}

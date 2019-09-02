@@ -3,4 +3,4 @@ title="Exploring Program Structure"
 weight=2
 +++
 
-{{<snippet file="src/test/scala/io/shiftleft/joern/StructureTests.scala" language="scala">}}
+{{<snippet file="codepropertygraph/semanticcpg/src/test/scala/io/shiftleft/semanticcpg/language/types/structure/StructureTests.scala" language="scala">}}

@@ -10,7 +10,7 @@ expected outcomes. As an example, the snippet below shows a DocuTest
 that demonstrates the behavior the `cpg.method.name.l` on a sample
 snippet containing only an empty main function.
 
-{{<snippet file="src/test/scala/io/shiftleft/joern/SampleDocuTest.scala" language="scala">}}
+{{<snippet file="codepropertygraph/semanticcpg/src/test/scala/io/shiftleft/semanticcpg/language/SampleDocuTest.scala" language="scala">}}
 
 The test contains a definition of the sample code as a first argument
 to the constructor `TestCpg`, and the corresponding code property
