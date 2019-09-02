@@ -3,6 +3,8 @@ package io.shiftleft.joern
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 import org.scalatest.{Matchers, WordSpec}
 
+import io.shiftleft.semanticcpg.language._
+
 /**
   * Test code that shows how code property graphs can be
   * generated using the FuzzyC language frontend
