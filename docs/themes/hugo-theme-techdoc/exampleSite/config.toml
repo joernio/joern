@@ -1,0 +1,51 @@
+baseURL = "https://example.com"
+
+languageCode = "en-us"
+DefaultContentLanguage = "en"
+title = "Hugo Techdoc Theme"
+theme = "hugo-theme-techdoc"
+
+hasCJKLanguage = true
+metaDataFormat = "yaml"
+
+pygmentsUseClasses = true
+pygmentsCodefences = true
+
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir= false
+enableMissingTranslationPlaceholders = false
+
+[Params]
+
+    # Souce Code repository section
+    description = "put your description"
+    github_repository = "https://github.com/thingsym/hugo-theme-techdoc"
+    version = "0.2.2"
+
+    # Documentation repository section
+    # documentation repository (set edit link to documentation repository)
+    github_doc_repository = "https://github.com/thingsym/hugo-theme-techdoc"
+
+    # Analytic section
+    google_analytics_id = "" # Your Google Analytics tracking id
+    tag_manager_container_id = "" # Your Google Tag Manager container id
+    google_site_verification = "" # Your Google Site Verification for Search Console
+
+    # Theme settings section
+    dateformat = "" # default "2 Jan 2006"
+    # See the format reference https://gohugo.io/functions/format/#hugo-date-and-time-templating-reference
+
+    # path name excluded from documentation menu
+    menu_exclusion = ["archives", "blog", "entry", "post", "posts"]
+
+
+# Global menu section
+[[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+
+[[menu.main]]
+    name = "Twitter"
+    url = "https://twitter.com/thingsym"
+    weight = 2
