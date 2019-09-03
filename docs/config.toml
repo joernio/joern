@@ -3,40 +3,49 @@ baseURL = "https://joern.io/docs/"
 languageCode = "en-us"
 DefaultContentLanguage = "en"
 title = "Joern Documentation"
-theme = "hugo-theme-docdock-master"
-themesdir = "themes"
-pygmentsCodeFences = true
-pygmentsStyle = "monokailight"
+theme = "hugo-theme-techdoc"
+
+hasCJKLanguage = true
+metaDataFormat = "yaml"
+
+pygmentsUseClasses = true
+pygmentsCodefences = true
 
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
 
-[params]
-editURL = "https://github.com/ShiftLeftSecurity/joern/edit/master/docs/content/"
-showVisitedLinks = true # default is false
-themeStyle = "flex" # "original" or "flex" # default "flex"
-themeVariant = "blue" # choose theme variant "green", "gold" , "gray", "blue" (default)
-ordersectionsby = "weight" # ordersectionsby = "title"
-disableHomeIcon = false # default is false
-disableSearch = true # default is false
-disableNavChevron = true # set true to hide next/prev chevron, default is false
-highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
-menushortcutsnewtab = false # set true to open shortcuts links to a new tab/window
-enableGitInfo = true
+[Params]
 
-[outputs]
-home = [ "HTML", "RSS", "JSON"]
+    # Souce Code repository section
+    description = "Platform for C/C++ Code Analysis based on Code Property Graphs"
+    github_repository = "https://github.com/ShiftLeftSecurity/joern/"
+    # version = "0.2.2"
+
+    # Documentation repository section
+    # documentation repository (set edit link to documentation repository)
+    # github_doc_repository = "https://github.com/thingsym/hugo-theme-techdoc"
+
+    # Analytic section
+    # google_analytics_id = "" # Your Google Analytics tracking id
+    # tag_manager_container_id = "" # Your Google Tag Manager container id
+    # google_site_verification = "" # Your Google Site Verification for Search Console
+
+    # Theme settings section
+    dateformat = "" # default "2 Jan 2006"
+    # See the format reference https://gohugo.io/functions/format/#hugo-date-and-time-templating-reference
+
+    # path name excluded from documentation menu
+    menu_exclusion = ["archives", "blog", "entry", "post", "posts"]
 
 
-[[menu.shortcuts]]
-pre = "<h3>More</h3>"
-name = "<i class='fa fa-github'></i> <label>Github repo</label>"
-identifier = "ds"
-url = "https://github.com/shiftleftsecurity/joern/"
-weight = 10
+# Global menu section
+[[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
 
-[[menu.shortcuts]]
-name = "<i class='fa fa-bullhorn'></i> <label>Chat on Gitter</label>"
-url = "https://gitter.im/joern-code-analyzer/community?source=orgpage"
-weight = 30
+[[menu.main]]
+    name = "Chat on Gitter"
+    url = "https://gitter.im/joern-code-analyzer/community?source=orgpage"
+    weight = 2
