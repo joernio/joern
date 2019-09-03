@@ -1,7 +1,7 @@
 package io.shiftleft.joern
 
 import io.shiftleft.SerializedCpg
-import io.shiftleft.layers.EnhancementRunner
+import io.shiftleft.semanticcpg.layers.EnhancementRunner
 import org.slf4j.LoggerFactory
 
 object Cpg2Scpg extends App {
