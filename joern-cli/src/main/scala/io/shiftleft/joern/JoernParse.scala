@@ -19,14 +19,14 @@ object JoernParse extends App {
     System.exit(0)
   }
 
-  def parse(inputPaths: Array[String], outputPath: String, enhance : Boolean = true): Unit = {
+  def parse(inputPaths: Array[String], outputPath: String, enhance: Boolean = true): Unit = {
     new FuzzyC2Cpg(outputPath).runAndOutput(inputPaths)
-    if (enhance){
+    if (enhance) {
       Cpg2Scpg.run(outputPath)
     }
   }
 
-  case class Config(inputPaths: Seq[String], outputPath: String, enhance : Boolean)
+  case class Config(inputPaths: Seq[String], outputPath: String, enhance: Boolean)
   def parseConfig: Option[Config] =
     new scopt.OptionParser[Config](getClass.getSimpleName) {
       arg[String]("<input-dir>")
@@ -38,7 +38,7 @@ object JoernParse extends App {
         .action((x, c) => c.copy(outputPath = x))
       opt[Unit]("noenhance")
         .text("run language frontend but do not enhance the CPG to create an SCPG")
-        .action((x,c) => c.copy(enhance = false))
+        .action((x, c) => c.copy(enhance = false))
 
     }.parse(args, Config(List(), DEFAULT_CPG_OUT_FILE, true))
 

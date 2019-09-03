@@ -27,8 +27,7 @@ object CpgLoader {
     * Load code property graph but do not apply semantics
     * @param filename name of the file that stores the cpg
     * */
-
-  def loadWithoutSemantics(filename : String) : Cpg = {
+  def loadWithoutSemantics(filename: String): Cpg = {
     val config = CpgLoaderConfig()
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
   }
