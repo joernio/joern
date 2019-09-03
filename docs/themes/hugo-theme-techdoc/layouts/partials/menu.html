@@ -1,0 +1,103 @@
+{{$currentNode := .}}
+<nav>
+<ul>
+<li class="{{ if .IsHome }}active{{ end }}"><a href="{{ .Site.BaseURL }}">Home</a></li>
+{{- if eq .Site.Params.ordersectionsby "title" -}}
+  {{- range .Site.Home.Sections.ByTitle -}}
+{{template "menu" dict "sect" . "currentnode" $currentNode}}
+  {{- end -}}
+{{- else -}}
+  {{- range .Site.Home.Sections.ByWeight -}}
+{{template "menu" dict "sect" . "currentnode" $currentNode}}
+  {{- end -}}
+{{- end}}
+</ul>
+</nav>
+
+{{define "menu"}}
+{{- $currentNode := .currentnode -}}
+{{ with .sect }}
+{{ if .IsSection }}
+{{ if in .Site.Params.menu_exclusion .Section }}
+{{- else -}}
+  {{- safeHTML .Params.head -}}
+<li class="{{ if .IsAncestor $currentNode }}parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><a href="{{ .URL }}">{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>
+  {{- $numberOfPages := (add (len .Pages) (len .Sections)) -}}
+  {{if ne $numberOfPages 0}}
+<ul class="{{ if .IsAncestor $currentNode }}sub-menu{{ end }}">
+    {{- .Scratch.Set "pages" .Pages -}}
+    {{- if .Sections -}}
+      {{- .Scratch.Set "pages" (.Pages | union .Sections) -}}
+    {{- end -}}
+    {{- $pages := (.Scratch.Get "pages") -}}
+    {{- if eq .Site.Params.ordersectionsby "title" -}}
+      {{- range $pages.ByTitle -}}
+        {{- if and .Params.hidden (not $.showhidden) -}}
+        {{- else -}}
+{{template "menu" dict "sect" . "currentnode" $currentNode}}
+        {{- end -}}
+      {{- end -}}
+    {{- else -}}
+      {{- range $pages.ByWeight -}}
+        {{- if and .Params.hidden (not $.showhidden) -}}
+        {{- else -}}
+{{template "menu" dict "sect" . "currentnode" $currentNode}}
+        {{- end -}}
+      {{- end -}}
+    {{- end}}
+</ul>
+  {{end}}
+</li>
+{{- end -}}
+{{- else -}}
+  {{- if not .Params.Hidden -}}
+<li class="{{ if eq .UniqueID $currentNode.UniqueID }}active{{ end }}"><a href="{{ .URL }}">{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a></li>
+  {{- end -}}
+{{ end -}}
+{{ end -}}
+{{ end }}
+<center>
+
+
+<b>Primary maintainer</b><br>
+<a href="https://shiftleft.io">
+  <img src="/docs/images/shiftleft_logo_with_alpha.png" style="background-color:white;" width="60%">
+</a>
+<br>
+
+Past maintainers<br>
+<a href="https://www.tu-braunschweig.de/sec/">
+  <img src="/docs/images/tubs_logo.svg" style="background-color:white;" width="60%">
+</a>
+<br>
+
+
+<a href="https://www.uni-goettingen.de/en/138524.html">
+  <img src="/docs/images/ugo_logo.jpg" style="background-color:white;" width="60%">
+</a>
+
+<br>
+
+
+Joern/Code Property Graph<br>
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/shiftleftsecurity/joern/subscription" data-icon="octicon-eye" data-show-count="true" aria-label="Watch shiftleftsecurity/joern on GitHub">Watch</a>
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/shiftleftsecurity/joern" data-icon="octicon-star" data-show-count="true" aria-label="Star shiftleftsecurity/joern on GitHub">Star</a>
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/ShiftLeftSecurity/joern/fork" data-icon="octicon-repo-forked" data-show-count="true" aria-label="Fork vjeantet/hugo-theme-docdock on GitHub">Fork</a>
+
+<br>
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/shiftleftsecurity/codepropertygraph/subscription" data-icon="octicon-eye" data-show-count="true" aria-label="Watch shiftleftsecurity/codepropertygraph on GitHub">Watch</a>
+
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/shiftleftsecurity/codepropertygraph" data-icon="octicon-star" data-show-count="true" aria-label="Star shiftleftsecurity/codepropertygraph on GitHub">Star</a>
+
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/shiftleftsecurity/codepropertygraph/fork" data-icon="octicon-repo-forked" data-show-count="true" aria-label="Fork shiftleftsecurity/codepropertygraph on GitHub">Fork</a>
+
+</center>
+<!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+

@@ -1,0 +1,38 @@
+{
+  "name": "hugo-theme-techdoc",
+  "version": "0.2.2",
+  "description": "The Techdoc is a Hugo Theme for technical documentation.",
+  "main": "gulpfile.js",
+  "author": "Thingsym",
+  "license": "MIT",
+  "devDependencies": {
+    "browser-sync": "~2.23.1",
+    "es6-promise": "~4.2.2",
+    "flexbox-grid-mixins": "~0.1.3",
+    "gulp": "~3.9.0",
+    "gulp-autoprefixer": "~4.1.0",
+    "gulp-cssnano": "~2.1.2",
+    "gulp-jshint": "~2.1.0",
+    "gulp-load-plugins": "~1.5.0",
+    "gulp-plumber": "~1.1.0",
+    "gulp-rename": "~1.2.0",
+    "gulp-sass": "~3.1.0",
+    "gulp-stylelint": "^8.0.0",
+    "gulp-uglify": "~3.0.0",
+    "gulp-util": "~3.0.4",
+    "gulp-watch": "~4.3.11",
+    "jshint": "~2.9.4",
+    "jshint-stylish": "~2.2.1",
+    "run-sequence": "~2.2.0",
+    "stylelint": "^9.9.0",
+    "stylelint-config-recommended": "^2.1.0",
+    "stylelint-config-recommended-scss": "^3.2.0",
+    "stylelint-scss": "^3.4.0"
+  },
+  "scripts": {
+    "default": "gulp",
+    "lint": "gulp lint",
+    "serve": "gulp serve",
+    "watch": "gulp watch"
+  }
+}
