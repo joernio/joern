@@ -14,7 +14,7 @@ class GenerationTests extends WordSpec with Matchers {
   "should generate and load CPG for example code" in {
     val inputFilenames = Array("joern-cli/src/test/resources/testcode/free/")
     val tmpFile = File.createTempFile("cpg", ".bin.zip")
-    val outputFilename = tmpFile.getName
+    val outputFilename = tmpFile.getPath
     tmpFile.delete()
 
     // Create a CPG using the C/C++ fuzzy parser
