@@ -17,7 +17,15 @@ Install Python-based utilities:
 pip install cpgclientlib
 ```
 
-Start the server:
+Alternatively, you can install the newest version of `cpgclientlib` from the `codepropertygraph` repository:
+
+```
+git clone https://github.com/ShiftLeftSecurity/codepropertygraph.git
+cd codepropertygraph/cpgclientlib
+sudo python setup.py install
+```
+
+Once `cpgclientlib` is installed, start the server:
 
 ```
 ./joernd
