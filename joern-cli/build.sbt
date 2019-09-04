@@ -6,6 +6,8 @@ libraryDependencies ++= Seq(
   "io.shiftleft" % "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
 
+  "com.lihaoyi" %% "ammonite" % "1.6.7" cross CrossVersion.full,
+
   "com.github.scopt"   %% "scopt"          % "3.7.0",
   "com.github.pathikrit" %% "better-files"  % "3.1.0",
   "org.scalatest" %% "scalatest" % "3.0.3" % Test
