@@ -3,15 +3,15 @@ name := "joern-cli"
 libraryDependencies ++= Seq(
   "io.shiftleft" % "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" % "semanticcpg" % Versions.cpgVersion,
+  "io.shiftleft" % "console" % Versions.cpgVersion,
   "io.shiftleft" % "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
 
-  "io.shiftleft" % "cpgqueryingtests" % "0.9.320" % Test,
   "com.github.scopt"   %% "scopt"          % "3.7.0",
   "com.github.pathikrit" %% "better-files"  % "3.1.0",
   "org.scalatest" %% "scalatest" % "3.0.3" % Test
-)
 
+)
 
 enablePlugins(JavaAppPackaging)
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
