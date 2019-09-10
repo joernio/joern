@@ -14,7 +14,7 @@ sbt stage
 Create a cpg (stored in `cpg.bin.zip`):
 
 ```
-./joern-parse joern-cli/src/test/resources/testcode/fre
+./joern-parse joern-cli/src/test/resources/testcode/free
 ```
 
 Execute the joern shell and explore it
