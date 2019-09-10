@@ -1,6 +1,6 @@
 name := "joern"
 organization := "io.shiftleft"
-scalaVersion := "2.12.8"
+ThisBuild/scalaVersion := "2.12.8"
 
 val cpgVersion = "0.10.12"
 val fuzzyc2cpgVersion = "0.1.83"
