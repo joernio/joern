@@ -17,10 +17,18 @@ object CpgLoader {
     * */
   def load(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
     val cpg = loadWithoutSemantics(filename)
+    applySemantics(cpg, semanticsFilenameOpt)
+    cpg
+  }
+
+  /**
+    * Apply data flow semantics from `semanticsFilenameOpt` to `cpg`. If `semanticsFilenameOpt`
+    * is omitted or None, default semantics will be applied.
+    * */
+  def applySemantics(cpg : Cpg, semanticsFilenameOpt : Option[String] = None): Unit = {
     val semanticsFilename = semanticsFilenameOpt.getOrElse("joern-cli/src/main/resources/default.semantics")
     val semantics = new SemanticsLoader(semanticsFilename).load
     new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
-    cpg
   }
 
   /**
