@@ -1,0 +1,3 @@
+#!/bin/bash
+
+joern-cli/target/universal/stage/bin/ammonite-bridge -Dlog4j.configurationFile=repl/src/main/resources/log4j2.xml -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:+UseG1GC -J-XX:+UseStringDeduplication "$@"

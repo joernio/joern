@@ -19,4 +19,8 @@ object AmmoniteBridge extends App with BridgeBase {
     lines.foldLeft(default) { case (res, line) => res + s"\n$line" }
   }
 
+  override def promptStr() : String = "joern> "
+
+  override def shutdownHooks : List[String] = List()
+
 }
