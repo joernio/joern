@@ -19,8 +19,11 @@ object JoernParse extends App {
     System.exit(0)
   }
 
-  def parse(inputPaths : Array[String], cpgFilename : String,
-            enhance : Boolean, dataFlow: Boolean, semanticsFile : String): Unit = {
+  def parse(inputPaths: Array[String],
+            cpgFilename: String,
+            enhance: Boolean,
+            dataFlow: Boolean,
+            semanticsFile: String): Unit = {
     new FuzzyC2Cpg(cpgFilename).runAndOutput(inputPaths)
     if (enhance) {
       Cpg2Scpg.run(cpgFilename, dataFlow, semanticsFile)
@@ -30,8 +33,8 @@ object JoernParse extends App {
   case class Config(inputPaths: Seq[String],
                     outputPath: String,
                     enhance: Boolean,
-                    dataFlow : Boolean,
-                    semanticsFile : String)
+                    dataFlow: Boolean,
+                    semanticsFile: String)
 
   def parseConfig: Option[Config] =
     new scopt.OptionParser[Config](getClass.getSimpleName) {

@@ -27,7 +27,7 @@ object CpgLoader {
     * Apply data flow semantics from `semanticsFilenameOpt` to `cpg`. If `semanticsFilenameOpt`
     * is omitted or None, default semantics will be applied.
     * */
-  def applySemantics(cpg : Cpg, semanticsFilenameOpt : Option[String] = None): Unit = {
+  def applySemantics(cpg: Cpg, semanticsFilenameOpt: Option[String] = None): Unit = {
     val semanticsFilename = semanticsFilenameOpt.getOrElse(defaultSemanticsFile)
     val semantics = new SemanticsLoader(semanticsFilename).load
     new DataFlowRunner(semantics).run(cpg, new SerializedCpg())

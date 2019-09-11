@@ -9,7 +9,7 @@ object AmmoniteBridge extends App with BridgeBase {
   /**
     * Code that is executed when starting the shell
     * */
-  override def predefPlus(lines: List[String]) : String = {
+  override def predefPlus(lines: List[String]): String = {
     val default =
       """
         |import io.shiftleft.joern.console._
@@ -22,8 +22,8 @@ object AmmoniteBridge extends App with BridgeBase {
     lines.foldLeft(default) { case (res, line) => res + s"\n$line" }
   }
 
-  override def promptStr() : String = "joern> "
+  override def promptStr(): String = "joern> "
 
-  override def shutdownHooks : List[String] = List()
+  override def shutdownHooks: List[String] = List()
 
 }

@@ -23,7 +23,7 @@ object Cpg2Scpg extends App {
     System.exit(0)
   }
 
-  case class Config(inputPath: String, dataFlow : Boolean, semanticsFile : String)
+  case class Config(inputPath: String, dataFlow: Boolean, semanticsFile: String)
   def parseConfig: Option[Config] =
     new scopt.OptionParser[Config](getClass.getSimpleName) {
       arg[String]("<cpg>")
@@ -43,7 +43,7 @@ object Cpg2Scpg extends App {
     * turning the CPG into an SCPG.
     * @param cpgFilename the filename of the cpg
     * */
-  def run(cpgFilename: String, dataFlow : Boolean, semanticsFilename : String): Unit = {
+  def run(cpgFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
     val cpg = CpgLoader.loadWithoutSemantics(cpgFilename)
     val serializedCpg = new SerializedCpg(cpgFilename)
     new EnhancementRunner().run(cpg, serializedCpg)
