@@ -14,7 +14,7 @@ class JoernServerImpl extends ServerImpl {
   def createCpg(filenames: List[String]): Unit = {
     val cpgFilename = "/tmp/cpg.bin.zip"
     logger.info(s"Attempting to create CPG for: ${filenames.mkString(",")}")
-    JoernParse.parse(filenames.toArray, cpgFilename)
+    JoernParse.parse(filenames.toArray, cpgFilename, true, true, CpgLoader.defaultSemanticsFile)
     cpg = Some(CpgLoader.load(cpgFilename))
     logger.info("CPG is ready")
   }

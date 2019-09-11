@@ -21,7 +21,7 @@ class GenerationTests extends WordSpec with Matchers {
     val fuzzyc2Cpg = new FuzzyC2Cpg(outputFilename)
     fuzzyc2Cpg.runAndOutput(inputFilenames)
     // Link CPG fragments and enhance to create semantic CPG
-    Cpg2Scpg.run(outputFilename)
+    Cpg2Scpg.run(outputFilename, false, "")
 
     // Load the CPG
     val cpg = CpgLoader.load(outputFilename)

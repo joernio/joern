@@ -10,7 +10,7 @@ object JoernParse extends App {
 
   parseConfig.foreach { config =>
     try {
-      parse(config.inputPaths.toArray, config.outputPath, config.enhance)
+      parse(config.inputPaths.toArray, config.outputPath, config.enhance, config.dataFlow, config.semanticsFile)
     } catch {
       case exception: Exception =>
         logger.error("Failed to enhance CPG.", exception)
@@ -19,14 +19,20 @@ object JoernParse extends App {
     System.exit(0)
   }
 
-  def parse(inputPaths: Array[String], outputPath: String, enhance: Boolean = true): Unit = {
-    new FuzzyC2Cpg(outputPath).runAndOutput(inputPaths)
+  def parse(inputPaths : Array[String], cpgFilename : String,
+            enhance : Boolean, dataFlow: Boolean, semanticsFile : String): Unit = {
+    new FuzzyC2Cpg(cpgFilename).runAndOutput(inputPaths)
     if (enhance) {
-      Cpg2Scpg.run(outputPath)
+      Cpg2Scpg.run(cpgFilename, dataFlow, semanticsFile)
     }
   }
 
-  case class Config(inputPaths: Seq[String], outputPath: String, enhance: Boolean)
+  case class Config(inputPaths: Seq[String],
+                    outputPath: String,
+                    enhance: Boolean,
+                    dataFlow : Boolean,
+                    semanticsFile : String)
+
   def parseConfig: Option[Config] =
     new scopt.OptionParser[Config](getClass.getSimpleName) {
       arg[String]("<input-dir>")
@@ -39,7 +45,13 @@ object JoernParse extends App {
       opt[Unit]("noenhance")
         .text("run language frontend but do not enhance the CPG to create an SCPG")
         .action((x, c) => c.copy(enhance = false))
+      opt[Unit]("nodataflow")
+        .text("do not perform data flow analysis")
+        .action((x, c) => c.copy(dataFlow = false))
+      opt[String]("semanticsfile")
+        .text("data flow semantics file")
+        .action((x, c) => c.copy(semanticsFile = x))
 
-    }.parse(args, Config(List(), DEFAULT_CPG_OUT_FILE, true))
+    }.parse(args, Config(List(), DEFAULT_CPG_OUT_FILE, true, true, CpgLoader.defaultSemanticsFile))
 
 }
