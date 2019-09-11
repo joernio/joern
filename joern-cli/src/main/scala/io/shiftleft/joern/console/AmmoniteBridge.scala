@@ -16,6 +16,7 @@ object AmmoniteBridge extends App with BridgeBase {
         |import io.shiftleft.joern.console.Console._
         |import io.shiftleft.semanticcpg.language._
         |import io.shiftleft.dataflowengine.language._
+        |implicit val resolver = NoResolve
         |
       """.stripMargin
     lines.foldLeft(default) { case (res, line) => res + s"\n$line" }
