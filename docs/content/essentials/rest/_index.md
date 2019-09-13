@@ -41,6 +41,14 @@ The Python library can be installed with the command:
 pip install cpgclientlib
 ```
 
+Alternatively, you can install the newest version of `cpgclientlib` from the `codepropertygraph` repository:
+
+```
+git clone https://github.com/ShiftLeftSecurity/codepropertygraph.git
+cd codepropertygraph/cpgclientlib
+sudo python setup.py install
+```
+
 The following sample scripts shows how to create and query a CPG using Python.
 
 ```python
