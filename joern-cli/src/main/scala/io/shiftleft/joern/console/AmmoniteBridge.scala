@@ -12,6 +12,7 @@ object AmmoniteBridge extends App with BridgeBase {
   override def predefPlus(lines: List[String]): String = {
     val default =
       """
+        |import io.shiftleft.console._
         |import io.shiftleft.joern.console._
         |import io.shiftleft.joern.console.Console._
         |import io.shiftleft.semanticcpg.language._
