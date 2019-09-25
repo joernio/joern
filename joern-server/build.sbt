@@ -7,7 +7,7 @@ resolvers += Classpaths.typesafeReleases
 dependsOn(Projects.joerncli)
 
 libraryDependencies ++= Seq(
-  "io.shiftleft" % "cpg-server" % Versions.cpgVersion,
+  "io.shiftleft" %% "cpg-server" % Versions.cpgVersion,
 
   "org.scalatra" %% "scalatra" % ScalatraVersion,
   "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
