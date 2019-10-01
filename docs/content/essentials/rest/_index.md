@@ -21,11 +21,13 @@ in your installation directory. By default, this will spawn a Web server on port
 **Upon starting the server**, you can explore the API at:
 
 ```
-http://localhost:8080/api-docs/swagger.json
+http://localhost:8080/docs
 ```
-either in raw JSON format or via Swagger UI at:
 
-http://petstore.swagger.io/?url=http://127.0.0.1:8080/api-docs/swagger.json
+Alternatively, you may fetch the raw Swagger YAML at:
+```
+http://localhost:8080/swagger.yaml
+```
 
 You should see the following:
 
