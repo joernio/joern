@@ -60,5 +60,11 @@ libraryDependencies ++= Seq(
   "io.chrisdavenport" %% "log4cats-slf4j" % Log4CatsVersion,
 )
 
+excludeDependencies ++= Seq(
+  // This project uses Logback in place of Log4j
+  ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl"),
+  ExclusionRule("org.slf4j", "slf4j-simple")
+)
+
 enablePlugins(JavaAppPackaging)
 

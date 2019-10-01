@@ -24,7 +24,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
     "successfully create a CPG from a set of input files" in withJoernProvider { provider =>
       val uuid = provider.createCpg(Set("joern-cli/src/test/resources/testcode/free")).unsafeRunSync()
 
-      eventually(timeout(5 seconds), interval(1 second)) {
+      eventually(timeout(5 seconds), interval(500 millis)) {
         provider.retrieveCpg(uuid).value.unsafeRunSync() should matchPattern {
           case Some(CpgOperationSuccess(_)) =>
         }
@@ -37,7 +37,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
 
       val cpgId = provider.createCpg(Set("joern-cli/src/test/resources/testcode/free")).unsafeRunSync()
 
-      val cpg = eventually(timeout(5 seconds), interval(1 second)) {
+      val cpg = eventually(timeout(5 seconds), interval(500 millis)) {
         inside(provider.retrieveCpg(cpgId).value.unsafeRunSync()) {
           case Some(CpgOperationSuccess(cpg)) => cpg
         }
@@ -45,7 +45,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
 
       val queryId = queryExecutor.executeQuery(cpg, "cpg.method.toJsonPretty").unsafeRunSync()
 
-      val queryResult = eventually(timeout(5 seconds), interval(1 second)) {
+      val queryResult = eventually(timeout(5 seconds), interval(500 millis)) {
         inside(queryExecutor.retrieveQueryResult(queryId).value.unsafeRunSync()) {
           case Some(CpgOperationSuccess(queryResult)) => queryResult
         }
