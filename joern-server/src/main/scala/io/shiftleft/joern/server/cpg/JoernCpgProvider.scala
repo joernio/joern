@@ -23,17 +23,16 @@ class JoernCpgProvider extends CpgProvider {
   private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin.zip"))
 
   private def constructCpg(cpgId: UUID, cpgFile: Path, fileNames: Array[String]): IO[Unit] = {
-    IO(JoernParse.parse(fileNames, cpgFile.toString, enhance = true, dataFlow = true, CpgLoader.defaultSemanticsFile))
-      .runAsync {
-        case Right(_) => populateCpg(cpgId, cpgFile)
-        case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
-      }.toIO
+    IO(JoernParse.parse(fileNames, cpgFile.toString, enhance = true, dataFlow = true, CpgLoader.defaultSemanticsFile)).runAsync {
+      case Right(_) => populateCpg(cpgId, cpgFile)
+      case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
+    }.toIO
   }
 
   private def populateCpg(cpgId: UUID, cpgFile: Path): IO[Unit] = {
     IO(CpgLoader.load(cpgFile.toString)).runAsync {
       case Right(cpg) => IO(cpgMap.put(cpgId, CpgOperationSuccess(cpg))).map(_ => ())
-      case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
+      case Left(ex)   => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
     }.toIO
   }
 
