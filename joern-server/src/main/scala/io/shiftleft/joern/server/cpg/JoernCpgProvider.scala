@@ -28,11 +28,14 @@ class JoernCpgProvider(implicit val cs: ContextShift[IO]) extends CpgProvider {
   private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin.zip"))
 
   private def constructCpg(cpgId: UUID, cpgFile: Path, fileNames: Array[String]): IO[Unit] = {
-    blocker.blockOn(
-      IO(JoernParse.parse(fileNames, cpgFile.toString, enhance = true, dataFlow = true, CpgLoader.defaultSemanticsFile))).runAsync {
-      case Right(_) => populateCpg(cpgId, cpgFile)
-      case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
-    }.toIO
+    blocker
+      .blockOn(IO(
+        JoernParse.parse(fileNames, cpgFile.toString, enhance = true, dataFlow = true, CpgLoader.defaultSemanticsFile)))
+      .runAsync {
+        case Right(_) => populateCpg(cpgId, cpgFile)
+        case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
+      }
+      .toIO
   }
 
   private def populateCpg(cpgId: UUID, cpgFile: Path): IO[Unit] = {
