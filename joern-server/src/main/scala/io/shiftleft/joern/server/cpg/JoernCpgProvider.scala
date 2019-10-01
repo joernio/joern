@@ -2,19 +2,24 @@ package io.shiftleft.joern.server.cpg
 
 import java.nio.file.{Files, Path}
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, Executors}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 import cats.data.OptionT
-import cats.effect.IO
+import cats.effect.{Blocker, ContextShift, IO}
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.cpgserver.cpg.CpgProvider
 import io.shiftleft.cpgserver.model.{CpgOperationFailure, CpgOperationResult, CpgOperationSuccess}
 import io.shiftleft.joern.{CpgLoader, JoernParse}
 
-class JoernCpgProvider extends CpgProvider {
+class JoernCpgProvider(implicit val cs: ContextShift[IO]) extends CpgProvider {
+
+  private val blocker: Blocker =
+    Blocker.liftExecutionContext(ExecutionContext.fromExecutor(Executors.newFixedThreadPool(2)))
 
   private val cpgMap = new ConcurrentHashMap[UUID, CpgOperationResult[Cpg]]().asScala
 
@@ -23,7 +28,8 @@ class JoernCpgProvider extends CpgProvider {
   private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin.zip"))
 
   private def constructCpg(cpgId: UUID, cpgFile: Path, fileNames: Array[String]): IO[Unit] = {
-    IO(JoernParse.parse(fileNames, cpgFile.toString, enhance = true, dataFlow = true, CpgLoader.defaultSemanticsFile)).runAsync {
+    blocker.blockOn(
+      IO(JoernParse.parse(fileNames, cpgFile.toString, enhance = true, dataFlow = true, CpgLoader.defaultSemanticsFile))).runAsync {
       case Right(_) => populateCpg(cpgId, cpgFile)
       case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
     }.toIO
