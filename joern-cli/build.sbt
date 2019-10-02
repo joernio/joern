@@ -7,10 +7,9 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
 
-  "com.github.scopt"   %% "scopt"          % "3.7.0",
+  "com.github.scopt"   %% "scopt"          % "3.7.1",
   "com.github.pathikrit" %% "better-files"  % "3.1.0",
-  "org.scalatest" %% "scalatest" % "3.0.3" % Test
-
+  "org.scalatest" %% "scalatest" % "3.0.8" % Test
 )
 
 enablePlugins(JavaAppPackaging)
