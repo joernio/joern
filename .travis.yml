@@ -5,13 +5,9 @@ branches:
     - master
 stages:
 - name: test
-- name: release
-  if: branch = master AND type = push
 jobs:
     include:
         - stage: test
-          script: sbt clean +test scalafmtCheck
-        - stage: release
           script: sbt clean +test scalafmtCheck stage
 
 webhooks:
