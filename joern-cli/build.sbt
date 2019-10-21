@@ -1,4 +1,9 @@
+enablePlugins(JavaAppPackaging)
+enablePlugins(UniversalPlugin)
+
+organization := "io.shiftleft"
 name := "joern-cli"
+maintainer := "fabs@shiftleft.io"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
@@ -7,12 +12,15 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
 
-  "com.github.scopt"   %% "scopt"          % "3.7.1",
+  "com.github.scopt"     %% "scopt"         % "3.7.1",
   "com.github.pathikrit" %% "better-files"  % "3.1.0",
-  "org.scalatest" %% "scalatest" % "3.0.8" % Test
+  "org.scalatest"        %% "scalatest"     % "3.0.8" % Test
 )
 
-enablePlugins(JavaAppPackaging)
+topLevelDirectory := Some(packageName.value)
+
+mappings in (Compile, packageDoc) := Seq()
+
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
 
