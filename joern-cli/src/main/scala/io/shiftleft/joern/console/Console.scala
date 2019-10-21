@@ -2,9 +2,10 @@ package io.shiftleft.joern.console
 
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.joern.CpgLoader
+import io.shiftleft.console.ScriptManager
+import io.shiftleft.joern.{CpgLoader, JoernScriptExecutor}
 
-object Console {
+object Console extends ScriptManager(new JoernScriptExecutor()) {
 
   def banner(): Unit = {
     println("""

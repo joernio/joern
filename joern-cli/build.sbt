@@ -3,12 +3,11 @@ name := "joern-cli"
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" %% "semanticcpg" % Versions.cpgVersion,
-  "io.shiftleft" %% "console" % Versions.cpgVersion,
+  "io.shiftleft" %% "console" % "0.10.64+0-a6a6ed52+20191021-1218", // TODO: set to correct version one the ScriptManger is in
   "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
-
-  "com.github.scopt"   %% "scopt"          % "3.7.1",
-  "com.github.pathikrit" %% "better-files"  % "3.1.0",
+  "com.github.scopt" %% "scopt" % "3.7.1",
+  "com.github.pathikrit" %% "better-files" % "3.1.0",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test
 )
 
@@ -27,34 +26,28 @@ generateScaladocs := {
   val label = "Joern API documentation"
   val s = streams.value
   val out = target.value / "api"
-  val fiOpts = (Compile/doc/fileInputOptions).value
+  val fiOpts = (Compile / doc / fileInputOptions).value
 
-   val sOpts = Seq(
-    "-language:implicitConversions",
-    "-doc-root-content", "api-doc-root.txt",
-    "-implicits")
+  val sOpts = Seq("-language:implicitConversions", "-doc-root-content", "api-doc-root.txt", "-implicits")
 
   val xapis = apiMappings.value
   val options = sOpts ++ Opts.doc.externalAPI(xapis)
-  val cp = data((Compile/dependencyClasspath).value).toList
+  val cp = data((Compile / dependencyClasspath).value).toList
 
   val inputFilesRelativeDir = target.value + "/inputFiles"
   val inputFiles = File(inputFilesRelativeDir)
   if (inputFiles.exists) inputFiles.delete()
   inputFiles.createDirectory()
 
-   /* extract sources-jar dependencies */
+  /* extract sources-jar dependencies */
   List(
     "codepropertygraph",
     "query-primitives",
     "enhancements",
     "semanticcpg"
   ).foreach { projectName =>
-    ZipUtil.unpack(
-      SbtHelper.findJar(projectName, updateReport, SbtHelper.JarClassifier.Sources),
-      inputFiles.toJava)
+    ZipUtil.unpack(SbtHelper.findJar(projectName, updateReport, SbtHelper.JarClassifier.Sources), inputFiles.toJava)
   }
-
 
   // slightly adapted from sbt's Default.scala `docTaskSettings`
   val srcs: Seq[JFile] =
@@ -73,7 +66,6 @@ generateScaladocs := {
     try exportedPW(w, command)
     finally w.close()
   }
-
 
   val runDoc = Doc.scaladoc(label, s.cacheStoreFactory.sub("scala"), compilers.value.scalac match {
     case ac: AnalyzingCompiler => ac.onArgs(exportedTS(s, "scaladoc"))
