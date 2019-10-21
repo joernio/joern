@@ -3,7 +3,7 @@ name := "joern-cli"
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" %% "semanticcpg" % Versions.cpgVersion,
-  "io.shiftleft" %% "console" % "0.10.64+0-a6a6ed52+20191021-1218", // TODO: set to correct version one the ScriptManger is in
+  "io.shiftleft" %% "console" % "0.10.64+0-a6a6ed52+20191021-1218", // TODO: set to correct version once the ScriptManger is in
   "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
   "com.github.scopt" %% "scopt" % "3.7.1",
@@ -53,7 +53,7 @@ generateScaladocs := {
   val srcs: Seq[JFile] =
     inputFiles.listRecursively
       .filter { file =>
-        file.extension == Some(".java") || file.extension == Some(".scala")
+        file.extension.contains(".java") || file.extension.contains(".scala")
       }
       .map(_.toJava)
       .toSeq
