@@ -15,5 +15,3 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 
 lazy val joerncli = Projects.joerncli
 lazy val joernserver = Projects.joernserver
-
-fork in run := true
