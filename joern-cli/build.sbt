@@ -11,6 +11,18 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % Test
 )
 
+// Weird hack to fix https://github.com/scala/bug/issues/10058
+// SBT messes up 'java.class.path' during tests.
+// Hence, 'new ScriptEngineManager().getEngineByName("scala")' always returns 'null'.
+// With this fix, scala-compiler-VERSION.jar is back on track and the engine is found.
+lazy val fixJavaClasspath = taskKey[String]("fix the Java classpath during tests")
+fixJavaClasspath := {
+  val cp = (fullClasspath in Test).value.map(x => x.data.getAbsolutePath).mkString(":")
+  System.setProperty("java.class.path", cp)
+}
+
+test in Test := (test in Test).dependsOn(fixJavaClasspath).value
+
 enablePlugins(JavaAppPackaging)
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {

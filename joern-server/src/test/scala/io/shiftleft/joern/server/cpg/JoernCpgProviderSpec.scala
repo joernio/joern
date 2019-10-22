@@ -21,6 +21,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
   }
 
   "createCpg" should {
+
     "successfully create a CPG from a set of input files" in withJoernProvider { provider =>
       val uuid = provider.createCpg(Set("joern-cli/src/test/resources/testcode/free")).unsafeRunSync()
 
@@ -31,8 +32,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
       }
     }
 
-    // TODO: This test currently fails when run via SBT (see https://github.com/scala/bug/issues/10058)
-    "produce a queryable CPG from the set of input files" ignore withJoernProvider { provider =>
+    "produce a queryable CPG from the set of input files" in withJoernProvider { provider =>
       val queryExecutor = new DefaultCpgQueryExecutor(new ScriptEngineManager())
 
       val cpgId = provider.createCpg(Set("joern-cli/src/test/resources/testcode/free")).unsafeRunSync()
@@ -52,5 +52,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
       }
       queryResult should not be empty
     }
+
   }
+
 }
