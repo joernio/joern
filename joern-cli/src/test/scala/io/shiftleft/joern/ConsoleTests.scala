@@ -9,6 +9,8 @@ import org.scalatest.{Matchers, WordSpec}
 
 class ConsoleTests extends WordSpec with Matchers {
 
+  private class TestConsole(outputFilename: String) extends ScriptManager(new JoernScriptExecutor(outputFilename))
+
   "should execute the list-funcs correctly for example code" in {
     val inputFilenames = Array("joern-cli/src/test/resources/testcode/free/")
     val tmpFile = File.createTempFile("cpg", ".bin.zip")
@@ -21,10 +23,8 @@ class ConsoleTests extends WordSpec with Matchers {
     // Link CPG fragments and enhance to create semantic CPG
     Cpg2Scpg.run(outputFilename, dataFlow = false, "")
 
-    class TestConsole extends ScriptManager(new JoernScriptExecutor(outputFilename))
-
     val expected = CpgLoader.load(outputFilename).method.name.l
-    val actual = new TestConsole().runScript("list-funcs")
+    val actual = new TestConsole(outputFilename).runScript("list-funcs")
 
     actual shouldBe expected
   }
