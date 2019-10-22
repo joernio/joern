@@ -12,14 +12,14 @@ import io.shiftleft.semanticcpg.language._
   * */
 class GenerationTests extends WordSpec with Matchers {
   "should generate and load CPG for example code" in {
-    val inputFilenames = Array("joern-cli/src/test/resources/testcode/free/")
+    val inputPath = getClass.getClassLoader.getResource("testcode/free")
     val tmpFile = File.createTempFile("cpg", ".bin.zip")
     val outputFilename = tmpFile.getPath
     tmpFile.delete()
 
     // Create a CPG using the C/C++ fuzzy parser
     val fuzzyc2Cpg = new FuzzyC2Cpg(outputFilename)
-    fuzzyc2Cpg.runAndOutput(inputFilenames)
+    fuzzyc2Cpg.runAndOutput(Set(inputPath.getPath), Set(".c"))
     // Link CPG fragments and enhance to create semantic CPG
     Cpg2Scpg.run(outputFilename, false, "")
 

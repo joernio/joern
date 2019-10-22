@@ -20,9 +20,11 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
     f(new JoernCpgProvider)
   }
 
+  private val filePath = getClass.getClassLoader.getResource("testcode/free").getPath
+
   "createCpg" should {
     "successfully create a CPG from a set of input files" in withJoernProvider { provider =>
-      val uuid = provider.createCpg(Set("joern-cli/src/test/resources/testcode/free")).unsafeRunSync()
+      val uuid = provider.createCpg(Set(filePath)).unsafeRunSync()
 
       eventually(timeout(5 seconds), interval(500 millis)) {
         provider.retrieveCpg(uuid).value.unsafeRunSync() should matchPattern {
@@ -35,7 +37,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
     "produce a queryable CPG from the set of input files" ignore withJoernProvider { provider =>
       val queryExecutor = new DefaultCpgQueryExecutor(new ScriptEngineManager())
 
-      val cpgId = provider.createCpg(Set("joern-cli/src/test/resources/testcode/free")).unsafeRunSync()
+      val cpgId = provider.createCpg(Set(filePath)).unsafeRunSync()
 
       val cpg = eventually(timeout(5 seconds), interval(500 millis)) {
         inside(provider.retrieveCpg(cpgId).value.unsafeRunSync()) {

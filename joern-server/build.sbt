@@ -1,5 +1,9 @@
+enablePlugins(JavaAppPackaging)
+enablePlugins(UniversalPlugin)
+
 organization := "io.shiftleft"
 name := "Joern Server"
+maintainer := "jacob@shiftleft.io"
 
 resolvers += Classpaths.typesafeReleases
 
@@ -66,5 +70,6 @@ excludeDependencies ++= Seq(
   ExclusionRule("org.slf4j", "slf4j-simple")
 )
 
-enablePlugins(JavaAppPackaging)
+topLevelDirectory := Some(packageName.value)
 
+mappings in (Compile, packageDoc) := Seq()
