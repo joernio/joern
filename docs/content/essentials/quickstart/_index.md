@@ -8,7 +8,12 @@ Clone and build the Joern:
 ```
 git clone https://github.com/ShiftLeftSecurity/joern.git
 cd joern
-sbt stage
+sbt createDistribution
+mkdir -p install
+cd install
+unzip ../joern-cli.zip
+unzip ../joern-server.zip
+cd joern-cli
 ```
 
 Create a cpg (stored in `cpg.bin.zip`):
