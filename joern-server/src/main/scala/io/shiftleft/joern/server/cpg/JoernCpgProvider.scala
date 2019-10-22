@@ -16,8 +16,8 @@ import io.shiftleft.cpgserver.cpg.CpgProvider
 import io.shiftleft.cpgserver.model.{CpgOperationFailure, CpgOperationResult, CpgOperationSuccess}
 import io.shiftleft.joern.{CpgLoader, JoernParse}
 
-class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".hpp"))
-                      (implicit val cs: ContextShift[IO]) extends CpgProvider {
+class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".hpp"))(implicit val cs: ContextShift[IO])
+    extends CpgProvider {
 
   private val blocker: Blocker =
     Blocker.liftExecutionContext(ExecutionContext.fromExecutor(Executors.newFixedThreadPool(2)))
@@ -28,15 +28,19 @@ class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".h
 
   private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin.zip"))
 
-  private def constructCpg(cpgId: UUID, cpgFile: Path, fileNames: Set[String], fileExtensions: Set[String]): IO[Unit] = {
+  private def constructCpg(cpgId: UUID,
+                           cpgFile: Path,
+                           fileNames: Set[String],
+                           fileExtensions: Set[String]): IO[Unit] = {
     blocker
-      .blockOn(IO(
-        JoernParse.parse(fileNames,
-                         fileExtensions,
-                         cpgFile.toString,
-                         enhance = true,
-                         dataFlow = true,
-                         CpgLoader.defaultSemanticsFile)))
+      .blockOn(
+        IO(
+          JoernParse.parse(fileNames,
+                           fileExtensions,
+                           cpgFile.toString,
+                           enhance = true,
+                           dataFlow = true,
+                           CpgLoader.defaultSemanticsFile)))
       .runAsync {
         case Right(_) => populateCpg(cpgId, cpgFile)
         case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())

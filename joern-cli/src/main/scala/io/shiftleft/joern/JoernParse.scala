@@ -10,13 +10,12 @@ object JoernParse extends App {
 
   parseConfig.foreach { config =>
     try {
-      parse(
-        config.inputPaths.toSet,
-        config.sourceFileExtensions,
-        config.outputPath,
-        config.enhance,
-        config.dataFlow,
-        config.semanticsFile)
+      parse(config.inputPaths.toSet,
+            config.sourceFileExtensions,
+            config.outputPath,
+            config.enhance,
+            config.dataFlow,
+            config.semanticsFile)
     } catch {
       case exception: Exception =>
         logger.error("Failed to enhance CPG.", exception)
