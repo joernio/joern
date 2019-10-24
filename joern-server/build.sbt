@@ -62,6 +62,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"      %% "cpg-server"     % Versions.cpgVersion,
   "io.chrisdavenport" %% "log4cats-core"  % Log4CatsVersion,
   "io.chrisdavenport" %% "log4cats-slf4j" % Log4CatsVersion,
+  "org.scalatest"        %% "scalatest"     % "3.0.8" % Test
 )
 
 excludeDependencies ++= Seq(
