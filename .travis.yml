@@ -1,16 +1,49 @@
 language: scala
-jdk: openjdk8
+dist: xenial
+jdk: openjdk-8
+if: tag IS blank
 branches:
-    only:
-    - master
+  only:
+  - master
+
 stages:
 - name: test
-jobs:
-    include:
-        - stage: test
-          script: sbt clean +test scalafmtCheck stage
+- name: release
+  if: branch = master AND type = push
 
-webhooks:
+jobs:
+  include:
+  - stage: test
+    script: sbt clean scalafmtCheck +test stage
+  - stage: release
+    script: skip
+    before_deploy:
+      - sbt createDistribution ciReleaseTagNextVersion
+      - sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
+      - sha512sum ./joern-server.zip > ./joern-server.zip.sha512
+    deploy:
+      edge: true
+      provider: releases
+      cleanup: false
+      token: "$GITHUB_TOKEN"
+      target_commitish: "$TRAVIS_COMMIT"
+      file:
+        - ./joern-cli.zip
+        - ./joern-cli.zip.sha512
+        - ./joern-server.zip
+        - ./joern-server.zip.sha512
+
+cache:
+  directories:
+    - "$HOME/.sbt/1.0/dependency"
+    - "$HOME/.sbt/boot/scala*"
+    - "$HOME/.sbt/launchers"
+    - "$HOME/.ivy2/cache"
+    - "$HOME/.coursier"
+    - "./target"
+
+notifications:
+  webhooks:
     urls:
       - https://webhooks.gitter.im/e/dc45091ae49f5b7d97bd
     on_success: change  # options: [always|never|change] default: always

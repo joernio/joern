@@ -12,12 +12,19 @@ object AmmoniteBridge extends App with BridgeBase {
   override def predefPlus(lines: List[String]): String = {
     val default =
       """
+        |import gremlin.scala._
         |import io.shiftleft.console._
         |import io.shiftleft.joern.console._
         |import io.shiftleft.joern.console.Console._
-        |import io.shiftleft.semanticcpg.language._
+        |import io.shiftleft.codepropertygraph.Cpg
+        |import io.shiftleft.codepropertygraph.cpgloading._
+        |import io.shiftleft.codepropertygraph.generated._
+        |import io.shiftleft.codepropertygraph.generated.nodes._
+        |import io.shiftleft.codepropertygraph.generated.edges._
         |import io.shiftleft.dataflowengine.language._
-        |implicit val resolver = NoResolve
+        |import io.shiftleft.semanticcpg.language._
+        |import scala.collection.JavaConverters._
+        |implicit val resolver: ICallResolver = NoResolve
         |
       """.stripMargin
     lines.foldLeft(default) { case (res, line) => res + s"\n$line" }

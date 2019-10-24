@@ -6,9 +6,11 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 
+import java.nio.file.{FileSystems, Files, Paths}
+
 /**
   * Thin wrapper around `codepropertygraph`'s CpgLoader
-  * */
+  **/
 object CpgLoader {
 
   /**
@@ -21,7 +23,21 @@ object CpgLoader {
     cpg
   }
 
-  val defaultSemanticsFile = "joern-cli/src/main/resources/default.semantics"
+  lazy val defaultSemanticsFile: String = {
+    import scala.collection.JavaConverters.mapAsJavaMapConverter
+
+    val file = Files.createTempFile("joern-default", ".semantics")
+    val defaultFile = getClass.getClassLoader.getResource("default.semantics").toURI
+
+    // Weird, yes, but necessary when running as a distribution.
+    // See (https://docs.oracle.com/javase/7/docs/technotes/guides/io/fsp/zipfilesystemprovider.html)
+    if (defaultFile.getScheme.contains("jar")) {
+      FileSystems.newFileSystem(defaultFile, Map("create" -> "false").asJava)
+    }
+
+    val fileLines = Files.readAllLines(Paths.get(defaultFile))
+    Files.write(file, fileLines, java.nio.charset.StandardCharsets.UTF_8).toString
+  }
 
   /**
     * Apply data flow semantics from `semanticsFilenameOpt` to `cpg`. If `semanticsFilenameOpt`

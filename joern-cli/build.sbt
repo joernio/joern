@@ -1,9 +1,14 @@
+enablePlugins(JavaAppPackaging)
+enablePlugins(UniversalPlugin)
+
+organization := "io.shiftleft"
 name := "joern-cli"
+maintainer := "fabs@shiftleft.io"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" %% "semanticcpg" % Versions.cpgVersion,
-  "io.shiftleft" %% "console" % "0.10.64+2-868d8249", // TODO: set to correct version once the ScriptManger is in
+  "io.shiftleft" %% "console" % Versions.cpgVersion,
   "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
   "com.github.scopt" %% "scopt" % "3.7.1",
@@ -24,6 +29,11 @@ fixJavaClasspath := {
 test in Test := (test in Test).dependsOn(fixJavaClasspath).value
 
 enablePlugins(JavaAppPackaging)
+
+topLevelDirectory := Some(packageName.value)
+
+mappings in (Compile, packageDoc) := Seq()
+
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
 
