@@ -1,31 +1,18 @@
 package io.shiftleft.joern
 
-import java.io.FileReader
-import javax.script.ScriptEngineManager
+import better.files.File
 
 object JoernQuery extends App {
 
   parseConfig.foreach { config =>
-    val e = new ScriptEngineManager().getEngineByName("scala")
-
-    val cpgLoadingCode =
-      s"""
-      | import io.shiftleft.joern.CpgLoader
-      | import io.shiftleft.codepropertygraph.Cpg
-      | import io.shiftleft.semanticcpg.language._
-      | import io.shiftleft.dataflowengine.language._
-      | val cpg : Cpg = CpgLoader.load("${config.cpgFilename}")
-      |""".stripMargin
-
-    val context = e.getContext
-    e.eval(cpgLoadingCode, context)
+    val e = new JoernScriptExecutor()
 
     if (config.isFile) {
-      val reader = new FileReader(config.query)
-      println(e.eval(reader, context))
+      val script = File(config.query).lines.mkString(System.lineSeparator())
+      println(e.runScript(script, config.cpgFilename))
     } else {
       val script = config.query + ".l.mkString(\"\\n\")"
-      println(e.eval(script, context))
+      println(e.runScript(script, config.cpgFilename))
     }
   }
 

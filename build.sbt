@@ -2,17 +2,16 @@ enablePlugins(GitVersioning)
 
 name := "joern"
 organization := "io.shiftleft"
-ThisBuild/scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.12.8"
 
-val cpgVersion = "0.10.75"
-val fuzzyc2cpgVersion = "0.1.113"
+val cpgVersion = "0.10.78"
+val fuzzyc2cpgVersion = "0.1.114"
 
 ThisBuild / resolvers += Resolver.mavenLocal
 ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
-scmInfo := Some(ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"),
-                     "scm:git@github.com:ShiftLeftSecurity/joern.git"
-                     ))
+scmInfo := Some(
+  ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"), "scm:git@github.com:ShiftLeftSecurity/joern.git"))
 homepage := Some(url("https://joern.io/"))
 licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
@@ -25,9 +24,7 @@ createDistribution := {
   val joernServerZip = (joernserver / Universal / packageBin).value
 
   IO.copy(
-      List(
-        (joernCliZip, file("./joern-cli.zip")),
-        (joernServerZip, file("./joern-server.zip"))),
-      CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
+    List((joernCliZip, file("./joern-cli.zip")), (joernServerZip, file("./joern-server.zip"))),
+    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
 }

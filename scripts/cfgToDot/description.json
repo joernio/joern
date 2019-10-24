@@ -1,0 +1,4 @@
+{
+  "name": "cfgToDot",
+  "description": "Generates a dot graph for your cfg."
+}
