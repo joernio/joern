@@ -14,6 +14,8 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
 
   private implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
+  private val TIMEOUT = 10 seconds
+
   private def withJoernProvider[T](f: JoernCpgProvider => T): T = {
     f(new JoernCpgProvider)
   }
@@ -25,7 +27,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
     "successfully create a CPG from a set of input files" in withJoernProvider { provider =>
       val uuid = provider.createCpg(Set(filePath)).unsafeRunSync()
 
-      eventually(timeout(5 seconds), interval(500 millis)) {
+      eventually(timeout(TIMEOUT), interval(500 millis)) {
         provider.retrieveCpg(uuid).value.unsafeRunSync() should matchPattern {
           case Some(CpgOperationSuccess(_)) =>
         }
@@ -37,7 +39,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
 
       val cpgId = provider.createCpg(Set(filePath)).unsafeRunSync()
 
-      val cpg = eventually(timeout(5 seconds), interval(500 millis)) {
+      val cpg = eventually(timeout(TIMEOUT), interval(500 millis)) {
         inside(provider.retrieveCpg(cpgId).value.unsafeRunSync()) {
           case Some(CpgOperationSuccess(cpg)) => cpg
         }
@@ -45,7 +47,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
 
       val queryId = queryExecutor.executeQuery(cpg, "cpg.method.toJsonPretty").unsafeRunSync()
 
-      val queryResult = eventually(timeout(5 seconds), interval(500 millis)) {
+      val queryResult = eventually(timeout(TIMEOUT), interval(500 millis)) {
         inside(queryExecutor.retrieveQueryResult(queryId).value.unsafeRunSync()) {
           case Some(CpgOperationSuccess(queryResult)) => queryResult
         }
