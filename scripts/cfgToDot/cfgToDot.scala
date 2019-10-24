@@ -1,10 +1,11 @@
+import javax.script.ScriptEngineManager
+import java.nio.file.Paths
+
 import gremlin.scala._
 import io.shiftleft.codepropertygraph.generated._
-import java.nio.file.Paths
-import io.shiftleft.queryprimitives.utils.ExpandTo
+import io.shiftleft.semanticcpg.utils.ExpandTo
 import org.apache.tinkerpop.gremlin.structure.Direction
-import io.shiftleft.queryprimitives.steps.Implicits.JavaIteratorDeco
-import javax.script.ScriptEngineManager
+import io.shiftleft.Implicits.JavaIteratorDeco
 
 /** Some helper functions: adapted from ReachingDefPass.scala in codeproperty graph repo */
 def vertexToStr(vertex: Vertex): String = {
