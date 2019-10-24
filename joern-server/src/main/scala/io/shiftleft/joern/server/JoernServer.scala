@@ -2,13 +2,12 @@ package io.shiftleft.joern.server
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
+import io.shiftleft.console.query.DefaultCpgQueryExecutor
 import javax.script.ScriptEngineManager
 import org.http4s.HttpRoutes
 import org.http4s.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
-
 import io.shiftleft.cpgserver.config.ServerConfiguration
-import io.shiftleft.cpgserver.query.DefaultCpgQueryExecutor
 import io.shiftleft.cpgserver.route.{CpgRoute, HttpErrorHandler, SwaggerRoute}
 import io.shiftleft.joern.server.cpg.JoernCpgProvider
 
