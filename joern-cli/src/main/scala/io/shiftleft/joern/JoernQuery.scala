@@ -1,19 +1,18 @@
 package io.shiftleft.joern
 
-import java.io.FileReader
-import javax.script.ScriptEngineManager
+import better.files.File
 
 object JoernQuery extends App {
 
   parseConfig.foreach { config =>
-    val executor = new JoernScriptExecutor(config.cpgFilename)
+    val e = new JoernScriptExecutor()
 
     if (config.isFile) {
-      val reader = new FileReader(config.query)
-      println(executor.run(reader))
+      val script = File(config.query).lines.mkString(System.lineSeparator())
+      println(e.runScript(script, config.cpgFilename))
     } else {
       val script = config.query + ".l.mkString(\"\\n\")"
-      println(executor.run(script))
+      println(e.runScript(script, config.cpgFilename))
     }
   }
 

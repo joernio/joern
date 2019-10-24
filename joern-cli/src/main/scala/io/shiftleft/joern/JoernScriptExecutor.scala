@@ -1,27 +1,44 @@
 package io.shiftleft.joern
 
-import java.io.FileReader
+import java.util.UUID
 
-import io.shiftleft.console.ScriptExecutor
-import javax.script.{ScriptEngine, ScriptEngineManager}
+import cats.data.OptionT
+import cats.effect.{ContextShift, IO}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.console.query.{
+  CpgOperationFailure,
+  CpgOperationResult,
+  CpgOperationSuccess,
+  CpgQueryExecutor,
+  DefaultCpgQueryExecutor
+}
+import javax.script.ScriptEngineManager
 
-class JoernScriptExecutor(cpgFilename: String = "cpg.bin.zip") extends ScriptExecutor {
+import scala.concurrent.ExecutionContext
 
-  private val engine: ScriptEngine = new ScriptEngineManager().getEngineByName("scala")
+class JoernScriptExecutor extends CpgQueryExecutor[AnyRef] {
 
-  private val cpgLoadingCode: String =
-    s"""
-       | import io.shiftleft.joern.CpgLoader
-       | import io.shiftleft.codepropertygraph.Cpg
-       | import io.shiftleft.semanticcpg.language._
-       | import io.shiftleft.dataflowengine.language._
-       | val cpg : Cpg = CpgLoader.load("$cpgFilename")
-       |""".stripMargin
+  private implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  run(cpgLoadingCode)
+  private val underlying = new DefaultCpgQueryExecutor(new ScriptEngineManager())
 
-  override def run(script: String): Object = engine.eval(script, engine.getContext)
+  override def executeQuery(cpg: Cpg, query: String): IO[UUID] =
+    ??? // unused within Joern
 
-  def run(script: FileReader): Object = engine.eval(script, engine.getContext)
+  override def executeQuerySync(cpg: Cpg, query: String): IO[CpgOperationResult[AnyRef]] =
+    underlying.executeQuerySync(cpg, query)
 
+  override def retrieveQueryResult(queryId: UUID): OptionT[IO, CpgOperationResult[AnyRef]] =
+    ??? // unused within Joern
+
+  def runScript(content: String, cpgFilename: String): AnyRef = {
+    val scriptExecutionResult = for {
+      queryResult <- executeQuerySync(CpgLoader.load(cpgFilename), content)
+      result <- queryResult match {
+        case CpgOperationSuccess(result) => IO(result)
+        case CpgOperationFailure(ex)     => IO.raiseError[AnyRef](ex)
+      }
+    } yield result
+    scriptExecutionResult.handleErrorWith(IO(_)).unsafeRunSync()
+  }
 }

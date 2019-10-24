@@ -1,13 +1,10 @@
 package io.shiftleft.joern
 
 import better.files.File
-import io.shiftleft.console.ScriptManager
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.{Matchers, WordSpec}
 
 class ConsoleTests extends WordSpec with Matchers with AbstractJoernCliTest {
-
-  private class TestConsole(outputFilename: String) extends ScriptManager(new JoernScriptExecutor(outputFilename))
 
   "should execute the list-funcs correctly for example code" in withTestCpg(
     File("joern-cli") / "src" / "test" / "resources" / "testcode" / "free") {

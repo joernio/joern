@@ -11,14 +11,14 @@ trait AbstractJoernCliTest {
   }
 
   private def loadTestCpg(file: File): (Cpg, String) = {
-    val inputFilenames = Array(file.pathAsString)
+    val inputFilenames = Set(file.pathAsString)
     val tmpFile = File.newTemporaryFile("cpg", "bin.zip")
     val outputFilename = tmpFile.pathAsString
     tmpFile.delete()
 
     // Create a CPG using the C/C++ fuzzy parser
     val fuzzyc2Cpg = new FuzzyC2Cpg(outputFilename)
-    fuzzyc2Cpg.runAndOutput(inputFilenames)
+    fuzzyc2Cpg.runAndOutput(inputFilenames, Set(".c"))
     // Link CPG fragments and enhance to create semantic CPG
     Cpg2Scpg.run(outputFilename, dataFlow = false, "")
 
