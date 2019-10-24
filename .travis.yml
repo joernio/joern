@@ -5,12 +5,10 @@ if: tag IS blank
 branches:
   only:
   - master
-
 stages:
 - name: test
 - name: release
   if: branch = master AND type = push
-
 jobs:
   include:
   - stage: test
@@ -18,9 +16,9 @@ jobs:
   - stage: release
     script: skip
     before_deploy:
-      - sbt createDistribution ciReleaseTagNextVersion
-      - sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
-      - sha512sum ./joern-server.zip > ./joern-server.zip.sha512
+    - sbt createDistribution ciReleaseTagNextVersion
+    - sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
+    - sha512sum ./joern-server.zip > ./joern-server.zip.sha512
     deploy:
       edge: true
       provider: releases
@@ -28,24 +26,26 @@ jobs:
       token: "$GITHUB_TOKEN"
       target_commitish: "$TRAVIS_COMMIT"
       file:
-        - ./joern-cli.zip
-        - ./joern-cli.zip.sha512
-        - ./joern-server.zip
-        - ./joern-server.zip.sha512
-
+      - "./joern-cli.zip"
+      - "./joern-cli.zip.sha512"
+      - "./joern-server.zip"
+      - "./joern-server.zip.sha512"
 cache:
   directories:
-    - "$HOME/.sbt/1.0/dependency"
-    - "$HOME/.sbt/boot/scala*"
-    - "$HOME/.sbt/launchers"
-    - "$HOME/.ivy2/cache"
-    - "$HOME/.coursier"
-    - "./target"
-
+  - "$HOME/.sbt/1.0/dependency"
+  - "$HOME/.sbt/boot/scala*"
+  - "$HOME/.sbt/launchers"
+  - "$HOME/.ivy2/cache"
+  - "$HOME/.coursier"
+  - "./target"
 notifications:
   webhooks:
     urls:
-      - https://webhooks.gitter.im/e/dc45091ae49f5b7d97bd
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: never     # options: [always|never|change] default: always
+    - https://webhooks.gitter.im/e/dc45091ae49f5b7d97bd
+    on_success: change
+    on_failure: always
+    on_start: never
+  slack:
+    secure: mGVY66yMLlduBkGrlhwc+qvhYS3MOcut5yIvaru5FirUf2hALQuoc1TWLzGxIO5CSBrVuj7hIXe9qHQlkHjhSlA2KSGQLIGd+r96FbhJk2HpJd11Jety0Kf0p0a9hc/xyMPW+5bR/BNENIJqCD+Ih7Awe8+3TqnbY+gtQihJi4qyHYxSxnDjkV9/Ac6UOx2acIPgw6DM1a/cTnUngqutUDXK7emVK3rikrcHDD3hZmQzpSFU33jL5W2mciYTse49fFvpt+LBFI8/JF/coN6ClSI5aVshsfFte1J9JW2T4o/4cVdNzG1iHGhW1jRlE1kNdqSDFKJ0C8DFtDnOBFmG4xK7x441KH+545dkkl9qo3Hr/3u9vPeV7rKazqojJE9d6R80JTqnLsGqlphRhYtJ85+412b2IAs7sZoxEK2D0JNfJ9vdPF1GIQYqjfyxoejlzBM0pqVNgefCnFZei6nC3XMXCki7W15M9dBdGbhNZKg6rGsyWXx1XMP6kcvdHYRGCd826VsatS2uVK2lyyjeRRoXRiluZN/rw3xSSSe8oIBKuNtq+ZN0AVE+8Y8fvokXpg7319p2s3qOF53lCUrJGF5YVl4/DQP6HDOuzAfMnq1z9j4X0rVGkEoJB5j7LecZOVAT7deW0jBxLHUG3SYg1H3//9cD7FwFzU9oXg8r32Q=
+    on_success: change
+    on_failure: always
