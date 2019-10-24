@@ -34,7 +34,7 @@ Finally, it offers pipe operators to write results to files:
 You can run scripts non-interactively using `joern`. For example,
 
 ```bash
-./joern --scripts scripts/list-funcs.scala
+./joern --script scripts/list-funcs.scala
 ```
 
 executes the `list-funcs.scala` script included with Joern, which loads the CPG at `cpg.bin.zip`, and writes out all function names.
