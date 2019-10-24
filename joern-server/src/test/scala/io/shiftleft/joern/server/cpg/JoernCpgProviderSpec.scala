@@ -1,14 +1,12 @@
 package io.shiftleft.joern.server.cpg
 
 import scala.concurrent.ExecutionContext
-
 import cats.effect.{ContextShift, IO}
+import io.shiftleft.console.query.{CpgOperationSuccess, DefaultCpgQueryExecutor}
 import javax.script.ScriptEngineManager
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Inside, Matchers, WordSpec}
 
-import io.shiftleft.cpgserver.model.CpgOperationSuccess
-import io.shiftleft.cpgserver.query.DefaultCpgQueryExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
