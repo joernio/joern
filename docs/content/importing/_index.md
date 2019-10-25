@@ -4,7 +4,7 @@ weight=2
 +++
 
 Code can be imported into joern in two ways. The program `joern-parse`
-can be used to create code property graphs and persist them in a
+can be used to create Code Property Graphs and persist them in a
 format based on Google Protocol Buffer messages, or, `create-cpg` can
 be used to instruct joern-server to create a code property graph and
 make it available via the REST API.

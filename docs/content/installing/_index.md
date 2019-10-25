@@ -125,8 +125,14 @@ sudo python setup.py install
 
 Code analysis can require lots of memory, and unfortunately, the JVM does not pick up the available amount of memory by itself. While tuning Java memory usage is a discipline in its own right, it is usually sufficient to specify the maximum available amount of heap memory using the JVM's -Xmx flag. The easiest way to achieve this globally is by setting the environment variable _JAVA_OPTS as follows:
 
-```
+```bash
 export _JAVA_OPTS="-Xmx$NG"
 ```
 
-where $N is the amount of memory in gigabytes. You can add this line to your shell startup script, e.g., ~/.bashrc or ~/.zshrc.
+where $N is the amount of memory in gigabytes. For example, to allow the JVM to use 20 gigabytes of RAM, you would issue the following:
+
+```bash
+export _JAVA_OPTS="-Xmx20G"
+```
+
+You can add this line to your shell startup script, e.g., ~/.bashrc or ~/.zshrc.
