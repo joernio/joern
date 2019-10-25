@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.1.0",
+  "io.circe" %% "circe-generic" % "0.12.2",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test
 )
 
