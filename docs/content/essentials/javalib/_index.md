@@ -13,25 +13,6 @@ C/C++ language module. The following Scala test code demonstrates how FuzzyC2CPG
 
 For your convenience, Joern includes two thin test programs around this API, `joern-parse` and `joern-query`, which allow creating and querying CPGs respectively.
 
-## Creating Code Property Graphs with `joern-parse`
-
-```
-./joern-parse <path/to/directory> --out <path/to/cpg/cpg_name>
-```
-
-If you ommit the ```--out``` flag, the CPG is named `cpg.bin.zip` and stored in the local folder.
-
-As an example, run
-```
-./joern-parse tests/free
-```
-to create a CPG for the test project `free`.
-
-To view all options offered by `fuzzyc2cpg`, simply run
-```
-./joern-parse
-```
-
 ## Querying Code Property Graphs with `joern-query`
 
 One you have created a code property graph, you can load and query it with `joern-query`:
