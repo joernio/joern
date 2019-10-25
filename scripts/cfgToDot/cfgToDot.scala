@@ -1,4 +1,3 @@
-import javax.script.ScriptEngineManager
 import java.nio.file.Paths
 
 import gremlin.scala._
