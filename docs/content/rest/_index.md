@@ -1,6 +1,6 @@
 +++
 title="Using Joern via its REST API"
-weight=4
+weight=3
 +++
 
 Joern and Ocular can be scripted with many different programming languages via the REST-based API server `CPG server`. It allows code property graphs to be created, loaded, and queried via HTTP requests. This allows any program that can send and receive HTTP requests to script Joern.
