@@ -12,7 +12,7 @@ make it available via the REST API.
 ## Creating Code Property Graphs with `joern-parse`
 
 Code property graphs can be created from C/C++ code using
-`joern-parse`. For example, to create a code property graph for the
+`joern-parse`. For example, to create a Code Property Graph for the
 vulnerable sample program `tarpit-c`, you can issue the following
 commands:
 
@@ -22,7 +22,7 @@ git clone https://github.com/ShiftLeftSecurity/tarpit-c
 ```
 
 This will create a file named `cpg.bin.zip` in the current working
-directory.
+directory from the C/C++ code in the directory `tarpit-c`.
 
 Joern-parse has the following signature:
 
