@@ -1,6 +1,6 @@
 +++
 title="Installation"
-weight=2
+weight=1
 +++
 
 Joern currently consists of the following components.
@@ -81,6 +81,15 @@ joern>
 This should print the joern banner and drop you onto the interactive
 shell.
 
+Finally, the Python 3 library and utilities of `cpgclientlib` can be installed via pip:
+
+```
+pip install cpgclientlib
+```
+
+You should find the scripts `cpg-create` and `cpg-query` in your path
+after installation.
+
 ## Building from Source Code
 
 To build joern-cli and joern-server from source code, you need to
@@ -88,7 +97,6 @@ install the Scala build tool (sbt), which you can install by following
 the instructions at https://www.scala-sbt.org/download.html. Any 1.x
 version of sbt works as sbt downloads the correct version for building
 joern as part of the build process.
-
 
 
 Once the dependencies are installed, run
@@ -102,6 +110,16 @@ sbt stage
 This builds joern-cli and joern-server in the current directory. To
 build the distribution (joern-cli.zip and joern-server.zip), you can
 issue `sbt createDistribution`.
+
+You can install the newest version of `cpgclientlib` from the source
+code hosted at the `codepropertygraph` repository:
+
+```bash
+git clone https://github.com/ShiftLeftSecurity/codepropertygraph.git
+cd codepropertygraph/cpgclientlib
+sudo python setup.py install
+```
+
 
 ## Configuring the JVM for Optimal Performance
 
