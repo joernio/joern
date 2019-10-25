@@ -6,7 +6,7 @@ import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 
 trait AbstractJoernCliTest {
 
-  def withTestCpg[T](file: File)(f: ((Cpg, String)) => T): T = {
+  protected def withTestCpg[T](file: File)(f: ((Cpg, String)) => T): T = {
     f(loadTestCpg(file))
   }
 
