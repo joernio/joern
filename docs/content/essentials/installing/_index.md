@@ -23,25 +23,73 @@ your own JVM-based project, you only need joern-cli. If, however, you
 plan to access code property graphs using Python scripts or via
 command line tools, the joern-server and cpgclientlib are for you.
 
+
 ## Prerequisites
 
-* Python3
-  - Link: https://www.python.org/downloads/
-* Java runtime 8
+joern-cli and joern-server are Scala applications and should work on
+systems offering a Java virtual machine, e.g., Microsoft Windows, Mac
+OS X or Gnu/Linux. cpgclientlib is a Python 3 library.
+
+* Java 8
   - Link: http://openjdk.java.net/install/
-* Scala build tool (sbt)
-  - Link: https://www.scala-sbt.org/
 
-Python3 and Java 8 are present in the official package repositories of
-all major current Linux distributions and BSD flavors. For installing
-the the Scala build tool (sbt), please following the instructions at:
+* Python3 (only if you need cpgclientlib)
+  - Link: https://www.python.org/downloads/
 
-https://www.scala-sbt.org/download.html
+All other dependencies are packaged with Joern and do not need to be
+installed manually. Python3 and Java 8 are present in the official
+package repositories of all major current Linux distributions and BSD
+flavors.
 
-Any 1.x version of sbt works as sbt downloads the correct version for
-building joern as part of the build process.
+## Installing Pre-Built Binaries
 
-## Building the code
+Pre-built binaries of joern-cli and joern-server are available at:
+
+https://github.com/ShiftLeftSecurity/joern/releases/
+
+To install the latest release, simply execute the following:
+
+```bash
+wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip
+wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-server.zip
+unzip joern-cli.zip
+unzip joern-server.zip
+```
+
+You can test your installation as follows:
+
+```bash
+cd joern-cli
+./joern
+Compiling (synthetic)/ammonite/predef/interpBridge.sc
+Compiling (synthetic)/ammonite/predef/replBridge.sc
+Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
+Compiling /home/tmp/shiftleft/joern/(console)
+
+     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
+     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
+     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
+██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
+╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
+ ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+
+Welcome to ShiftLeft Ocular/Joern
+
+joern>
+```
+
+This should print the joern banner and drop you onto the interactive
+shell.
+
+## Building from Source Code
+
+To build joern-cli and joern-server from source code, you need to
+install the Scala build tool (sbt), which you can install by following
+the instructions at https://www.scala-sbt.org/download.html. Any 1.x
+version of sbt works as sbt downloads the correct version for building
+joern as part of the build process.
+
+
 
 Once the dependencies are installed, run
 
@@ -51,15 +99,9 @@ cd joern
 sbt stage
 ```
 
-This builds the Joern Java library and Joern server.
-
-## A Test Run
-
-To test if the build was successful, you can run
-```
-./joern-parse joern-cli/src/test/resources/testcode/free
-```
-This command will create a code property graph for the sample program in the directory `src/test/resources/testcode/free`, and store the graph in the file `cpg.bin.zip`.
+This builds joern-cli and joern-server in the current directory. To
+build the distribution (joern-cli.zip and joern-server.zip), you can
+issue `sbt createDistribution`.
 
 ## Configuring the JVM for Optimal Performance
 
@@ -70,4 +112,3 @@ export _JAVA_OPTS="-Xmx$NG"
 ```
 
 where $N is the amount of memory in gigabytes. You can add this line to your shell startup script, e.g., ~/.bashrc or ~/.zshrc.
-
