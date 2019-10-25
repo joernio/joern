@@ -1,6 +1,6 @@
 +++
 title="Using Joern via its REST API"
-weight=4
+weight=3
 +++
 
 Joern and Ocular can be scripted with many different programming languages via the REST-based API server `CPG server`. It allows code property graphs to be created, loaded, and queried via HTTP requests. This allows any program that can send and receive HTTP requests to script Joern.
@@ -34,22 +34,6 @@ You should see the following:
 {{<figure src="/docs/images/swagger.png">}}
 
 ## The Python library `cpgclientlib`
-
-As a reference implementation for a REST-based client library, we provide the Python 3 library `cpgclientlib`. This library makes it possible to script Joern with Python 3.
-
-The Python library can be installed with the command:
-
-```
-pip install cpgclientlib
-```
-
-Alternatively, you can install the newest version of `cpgclientlib` from the `codepropertygraph` repository:
-
-```
-git clone https://github.com/ShiftLeftSecurity/codepropertygraph.git
-cd codepropertygraph/cpgclientlib
-sudo python setup.py install
-```
 
 The following sample scripts shows how to create and query a CPG using Python.
 
