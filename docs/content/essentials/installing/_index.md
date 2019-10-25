@@ -3,6 +3,26 @@ title="Installation"
 weight=2
 +++
 
+Joern currently consists of the following components.
+
+* [joern-cli](https://github.com/ShiftLeftSecurity/joern/tree/master/joern-cli). Joern
+  command line tools for creating and analyzing code  property
+  graphs. This package includes the interactive Joern shell.
+
+* [joern-server](https://github.com/ShiftLeftSecurity/joern/tree/master/joern-server). The
+  Joern REST server. This allows you to make code property graphs
+  accessible via HTTP.
+
+* [cpgclientlib](https://github.com/ShiftLeftSecurity/codepropertygraph/tree/master/cpgclientlib). A
+  Python library for interacting with the Joern REST  server. This
+  package also includes command line tools for creating code property
+  graphs on the server side, and subsequently querying them.
+
+If you only want to use the interactive shell or integrate Joern into
+your own JVM-based project, you only need joern-cli. If, however, you
+plan to access code property graphs using Python scripts or via
+command line tools, the joern-server and cpgclientlib are for you.
+
 ## Prerequisites
 
 * Python3
