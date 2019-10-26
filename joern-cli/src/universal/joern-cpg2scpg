@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ $OSTYPE == darwin* ]]; then
     SCRIPT_ABS_PATH=$(greadlink -f "$0")
