@@ -1,0 +1,4 @@
+{
+  "name": "ast-for-funcs",
+  "description": "Returns the corresponding AST for each function as Json object."
+}

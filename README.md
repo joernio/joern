@@ -15,3 +15,9 @@ Building
 ---
 To create your own distribution of the Joern tools, ensure you have `sbt` installed and simply run 
 `sbt createDistribution`.
+
+For OSX you need to install greadlink package:
+
+```
+brew install coreutils
+```
