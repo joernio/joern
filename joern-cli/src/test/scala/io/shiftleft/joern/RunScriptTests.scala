@@ -65,6 +65,22 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     actual should include(""""function" : "<operator>.indirectMemberAccess"""")
     actual should include(""""function" : "<operator>.assignment"""")
     actual should include(""""function" : "<operator>.notEquals"""")
+    actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
+    actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
+  }
+
+  "should execute the cfg-for-funcs correctly for example code" in withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/free"))) { _ =>
+    val actual = console.Console.runScript("cfg-for-funcs").toString
+    actual should include regex """"file" : ".*/testcode/free/free.c""""
+    actual should include(""""function" : "free_list"""")
+    actual should include(""""function" : "free"""")
+    actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+    actual should include(""""function" : "<operator>.assignment"""")
+    actual should include(""""function" : "<operator>.notEquals"""")
+    actual should include("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
+    actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
+
   }
 
 }
