@@ -21,17 +21,17 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
   }
 
-  "should execute the list-funcs correctly for example code" in withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/free"))) { cpg =>
-    val expected = cpg.method.name.l
-    val actual = console.Console.runScript("list-funcs")
-    actual shouldBe expected
-  }
+  "Executing scripts for example code 'testcode/free'" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
+    "work correctly for 'list-funcs'" in {
+      val expected = cpg.method.name.l
+      val actual = console.Console.runScript("list-funcs", cpg)
+      actual shouldBe expected
+    }
 
-  "should execute the cfgToDot correctly for example code" in withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/free"))) { _ =>
-    val expected =
-      """digraph g {
+    "work correctly for 'cfgToDot'" in {
+      val expected =
+        """digraph g {
           | node[shape=plaintext];
           | "free.c: 11 p" -> "free.c: 11 free(p)";
           |  "free.c: 11 free(p)" -> "free.c: 9 p";
@@ -52,34 +52,33 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
           |  "free.c: 9 *p = head" -> "free.c: 9 p";
           |  "" -> "free.c: 9 p";
           | }""".stripMargin
-    val actual = console.Console.runScript("cfgToDot")
-    actual shouldBe expected
-  }
+      val actual = console.Console.runScript("cfgToDot", cpg)
+      actual shouldBe expected
+    }
 
-  "should execute the ast-for-funcs correctly for example code" in withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/free"))) { _ =>
-    val actual = console.Console.runScript("ast-for-funcs").toString
-    actual should include regex """"file" : ".*/testcode/free/free.c""""
-    actual should include(""""function" : "free_list"""")
-    actual should include(""""function" : "free"""")
-    actual should include(""""function" : "<operator>.indirectMemberAccess"""")
-    actual should include(""""function" : "<operator>.assignment"""")
-    actual should include(""""function" : "<operator>.notEquals"""")
-    actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
-    actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
-  }
+    "work correctly for 'ast-for-funcs'" in {
+      val actual = console.Console.runScript("ast-for-funcs", cpg).toString
+      actual should include regex """"file" : ".*/testcode/free/free.c""""
+      actual should include(""""function" : "free_list"""")
+      actual should include(""""function" : "free"""")
+      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+      actual should include(""""function" : "<operator>.assignment"""")
+      actual should include(""""function" : "<operator>.notEquals"""")
+      actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
+      actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
+    }
 
-  "should execute the cfg-for-funcs correctly for example code" in withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/free"))) { _ =>
-    val actual = console.Console.runScript("cfg-for-funcs").toString
-    actual should include regex """"file" : ".*/testcode/free/free.c""""
-    actual should include(""""function" : "free_list"""")
-    actual should include(""""function" : "free"""")
-    actual should include(""""function" : "<operator>.indirectMemberAccess"""")
-    actual should include(""""function" : "<operator>.assignment"""")
-    actual should include(""""function" : "<operator>.notEquals"""")
-    actual should include("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
-    actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
+    "work correctly for 'cfg-for-funcs'" in {
+      val actual = console.Console.runScript("cfg-for-funcs", cpg).toString
+      actual should include regex """"file" : ".*/testcode/free/free.c""""
+      actual should include(""""function" : "free_list"""")
+      actual should include(""""function" : "free"""")
+      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+      actual should include(""""function" : "<operator>.assignment"""")
+      actual should include(""""function" : "<operator>.notEquals"""")
+      actual should include("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
+      actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
+    }
 
   }
 
