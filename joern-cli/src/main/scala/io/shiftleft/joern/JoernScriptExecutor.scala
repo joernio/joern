@@ -5,13 +5,7 @@ import java.util.UUID
 import cats.data.OptionT
 import cats.effect.{ContextShift, IO}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.console.query.{
-  CpgOperationFailure,
-  CpgOperationResult,
-  CpgOperationSuccess,
-  CpgQueryExecutor,
-  DefaultCpgQueryExecutor
-}
+import io.shiftleft.console.query.{CpgOperationResult, CpgQueryExecutor, DefaultCpgQueryExecutor}
 import javax.script.ScriptEngineManager
 
 import scala.concurrent.ExecutionContext
@@ -31,14 +25,4 @@ class JoernScriptExecutor extends CpgQueryExecutor[AnyRef] {
   override def retrieveQueryResult(queryId: UUID): OptionT[IO, CpgOperationResult[AnyRef]] =
     ??? // unused within Joern
 
-  def runScript(content: String, cpgFilename: String): AnyRef = {
-    val scriptExecutionResult = for {
-      queryResult <- executeQuerySync(CpgLoader.load(cpgFilename), content)
-      result <- queryResult match {
-        case CpgOperationSuccess(result) => IO(result)
-        case CpgOperationFailure(ex)     => IO.raiseError[AnyRef](ex)
-      }
-    } yield result
-    scriptExecutionResult.handleErrorWith(IO(_)).unsafeRunSync()
-  }
 }
