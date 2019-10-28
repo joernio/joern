@@ -4,8 +4,8 @@ name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.12.8"
 
-val cpgVersion = "0.10.86"
-val fuzzyc2cpgVersion = "0.1.116"
+val cpgVersion = "0.10.87"
+val fuzzyc2cpgVersion = "1.1.4"
 
 ThisBuild / resolvers += Resolver.mavenLocal
 ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
@@ -18,7 +18,7 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 lazy val joerncli = Projects.joerncli
 lazy val joernserver = Projects.joernserver
 
-lazy val createDistribution = taskKey[Unit]("Create a FuzzyC2CPG distribution")
+lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
   val joernCliZip = (joerncli / Universal / packageBin).value
   val joernServerZip = (joernserver / Universal / packageBin).value

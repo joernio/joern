@@ -9,9 +9,11 @@ import scala.concurrent.ExecutionContext
 import cats.data.OptionT
 import cats.effect.{Blocker, ContextShift, IO}
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.query.{CpgOperationFailure, CpgOperationResult, CpgOperationSuccess}
 import io.shiftleft.cpgserver.cpg.CpgProvider
+import io.shiftleft.joern.JoernParse.ParserConfig
 import io.shiftleft.joern.{CpgLoader, JoernParse}
 
 class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".hpp"))(implicit val cs: ContextShift[IO])
@@ -30,15 +32,14 @@ class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".h
                            cpgFile: Path,
                            fileNames: Set[String],
                            fileExtensions: Set[String]): IO[Unit] = {
+    val parserConfig = ParserConfig(
+      inputPaths = fileNames,
+      sourceFileExtensions = fileExtensions,
+      outputCpgFile = cpgFile.toString
+    )
+
     blocker
-      .blockOn(
-        IO(
-          JoernParse.parse(fileNames,
-                           fileExtensions,
-                           cpgFile.toString,
-                           enhance = true,
-                           dataFlow = true,
-                           CpgLoader.defaultSemanticsFile)))
+      .blockOn(IO(JoernParse.generateCpg(parserConfig)))
       .runAsync {
         case Right(_) => populateCpg(cpgId, cpgFile)
         case Left(ex) => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())

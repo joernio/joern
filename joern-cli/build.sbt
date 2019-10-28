@@ -1,3 +1,5 @@
+import java.io.FilenameFilter
+
 enablePlugins(JavaAppPackaging)
 enablePlugins(UniversalPlugin)
 
@@ -34,6 +36,26 @@ enablePlugins(JavaAppPackaging)
 topLevelDirectory := Some(packageName.value)
 
 mappings in (Compile, packageDoc) := Seq()
+
+lazy val downloadFuzzyPreprocessor = taskKey[File]("Download the FuzzyC2CPG preprocessor")
+downloadFuzzyPreprocessor := {
+  val ppFilename = "fuzzyppcli.zip"
+  val ppUrl = new URL(
+    s"https://github.com/ShiftLeftSecurity/fuzzyc2cpg/releases/download/v${Versions.fuzzyc2cpgVersion}/$ppFilename")
+
+  val ppOutputDir = file("fuzzyppcli")
+  println(s"downloading $ppUrl")
+  IO.unzipURL(ppUrl, ppOutputDir)
+
+  ppOutputDir.listFiles().map(_.setExecutable(true))
+
+  ppOutputDir
+}
+
+import NativePackagerHelper.contentOf
+mappings in Universal ++= contentOf(downloadFuzzyPreprocessor.value).map {
+  case (binary, name) => binary -> s"/bin/$name"
+}
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
