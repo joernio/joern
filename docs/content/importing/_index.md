@@ -48,17 +48,22 @@ To view all options offered by `fuzzyc2cpg`, simply run
 ./joern-parse
 ```
 
-## Creating complete Code Property Graphs
-What happens with header files included in your programs? By default, unless you explicitly copy any used headers into
-your source, they will be ignored by `joern-parse`, resulting in a valid, but incomplete CPG. 
+## Dealing with Header Files and Macros
+What happens with header files included in your programs? By default,
+unless you explicitly copy their contents into the source files that
+reference them, `joern-parse` assumes that they are not available. The
+resulting CPG is valid but possibly imprecise.
 
-To solve this, we can use the [FuzzyC2CPG preprocessor](https://github.com/ShiftLeftSecurity/fuzzyc2cpg/#running). 
-Using this tool, you can specify the location of any header files and defines/macros used by your source code. These 
-will then be used by Joern to generate a more complete CPG. Any missing header files will simply be elided from the 
-resulting CPG.
+In the fortunate situation where some or even all of the header files
+and macro definitions are available, `joern-parse` allows this
+information to be incorporated into CPG generation using the built-in
+[fuzzy C/C++
+preprocessor](https://github.com/ShiftLeftSecurity/fuzzyc2cpg/#running). In
+line with the approach followed by the fuzzy C/C++ parser, any missing
+header files will simply be elided in the generation of the CPG.
 
-For a more detailed explanation of the preprocessor options available to you, pass the `--help` option to
-`joern-parse`.
+For a more detailed explanation of the preprocessor options available
+to you, pass the `--help` option to `joern-parse`.
 
 ## Creating Code Property Graphs with `cpg-create`
 

@@ -24,7 +24,7 @@ enableMissingTranslationPlaceholders = false
 
     # Documentation repository section
     # documentation repository (set edit link to documentation repository)
-    # github_doc_repository = "https://github.com/thingsym/hugo-theme-techdoc"
+    github_doc_repository = "https://github.com/ShiftLeftSecurity/joern/"
 
     # Analytic section
     # google_analytics_id = "" # Your Google Analytics tracking id
