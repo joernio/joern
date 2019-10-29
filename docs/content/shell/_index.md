@@ -29,14 +29,66 @@ Finally, it offers pipe operators to write results to files:
 * |> "$filename" writes to file at $filename
 * |>> "$filename" appends to file at $filename
 
-## Running scripts
+## Inline Code Reading
+
+The Joern shell allows you to read code associated with query
+results. For any expression, you can simply query the code field. For
+example, to review all calls to `memcpy`, you can issue:
+
+```bash
+joern> cpg.method.name("memcpy").callIn.code.l
+
+res5: List[String] = List(
+  "memcpy(buf, first, first_len)",
+  "memcpy(buf + first_len, second, second_len)",
+  "memcpy(buf, first, first_len)",
+  "memcpy(buf + first_len, second, second_len)",
+  "memcpy(buf + first_len, second, second_len)",
+  "memcpy(buf, first, first_len)"
+)
+```
+
+You can also pipe the result list into a pager as follows:
+
+```bash
+joern> browse(cpg.method.name("memcpy").callIn.code.l)
+```
+
+To study the context in which a result occurs, you can use the `.dump`
+method, which will dump the enclosing function's code for each
+finding, and point you to the finding via an arrow:
+
+```bash
+joern> cpg.method.name("memcpy").callIn.dump
+
+int main() {
+  unsigned int first_len = UINT_MAX - 256;
+  unsigned int second_len = 256;
+  unsigned int buf_len = 256;
+
+  char first[first_len], second[second_len], buf[buf_len];
+  int new_len = (first_len+second_len); // <- IDB (negative)
+
+  if(new_len <= 256) {
+	memcpy(buf, first, first_len);
+// ===> memcpy(buf + first_len, second, second_len);
+  }
+}
+
+...
+```
+
+You can use this feature together with `browse` to read code in the
+pager.
+
+## Running Scripts
 
 You can run scripts non-interactively using `joern`.
- 
+
 ### From the outside
 
 The `--script` option allows to execute scripts in a newly instantiated session.
- 
+
 For example,
 
 ```bash
