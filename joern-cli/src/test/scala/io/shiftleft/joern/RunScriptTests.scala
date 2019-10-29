@@ -80,6 +80,18 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       actual should not include ("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
     }
 
+    "work correctly for 'pdg-for-funcs'" in {
+      val actual = console.Console.runScript("pdg-for-funcs", cpg).toString
+      actual should include regex """"file" : ".*/testcode/free/free.c""""
+      actual should include(""""function" : "free_list"""")
+      actual should include(""""function" : "free"""")
+      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+      actual should include(""""function" : "<operator>.assignment"""")
+      actual should include(""""function" : "<operator>.notEquals"""")
+      actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
+      actual should include("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
+    }
+
   }
 
 }

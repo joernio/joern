@@ -1,3 +1,39 @@
+/* cfgToDot.scala
+
+   This script generates a Dot representation for the CFG of the currently loaded CPG.
+
+   Input: A valid CPG
+   Output: String
+
+   Running the Script
+   ------------------
+   see: README.md
+
+   Sample Output
+   -------------
+   digraph g {
+     node[shape=plaintext];
+      "free.c: 11 p" -> "free.c: 11 free(p)";
+      "free.c: 11 free(p)" -> "free.c: 9 p";
+      "free.c: 10 next" -> "free.c: 10 p->next";
+      "free.c: 10 p" -> "free.c: 10 next";
+      "free.c: 10 p->next" -> "free.c: 10 q = p->next";
+      "free.c: 10 q" -> "free.c: 10 p";
+      "free.c: 10 q = p->next" -> "free.c: 11 p";
+      "free.c: 9 q" -> "free.c: 9 p = q";
+      "free.c: 9 p" -> "free.c: 9 q";
+      "free.c: 9 p = q" -> "free.c: 9 p";
+      "free.c: 9 NULL" -> "free.c: 9 p != NULL";
+      "free.c: 9 p" -> "free.c: 9 NULL";
+      "free.c: 9 p != NULL" -> "free.c: 10 q";
+      "free.c: 9 p != NULL" -> "";
+      "free.c: 9 head" -> "free.c: 9 *p = head";
+      "free.c: 9 p" -> "free.c: 9 head";
+      "free.c: 9 *p = head" -> "free.c: 9 p";
+      "" -> "free.c: 9 p";
+   }
+ */
+
 import java.nio.file.Paths
 
 import gremlin.scala._
