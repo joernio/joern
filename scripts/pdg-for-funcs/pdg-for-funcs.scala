@@ -1,6 +1,6 @@
-/* cfg-for-funcs.scala
+/* pdg-for-funcs.scala
 
-   This script returns a Json representation of the CFG for each method contained in the currently loaded CPG.
+   This script returns a Json representation of the PDG for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
    Output: Json
@@ -15,11 +15,11 @@
     "functions": Array of all methods contained in the currently loaded CPG
       |_ "function": Method name as String
       |_ "id": Method id as String (String representation of the underlying Method node)
-      |_ "CFG": Array of all nodes connected via CFG edges
-          |_ "id": Node id as String (String representation of the underlying CFG node)
+      |_ "PDG": Array of all nodes that are reachable by data-flow or control-flow from the current method locals
+          |_ "id": Node id as String (String representation of the underlying node)
           |_ "properties": Array of properties of the current node as key-value pair
-          |_ "edges": Array of all CFG edges where the current node is referenced as inVertex or outVertex
-              |_ "id": Edge id as String (String representation of the CFG edge)
+          |_ "edges": Array of all AST and CFG edges where the current node is referenced as inVertex or outVertex
+              |_ "id": Edge id as String (String representation of the edge)
               |_ "in": Node id as String of the inVertex node (String representation of the inVertex node)
               |_ "out": Node id as String of the outVertex node (String representation of the outVertex node)
 
@@ -31,7 +31,7 @@
       {
         "function" : "free_list",
         "id" : "io.shiftleft.codepropertygraph.generated.nodes.Method@b",
-        "CFG" : [
+        "PDG" : [
           {
             "id" : "io.shiftleft.codepropertygraph.generated.nodes.Call@12",
             "edges" : [
@@ -40,11 +40,7 @@
                 "in" : "io.shiftleft.codepropertygraph.generated.nodes.Call@12",
                 "out" : "io.shiftleft.codepropertygraph.generated.nodes.Identifier@15"
               },
-              {
-                "id" : "io.shiftleft.codepropertygraph.generated.edges.Cfg@1d4e9",
-                "in" : "io.shiftleft.codepropertygraph.generated.nodes.Identifier@18",
-                "out" : "io.shiftleft.codepropertygraph.generated.nodes.Call@12"
-              }
+              // ...
             ],
             "properties" : [
               {
@@ -76,18 +72,15 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
+import io.shiftleft.dataflowengine.language._
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 
 import gremlin.scala._
-import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
-
-final case class CfgForFuncsFunction(function: String, id: String, CFG: List[CfgNode])
-final case class CfgForFuncsResult(file: String, functions: List[CfgForFuncsFunction])
-
-implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
-implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
+implicit val encodeFuncResult: Encoder[PdgForFuncsResult] = deriveEncoder
+implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
 implicit val encodeVertex: Encoder[CfgNode] =
   (node: CfgNode) =>
     Json.obj(
@@ -95,7 +88,7 @@ implicit val encodeVertex: Encoder[CfgNode] =
       ("edges",
         Json.fromValues(
           node.graph.E
-            .hasLabel("CFG")
+            .hasLabel("AST", "CFG")
             .l
             .collect {
               case e if e.inVertex == node  => e
@@ -116,10 +109,27 @@ implicit val encodeVertex: Encoder[CfgNode] =
       }))
     )
 
-CfgForFuncsResult(
+final case class PdgForFuncsFunction(function: String, id: String, PDG: List[CfgNode])
+final case class PdgForFuncsResult(file: String, functions: List[PdgForFuncsFunction])
+
+PdgForFuncsResult(
   cpg.file.name.l.head,
   cpg.method.name.l.map { methodName =>
     val method = cpg.method.name(methodName)
-    CfgForFuncsFunction(methodName, cpg.method.name(methodName).l.head.toString, method.cfgNode.l)
+    val methodId = cpg.method.name(methodName).l.head.toString
+    val sink = method.local.evalType(".*").referencingIdentifiers
+    val source = cpg.method.parameter
+    val dependencies = sink
+      .reachableByFlows(source)
+      .l
+      .flatMap { path =>
+        path
+          .map {
+            case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
+            case trackingPoint                          => trackingPoint.cfgNode
+          }
+      }
+      .filter(_.toString != methodId)
+    PdgForFuncsFunction(methodName, methodId, dependencies)
   }
 ).asJson
