@@ -32,15 +32,12 @@ cpg.all
 res8: NodeSteps[StoredNode] = io.shiftleft.semanticcpg.language.NodeSteps@4cce421e
 ```
 
-Notice that the result is not a list of nodes but rather a
+Notice that the result is not a list of nodes but rather of type
 `NodeSteps[StoredNode]`. You can think of this as an *expression*
 which - only upon evaluation - yields all nodes [1]. The advantage of
-this two stage approach is that we can already perform calculations on
-expressions prior to costly evaluation. In particular, we can use the
-type system to perform validity checks and query optimization,
-features that are vital as we compose expressions to form complex
-queries.
-
+this two stage approach is that we can compose expressions without
+needing to evaluate them. We can perform validity checks and query
+optimization prior to costly evaluation.
 
 To evaluate the expression, we can simply force conversion to a list:
 
