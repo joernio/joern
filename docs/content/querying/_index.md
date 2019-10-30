@@ -106,7 +106,7 @@ think of traversals as expressions that describe sets of nodes.
 
 ## Expression Types and Starters
 
-For each node label, a corresponding *expression type* is defined in the
+For each node label, a corresponding *type* is defined in the
 query language, e.g., `Method` for nodes with the label `METHOD`, and
 `Local` for nodes with the label `LOCAL`. For each label, we also
 define a *starter* that represents all nodes with that label. For
