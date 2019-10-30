@@ -1,43 +1,45 @@
 +++
-Title="Querying Code Property Graphs"
+Title="Query Language"
 weight=5
 alwaysopen=true
 +++
 
 Joern/Ocular provides a domain specific language (DSL) for code
-analysis based on the Scala programming language. The great advantage
-of this approach is that all features of the host language are
-automatically inherited. Joern queries are simply lazily evaluated
-Scala expressions, and you can make use of the complete Scala
-programming language in Joern scripts.
+analysis based on [Scala](https://www.scala-lang.org/). It is an
+internal DSL, that is, it is a language defined via classes and
+methods as opposed to a formal grammar. The great advantage of this
+approach is that all features of the host language are automatically
+inherited. Joern queries are lazily evaluated Scala expressions, and
+you can make use of the complete Scala programming language in Joern
+scripts. In this section, we look into the basic concepts of our query
+language and illustrate them by example.
+
+In the following examples, we assume that a code property graph for
+the *tarpitc* program is loaded. For details on creating and loading
+CPGs, please check out [Importing Code](../importing) and [The Joern
+Shell](../shell).
 
 
-# Basic Concepts: Expressions, Labels, IDs
 
-To get a first idea of what information the Code Property Graph makes
-available, start the `joern` shell and type `cpg.`, then press the Tab
-key:
+# Nodes, Labels, and Expressions
 
-
-```bash
-joern> cpg.
-all             file            local           methodReturn    types
-argument        graph           member          namespace
-call            id              metaData        namespaceBlock
-close           identifier      method          parameter
-comment         literal         methodRef       typeDecl
-
-```
-
-The following query returns *all* nodes upon evaluation:
+To begin exploring the data that the language exposes,
+let's create a query that selects all nodes in the code property graph with
+`cpg.all`:
 
 ```bash
 cpg.all
 res8: NodeSteps[StoredNode] = io.shiftleft.semanticcpg.language.NodeSteps@4cce421e
 ```
-Notice that `cpg.all` is an **expression**, and this is expression is
-only **evaluated** if so requested, e.g., by converting the expression to a
-list as in the following query.
+
+Notice that the result is not a list of nodes but rather of type
+`NodeSteps[StoredNode]`. You can think of this as an *expression*
+which - only upon evaluation - yields all nodes [1]. The advantage of
+this two stage approach is that we can compose expressions without
+needing to evaluate them. We can perform validity checks and query
+optimization prior to costly evaluation.
+
+To evaluate the expression, we can simply force conversion to a list:
 
 ```bash
 cpg.all.toList.size
@@ -45,19 +47,18 @@ cpg.all.toList.size
 ```
 
 This query returns the number of nodes in the graph, that is, the size
-of the list obtained by evaluating the expression `cpg.all`. Since
-converting to lists is such a common operation, we have introduced the
-shorthand `.l` for `.toList`. The previous query can thus also be
-written as:
+of the list obtained containing all of the nodes. Since converting to lists
+is such a common operation, we have introduced the shorthand `.l` for
+`.toList`. The previous query can thus also be written as:
 
 ```bash
 cpg.all.l.size
 711
 ```
 
-Each node has a **label** and a unique **id**. The label indicates the
-type of program construct represented by the node. To get an overview
-of labels in the graph, you can issue the following query:
+Each node has a **label**. The label indicates the type of program
+construct represented by the node. To get an overview of labels in the
+graph, you can issue the following query:
 
 ```bash
 cpg.all.label.toSet.toList.sorted
@@ -90,39 +91,98 @@ method `toSet` is called. The resulting Scala set is converted to a
 list and sorted. Note that both `toList` and `sorted` are API methods
 of the host language Scala.
 
-The **id** is a long integer that uniquely identifies the node. It can
-be used to jump to the node in subsequent queries. For example, you
-can determine the ids of all File nodes as follows:
+[1] The term `Step` is inherited from the graph traversal language
+[Gremlin](http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps),
+and more specifically
+[gremlin-scala](https://github.com/mpollmeier/gremlin-scala) on which
+our DSL is based. In Gremlin, `Steps` describe walks in a graph, which
+are combined via function composition to yield *traversals*. You can
+think of traversals as expressions that describe sets of nodes.
+
+
+
+## Expression Types and Starters
+
+For each node label, a corresponding *type* is defined in the
+query language, e.g., `Method` for nodes with the label `METHOD`, and
+`Local` for nodes with the label `LOCAL`. For each label, we also
+define a *starter* that represents all nodes with that label. For
+example,
+
+```bash
+cpg.method
+res1: types.structure.Method = io.shiftleft.semanticcpg.language.types.structure.Method@b889cb6
+```
+returns an expression that yields all methods on evaluation.
+
+You can get a complete list of starters by typing `cpg.`, and
+pressing the Tab key:
+
+```bash
+joern> cpg.
+all             file            local           methodReturn    types
+argument        graph           member          namespace
+call            id              metaData        namespaceBlock
+close           identifier      method          parameter
+comment         literal         methodRef       typeDecl
+
+```
+
+It is generally advisable to use specific starters as opposed to the
+generic `cpg.all`, as for the latter, it is unclear at compile time
+which types of nodes are processed. Using specific starters such as
+`.method` make it possible to use Scala's type system for
+auto-completion and to detect invalid queries before they are evaluated.
+
+## Node IDs
+
+For each node, we store an **ID**. The ID is a long integer that
+uniquely identifies the node.You should not need to ever retrieve
+node IDs within Joern/Ocular scripts, however, they may come in handy
+when passing nodes to external tools - especially if these tools plan
+to run subsequent queries.
+
+As an example, the following query returns the ids of all file nodes.
 
 ```bash
 cpg.file.id.l
 res11: List[AnyRef] = List(34L, 32L, 30L, 28L, 26L, 24L, 22L, 20L, 18L, 16L, 14L, 12L, 10L, 8L, 6L, 4L)
 ```
 
-To select the node with the id `10`, you can use the following query:
+Consider that - upon receiving this result, an external tool would
+like to invoke a follow-up query on the first file node. To achieve
+this, it can issue the query
 
 ```bash
-cpg.id(10).l
+cpg.id(34).l
 res7: List[Nothing] = List(
   File(id -> 10L, name -> "/home/tmp/shiftleft/joern/tarpit-c/tarpitc/buffer_underwrite.c", order -> null)
 )
 ```
 
-Note that the type of the nodes returned by `cpg.id(10)` is unknown at
-compile time, and therefore, the returned type for `cpg.id(10).l`is
-`List[Nothing]`. In practice, you will know the types of nodes you are
-expecting from the previous query. For example, in the outlined
-scenario, we know that case are file nodes. An explicit cast can be
+Note that the type of the nodes returned by `cpg.id(34)` is unknown at
+compile time, and therefore, the returned type for `cpg.id(34).l`is
+`List[Nothing]`. In practice, the external tool will usually know the
+node type from the previous query, e.g., in our example, we know that
+the node with the ID `34` is a `File` node. An explicit cast can be
 performed to bring us back into the typed world:
 
 ```bash
-cpg.id(10).asInstanceOf[NodeSteps[nodes.File]].name.l
+cpg.id(34).asInstanceOf[NodeSteps[nodes.File]].name.l
 res24: List[String] = List("/home/tmp/shiftleft/joern/tarpit-c/tarpitc/buffer_underwrite.c")
 
 ```
 
+Finally, `cpg.id` also accepts a sequence of nodes. For example
 
-## Query Structure
+```bash
+cpg.id(Seq(34,10))
+```
+
+returns the nodes with IDs `34` and `10`.
+
+
+## Overall Query Structure
 
 Queries can be broken down into three the following three parts.
 
