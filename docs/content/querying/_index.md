@@ -23,7 +23,7 @@ Shell](../shell).
 
 # Nodes, Labels, and Expressions
 
-To get a first idea of the data which the language makes accessible,
+To begin exploring the data that the language exposes,
 let us begin querying for all nodes of the code property graph via
 `cpg.all`:
 
