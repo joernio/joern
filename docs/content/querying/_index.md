@@ -135,7 +135,7 @@ It is generally advisable to use specific starters as opposed to the
 generic `cpg.all`, as for the latter, it is unclear at compile time
 which types of nodes are processed. Using specific starters such as
 `.method` make it possible to use Scala's type system for
-completion and to detect invalid queries even before evaluation.
+auto-completion and to detect invalid queries before they are evaluated.
 
 ## Node IDs
 
