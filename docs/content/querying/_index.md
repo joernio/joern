@@ -38,7 +38,7 @@ which - only upon evaluation - yields all nodes [1]. The advantage of
 this two stage approach is that we can already perform calculations on
 expressions prior to costly evaluation. In particular, we can use the
 type system to perform validity checks and query optimization,
-features that are vital as we compose expression to form complex
+features that are vital as we compose expressions to form complex
 queries.
 
 
