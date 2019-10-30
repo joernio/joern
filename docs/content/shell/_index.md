@@ -79,7 +79,12 @@ int main() {
 ```
 
 You can use this feature together with `browse` to read code in the
-pager.
+pager. Finally, if you want to read the code in your favourite editor,
+just dump it to a file:
+
+```bash
+cpg.method.name("memcpy").callIn.dump |> "/tmp/foo.c"
+```
 
 ## Running Scripts
 
