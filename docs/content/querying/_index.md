@@ -134,7 +134,7 @@ comment         literal         methodRef       typeDecl
 It is generally advisable to use specific starters as opposed to the
 generic `cpg.all`, as for the latter, it is unclear at compile time
 which types of nodes are processed. Using specific starters such as
-`.method` make it possible to use the Scala's type system for
+`.method` make it possible to use Scala's type system for
 completion and to detect invalid queries even before evaluation.
 
 ## Node IDs
