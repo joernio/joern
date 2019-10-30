@@ -24,7 +24,7 @@ Shell](../shell).
 # Nodes, Labels, and Expressions
 
 To begin exploring the data that the language exposes,
-let us begin querying for all nodes of the code property graph via
+let's create a query that selects all nodes in the code property graph with
 `cpg.all`:
 
 ```bash
