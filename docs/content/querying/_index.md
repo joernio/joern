@@ -50,7 +50,7 @@ cpg.all.toList.size
 ```
 
 This query returns the number of nodes in the graph, that is, the size
-of the list obtained containing all nodes. Since converting to lists
+of the list obtained containing all of the nodes. Since converting to lists
 is such a common operation, we have introduced the shorthand `.l` for
 `.toList`. The previous query can thus also be written as:
 
