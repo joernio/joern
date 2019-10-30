@@ -76,7 +76,9 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes
 
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.Edge
@@ -84,7 +86,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 val cfgEdges = cpg.graph.E.hasLabel("CFG").l
 
-final case class CfgForFuncsFunction(function: String, id: String, CFG: List[CfgNode])
+final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
 final case class CfgForFuncsResult(file: String, functions: List[CfgForFuncsFunction])
 
 implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
@@ -98,8 +100,8 @@ implicit val encodeEdge: Encoder[Edge] =
       ("out", Json.fromString(edge.outVertex().toString))
     )
 
-implicit val encodeVertex: Encoder[CfgNode] =
-  (node: CfgNode) =>
+implicit val encodeVertex: Encoder[nodes.CfgNode] =
+  (node: nodes.CfgNode) =>
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
@@ -118,9 +120,12 @@ implicit val encodeVertex: Encoder[CfgNode] =
 
 CfgForFuncsResult(
   cpg.file.name.l.head,
-  cpg.method.name.l.map { methodName =>
-    val method = cpg.method.nameExact(methodName)
-    val methodId = cpg.method.nameExact(methodName).l.head.toString
-    CfgForFuncsFunction(methodName, methodId, method.cfgNode.l)
-  }
+  cpg.method.map { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+    val cfgNodes = new CfgNode(
+      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
+    ).l
+    CfgForFuncsFunction(methodName, methodId, cfgNodes)
+  }.l
 ).asJson

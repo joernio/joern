@@ -73,8 +73,11 @@ import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
 import io.shiftleft.dataflowengine.language._
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.semanticcpg.language.types.structure.Local
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes
 
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
@@ -92,8 +95,8 @@ implicit val encodeEdge: Encoder[Edge] =
       ("out", Json.fromString(edge.outVertex().toString))
     )
 
-implicit val encodeVertex: Encoder[CfgNode] =
-  (node: CfgNode) =>
+implicit val encodeVertex: Encoder[nodes.CfgNode] =
+  (node: nodes.CfgNode) =>
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
@@ -110,16 +113,26 @@ implicit val encodeVertex: Encoder[CfgNode] =
       }))
     )
 
-final case class PdgForFuncsFunction(function: String, id: String, PDG: List[CfgNode])
+final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nodes.CfgNode])
 final case class PdgForFuncsResult(file: String, functions: List[PdgForFuncsFunction])
 
 PdgForFuncsResult(
   cpg.file.name.l.head,
-  cpg.method.name.l.map { methodName =>
-    val method = cpg.method.nameExact(methodName)
-    val methodId = cpg.method.nameExact(methodName).l.head.toString
-    val sink = method.local.evalType(".*").referencingIdentifiers
+  cpg.method.map { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+
+    val local = new Local(
+      method
+        .out(EdgeTypes.CONTAINS)
+        .hasLabel(NodeTypes.BLOCK)
+        .out(EdgeTypes.AST)
+        .hasLabel(NodeTypes.LOCAL)
+        .cast[nodes.Local])
+
+    val sink = local.evalType(".*").referencingIdentifiers
     val source = cpg.method.parameter
+
     val dependencies = sink
       .reachableByFlows(source)
       .l
@@ -132,5 +145,5 @@ PdgForFuncsResult(
       }
       .filter(_.toString != methodId)
     PdgForFuncsFunction(methodName, methodId, dependencies)
-  }
+  }.l
 ).asJson

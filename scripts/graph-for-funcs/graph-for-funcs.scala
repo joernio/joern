@@ -28,7 +28,11 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 
 import gremlin.scala._
@@ -40,9 +44,9 @@ val edges = cpg.graph.E.hasLabel("AST", "CFG").l
 
 final case class GraphForFuncsFunction(function: String,
                                        id: String,
-                                       AST: List[AstNode],
-                                       CFG: List[AstNode],
-                                       PDG: List[AstNode])
+                                       AST: List[nodes.AstNode],
+                                       CFG: List[nodes.AstNode],
+                                       PDG: List[nodes.AstNode])
 final case class GraphForFuncsResult(file: String, functions: List[GraphForFuncsFunction])
 
 implicit val encodeEdge: Encoder[Edge] =
@@ -53,8 +57,8 @@ implicit val encodeEdge: Encoder[Edge] =
       ("out", Json.fromString(edge.outVertex().toString))
     )
 
-implicit val encodeNode: Encoder[AstNode] =
-  (node: AstNode) =>
+implicit val encodeNode: Encoder[nodes.AstNode] =
+  (node: nodes.AstNode) =>
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
@@ -76,14 +80,26 @@ implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
 
 GraphForFuncsResult(
   cpg.file.name.l.head,
-  cpg.method.name.l.map { methodName =>
-    val methodId = cpg.method.nameExact(methodName).l.head.toString
+  cpg.method.map { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
 
-    val astChildren = cpg.method.nameExact(methodName).astChildren.l
-    val cfgChildren = cpg.method.nameExact(methodName).cfgNode.l
+    val astChildren = method.astMinusRoot.l
 
-    val sink = cpg.method.nameExact(methodName).local.evalType(".*").referencingIdentifiers
+    val cfgChildren = new CfgNode(
+      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
+    ).l
+
+    val local = new Local(
+      method
+        .out(EdgeTypes.CONTAINS)
+        .hasLabel(NodeTypes.BLOCK)
+        .out(EdgeTypes.AST)
+        .hasLabel(NodeTypes.LOCAL)
+        .cast[nodes.Local])
+    val sink = local.evalType(".*").referencingIdentifiers
     val source = cpg.method.parameter
+
     val pdgChildren = sink
       .reachableByFlows(source)
       .l
@@ -97,5 +113,5 @@ GraphForFuncsResult(
       .filter(_.toString != methodId)
 
     GraphForFuncsFunction(methodName, methodId, astChildren, cfgChildren, pdgChildren)
-  }
+  }.l
 ).asJson

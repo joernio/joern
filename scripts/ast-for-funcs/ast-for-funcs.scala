@@ -121,9 +121,10 @@ implicit val encodeVertex: Encoder[AstNode] =
 
 AstForFuncsResult(
   cpg.file.name.l.head,
-  cpg.method.name.l.map { methodName =>
-    val method = cpg.method.nameExact(methodName)
-    val methodId = cpg.method.nameExact(methodName).l.head.toString
-    AstForFuncsFunction(methodName, methodId, method.astChildren.l)
-  }
+  cpg.method.map { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+    val astChildren = method.astMinusRoot.l
+    AstForFuncsFunction(methodName, methodId, astChildren)
+  }.l
 ).asJson
