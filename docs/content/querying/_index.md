@@ -167,7 +167,7 @@ Note that the type of the nodes returned by `cpg.id(34)` is unknown at
 compile time, and therefore, the returned type for `cpg.id(34).l`is
 `List[Nothing]`. In practice, the external tool will usually know the
 node type from the previous query, e.g., in our example, we know that
-the node with the ID `34` is a file node. An explicit cast can be
+the node with the ID `34` is a `File` node. An explicit cast can be
 performed to bring us back into the typed world:
 
 ```bash
