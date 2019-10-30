@@ -73,34 +73,38 @@ import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
 import io.shiftleft.dataflowengine.language._
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.semanticcpg.language.types.structure.Local
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes
 
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
+val edges = cpg.graph.E.hasLabel("AST", "CFG").l
+
 implicit val encodeFuncResult: Encoder[PdgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
-implicit val encodeVertex: Encoder[CfgNode] =
-  (node: CfgNode) =>
+
+implicit val encodeEdge: Encoder[Edge] =
+  (edge: Edge) =>
+    Json.obj(
+      ("id", Json.fromString(edge.toString)),
+      ("in", Json.fromString(edge.inVertex().toString)),
+      ("out", Json.fromString(edge.outVertex().toString))
+    )
+
+implicit val encodeVertex: Encoder[nodes.CfgNode] =
+  (node: nodes.CfgNode) =>
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues(
-          node.graph.E
-            .hasLabel("AST", "CFG")
-            .l
-            .collect {
-              case e if e.inVertex == node  => e
-              case e if e.outVertex == node => e
-            }
-            .map { edge: Edge =>
-              Json.obj(
-                ("id", Json.fromString(edge.toString)),
-                ("in", Json.fromString(edge.inVertex().toString)),
-                ("out", Json.fromString(edge.outVertex().toString))
-              )
-            })),
+          edges.collect {
+            case e if e.inVertex == node  => e
+            case e if e.outVertex == node => e
+          }.map(_.asJson))),
       ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
         Json.obj(
           ("key", Json.fromString(p.key())),
@@ -109,16 +113,26 @@ implicit val encodeVertex: Encoder[CfgNode] =
       }))
     )
 
-final case class PdgForFuncsFunction(function: String, id: String, PDG: List[CfgNode])
+final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nodes.CfgNode])
 final case class PdgForFuncsResult(file: String, functions: List[PdgForFuncsFunction])
 
 PdgForFuncsResult(
   cpg.file.name.l.head,
-  cpg.method.name.l.map { methodName =>
-    val method = cpg.method.name(methodName)
-    val methodId = cpg.method.name(methodName).l.head.toString
-    val sink = method.local.evalType(".*").referencingIdentifiers
+  cpg.method.map { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+
+    val local = new Local(
+      method
+        .out(EdgeTypes.CONTAINS)
+        .hasLabel(NodeTypes.BLOCK)
+        .out(EdgeTypes.AST)
+        .hasLabel(NodeTypes.LOCAL)
+        .cast[nodes.Local])
+
+    val sink = local.evalType(".*").referencingIdentifiers
     val source = cpg.method.parameter
+
     val dependencies = sink
       .reachableByFlows(source)
       .l
@@ -131,5 +145,5 @@ PdgForFuncsResult(
       }
       .filter(_.toString != methodId)
     PdgForFuncsFunction(methodName, methodId, dependencies)
-  }
+  }.l
 ).asJson

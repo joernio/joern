@@ -85,32 +85,32 @@ import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
+val astEdges = cpg.graph.E.hasLabel("AST").l
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
 final case class AstForFuncsResult(file: String, functions: List[AstForFuncsFunction])
 
 implicit val encodeFuncResult: Encoder[AstForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[AstForFuncsFunction] = deriveEncoder
+
+implicit val encodeEdge: Encoder[Edge] =
+  (edge: Edge) =>
+    Json.obj(
+      ("id", Json.fromString(edge.toString)),
+      ("in", Json.fromString(edge.inVertex().toString)),
+      ("out", Json.fromString(edge.outVertex().toString))
+    )
+
 implicit val encodeVertex: Encoder[AstNode] =
   (node: AstNode) =>
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues(
-          node.graph.E
-            .hasLabel("AST")
-            .l
-            .collect {
-              case e if e.inVertex == node  => e
-              case e if e.outVertex == node => e
-            }
-            .map { edge: Edge =>
-              Json.obj(
-                ("id", Json.fromString(edge.toString)),
-                ("in", Json.fromString(edge.inVertex().toString)),
-                ("out", Json.fromString(edge.outVertex().toString))
-              )
-            })),
+          astEdges.collect {
+            case e if e.inVertex == node  => e
+            case e if e.outVertex == node => e
+          }.map(_.asJson))),
       ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
         Json.obj(
           ("key", Json.fromString(p.key())),
@@ -121,8 +121,10 @@ implicit val encodeVertex: Encoder[AstNode] =
 
 AstForFuncsResult(
   cpg.file.name.l.head,
-  cpg.method.name.l.map { methodName =>
-    val method = cpg.method.name(methodName)
-    AstForFuncsFunction(methodName, cpg.method.name(methodName).l.head.toString, method.astChildren.l)
-  }
+  cpg.method.map { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+    val astChildren = method.astMinusRoot.l
+    AstForFuncsFunction(methodName, methodId, astChildren)
+  }.l
 ).asJson
