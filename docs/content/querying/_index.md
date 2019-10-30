@@ -32,7 +32,7 @@ cpg.all
 res8: NodeSteps[StoredNode] = io.shiftleft.semanticcpg.language.NodeSteps@4cce421e
 ```
 
-Notice that the result is not a list of nodes but rather a variable type
+Notice that the result is not a list of nodes but rather a
 `NodeSteps[StoredNode]`. You can think of this as an *expression*
 which - only upon evaluation - yields all nodes [1]. The advantage of
 this two stage approach is that we can already perform calculations on
