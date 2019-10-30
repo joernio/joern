@@ -79,28 +79,29 @@ import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
+val edges = cpg.graph.E.hasLabel("AST", "CFG").l
+
 implicit val encodeFuncResult: Encoder[PdgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
+
+implicit val encodeEdge: Encoder[Edge] =
+  (edge: Edge) =>
+    Json.obj(
+      ("id", Json.fromString(edge.toString)),
+      ("in", Json.fromString(edge.inVertex().toString)),
+      ("out", Json.fromString(edge.outVertex().toString))
+    )
+
 implicit val encodeVertex: Encoder[CfgNode] =
   (node: CfgNode) =>
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues(
-          node.graph.E
-            .hasLabel("AST", "CFG")
-            .l
-            .collect {
-              case e if e.inVertex == node  => e
-              case e if e.outVertex == node => e
-            }
-            .map { edge: Edge =>
-              Json.obj(
-                ("id", Json.fromString(edge.toString)),
-                ("in", Json.fromString(edge.inVertex().toString)),
-                ("out", Json.fromString(edge.outVertex().toString))
-              )
-            })),
+          edges.collect {
+            case e if e.inVertex == node  => e
+            case e if e.outVertex == node => e
+          }.map(_.asJson))),
       ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
         Json.obj(
           ("key", Json.fromString(p.key())),
@@ -115,8 +116,8 @@ final case class PdgForFuncsResult(file: String, functions: List[PdgForFuncsFunc
 PdgForFuncsResult(
   cpg.file.name.l.head,
   cpg.method.name.l.map { methodName =>
-    val method = cpg.method.name(methodName)
-    val methodId = cpg.method.name(methodName).l.head.toString
+    val method = cpg.method.nameExact(methodName)
+    val methodId = cpg.method.nameExact(methodName).l.head.toString
     val sink = method.local.evalType(".*").referencingIdentifiers
     val source = cpg.method.parameter
     val dependencies = sink
