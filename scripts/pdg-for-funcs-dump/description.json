@@ -1,0 +1,4 @@
+{
+  "name": "pdg-for-funcs-dump",
+  "description": "Prints the corresponding PDG for each function as Json string to a file."
+}

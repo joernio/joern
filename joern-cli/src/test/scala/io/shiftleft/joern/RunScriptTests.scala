@@ -58,7 +58,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
     "work correctly for 'ast-for-funcs'" in {
       val actual = console.Console.runScript("ast-for-funcs", cpg).toString
-      actual should include regex """"file" : ".*/testcode/free/free.c""""
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")
@@ -70,7 +69,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
     "work correctly for 'cfg-for-funcs'" in {
       val actual = console.Console.runScript("cfg-for-funcs", cpg).toString
-      actual should include regex """"file" : ".*/testcode/free/free.c""""
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")
@@ -82,7 +80,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
     "work correctly for 'pdg-for-funcs'" in {
       val actual = console.Console.runScript("pdg-for-funcs", cpg).toString
-      actual should include regex """"file" : ".*/testcode/free/free.c""""
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")
@@ -94,7 +91,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
     "work correctly for 'graph-for-funcs'" in {
       val actual = console.Console.runScript("graph-for-funcs", cpg).toString
-      actual should include regex """"file" : ".*/testcode/free/free.c""""
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")

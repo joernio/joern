@@ -1,9 +1,9 @@
-/* cfg-for-funcs.scala
+/* cfg-for-funcs-dump.scala
 
-   This script returns a Json representation of the CFG for each method contained in the currently loaded CPG.
+   This script prints a Json string representation of the CFG for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
-   Output: Json
+   Output: Json string in file "cfg-for-funcs.json"
 
    Running the Script
    ------------------
@@ -68,8 +68,9 @@
               // ...
  */
 
-import scala.collection.JavaConverters._
+import java.io._
 
+import scala.collection.JavaConverters._
 import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
@@ -83,9 +84,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
-final case class CfgForFuncsResult(functions: List[CfgForFuncsFunction])
 
-implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
 
 implicit val encodeEdge: Encoder[Edge] =
@@ -110,13 +109,25 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
       }))
     )
 
-CfgForFuncsResult(
-  cpg.method.map { method =>
-    val methodName = method.fullName
-    val methodId = method.toString
-    val cfgNodes = new CfgNode(
-      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-    ).l
-    CfgForFuncsFunction(methodName, methodId, cfgNodes)
-  }.l
-).asJson
+val methods = cpg.method.l
+val numMethods = methods.size
+var current = 1
+
+val writer = new PrintWriter(new File("cfg-for-funcs.json"))
+
+writer.write("{")
+writer.write(""""functions": [""")
+methods.foreach { method =>
+  val methodName = method.fullName
+  val methodId = method.toString
+  val cfgNodes = new CfgNode(
+    method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
+  ).l
+  System.out.println(s"($current / $numMethods) Writing CFG for '$methodName'.")
+  current += 1
+  writer.write(CfgForFuncsFunction(methodName, methodId, cfgNodes).asJson.toString)
+  writer.write(",")
+}
+writer.write("]")
+writer.write("}")
+writer.close()

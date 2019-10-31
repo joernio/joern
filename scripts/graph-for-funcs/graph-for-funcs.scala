@@ -12,14 +12,12 @@
 
    The JSON generated has the following keys:
 
-    "file": The file (as full path) the CPG was generated from
-    "functions": Array of all methods contained in the currently loaded CPG
-      |_ "function": Method name as String
-      |_ "id": Method id as String (String representation of the underlying Method node)
-      |_ "AST": see ast-for-funcs script
-      |_ "CFG": see cfg-for-funcs script
-      |_ "PDG": see pdg-for-funcs script
-
+   "functions": Array of all methods contained in the currently loaded CPG
+     |_ "function": Method name as String
+     |_ "id": Method id as String (String representation of the underlying Method node)
+     |_ "AST": see ast-for-funcs script
+     |_ "CFG": see cfg-for-funcs script
+     |_ "PDG": see pdg-for-funcs script
  */
 
 import scala.collection.JavaConverters._
@@ -28,26 +26,25 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
+import io.shiftleft.dataflowengine.language._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 
 import gremlin.scala._
-import io.shiftleft.dataflowengine.language._
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
-
-val edges = cpg.graph.E.hasLabel("AST", "CFG").l
 
 final case class GraphForFuncsFunction(function: String,
                                        id: String,
                                        AST: List[nodes.AstNode],
                                        CFG: List[nodes.AstNode],
                                        PDG: List[nodes.AstNode])
-final case class GraphForFuncsResult(file: String, functions: List[GraphForFuncsFunction])
+final case class GraphForFuncsResult(functions: List[GraphForFuncsFunction])
 
 implicit val encodeEdge: Encoder[Edge] =
   (edge: Edge) =>
@@ -62,11 +59,7 @@ implicit val encodeNode: Encoder[nodes.AstNode] =
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
-        Json.fromValues(
-          edges.collect {
-            case e if e.inVertex == node  => e
-            case e if e.outVertex == node => e
-          }.map(_.asJson))),
+        Json.fromValues((node.inE("AST", "CFG").l ++ node.outE("AST", "CFG").l).map(_.asJson))),
       ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
         Json.obj(
           ("key", Json.fromString(p.key())),
@@ -79,7 +72,6 @@ implicit val encodeFuncFunction: Encoder[GraphForFuncsFunction] = deriveEncoder
 implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
 
 GraphForFuncsResult(
-  cpg.file.name.l.head,
   cpg.method.map { method =>
     val methodName = method.fullName
     val methodId = method.toString
@@ -97,8 +89,8 @@ GraphForFuncsResult(
         .out(EdgeTypes.AST)
         .hasLabel(NodeTypes.LOCAL)
         .cast[nodes.Local])
-    val sink = local.evalType(".*").referencingIdentifiers
-    val source = cpg.method.parameter
+    val sink = local.evalType(".*").referencingIdentifiers.dedup
+    val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
     val pdgChildren = sink
       .reachableByFlows(source)
@@ -112,6 +104,6 @@ GraphForFuncsResult(
       }
       .filter(_.toString != methodId)
 
-    GraphForFuncsFunction(methodName, methodId, astChildren, cfgChildren, pdgChildren)
+    GraphForFuncsFunction(methodName, methodId, astChildren, cfgChildren, pdgChildren.distinct)
   }.l
 ).asJson
