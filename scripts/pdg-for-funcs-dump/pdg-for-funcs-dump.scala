@@ -133,17 +133,15 @@ methods.foreach { method =>
       .hasLabel(NodeTypes.LOCAL)
       .cast[nodes.Local])
 
-  val sink = local.evalType(".*").referencingIdentifiers.dedup
+  val sink = local.referencingIdentifiers.dedup
   val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
   val dependencies = sink
-    .reachableByFlows(source)
+    .reachableBy(source).dedup
     .l
-    .flatMap { path =>
-      path.map {
-        case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
-        case trackingPoint                          => trackingPoint.cfgNode
-      }
+    .map {
+      case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
+      case trackingPoint                          => trackingPoint.cfgNode
     }
     .filter(_.toString != methodId)
   System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
