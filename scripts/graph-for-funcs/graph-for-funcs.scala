@@ -12,14 +12,12 @@
 
    The JSON generated has the following keys:
 
-    "file": The file (as full path) the CPG was generated from
-    "functions": Array of all methods contained in the currently loaded CPG
-      |_ "function": Method name as String
-      |_ "id": Method id as String (String representation of the underlying Method node)
-      |_ "AST": see ast-for-funcs script
-      |_ "CFG": see cfg-for-funcs script
-      |_ "PDG": see pdg-for-funcs script
-
+   "functions": Array of all methods contained in the currently loaded CPG
+     |_ "function": Method name as String
+     |_ "id": Method id as String (String representation of the underlying Method node)
+     |_ "AST": see ast-for-funcs script
+     |_ "CFG": see cfg-for-funcs script
+     |_ "PDG": see pdg-for-funcs script
  */
 
 import scala.collection.JavaConverters._
@@ -46,7 +44,7 @@ final case class GraphForFuncsFunction(function: String,
                                        AST: List[nodes.AstNode],
                                        CFG: List[nodes.AstNode],
                                        PDG: List[nodes.AstNode])
-final case class GraphForFuncsResult(file: String, functions: List[GraphForFuncsFunction])
+final case class GraphForFuncsResult(functions: List[GraphForFuncsFunction])
 
 implicit val encodeEdge: Encoder[Edge] =
   (edge: Edge) =>
@@ -74,7 +72,6 @@ implicit val encodeFuncFunction: Encoder[GraphForFuncsFunction] = deriveEncoder
 implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
 
 GraphForFuncsResult(
-  cpg.file.name.l.head, // TODO: support multiple files
   cpg.method.map { method =>
     val methodName = method.fullName
     val methodId = method.toString

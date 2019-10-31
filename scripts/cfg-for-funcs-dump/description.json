@@ -1,4 +1,4 @@
 {
   "name": "cfg-for-funcs-dump",
-  "description": "Returns the corresponding CFG for each function as Json string."
+  "description": "Prints the corresponding CFG for each function as Json string to a file."
 }

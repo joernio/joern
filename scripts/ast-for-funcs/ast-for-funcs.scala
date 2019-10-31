@@ -11,7 +11,6 @@
 
    The JSON generated has the following keys:
 
-    "file": The file (as full path) the CPG was generated from
     "functions": Array of all methods contained in the currently loaded CPG
       |_ "function": Method name as String
       |_ "id": Method id as String (String representation of the underlying Method node)
@@ -26,7 +25,6 @@
    Sample Output
    -------------
    {
-    "file" : "/path/to/free/free.c",
     "functions" : [
       {
         "function" : "free_list",
@@ -86,7 +84,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
-final case class AstForFuncsResult(file: String, functions: List[AstForFuncsFunction])
+final case class AstForFuncsResult(functions: List[AstForFuncsFunction])
 
 implicit val encodeFuncResult: Encoder[AstForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[AstForFuncsFunction] = deriveEncoder
@@ -114,7 +112,6 @@ implicit val encodeVertex: Encoder[AstNode] =
     )
 
 AstForFuncsResult(
-  cpg.file.name.l.head, // TODO: support multiple files
   cpg.method.map { method =>
     val methodName = method.fullName
     val methodId = method.toString

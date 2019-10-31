@@ -3,7 +3,7 @@
    This script prints a Json string representation of the AST for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
-   Output: Json string in file
+   Output: Json string in file "ast-for-funcs.json"
 
    Running the Script
    ------------------
@@ -26,7 +26,6 @@
    Sample Output
    -------------
    {
-    "file" : "/path/to/free/free.c",
     "functions" : [
       {
         "function" : "free_list",
@@ -128,6 +127,7 @@ methods.foreach { method =>
   System.out.println(s"($current / $numMethods) Writing AST for '$methodName'.")
   current += 1
   writer.write(AstForFuncsFunction(methodName, methodId, astChildren).asJson.toString)
+  writer.write(",")
 }
 writer.write("]")
 writer.write("}")

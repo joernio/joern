@@ -1,4 +1,4 @@
 {
   "name": "ast-for-funcs-dump",
-  "description": "Prints the corresponding AST for each function as Json string."
+  "description": "Prints the corresponding AST for each function as Json string to a file."
 }

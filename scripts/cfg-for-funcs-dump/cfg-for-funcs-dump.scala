@@ -3,7 +3,7 @@
    This script prints a Json string representation of the CFG for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
-   Output: Json string in file
+   Output: Json string in file "cfg-for-funcs.json"
 
    Running the Script
    ------------------
@@ -11,22 +11,20 @@
 
    The JSON generated has the following keys:
 
-    "file": The file (as full path) the CPG was generated from
-    "functions": Array of all methods contained in the currently loaded CPG
-      |_ "function": Method name as String
-      |_ "id": Method id as String (String representation of the underlying Method node)
-      |_ "CFG": Array of all nodes connected via CFG edges
-          |_ "id": Node id as String (String representation of the underlying CFG node)
-          |_ "properties": Array of properties of the current node as key-value pair
-          |_ "edges": Array of all CFG edges where the current node is referenced as inVertex or outVertex
-              |_ "id": Edge id as String (String representation of the CFG edge)
-              |_ "in": Node id as String of the inVertex node (String representation of the inVertex node)
-              |_ "out": Node id as String of the outVertex node (String representation of the outVertex node)
+   "functions": Array of all methods contained in the currently loaded CPG
+     |_ "function": Method name as String
+     |_ "id": Method id as String (String representation of the underlying Method node)
+     |_ "CFG": Array of all nodes connected via CFG edges
+         |_ "id": Node id as String (String representation of the underlying CFG node)
+         |_ "properties": Array of properties of the current node as key-value pair
+         |_ "edges": Array of all CFG edges where the current node is referenced as inVertex or outVertex
+             |_ "id": Edge id as String (String representation of the CFG edge)
+             |_ "in": Node id as String of the inVertex node (String representation of the inVertex node)
+             |_ "out": Node id as String of the outVertex node (String representation of the outVertex node)
 
    Sample Output
    -------------
    {
-    "file" : "/path/to/free/free.c",
     "functions" : [
       {
         "function" : "free_list",
@@ -86,9 +84,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
-final case class CfgForFuncsResult(file: String, functions: List[CfgForFuncsFunction])
 
-implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
 
 implicit val encodeEdge: Encoder[Edge] =
@@ -130,6 +126,7 @@ methods.foreach { method =>
   System.out.println(s"($current / $numMethods) Writing CFG for '$methodName'.")
   current += 1
   writer.write(CfgForFuncsFunction(methodName, methodId, cfgNodes).asJson.toString)
+  writer.write(",")
 }
 writer.write("]")
 writer.write("}")

@@ -3,7 +3,7 @@
    This script prints a Json string representation of the PDG for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
-   Output: Json string
+   Output: Json string in file "pdg-for-funcs.json"
 
    Running the Script
    ------------------
@@ -11,22 +11,20 @@
 
    The JSON generated has the following keys:
 
-    "file": The file (as full path) the CPG was generated from
-    "functions": Array of all methods contained in the currently loaded CPG
-      |_ "function": Method name as String
-      |_ "id": Method id as String (String representation of the underlying Method node)
-      |_ "PDG": Array of all nodes that are reachable by data-flow or control-flow from the current method locals
-          |_ "id": Node id as String (String representation of the underlying node)
-          |_ "properties": Array of properties of the current node as key-value pair
-          |_ "edges": Array of all AST and CFG edges where the current node is referenced as inVertex or outVertex
-              |_ "id": Edge id as String (String representation of the edge)
-              |_ "in": Node id as String of the inVertex node (String representation of the inVertex node)
-              |_ "out": Node id as String of the outVertex node (String representation of the outVertex node)
+   "functions": Array of all methods contained in the currently loaded CPG
+     |_ "function": Method name as String
+     |_ "id": Method id as String (String representation of the underlying Method node)
+     |_ "PDG": Array of all nodes that are reachable by data-flow or control-flow from the current method locals
+         |_ "id": Node id as String (String representation of the underlying node)
+         |_ "properties": Array of properties of the current node as key-value pair
+         |_ "edges": Array of all AST and CFG edges where the current node is referenced as inVertex or outVertex
+             |_ "id": Edge id as String (String representation of the edge)
+             |_ "in": Node id as String of the inVertex node (String representation of the inVertex node)
+             |_ "out": Node id as String of the outVertex node (String representation of the outVertex node)
 
    Sample Output
    -------------
    {
-    "file" : "/path/to/free/free.c",
     "functions" : [
       {
         "function" : "free_list",
@@ -123,8 +121,6 @@ methods.foreach { method =>
   val methodName = method.fullName
   val methodId = method.toString
 
-  System.out.println(s"In '$methodName' ...")
-
   val local = new Local(
     method
       .out(EdgeTypes.CONTAINS)
@@ -147,6 +143,7 @@ methods.foreach { method =>
   System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
   current += 1
   writer.write(PdgForFuncsFunction(methodName, methodId, dependencies.distinct).asJson.toString)
+  writer.write(",")
 }
 writer.write("]")
 writer.write("}")
