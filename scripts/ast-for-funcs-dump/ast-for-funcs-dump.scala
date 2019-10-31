@@ -1,9 +1,9 @@
-/* ast-for-funcs.scala
+/* ast-for-funcs-dump.scala
 
-   This script returns a Json representation of the AST for each method contained in the currently loaded CPG.
+   This script prints a Json string representation of the AST for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
-   Output: Json
+   Output: Json string in file
 
    Running the Script
    ------------------
@@ -73,6 +73,8 @@
               // ...
  */
 
+import java.io._
+
 import scala.collection.JavaConverters._
 
 import io.circe.syntax._
@@ -86,9 +88,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
-final case class AstForFuncsResult(file: String, functions: List[AstForFuncsFunction])
 
-implicit val encodeFuncResult: Encoder[AstForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[AstForFuncsFunction] = deriveEncoder
 
 implicit val encodeEdge: Encoder[Edge] =
@@ -113,12 +113,22 @@ implicit val encodeVertex: Encoder[AstNode] =
       }))
     )
 
-AstForFuncsResult(
-  cpg.file.name.l.head, // TODO: support multiple files
-  cpg.method.map { method =>
-    val methodName = method.fullName
-    val methodId = method.toString
-    val astChildren = method.astMinusRoot.l
-    AstForFuncsFunction(methodName, methodId, astChildren)
-  }.l
-).asJson
+val methods = cpg.method.l
+val numMethods = methods.size
+var current = 1
+
+val writer = new PrintWriter(new File("ast-for-funcs.json"))
+
+writer.write("{")
+writer.write(""""functions": [""")
+methods.foreach { method =>
+  val methodName = method.fullName
+  val methodId = method.toString
+  val astChildren = method.astMinusRoot.l
+  System.out.println(s"($current / $numMethods) Writing AST for '$methodName'.")
+  current += 1
+  writer.write(AstForFuncsFunction(methodName, methodId, astChildren).asJson.toString)
+}
+writer.write("]")
+writer.write("}")
+writer.close()

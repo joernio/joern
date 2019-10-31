@@ -67,22 +67,21 @@
  */
 
 import scala.collection.JavaConverters._
-
 import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
 import io.shiftleft.dataflowengine.language._
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes
 
 import gremlin.scala._
+import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
-
-val edges = cpg.graph.E.hasLabel("AST", "CFG").l
 
 implicit val encodeFuncResult: Encoder[PdgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
@@ -100,11 +99,7 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
-        Json.fromValues(
-          edges.collect {
-            case e if e.inVertex == node  => e
-            case e if e.outVertex == node => e
-          }.map(_.asJson))),
+        Json.fromValues((node.inE("AST", "CFG").l ++ node.outE("AST", "CFG").l).map(_.asJson))),
       ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
         Json.obj(
           ("key", Json.fromString(p.key())),
@@ -117,7 +112,7 @@ final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nod
 final case class PdgForFuncsResult(file: String, functions: List[PdgForFuncsFunction])
 
 PdgForFuncsResult(
-  cpg.file.name.l.head,
+  cpg.file.name.l.head, // TODO: support multiple files
   cpg.method.map { method =>
     val methodName = method.fullName
     val methodId = method.toString
@@ -130,20 +125,19 @@ PdgForFuncsResult(
         .hasLabel(NodeTypes.LOCAL)
         .cast[nodes.Local])
 
-    val sink = local.evalType(".*").referencingIdentifiers
-    val source = cpg.method.parameter
+    val sink = local.evalType(".*").referencingIdentifiers.dedup
+    val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
     val dependencies = sink
       .reachableByFlows(source)
       .l
       .flatMap { path =>
-        path
-          .map {
-            case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
-            case trackingPoint                          => trackingPoint.cfgNode
-          }
+        path.map {
+          case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
+          case trackingPoint                          => trackingPoint.cfgNode
+        }
       }
       .filter(_.toString != methodId)
-    PdgForFuncsFunction(methodName, methodId, dependencies)
+    PdgForFuncsFunction(methodName, methodId, dependencies.distinct)
   }.l
 ).asJson

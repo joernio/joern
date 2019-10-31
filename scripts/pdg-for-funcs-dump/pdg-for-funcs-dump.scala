@@ -1,9 +1,9 @@
-/* cfg-for-funcs.scala
+/* pdg-for-funcs-dump.scala
 
-   This script returns a Json representation of the CFG for each method contained in the currently loaded CPG.
+   This script prints a Json string representation of the PDG for each method contained in the currently loaded CPG.
 
    Input: A valid CPG
-   Output: Json
+   Output: Json string
 
    Running the Script
    ------------------
@@ -15,11 +15,11 @@
     "functions": Array of all methods contained in the currently loaded CPG
       |_ "function": Method name as String
       |_ "id": Method id as String (String representation of the underlying Method node)
-      |_ "CFG": Array of all nodes connected via CFG edges
-          |_ "id": Node id as String (String representation of the underlying CFG node)
+      |_ "PDG": Array of all nodes that are reachable by data-flow or control-flow from the current method locals
+          |_ "id": Node id as String (String representation of the underlying node)
           |_ "properties": Array of properties of the current node as key-value pair
-          |_ "edges": Array of all CFG edges where the current node is referenced as inVertex or outVertex
-              |_ "id": Edge id as String (String representation of the CFG edge)
+          |_ "edges": Array of all AST and CFG edges where the current node is referenced as inVertex or outVertex
+              |_ "id": Edge id as String (String representation of the edge)
               |_ "in": Node id as String of the inVertex node (String representation of the inVertex node)
               |_ "out": Node id as String of the outVertex node (String representation of the outVertex node)
 
@@ -31,7 +31,7 @@
       {
         "function" : "free_list",
         "id" : "io.shiftleft.codepropertygraph.generated.nodes.Method@b",
-        "CFG" : [
+        "PDG" : [
           {
             "id" : "io.shiftleft.codepropertygraph.generated.nodes.Call@12",
             "edges" : [
@@ -40,11 +40,7 @@
                 "in" : "io.shiftleft.codepropertygraph.generated.nodes.Call@12",
                 "out" : "io.shiftleft.codepropertygraph.generated.nodes.Identifier@15"
               },
-              {
-                "id" : "io.shiftleft.codepropertygraph.generated.edges.Cfg@1d4e9",
-                "in" : "io.shiftleft.codepropertygraph.generated.nodes.Identifier@18",
-                "out" : "io.shiftleft.codepropertygraph.generated.nodes.Call@12"
-              }
+              // ...
             ],
             "properties" : [
               {
@@ -70,25 +66,26 @@
               // ...
  */
 
-import scala.collection.JavaConverters._
+import java.io._
 
+import scala.collection.JavaConverters._
 import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
-import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
+import io.shiftleft.dataflowengine.language._
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.semanticcpg.language.types.expressions.Call
+import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes
 
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
-final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
-final case class CfgForFuncsResult(file: String, functions: List[CfgForFuncsFunction])
-
-implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
-implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
+implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
 
 implicit val encodeEdge: Encoder[Edge] =
   (edge: Edge) =>
@@ -103,7 +100,7 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
     Json.obj(
       ("id", Json.fromString(node.toString)),
       ("edges",
-        Json.fromValues((node.inE("CFG").l ++ node.outE("CFG").l).map(_.asJson))),
+        Json.fromValues((node.inE("AST", "CFG").l ++ node.outE("AST", "CFG").l).map(_.asJson))),
       ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
         Json.obj(
           ("key", Json.fromString(p.key())),
@@ -112,14 +109,47 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
       }))
     )
 
-CfgForFuncsResult(
-  cpg.file.name.l.head, // TODO: support multiple files
-  cpg.method.map { method =>
-    val methodName = method.fullName
-    val methodId = method.toString
-    val cfgNodes = new CfgNode(
-      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-    ).l
-    CfgForFuncsFunction(methodName, methodId, cfgNodes)
-  }.l
-).asJson
+final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nodes.CfgNode])
+
+val methods = cpg.method.l
+val numMethods = methods.size
+var current = 1
+
+val writer = new PrintWriter(new File("pdg-for-funcs.json"))
+
+writer.write("{")
+writer.write(""""functions": [""")
+methods.foreach { method =>
+  val methodName = method.fullName
+  val methodId = method.toString
+
+  System.out.println(s"In '$methodName' ...")
+
+  val local = new Local(
+    method
+      .out(EdgeTypes.CONTAINS)
+      .hasLabel(NodeTypes.BLOCK)
+      .out(EdgeTypes.AST)
+      .hasLabel(NodeTypes.LOCAL)
+      .cast[nodes.Local])
+
+  val sink = local.evalType(".*").referencingIdentifiers.dedup
+  val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
+
+  val dependencies = sink
+    .reachableByFlows(source)
+    .l
+    .flatMap { path =>
+      path.map {
+        case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
+        case trackingPoint                          => trackingPoint.cfgNode
+      }
+    }
+    .filter(_.toString != methodId)
+  System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
+  current += 1
+  writer.write(PdgForFuncsFunction(methodName, methodId, dependencies.distinct).asJson.toString)
+}
+writer.write("]")
+writer.write("}")
+writer.close()
