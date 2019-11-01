@@ -99,6 +99,13 @@ version of sbt works as sbt downloads the correct version for building
 joern as part of the build process.
 
 
+If you are building Joern using macOS you will need to install the
+greadlink package:
+
+```bash
+brew install coreutils
+```
+
 Once the dependencies are installed, run
 
 ```bash
