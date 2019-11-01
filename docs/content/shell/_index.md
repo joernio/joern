@@ -29,7 +29,7 @@ Finally, it offers pipe operators to write results to files:
 * |> "$filename" writes to file at $filename
 * |>> "$filename" appends to file at $filename
 
-## Inline Code Reading
+## Inline Code Browsing
 
 The Joern shell allows you to read code associated with query
 results. For any expression, you can simply query the code field. For
@@ -83,8 +83,11 @@ pager. Finally, if you want to read the code in your favourite editor,
 just dump it to a file:
 
 ```bash
-cpg.method.name("memcpy").callIn.dump |> "/tmp/foo.c"
+cpg.method.name("memcpy").callIn.dumpRaw |> "/tmp/foo.c"
 ```
+
+We use `dumpRaw` here to skip syntax highlighting, as your editor will
+most likely do that for you.
 
 ## Running Scripts
 
