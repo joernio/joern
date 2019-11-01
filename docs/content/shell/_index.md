@@ -71,7 +71,7 @@ int main() {
 
   if(new_len <= 256) {
 	memcpy(buf, first, first_len);
-  /* ===> */ memcpy(buf + first_len, second, second_len);
+        memcpy(buf + first_len, second, second_len); /* <=== */ 
   }
 }
 
