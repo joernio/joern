@@ -54,6 +54,8 @@ You can also pipe the result list into a pager as follows:
 joern> browse(cpg.method.name("memcpy").callIn.code.l)
 ```
 
+**Please make sure [source-highlight](https://www.gnu.org/software/src-highlite/) is installed for the `.dump` feature to work.**
+
 To study the context in which a result occurs, you can use the `.dump`
 method, which will dump the enclosing function's code for each
 finding, and point you to the finding via an arrow:
