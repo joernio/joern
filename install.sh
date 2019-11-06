@@ -12,8 +12,6 @@ check_installed() {
   fi
 }
 check_installed "sbt"
-check_installed "curl"
-
 
 # Confirm install with user.
 JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
