@@ -16,7 +16,6 @@ check_installed "curl"
 
 
 # Confirm install with user.
-# TODO: Specify custom link dir.
 JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 
