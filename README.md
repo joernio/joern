@@ -9,5 +9,6 @@ Releases
 ---
 Pre-built instances of the Joern command-line tools may be found [here](https://github.com/ShiftLeftSecurity/joern/releases).
 
-To run the Joern tools, you must have version 8 or above of the Java Runtime Environment installed.
+It is recommended you install the prebuilt Joern tooling by running the [install](https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-install.sh) script.
 
+To run the Joern tools, you must have version 8 or above of the Java Runtime Environment installed.
