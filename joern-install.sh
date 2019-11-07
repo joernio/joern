@@ -11,13 +11,12 @@ check_installed() {
     exit 1
   fi
 }
-check_installed "sbt"
 
 # Confirm install with user.
 JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 
-echo -n "This script will build Joern and download the FuzzyC2CPG preprocessor. Proceed? [Y/n]: "
+echo -n "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
 read -r JOERN_PROMPT_ANSWER
 
 if [ "$JOERN_PROMPT_ANSWER" != "Y" ] && [ "$JOERN_PROMPT_ANSWER" != "y" ]; then
@@ -44,10 +43,20 @@ if [ "$JOERN_LINK_ANSWER" = "Y" ] || [ "$JOERN_LINK_ANSWER" = "y" ]; then
   fi
 fi
 
-# Build and extract the Joern CLI & Server
-cd "$SCRIPT_ABS_DIR"; sbt clean createDistribution; cd - > /dev/null;
+# Download and extract the Joern CLI & Server
+check_installed "curl"
+
+echo -n "Please enter a Joern version/tag or press enter for the latest version: "
+read -r JOERN_VERSION
+if [ "$JOERN_VERSION" = "" ]; then
+  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-{cli,server}.zip" -o "$SCRIPT_ABS_DIR/joern-#1.zip"
+else
+  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-{cli,server}.zip" -o "$SCRIPT_ABS_DIR/joern-#1.zip"
+fi
+
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-server.zip
+rm "$SCRIPT_ABS_DIR"/joern-cli.zip "$SCRIPT_ABS_DIR"/joern-server.zip
 
 # Link to JOERN_LINK_DIR if desired by the user
 if [ -n "${JOERN_LINK_DIR+dummy}" ]; then

@@ -26,6 +26,7 @@ jobs:
       token: "$GITHUB_TOKEN"
       target_commitish: "$TRAVIS_COMMIT"
       file:
+      - "./joern-install.sh"
       - "./joern-cli.zip"
       - "./joern-cli.zip.sha512"
       - "./joern-server.zip"
