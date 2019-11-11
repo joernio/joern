@@ -7,8 +7,11 @@ ThisBuild / scalaVersion := "2.12.8"
 val cpgVersion = "0.10.112"
 val fuzzyc2cpgVersion = "1.1.8"
 
-ThisBuild / resolvers += Resolver.mavenLocal
-ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+ThisBuild / resolvers ++= Seq(
+  Resolver.mavenLocal,
+  Resolver.bintrayRepo("shiftleft", "maven"),
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+)
 
 scmInfo := Some(
   ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"), "scm:git@github.com:ShiftLeftSecurity/joern.git"))
