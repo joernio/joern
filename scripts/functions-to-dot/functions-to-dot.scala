@@ -16,7 +16,7 @@ import scala.annotation.tailrec
 def getTopLevelExpressions(expression: Vertex): List[Expression] = {
   expression
     .out(EdgeTypes.AST)
-    .not(_.hasLabel(NodeTypes.LOCAL))
+    .hasLabel(NodeTypes.BLOCK, NodeTypes.CONTROL_STRUCTURE, NodeTypes.RETURN, NodeTypes.CALL)
     .cast[nodes.Expression]
     .l
 }
@@ -45,7 +45,9 @@ def dotFromMethod(method: Method): List[String] = {
         case ex: Call =>
           val currDotRepr = s""" "$parentId" -> "${ex.id}" [label="${ex.code}"];"""
           go(tail, parent, dots :+ currDotRepr)
-        case ex  => throw new RuntimeException(s"Unhandled node type: [${ex.getClass.getSimpleName}]")
+        case _  =>
+          // Ignore all other node types.
+          go(tail, parent, dots)
       }
     }
   }
@@ -54,7 +56,7 @@ def dotFromMethod(method: Method): List[String] = {
     .out(EdgeTypes.AST)
     .hasLabel(NodeTypes.BLOCK)
     .out(EdgeTypes.AST)
-    .not(_.hasLabel(NodeTypes.LOCAL))
+    .not(_.hasLabel(NodeTypes.LOCAL, NodeTypes.TYPE_DECL))
     .cast[nodes.Expression]
     .l
 
