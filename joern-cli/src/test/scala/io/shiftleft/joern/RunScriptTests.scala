@@ -103,6 +103,23 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       actual should include(""""PDG"""")
     }
 
+    "work correctly for 'functions-to-dot'" in {
+      val List(actual) = console.Console.runScript("functions-to-dot", cpg).asInstanceOf[List[String]]
+
+      val expectedRegex =
+        """|digraph free_list \{
+           | "\d+" -> "\d+" \[label="for \(struct node \*p = head; p != NULL; p = q\)"\];
+           | "\d+" -> "\d+" \[label="\*p = head"\];
+           | "\d+" -> "\d+" \[label="p != NULL"\];
+           | "\d+" -> "\d+" \[label="p = q"\];
+           | "\d+" -> "\d+" \[label=BLOCK\];
+           | "\d+" -> "\d+" \[label="q = p->next"\];
+           | "\d+" -> "\d+" \[label="free\(p\)"\];
+           |\}
+           |""".stripMargin
+
+      actual should fullyMatch regex expectedRegex
+    }
   }
 
 }
