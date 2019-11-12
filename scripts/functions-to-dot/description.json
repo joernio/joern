@@ -1,0 +1,4 @@
+{
+  "name": "functions-to-dot",
+  "description": "Generates a dot graph for each function in the provided CPG. Each file will contain"
+}
