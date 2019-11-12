@@ -1,4 +1,4 @@
 {
   "name": "functions-to-dot",
-  "description": "Generates a dot graph for each function in the provided CPG. Each file will contain"
+  "description": "Generates a list of strings, each containing a dot graph for every internal function in the provided CPG."
 }

@@ -63,12 +63,12 @@ def dotFromMethod(method: Method): List[String] = {
 
 def stringifyDotFromMethod(method: Method): String = {
   val sb = new StringBuilder
-  sb.append(s"digraph ${method.name} {\n node[shape=box];\n")
+  sb.append(s"digraph ${method.name} {\n")
   sb.append(dotFromMethod(method).mkString("\n"))
   sb.append("\n}\n")
   sb.toString
 }
 
-cpg.method.filterNot(_.external).l.map { method =>
+cpg.method.internal.l.map { method =>
   stringifyDotFromMethod(method)
 }
