@@ -4,10 +4,13 @@ name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.12.8"
 
-val cpgVersion = "0.10.112"
-val fuzzyc2cpgVersion = "1.1.8"
+val cpgVersion = "0.10.122"
+val fuzzyc2cpgVersion = "1.1.11"
 
 ThisBuild / resolvers += Resolver.mavenLocal
+
+ThisBuild / resolvers += Resolver.bintrayRepo("shiftleft", "maven")
+
 ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 
 scmInfo := Some(
