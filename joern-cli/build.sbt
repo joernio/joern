@@ -13,10 +13,17 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion,
   "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.1.0",
   "io.circe" %% "circe-generic" % "0.12.2",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test
+)
+
+excludeDependencies ++= Seq(
+  // This project uses Logback in place of Log4j
+  ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl"),
+  ExclusionRule("org.slf4j", "slf4j-simple")
 )
 
 // Weird hack to fix https://github.com/scala/bug/issues/10058
