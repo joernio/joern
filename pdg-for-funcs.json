@@ -1,0 +1,16 @@
+{"functions": [{
+  "function" : "printf",
+  "id" : "io.shiftleft.codepropertygraph.generated.nodes.Method@22",
+  "PDG" : [
+  ]
+},{
+  "function" : "main",
+  "id" : "io.shiftleft.codepropertygraph.generated.nodes.Method@6",
+  "PDG" : [
+  ]
+},{
+  "function" : "print_number",
+  "id" : "io.shiftleft.codepropertygraph.generated.nodes.Method@11",
+  "PDG" : [
+  ]
+},]}

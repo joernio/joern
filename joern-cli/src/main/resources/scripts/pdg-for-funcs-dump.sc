@@ -134,10 +134,7 @@ methods.foreach { method =>
   val dependencies = sink
     .reachableBy(source).dedup
     .l
-    .map {
-      case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
-      case trackingPoint                          => trackingPoint.cfgNode
-    }
+    .map(_.cfgNode)
     .filter(_.toString != methodId)
   System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
   current += 1
