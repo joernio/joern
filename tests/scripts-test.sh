@@ -19,6 +19,9 @@ for script in "$JOERN_SCRIPTS_DIR"/*.sc; do
     echo "Script [$script] failed to run successfully."
     exit 1
   fi
+
+  echo "Script [$script] passed..."
+  echo ""
 done
 
-echo "Scripts tested successfully."
+echo "All scripts tested successfully."
