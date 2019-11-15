@@ -12,7 +12,9 @@ fuzzyc2cpg
 joern-cli.zip
 joern-server.zip
 cpg.bin.zip
-
+ast-for-funcs.json
+cfg-for-funcs.json
+pdg-for-funcs.json
 
 # Created by https://www.gitignore.io/api/java,linux,windows,intellij
 # Edit at https://www.gitignore.io/?templates=java,linux,windows,intellij
