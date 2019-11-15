@@ -26,15 +26,16 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 import io.circe.{Encoder, Json}
 
-import io.shiftleft.dataflowengine.language._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.dataflowengine.language._
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
-
+import io.shiftleft.joern.console.Console.cpg
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty

@@ -1,4 +1,0 @@
-{
-  "name": "graph-for-funcs",
-  "description": "Returns the corresponding graph (AST+CFG+PDG) for each function as Json object."
-}

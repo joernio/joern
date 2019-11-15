@@ -72,19 +72,19 @@
               // ...
  */
 
+import gremlin.scala._
+import io.circe.generic.semiauto._
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
+import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
+
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.joern.console.Console.cpg
+import io.shiftleft.semanticcpg.language._
+
 import java.io._
 
 import scala.collection.JavaConverters._
-
-import io.circe.syntax._
-import io.circe.generic.semiauto._
-import io.circe.{Encoder, Json}
-
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
-
-import gremlin.scala._
-import org.apache.tinkerpop.gremlin.structure.Edge
-import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
 

@@ -1,0 +1,40 @@
+{
+  "scripts": [
+    {
+        "name": "ast-for-funcs",
+        "description": "Returns the corresponding AST for each function as Json object."
+    },
+    {
+      "name": "ast-for-funcs-dump",
+      "description": "Prints the corresponding AST for each function as Json string to a file."
+    },
+    {
+      "name": "cfg-for-funcs",
+      "description": "Returns the corresponding CFG for each function as Json object."
+    },
+    {
+      "name": "cfg-for-funcs-dump",
+      "description": "Prints the corresponding CFG for each function as Json string to a file."
+    },
+    {
+      "name": "cfgToDot",
+      "description": "Generates a dot graph for your cfg."
+    },
+    {
+      "name": "functions-to-dot",
+      "description": "Generates a list of strings, each containing a dot graph for every internal function in the provided CPG."
+    },
+    {
+      "name": "graph-for-funcs",
+      "description": "Returns the corresponding graph (AST+CFG+PDG) for each function as Json object."
+    },
+    {
+      "name": "list-funcs",
+      "description": "Lists all functions."
+    },
+    {
+      "name": "pdg-for-funcs-dump",
+      "description": "Prints the corresponding PDG for each function as Json string to a file."
+    }
+  ]
+}

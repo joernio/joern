@@ -68,20 +68,20 @@
               // ...
  */
 
+import gremlin.scala._
+import io.circe.generic.semiauto._
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
+import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
+
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.joern.console.Console.cpg
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
+
 import java.io._
 
 import scala.collection.JavaConverters._
-import io.circe.syntax._
-import io.circe.generic.semiauto._
-import io.circe.{Encoder, Json}
-
-import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes
-
-import gremlin.scala._
-import org.apache.tinkerpop.gremlin.structure.Edge
-import org.apache.tinkerpop.gremlin.structure.VertexProperty
 
 final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
 

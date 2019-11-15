@@ -34,13 +34,14 @@
    }
  */
 
-import java.nio.file.Paths
-
 import gremlin.scala._
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.semanticcpg.utils.ExpandTo
 import org.apache.tinkerpop.gremlin.structure.Direction
+
 import io.shiftleft.Implicits.JavaIteratorDeco
+import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.joern.console.Console.cpg
+
+import java.nio.file.Paths
 
 /** Some helper functions: adapted from ReachingDefPass.scala in codeproperty graph repo */
 def vertexToStr(vertex: Vertex): String = {

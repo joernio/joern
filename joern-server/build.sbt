@@ -2,7 +2,7 @@ enablePlugins(JavaAppPackaging)
 enablePlugins(UniversalPlugin)
 
 organization := "io.shiftleft"
-name := "Joern Server"
+name := "joern-server"
 maintainer := "jacob@shiftleft.io"
 
 resolvers += Classpaths.typesafeReleases
