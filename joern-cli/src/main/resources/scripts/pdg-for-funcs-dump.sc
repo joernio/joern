@@ -78,7 +78,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 
-import java.io._
+import java.io.{PrintWriter, File => JFile}
 
 import scala.collection.JavaConverters._
 
@@ -112,7 +112,7 @@ val methods = cpg.method.l
 val numMethods = methods.size
 var current = 1
 
-val writer = new PrintWriter(new File("pdg-for-funcs.json"))
+val writer = new PrintWriter(new JFile("pdg-for-funcs.json"))
 
 writer.write("{")
 writer.write(""""functions": [""")

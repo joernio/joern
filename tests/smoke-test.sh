@@ -5,7 +5,7 @@ SCRIPT_ABS_PATH=$(readlink -f "$0")
 SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 # Setup
-JOERN_PARSER="$SCRIPT_ABS_DIR"/joern-parse
+JOERN_PARSER="$SCRIPT_ABS_DIR"/../joern-parse
 JOERN_PARSER_TEST_DIR="$SCRIPT_ABS_DIR"/smoke-test-repos
 
 JOERN_PARSER_TEST_PROJECTS=(

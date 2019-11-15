@@ -72,7 +72,6 @@
               // ...
  */
 
-import gremlin.scala._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -81,8 +80,7 @@ import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
-
-import java.io._
+import java.io.{PrintWriter, File => JFile}
 
 import scala.collection.JavaConverters._
 
@@ -116,7 +114,7 @@ val methods = cpg.method.l
 val numMethods = methods.size
 var current = 1
 
-val writer = new PrintWriter(new File("ast-for-funcs.json"))
+val writer = new PrintWriter(new JFile("ast-for-funcs.json"))
 
 writer.write("{")
 writer.write(""""functions": [""")

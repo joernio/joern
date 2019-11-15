@@ -79,7 +79,7 @@ import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
 
-import java.io._
+import java.io.{PrintWriter, File => JFile}
 
 import scala.collection.JavaConverters._
 
@@ -113,7 +113,7 @@ val methods = cpg.method.l
 val numMethods = methods.size
 var current = 1
 
-val writer = new PrintWriter(new File("cfg-for-funcs.json"))
+val writer = new PrintWriter(new JFile("cfg-for-funcs.json"))
 
 writer.write("{")
 writer.write(""""functions": [""")
