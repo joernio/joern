@@ -12,7 +12,7 @@ stages:
 jobs:
   include:
   - stage: test
-    script: sbt clean scalafmtCheck +test stage
+    script: sbt clean scalafmtCheck +test stage && ./tests/scripts-test.sh
   - stage: release
     script: skip
     before_deploy:

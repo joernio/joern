@@ -78,7 +78,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 
-import java.io._
+import java.io.{PrintWriter, File => JFile}
 
 import scala.collection.JavaConverters._
 
@@ -112,7 +112,7 @@ val methods = cpg.method.l
 val numMethods = methods.size
 var current = 1
 
-val writer = new PrintWriter(new File("pdg-for-funcs.json"))
+val writer = new PrintWriter(new JFile("pdg-for-funcs.json"))
 
 writer.write("{")
 writer.write(""""functions": [""")
@@ -134,10 +134,7 @@ methods.foreach { method =>
   val dependencies = sink
     .reachableBy(source).dedup
     .l
-    .map {
-      case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
-      case trackingPoint                          => trackingPoint.cfgNode
-    }
+    .map(_.cfgNode)
     .filter(_.toString != methodId)
   System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
   current += 1
