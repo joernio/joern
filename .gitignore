@@ -9,7 +9,7 @@ fuzzyc2cpg
 .idea/
 joern-cli.zip
 joern-server.zip
-fuzzyppcli-dist
+fuzzyppcli/
 cpg.bin.zip
 
 

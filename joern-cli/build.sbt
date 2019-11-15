@@ -1,5 +1,3 @@
-import java.io.FilenameFilter
-
 enablePlugins(JavaAppPackaging)
 enablePlugins(UniversalPlugin)
 

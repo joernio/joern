@@ -37,12 +37,12 @@ class JoernScriptExecutor extends CpgQueryExecutor[AnyRef] {
   }
 
   override def executeQuery(cpg: Cpg, query: String): IO[UUID] =
-    ??? // unused within Joern
+    ??? // unused in the Joern CLI
 
   override def executeQuerySync(cpg: Cpg, query: String): IO[CpgOperationResult[AnyRef]] =
     underlying.executeQuerySync(cpg, query)
 
   override def retrieveQueryResult(queryId: UUID): OptionT[IO, CpgOperationResult[AnyRef]] =
-    ??? // unused within Joern
+    ??? // unused in the Joern CLI
 
 }
