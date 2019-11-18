@@ -71,6 +71,7 @@ res5: List[String] = List(
   "IDENTIFIER",
   "LITERAL",
   "LOCAL",
+  "MEMBER",
   "META_DATA",
   "METHOD",
   "METHOD_INST",
