@@ -5,7 +5,7 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.12.8"
 
 val cpgVersion = "0.10.139"
-val fuzzyc2cpgVersion = "1.1.13"
+val fuzzyc2cpgVersion = "1.1.14"
 
 ThisBuild / resolvers += Resolver.mavenLocal
 
