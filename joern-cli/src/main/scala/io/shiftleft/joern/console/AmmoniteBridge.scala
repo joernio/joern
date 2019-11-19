@@ -1,10 +1,10 @@
 package io.shiftleft.joern.console
 
-import io.shiftleft.console.BridgeBase
+import io.shiftleft.console.{BridgeBase, JoernProduct}
 
 object AmmoniteBridge extends App with BridgeBase {
 
-  runAmmonite(parseConfig(args))
+  runAmmonite(parseConfig(args), JoernProduct)
 
   /**
     * Code that is executed when starting the shell

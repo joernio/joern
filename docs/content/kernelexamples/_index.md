@@ -58,7 +58,7 @@ number.
 println(sinkArguments.reachableByFlows(cpg.identifier).l.size)
 ```
 
-as of writing this returns 1069, but your result may very. 
+as of writing this returns 559, but your result may very. 
 
 Let's look for something which doesn't overwhelm us.
 It would be interesting to have an estimate if the arguments of `copy_from_user`
@@ -108,35 +108,27 @@ reachingDefs1
 should give us output similar to this, but your results may differ:
 
 ```
-fibsize = 0
-i = 0
-fibptr = aac_fib_alloc(dev)
-kmalloc(fibsize, GFP_KERNEL)
-actual_fibsize64 == fibsize
-actual_fibsize64 = actual_fibsize + (user_srbcmd->sg.count & 0xff) *\n\t  (sizeof(struct sgentry64) - sizeof(struct sgentry))
-*usg32 = &user_srbcmd->sg
-kfib = dma_alloc_coherent(&dev->pdev->dev, size, &daddr,\n\t\t\t\t\t  GFP_KERNEL)
-kmemdup(upsg,\n\t\t\t\t      actual_fibsize - sizeof(struct aac_srb)\n\t\t\t\t      + sizeof(struct sgmap), GFP_KERNEL)
-i = 0
-actual_fibsize = sizeof(struct aac_srb) - sizeof(struct sgentry) +\n\t\t((user_srbcmd->sg.count & 0xff) * sizeof(struct sgentry))
-* upsg = (struct user_sgmap64*)&user_srbcmd->sg
-user_srbcmd = kmalloc(fibsize, GFP_KERNEL)
-&daddr
-dma_alloc_coherent(&dev->pdev->dev, size, &daddr,\n\t\t\t\t\t  GFP_KERNEL)
-aac_fib_alloc(dev)
-actual_fibsize + (user_srbcmd->sg.count & 0xff) *\n\t  (sizeof(struct sgentry64) - sizeof(struct sgentry))
-i = 0
-usg = kmemdup(upsg,\n\t\t\t\t      actual_fibsize - sizeof(struct aac_srb)\n\t\t\t\t      + sizeof(struct sgmap), GFP_KERNEL)
-i = 0
+reachingDefs1.intersect(reachingDefs2).asInstanceOf[Set[Call]].foreach(elem => println(elem.code)) 
 kfib = fibptr->hw_fib_va
-size = le16_to_cpu(kfib->header.SenderSize)
-* usg = (struct user_sgmap64 *)upsg
-actual_fibsize - sizeof(struct aac_srb)\n\t\t\t\t      + sizeof(struct sgmap)
-i = 0
-size = le16_to_cpu(kfib->header.Size) +\n\t\tsizeof(struct aac_fibhdr)
-*usg64 =\n\t\t\t(struct user_sgmap64 *)&user_srbcmd->sg
-* upsg = &user_srbcmd->sg
+kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
 (struct user_sgmap64 *)upsg
+aac_fib_alloc(dev)
+i = 0
+* usg = (struct user_sgmap64 *)upsg
+kmalloc(fibsize, GFP_KERNEL)
+fibptr = aac_fib_alloc(dev)
+size = le16_to_cpu(kfib->header.SenderSize)
+i = 0
+actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap)
+i = 0
+size = le16_to_cpu(kfib->header.Size) + sizeof(struct aac_fibhdr)
+i = 0
+usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)\n\t\t\t  + sizeof(struct sgmap), GFP_KERNEL)
+actual_fibsize = sizeof(struct aac_srb) - sizeof(struct sgentry) +\n\t\t((user_srbcmd->sg.count & 0xff) * sizeof(struct sgentry))
+user_srbcmd = kmalloc(fibsize, GFP_KERNEL)
+* upsg = (struct user_sgmap64*)&user_srbcmd->sg
+* upsg = &user_srbcmd->sg
+fibsize = 0
 ```
 
 This is actually quite nice; we can see that most *potential* checks involve some kind of a *size* element (as we might expect). 
@@ -145,7 +137,7 @@ At the beginning of this section we saw some `copy_from_user` outputs.
 Let's look at those that have `kfib` as their first argument. This decision is not made randomly. If we look at the output above we see that `kfib` is an interesting pointer which gives us access to an header and its size seems to have an involvement in a check: 
 `kfib->header.Size`.
 
-We can confirm this in the source code (`commctrl.c:76`):
+We can confirm this in the source code (`commctrl.c:90`):
 
 ```c
 size = le16_to_cpu(kfib->header.Size) + sizeof(struct aac_fibhdr);
@@ -176,8 +168,8 @@ cpg.call.name("copy_from_user")
 Output:
 
 ```
-copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
 copy_from_user(kfib, arg, size)
+copy_from_user((void *)kfib, arg, sizeof(struct aac_fibhdr))
 ```
 
 Nice, we have two of them. If we find flows from these sinks to a common ancestor which defines `kfib` and there is no other definition of `kfib` along our way we might have a double fetch.
@@ -214,7 +206,7 @@ fresh traversal *starting* at the given node. In this case we filtered with *hea
 Our output:
 
 ```
-(fibptr = aac_fib_alloc(dev),58)
-(aac_fib_alloc(dev),58)
-(kfib = fibptr->hw_fib_va,63)
+(kfib = fibptr->hw_fib_va,77)
+(aac_fib_alloc(dev),72)
+(fibptr = aac_fib_alloc(dev),72)
 ```
