@@ -2,6 +2,7 @@ Joern
 ===
 
 [![Build Status](https://travis-ci.org/ShiftLeftSecurity/joern.svg?branch=master)](https://travis-ci.org/ShiftLeftSecurity/joern)
+[![Gitter](https://badges.gitter.im/joern-code-analyzer/community.svg)](https://gitter.im/joern-code-analyzer/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Documentation on the usage of Joern and Joern server may be found on the Joern [microsite](https://joern.io/docs/).
 
