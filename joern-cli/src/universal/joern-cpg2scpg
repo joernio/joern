@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
-if [[ $OSTYPE == darwin* ]]; then
+if [ "$(uname -s)" = "Darwin" ]; then
     SCRIPT_ABS_PATH=$(greadlink -f "$0")
 else
     SCRIPT_ABS_PATH=$(readlink -f "$0")
@@ -9,8 +9,8 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 SCRIPT="$SCRIPT_ABS_DIR"/bin/cpg-2-scpg
 
 if [ ! -f "$SCRIPT" ]; then
-    echo "Unable to find $SCRIPT, have you created the distribution?";
-    exit 1;
-fi;
+    echo "Unable to find $SCRIPT, have you created the distribution?"
+    exit 1
+fi
 
-$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m "$@";
+$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m "$@"

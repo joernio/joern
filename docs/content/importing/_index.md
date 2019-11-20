@@ -85,3 +85,14 @@ cpg-create tarpit-c
 
 This will parse the code in the directory `tarpit-c`, create a code
 property graph on, and make it available via the joern server.
+
+Note that the directory passed to `cpg-create` **must** be relative to 
+the server's current working directory. For example, with the following setup:
+- `~/joern-server` - server working directory
+- `~/repos/my-code` - code location
+
+We would run `cpg-create`, specifying the location of `my-code` relative to the
+server working directory. This would be:
+```shell script
+ cpg-create ../repos/my-code
+```
