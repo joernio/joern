@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 if [[ $OSTYPE == darwin* ]]; then
     SCRIPT_ABS_PATH=$(greadlink -f "$0")
@@ -15,3 +15,4 @@ if [ ! -f "$SCRIPT" ]; then
 fi;
 
 $SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m "$@"
+
