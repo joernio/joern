@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-if [[ $OSTYPE == darwin* ]]; then
+if [ "$(uname -s)" = "Darwin" ]; then
     SCRIPT_ABS_PATH=$(greadlink -f "$0")
 else
     SCRIPT_ABS_PATH=$(readlink -f "$0")
