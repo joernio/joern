@@ -1,0 +1,47 @@
+{
+  "name": "@shiftleft/joern-website",
+  "version": "0.0.0",
+  "description": "Joern Website",
+  "keywords": [
+    "joern",
+    "website"
+  ],
+  "author": "Chaitanya K Kamatham <projects+gitkraken@kchaitanya.com>",
+  "homepage": "https://github.com/ShiftLeftSecurity/joern#readme",
+  "license": "Apache-2.0",
+  "main": "src/index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShiftLeftSecurity/joern.git"
+  },
+  "scripts": {
+    "start": "gatsby develop"
+  },
+  "bugs": {
+    "url": "https://github.com/ShiftLeftSecurity/joern/issues"
+  },
+  "dependencies": {
+    "gatsby": "^2.18.2",
+    "gatsby-plugin-manifest": "^2.2.29",
+    "gatsby-plugin-offline": "^3.0.22",
+    "gatsby-plugin-react-helmet": "^3.1.15",
+    "gatsby-plugin-sass": "^2.1.23",
+    "node-sass": "^4.13.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-helmet": "^5.2.1",
+    "react-scroll-to-element": "^0.2.0",
+    "react-scrollspy": "^3.4.0",
+    "react-waypoint": "^9.0.2"
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1"
+  }
+}
