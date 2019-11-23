@@ -7,11 +7,11 @@ const Header = props => (
     <span className="logo">
       <img src={logo} alt="" />
     </span>
-    <h1>Joern</h1>
+    {/* <h1>Joern</h1> */}
     <p>
-      Just another free, fully responsive site template
+     Next Generation <b><em> Code Analysis</em></b>
       <br />
-      design by <a href="https://html5up.net">HTML5 UP</a>.
+      engine for <a href="#">C/C++</a>.
     </p>
   </header>
 );

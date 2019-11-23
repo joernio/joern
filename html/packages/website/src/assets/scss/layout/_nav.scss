@@ -18,7 +18,8 @@
 		width: _size(inner);
 		max-width: calc(100% - #{_size(element-margin) * 2});
 		padding: 1em;
-		background-color: _palette(invert, bg-alt);
+		color: _palette(text-nav);
+		background-color: _palette(bg-nav);
 		border-top-left-radius: _size(border-radius-main);
 		border-top-right-radius: _size(border-radius-main);
 		cursor: default;
@@ -56,6 +57,7 @@
 
 					&:hover {
 						background-color: _palette(invert, border-bg);
+						color: _palette(text-nav);
 					}
 
 					// &.active {
@@ -65,7 +67,7 @@
 				}
 				&.is-active {
 					a {
-						background-color: _palette(invert, bg);
+						background-color: _palette(invert, bg-nav);
 						box-shadow: none;
 					}
 				}
