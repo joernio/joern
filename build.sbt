@@ -4,7 +4,7 @@ name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.12.8"
 
-val cpgVersion = "0.10.139"
+val cpgVersion = "0.10.146"
 val fuzzyc2cpgVersion = "1.1.16"
 
 ThisBuild / resolvers += Resolver.mavenLocal

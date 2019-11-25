@@ -1,8 +1,9 @@
 {
+  "description": "A collection of general-purpose scripts.",
   "scripts": [
     {
-        "name": "ast-for-funcs",
-        "description": "Returns the corresponding AST for each function as Json object."
+      "name": "ast-for-funcs",
+      "description": "Returns the corresponding AST for each function as Json object."
     },
     {
       "name": "ast-for-funcs-dump",
