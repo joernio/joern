@@ -39,7 +39,8 @@
     "react-helmet": "^5.2.1",
     "react-scroll-to-element": "^0.2.0",
     "react-scrollspy": "^3.4.0",
-    "react-waypoint": "^9.0.2"
+    "react-waypoint": "^9.0.2",
+    "typed.js": "^2.0.11"
   },
   "devDependencies": {
     "prettier": "^1.19.1"
