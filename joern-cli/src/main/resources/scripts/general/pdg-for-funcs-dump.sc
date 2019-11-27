@@ -80,7 +80,7 @@ import io.shiftleft.semanticcpg.language.types.structure.Local
 
 import java.io.{PrintWriter, File => JFile}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
 

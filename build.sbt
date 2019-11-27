@@ -2,16 +2,21 @@ enablePlugins(GitVersioning)
 
 name := "joern"
 organization := "io.shiftleft"
-ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.13.1"
 
-val cpgVersion = "0.10.146"
-val fuzzyc2cpgVersion = "1.1.16"
+val cpgVersion = "0.10.149+8-6dfb3721"
+val fuzzyc2cpgVersion = "39a2faad24faf2f3ec1bcab049c0f019e272845d"
 
-ThisBuild / resolvers += Resolver.mavenLocal
+ThisBuild / resolvers ++= Seq(
+  Resolver.mavenLocal,
+  Resolver.bintrayRepo("shiftleft", "maven"),
+  Resolver.bintrayRepo("mpollmeier", "maven"),
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+)
 
-ThisBuild / resolvers += Resolver.bintrayRepo("shiftleft", "maven")
-
-ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+ThisBuild/scalacOptions ++= Seq(
+  "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
+)
 
 scmInfo := Some(
   ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"), "scm:git@github.com:ShiftLeftSecurity/joern.git"))
@@ -31,3 +36,5 @@ createDistribution := {
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
 }
+
+Global / onChangedBuildSource := ReloadOnSourceChanges

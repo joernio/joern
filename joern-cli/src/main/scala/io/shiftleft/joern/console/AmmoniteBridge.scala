@@ -23,7 +23,7 @@ object AmmoniteBridge extends App with BridgeBase {
         |import io.shiftleft.codepropertygraph.generated.edges._
         |import io.shiftleft.dataflowengine.language._
         |import io.shiftleft.semanticcpg.language._
-        |import scala.collection.JavaConverters._
+        |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
         |
       """.stripMargin

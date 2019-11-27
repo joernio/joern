@@ -82,7 +82,7 @@ import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
 import java.io.{PrintWriter, File => JFile}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
 

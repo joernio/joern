@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.github.scopt" %% "scopt" % "3.7.1",
-  "com.github.pathikrit" %% "better-files" % "3.1.0",
+  "com.github.pathikrit" %% "better-files" % "3.8.0",
   "io.circe" %% "circe-generic" % "0.12.2",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test
 )
@@ -46,7 +46,8 @@ lazy val downloadFuzzyPreprocessor = taskKey[File]("Download the FuzzyC2CPG prep
 downloadFuzzyPreprocessor := {
   val ppFilename = "fuzzyppcli.zip"
   val ppUrl = new URL(
-    s"https://github.com/ShiftLeftSecurity/fuzzyc2cpg/releases/download/v${Versions.fuzzyc2cpgVersion}/$ppFilename")
+    // s"https://github.com/ShiftLeftSecurity/fuzzyc2cpg/releases/download/v${Versions.fuzzyc2cpgVersion}/$ppFilename")
+      "https://github.com/ShiftLeftSecurity/fuzzyc2cpg/releases/download/v1.1.17/fuzzyppcli.zip")
 
   val ppOutputDir = file("fuzzyppcli")
   println(s"downloading $ppUrl")
