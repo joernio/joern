@@ -2,7 +2,7 @@ enablePlugins(GitVersioning)
 
 name := "joern"
 organization := "io.shiftleft"
-ThisBuild / scalaVersion := "2.13.1"
+ThisBuild / scalaVersion := "2.13.0"
 
 val cpgVersion = "0.10.149+8-6dfb3721"
 val fuzzyc2cpgVersion = "39a2faad24faf2f3ec1bcab049c0f019e272845d"
