@@ -4,8 +4,8 @@ name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.0"
 
-val cpgVersion = "0.10.149+8-6dfb3721"
-val fuzzyc2cpgVersion = "39a2faad24faf2f3ec1bcab049c0f019e272845d"
+val cpgVersion = "0.10.153+14-4a6b0a0e"
+val fuzzyc2cpgVersion = "9e8eb2b7e594a399f0a9e3859ebe9cc808c2489d"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
