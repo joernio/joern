@@ -2,10 +2,13 @@ enablePlugins(GitVersioning)
 
 name := "joern"
 organization := "io.shiftleft"
+/* n.b. skip 2.13.1, it has a regression https://github.com/scala/bug/issues/11754,
+ * which is fixed in https://github.com/scala/scala/pull/8447, i.e. we can upgrade
+ * to 2.13.2 once that's released */
 ThisBuild / scalaVersion := "2.13.0"
 
-val cpgVersion = "0.10.153+14-4a6b0a0e"
-val fuzzyc2cpgVersion = "9e8eb2b7e594a399f0a9e3859ebe9cc808c2489d"
+val cpgVersion = "0.11.1"
+val fuzzyc2cpgVersion = "1.1.19"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
