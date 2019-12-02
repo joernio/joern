@@ -12,9 +12,9 @@ const Index = props => {
   const toggleStickyNav = () => setStickyNav(prev => !prev);
   return (
     <Layout>
-      <Helmet title="Gatsby Starter - Stellar" />
+      <Helmet title="Joern" />
       <Header />
-      <Waypoint onEnter={toggleStickyNav} onLeave={toggleStickyNav}></Waypoint>
+      <Waypoint onEnter={toggleStickyNav} onLeave={toggleStickyNav} />
       <Nav sticky={stickyNav} />
 
       <div id="main">

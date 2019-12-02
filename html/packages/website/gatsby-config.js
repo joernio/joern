@@ -1,7 +1,7 @@
 module.exports = {
   siteMetadata: {
     title: 'Joern',
-    author: 'Chaitanya K Kamatham',
+    author: 'Chaitanya K Kamatham, Suchakra Sharma',
     description: 'Jeorn Website',
   },
   plugins: [
@@ -20,5 +20,7 @@ module.exports = {
     },
     'gatsby-plugin-sass',
     'gatsby-plugin-offline',
+    'gatsby-plugin-typescript',
+    'gatsby-plugin-styled-components',
   ],
 };

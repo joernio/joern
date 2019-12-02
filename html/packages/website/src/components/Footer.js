@@ -1,5 +1,5 @@
-import { Link } from 'gatsby'
-import React from 'react'
+import { Link } from 'gatsby';
+import React from 'react';
 
 const Footer = props => (
   <footer id="footer">
@@ -66,9 +66,10 @@ const Footer = props => (
       </ul>
     </section>
     <p className="copyright">
-      &copy; Untitled. Design: <a href="https://html5up.net">HTML5 UP</a>.
+      &copy; {new Date().getFullYear()}{' '}
+      <a href="https://www.shiftleft.io">ShiftLeft Security Inc</a>.
     </p>
   </footer>
-)
+);
 
-export default Footer
+export default Footer;
