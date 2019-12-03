@@ -20,7 +20,7 @@
      |_ "PDG": see pdg-for-funcs script
  */
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import io.circe.syntax._
 import io.circe.generic.semiauto._

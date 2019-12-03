@@ -7,6 +7,7 @@ import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 
 import java.nio.file.{FileSystems, Files, Paths}
+import scala.jdk.CollectionConverters._
 
 /**
   * Thin wrapper around `codepropertygraph`'s CpgLoader
@@ -24,10 +25,8 @@ object CpgLoader {
   }
 
   lazy val defaultSemanticsFile: String = {
-    import scala.collection.JavaConverters.mapAsJavaMapConverter
-
     val file = Files.createTempFile("joern-default", ".semantics")
-    val defaultFile = getClass.getClassLoader.getResource("default.semantics").toURI
+    val defaultFile = this.getClass.getClassLoader.getResource("default.semantics").toURI
 
     // Weird, yes, but necessary when running as a distribution.
     // See (https://docs.oracle.com/javase/7/docs/technotes/guides/io/fsp/zipfilesystemprovider.html)

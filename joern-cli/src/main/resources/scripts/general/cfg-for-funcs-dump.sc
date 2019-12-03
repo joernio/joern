@@ -81,7 +81,7 @@ import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNo
 
 import java.io.{PrintWriter, File => JFile}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
 

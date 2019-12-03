@@ -81,7 +81,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
 final case class AstForFuncsResult(functions: List[AstForFuncsFunction])

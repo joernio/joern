@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path}
 import java.util.UUID
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 import cats.data.OptionT
 import cats.effect.{Blocker, ContextShift, IO}

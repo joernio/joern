@@ -27,7 +27,7 @@ class JoernScriptExecutor extends CpgQueryExecutor[AnyRef] {
         |import io.shiftleft.codepropertygraph.generated.nodes._
         |import io.shiftleft.dataflowengine.language._
         |import io.shiftleft.semanticcpg.language._
-        |import scala.collection.JavaConverters._
+        |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
         |val cpg = aCpg.asInstanceOf[io.shiftleft.codepropertygraph.Cpg]
         |

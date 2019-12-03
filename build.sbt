@@ -2,16 +2,24 @@ enablePlugins(GitVersioning)
 
 name := "joern"
 organization := "io.shiftleft"
-ThisBuild / scalaVersion := "2.12.8"
+/* n.b. skip 2.13.1, it has a regression https://github.com/scala/bug/issues/11754,
+ * which is fixed in https://github.com/scala/scala/pull/8447, i.e. we can upgrade
+ * to 2.13.2 once that's released */
+ThisBuild / scalaVersion := "2.13.0"
 
-val cpgVersion = "0.10.146"
-val fuzzyc2cpgVersion = "1.1.16"
+val cpgVersion = "0.11.1"
+val fuzzyc2cpgVersion = "1.1.19"
 
-ThisBuild / resolvers += Resolver.mavenLocal
+ThisBuild / resolvers ++= Seq(
+  Resolver.mavenLocal,
+  Resolver.bintrayRepo("shiftleft", "maven"),
+  Resolver.bintrayRepo("mpollmeier", "maven"),
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+)
 
-ThisBuild / resolvers += Resolver.bintrayRepo("shiftleft", "maven")
-
-ThisBuild / resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+ThisBuild/scalacOptions ++= Seq(
+  "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
+)
 
 scmInfo := Some(
   ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"), "scm:git@github.com:ShiftLeftSecurity/joern.git"))
@@ -31,3 +39,5 @@ createDistribution := {
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
 }
+
+Global / onChangedBuildSource := ReloadOnSourceChanges
