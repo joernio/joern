@@ -34,6 +34,10 @@
       "description": "Lists all functions."
     },
     {
+      "name": "pdg-for-funcs",
+      "description": "Returns a collection of nodes reachable by data-flow or control-flow from all local variables, grouped by method"
+    },
+    {
       "name": "pdg-for-funcs-dump",
       "description": "Prints the corresponding PDG for each function as Json string to a file."
     }

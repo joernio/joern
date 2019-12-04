@@ -120,6 +120,10 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
       actual should fullyMatch regex expectedRegex
     }
+
+    "work correctly for 'pdg-for-funcs'" in {
+      console.Console.runScript("general/pdg-for-funcs", cpg).asInstanceOf[FunctionPDG]
+    }
   }
 
 }
