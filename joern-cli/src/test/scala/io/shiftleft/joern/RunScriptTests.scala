@@ -78,17 +78,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       actual should not include """io.shiftleft.codepropertygraph.generated.edges.Ast"""
     }
 
-    "work correctly for 'pdg-for-funcs'" ignore {
-      val actual = console.Console.runScript("general/pdg-for-funcs", cpg).toString
-      actual should include(""""function" : "free_list"""")
-      actual should include(""""function" : "free"""")
-      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
-      actual should include(""""function" : "<operator>.assignment"""")
-      actual should include(""""function" : "<operator>.notEquals"""")
-      actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
-      actual should include("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
-    }
-
     "work correctly for 'graph-for-funcs'" in {
       val actual = console.Console.runScript("general/graph-for-funcs", cpg).toString
       actual should include(""""function" : "free_list"""")
@@ -122,7 +111,45 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'pdg-for-funcs'" in {
-      console.Console.runScript("general/pdg-for-funcs", cpg).asInstanceOf[FunctionPDG]
+      val result = console.Console.runScript("general/pdg-for-funcs", cpg).asInstanceOf[String]
+      result should contain ("""
+                            |[
+                            |  {
+                            |    "functionName" : "free_list",
+                            |    "reachableNodes" : [
+                            |      {
+                            |        "id" : 18,
+                            |        "code" : "*p = head",
+                            |        "edgesIn" : {
+                            |          "CONTAINS" : 1,
+                            |          "REACHING_DEF" : 1,
+                            |          "CFG" : 1,
+                            |          "POST_DOMINATE" : 1,
+                            |          "AST" : 1,
+                            |          "DOMINATE" : 1
+                            |        },
+                            |        "edgesOut" : {
+                            |          "CONTAINS" : 1,
+                            |          "REACHING_DEF" : 1,
+                            |          "CFG" : 1,
+                            |          "POST_DOMINATE" : 1,
+                            |          "AST" : 1,
+                            |          "DOMINATE" : 1
+                            |        },
+                            |        "properties" : {
+                            |          "DISPATCH_TYPE" : "STATIC_DISPATCH",
+                            |          "METHOD_INST_FULL_NAME" : "<operator>.assignment",
+                            |          "NAME" : "<operator>.assignment",
+                            |          "CODE" : "*p = head",
+                            |          "LINE_NUMBER" : "9",
+                            |          "SIGNATURE" : "TODO assignment signature",
+                            |          "TYPE_FULL_NAME" : "ANY",
+                            |          "COLUMN_NUMBER" : "21",
+                            |          "ARGUMENT_INDEX" : "1",
+                            |          "ORDER" : "1"
+                            |        }
+                            |      },
+                            |""".stripMargin)
     }
   }
 
