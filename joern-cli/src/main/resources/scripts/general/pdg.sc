@@ -1,6 +1,6 @@
 /* pdg.sc
 
-   This script returns a complete PDG for the whole CPG, seperate into two lists, once for the edges and another for the
+   This script returns a complete PDG for the whole CPG, separated into two lists, once for the edges and another for the
    vertices.
 
    The first list contains all of the edges in the PDG. The first entry in each tuple contains the ID of the incoming
