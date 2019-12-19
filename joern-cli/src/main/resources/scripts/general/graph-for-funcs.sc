@@ -35,7 +35,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
-import io.shiftleft.joern.console.Console.cpg
+
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
@@ -72,39 +72,41 @@ implicit val encodeNode: Encoder[nodes.AstNode] =
 implicit val encodeFuncFunction: Encoder[GraphForFuncsFunction] = deriveEncoder
 implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
 
-GraphForFuncsResult(
-  cpg.method.map { method =>
-    val methodName = method.fullName
-    val methodId = method.toString
+@main def main(): Json = {
+  GraphForFuncsResult(
+    cpg.method.map { method =>
+      val methodName = method.fullName
+      val methodId = method.toString
 
-    val astChildren = method.astMinusRoot.l
+      val astChildren = method.astMinusRoot.l
 
-    val cfgChildren = new CfgNode(
-      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-    ).l
+      val cfgChildren = new CfgNode(
+        method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
+      ).l
 
-    val local = new Local(
-      method
-        .out(EdgeTypes.CONTAINS)
-        .hasLabel(NodeTypes.BLOCK)
-        .out(EdgeTypes.AST)
-        .hasLabel(NodeTypes.LOCAL)
-        .cast[nodes.Local])
-    val sink = local.evalType(".*").referencingIdentifiers.dedup
-    val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
+      val local = new Local(
+        method
+          .out(EdgeTypes.CONTAINS)
+          .hasLabel(NodeTypes.BLOCK)
+          .out(EdgeTypes.AST)
+          .hasLabel(NodeTypes.LOCAL)
+          .cast[nodes.Local])
+      val sink = local.evalType(".*").referencingIdentifiers.dedup
+      val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
-    val pdgChildren = sink
-      .reachableByFlows(source)
-      .l
-      .flatMap { path =>
-        path
-          .map {
-            case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
-            case trackingPoint                          => trackingPoint.cfgNode
-          }
-      }
-      .filter(_.toString != methodId)
+      val pdgChildren = sink
+        .reachableByFlows(source)
+        .l
+        .flatMap { path =>
+          path
+            .map {
+              case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
+              case trackingPoint                          => trackingPoint.cfgNode
+            }
+        }
+        .filter(_.toString != methodId)
 
-    GraphForFuncsFunction(methodName, methodId, astChildren, cfgChildren, pdgChildren.distinct)
-  }.l
-).asJson
+      GraphForFuncsFunction(methodName, methodId, astChildren, cfgChildren, pdgChildren.distinct)
+    }.l
+  ).asJson
+}

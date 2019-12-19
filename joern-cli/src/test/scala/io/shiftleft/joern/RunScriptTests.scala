@@ -25,7 +25,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
     "work correctly for 'list-funcs'" in {
       val expected = cpg.method.name.l
-      val actual = console.Console.runScript("general/list-funcs", cpg)
+      val actual = console.Console.runScript("general/list-funcs.sc", Map.empty, cpg)
       actual shouldBe expected
     }
 
@@ -52,12 +52,12 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
           |  "free.c: 9 *p = head" -> "free.c: 9 p";
           |  "" -> "free.c: 9 p";
           | }""".stripMargin
-      val actual = console.Console.runScript("general/cfgToDot", cpg)
+      val actual = console.Console.runScript("general/cfgToDot.sc", Map.empty, cpg)
       actual shouldBe expected
     }
 
     "work correctly for 'ast-for-funcs'" in {
-      val actual = console.Console.runScript("general/ast-for-funcs", cpg).toString
+      val actual = console.Console.runScript("general/ast-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")
@@ -68,7 +68,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'cfg-for-funcs'" in {
-      val actual = console.Console.runScript("general/cfg-for-funcs", cpg).toString
+      val actual = console.Console.runScript("general/cfg-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")
@@ -79,7 +79,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'pdg'" in {
-      val actual = console.Console.runScript("general/pdg", cpg).toString
+      val actual = console.Console.runScript("general/pdg.sc", Map.empty, cpg).toString
 
       val expectedRegex = """\(List\((\(\d+,\d+\),?\s?)+\),List\((\(\d+,[\w\W]+\),?\s?)+\)\)""".r
 
@@ -87,7 +87,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'graph-for-funcs'" in {
-      val actual = console.Console.runScript("general/graph-for-funcs", cpg).toString
+      val actual = console.Console.runScript("general/graph-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectMemberAccess"""")
@@ -101,7 +101,8 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'functions-to-dot'" in {
-      val List(actual) = console.Console.runScript("general/functions-to-dot", cpg).asInstanceOf[List[String]]
+      val List(actual) =
+        console.Console.runScript("general/functions-to-dot.sc", Map.empty, cpg).asInstanceOf[List[String]]
 
       val expectedRegex =
         """|digraph free_list \{

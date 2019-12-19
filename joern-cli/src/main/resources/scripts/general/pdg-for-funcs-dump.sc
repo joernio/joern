@@ -107,39 +107,41 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
 
 final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nodes.CfgNode])
 
-val methods = cpg.method.l
-val numMethods = methods.size
-var current = 1
+@main def main(): Unit = {
+  val methods = cpg.method.l
+  val numMethods = methods.size
+  var current = 1
 
-val writer = new PrintWriter(new JFile("pdg-for-funcs.json"))
+  val writer = new PrintWriter(new JFile("pdg-for-funcs.json"))
 
-writer.write("{")
-writer.write(""""functions": [""")
-methods.foreach { method =>
-  val methodName = method.fullName
-  val methodId = method.toString
+  writer.write("{")
+  writer.write(""""functions": [""")
+  methods.foreach { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
 
-  val local = new Local(
-    method
-      .out(EdgeTypes.CONTAINS)
-      .hasLabel(NodeTypes.BLOCK)
-      .out(EdgeTypes.AST)
-      .hasLabel(NodeTypes.LOCAL)
-      .cast[nodes.Local])
+    val local = new Local(
+      method
+        .out(EdgeTypes.CONTAINS)
+        .hasLabel(NodeTypes.BLOCK)
+        .out(EdgeTypes.AST)
+        .hasLabel(NodeTypes.LOCAL)
+        .cast[nodes.Local])
 
-  val sink = local.referencingIdentifiers.dedup
-  val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
+    val sink = local.referencingIdentifiers.dedup
+    val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
-  val dependencies = sink
-    .reachableBy(source).dedup
-    .l
-    .map(_.cfgNode)
-    .filter(_.toString != methodId)
-  System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
-  current += 1
-  writer.write(PdgForFuncsFunction(methodName, methodId, dependencies.distinct).asJson.toString)
-  writer.write(",")
+    val dependencies = sink
+      .reachableBy(source).dedup
+      .l
+      .map(_.cfgNode)
+      .filter(_.toString != methodId)
+    System.out.println(s"($current / $numMethods) Writing PDG for '$methodName'.")
+    current += 1
+    writer.write(PdgForFuncsFunction(methodName, methodId, dependencies.distinct).asJson.toString)
+    writer.write(",")
+  }
+  writer.write("]")
+  writer.write("}")
+  writer.close()
 }
-writer.write("]")
-writer.write("}")
-writer.close()

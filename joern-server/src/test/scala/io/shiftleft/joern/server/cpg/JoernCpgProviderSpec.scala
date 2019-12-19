@@ -2,10 +2,12 @@ package io.shiftleft.joern.server.cpg
 
 import scala.concurrent.ExecutionContext
 import cats.effect.{ContextShift, IO}
-import io.shiftleft.console.query.{CpgOperationSuccess, DefaultCpgQueryExecutor}
-import javax.script.ScriptEngineManager
+
+import io.shiftleft.cpgserver.query.CpgOperationSuccess
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Inside, Matchers, WordSpec}
+
+import io.shiftleft.joern.server.scripting.JoernServerAmmoniteExecutor
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -35,7 +37,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
     }
 
     "produce a queryable CPG from the set of input files" in withJoernProvider { provider =>
-      val queryExecutor = new DefaultCpgQueryExecutor(new ScriptEngineManager())
+      val serverExecutor = new JoernServerAmmoniteExecutor
 
       val cpgId = provider.createCpg(Set(filePath)).unsafeRunSync()
 
@@ -45,10 +47,10 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
         }
       }
 
-      val queryId = queryExecutor.executeQuery(cpg, "cpg.method.toJsonPretty").unsafeRunSync()
+      val queryId = serverExecutor.executeQuery(cpg, "cpg.method.toJsonPretty").unsafeRunSync()
 
       val queryResult = eventually(timeout(TIMEOUT), interval(500 millis)) {
-        inside(queryExecutor.retrieveQueryResult(queryId).value.unsafeRunSync()) {
+        inside(serverExecutor.retrieveQueryResult(queryId).value.unsafeRunSync()) {
           case Some(CpgOperationSuccess(queryResult)) => queryResult
         }
       }

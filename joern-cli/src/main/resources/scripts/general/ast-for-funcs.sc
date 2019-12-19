@@ -78,7 +78,6 @@ import io.circe.{Encoder, Json}
 import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
-import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters._
@@ -111,11 +110,13 @@ implicit val encodeVertex: Encoder[AstNode] =
       }))
     )
 
-AstForFuncsResult(
-  cpg.method.map { method =>
-    val methodName = method.fullName
-    val methodId = method.toString
-    val astChildren = method.astMinusRoot.l
-    AstForFuncsFunction(methodName, methodId, astChildren)
-  }.l
-).asJson
+@main def main(): Json = {
+  AstForFuncsResult(
+    cpg.method.map { method =>
+      val methodName = method.fullName
+      val methodId = method.toString
+      val astChildren = method.astMinusRoot.l
+      AstForFuncsFunction(methodName, methodId, astChildren)
+    }.l
+  ).asJson
+}

@@ -11,8 +11,8 @@ import cats.effect.{Blocker, ContextShift, IO}
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.console.query.{CpgOperationFailure, CpgOperationResult, CpgOperationSuccess}
 import io.shiftleft.cpgserver.cpg.CpgProvider
+import io.shiftleft.cpgserver.query.{CpgOperationFailure, CpgOperationResult, CpgOperationSuccess}
 import io.shiftleft.joern.JoernParse.ParserConfig
 import io.shiftleft.joern.{CpgLoader, JoernParse}
 

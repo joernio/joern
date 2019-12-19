@@ -1,8 +1,10 @@
 package io.shiftleft.joern.console
 
 import better.files.File
+
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.joern.{CpgLoader, JoernScriptManager}
+import io.shiftleft.joern.CpgLoader
+import io.shiftleft.joern.scripting.JoernScriptManager
 
 object Console extends JoernScriptManager {
 

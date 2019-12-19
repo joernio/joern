@@ -78,7 +78,6 @@ import io.circe.{Encoder, Json}
 import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
-import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
 import java.io.{PrintWriter, File => JFile}
 
@@ -110,23 +109,25 @@ implicit val encodeVertex: Encoder[AstNode] =
       }))
     )
 
-val methods = cpg.method.l
-val numMethods = methods.size
-var current = 1
+@main def main(): Unit = {
+  val methods = cpg.method.l
+  val numMethods = methods.size
+  var current = 1
 
-val writer = new PrintWriter(new JFile("ast-for-funcs.json"))
+  val writer = new PrintWriter(new JFile("ast-for-funcs.json"))
 
-writer.write("{")
-writer.write(""""functions": [""")
-methods.foreach { method =>
-  val methodName = method.fullName
-  val methodId = method.toString
-  val astChildren = method.astMinusRoot.l
-  System.out.println(s"($current / $numMethods) Writing AST for '$methodName'.")
-  current += 1
-  writer.write(AstForFuncsFunction(methodName, methodId, astChildren).asJson.toString)
-  writer.write(",")
+  writer.write("{")
+  writer.write(""""functions": [""")
+  methods.foreach { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+    val astChildren = method.astMinusRoot.l
+    System.out.println(s"($current / $numMethods) Writing AST for '$methodName'.")
+    current += 1
+    writer.write(AstForFuncsFunction(methodName, methodId, astChildren).asJson.toString)
+    writer.write(",")
+  }
+  writer.write("]")
+  writer.write("}")
+  writer.close()
 }
-writer.write("]")
-writer.write("}")
-writer.close()

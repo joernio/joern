@@ -2,43 +2,43 @@
   "description": "A collection of general-purpose scripts.",
   "scripts": [
     {
-      "name": "ast-for-funcs",
+      "name": "ast-for-funcs.sc",
       "description": "Returns the corresponding AST for each function as Json object."
     },
     {
-      "name": "ast-for-funcs-dump",
+      "name": "ast-for-funcs-dump.sc",
       "description": "Prints the corresponding AST for each function as Json string to a file."
     },
     {
-      "name": "cfg-for-funcs",
+      "name": "cfg-for-funcs.sc",
       "description": "Returns the corresponding CFG for each function as Json object."
     },
     {
-      "name": "cfg-for-funcs-dump",
+      "name": "cfg-for-funcs-dump.sc",
       "description": "Prints the corresponding CFG for each function as Json string to a file."
     },
     {
-      "name": "cfgToDot",
+      "name": "cfgToDot.sc",
       "description": "Generates a dot graph for your cfg."
     },
     {
-      "name": "functions-to-dot",
+      "name": "functions-to-dot.sc",
       "description": "Generates a list of strings, each containing a dot graph for every internal function in the provided CPG."
     },
     {
-      "name": "graph-for-funcs",
+      "name": "graph-for-funcs.sc",
       "description": "Returns the corresponding graph (AST+CFG+PDG) for each function as Json object."
     },
     {
-      "name": "list-funcs",
+      "name": "list-funcs.sc",
       "description": "Lists all functions."
     },
     {
-      "name": "pdg",
+      "name": "pdg.sc",
       "description": "Generate a PDG for the whole CPG."
     },
     {
-      "name": "pdg-for-funcs-dump",
+      "name": "pdg-for-funcs-dump.sc",
       "description": "Prints the corresponding PDG for each function as Json string to a file."
     }
   ]
