@@ -14,6 +14,16 @@ class JoernScriptManager extends ScriptManager(JoernAmmoniteExecutor) {
       * @return The result of running the script against this CPG.
       */
     def runScript(name: String): Any =
-      JoernScriptManager.this.runScript(name, Map.empty, cpg)
+      runScript(name, Map.empty)
+
+    /**
+      * Run an arbitrary script over this CPG with parameters.
+      *
+      * @param name The name of the script to run.
+      * @param parameters The parameters to pass to the script.
+      * @return The result of running the script against this CPG.
+      */
+    def runScript(name: String, parameters: Map[String, String]): Any =
+      JoernScriptManager.this.runScript(name, parameters, cpg)
   }
 }
