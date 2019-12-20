@@ -11,23 +11,25 @@
 */
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.joern.console.Console.cpg
 
 import scala.collection.mutable
 
 type EdgeEntry = (AnyRef, AnyRef)
 type VertexEntry = (AnyRef, String)
 
-val edges = cpg.scalaGraph.E().filter(edge => edge.hasLabel(EdgeTypes.REACHING_DEF, EdgeTypes.CDG)).dedup.l
+@main def main(): (List[EdgeEntry], List[VertexEntry]) = {
+  val edges = cpg.scalaGraph.E().filter(edge => edge.hasLabel(EdgeTypes.REACHING_DEF, EdgeTypes.CDG)).dedup.l
 
-val (edgeResult, vertexResult) =
-  edges.foldLeft((mutable.Set.empty[EdgeEntry], mutable.Set.empty[VertexEntry])) {
-    case ((edgeList, vertexList), edge) =>
-      val edgeEntry = (edge.inVertex().id, edge.outVertex().id)
-      val inVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
-      val outVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
+  val (edgeResult, vertexResult) =
+    edges.foldLeft((mutable.Set.empty[EdgeEntry], mutable.Set.empty[VertexEntry])) {
+      case ((edgeList, vertexList), edge) =>
+        val edgeEntry = (edge.inVertex().id, edge.outVertex().id)
+        val inVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
+        val outVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
 
-      (edgeList += edgeEntry, vertexList ++= Set(inVertexEntry, outVertexEntry))
-  }
+        (edgeList += edgeEntry, vertexList ++= Set(inVertexEntry, outVertexEntry))
+    }
 
-(edgeResult.toList, vertexResult.toList)
+  (edgeResult.toList, vertexResult.toList)
+}
+

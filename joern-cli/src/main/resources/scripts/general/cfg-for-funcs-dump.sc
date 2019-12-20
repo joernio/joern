@@ -75,7 +75,6 @@ import io.circe.{Encoder, Json}
 import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.joern.console.Console.cpg
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
 
@@ -109,25 +108,27 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
       }))
     )
 
-val methods = cpg.method.l
-val numMethods = methods.size
-var current = 1
+@main def main(): Unit = {
+  val methods = cpg.method.l
+  val numMethods = methods.size
+  var current = 1
 
-val writer = new PrintWriter(new JFile("cfg-for-funcs.json"))
+  val writer = new PrintWriter(new JFile("cfg-for-funcs.json"))
 
-writer.write("{")
-writer.write(""""functions": [""")
-methods.foreach { method =>
-  val methodName = method.fullName
-  val methodId = method.toString
-  val cfgNodes = new CfgNode(
-    method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-  ).l
-  System.out.println(s"($current / $numMethods) Writing CFG for '$methodName'.")
-  current += 1
-  writer.write(CfgForFuncsFunction(methodName, methodId, cfgNodes).asJson.toString)
-  writer.write(",")
+  writer.write("{")
+  writer.write(""""functions": [""")
+  methods.foreach { method =>
+    val methodName = method.fullName
+    val methodId = method.toString
+    val cfgNodes = new CfgNode(
+      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
+    ).l
+    System.out.println(s"($current / $numMethods) Writing CFG for '$methodName'.")
+    current += 1
+    writer.write(CfgForFuncsFunction(methodName, methodId, cfgNodes).asJson.toString)
+    writer.write(",")
+  }
+  writer.write("]")
+  writer.write("}")
+  writer.close()
 }
-writer.write("]")
-writer.write("}")
-writer.close()

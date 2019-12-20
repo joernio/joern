@@ -71,6 +71,8 @@ def stringifyDotFromMethod(method: Method): String = {
   sb.toString
 }
 
-cpg.method.internal.l.map { method =>
-  stringifyDotFromMethod(method)
+@main def main(): List[String] = {
+  cpg.method.internal.l.map { method =>
+    stringifyDotFromMethod(method)
+  }
 }

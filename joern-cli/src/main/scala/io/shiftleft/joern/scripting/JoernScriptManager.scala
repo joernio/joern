@@ -1,9 +1,9 @@
-package io.shiftleft.joern
+package io.shiftleft.joern.scripting
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.console.ScriptManager
+import io.shiftleft.console.scripting.ScriptManager
 
-class JoernScriptManager(executor: JoernScriptExecutor = new JoernScriptExecutor()) extends ScriptManager(executor) {
+class JoernScriptManager extends ScriptManager(JoernAmmoniteExecutor) {
 
   implicit class CpgScriptRunner(cpg: Cpg) {
 
@@ -13,7 +13,7 @@ class JoernScriptManager(executor: JoernScriptExecutor = new JoernScriptExecutor
       * @param name The name of the script to run.
       * @return The result of running the script against this CPG.
       */
-    def runScript(name: String): AnyRef =
-      JoernScriptManager.this.runScript(name, cpg)
+    def runScript(name: String): Any =
+      JoernScriptManager.this.runScript(name, Map.empty, cpg)
   }
 }
