@@ -113,5 +113,3 @@ generateScaladocs := {
 
   out
 }
-
-Test / fork := true
