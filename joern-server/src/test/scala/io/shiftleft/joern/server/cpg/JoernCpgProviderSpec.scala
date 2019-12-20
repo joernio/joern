@@ -16,7 +16,7 @@ class JoernCpgProviderSpec extends WordSpec with Matchers with Eventually with I
 
   private implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  private val TIMEOUT = 10 seconds
+  private val TIMEOUT = 20 seconds
 
   private def withJoernProvider[T](f: JoernCpgProvider => T): T = {
     f(new JoernCpgProvider)
