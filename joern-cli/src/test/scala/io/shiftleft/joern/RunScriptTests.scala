@@ -81,7 +81,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     "work correctly for 'pdg'" in {
       val actual = console.Console.runScript("general/pdg.sc", Map.empty, cpg).toString
 
-      val expectedRegex = """\(List\((\(\d+,\d+\),?\s?)+\),List\((\(\d+,[\w\W]+\),?\s?)+\)\)""".r
+      val expectedRegex = """List\(\(None,List\((\(\d+,\d+\),?\s?)+\),List\((\(\d+,[\w\W]+\),?\s?)+\)\)\)""".r
 
       actual should fullyMatch regex expectedRegex
     }
