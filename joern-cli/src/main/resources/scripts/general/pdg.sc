@@ -25,7 +25,7 @@ type VertexEntry = (AnyRef, String)
       case ((edgeList, vertexList), edge) =>
         val edgeEntry = (edge.inVertex().id, edge.outVertex().id)
         val inVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
-        val outVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
+        val outVertexEntry = (edge.outVertex().id, edge.outVertex().property("CODE").orElse(""))
 
         (edgeList += edgeEntry, vertexList ++= Set(inVertexEntry, outVertexEntry))
     }
