@@ -46,7 +46,7 @@ object JoernParse extends App {
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
                           semanticsFile: String = CpgLoader.defaultSemanticsFile,
-                          sourceFileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".hpp"),
+                          sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"),
                           preprocessorConfig: PreprocessorConfig = PreprocessorConfig())
 
   case class PreprocessorConfig(preprocessorExecutable: String = "./bin/fuzzyppcli",
@@ -80,7 +80,7 @@ object JoernParse extends App {
         .action((x, c) => c.copy(semanticsFile = x))
       opt[String]("source-file-ext")
         .unbounded()
-        .text("source file extensions to include when gathering source files. Defaults are .c, .cpp, .h and .hpp")
+        .text("source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
         .action((pat, cfg) => cfg.copy(sourceFileExtensions = cfg.sourceFileExtensions + pat))
       opt[String]("include")
         .unbounded()

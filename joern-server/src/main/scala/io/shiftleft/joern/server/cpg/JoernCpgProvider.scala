@@ -16,7 +16,7 @@ import io.shiftleft.cpgserver.query.{CpgOperationFailure, CpgOperationResult, Cp
 import io.shiftleft.joern.JoernParse.ParserConfig
 import io.shiftleft.joern.{CpgLoader, JoernParse}
 
-class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cpp", ".h", ".hpp"))(implicit val cs: ContextShift[IO])
+class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"))(implicit val cs: ContextShift[IO])
     extends CpgProvider {
 
   private val blocker: Blocker =
