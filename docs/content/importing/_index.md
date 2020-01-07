@@ -106,7 +106,8 @@ One can trigger the enhancement step manually by doing the following in the REPL
 ```scala
 import io.shiftleft.joern.Cpg2Scpg
 import io.shiftleft.joern.CpgLoader
-Cpg2Scpg.run("cpg.bin.zip", true, CpgLoader.defaultSemanticsFile)  
+Cpg2Scpg.run("cpg.bin.zip", true, CpgLoader.defaultSemanticsFile)
+loadCpg("cpg.bin.zip")
 ```
 
 Beware: This is not the intended way to do things. Normally you should be alright using `joern-parse`.
