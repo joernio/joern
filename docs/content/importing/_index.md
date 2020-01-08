@@ -96,3 +96,18 @@ server working directory. This would be:
 ```shell script
  cpg-create ../repos/my-code
 ```
+
+## Creating Code Property Graphs with self built [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg)
+
+When using the fuzzyc language frontend directly (instead of running `joern-parse`) the cpg file that is created does not include enhancements. These enhancements are needed to find external methods, not declared in the input source code for example. When using `joern-parse` these enhancements are written into the created cpg file.
+
+One can trigger the enhancement step manually by doing the following in the REPL:
+
+```scala
+import io.shiftleft.joern.Cpg2Scpg
+import io.shiftleft.joern.CpgLoader
+Cpg2Scpg.run("cpg.bin.zip", true, CpgLoader.defaultSemanticsFile)
+loadCpg("cpg.bin.zip")
+```
+
+Beware: This is not the intended way to do things! Normally you should be alright using `joern-parse`.
