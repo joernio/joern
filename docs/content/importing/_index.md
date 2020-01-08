@@ -110,4 +110,4 @@ Cpg2Scpg.run("cpg.bin.zip", true, CpgLoader.defaultSemanticsFile)
 loadCpg("cpg.bin.zip")
 ```
 
-Beware: This is not the intended way to do things. Normally you should be alright using `joern-parse`.
+Beware: This is not the intended way to do things! Normally you should be alright using `joern-parse`.
