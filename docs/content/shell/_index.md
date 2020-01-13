@@ -134,7 +134,37 @@ def scripts(): List[ScriptDescription]
 This will list all available scripts (`name`, `description`) that are stored in the `scripts/` folder of Joern.
 
 ```scala
-def runScript(name: String): AnyRef
+def runScript(name: String, parameters: Map[String, String]): AnyRef
 ```
 
-This will execute the script named `name` as already explained above.
+This will execute the script named `name` as already explained above. Any script parameters can be provided
+using the map. Alternatively, a script may also be run on a cpg as follows:
+```scala
+val myCpg: Cpg = ...
+myCpg.runScript("my-script")
+```
+
+### Extracting a PDG from a CPG
+To extract a PDG for all methods in the CPG, you can run the following script included in your
+Joern distribution:
+```scala
+cpg.runScript("general/pdg.sc")
+```
+
+If you are only interested in a subset of functions in the CPG, you may also provide a parameter
+containing a regular expression, which will be used to filter out functions based on name:
+```scala
+cpg.runScript("general/pdg.sc", Map("methodRegex" -> ".*length.*"))
+```
+
+### Extracting a CFG from a CPG
+As above, all Joern distribution also include scripts to extract a CFG from a CPG. To obtain a CFG for
+all functions in a CPG, run the following script:
+```scala
+cpg.runScript("general/cfg-for-funcs.sc")
+```
+
+There is also a script which provides a CFG in the DOT format:
+```scala
+cpg.runScript("general/cfgToDot.sc")
+```
