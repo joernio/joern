@@ -8,6 +8,7 @@ import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import java.nio.file.{FileSystems, Files, Paths}
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.overflowdb.OdbConfig
 
 import scala.jdk.CollectionConverters._
 
@@ -22,7 +23,7 @@ object CpgLoader {
     * */
   def load(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
     val cpg = loadWithoutSemantics(filename)
-    applySemantics(cpg, semanticsFilenameOpt)
+    reapplySemantics(cpg, semanticsFilenameOpt)
     cpg
   }
 
@@ -57,11 +58,19 @@ object CpgLoader {
   def removeAllSemantics(cpg: Cpg): Unit = {
     val edgeTypesToRemove = Set(EdgeTypes.PROPAGATE, EdgeTypes.REACHING_DEF)
     // TODO Does overflowDB allow doing this in parallel?
-    cpg.scalaGraph
-      .E()
-      .toIterator()
+    cpg.graph.edges().asScala
       .filter(e => edgeTypesToRemove.contains(e.label))
       .foreach(_.remove)
+  }
+
+  /**
+    * Remove all semantics from the graph and apply semantics stored
+    * at `semanticsFilenameOpt`.  If `semanticsFilenameOpt` is omitted or None,
+    * default semantics will be applied.
+    * */
+  def reapplySemantics(cpg: Cpg, semanticsFilenameOpt: Option[String] = None): Unit = {
+    removeAllSemantics(cpg)
+    applySemantics(cpg, semanticsFilenameOpt)
   }
 
   /**
@@ -69,7 +78,7 @@ object CpgLoader {
     * @param filename name of the file that stores the cpg
     * */
   def loadWithoutSemantics(filename: String): Cpg = {
-    val config = CpgLoaderConfig()
+    val config = CpgLoaderConfig().withOverflowConfig(OdbConfig.withDefaults())
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
   }
 
