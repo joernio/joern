@@ -5,8 +5,10 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
-
 import java.nio.file.{FileSystems, Files, Paths}
+
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+
 import scala.jdk.CollectionConverters._
 
 /**
@@ -46,6 +48,20 @@ object CpgLoader {
     val semanticsFilename = semanticsFilenameOpt.getOrElse(defaultSemanticsFile)
     val semantics = new SemanticsLoader(semanticsFilename).load
     new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
+  }
+
+  /**
+    * Undo `applySemantics`. This method is O(n) in the number of edges,
+    * and single threaded, so consider it may take a bit for large graphs.
+    * */
+  def removeAllSemantics(cpg: Cpg): Unit = {
+    val edgeTypesToRemove = Set(EdgeTypes.PROPAGATE, EdgeTypes.REACHING_DEF)
+    // TODO Does overflowDB allow doing this in parallel?
+    cpg.scalaGraph
+      .E()
+      .toIterator()
+      .filter(e => edgeTypesToRemove.contains(e.label))
+      .foreach(_.remove)
   }
 
   /**
