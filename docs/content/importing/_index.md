@@ -93,13 +93,12 @@ the server's current working directory. For example, with the following setup:
 
 We would run `cpg-create`, specifying the location of `my-code` relative to the
 server working directory. This would be:
-```shell script
+
+```bash
  cpg-create ../repos/my-code
 ```
 
-
 ## Creating Code Property Graphs with self-built fuzzyc2cpg
-
 
 When using the [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg) language
 frontend directly (instead of running `joern-parse`), the cpg file
