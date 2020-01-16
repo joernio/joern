@@ -17,26 +17,6 @@ import scala.jdk.CollectionConverters._
   **/
 object CpgLoader {
 
-  /**
-    * Load code property graph
-    * @param filename name of the file that stores the cpg
-    * */
-  def load(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
-    val cpg = loadWithoutSemantics(filename)
-    applySemantics(cpg, semanticsFilenameOpt)
-    cpg
-  }
-
-  /**
-    * Load code property graph from overflowDB and apply semantics
-    * @param filename name of the file that stores the cpg
-    * */
-  def loadFromOdb(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
-    val cpg = loadFromOdbWithoutSemantics(filename)
-    applySemantics(cpg, semanticsFilenameOpt)
-    cpg
-  }
-
   lazy val defaultSemanticsFile: String = {
     val file = Files.createTempFile("joern-default", ".semantics")
     val defaultFile = this.getClass.getClassLoader.getResource("default.semantics").toURI
@@ -79,19 +59,19 @@ object CpgLoader {
   }
 
   /**
-    * Load code property graph but do not apply semantics
+    * Load code property graph
     * @param filename name of the file that stores the cpg
     * */
-  def loadWithoutSemantics(filename: String): Cpg = {
+  def load(filename: String): Cpg = {
     val config = CpgLoaderConfig()
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
   }
 
   /**
-    * Load code property graph from overflow DB without applying semantics
-    * @param filename name of the file that stores the cpg overflowdb
+    * Load code property graph from overflowDB and apply semantics
+    * @param filename name of the file that stores the cpg
     * */
-  def loadFromOdbWithoutSemantics(filename: String): Cpg = {
+  def loadFromOdb(filename: String): Cpg = {
     val odbConfig = OdbConfig.withDefaults().withStorageLocation(filename)
     val config = CpgLoaderConfig().withOverflowConfig(odbConfig)
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
