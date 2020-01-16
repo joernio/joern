@@ -8,6 +8,7 @@ import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import java.nio.file.{FileSystems, Files, Paths}
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.overflowdb.OdbConfig
 
 import scala.jdk.CollectionConverters._
 
@@ -22,6 +23,16 @@ object CpgLoader {
     * */
   def load(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
     val cpg = loadWithoutSemantics(filename)
+    applySemantics(cpg, semanticsFilenameOpt)
+    cpg
+  }
+
+  /**
+    * Load code property graph from overflowDB and apply semantics
+    * @param filename name of the file that stores the cpg
+    * */
+  def loadFromOdb(filename: String, semanticsFilenameOpt: Option[String] = None): Cpg = {
+    val cpg = loadFromOdbWithoutSemantics(filename)
     applySemantics(cpg, semanticsFilenameOpt)
     cpg
   }
@@ -74,6 +85,16 @@ object CpgLoader {
   def loadWithoutSemantics(filename: String): Cpg = {
     val config = CpgLoaderConfig()
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
+  }
+
+  /**
+    * Load code property graph from overflow DB without applying semantics
+    * @param filename name of the file that stores the cpg overflowdb
+    * */
+  def loadFromOdbWithoutSemantics(filename: String): Cpg = {
+    val odbConfig = OdbConfig.withDefaults().withStorageLocation(filename)
+    val config = CpgLoaderConfig().withOverflowConfig(odbConfig)
+    io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
   }
 
 }
