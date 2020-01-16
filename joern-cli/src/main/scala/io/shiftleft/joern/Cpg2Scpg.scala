@@ -14,7 +14,7 @@ object Cpg2Scpg extends App {
 
   parseConfig.foreach { config =>
     try {
-      run(config.inputPath, config.dataFlow, config.semanticsFile)
+      run(config.inputPath, "store.bin", config.dataFlow, config.semanticsFile)
     } catch {
       case exception: Exception =>
         logger.error("Failed to generate CPG.", exception)
@@ -41,17 +41,18 @@ object Cpg2Scpg extends App {
   /**
     * Load the CPG at `cpgFilename` and add enhancements,
     * turning the CPG into an SCPG.
-    * @param cpgFilename the filename of the cpg
+    * @param storeFilename the filename of the cpg
     * */
-  def run(cpgFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
-    val cpg = CpgLoader.load(cpgFilename)
-    val serializedCpg = new SerializedCpg(cpgFilename)
+  def run(inputFilename: String, storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
+    val cpg = CpgLoader.load(inputFilename, storeFilename)
+    val serializedCpg = new SerializedCpg(inputFilename)
     new EnhancementRunner().run(cpg, serializedCpg)
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
       new DataFlowRunner(semantics).run(cpg, serializedCpg)
     }
     serializedCpg.close
+    cpg.graph.close()
   }
 
 }

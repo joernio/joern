@@ -20,7 +20,7 @@ trait AbstractJoernCliTest {
     val fuzzyc2Cpg = new FuzzyC2Cpg(outputFilename)
     fuzzyc2Cpg.runAndOutput(inputFilenames, Set(".c"))
     // Link CPG fragments and enhance to create semantic CPG
-    Cpg2Scpg.run(outputFilename, dataFlow = false, "")
+    Cpg2Scpg.run(outputFilename, "", dataFlow = false, "")
 
     // Load the CPG
     (CpgLoader.load(outputFilename), outputFilename)

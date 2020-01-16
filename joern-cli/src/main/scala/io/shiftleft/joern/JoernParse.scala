@@ -1,5 +1,8 @@
 package io.shiftleft.joern
 
+import java.nio.file.Files
+
+import better.files.File
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 import org.slf4j.LoggerFactory
 
@@ -20,25 +23,29 @@ object JoernParse extends App {
   }
 
   def generateCpg(config: ParserConfig): Unit = {
-    val fuzzyc = new FuzzyC2Cpg(config.outputCpgFile)
 
-    if (config.preprocessorConfig.usePreprocessor) {
-      fuzzyc.runWithPreprocessorAndOutput(
-        config.inputPaths,
-        config.sourceFileExtensions,
-        config.preprocessorConfig.includeFiles,
-        config.preprocessorConfig.includePaths,
-        config.preprocessorConfig.defines,
-        config.preprocessorConfig.undefines,
-        config.preprocessorConfig.preprocessorExecutable
-      )
-    } else {
-      fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
+    File.usingTemporaryFile("joern") { file =>
+      val tmpFilePath = file.path.toString
+      val fuzzyc = new FuzzyC2Cpg(tmpFilePath)
+      if (config.preprocessorConfig.usePreprocessor) {
+        fuzzyc.runWithPreprocessorAndOutput(
+          config.inputPaths,
+          config.sourceFileExtensions,
+          config.preprocessorConfig.includeFiles,
+          config.preprocessorConfig.includePaths,
+          config.preprocessorConfig.defines,
+          config.preprocessorConfig.undefines,
+          config.preprocessorConfig.preprocessorExecutable
+        )
+      } else {
+        fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
+      }
+
+      if (config.enhance) {
+        Cpg2Scpg.run(tmpFilePath, config.outputCpgFile, config.dataFlow, config.semanticsFile)
+      }
     }
 
-    if (config.enhance) {
-      Cpg2Scpg.run(config.outputCpgFile, config.dataFlow, config.semanticsFile)
-    }
   }
 
   case class ParserConfig(inputPaths: Set[String] = Set.empty,

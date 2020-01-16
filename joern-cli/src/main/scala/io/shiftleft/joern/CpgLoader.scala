@@ -61,9 +61,15 @@ object CpgLoader {
   /**
     * Load code property graph
     * @param filename name of the file that stores the cpg
+    * @param storeFilename if unequal non-empty - location of ODB store
     * */
-  def load(filename: String): Cpg = {
-    val config = CpgLoaderConfig()
+  def load(filename: String, storeFilename: String = ""): Cpg = {
+    val config = if (storeFilename != "") {
+      val odbConfig = OdbConfig.withDefaults().withStorageLocation(storeFilename)
+      CpgLoaderConfig().withOverflowConfig(odbConfig)
+    } else {
+      CpgLoaderConfig()
+    }
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load(filename, config)
   }
 
