@@ -59,7 +59,7 @@ object CpgLoader {
     * */
   def removeAllSemantics(cpg: Cpg): Unit = {
     val edgeTypesToRemove = Set(EdgeTypes.PROPAGATE, EdgeTypes.REACHING_DEF)
-    // TODO Does overflowDB allow doing this in parallel?
+    // TODO Replace with call to generic DiffGraph unapply methods once available
     cpg.graph
       .edges()
       .asScala
