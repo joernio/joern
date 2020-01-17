@@ -60,7 +60,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       val actual = console.Console.runScript("general/ast-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
-      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+      actual should include(""""function" : "<operator>.indirectFieldAccess"""")
       actual should include(""""function" : "<operator>.assignment"""")
       actual should include(""""function" : "<operator>.notEquals"""")
       actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
@@ -71,7 +71,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       val actual = console.Console.runScript("general/cfg-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
-      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+      actual should include(""""function" : "<operator>.indirectFieldAccess"""")
       actual should include(""""function" : "<operator>.assignment"""")
       actual should include(""""function" : "<operator>.notEquals"""")
       actual should include("""io.shiftleft.codepropertygraph.generated.edges.Cfg""")
@@ -90,7 +90,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       val actual = console.Console.runScript("general/graph-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
-      actual should include(""""function" : "<operator>.indirectMemberAccess"""")
+      actual should include(""""function" : "<operator>.indirectFieldAccess"""")
       actual should include(""""function" : "<operator>.assignment"""")
       actual should include(""""function" : "<operator>.notEquals"""")
       actual should include("""io.shiftleft.codepropertygraph.generated.edges.Ast""")
