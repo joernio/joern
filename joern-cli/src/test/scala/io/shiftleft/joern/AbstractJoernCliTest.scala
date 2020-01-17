@@ -12,7 +12,7 @@ trait AbstractJoernCliTest {
 
   private def loadTestCpg(file: File): (Cpg, String) = {
     val inputFilenames = Set(file.pathAsString)
-    val tmpFile = File.newTemporaryFile("cpg", "bin.zip")
+    val tmpFile = File.newTemporaryFile("cpg", "bin")
     val outputFilename = tmpFile.pathAsString
     tmpFile.delete()
 

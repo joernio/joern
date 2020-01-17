@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 
 object Cpg2Scpg extends App {
 
-  val DEFAULT_CPG_IN_FILE = "cpg.bin.zip"
+  val DEFAULT_CPG_IN_FILE = "cpg.bin"
 
   private val logger = LoggerFactory.getLogger(getClass)
 

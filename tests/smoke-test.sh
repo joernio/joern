@@ -46,7 +46,7 @@ do
   "$JOERN_PARSER" \
     -J-Xmx12G \
     --source-file-ext=".cc,.hh" \
-    --out="$JOERN_PARSER_TEST_DIR/$JOERN_PARSER_TEST_PROJECT.bin.zip" \
+    --out="$JOERN_PARSER_TEST_DIR/$JOERN_PARSER_TEST_PROJECT.bin" \
     "$JOERN_PARSER_TEST_DIR/$JOERN_PARSER_TEST_PROJECT"
 
   # Check status of parse

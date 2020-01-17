@@ -1,7 +1,5 @@
 package io.shiftleft.joern
 
-import java.nio.file.Files
-
 import better.files.File
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 import org.slf4j.LoggerFactory
@@ -9,7 +7,7 @@ import org.slf4j.LoggerFactory
 import scala.util.control.NonFatal
 
 object JoernParse extends App {
-  val DEFAULT_CPG_OUT_FILE = "cpg.bin.zip"
+  val DEFAULT_CPG_OUT_FILE = "cpg.bin"
 
   private val logger = LoggerFactory.getLogger(getClass)
 

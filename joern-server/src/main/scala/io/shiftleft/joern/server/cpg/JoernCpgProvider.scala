@@ -27,7 +27,7 @@ class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".
 
   private val uuidProvider = IO(UUID.randomUUID)
 
-  private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin.zip"))
+  private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin"))
 
   private def constructCpg(cpgId: UUID,
                            cpgFile: Path,
