@@ -1,6 +1,6 @@
 package io.shiftleft.joern
 
-import io.shiftleft.SerializedCpg
+import better.files.File
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import io.shiftleft.semanticcpg.layers.EnhancementRunner
@@ -44,14 +44,14 @@ object Cpg2Scpg extends App {
     * @param storeFilename the filename of the cpg
     * */
   def run(inputFilename: String, storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
+    val storeFile = File(storeFilename)
+    if (storeFilename != "" && storeFile.exists) { storeFile.delete() }
     val cpg = CpgLoader.load(inputFilename, storeFilename)
-    val serializedCpg = new SerializedCpg(inputFilename)
-    new EnhancementRunner().run(cpg, serializedCpg)
+    new EnhancementRunner().run(cpg)
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
-      new DataFlowRunner(semantics).run(cpg, serializedCpg)
+      new DataFlowRunner(semantics).run(cpg)
     }
-    serializedCpg.close
     cpg.graph.close()
   }
 
