@@ -1,0 +1,41 @@
+{
+  "description": "A collection of scripts that deal with the extraction of the code property graph.",
+  "scripts": [
+    {
+      "name": "ast-for-funcs.sc",
+      "description": "Returns the corresponding AST for each function as Json object."
+    },
+    {
+      "name": "ast-for-funcs-dump.sc",
+      "description": "Prints the corresponding AST for each function as Json string to a file."
+    },
+    {
+      "name": "cfg-for-funcs.sc",
+      "description": "Returns the corresponding CFG for each function as Json object."
+    },
+    {
+      "name": "cfg-for-funcs-dump.sc",
+      "description": "Prints the corresponding CFG for each function as Json string to a file."
+    },
+    {
+      "name": "cfgToDot.sc",
+      "description": "Generates a dot graph for your cfg."
+    },
+    {
+      "name": "functions-to-dot.sc",
+      "description": "Generates a list of strings, each containing a dot graph for every internal function in the provided CPG."
+    },
+    {
+      "name": "graph-for-funcs.sc",
+      "description": "Returns the corresponding graph (AST+CFG+PDG) for each function as Json object."
+    },
+    {
+      "name": "pdg.sc",
+      "description": "Generate a PDG for the whole CPG."
+    },
+    {
+      "name": "pdg-for-funcs-dump.sc",
+      "description": "Prints the corresponding PDG for each function as Json string to a file."
+    }
+  ]
+}

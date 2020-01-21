@@ -1,0 +1,9 @@
+{
+  "description": "A collection of scripts that can be used to detect vulnerabilities.",
+  "scripts": [
+    {
+      "name": "pointer-to-int.sc",
+      "description": "Lists all occurrences of pointer arithmetic that are subsequently assigned to an int."
+    }
+  ]
+}
