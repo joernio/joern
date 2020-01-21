@@ -4,6 +4,7 @@ import better.files.File
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import io.shiftleft.semanticcpg.layers.EnhancementRunner
+import io.shiftleft.SerializedCpg
 import org.slf4j.LoggerFactory
 
 object Cpg2Scpg extends App {
@@ -47,10 +48,10 @@ object Cpg2Scpg extends App {
     val storeFile = File(storeFilename)
     if (storeFilename != "" && storeFile.exists) { storeFile.delete() }
     val cpg = CpgLoader.load(inputFilename, storeFilename)
-    new EnhancementRunner().run(cpg)
+    new EnhancementRunner().run(cpg, new SerializedCpg())
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
-      new DataFlowRunner(semantics).run(cpg)
+      new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
     }
     cpg.graph.close()
   }
