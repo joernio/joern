@@ -60,7 +60,8 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       val expected =
         """digraph g {
           | node[shape=plaintext];
-          | "free.c: 11 p" -> "free.c: 11 free(p)";
+          | "" -> "free.c: 9 p";
+          |  "free.c: 11 p" -> "free.c: 11 free(p)";
           |  "free.c: 11 free(p)" -> "free.c: 9 p";
           |  "free.c: 10 next" -> "free.c: 10 p->next";
           |  "free.c: 10 p" -> "free.c: 10 next";
@@ -77,7 +78,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
           |  "free.c: 9 head" -> "free.c: 9 *p = head";
           |  "free.c: 9 p" -> "free.c: 9 head";
           |  "free.c: 9 *p = head" -> "free.c: 9 p";
-          |  "" -> "free.c: 9 p";
           | }""".stripMargin
       val actual = console.Console.runScript("graph/cfgToDot.sc", Map.empty, cpg)
       actual shouldBe expected
