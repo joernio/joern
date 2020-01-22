@@ -2,9 +2,12 @@ package io.shiftleft.joern
 
 import better.files.File
 import better.files.Dsl._
+
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.{Matchers, WordSpec}
+
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 
 class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
@@ -18,6 +21,28 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
         } finally {
           rm(cpgZip)
         }
+    }
+  }
+
+  "Executing scripts for example code 'testcode/unsafe-ptr" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/unsafe-ptr"))) { cpg: Cpg =>
+
+
+    "work correctly for 'pointer-to-int.sc'" in {
+      val calls =
+        console.Console.runScript("vulns/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+
+      calls.map(_.code) should contain theSameElementsAs List(
+        "simple_subtraction = p - q",
+        "nested_subtraction = p - q - r",
+        "literal_subtraction = p - i",
+        "addrOf_subtraction = p - &i",
+        "nested_addrOf_subtraction =  3 - &i - 4",
+        "literal_addrOf_subtraction = 3 - &i",
+        "array_subtraction = x - p",
+        "array_literal_subtraction = x - 3",
+        "array_addrOf_subtraction = x - &i"
+      )
     }
   }
 
@@ -117,11 +142,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
            |""".stripMargin
 
       actual should fullyMatch regex expectedRegex
-    }
-
-    "work correctly for 'pointer-to-int.sc'" in {
-      val List(actual) =
-        console.Console.runScript("vulns/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[String]]
     }
   }
 

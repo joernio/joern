@@ -11,9 +11,8 @@ private def expressionIsPointer(argument: Expression, isSubExpression: Boolean =
     case call: Call if call.name == Operators.indirectFieldAccess => // On '->', only check the selected field.
       expressionIsPointer(call.start.argument.l.last, isSubExpression = true)
     case call: Call => // On normal nested call, check all arguments are also pointers.
-      call.name == Operators.addressOf || call.start.argument.l.forall { arg =>
-        expressionIsPointer(arg, isSubExpression = true)
-      }
+      call.name == Operators.addressOf ||
+        call.start.argument.l.forall(expressionIsPointer(_, isSubExpression = true))
     case _: Literal if isSubExpression => true // Lone literals are not counted.
     case _ => false
   }
