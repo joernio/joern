@@ -48,6 +48,21 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
   }
 
+  "Executing scripts for example code 'testcode/syscalls" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/syscalls"))) { cpg: Cpg =>
+
+
+    "work correctly for 'syscalls.sc'" in {
+      val calls =
+        console.Console.runScript("general/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+
+      calls.map(_.name) should contain theSameElementsAs List(
+        "gettimeofday",
+        "exit"
+      )
+    }
+  }
+
   "Executing scripts for example code 'testcode/free'" should withCpgZip(
     File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
     "work correctly for 'list-funcs'" in {
@@ -60,8 +75,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       val expected =
         """digraph g {
           | node[shape=plaintext];
-          | "" -> "free.c: 9 p";
-          |  "free.c: 11 p" -> "free.c: 11 free(p)";
+          | "free.c: 11 p" -> "free.c: 11 free(p)";
           |  "free.c: 11 free(p)" -> "free.c: 9 p";
           |  "free.c: 10 next" -> "free.c: 10 p->next";
           |  "free.c: 10 p" -> "free.c: 10 next";
@@ -78,6 +92,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
           |  "free.c: 9 head" -> "free.c: 9 *p = head";
           |  "free.c: 9 p" -> "free.c: 9 head";
           |  "free.c: 9 *p = head" -> "free.c: 9 p";
+          |  "" -> "free.c: 9 p";
           | }""".stripMargin
       val actual = console.Console.runScript("graph/cfgToDot.sc", Map.empty, cpg)
       actual shouldBe expected
