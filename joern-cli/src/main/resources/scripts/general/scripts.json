@@ -4,10 +4,6 @@
     {
       "name": "list-funcs.sc",
       "description": "Lists all functions."
-    },
-    {
-      "name": "syscalls.sc",
-      "description": "Lists all C Linux syscalls found in the program"
     }
   ]
 }

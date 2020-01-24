@@ -26,11 +26,9 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
   "Executing scripts for example code 'testcode/unsafe-ptr" should withCpgZip(
     File(getClass.getClassLoader.getResource("testcode/unsafe-ptr"))) { cpg: Cpg =>
-
-
     "work correctly for 'pointer-to-int.sc'" in {
       val calls =
-        console.Console.runScript("vulns/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        console.Console.runScript("c/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.code) should contain theSameElementsAs List(
         "simple_subtraction = p - q",
@@ -50,15 +48,27 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
   "Executing scripts for example code 'testcode/syscalls" should withCpgZip(
     File(getClass.getClassLoader.getResource("testcode/syscalls"))) { cpg: Cpg =>
-
-
     "work correctly for 'syscalls.sc'" in {
       val calls =
-        console.Console.runScript("general/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        console.Console.runScript("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.name) should contain theSameElementsAs List(
         "gettimeofday",
         "exit"
+      )
+    }
+  }
+
+  "Executing scripts for example code 'testcode/malloc-overflow" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/malloc-overflow"))) { cpg: Cpg =>
+    "work correctly for 'malloc-overflow.sc'" in {
+      val calls =
+        console.Console.runScript("c/malloc-overflow.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+
+      calls.map(_.code) should contain theSameElementsAs List(
+        "malloc(sizeof(int) * 42)",
+        "malloc(sizeof(int) * 3)",
+        "malloc(sizeof(int) + 55)"
       )
     }
   }
