@@ -15,7 +15,7 @@ inside a running Joern session. You can also use the `runScript` method availabl
 cpg.runScript("my-script.sc", Map("param" -> "value"))
 ```
 
-To get a list of available scripts you can want to call:
+To get a list of available scripts you can call:
 
 ```scala
 def scripts(): List[ScriptDescription]
