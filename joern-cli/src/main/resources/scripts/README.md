@@ -5,14 +5,17 @@ This is our collection of ready-to-run scripts for `joern`.
 You can start them by using one of the following methods:
 
 ```scala
-def runScript(name: String): AnyRef
-def runScript(name: String, cpg: Cpg): AnyRef
-def runScript(name: String, cpgFilename: String): AnyRef
+def runScript(name: String, params: Map[String, String]): AnyRef
+def runScript(name: String, params: Map[String, String], cpg: Cpg): AnyRef
+def runScript(name: String, params: Map[String, String], cpgFilename: String): AnyRef
 ```
 
-inside a running Joern session.
+inside a running Joern session. You can also use the `runScript` method available on the `cpg`:
+```scala
+cpg.runScript("my-script.sc", Map("param" -> "value"))
+```
 
-To get a list of available scripts you might want to call:
+To get a list of available scripts you can want to call:
 
 ```scala
 def scripts(): List[ScriptDescription]
