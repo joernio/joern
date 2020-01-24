@@ -73,6 +73,16 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
   }
 
+  "Executing scripts for example code 'testcode/leak" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/leak"))) { cpg: Cpg =>
+    "work correctly for 'malloc-leak.sc'" in {
+      val calls =
+        console.Console.runScript("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[Call]]
+
+      calls.map(_.code) should contain theSameElementsAs List("* leak = malloc(sizeof(int))")
+    }
+  }
+
   "Executing scripts for example code 'testcode/free'" should withCpgZip(
     File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
     "work correctly for 'list-funcs'" in {
