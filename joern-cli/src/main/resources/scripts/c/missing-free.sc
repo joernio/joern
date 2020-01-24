@@ -1,20 +1,20 @@
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Identifier}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.dataflowengine.language._
+import io.shiftleft.semanticcpg.language._
 
-@main def main(): List[Identifier] = {
-  (cpg: Cpg).assignment.where { assignment =>
+private def mallocCalls(cpg: Cpg): Steps[Call] = {
+  cpg.assignment.where { assignment =>
     assignment.argument(2) match {
       case call: Call => call.name == "malloc"
       case _ => false
     }
-  }.map { assignment =>
-    (assignment.method, assignment.argument(1).asInstanceOf[Identifier])
-  }.where { case (containingMethod, allocatedIdentifier) =>
-    containingMethod.start.callOut.name("free").where { freeCall =>
-      val freeArg = freeCall.argument(1).asInstanceOf[Identifier]
-      freeArg.name == allocatedIdentifier.code && freeArg.code == allocatedIdentifier.code
-    }.isEmpty
-  }.map { case (_, identifier) => identifier }.l
+  }
+}
+
+private def freeCalls(cpg: Cpg): Steps[Call] = cpg.call("free")
+
+@main def main(): Set[Call] = {
+  val freedCalls = freeCalls(cpg).reachableBy(mallocCalls(cpg)).toSet
+  mallocCalls(cpg).toSet.diff(freedCalls)
 }
