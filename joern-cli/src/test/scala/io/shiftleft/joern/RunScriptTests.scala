@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.{Matchers, WordSpec}
 
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 
 class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
@@ -80,6 +80,18 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
         console.Console.runScript("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[Call]]
 
       calls.map(_.code) should contain theSameElementsAs List("* leak = malloc(sizeof(int))")
+    }
+  }
+
+  "Executing scripts for example code 'testcode/const-funcs" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/const-funcs"))) { cpg: Cpg =>
+    "work correctly for 'const-funcs.sc'" in {
+      val methods =
+        console.Console.runScript("c/const-funcs.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
+
+      // "side_effect_number" is included here as we are simply trying to emulate a side effect.
+      methods.map(_.name) should contain theSameElementsAs
+        List("eligible", "eligible_params", "side_effect_number")
     }
   }
 

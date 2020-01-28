@@ -2,6 +2,10 @@
   "description": "A collection of scripts that can be used to detect vulnerabilities.",
   "scripts": [
     {
+      "name": "const-funcs.sc",
+      "description": "Lists all functions that may potentially be marked as const functions."
+    },
+    {
       "name": "malloc-leak.sc",
       "description": "Lists all malloc calls that do not have a corresponding free."
     },
