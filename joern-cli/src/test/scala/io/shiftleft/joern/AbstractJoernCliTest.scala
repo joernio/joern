@@ -24,7 +24,7 @@ trait AbstractJoernCliTest {
     val storeTmpFile = File.newTemporaryFile("store", "bin")
     val storeFilename = storeTmpFile.pathAsString
     storeTmpFile.delete()
-    Cpg2Scpg.run(fuzzycOutFilename, storeFilename, dataFlow = false, "")
+    Cpg2Scpg.run(fuzzycOutFilename, storeFilename, dataFlow = true, CpgLoader.defaultSemanticsFile)
 
     // Load the CPG
     (CpgLoader.loadFromOdb(storeFilename), fuzzycOutFilename)
