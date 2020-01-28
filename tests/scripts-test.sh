@@ -13,8 +13,7 @@ JOERN_SCRIPTS_DIR="$SCRIPT_ABS_DIR/../scripts"
 $JOERN_PARSER "$SCRIPT_ABS_DIR"/code
 
 # Run each script.
-# TODO: Do not fix to the `general` folder.
-for script in "$JOERN_SCRIPTS_DIR"/general/*.sc; do
+for script in "$JOERN_SCRIPTS_DIR"/**/*.sc; do
   echo "Testing script [$script]..."
   $JOERN --import "$SCRIPT_ABS_DIR"/loadcpg.sc --script "$script"
   JOERN_EXIT_CODE=$?

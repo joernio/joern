@@ -1,0 +1,29 @@
+{
+  "description": "A collection of scripts that can be used to detect vulnerabilities.",
+  "scripts": [
+    {
+      "name": "const-funcs.sc",
+      "description": "Lists all functions that may potentially be marked as const functions."
+    },
+    {
+      "name": "malloc-leak.sc",
+      "description": "Lists all malloc calls that do not have a corresponding free."
+    },
+    {
+      "name": "malloc-overflow.sc",
+      "description": "Lists all call sites where the first argument to malloc involves multiplication or addition"
+    },
+    {
+      "name": "pointer-to-int.sc",
+      "description": "Lists all occurrences of pointer arithmetic that are subsequently assigned to an int."
+    },
+    {
+      "name": "syscalls.sc",
+      "description": "Lists all C Linux syscalls found in the program"
+    },
+    {
+      "name": "userspace-memory-access.sc",
+      "description": "Lists all accesses to userspace memory addresses."
+    }
+  ]
+}
