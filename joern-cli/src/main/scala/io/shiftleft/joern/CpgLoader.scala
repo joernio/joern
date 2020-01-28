@@ -79,7 +79,7 @@ object CpgLoader {
     * */
   def loadFromOdb(filename: String): Cpg = {
     val odbConfig = OdbConfig.withDefaults().withStorageLocation(filename)
-    val config = CpgLoaderConfig().withOverflowConfig(odbConfig)
+    val config = CpgLoaderConfig().withOverflowConfig(odbConfig).doNotCreateIndexesOnLoad
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
   }
 
