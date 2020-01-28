@@ -88,7 +88,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
       val calls =
         console.Console.runScript("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[Call]]
 
-      calls.map(_.code) should contain theSameElementsAs List("* leak = malloc(sizeof(int))")
+      calls.map(_.code) should contain theSameElementsAs Set("* leak = malloc(sizeof(int))")
     }
   }
 
@@ -100,7 +100,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
       // "side_effect_number" is included here as we are simply trying to emulate a side effect.
       methods.map(_.name) should contain theSameElementsAs
-        List("eligible", "eligible_params", "side_effect_number")
+        Set("eligible", "eligible_params", "side_effect_number")
     }
   }
 
