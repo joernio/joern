@@ -57,6 +57,15 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
         "exit"
       )
     }
+
+    "work correctly for 'userspace-memory-access.sc'" in {
+      val calls =
+        console.Console.runScript("c/userspace-memory-access.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+
+      calls.map(_.name) should contain theSameElementsAs List(
+        "get_user"
+      )
+    }
   }
 
   "Executing scripts for example code 'testcode/malloc-overflow" should withCpgZip(

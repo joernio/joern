@@ -20,6 +20,10 @@
     {
       "name": "syscalls.sc",
       "description": "Lists all C Linux syscalls found in the program"
+    },
+    {
+      "name": "userspace-memory-access.sc",
+      "description": "Lists all accesses to userspace memory addresses."
     }
   ]
 }
