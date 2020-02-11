@@ -104,6 +104,25 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
   }
 
+  "Executing scripts for example code 'testcode/const-ish" should withCpgZip(
+    File(getClass.getClassLoader.getResource("testcode/const-ish"))) { cpg: Cpg =>
+    "work correctly for 'const-ish.sc'" in {
+      val methods =
+        console.Console.runScript("c/const-ish.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
+
+      // "side_effect_number" is included here as we are simply trying to emulate a side effect.
+      methods.map(_.name) should contain theSameElementsAs
+        Set(
+          "modify_const_struct_member_cpp_cast",
+          "modify_const_struct_member_c_cast",
+          "modify_const_struct_member",
+          "modify_const_struct_cpp_cast",
+          "modify_const_struct_c_cast",
+          "modify_const_struct"
+        )
+    }
+  }
+
   "Executing scripts for example code 'testcode/free'" should withCpgZip(
     File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
     "work correctly for 'list-funcs'" in {

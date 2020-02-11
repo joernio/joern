@@ -6,6 +6,10 @@
       "description": "Lists all functions that may potentially be marked as const functions."
     },
     {
+      "name": "const-ish.sc",
+      "description": "Detect assignment to const parameters or members of const parameters."
+    },
+    {
       "name": "malloc-leak.sc",
       "description": "Lists all malloc calls that do not have a corresponding free."
     },
