@@ -1,6 +1,7 @@
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension._
 import io.shiftleft.dataflowengine.language._
 
 private def callOutsAreConst(method: Method): Boolean = {
