@@ -120,7 +120,7 @@ final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nod
     val methodName = method.fullName
     val methodId = method.toString
 
-    val local = new Local(
+    val local = new NodeSteps(
       method
         .out(EdgeTypes.CONTAINS)
         .hasLabel(NodeTypes.BLOCK)
@@ -129,7 +129,7 @@ final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nod
         .cast[nodes.Local])
 
     val sink = local.referencingIdentifiers.dedup
-    val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
+    val source = new NodeSteps(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
     val dependencies = sink
       .reachableBy(source).dedup

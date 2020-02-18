@@ -80,11 +80,11 @@ implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
 
       val astChildren = method.astMinusRoot.l
 
-      val cfgChildren = new CfgNode(
+      val cfgChildren = new NodeSteps(
         method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
       ).l
 
-      val local = new Local(
+      val local = new NodeSteps(
         method
           .out(EdgeTypes.CONTAINS)
           .hasLabel(NodeTypes.BLOCK)
@@ -92,7 +92,7 @@ implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
           .hasLabel(NodeTypes.LOCAL)
           .cast[nodes.Local])
       val sink = local.evalType(".*").referencingIdentifiers.dedup
-      val source = new Call(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
+      val source = new NodeSteps(method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
 
       val pdgChildren = sink
         .reachableByFlows(source)
