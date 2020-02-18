@@ -7,7 +7,7 @@ Joern and Ocular offer a Java API that can be used from JVM-based languages such
 
 For code property graph creation, Joern includes
 [fuzzyc2cpg](https://github.com/ShiftLeftSecurity/fuzzyc2cpg), a fuzzy
-C/C++ language module. The following Scala test code demonstrates how FuzzyC2CPG can be used to create a code property graph from all C/C++ files in the directory `joern-cli/src/test/resources/testcode/free` and save it at `/tmp/cpg.bin.zip`.
+C/C++ language module. The following Scala test code demonstrates how FuzzyC2CPG can be used to create a code property graph from all C/C++ files in the directory `joern-cli/src/test/resources/testcode/free` and save it at `/tmp/cpg.bin`.
 
 {{<snippet file="src/test/scala/io/shiftleft/joern/GenerationTests.scala" language="scala">}}
 

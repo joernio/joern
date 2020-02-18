@@ -21,7 +21,7 @@ git clone https://github.com/ShiftLeftSecurity/tarpit-c
 ./joern-parse tarpit-c
 ```
 
-This will create a file named `cpg.bin.zip` in the current working
+This will create a file named `cpg.bin` in the current working
 directory from the C/C++ code in the directory `tarpit-c`.
 
 Joern-parse has the following signature:
@@ -40,7 +40,7 @@ via the `--out` flag.
 
 will write the CPG to `tarpitc.bin.zip`.
 
-If you omit the ```--out``` flag, the CPG is named `cpg.bin.zip` and
+If you omit the ```--out``` flag, the CPG is named `cpg.bin` and
 stored in the current working directory.
 
 To view all options offered by `fuzzyc2cpg`, simply run
@@ -113,8 +113,8 @@ One can trigger the enhancement step manually by doing the following in the REPL
 ```bash
 import io.shiftleft.joern.Cpg2Scpg
 import io.shiftleft.joern.CpgLoader
-Cpg2Scpg.run("cpg.bin.zip", true, CpgLoader.defaultSemanticsFile)
-loadCpg("cpg.bin.zip")
+Cpg2Scpg.run("cpg.bin", true, CpgLoader.defaultSemanticsFile)
+loadCpg("cpg.bin")
 ```
 
 Beware: This is not the intended way to do things! Normally you should

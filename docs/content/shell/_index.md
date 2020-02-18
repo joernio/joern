@@ -11,10 +11,10 @@ You can start the shell by executing
 ```bash
 ./joern
 ```
-Once in the shell, `loadCpg($filename)` can be used to load the CPG stored at filename. Subsequently, it can be accessed as `cpg`. For example, the following loads the CPG stored at "cpg.bin.zip", lists all methods, and pipes them to the file "/tmp/foo.txt":
+Once in the shell, `loadCpg($filename)` can be used to load the CPG stored at filename. Subsequently, it can be accessed as `cpg`. For example, the following loads the CPG stored at "cpg.bin", lists all methods, and pipes them to the file "/tmp/foo.txt":
 
 ```bash
-loadCpg("cpg.bin.zip")
+loadCpg("cpg.bin")
 cpg.method.name.l |> "/tmp/foo.txt"
 ```
 
@@ -105,7 +105,7 @@ For example,
 ./joern --script scripts/list-funcs.scala
 ```
 
-executes the `list-funcs.scala` script included with Joern, which loads the CPG at `cpg.bin.zip`, and writes out all function names.
+executes the `list-funcs.scala` script included with Joern, which loads the CPG at `cpg.bin`, and writes out all function names.
 
 You can also pass arguments to scripts. For example, the following script accepts the filename of a CPG (`cpgFile`) and a filename of a result file (`outFile`):
 
@@ -119,7 +119,7 @@ You can also pass arguments to scripts. For example, the following script accept
 It can be called as follows:
 
 ```bash
-./joern --script test.sc --params cpgFile=/fullpath/to/cpg.bin.zip,outFile=out.log
+./joern --script test.sc --params cpgFile=/fullpath/to/cpg.bin,outFile=out.log
 ```
 
 ### During a running session with the ScriptManager

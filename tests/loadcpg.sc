@@ -4,4 +4,4 @@
 
 import io.shiftleft.joern.console.Console._
 
-loadCpg("cpg.bin.zip")
+loadCpg("cpg.bin")

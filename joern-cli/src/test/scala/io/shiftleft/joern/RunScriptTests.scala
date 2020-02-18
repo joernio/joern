@@ -12,7 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
   private def withCpgZip[T](file: File)(f: Cpg => T): T = {
-    val cpgZip = File(".") / "cpg.bin.zip"
+    val cpgZip = File(".") / "cpg.bin"
     withTestCpg(file) {
       case (cpg, outputFilename) =>
         cp(File(outputFilename), cpgZip)

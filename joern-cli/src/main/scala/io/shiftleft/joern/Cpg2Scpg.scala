@@ -1,20 +1,21 @@
 package io.shiftleft.joern
 
-import io.shiftleft.SerializedCpg
+import better.files.File
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import io.shiftleft.semanticcpg.layers.EnhancementRunner
+import io.shiftleft.SerializedCpg
 import org.slf4j.LoggerFactory
 
 object Cpg2Scpg extends App {
 
-  val DEFAULT_CPG_IN_FILE = "cpg.bin.zip"
+  val DEFAULT_CPG_IN_FILE = "cpg.bin"
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   parseConfig.foreach { config =>
     try {
-      run(config.inputPath, config.dataFlow, config.semanticsFile)
+      run(config.inputPath, "store.bin", config.dataFlow, config.semanticsFile)
     } catch {
       case exception: Exception =>
         logger.error("Failed to generate CPG.", exception)
@@ -41,17 +42,19 @@ object Cpg2Scpg extends App {
   /**
     * Load the CPG at `cpgFilename` and add enhancements,
     * turning the CPG into an SCPG.
-    * @param cpgFilename the filename of the cpg
+    * @param storeFilename the filename of the cpg
     * */
-  def run(cpgFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
-    val cpg = CpgLoader.loadWithoutSemantics(cpgFilename)
-    val serializedCpg = new SerializedCpg(cpgFilename)
-    new EnhancementRunner().run(cpg, serializedCpg)
+  def run(inputFilename: String, storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
+    val storeFile = File(storeFilename)
+    if (storeFilename != "" && storeFile.exists) { storeFile.delete() }
+    val cpg = CpgLoader.load(inputFilename, storeFilename)
+    new EnhancementRunner().run(cpg, new SerializedCpg())
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
-      new DataFlowRunner(semantics).run(cpg, serializedCpg)
+      new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
     }
-    serializedCpg.close
+    io.shiftleft.codepropertygraph.cpgloading.CpgLoader.createIndexes(cpg)
+    cpg.graph.close()
   }
 
 }

@@ -30,18 +30,22 @@ object Console extends JoernScriptManager {
   }
 
   /**
-    * Load CPG stored at `inputPath` and apply data flow semantics from `semanticsFilenameOpt`.
-    * If `semanticsFilename` is not given or `None`, default semantics will be applied.
+    * Load CPG stored at `inputPath`.
     * */
   def loadCpg(inputPath: String): Option[Cpg] = {
     if (!File(inputPath).exists) {
       report(s"File does not exist: $inputPath")
       return None
     }
-    _cpg = CpgLoader.loadWithoutSemantics(inputPath)
+    _cpg = CpgLoader.loadFromOdb(inputPath)
     Some(cpg)
   }
 
+  /**
+    * (Re)-apply semantics stored in `semanticsFilenameOpt`.
+    * If `semanticsFilenameOpt` is None default semantics
+    * are applied.
+    * */
   def applySemantics(semanticsFilenameOpt: Option[String]): Unit =
     CpgLoader.applySemantics(cpg, semanticsFilenameOpt)
 

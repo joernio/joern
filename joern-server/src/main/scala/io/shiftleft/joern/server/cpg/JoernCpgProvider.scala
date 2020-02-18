@@ -27,7 +27,7 @@ class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".
 
   private val uuidProvider = IO(UUID.randomUUID)
 
-  private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin.zip"))
+  private val tempFileProvider = IO(Files.createTempFile("", ".cpg.bin"))
 
   private def constructCpg(cpgId: UUID,
                            cpgFile: Path,
@@ -49,7 +49,7 @@ class JoernCpgProvider(fileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".
   }
 
   private def populateCpg(cpgId: UUID, cpgFile: Path): IO[Unit] = {
-    IO(CpgLoader.load(cpgFile.toString)).runAsync {
+    IO(CpgLoader.loadFromOdb(cpgFile.toString)).runAsync {
       case Right(cpg) => IO(cpgMap.put(cpgId, CpgOperationSuccess(cpg))).map(_ => ())
       case Left(ex)   => IO(cpgMap.put(cpgId, CpgOperationFailure(ex))).map(_ => ())
     }.toIO
