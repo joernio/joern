@@ -51,7 +51,6 @@ object Cpg2Scpg extends App {
       val semantics = new SemanticsLoader(semanticsFilename).load()
       new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
     }
-    io.shiftleft.codepropertygraph.cpgloading.CpgLoader.createIndexes(cpg)
     cpg
   }
 
