@@ -1,7 +1,9 @@
 package io.shiftleft.joern
 
-import better.files.File
+import java.util.concurrent.LinkedBlockingQueue
+
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
+import io.shiftleft.proto.cpg.Cpg.CpgStruct
 import org.slf4j.LoggerFactory
 
 import scala.util.control.NonFatal
@@ -22,26 +24,25 @@ object JoernParse extends App {
 
   def generateCpg(config: ParserConfig): Unit = {
 
-    File.usingTemporaryFile("joern") { file =>
-      val tmpFilePath = file.path.toString
-      val fuzzyc = new FuzzyC2Cpg(tmpFilePath)
-      if (config.preprocessorConfig.usePreprocessor) {
-        fuzzyc.runWithPreprocessorAndOutput(
-          config.inputPaths,
-          config.sourceFileExtensions,
-          config.preprocessorConfig.includeFiles,
-          config.preprocessorConfig.includePaths,
-          config.preprocessorConfig.defines,
-          config.preprocessorConfig.undefines,
-          config.preprocessorConfig.preprocessorExecutable
-        )
-      } else {
-        fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
-      }
+    val queue = new LinkedBlockingQueue[CpgStruct.Builder]()
+    val factory = new io.shiftleft.fuzzyc2cpg.output.overflowdb.OutputModuleFactory(config.outputCpgFile, queue)
+    val fuzzyc = new FuzzyC2Cpg(factory)
+    if (config.preprocessorConfig.usePreprocessor) {
+      fuzzyc.runWithPreprocessorAndOutput(
+        config.inputPaths,
+        config.sourceFileExtensions,
+        config.preprocessorConfig.includeFiles,
+        config.preprocessorConfig.includePaths,
+        config.preprocessorConfig.defines,
+        config.preprocessorConfig.undefines,
+        config.preprocessorConfig.preprocessorExecutable
+      )
+    } else {
+      fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
+    }
 
-      if (config.enhance) {
-        Cpg2Scpg.run(tmpFilePath, config.outputCpgFile, config.dataFlow, config.semanticsFile)
-      }
+    if (config.enhance) {
+      Cpg2Scpg.run(config.outputCpgFile, config.dataFlow, config.semanticsFile).close()
     }
 
   }
