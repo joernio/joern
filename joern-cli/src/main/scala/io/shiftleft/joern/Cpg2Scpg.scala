@@ -1,10 +1,10 @@
 package io.shiftleft.joern
 
-import better.files.File
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import io.shiftleft.semanticcpg.layers.EnhancementRunner
 import io.shiftleft.SerializedCpg
+import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 
 object Cpg2Scpg extends App {
@@ -15,7 +15,7 @@ object Cpg2Scpg extends App {
 
   parseConfig.foreach { config =>
     try {
-      run(config.inputPath, "store.bin", config.dataFlow, config.semanticsFile)
+      run(config.inputPath, config.dataFlow, config.semanticsFile).close()
     } catch {
       case exception: Exception =>
         logger.error("Failed to generate CPG.", exception)
@@ -40,21 +40,19 @@ object Cpg2Scpg extends App {
     }.parse(args, Config(DEFAULT_CPG_IN_FILE, true, CpgLoader.defaultSemanticsFile))
 
   /**
-    * Load the CPG at `cpgFilename` and add enhancements,
+    * Load the CPG at `storeFilename` and add enhancements,
     * turning the CPG into an SCPG.
     * @param storeFilename the filename of the cpg
     * */
-  def run(inputFilename: String, storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Unit = {
-    val storeFile = File(storeFilename)
-    if (storeFilename != "" && storeFile.exists) { storeFile.delete() }
-    val cpg = CpgLoader.load(inputFilename, storeFilename)
+  def run(storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Cpg = {
+    val cpg = CpgLoader.loadFromOdb(storeFilename)
     new EnhancementRunner().run(cpg, new SerializedCpg())
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
       new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
     }
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.createIndexes(cpg)
-    cpg.graph.close()
+    cpg
   }
 
 }
