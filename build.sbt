@@ -7,7 +7,7 @@ organization := "io.shiftleft"
  * to 2.13.2 once that's released */
 ThisBuild / scalaVersion := "2.13.0"
 
-val cpgVersion = "0.11.76"
+val cpgVersion = "0.11.80"
 val fuzzyc2cpgVersion = "1.1.32"
 
 ThisBuild / resolvers ++= Seq(
