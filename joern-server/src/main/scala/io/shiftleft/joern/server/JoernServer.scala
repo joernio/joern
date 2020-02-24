@@ -15,6 +15,15 @@ import io.shiftleft.joern.server.scripting.JoernServerAmmoniteExecutor
 
 object JoernServer extends IOApp {
 
+  private val banner: String =
+    """ |     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗    ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗
+        |     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║    ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+        |     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║    ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝
+        |██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║    ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+        |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║    ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+        | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝    ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+        |""".stripMargin
+
   private val cpgProvider: JoernCpgProvider =
     new JoernCpgProvider
 
@@ -25,13 +34,14 @@ object JoernServer extends IOApp {
     CpgRoute.CpgHttpErrorHandler
 
   private val serverConfig: ServerConfiguration =
-    ServerConfiguration.config.getOrElse(ServerConfiguration("127.0.0.1", 8080))
+    ServerConfiguration.config.getOrElse(ServerConfiguration.default)
 
   private val httpRoutes: HttpRoutes[IO] =
-    CpgRoute(cpgProvider, ammoniteServerExecutor).routes <+> SwaggerRoute().routes
+    CpgRoute(cpgProvider, ammoniteServerExecutor, serverConfig.files).routes <+> SwaggerRoute().routes
 
   override def run(args: List[String]): IO[ExitCode] = {
     BlazeServerBuilder[IO]
+      .withBanner(List(banner))
       .bindHttp(serverConfig.port, serverConfig.host)
       .withHttpApp(httpRoutes.orNotFound)
       .serve
