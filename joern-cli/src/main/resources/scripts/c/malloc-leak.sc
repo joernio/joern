@@ -1,7 +1,7 @@
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.dataflowengine.language._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.Assignment
+import io.shiftleft.semanticcpg.language.operatorextension.opnodes.Assignment
 
 private def mallocCalls(cpg: Cpg): Steps[Assignment] = {
   cpg.assignment.where { assignment =>

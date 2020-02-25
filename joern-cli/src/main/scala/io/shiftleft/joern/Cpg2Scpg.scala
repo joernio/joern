@@ -15,7 +15,12 @@ object Cpg2Scpg extends App {
 
   parseConfig.foreach { config =>
     try {
-      run(config.inputPath, config.dataFlow, config.semanticsFile).close()
+      val cpg = run(config.inputPath, config.dataFlow, config.semanticsFile)
+      logger.info(s"Closing Cpg...")
+      val startTime = System.currentTimeMillis()
+      cpg.close()
+      logger.info(s"Done in : ${System.currentTimeMillis() - startTime} ms")
+
     } catch {
       case exception: Exception =>
         logger.error("Failed to generate CPG.", exception)
@@ -51,7 +56,6 @@ object Cpg2Scpg extends App {
       val semantics = new SemanticsLoader(semanticsFilename).load()
       new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
     }
-    io.shiftleft.codepropertygraph.cpgloading.CpgLoader.createIndexes(cpg)
     cpg
   }
 
