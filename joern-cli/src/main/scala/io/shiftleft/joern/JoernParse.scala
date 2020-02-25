@@ -3,6 +3,7 @@ package io.shiftleft.joern
 import java.util.concurrent.LinkedBlockingQueue
 
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
+import io.shiftleft.joern.Cpg2Scpg.logger
 import io.shiftleft.proto.cpg.Cpg.CpgStruct
 import org.slf4j.LoggerFactory
 
@@ -42,7 +43,11 @@ object JoernParse extends App {
     }
 
     if (config.enhance) {
-      Cpg2Scpg.run(config.outputCpgFile, config.dataFlow, config.semanticsFile).close()
+      val cpg = Cpg2Scpg.run(config.outputCpgFile, config.dataFlow, config.semanticsFile)
+      logger.info(s"Closing Cpg...")
+      val startTime = System.currentTimeMillis()
+      cpg.close()
+      logger.info(s"Done in : ${System.currentTimeMillis() - startTime} ms")
     }
 
   }
