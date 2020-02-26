@@ -24,21 +24,23 @@ object JoernParse extends App {
 
   def generateCpg(config: ParserConfig): Unit = {
 
-    val queue = new LinkedBlockingQueue[CpgStruct.Builder]()
-    val factory = new io.shiftleft.fuzzyc2cpg.output.overflowdb.OutputModuleFactory(config.outputCpgFile, queue)
-    val fuzzyc = new FuzzyC2Cpg(factory)
-    if (config.preprocessorConfig.usePreprocessor) {
-      fuzzyc.runWithPreprocessorAndOutput(
-        config.inputPaths,
-        config.sourceFileExtensions,
-        config.preprocessorConfig.includeFiles,
-        config.preprocessorConfig.includePaths,
-        config.preprocessorConfig.defines,
-        config.preprocessorConfig.undefines,
-        config.preprocessorConfig.preprocessorExecutable
-      )
-    } else {
-      fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
+    if (!config.enhanceOnly) {
+      val queue = new LinkedBlockingQueue[CpgStruct.Builder]()
+      val factory = new io.shiftleft.fuzzyc2cpg.output.overflowdb.OutputModuleFactory(config.outputCpgFile, queue)
+      val fuzzyc = new FuzzyC2Cpg(factory)
+      if (config.preprocessorConfig.usePreprocessor) {
+        fuzzyc.runWithPreprocessorAndOutput(
+          config.inputPaths,
+          config.sourceFileExtensions,
+          config.preprocessorConfig.includeFiles,
+          config.preprocessorConfig.includePaths,
+          config.preprocessorConfig.defines,
+          config.preprocessorConfig.undefines,
+          config.preprocessorConfig.preprocessorExecutable
+        )
+      } else {
+        fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
+      }
     }
 
     if (config.enhance) {
@@ -51,6 +53,7 @@ object JoernParse extends App {
                           outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
+                          enhanceOnly: Boolean = false,
                           semanticsFile: String = CpgLoader.defaultSemanticsFile,
                           sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"),
                           preprocessorConfig: PreprocessorConfig = PreprocessorConfig())
@@ -78,6 +81,9 @@ object JoernParse extends App {
       opt[Unit]("noenhance")
         .text("run language frontend but do not enhance the CPG to create an SCPG")
         .action((x, c) => c.copy(enhance = false))
+      opt[Unit]("enhanceonly")
+        .text("Only run the enhancer")
+        .action((x, c) => c.copy(enhanceOnly = true))
       opt[Unit]("nodataflow")
         .text("do not perform data flow analysis")
         .action((x, c) => c.copy(dataFlow = false))

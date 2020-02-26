@@ -13,4 +13,5 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
-$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m "$@"
+$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m "$@" --noenhance
+$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m "$@" --enhanceonly
