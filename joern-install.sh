@@ -4,9 +4,9 @@ set -eu
 if [ "$(uname)" = 'Darwin' ]; then
   # get script location
   # https://unix.stackexchange.com/a/96238
-  if [ -n "$BASH_SOURCE" ]; then
+  if [ "${BASH_SOURCE:-x}" != 'x' ]; then
     this_script=$BASH_SOURCE
-  elif [ -n "$ZSH_VERSION" ]; then
+  elif [ "${ZSH_VERSION:-x}" != 'x' ]; then
     setopt function_argzero
     this_script=$0
   elif eval '[[ -n ${.sh.file} ]]' 2>/dev/null; then
