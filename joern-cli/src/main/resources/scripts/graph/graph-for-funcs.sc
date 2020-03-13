@@ -98,7 +98,7 @@ implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
         .reachableByFlows(source)
         .l
         .flatMap { path =>
-          path
+          path.elements
             .map {
               case trackingPoint @ (_: MethodParameterIn) => trackingPoint.start.method.head
               case trackingPoint                          => trackingPoint.cfgNode
