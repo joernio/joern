@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 cd /tmp
 rm -rf /tmp/hugo_cache/
