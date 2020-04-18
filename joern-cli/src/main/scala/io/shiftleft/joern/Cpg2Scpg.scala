@@ -2,7 +2,7 @@ package io.shiftleft.joern
 
 import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
-import io.shiftleft.semanticcpg.layers.EnhancementRunner
+import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Semanticcpg}
 import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
@@ -51,7 +51,8 @@ object Cpg2Scpg extends App {
     * */
   def run(storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Cpg = {
     val cpg = CpgLoader.loadFromOdb(storeFilename)
-    new EnhancementRunner().run(cpg, new SerializedCpg())
+    val context = new LayerCreatorContext(cpg, new SerializedCpg())
+    new Semanticcpg().run(context)
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
       new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
