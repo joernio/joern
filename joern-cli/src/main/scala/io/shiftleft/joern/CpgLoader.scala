@@ -3,12 +3,13 @@ package io.shiftleft.joern
 import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
-import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
+import io.shiftleft.dataflowengine.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import java.nio.file.{FileSystems, Files, Paths}
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.overflowdb.OdbConfig
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.jdk.CollectionConverters._
 
@@ -40,7 +41,9 @@ object CpgLoader {
       removeAllSemantics(cpg)
       val semanticsFilename = semanticsFilenameOpt.getOrElse(defaultSemanticsFile)
       val semantics = new SemanticsLoader(semanticsFilename).load
-      new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
+      val context = new LayerCreatorContext(cpg, new SerializedCpg())
+      val options = new OssDataFlowOptions(semantics)
+      new OssDataFlow().run(context, Some(options))
     }
   }
 
