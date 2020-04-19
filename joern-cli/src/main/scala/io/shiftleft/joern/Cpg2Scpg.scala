@@ -1,6 +1,6 @@
 package io.shiftleft.joern
 
-import io.shiftleft.dataflowengine.layers.dataflows.DataFlowRunner
+import io.shiftleft.dataflowengine.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Scpg}
 import io.shiftleft.SerializedCpg
@@ -55,7 +55,8 @@ object Cpg2Scpg extends App {
     new Scpg().run(context)
     if (dataFlow) {
       val semantics = new SemanticsLoader(semanticsFilename).load()
-      new DataFlowRunner(semantics).run(cpg, new SerializedCpg())
+      val options = new OssDataFlowOptions(semantics)
+      new OssDataFlow().run(context, Some(options))
     }
     cpg
   }
