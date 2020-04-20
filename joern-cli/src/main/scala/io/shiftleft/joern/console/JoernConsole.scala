@@ -6,7 +6,7 @@ import io.shiftleft.console.scripting.ScriptManager
 import io.shiftleft.joern.CpgLoader
 import io.shiftleft.joern.scripting.JoernAmmoniteExecutor
 
-object Console extends ScriptManager(JoernAmmoniteExecutor) {
+object JoernConsole extends ScriptManager(JoernAmmoniteExecutor) {
 
   def banner(): Unit = {
     println("""

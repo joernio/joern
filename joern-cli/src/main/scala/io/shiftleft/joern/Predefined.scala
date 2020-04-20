@@ -22,12 +22,12 @@ object Predefined {
 
   val forInteractiveShell: String = shared +
     """
-      | import io.shiftleft.joern.console.Console._
+      | import io.shiftleft.joern.console.JoernConsole._
     """.stripMargin
 
   val forScripts: String = shared +
     """
-    | import io.shiftleft.joern.console.Console.{cpg => _, _}
+    | import io.shiftleft.joern.console.JoernConsole.{cpg => _, _}
   """.stripMargin
 
 }
