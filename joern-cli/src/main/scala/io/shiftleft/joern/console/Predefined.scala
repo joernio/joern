@@ -1,4 +1,4 @@
-package io.shiftleft.joern
+package io.shiftleft.joern.console
 
 object Predefined {
 
@@ -8,6 +8,7 @@ object Predefined {
         |import gremlin.scala.{`package` => _, _}
         |import io.shiftleft.console.{`package` => _, _}
         |import io.shiftleft.joern.console._
+        |import io.shiftleft.joern.console.JoernConsole._
         |import io.shiftleft.codepropertygraph.Cpg
         |import io.shiftleft.codepropertygraph.cpgloading._
         |import io.shiftleft.codepropertygraph.generated._
@@ -22,12 +23,12 @@ object Predefined {
 
   val forInteractiveShell: String = shared +
     """
-      | import io.shiftleft.joern.console.JoernConsole._
+      |import io.shiftleft.joern.console.Joern._
     """.stripMargin
 
   val forScripts: String = shared +
     """
-    | import io.shiftleft.joern.console.JoernConsole._
+      |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
   """.stripMargin
 
 }

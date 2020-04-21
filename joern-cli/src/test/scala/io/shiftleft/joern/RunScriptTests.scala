@@ -28,7 +28,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/unsafe-ptr"))) { cpg: Cpg =>
     "work correctly for 'pointer-to-int.sc'" in {
       val calls =
-        console.JoernConsole.runScript("c/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        console.JoernConsole.runScriptTest("c/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.code) should contain theSameElementsAs List(
         "simple_subtraction = p - q",
@@ -50,7 +50,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/syscalls"))) { cpg: Cpg =>
     "work correctly for 'syscalls.sc'" in {
       val calls =
-        console.JoernConsole.runScript("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        console.JoernConsole.runScriptTest("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.name) should contain theSameElementsAs List(
         "gettimeofday",
@@ -60,7 +60,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
     "work correctly for 'userspace-memory-access.sc'" in {
       val calls =
-        console.JoernConsole.runScript("c/userspace-memory-access.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        console.JoernConsole.runScriptTest("c/userspace-memory-access.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.name) should contain theSameElementsAs List(
         "get_user"
@@ -72,7 +72,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/malloc-overflow"))) { cpg: Cpg =>
     "work correctly for 'malloc-overflow.sc'" in {
       val calls =
-        console.JoernConsole.runScript("c/malloc-overflow.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        console.JoernConsole.runScriptTest("c/malloc-overflow.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.code) should contain theSameElementsAs List(
         "malloc(sizeof(int) * 42)",
@@ -86,7 +86,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/leak"))) { cpg: Cpg =>
     "work correctly for 'malloc-leak.sc'" in {
       val calls =
-        console.JoernConsole.runScript("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[Call]]
+        console.JoernConsole.runScriptTest("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[Call]]
 
       calls.map(_.code) should contain theSameElementsAs Set("* leak = malloc(sizeof(int))")
     }
@@ -96,7 +96,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/const-funcs"))) { cpg: Cpg =>
     "work correctly for 'const-funcs.sc'" in {
       val methods =
-        console.JoernConsole.runScript("c/const-funcs.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
+        console.JoernConsole.runScriptTest("c/const-funcs.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
 
       // "side_effect_number" is included here as we are simply trying to emulate a side effect.
       methods.map(_.name) should contain theSameElementsAs
@@ -108,7 +108,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/const-ish"))) { cpg: Cpg =>
     "work correctly for 'const-ish.sc'" in {
       val methods =
-        console.JoernConsole.runScript("c/const-ish.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
+        console.JoernConsole.runScriptTest("c/const-ish.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
 
       // "side_effect_number" is included here as we are simply trying to emulate a side effect.
       methods.map(_.name) should contain theSameElementsAs
@@ -127,7 +127,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
     "work correctly for 'list-funcs'" in {
       val expected = cpg.method.name.l
-      val actual = console.JoernConsole.runScript("general/list-funcs.sc", Map.empty, cpg)
+      val actual = console.JoernConsole.runScriptTest("general/list-funcs.sc", Map.empty, cpg)
       actual shouldBe expected
     }
 
@@ -155,12 +155,12 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
           |  "free.c: 9 *p = head" -> "free.c: 9 p";
           |  "" -> "free.c: 9 p";
           | }""".stripMargin
-      val actual = console.JoernConsole.runScript("graph/cfgToDot.sc", Map.empty, cpg).asInstanceOf[String]
+      val actual = console.JoernConsole.runScriptTest("graph/cfgToDot.sc", Map.empty, cpg).asInstanceOf[String]
       actual shouldBe expected
     }
 
     "work correctly for 'ast-for-funcs'" in {
-      val actual = console.JoernConsole.runScript("graph/ast-for-funcs.sc", Map.empty, cpg).toString
+      val actual = console.JoernConsole.runScriptTest("graph/ast-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectFieldAccess"""")
@@ -171,7 +171,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'cfg-for-funcs'" in {
-      val actual = console.JoernConsole.runScript("graph/cfg-for-funcs.sc", Map.empty, cpg).toString
+      val actual = console.JoernConsole.runScriptTest("graph/cfg-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectFieldAccess"""")
@@ -182,7 +182,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'pdg'" in {
-      val actual = console.JoernConsole.runScript("graph/pdg.sc", Map.empty, cpg).toString
+      val actual = console.JoernConsole.runScriptTest("graph/pdg.sc", Map.empty, cpg).toString
 
       val expectedRegex = """List\(\(None,List\((\(\d+,\d+\),?\s?)+\),List\((\(\d+,[\w\W]+\),?\s?)+\)\)\)""".r
 
@@ -190,7 +190,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     }
 
     "work correctly for 'graph-for-funcs'" in {
-      val actual = console.JoernConsole.runScript("graph/graph-for-funcs.sc", Map.empty, cpg).toString
+      val actual = console.JoernConsole.runScriptTest("graph/graph-for-funcs.sc", Map.empty, cpg).toString
       actual should include(""""function" : "free_list"""")
       actual should include(""""function" : "free"""")
       actual should include(""""function" : "<operator>.indirectFieldAccess"""")
@@ -205,7 +205,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
 
     "work correctly for 'functions-to-dot'" in {
       val List(actual) =
-        console.JoernConsole.runScript("graph/functions-to-dot.sc", Map.empty, cpg).asInstanceOf[List[String]]
+        console.JoernConsole.runScriptTest("graph/functions-to-dot.sc", Map.empty, cpg).asInstanceOf[List[String]]
 
       val expectedRegex =
         """|digraph free_list \{

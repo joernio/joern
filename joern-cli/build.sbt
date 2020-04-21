@@ -15,7 +15,8 @@ libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.8.0",
   "io.circe" %% "circe-generic" % "0.12.2",
-  "org.scalatest" %% "scalatest" % "3.0.8" % Test
+  "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  "org.reflections" % "reflections"           % "0.9.12",
 )
 
 excludeDependencies ++= Seq(

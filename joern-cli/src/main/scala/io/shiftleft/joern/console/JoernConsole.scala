@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
 import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.shiftleft.joern.CpgLoader
-import io.shiftleft.joern.scripting.JoernAmmoniteExecutor
 import io.shiftleft.semanticcpg.layers.LayerCreator
 
 class JoernWorkspaceLoader extends WorkspaceLoader {
@@ -17,6 +16,8 @@ class JoernWorkspaceLoader extends WorkspaceLoader {
 }
 
 class JoernConsole extends Console(JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
+
+  override def config: ConsoleConfig = JoernConsole.config
 
   def banner(): Unit = {
     println("""
@@ -29,26 +30,10 @@ class JoernConsole extends Console(JoernAmmoniteExecutor, new JoernWorkspaceLoad
       """.stripMargin)
   }
 
-  private var _cpg: Cpg = null
-
-  /**
-    * Return the CPG that was last loaded
-    * */
-  override def cpg: Cpg = _cpg match {
-    case null       => throw new RuntimeException("No CPG loaded. Use `loadCpg(filename)` first")
-    case value: Cpg => value
-  }
-
-  /**
-    * Load CPG stored at `inputPath`.
-    * */
-  def loadCpg(inputPath: String): Option[Cpg] = {
-    if (!File(inputPath).exists) {
-      report(s"File does not exist: $inputPath")
-      return None
-    }
-    _cpg = CpgLoader.loadFromOdb(inputPath)
-    Some(cpg)
+  // If you remove this, the shell will not start.
+  def version(): String = {
+    // TODO read and report version
+    ""
   }
 
   /**
@@ -59,16 +44,18 @@ class JoernConsole extends Console(JoernAmmoniteExecutor, new JoernWorkspaceLoad
   def applySemantics(semanticsFilenameOpt: Option[String]): Unit =
     CpgLoader.applySemantics(cpg, semanticsFilenameOpt)
 
-  override def _runAnalyzer(overlayCreators: LayerCreator*): Cpg = ???
+  override def _runAnalyzer(overlayCreators: LayerCreator*): Cpg = {
+    cpg
+  }
 
-  private val _config = new ConsoleConfig()
-  override def config: ConsoleConfig = _config
-
-  override def applyDefaultOverlays(cpg: Cpg): Unit = ???
+  override def applyDefaultOverlays(cpg: Cpg): Unit = {}
 }
 
 object JoernConsole {
-  def runScript(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
+
+  def config: ConsoleConfig = new ConsoleConfig()
+
+  def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
       override def config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
