@@ -3,19 +3,20 @@ package io.shiftleft.joern.console
 import java.nio.file.Path
 
 import better.files.File
+import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
 import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.shiftleft.joern.CpgLoader
 import io.shiftleft.semanticcpg.layers.LayerCreator
 
-class JoernWorkspaceLoader extends WorkspaceLoader {
+class JoernWorkspaceLoader extends WorkspaceLoader[Project] {
   override def createProject(projectFile: ProjectFile, path: Path): Project = {
     Project(projectFile, path)
   }
 }
 
-class JoernConsole extends Console(JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
+class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
 
   override def config: ConsoleConfig = JoernConsole.config
 
@@ -36,6 +37,8 @@ class JoernConsole extends Console(JoernAmmoniteExecutor, new JoernWorkspaceLoad
     ""
   }
 
+  override protected def runCreator(creator: LayerCreator, serializedCpg: SerializedCpg): Unit = {}
+
   /**
     * (Re)-apply semantics stored in `semanticsFilenameOpt`.
     * If `semanticsFilenameOpt` is None default semantics
@@ -44,11 +47,8 @@ class JoernConsole extends Console(JoernAmmoniteExecutor, new JoernWorkspaceLoad
   def applySemantics(semanticsFilenameOpt: Option[String]): Unit =
     CpgLoader.applySemantics(cpg, semanticsFilenameOpt)
 
-  override def _runAnalyzer(overlayCreators: LayerCreator*): Cpg = {
-    cpg
-  }
-
   override def applyDefaultOverlays(cpg: Cpg): Unit = {}
+
 }
 
 object JoernConsole {
