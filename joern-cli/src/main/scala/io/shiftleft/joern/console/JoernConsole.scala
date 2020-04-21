@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
 import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.shiftleft.joern.CpgLoader
-import io.shiftleft.semanticcpg.layers.LayerCreator
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Scpg}
 
 class JoernWorkspaceLoader extends WorkspaceLoader[Project] {
   override def createProject(projectFile: ProjectFile, path: Path): Project = {
@@ -37,7 +37,10 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
     ""
   }
 
-  override protected def runCreator(creator: LayerCreator, serializedCpg: SerializedCpg): Unit = {}
+  override protected def runCreator(creator: LayerCreator, serializedCpg: SerializedCpg): Unit = {
+    val context = new LayerCreatorContext(cpg, serializedCpg)
+    creator.run(context, serializeInverse = true)
+  }
 
   /**
     * (Re)-apply semantics stored in `semanticsFilenameOpt`.
@@ -47,7 +50,14 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
   def applySemantics(semanticsFilenameOpt: Option[String]): Unit =
     CpgLoader.applySemantics(cpg, semanticsFilenameOpt)
 
-  override def applyDefaultOverlays(cpg: Cpg): Unit = {}
+  override def applyDefaultOverlays(cpg: Cpg): Unit = {
+    val appliedOverlays = io.shiftleft.semanticcpg.Overlays.appliedOverlays(cpg)
+    if (appliedOverlays.isEmpty && !(new Scpg().probe(cpg))) {
+      report("Adding default overlays to base CPG")
+      val overlayCreators = List(new Scpg)
+      _runAnalyzer(overlayCreators :_*)
+    }
+  }
 
 }
 
