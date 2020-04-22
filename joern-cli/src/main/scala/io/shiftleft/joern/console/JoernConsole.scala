@@ -55,7 +55,7 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
     if (appliedOverlays.isEmpty && !(new Scpg().probe(cpg))) {
       report("Adding default overlays to base CPG")
       val overlayCreators = List(new Scpg)
-      _runAnalyzer(overlayCreators :_*)
+      _runAnalyzer(overlayCreators: _*)
     }
   }
 
