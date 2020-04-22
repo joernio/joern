@@ -59,7 +59,7 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
     }
   }
 
-  def loadCpg(inputPath : String): Option[Cpg] = {
+  def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
     importCpg(inputPath)
   }
