@@ -37,11 +37,6 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
     ""
   }
 
-  override protected def runCreator(creator: LayerCreator, serializedCpg: SerializedCpg): Unit = {
-    val context = new LayerCreatorContext(cpg, serializedCpg)
-    creator.run(context, serializeInverse = true)
-  }
-
   /**
     * (Re)-apply semantics stored in `semanticsFilenameOpt`.
     * If `semanticsFilenameOpt` is None default semantics
@@ -49,15 +44,6 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
     * */
   def applySemantics(semanticsFilenameOpt: Option[String]): Unit =
     CpgLoader.applySemantics(cpg, semanticsFilenameOpt)
-
-  override def applyDefaultOverlays(cpg: Cpg): Unit = {
-    val appliedOverlays = io.shiftleft.semanticcpg.Overlays.appliedOverlays(cpg)
-    if (appliedOverlays.isEmpty && !(new Scpg().probe(cpg))) {
-      report("Adding default overlays to base CPG")
-      val overlayCreators = List(new Scpg)
-      _runAnalyzer(overlayCreators: _*)
-    }
-  }
 
   def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
