@@ -3,12 +3,10 @@ package io.shiftleft.joern.console
 import java.nio.file.Path
 
 import better.files.File
-import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
 import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.shiftleft.joern.CpgLoader
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Scpg}
 
 class JoernWorkspaceLoader extends WorkspaceLoader[Project] {
   override def createProject(projectFile: ProjectFile, path: Path): Project = {
