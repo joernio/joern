@@ -11,7 +11,7 @@ A race condition exists in the Linux Kernel in version 4.7 in the ioctl_send_fib
 ```bash
 $ git clone https://github.com/torvalds/linux
 $ cd linux
-$ git checkout v4.7
+$ git checkout v4.4
 ```
 
 We build the code property graph for the vulnerable driver as follows:
