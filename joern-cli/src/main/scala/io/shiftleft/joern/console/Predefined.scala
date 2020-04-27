@@ -1,5 +1,6 @@
-package io.shiftleft.joern
+package io.shiftleft.joern.console
 
+import io.shiftleft.console.{Help, Run}
 object Predefined {
 
   /* ammonite tab completion is partly broken for scala > 2.12.8
@@ -8,6 +9,7 @@ object Predefined {
         |import gremlin.scala.{`package` => _, _}
         |import io.shiftleft.console.{`package` => _, _}
         |import io.shiftleft.joern.console._
+        |import io.shiftleft.joern.console.JoernConsole._
         |import io.shiftleft.codepropertygraph.Cpg
         |import io.shiftleft.codepropertygraph.cpgloading._
         |import io.shiftleft.codepropertygraph.generated._
@@ -22,12 +24,19 @@ object Predefined {
 
   val forInteractiveShell: String = shared +
     """
-      | import io.shiftleft.joern.console.Console._
-    """.stripMargin
+      |import io.shiftleft.joern.console.Joern._
+      |
+    """.stripMargin + dynamicPredef()
 
   val forScripts: String = shared +
     """
-    | import io.shiftleft.joern.console.Console.{cpg => _, _}
-  """.stripMargin
+      |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
+      |
+  """.stripMargin + dynamicPredef()
+
+  def dynamicPredef(): String = {
+    Run.codeForRunCommand() +
+      Help.codeForHelpCommand[io.shiftleft.joern.console.JoernConsole]
+  }
 
 }

@@ -1,7 +1,6 @@
-package io.shiftleft.joern.scripting
+package io.shiftleft.joern.console
 
 import io.shiftleft.console.scripting.AmmoniteExecutor
-import io.shiftleft.joern.Predefined
 
 object JoernAmmoniteExecutor extends AmmoniteExecutor {
   override lazy val predef: String =
