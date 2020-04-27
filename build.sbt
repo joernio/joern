@@ -6,8 +6,9 @@ organization := "io.shiftleft"
  * which is fixed in https://github.com/scala/scala/pull/8447, i.e. we can upgrade
  * to 2.13.2 once that's released */
 ThisBuild / scalaVersion := "2.13.0"
+ThisBuild /Test /fork := true
 
-val cpgVersion = "0.11.156"
+val cpgVersion = "0.11.175"
 val fuzzyc2cpgVersion = "1.1.33"
 
 ThisBuild / resolvers ++= Seq(
