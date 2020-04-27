@@ -27,7 +27,11 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
         |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
         | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
       """.stripMargin)
+    println(helpMsg())
   }
+
+  private def helpMsg(): String =
+    s"""Type `help` or `browse(help)` to begin""".stripMargin
 
   // If you remove this, the shell will not start.
   def version(): String = {
