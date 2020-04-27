@@ -37,7 +37,7 @@ JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 echo -n "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
 read -r JOERN_PROMPT_ANSWER
 
-if [ "$JOERN_PROMPT_ANSWER" != "Y" ] && [ "$JOERN_PROMPT_ANSWER" != "y" ]; then
+if [ "$JOERN_PROMPT_ANSWER" = "N" ] && [ "$JOERN_PROMPT_ANSWER" = "n" ]; then
   exit 0
 fi
 
