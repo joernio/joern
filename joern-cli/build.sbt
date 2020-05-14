@@ -27,6 +27,7 @@ excludeDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
+scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 
 topLevelDirectory := Some(packageName.value)
 
