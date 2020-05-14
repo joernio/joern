@@ -20,6 +20,7 @@ object Predefined {
         |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
         |
+        |
       """.stripMargin
 
   val forInteractiveShell: String = shared +
@@ -36,7 +37,8 @@ object Predefined {
 
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +
-      Help.codeForHelpCommand[io.shiftleft.joern.console.JoernConsole]
+      Help.codeForHelpCommand[io.shiftleft.joern.console.JoernConsole] +
+      "\nopts.ossdataflow.semanticsFilename = io.shiftleft.joern.CpgLoader.defaultSemanticsFile\n"
   }
 
 }

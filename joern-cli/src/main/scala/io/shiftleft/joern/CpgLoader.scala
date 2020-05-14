@@ -4,7 +4,6 @@ import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.dataflowengine.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.dataflowengine.semanticsloader.SemanticsLoader
 import java.nio.file.{FileSystems, Files, Paths}
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -40,10 +39,9 @@ object CpgLoader {
     if (semanticsFilenameOpt.isDefined) {
       removeAllSemantics(cpg)
       val semanticsFilename = semanticsFilenameOpt.getOrElse(defaultSemanticsFile)
-      val semantics = new SemanticsLoader(semanticsFilename).load
       val context = new LayerCreatorContext(cpg, new SerializedCpg())
-      val options = new OssDataFlowOptions(semantics)
-      new OssDataFlow().run(context, Some(options))
+      val options = new OssDataFlowOptions(semanticsFilename)
+      new OssDataFlow(() => options).run(context)
     }
   }
 

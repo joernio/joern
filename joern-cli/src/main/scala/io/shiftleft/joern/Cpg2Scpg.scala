@@ -54,9 +54,8 @@ object Cpg2Scpg extends App {
     val context = new LayerCreatorContext(cpg, new SerializedCpg())
     new Scpg().run(context)
     if (dataFlow) {
-      val semantics = new SemanticsLoader(semanticsFilename).load()
-      val options = new OssDataFlowOptions(semantics)
-      new OssDataFlow().run(context, Some(options))
+      val options = new OssDataFlowOptions(semanticsFilename)
+      new OssDataFlow(() => options).run(context)
     }
     cpg
   }
