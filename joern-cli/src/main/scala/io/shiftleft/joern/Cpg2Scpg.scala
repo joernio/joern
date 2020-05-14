@@ -55,7 +55,7 @@ object Cpg2Scpg extends App {
     new Scpg().run(context)
     if (dataFlow) {
       val options = new OssDataFlowOptions(semanticsFilename)
-      new OssDataFlow(() => options).run(context)
+      new OssDataFlow(options).run(context)
     }
     cpg
   }

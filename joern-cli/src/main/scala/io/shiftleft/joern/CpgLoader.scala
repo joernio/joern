@@ -41,7 +41,7 @@ object CpgLoader {
       val semanticsFilename = semanticsFilenameOpt.getOrElse(defaultSemanticsFile)
       val context = new LayerCreatorContext(cpg, new SerializedCpg())
       val options = new OssDataFlowOptions(semanticsFilename)
-      new OssDataFlow(() => options).run(context)
+      new OssDataFlow(options).run(context)
     }
   }
 
