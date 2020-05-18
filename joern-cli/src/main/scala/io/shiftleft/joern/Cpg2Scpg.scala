@@ -51,7 +51,7 @@ object Cpg2Scpg extends App {
     * */
   def run(storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Cpg = {
     val cpg = CpgLoader.loadFromOdb(storeFilename)
-    val context = new LayerCreatorContext(cpg, new SerializedCpg())
+    val context = new LayerCreatorContext(cpg)
     new Scpg().run(context)
     if (dataFlow) {
       val options = new OssDataFlowOptions(semanticsFilename)
