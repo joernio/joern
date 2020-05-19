@@ -116,23 +116,3 @@ generateScaladocs := {
 
   out
 }
-
-lazy val packageZip = taskKey[File]("create zip with joern-cli, including schema-extender")
-packageZip := {
-  import org.zeroturnaround.zip.ZipUtil
-  val joernCliStaged = (Universal/stage).value
-  val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value
-  val schemaExtenderInstallLocation = joernCliStaged/"schema-extender"
-
-  IO.copyDirectory(schemaExtenderStaged, schemaExtenderInstallLocation, CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
-
-  val cpgJarName = s"io.shiftleft.codepropertygraph_${scalaBinaryVersion.value}-${Versions.cpgVersion}.jar"
-  val cpgJar = joernCliStaged/"lib"/cpgJarName
-  assert(cpgJar.exists, s"cpg jar not found at expected path: $cpgJar")
-  IO.unzip(cpgJar, schemaExtenderInstallLocation, _.startsWith("schemas/"))
-
-  val resultingZip = target.value/"joern-cli.zip"
-  ZipUtil.pack(joernCliStaged, resultingZip)
-  resultingZip
-}
-

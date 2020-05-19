@@ -8,7 +8,7 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.0"
 ThisBuild /Test /fork := true
 
-val cpgVersion = "0.11.223"
+val cpgVersion = "0.11.217"
 val fuzzyc2cpgVersion = "1.1.37"
 
 ThisBuild / resolvers ++= Seq(
@@ -29,21 +29,16 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 
 lazy val joerncli = Projects.joerncli
 lazy val joernserver = Projects.joernserver
-lazy val schemaExtender = Projects.schemaExtender
 
-lazy val packageZip = taskKey[File]("create zip with of some project")
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  val joernCliZip = (joerncli/packageZip).value
-  val joernServerZip = (joernserver/Universal/packageBin).value
+  val joernCliZip = (joerncli / Universal / packageBin).value
+  val joernServerZip = (joernserver / Universal / packageBin).value
 
-  val cliZip = "./joern-cli.zip"
-  val serverZip = "./joern-server.zip"
   IO.copy(
-    List((joernCliZip, file(cliZip)), (joernServerZip, file(serverZip))),
+    List((joernCliZip, file("./joern-cli.zip")), (joernServerZip, file("./joern-server.zip"))),
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
-  println(s"created distribution - resulting files: $cliZip, $serverZip")
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

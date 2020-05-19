@@ -16,7 +16,6 @@ cpg.bin
 ast-for-funcs.json
 cfg-for-funcs.json
 pdg-for-funcs.json
-joern-cli/workspace
 
 .bloop
 
