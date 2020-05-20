@@ -29,16 +29,21 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 
 lazy val joerncli = Projects.joerncli
 lazy val joernserver = Projects.joernserver
+lazy val schemaExtender = Projects.schemaExtender
 
+lazy val packageZip = taskKey[File]("create zip with of some project")
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  val joernCliZip = (joerncli / Universal / packageBin).value
-  val joernServerZip = (joernserver / Universal / packageBin).value
+  val joernCliZip = (joerncli/packageZip).value
+  val joernServerZip = (joernserver/Universal/packageBin).value
 
+  val cliZip = "./joern-cli.zip"
+  val serverZip = "./joern-server.zip"
   IO.copy(
-    List((joernCliZip, file("./joern-cli.zip")), (joernServerZip, file("./joern-server.zip"))),
+    List((joernCliZip, file(cliZip)), (joernServerZip, file(serverZip))),
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
+  println(s"created distribution - resulting files: $cliZip, $serverZip")
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
