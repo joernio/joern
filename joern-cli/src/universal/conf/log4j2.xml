@@ -2,16 +2,13 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %msg%n"/>
+            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %c{0}: %msg%n"/>
         </Console>
     </Appenders>
     <Loggers>
-        <!-- java.util.logging redirection (from tomcat/jasper) -->
         <Logger name="org.apache.tomcat" level="error"/>
         <Logger name="org.apache.jasper" level="error"/>
-
         <Logger name="org.reflections" level="off" />
-
         <Logger name="io.shiftleft.overflowdb" level="debug" />
 
         <Root level="INFO">
