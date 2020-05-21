@@ -31,10 +31,10 @@ lazy val joerncli = Projects.joerncli
 lazy val joernserver = Projects.joernserver
 lazy val schemaExtender = Projects.schemaExtender
 
-lazy val packageZip = taskKey[File]("create zip with of some project")
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  val joernCliZip = (joerncli/packageZip).value
+  joerncli/Universal/packageZipTarball
+  val joernCliZip = (joerncli/Universal/packageBin).value
   val joernServerZip = (joernserver/Universal/packageBin).value
 
   val cliZip = "./joern-cli.zip"
