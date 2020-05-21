@@ -23,7 +23,8 @@ libraryDependencies ++= Seq(
 excludeDependencies ++= Seq(
   // This project uses Logback in place of Log4j
   ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl"),
-  ExclusionRule("org.slf4j", "slf4j-simple")
+  ExclusionRule("org.slf4j", "slf4j-simple"),
+  ExclusionRule("ch.qos.logback", "logback-classic"),
 )
 
 enablePlugins(JavaAppPackaging)
