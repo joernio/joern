@@ -117,22 +117,20 @@ generateScaladocs := {
   out
 }
 
-lazy val packageZip = taskKey[File]("create zip with joern-cli, including schema-extender")
-packageZip := {
-  import org.zeroturnaround.zip.ZipUtil
+/* add schemas from codepropertygraph and schema-extender */
+Universal/packageBin/mappings ++= {
+  import better.files.File
   val joernCliStaged = (Universal/stage).value
-  val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value
-  val schemaExtenderInstallLocation = joernCliStaged/"schema-extender"
-
-  IO.copyDirectory(schemaExtenderStaged, schemaExtenderInstallLocation, CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
+  val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value.toPath
+  val tmpDir = File.newTemporaryDirectory("joern-cli-build").deleteOnExit
 
   val cpgJarName = s"io.shiftleft.codepropertygraph_${scalaBinaryVersion.value}-${Versions.cpgVersion}.jar"
   val cpgJar = joernCliStaged/"lib"/cpgJarName
   assert(cpgJar.exists, s"cpg jar not found at expected path: $cpgJar")
-  IO.unzip(cpgJar, schemaExtenderInstallLocation, _.startsWith("schemas/"))
+  IO.unzip(cpgJar, tmpDir.toJava, _.startsWith("schemas/"))
 
-  val resultingZip = target.value/"joern-cli.zip"
-  ZipUtil.pack(joernCliStaged, resultingZip)
-  resultingZip
+  for {
+    dir <- List(tmpDir, File(schemaExtenderStaged))
+    file <- dir.listRecursively
+  } yield file.toJava -> s"schema-extender/${dir.relativize(file.path)}"
 }
-
