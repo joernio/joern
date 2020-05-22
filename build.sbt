@@ -9,7 +9,7 @@ ThisBuild / scalaVersion := "2.13.0"
 ThisBuild /Test /fork := true
 
 val cpgVersion = "0.11.228"
-val fuzzyc2cpgVersion = "1.1.37"
+val fuzzyc2cpgVersion = "1.1.38"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
