@@ -11,6 +11,6 @@ import io.shiftleft.semanticcpg.language._
     method.start
       .assignments
       .target
-      .reachableBy(method.parameter.where(_.typeFullName.contains("const")))
+      .reachableBy(method.parameter.filter(_.typeFullName.contains("const")))
   }.toSet
 }
