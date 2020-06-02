@@ -53,6 +53,7 @@ def dotFromMethod(method: Method): List[String] = {
   }
 
   val methodExpressions = method
+    .asInstanceOf[Vertex] //TODO MP drop as soon as we have the remainder of the below in ODB graph api
     .out(EdgeTypes.AST)
     .hasLabel(NodeTypes.BLOCK)
     .out(EdgeTypes.AST)
