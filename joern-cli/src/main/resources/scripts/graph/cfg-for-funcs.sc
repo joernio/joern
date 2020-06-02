@@ -113,10 +113,7 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
     cpg.method.map { method =>
       val methodName = method.fullName
       val methodId = method.toString
-      val methodVertex: Vertex = method //TODO MP drop as soon as we have the remainder of the below in ODB graph api
-      val cfgNodes = new NodeSteps(
-        methodVertex.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-      ).l
+      val cfgNodes = method.out(EdgeTypes.CONTAINS).asScala.collect { case node: nodes.CfgNode => node }.toList
       CfgForFuncsFunction(methodName, methodId, cfgNodes)
     }.l
   ).asJson

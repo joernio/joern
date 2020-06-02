@@ -80,10 +80,7 @@ implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
       val methodVertex: Vertex = method //TODO MP drop as soon as we have the remainder of the below in ODB graph api
 
       val astChildren = method.astMinusRoot.l
-
-      val cfgChildren = new NodeSteps(
-        methodVertex.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-      ).l
+      val cfgChildren = method.out(EdgeTypes.CONTAINS).asScala.collect { case node: nodes.CfgNode => node }.toList
 
       val local = new NodeSteps(
         methodVertex
