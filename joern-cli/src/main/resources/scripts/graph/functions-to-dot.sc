@@ -52,7 +52,7 @@ def dotFromMethod(method: Method): List[String] = {
     }
   }
 
-  val methodExpressions = method
+  val methodExpressions = (method: Vertex)
     .out(EdgeTypes.AST)
     .hasLabel(NodeTypes.BLOCK)
     .out(EdgeTypes.AST)
