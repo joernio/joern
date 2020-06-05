@@ -120,9 +120,7 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
   methods.foreach { method =>
     val methodName = method.fullName
     val methodId = method.toString
-    val cfgNodes = new NodeSteps(
-      method.out(EdgeTypes.CONTAINS).filterOnEnd(_.isInstanceOf[nodes.CfgNode]).cast[nodes.CfgNode]
-    ).l
+    val cfgNodes = method.out(EdgeTypes.CONTAINS).asScala.collect { case node: nodes.CfgNode => node }.toList
     System.out.println(s"($current / $numMethods) Writing CFG for '$methodName'.")
     current += 1
     writer.write(CfgForFuncsFunction(methodName, methodId, cfgNodes).asJson.toString)
