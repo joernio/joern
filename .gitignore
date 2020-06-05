@@ -17,6 +17,7 @@ ast-for-funcs.json
 cfg-for-funcs.json
 pdg-for-funcs.json
 joern-cli/workspace
+/workspace
 
 .bloop
 
