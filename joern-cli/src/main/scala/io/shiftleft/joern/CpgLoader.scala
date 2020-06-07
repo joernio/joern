@@ -7,7 +7,7 @@ import io.shiftleft.dataflowengine.layers.dataflows.{OssDataFlow, OssDataFlowOpt
 import java.nio.file.{FileSystems, Files, Paths}
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.overflowdb.OdbConfig
+import overflowdb.OdbConfig
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.jdk.CollectionConverters._
