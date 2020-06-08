@@ -49,9 +49,10 @@ object SchemaExtender extends App {
   assert(schemasDir.exists, s"$schemasDir doesn't exist")
 
   val classesOutDir = File("generated/classes")
-  val classFiles = compile(generateDomainClassSources)
+  val classFiles    = compile(generateDomainClassSources)
   updateTargetJar(classFiles)
-  println(s"finished successfully, $targetJar now contains generated classes for the schema defined in $schemasDir")
+  println(
+    s"finished successfully, $targetJar now contains generated classes for the schema defined in $schemasDir")
 
   lazy val backupJar: File = {
     val backup = File("backup.jar")
@@ -64,7 +65,7 @@ object SchemaExtender extends App {
 
   def generateDomainClassSources: Iterator[File] = {
     val inputSchemaFiles = schemasDir.listRecursively.filter(_.name.endsWith(".json"))
-    val generatedSrcDir = File("generated/src")
+    val generatedSrcDir  = File("generated/src")
     val mergedSchemaFile = SchemaMerger.mergeCollections(inputSchemaFiles.map(_.toJava).toSeq)
     new CodeGen(
       mergedSchemaFile.getAbsolutePath,
