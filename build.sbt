@@ -33,7 +33,7 @@ lazy val schemaExtender = Projects.schemaExtender
 
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  joerncli/Universal/packageZipTarball
+  (joerncli/Universal/packageZipTarball).value
   val joernCliZip = (joerncli/Universal/packageBin).value
   val joernServerZip = (joernserver/Universal/packageBin).value
 
