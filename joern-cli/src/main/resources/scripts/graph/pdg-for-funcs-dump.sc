@@ -71,7 +71,7 @@ import io.circe.{Encoder, Json}
 import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
-import io.shiftleft.dataflowengine.language._
+import io.shiftleft.dataflowengineoss.language._
 import io.shiftleft.joern.console.JoernConsole._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
