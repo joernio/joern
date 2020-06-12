@@ -9,7 +9,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
   "io.shiftleft" %% "semanticcpg" % Versions.cpgVersion,
   "io.shiftleft" %% "console" % Versions.cpgVersion,
-  "io.shiftleft" %% "dataflowengine" % Versions.cpgVersion,
+  "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
   "com.lihaoyi" %% "ammonite" % "2.0.4" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",

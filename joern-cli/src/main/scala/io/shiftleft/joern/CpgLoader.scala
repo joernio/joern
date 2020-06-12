@@ -3,7 +3,7 @@ package io.shiftleft.joern
 import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
-import io.shiftleft.dataflowengine.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import java.nio.file.{FileSystems, Files, Paths}
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes

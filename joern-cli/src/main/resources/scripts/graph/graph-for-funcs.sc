@@ -30,7 +30,7 @@ import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNo
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.dataflowengine.language._
+import io.shiftleft.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
