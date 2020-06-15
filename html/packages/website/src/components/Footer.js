@@ -65,10 +65,6 @@ const Footer = props => (
         </li>
       </ul>
     </section>
-    <p className="copyright">
-      &copy; {new Date().getFullYear()}{' '}
-      <a href="https://www.shiftleft.io">ShiftLeft Security Inc</a>.
-    </p>
   </footer>
 );
 

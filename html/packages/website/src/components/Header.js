@@ -123,7 +123,7 @@ const Header = props => {
           <TerminalBody>
             <div ref={pref}></div>
           </TerminalBody>
-        </Terminal>
+        </Terminal>      
       </Row>
     </header>
   );

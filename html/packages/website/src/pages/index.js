@@ -12,7 +12,7 @@ const Index = props => {
   const toggleStickyNav = () => setStickyNav(prev => !prev);
   return (
     <Layout>
-      <Helmet title="Joern" />
+      <Helmet title="Joern - Open-Source Code Querying Engine" />
       <Header />
       <Waypoint onEnter={toggleStickyNav} onLeave={toggleStickyNav} />
       <Nav sticky={stickyNav} />
@@ -24,7 +24,7 @@ const Index = props => {
               <header className="major">
                 <h2>WTH</h2>
               </header>
-              <p>
+	      <p>
                 Sed lorem ipsum dolor sit amet nullam consequat feugiat
                 consequat magna adipiscing magna etiam amet veroeros. Lorem
                 ipsum dolor tempus sit cursus. Tempus nisl et nullam lorem ipsum
@@ -32,8 +32,8 @@ const Index = props => {
               </p>
               <ul className="actions">
                 <li>
-                  <Link to="/generic" className="button">
-                    Learn More
+                  <Link to="/docs" className="button">
+                    Documentation
                   </Link>
                 </li>
               </ul>

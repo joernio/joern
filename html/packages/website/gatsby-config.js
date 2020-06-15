@@ -1,8 +1,8 @@
 module.exports = {
   siteMetadata: {
     title: 'Joern',
-    author: 'Chaitanya K Kamatham, Suchakra Sharma',
-    description: 'Jeorn Website',
+    author: 'Chaitanya K Kamatham, Suchakra Sharma, Fabian Yamaguchi',
+    description: 'Joern Website',
   },
   plugins: [
     'gatsby-plugin-react-helmet',
