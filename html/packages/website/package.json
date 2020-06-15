@@ -31,6 +31,7 @@
     "gatsby-plugin-typescript": "^2.1.20",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
+    "react-github-btn": "^1.2.0",
     "react-helmet": "^5.2.1",
     "react-scroll-to-element": "^0.2.0",
     "react-scrollspy": "^3.4.2",

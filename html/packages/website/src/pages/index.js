@@ -22,7 +22,7 @@ const Index = props => {
           <div className="spotlight">
             <div className="content">
               <header className="major">
-                <h2>WTH</h2>
+                <h2>An Interactive Shell for Code Analysis</h2>
               </header>
 	      <p>
                 Sed lorem ipsum dolor sit amet nullam consequat feugiat
@@ -138,7 +138,6 @@ const Index = props => {
             </ul>
           </footer>
         </section>
-
         <section id="cta" className="main special">
           <header className="major">
             <h2>Congue imperdiet</h2>

@@ -1,3 +1,4 @@
+import GitHubButton from 'react-github-btn'
 import React from 'react';
 import Typed from 'typed.js';
 import logo from '../assets/images/logo.svg';
@@ -111,7 +112,29 @@ const Header = props => {
               <em> Code Querying</em>
             </b>
             <br />
-            Engine for C/C++.
+            Engine for C/C++.<br/>
+
+	    <GitHubButton href="https://github.com/ShiftLeftSecurity/joern/subscription"
+	    data-color-scheme="no-preference: light; light: dark; dark: light;"
+	    data-icon="octicon-eye" data-size="large" data-show-count="true"
+	    aria-label="Watch ShiftLeftSecurity/joern on GitHub">
+	    Watch
+	    </GitHubButton>
+
+	    <GitHubButton href="https://github.com/ShiftLeftSecurity/joern"
+	    data-color-scheme="no-preference: light; light: dark; dark: light;"
+	    data-icon="octicon-star" data-size="large" data-show-count="true"
+	    aria-label="Star ShiftLeftSecurity/joern on GitHub">
+	    Star
+	    </GitHubButton>
+
+	    <GitHubButton href="https://github.com/ShiftLeftSecurity/joern/fork"
+	    data-color-scheme="no-preference: light; light: dark; dark: light;"
+	    data-icon="octicon-repo-forked" data-size="large" data-show-count="true"
+	    aria-label="Fork ShiftLeftSecurity/joern on GitHub">
+	    Fork
+	    </GitHubButton>
+
           </p>
         </div>
         <Terminal>
