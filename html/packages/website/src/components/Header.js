@@ -76,10 +76,13 @@ const typedStrings = [
   '',
   '<p><div style="background: transparent;">' +
     '<pre>' +
-    '<span cmd><b>ocular></b> loadCpg</span><span code>(</span><span style="color: #e6db74">&quot;my_cpg.bin.zip&quot;</span><span style="color: #f92672">)</span>\n' +
-    '<span cmd><b>ocular></b> val</span> <span code-1>sources</span> <span code>=</span> <span style="color: #f8f8f2">cpg</span><span style="color: #f92672">.</span><span style="color: #a6e22e">annotation</span><span style="color: #f92672">.</span><span style="color: #a6e22e">name</span><span style="color: #f92672">(</span>\n &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #e6db74">&quot;.*(CookieValue|PathVariable).*&quot;</span><span style="color: #f92672">).</span><span style="color: #a6e22e">parameter</span>\n' +
-    '<span cmd><b>ocular></b> val</span> <span code-1>sinks</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">cpg</span><span style="color: #f92672">.</span><span style="color: #a6e22e">method</span><span style="color: #f92672">.</span><span style="color: #a6e22e">parameter</span>\n' +
-    '<span cmd><b>ocular></b> sinks</span><span code>.</span><span style="color: #a6e22e">reachableBy</span><span style="color: #f92672">(</span><span style="color: #f8f8f2">sources</span><span style="color: #f92672">).</span><span style="color: #a6e22e">flows</span><span style="color: #f92672">.</span><span style="color: #a6e22e">p</span>\n' +
+    '<span cmd><b>joern></b> importCode</span><span code>(</span><span style="color: #e6db74">&quot;/path/to/php-src&quot;</span><span style="color: #f92672">)</span>\n' +
+	'<span cmd><b>joern></b> <span style="color: #f8f8f2">cpg</span><span style="color: #f92672">.</span><span style="color: #a6e22e">call</span><span style="color: #f92672">(</span><span style="color: #e6db74">&quot;zend_parse_parameters&quot;</span><span style="color: #f92672">).</span><span style="color: #a6e22e">argument.ast.isIdentifier</span>\n' + 
+	'<span cmd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.filter(_.typ.fullName(<span style="color: #e6db74">&quot;.*char.*&quot;</span>))</span>\n' +
+	'<span cmd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.newTagNode(<span style="color: #e6db74">&quot;attacker-controlled-string&quot;</span>).store</span>\n' +
+    '<span cmd><b>joern></b> run.commit</span>\n' +
+	'<span cmd><b>joern></b> cpg.call("strcpy").argument(1)</span>\n' +
+	'<span cmd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.reachableBy(cpg.tag(<span style="color: #e6db74">&quot;attacker-contr.*&quot;</span>).identifier)</span><span code>.</span><span style="color: #a6e22e">l</span>\n' +
     '</pre></div>\n</p>',
 ];
 
@@ -103,12 +106,12 @@ const Header = props => {
         <div>
           <img src={logo} alt="Logo" />
           <p>
-            Next Generation{' '}
+            Open-Source{' '}
             <b>
-              <em> Code Analysis</em>
+              <em> Code Querying</em>
             </b>
             <br />
-            engine for <a href="/c-cpp">C/C++</a>.
+            Engine for C/C++.
           </p>
         </div>
         <Terminal>
