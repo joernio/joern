@@ -6,6 +6,7 @@ import pic01 from '../assets/images/pic01.jpg';
 import Header from '../components/Header';
 import Layout from '../components/layout';
 import Nav from '../components/Nav';
+import { MDXRenderer } from "gatsby-plugin-mdx";
 
 const Index = props => {
   const [stickyNav, setStickyNav] = React.useState(true);
@@ -24,6 +25,9 @@ const Index = props => {
               <header className="major">
                 <h2>An Interactive Shell for Code Analysis</h2>
               </header>
+              <p>
+        <MDXRenderer>{props.data.allMdx.edges[0].node.body}</MDXRenderer>
+	      </p>
 	      <p>
                 Sed lorem ipsum dolor sit amet nullam consequat feugiat
                 consequat magna adipiscing magna etiam amet veroeros. Lorem
@@ -168,3 +172,16 @@ const Index = props => {
 };
 
 export default Index;
+
+export const pageQuery = graphql`
+query MyQuery {
+  allMdx(filter: {frontmatter: {slug: {eq: "foo"}}}) {
+    edges {
+      node {
+        id
+        body
+      }
+    }
+  }
+} 
+`
