@@ -10,5 +10,5 @@ import { wrapRootElement as wrap } from './root-wrapper';
 
 export const wrapRootElement = wrap;
 
-require("prismjs/themes/prism-dark.css")
+require("prismjs/themes/prism-twilight.css")
 
