@@ -1,4 +1,4 @@
-import GitHubButton from 'react-github-btn'
+import GitHubButton from 'react-github-btn';
 import React from 'react';
 import Typed from 'typed.js';
 import logo from '../assets/images/logo.svg';
@@ -44,7 +44,7 @@ const TerminalBody = styled.div`
   align-items: center;
   padding-left: 1rem;
   font-family: monospace, monospace;
-  font-size: 0.8em;
+  font-size: 0.7em;
   color: #111;
   border: none;
   width: min-content;
