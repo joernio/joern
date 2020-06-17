@@ -44,7 +44,7 @@ const Index = props => {
               </ul>
             </div>
             <span className="image">
-              <img src={picworkspace} alt="" />
+              <img src={picworkspace} alt="" width="60%"/>
             </span>
           </div>
         </section>
