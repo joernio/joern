@@ -22,5 +22,12 @@ module.exports = {
     'gatsby-plugin-offline',
     'gatsby-plugin-typescript',
     'gatsby-plugin-styled-components',
+    {
+	resolve: `gatsby-source-filesystem`,
+	options: {
+	    name: `mdx-pages`,
+	    path: `${__dirname}/src/mdx`,
+	},
+    },
   ],
 };

@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "gatsby-plugin-typescript": "^2.1.20",
+    "gatsby-source-filesystem": "^2.3.11",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "react-github-btn": "^1.2.0",
