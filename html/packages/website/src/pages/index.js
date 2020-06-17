@@ -3,6 +3,7 @@ import React from 'react';
 import Helmet from 'react-helmet';
 import { Waypoint } from 'react-waypoint';
 import pic01 from '../assets/images/pic01.jpg';
+import picworkspace from '../assets/images/workspace.png';
 import Header from '../components/Header';
 import Layout from '../components/layout';
 import Nav from '../components/Nav';
@@ -43,7 +44,7 @@ const Index = props => {
               </ul>
             </div>
             <span className="image">
-              <img src={pic01} alt="" />
+              <img src={picworkspace} alt="" />
             </span>
           </div>
         </section>
