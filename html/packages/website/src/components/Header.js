@@ -18,21 +18,22 @@ const TerminalHeader = styled.div`
   display: flex;
   align-items: center;
   padding: 0.7rem;
+  padding-left:530px;
 `;
 
 const TerminalCircle = styled.div`
-  border-radius: 50px;
+ border-radius: 50px;
   width: 12px;
   height: 12px;
   margin: 0 0.2rem;
   &:nth-child(2) {
-    background: #ffbd2e;
+    background: grey;
   }
   &:nth-child(1) {
-    background: #ff5f57;
+    background: grey;
   }
   &:nth-child(3) {
-    background: #2ace42;
+    background: grey;
   }
 `;
 const TerminalBody = styled.div`
@@ -139,9 +140,9 @@ const Header = props => {
         </div>
         <Terminal>
           <TerminalHeader>
+	    <TerminalCircle />
             <TerminalCircle />
-            <TerminalCircle />
-            <TerminalCircle />
+          <TerminalCircle />
           </TerminalHeader>
           <TerminalBody>
             <div ref={pref}></div>
