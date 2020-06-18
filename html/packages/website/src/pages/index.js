@@ -27,14 +27,8 @@ const Index = props => {
                 <h2>An Interactive Shell for Code Analysis</h2>
               </header>
               <p>
-        <MDXRenderer>{props.data.allMdx.edges[0].node.body}</MDXRenderer>
+          <MDXRenderer>{props.data.allMdx.edges.filter(x => x.node.frontmatter.slug === 'intro')[0].node.body}</MDXRenderer>
 	      </p>
-	      <p>
-                Sed lorem ipsum dolor sit amet nullam consequat feugiat
-                consequat magna adipiscing magna etiam amet veroeros. Lorem
-                ipsum dolor tempus sit cursus. Tempus nisl et nullam lorem ipsum
-                dolor sit amet aliquam.
-              </p>
               <ul className="actions">
                 <li>
                   <Link to="/docs" className="button">
@@ -49,47 +43,14 @@ const Index = props => {
           </div>
         </section>
 
-        <section id="first" className="main special">
+        <section id="first" className="main">
           <header className="major">
-            <h2>Magna veroeros</h2>
+            <h2>Getting Started</h2>
           </header>
-          <ul className="features">
-            <li>
-              <span className="icon major style1 fa-code"></span>
-              <h3>Ipsum consequat</h3>
-              <p>
-                Sed lorem amet ipsum dolor et amet nullam consequat a feugiat
-                consequat tempus veroeros sed consequat.
-              </p>
-            </li>
-            <li>
-              <span className="icon major style3 fa-copy"></span>
-              <h3>Amed sed feugiat</h3>
-              <p>
-                Sed lorem amet ipsum dolor et amet nullam consequat a feugiat
-                consequat tempus veroeros sed consequat.
-              </p>
-            </li>
-            <li>
-              <span className="icon major style5 fa-diamond"></span>
-              <h3>Dolor nullam</h3>
-              <p>
-                Sed lorem amet ipsum dolor et amet nullam consequat a feugiat
-                consequat tempus veroeros sed consequat.
-              </p>
-            </li>
-          </ul>
-          <footer className="major">
-            <ul className="actions">
-              <li>
-                <Link to="/generic" className="button">
-                  Learn More
-                </Link>
-              </li>
-            </ul>
-          </footer>
+	  <p>
+          <MDXRenderer>{props.data.allMdx.edges.filter(x => x.node.frontmatter.slug === 'getting-started')[0].node.body}</MDXRenderer>
+          </p>
         </section>
-
         <section id="second" className="main special">
           <header className="major">
             <h2>Ipsum consequat</h2>
@@ -132,16 +93,7 @@ const Index = props => {
             iaculis porttitor. Sed ut magna ac risus et hendrerit scelerisque.
             Praesent eleifend lacus in lectus aliquam porta. Cras eu ornare dui
             curabitur lacinia.
-          </p>
-          <footer className="major">
-            <ul className="actions">
-              <li>
-                <Link to="/generic" className="button">
-                  Learn More
-                </Link>
-              </li>
-            </ul>
-          </footer>
+          </p>          
         </section>
         <section id="cta" className="main special">
           <header className="major">
@@ -176,11 +128,14 @@ export default Index;
 
 export const pageQuery = graphql`
 query MyQuery {
-  allMdx(filter: {frontmatter: {slug: {eq: "foo"}}}) {
+  allMdx {
     edges {
       node {
         id
         body
+        frontmatter {
+         slug
+        }
       }
     }
   }

@@ -78,7 +78,7 @@ const typedStrings = [
   '<p><div style="background: transparent;">' +
     '<pre>' +
     '<span cmd><b>joern></b> importCode</span><span code>(</span><span style="color: #e6db74">&quot;/path/to/php-src&quot;</span><span style="color: #f92672">)</span>\n' +
-	'<span cmd><b>joern></b> <span style="color: #f8f8f2">cpg</span>.<span style="color: #a6e22e">call</span><span style="color: #f92672">(</span><span style="color: #e6db74">&quot;zend_parse_parameters&quot;</span><span style="color: #f92672">).</span><span style="color: #a6e22e">argument.ast.isIdentifier</span>\n' + 
+	'<span cmd><b>joern></b> <span style="color: #f8f8f2">cpg</span>.<span style="color: #a6e22e">call</span><span style="color: #f92672">(</span><span style="color: #e6db74">&quot;zend_parse_parameters&quot;</span><span style="color: #f92672">)\n' + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.</span><span style="color: #a6e22e">argument.ast.isIdentifier</span>\n' + 
 	'<span cmd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.filter<span style="color: #f92672">(</span>_.typ.fullName<span style="color: #f92672">(</span><span style="color: #e6db74">&quot;.*char.*&quot;</span><span style="color: #f92672">))</span></span>\n' +
 	'<span cmd>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.newTagNode<span style="color: #f92672">(</span><span style="color: #e6db74">&quot;attacker-controlled-string&quot;</span><span style="color: #f92672">)</span>.store</span>\n' +
     '<span cmd><b>joern></b> run.commit</span>\n' +

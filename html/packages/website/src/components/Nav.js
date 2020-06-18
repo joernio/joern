@@ -21,7 +21,7 @@ const Nav = props => (
       </li>
       <li>
         <Scroll type="id" element="second">
-          <a href="/introduction">Documentation</a>
+          <a href="/introduction">Code Property Graphs</a>
         </Scroll>
       </li>
       <li>
