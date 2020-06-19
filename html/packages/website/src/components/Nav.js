@@ -16,12 +16,12 @@ const Nav = props => (
       </li>
       <li>
         <Scroll type="id" element="first">
-          <a href="/introduction">Getting Started</a>
+          <a href="/introduction">Code Property Graphs</a>
         </Scroll>
       </li>
       <li>
         <Scroll type="id" element="second">
-          <a href="/introduction">Code Property Graphs</a>
+          <a href="/introduction">Getting Started</a>
         </Scroll>
       </li>
       <li>
