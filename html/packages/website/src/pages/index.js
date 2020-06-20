@@ -76,22 +76,17 @@ const Index = props => {
         <section id="cta" className="main special">
           <header className="major">
             <h2>Community</h2>
-            <p>
-              Donec imperdiet consequat consequat. Suspendisse feugiat congue
-              <br />
-              posuere. Nulla massa urna, fermentum eget quam aliquet.
-            </p>
           </header>
           <footer className="major">
             <ul className="actions">
               <li>
-                <Link to="/generic" className="button special">
-                  Get Started
+                <Link to="https://gitter.im/joern-code-analyzer/community" className="button">
+                  Gitter Chat
                 </Link>
               </li>
               <li>
-                <Link to="/generic" className="button">
-                  Learn More
+                <Link to="https://github.com/shiftleftsecurity/joern/issues" className="button">
+                  Issue Tracker
                 </Link>
               </li>
             </ul>
