@@ -36,6 +36,7 @@
     "gatsby-plugin-typescript": "^2.1.20",
     "gatsby-source-filesystem": "^2.3.11",
     "gatsby-transformer-remark": "^2.8.15",
+    "gitter-sidecar": "^1.5.0",
     "prism-react-renderer": "^1.1.1",
     "prismjs": "^1.20.0",
     "react": "^16.12.0",

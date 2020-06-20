@@ -8,19 +8,26 @@ import Header from '../components/Header';
 import Layout from '../components/layout';
 import Nav from '../components/Nav';
 import { MDXRenderer } from "gatsby-plugin-mdx";
+import cpgimg from '../assets/images/cpg.png';
 
 const Index = props => {
   const [stickyNav, setStickyNav] = React.useState(true);
   const toggleStickyNav = () => setStickyNav(prev => !prev);
+  var Sidecar = require('gitter-sidecar');
+  var myChat = new Sidecar({
+  room: 'joern-code-analyzer/community'
+});
+    
   return (
     <Layout>
-      <Helmet title="Joern - Open-Source Code Querying Engine" />
+      <Helmet title="Joern - Open-Source Code Querying Engine" />      
       <Header />
       <Waypoint onEnter={toggleStickyNav} onLeave={toggleStickyNav} />
-      <Nav sticky={stickyNav} />
+	<Nav sticky={stickyNav} />
 
       <div id="main">
-        <section id="intro" className="main">
+
+	  <section id="intro" className="main">
           <div className="spotlight">
             <div className="content">
               <header className="major">
@@ -44,12 +51,19 @@ const Index = props => {
         </section>
 
         <section id="first" className="main">
-          <header className="major">
+          <div className="spotlight">
+	  <header className="major">
             <h2>Code Property Graphs</h2>
           </header>
-	<p>
+	  <div className="content">
+	  <p>
           <MDXRenderer>{props.data.allMdx.edges.filter(x => x.node.frontmatter.slug === 'cpgs')[0].node.body}</MDXRenderer>
-          </p>  
+          </p>
+          </div>
+            <span className="image">
+          <img src={cpgimg} alt="" width="60%" style={{'background-color': 'white'}} />
+          </span>
+	  </div>
         </section>
         <section id="second" className="main">
           <header className="major">

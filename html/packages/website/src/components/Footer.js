@@ -9,7 +9,6 @@ const Footer = props => (
     <section>
       <h2>Primary Maintainer</h2>
 	<p>
-	Fabian Yamaguchi @
 	<span className="image">
         <img src={sllogo} width="60%" style={{'background-color': 'white', 'padding' : '6px'}} />
 	</span>
