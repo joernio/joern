@@ -38,7 +38,7 @@ const Index = props => {
 	      </p>
               <ul className="actions">
                 <li>
-                  <Link to="/docs" className="button">
+                  <Link to="https://docs.joern.io" className="button">
                     Documentation
                   </Link>
                 </li>
@@ -52,14 +52,14 @@ const Index = props => {
 
         <section id="first" className="main">
           <div className="spotlight">
+	  <div className="content">
 	  <header className="major">
             <h2>Code Property Graphs</h2>
           </header>
-	  <div className="content">
 	  <p>
           <MDXRenderer>{props.data.allMdx.edges.filter(x => x.node.frontmatter.slug === 'cpgs')[0].node.body}</MDXRenderer>
-          </p>
-          </div>
+	  </p>
+	  </div>
             <span className="image">
           <img src={cpgimg} alt="" width="60%" style={{'background-color': 'white'}} />
           </span>
