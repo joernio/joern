@@ -81,14 +81,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language._
 import java.io.{PrintWriter, File => JFile}
 
+import overflowdb._
+import overflowdb.traversal._
+
 import scala.jdk.CollectionConverters._
 
 final case class AstForFuncsFunction(function: String, id: String, AST: List[AstNode])
 
 implicit val encodeFuncFunction: Encoder[AstForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inVertex().toString)),

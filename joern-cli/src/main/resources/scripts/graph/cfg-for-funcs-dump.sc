@@ -80,14 +80,16 @@ import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNo
 
 import java.io.{PrintWriter, File => JFile}
 
+import overflowdb._
+import overflowdb.traversal._
 import scala.jdk.CollectionConverters._
 
 final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
 
 implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inVertex().toString)),

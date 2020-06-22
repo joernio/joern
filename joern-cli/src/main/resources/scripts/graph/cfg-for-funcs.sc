@@ -78,6 +78,9 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.CfgNode
 
+import overflowdb._
+import overflowdb.traversal._
+
 import scala.jdk.CollectionConverters._
 
 final case class CfgForFuncsFunction(function: String, id: String, CFG: List[nodes.CfgNode])
@@ -86,8 +89,8 @@ final case class CfgForFuncsResult(functions: List[CfgForFuncsFunction])
 implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inVertex().toString)),
