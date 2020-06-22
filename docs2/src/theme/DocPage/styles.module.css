@@ -1,0 +1,26 @@
+.docPage {
+  display: flex;
+}
+
+.docSidebarContainer {
+  border-right: 1px solid rgba(235, 241, 235, 1);
+  box-sizing: border-box;
+  border-right: 1px solid rgba(235, 241, 235, 1);
+  width: 270px;
+  height: 100%;
+  padding-top: 0.5em;
+}
+
+.docMainContainer {
+  flex-grow: 1;
+}
+
+@media (max-width: 996px) {
+  .docPage {
+    display: inherit;
+  }
+
+  .docSidebarContainer {
+    margin-top: 0;
+  }
+}

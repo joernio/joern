@@ -1,0 +1,63 @@
+{
+  "name": "@shiftleft/joern-website",
+  "version": "0.0.0",
+  "description": "Joern Website",
+  "keywords": [
+    "joern",
+    "website"
+  ],
+  "author": "Chaitanya K Kamatham <projects+gitkraken@kchaitanya.com>",
+  "homepage": "https://github.com/ShiftLeftSecurity/joern#readme",
+  "license": "Apache-2.0",
+  "main": "src/index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShiftLeftSecurity/joern.git"
+  },
+  "scripts": {
+    "start": "gatsby develop"
+  },
+  "bugs": {
+    "url": "https://github.com/ShiftLeftSecurity/joern/issues"
+  },
+  "dependencies": {
+    "@mdx-js/mdx": "^1.6.5",
+    "@mdx-js/react": "^1.6.5",
+    "gatsby-cli": "^2.12.45",
+    "gatsby-mdx": "^0.5.6",
+    "gatsby-plugin-mdx": "^1.2.15",
+    "gatsby-plugin-typescript": "^2.1.20",
+    "gatsby-source-filesystem": "^2.3.11",
+    "gatsby-transformer-remark": "^2.8.15",
+    "gitter-sidecar": "^1.5.0",
+    "prism-react-renderer": "^1.1.1",
+    "prismjs": "^1.20.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-github-btn": "^1.2.0",
+    "react-helmet": "^5.2.1",
+    "react-scroll-to-element": "^0.2.0",
+    "react-scrollspy": "^3.4.2",
+    "react-waypoint": "^9.0.2",
+    "styled-components": "^4.4.1",
+    "typed.js": "^2.0.11"
+  },
+  "devDependencies": {
+    "gatsby": "^2.18.6",
+    "gatsby-plugin-manifest": "^2.2.31",
+    "gatsby-plugin-offline": "^3.0.26",
+    "gatsby-plugin-react-helmet": "^3.1.16",
+    "gatsby-plugin-sass": "^2.1.24",
+    "gatsby-plugin-styled-components": "^3.1.14",
+    "node-sass": "^4.13.0",
+    "prettier": "^1.19.1",
+    "typescript": "^3.7.2"
+  }
+}
