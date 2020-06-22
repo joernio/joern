@@ -1,5 +1,7 @@
 module.exports = {
-  docs: [
-    'home'
+    docs: [
+	'home',
+	'installation',
+	'quickstart',
   ],
 };
