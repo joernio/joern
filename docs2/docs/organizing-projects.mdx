@@ -1,0 +1,138 @@
+---
+id: organizing-projects
+title: Workspace
+---
+
+When working with Joern, a common set of commands is focused around organizing files generated during analyses. This walk-through provides a detailed description of these commands.
+
+
+### The Workspace
+
+The Workspace is a directory on your file system in which all files generated during analyses are saved. Every Joern installation has exactly one Workspace and it provides access to it with the `workspace` command.  Type `workspace` in your Joern Shell now and press `ENTER` to evaluate:
+
+```java
+joern> workspace
+The workpace is empty. Use `importCode` or `importCpg` to populate it
+res0: io.shiftleft.console.workspacehandling.WorkspaceManager[io.shiftleft.repl.JoernProject] = empty
+```
+
+The Joern Workspace will be empty if you haven't used Joern before. While empty, it's not of much use, but you can still print its path on the filesystem using the `workspace.getPath` method:
+
+```java
+joern> workspace.getPath
+res1: String = "/home/user/.shiftleft/joern/workspace"
+```
+
+OK. You now know what the Workspace is, and where it is located, let us move on to something more exciting, Joern Projects.
+
+### Joern Projects
+
+An Joern Project is a collection of files related to a single analysis. Just like the Joern Workspace, Joern Projects are represented by directories on your filesystem. Each project directory contains the project metadata (like its name, or the absolute path of the program under analysis), a binary representation of the Code Property Graph for the program under analysis, and, optionally, binary representations of the Code Property Graph Overlays that have been generated. Other files may be part of project directories, but we will leave their description for later.
+
+For now, let us create two Joern Projects using the `importCode` [top-level command](/joern/top-level-commands) of the Joern Shell. `importCode` does four things: 1) it creates a new Joern Project for a program found at a path, 2) it generates a Code Property Graph for that program, 3) it loads the generated Code Property Graph into memory, and 4) it generates Code Property Graph Overlays for that Code Property Graph. For the purposes of this demonstration, you will create the two Joern Projects from a sample program named `X42`. Clone the following git repository which contains its implementation in a few different programming languages:
+
+```bash
+$ git clone git@github.com:ShiftLeftSecurity/x42.git
+```
+
+Now run `importCode`, first for the _C_ implementation of the `X42` program: 
+
+```java
+joern> importCode("./x42/c", "x42-c")
+Creating project `x42-c` for code at `./x42/c`
+// ...output trimmed
+res1: Option[Cpg] = Some(io.shiftleft.codepropertygraph.Cpg@7923e12c)
+```
+
+:::note
+If you see an error and a return value of `None`, you have probably pointed Joern to the wrong input path for the directory containing the source code for the sample project. Ensure it is correct by navigating to the git repository you cloned and using its absolute path in the `importCode` command.
+:::
+
+Then, for the _Java_ implementation of the same `X42` program:
+
+```java
+joern> importCode("./x42/java/X42.jar", "x42-java")
+Creating project `x42-java` for code at `./x42/java/X42.jar`
+// ...output trimmed
+res2: Option[Cpg] = Some(io.shiftleft.codepropertygraph.Cpg@5d41bf70)
+```
+
+If you did everything right, the output of `workspace` will look something like this:
+
+```java
+joern> workspace 
+res3: io.shiftleft.console.workspacehandling.WorkspaceManager[io.shiftleft.repl.JoernProject] = 
+____________________________________________________________________________
+| name    | overlays                    | inputPath                  | open|
+|==========================================================================|
+| x42-java| semanticcpg,dataflow,tagging| /home/user/x42/java/X42.jar| true|
+| x42-c   | semanticcpg,dataflow,tagging| /home/user/x42/c           | true|
+```
+
+The output is fairly self-explanatory. The Joern Workspace contains two Joern Projects, one named `x42-c` and one named `x42-java`. The second column, _overlays_, lists the Code Property Graph Overlays that have been created for each project.  Values in the _inputPath_ column refer to the absolute filesystem paths of the programs these projects represent. And finally, _open_ specifies whether the Code Property Graphs are currently loaded in memory.
+
+:::note
+You might have noticed that the paths pointing to the different language implementations of the X42 program differ slightly. One points to a directory, another to a file. That is because of the way Joern creates Code Property Graphs for programs. For Java, JAR files are supported. For other languages, directories with source files.
+:::
+
+Each Joern Shell session has one active project at a time, and you can find out which one it is using the `project` command:
+
+```java
+joern> project 
+res4: io.shiftleft.repl.JoernProject = Project(
+  ProjectFile("/home/user/x42/c", "x42-c"),
+  /home/user/.shiftleft/joern/workspace/x42-c,
+  Some(io.shiftleft.codepropertygraph.Cpg@28ce038d)
+)
+```
+
+The active project is the project which contains the Code Property Graph you want to focus your analysis on at a given time. Some important Joern Shell commands always refer to the _current active project_. For example, if you run `cpg.metaData.l`, the return value will be the _META_DATA_ node of the Code Property Graph of the _currently active project_, which in this case, is `x42-c`:
+
+```java
+joern> cpg.metaData.l 
+res5: List[MetaData] = List(
+  MetaData(
+    id -> 2L,
+    language -> "C",
+    version -> null,
+    overlays -> List("semanticcpg", "dataflow", "tagging"),
+    policyDirectories -> List(),
+    spid -> None
+  )
+)
+```
+
+If instead you'd like access to the _META_DATA_ node of the `x42-java` project, you'd first make it the active project using `workspace.setActiveProject`:
+
+```java
+joern> workspace.setActiveProject("x42-java") 
+res6: Option[io.shiftleft.repl.JoernProject] = Some(
+  Project(
+    ProjectFile("/home/user/x42/java/X42.jar", "x42-java"),
+    /home/user/.shiftleft/joern/workspace/x42-java,
+    Some(io.shiftleft.codepropertygraph.Cpg@13a6e76f)
+  )
+)
+```
+
+And then run the `cpg.metaData.l` command again to see its _META_DATA_ node:
+
+```java
+joern> cpg.metaData.l 
+res7: List[MetaData] = List(
+  MetaData(
+    id -> 1L,
+    language -> "JAVA",
+    version -> "0.1",
+    overlays -> List("semanticcpg", "dataflow", "tagging"),
+    policyDirectories -> List(),
+    spid -> None
+  )
+)
+```
+
+Other top-level commands that refer to the currently active project are [`run`](/joern/top-level-commands#run), [`open`](/joern/top-level-commands#open), [`close`](/joern/top-level-commands#close), [`delete`](/joern/top-level-commands#delete) and [`undo`](/joern/top-level-commands#undo).
+
+
+That concludes this gentle introducton into the commands the Joern Shell provides you with for organizing your Joern Projects. Have fun with your analysis!
+

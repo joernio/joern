@@ -3,5 +3,9 @@ module.exports = {
 	'home',
 	'installation',
 	'quickstart',
+	'organizing-projects',
+	'code-property-graph',
+	'traversal-basics',
+	'c-syntaxtree'
   ],
 };
