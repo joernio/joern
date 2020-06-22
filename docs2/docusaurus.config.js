@@ -7,12 +7,12 @@ module.exports = {
   baseUrl: '/',
   favicon: 'img/website-icon.png',
     themeConfig: {
-	    defaultDarkMode: true,
+	    defaultDarkMode:  false,
     navbar: {
       title: '',
       logo: {
         alt: 'Joern Logo',
-        src: 'img/website-icon.jpg',
+        src: 'img/website-icon.png',
         href: '/home',
         target: '_self'
       },

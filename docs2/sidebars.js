@@ -1,5 +1,11 @@
 module.exports = {
-  docs: [
-    'home'
+    docs: [
+	'home',
+	'installation',
+	'quickstart',
+	'organizing-projects',
+	'code-property-graph',
+	'traversal-basics',
+	'c-syntaxtree'
   ],
 };
