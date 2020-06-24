@@ -13,11 +13,12 @@ import cpgimg from '../assets/images/cpg.png';
 const Index = props => {
   const [stickyNav, setStickyNav] = React.useState(true);
   const toggleStickyNav = () => setStickyNav(prev => !prev);
-  var Sidecar = require('gitter-sidecar');
-  var myChat = new Sidecar({
-  room: 'joern-code-analyzer/community'
-});
-    
+  if (typeof window !== `undefined`) {
+       var Sidecar = require('gitter-sidecar');
+       var myChat = new Sidecar({
+       room: 'joern-code-analyzer/community'
+   });
+  }  
   return (
     <Layout>
       <Helmet title="Joern - Open-Source Code Querying Engine" />      
