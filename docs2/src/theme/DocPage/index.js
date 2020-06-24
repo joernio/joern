@@ -51,7 +51,7 @@ function DocPage(props) {
           {sidebar && (
             <div className={styles.docSidebarContainer}>
 
-		  <div align="center" id="logo"><a href="https://joern.io"><img width="40%" src="img/logo.svg"/></a></div>
+		  <div align="center" id="logo"><a href="https://joern.io"><img width="40%" src="/img/logo.svg"/></a></div>
 	      
                 <DocSidebar
                 docsSidebars={docsSidebars}
