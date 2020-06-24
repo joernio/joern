@@ -170,46 +170,7 @@ function DocSidebar(props) {
         </Link>
       )}
       <div
-        className={classnames('menu', 'menu--responsive', styles.menu, {
-          'menu--show': showResponsiveSidebar,
-        })}>
-        <button
-          aria-label={showResponsiveSidebar ? 'Close Menu' : 'Open Menu'}
-          aria-haspopup="true"
-          className="button button--secondary button--sm menu__button"
-          type="button"
-          onClick={() => {
-            setShowResponsiveSidebar(!showResponsiveSidebar);
-          }}>
-          {showResponsiveSidebar ? (
-            <span
-              className={classnames(
-                styles.sidebarMenuIcon,
-                styles.sidebarMenuCloseIcon,
-              )}>
-              &times;
-            </span>
-          ) : (
-            <svg
-              aria-label="Menu"
-              className={styles.sidebarMenuIcon}
-              xmlns="http://www.w3.org/2000/svg"
-              height={MOBILE_TOGGLE_SIZE}
-              width={MOBILE_TOGGLE_SIZE}
-              viewBox="0 0 32 32"
-              role="img"
-              focusable="false">
-              <title>Menu</title>
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeMiterlimit="10"
-                strokeWidth="2"
-                d="M4 7h22M4 15h22M4 23h22"
-              />
-            </svg>
-          )}
-        </button>
+        className={classnames('menu', styles.menu)}>
         <ul className="menu__list">
           {sidebarData.map((item) => (
             <DocSidebarItem
