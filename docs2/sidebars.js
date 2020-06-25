@@ -3,6 +3,7 @@ module.exports = {
 	'home',
 	'installation',
 	'quickstart',
+	'shell',
 	'organizing-projects',
 	'code-property-graph',
 	'traversal-basics',
