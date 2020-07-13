@@ -34,35 +34,34 @@
    }
  */
 
-import gremlin.scala._
-import org.apache.tinkerpop.gremlin.structure.Direction
-
 import io.shiftleft.Implicits.JavaIteratorDeco
 import io.shiftleft.codepropertygraph.generated._
+import overflowdb._
+import overflowdb.traversal._
 
 import java.nio.file.Paths
 
 /** Some helper functions: adapted from ReachingDefPass.scala in codeproperty graph repo */
-def vertexToStr(vertex: Vertex): String = {
+def vertexToStr(vertex: Node): String = {
   try {
-    val methodVertex = vertex.vertices(Direction.IN, "CONTAINS").nextChecked
-    val fileName = methodVertex.vertices(Direction.IN, "CONTAINS").nextChecked match {
+    val methodVertex = vertex.in("CONTAINS").next
+    val fileName = methodVertex.in("CONTAINS").next match {
       case file: nodes.File => file.asInstanceOf[nodes.File].name
       case _ => "NA"
     }
 
-    s"${Paths.get(fileName).getFileName.toString}: ${vertex.value2(NodeKeys.LINE_NUMBER).toString} ${vertex.value2(NodeKeys.CODE)}"
+    s"${Paths.get(fileName).getFileName.toString}: ${vertex.property(NodeKeysOdb.LINE_NUMBER)} ${vertex.property(NodeKeysOdb.CODE)}"
   } catch { case _: Exception => "" }
 }
 
-def toDot(graph: ScalaGraph): String = {
+def toDot(graph: OdbGraph): String = {
   val buf = new StringBuffer()
 
   buf.append("digraph g {\n node[shape=plaintext];\n")
 
   graph.E.hasLabel("CFG").l.foreach { e =>
-    val inV = vertexToStr(e.inVertex).replace("\"", "\'")
-    val outV = vertexToStr(e.outVertex).replace("\"", "\'")
+    val inV = vertexToStr(e.inNode).replace("\"", "\'")
+    val outV = vertexToStr(e.outNode).replace("\"", "\'")
     buf.append(s""" "$outV" -> "$inV";\n """)
   }
   buf.append { "}" }
