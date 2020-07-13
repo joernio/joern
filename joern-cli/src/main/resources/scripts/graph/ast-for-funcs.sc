@@ -71,11 +71,9 @@
               // ...
  */
 
-import gremlin.scala._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language._
@@ -94,8 +92,8 @@ implicit val encodeEdge: Encoder[OdbEdge] =
   (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
-      ("in", Json.fromString(edge.inVertex().toString)),
-      ("out", Json.fromString(edge.outVertex().toString))
+      ("in", Json.fromString(edge.inNode.toString)),
+      ("out", Json.fromString(edge.outNode.toString))
     )
 
 implicit val encodeVertex: Encoder[AstNode] =
@@ -104,10 +102,10 @@ implicit val encodeVertex: Encoder[AstNode] =
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues((node.inE("AST").l ++ node.outE("AST").l).map(_.asJson))),
-      ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
+      ("properties", Json.fromValues(node.propertyMap.asScala.toList.map { case (key, value) =>
         Json.obj(
-          ("key", Json.fromString(p.key())),
-          ("value", Json.fromString(p.value().toString))
+          ("key", Json.fromString(key)),
+          ("value", Json.fromString(value.toString))
         )
       }))
     )
