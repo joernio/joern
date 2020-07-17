@@ -59,7 +59,7 @@ def toDot(graph: OdbGraph): String = {
 
   buf.append("digraph g {\n node[shape=plaintext];\n")
 
-  graph.E.hasLabel("CFG").l.foreach { e =>
+  graph.edges("CFG").l.foreach { e =>
     val inV = vertexToStr(e.inNode).replace("\"", "\'")
     val outV = vertexToStr(e.outNode).replace("\"", "\'")
     buf.append(s""" "$outV" -> "$inV";\n """)
