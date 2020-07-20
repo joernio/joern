@@ -11,6 +11,9 @@ const useStyles = makeStyles({
   table: {
     minWidth: 550,
   },
+  cell: {
+    color: 'white'
+  }
 });
 
 const NodeStepDetail = ({ stepInfo }) => {
@@ -31,19 +34,19 @@ const NodeStepDetail = ({ stepInfo }) => {
             <Table className={classes.table} aria-label="Overview of Property Directives">
               <TableHead>
                 <TableRow>
-                  <TableCell style={{ width: 200 }}>Property Directive</TableCell>
-                  <TableCell align="left">Return Type</TableCell>
-                  <TableCell align="left">Description</TableCell>
+                  <TableCell className={classes.cell} style={{ width: 200 }}>Property Directive</TableCell>
+                  <TableCell className={classes.cell} align="left">Return Type</TableCell>
+                  <TableCell className={classes.cell} align="left">Description</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {propertyDirectives.map((directive) => (
                   <TableRow key={directive.queryComponent}>
-                    <TableCell component="th" scope="row">
+                    <TableCell className={classes.cell} component="th" scope="row">
                       {directive.queryComponent}
                     </TableCell>
-                    <TableCell align="left">{directive.returnType}</TableCell>
-                    <TableCell align="left">{directive.description}</TableCell>
+                    <TableCell className={classes.cell} align="left">{directive.returnType}</TableCell>
+                    <TableCell className={classes.cell} align="left">{directive.description}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -58,17 +61,17 @@ const NodeStepDetail = ({ stepInfo }) => {
             <Table className={classes.table} aria-label="Overview of Node Type Steps">
               <TableHead>
                 <TableRow>
-                  <TableCell style={{ width: 200 }}>Node Type Step</TableCell>
-                  <TableCell align="left">Description</TableCell>
+                  <TableCell className={classes.cell} style={{ width: 200 }}>Node Type Step</TableCell>
+                  <TableCell className={classes.cell} align="left">Description</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {nodeTypeSteps.map((step) => (
                   <TableRow key={step.queryComponent}>
-                    <TableCell component="th" scope="row">
+                    <TableCell className={classes.cell} component="th" scope="row">
                       {step.queryComponent}
                     </TableCell>
-                    <TableCell align="left">{step.description}</TableCell>
+                    <TableCell className={classes.cell} align="left">{step.description}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -83,17 +86,17 @@ const NodeStepDetail = ({ stepInfo }) => {
             <Table className={classes.table} aria-label="Overview of Complex Steps">
               <TableHead>
                 <TableRow>
-                  <TableCell style={{ width: 200 }}>Complex Step</TableCell>
-                  <TableCell align="left">Description</TableCell>
+                  <TableCell className={classes.cell} style={{ width: 200 }}>Complex Step</TableCell>
+                  <TableCell className={classes.cell} align="left">Description</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {complexSteps.map((step) => (
                   <TableRow key={step.queryComponent}>
-                    <TableCell component="th" scope="row">
+                    <TableCell className={classes.cell} component="th" scope="row">
                       {step.queryComponent}
                     </TableCell>
-                    <TableCell align="left">{step.description}</TableCell>
+                    <TableCell className={classes.cell} align="left">{step.description}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
