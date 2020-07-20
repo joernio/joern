@@ -3,16 +3,35 @@ id: server
 title: Server
 ---
 
-The interpreter can also be accessed via a very simple HTTP API. The
-API allows posting queries and obtaining responses. Additionally, a
-Websocket is offered that clients can subscribe to in order to be
-notified by the server when query responses are available.
+The interpreter can also be accessed via an HTTP API. Its primary jobs
+are to (a) provide an interface to allow querying Code Property Graphs
+from non-JVM-based programming languages, and (b) enabling clients
+with limited computational resources to outsource CPG construction and
+querying to a server machine.
 
 The server can be spawned as follows:
 
 ```
 joern --server
 ```
+
+A sample client is available for Python at:
+
+https://github.com/ShiftLeftSecurity/cpgqls-client-python#example-usage
+
+
+## For Developers
+
+If you are interested in querying Code Property Graphs from your
+favorite programming language and that language is not JVM-based and
+not Python, then the following information on the server's API may be
+of interest to you.
+
+The HTTP API allows posting queries and obtaining
+responses. Additionally, a Websocket is offered that clients can
+subscribe to in order to be notified by the server when query
+responses are available.
+
 
 This will spawn a web server on port 8080 with the following
 functionality: 
@@ -42,7 +61,6 @@ ws://$hostname:8080/connect
 where `$hostname` is the name of the host on which the server is
 running. Once subscribed, uuids of completed queries are reported on
 the web socket.
-
 
 :::note
 Note that the server exclusively implements remote access to an
