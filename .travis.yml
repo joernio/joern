@@ -18,7 +18,6 @@ jobs:
     before_deploy:
     - sbt createDistribution ciReleaseTagNextVersion
     - sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
-    - sha512sum ./joern-server.zip > ./joern-server.zip.sha512
     deploy:
       edge: true
       provider: releases
@@ -29,8 +28,6 @@ jobs:
       - "./joern-install.sh"
       - "./joern-cli.zip"
       - "./joern-cli.zip.sha512"
-      - "./joern-server.zip"
-      - "./joern-server.zip.sha512"
 cache:
   directories:
   - "$HOME/.sbt/1.0/dependency"
