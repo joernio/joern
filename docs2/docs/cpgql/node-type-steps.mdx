@@ -1,0 +1,99 @@
+---
+id: node-type-steps
+title: Node-Type Steps
+---
+
+import NodeStepsOverviewTable from '@site/src/components/NodeTypeStepsOverviewTable';
+import NodeStepDetail from '@site/src/components/NodeStepDetail';
+
+import { oqlRef, StepKind, StepFamily } from '@site/src/oqlref';
+
+### Overview
+
+<NodeStepsOverviewTable stepsInfo={oqlRef.stepsInfoForFamily(StepFamily.NodeTypeStep)} />
+
+### all
+
+The `all` Node-Type Step represents a traversal which visits all nodes of a Code Property Graph. It supports the two only _Property Directives_ which are common to all _Node-Type Steps_, `id` and `label`.
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.All)} />
+
+### block
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Block)} />
+
+### call
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Call)} />
+
+### comment
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Comment)} />
+
+### file
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.File)} />
+
+### identifier
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Identifier)} />
+
+### literal
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Literal)} />
+
+### local
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Local)} />
+
+### member
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Member)} />
+
+### metaData
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.MetaData)} />
+
+### method
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Method)} />
+
+### methodRef
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.MethodRef)} />
+
+### methodReturn
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.MethodReturn)} />
+
+### modifier
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Modifier)} />
+
+### namespaceBlock
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.NamespaceBlock)} />
+
+### namespace
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Namespace)} />
+
+### parameter
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Parameter)} />
+
+### returns
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Returns)} />
+
+### tag
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Tag)} />
+
+### typeDecl
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.TypeDecl)} />
+
+### typ
+
+<NodeStepDetail stepInfo={oqlRef.stepInfoForKind(StepKind.Typ)} />

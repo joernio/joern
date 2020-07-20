@@ -1,0 +1,56 @@
+---
+id: methods
+title: Methods
+---
+
+CPGQL provides several functions for identifying `METHOD` nodes and similar nodes around it.
+
+`METHOD` nodes are one of the most important nodes in a Code Property Graph. 
+
+What do `METHOD` nodes represent exactly?
+
+Take the following program written in _C_:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+  if (argc > 1 && strcmp(argv[1], "42") == 0) {
+    fprintf(stderr, "It depends!\n");
+    exit(42);
+  }
+  printf("What is the meaning of life?\n");
+  exit(0);
+}
+
+```
+
+The definition of the `main` function is of course a node of type `METHOD` in the Code Property Graph.
+But, maybe unexpectedly, the Code Property Graph for the program above has _9_ nodes of type `METHOD`.
+
+
+
+
+The most important ones are `METHOD`, `METHOD_PARAMETER_IN`, `METHOD_RETURN`, and `MODIFIER`
+
+`cpg.method`, `cpg.methodReturn`, `cpg.methodRef`
+
+
+
+
+
+
+
+This article gives an overview of all the Traversal Steps centered around identifying `METHOD` nodes in a Code Property Graph. The `METHOD` node itself represents.
+
+
+
+
+There are multiple ways of identifying methods using the Joern Shell.
+
+
+:::note
+Add text
+:::
