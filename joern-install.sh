@@ -61,20 +61,19 @@ if [ "$JOERN_LINK_ANSWER" = "Y" ] || [ "$JOERN_LINK_ANSWER" = "y" ]; then
   fi
 fi
 
-# Download and extract the Joern CLI & Server
+# Download and extract the Joern CLI
 check_installed "curl"
 
 echo -n "Please enter a Joern version/tag or press enter for the latest version: "
 read -r JOERN_VERSION
 if [ "$JOERN_VERSION" = "" ]; then
-  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-{cli,server}.zip" -o "$SCRIPT_ABS_DIR/joern-#1.zip"
+  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
 else
-  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-{cli,server}.zip" -o "$SCRIPT_ABS_DIR/joern-#1.zip"
+  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
 fi
 
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
-unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-server.zip
-rm "$SCRIPT_ABS_DIR"/joern-cli.zip "$SCRIPT_ABS_DIR"/joern-server.zip
+rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
 # Link to JOERN_LINK_DIR if desired by the user
 if [ -n "${JOERN_LINK_DIR+dummy}" ]; then
@@ -82,7 +81,6 @@ if [ -n "${JOERN_LINK_DIR+dummy}" ]; then
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR"
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-cpg2scpg "$JOERN_LINK_DIR"
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR"
-  ln -sf "$JOERN_INSTALL_DIR"/joern-server/joernd "$JOERN_LINK_DIR"
 fi
 
 echo "Install complete!"
