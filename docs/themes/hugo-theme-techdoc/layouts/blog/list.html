@@ -1,8 +1,0 @@
-{{- define "main" -}}
-<h1>{{ .Title }}</h1>
-{{- .Content -}}
-{{ range (.Paginate ( first 50 .Data.Pages )).Pages }}
-{{ .Render "summary"}}
-{{ end }}
-{{ template "_internal/pagination.html" . }}
-{{- end -}}
