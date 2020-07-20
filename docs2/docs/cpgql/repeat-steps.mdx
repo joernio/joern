@@ -8,7 +8,7 @@ _Repeat Steps_ are steps which repeat a traversal a number of times.
 ### repeat..times
 
 ```java
-ocular> cpg.method.name("main").repeat(_.astChildren).times(4).l
+joern> cpg.method.name("main").repeat(_.astChildren).times(4).l
 res123: List[AstNode] = List(
   Call(
     id -> 13L,
@@ -40,7 +40,7 @@ res123: List[AstNode] = List(
 ### repeat..until
 
 ```java
-ocular> cpg.method.name("main").repeat(_.astChildren).until(_.isCall).l
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isCall).l
 res124: List[AstNode] = List(
   Call(
     id -> 29L,
@@ -76,7 +76,7 @@ res124: List[AstNode] = List(
 ```
 
 ```java
-ocular> cpg.method.name("main").repeat(_.astChildren).until(_.isCall.name("exit")).l 
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isCall.name("exit")).l 
 res125: List[AstNode] = List(
   Call(
     id -> 31L,
@@ -97,7 +97,7 @@ res125: List[AstNode] = List(
 
 
 ```java
-ocular> cpg.method.name("main").repeat(_.astChildren).emit(_.isControlStructure).times(4).l
+joern> cpg.method.name("main").repeat(_.astChildren).emit(_.isControlStructure).times(4).l
 res130: List[AstNode] = List(
   ControlStructure(
     id -> 11L,
@@ -134,7 +134,7 @@ res130: List[AstNode] = List(
 ### repeat..emit..until
 
 ```java
-ocular> cpg.method.name("main").repeat(_.astChildren).until(_.isCall).l
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isCall).l
 res124: List[AstNode] = List(
   Call(
     id -> 29L,

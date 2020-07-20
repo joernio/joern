@@ -29,7 +29,7 @@ The `map` _Core Step_ is a Step which transforms objects in a traversal with an 
 For example, say that you'd like to return the value of the CODE property, together with the value of the TYPE_FULL_NAME property of all LITERAL nodes in `X42`'s Code Property Graph:
 
 ```java
-ocular> cpg.literal.map(node => List(node.typeFullName, node.code)).toList
+joern> cpg.literal.map(node => List(node.typeFullName, node.code)).toList
 res223: List[List[String]] = List(
   List("char *", "\"What is the meaning of life?\\n\""),
   List("int", "42"),
@@ -47,7 +47,7 @@ res223: List[List[String]] = List(
 `sideEffect` is a step that executes a function on each node of the traversal it suffixes.
 
 ```java
-ocular> cpg.literal.sideEffect(node => println("Called once for ID " + node.id.toString())).code.l 
+joern> cpg.literal.sideEffect(node => println("Called once for ID " + node.id.toString())).code.l 
 Called once for ID 32
 Called once for ID 30
 Called once for ID 34
@@ -74,7 +74,7 @@ res0: List[String] = List(
 
 For example, say you'd like to query `X42`'s Code Property Graph for the AST parent nodes of all CALL nodes, and print out their CODE property:
 ```java
-ocular> cpg.call.astParent.isCall.code.l 
+joern> cpg.call.astParent.isCall.code.l 
 res0: List[String] = List(
   "strcmp(argv[1], \"42\")",
   "strcmp(argv[1], \"42\") == 0",
@@ -85,7 +85,7 @@ res0: List[String] = List(
 Because of the structure of the resulting AST, the query returns a duplicate result. To remove it, add `dedup` to the query:
 
 ```java
-ocular> cpg.call.astParent.isCall.dedup.code.l 
+joern> cpg.call.astParent.isCall.dedup.code.l 
 res0: List[String] = List(
   "strcmp(argv[1], \"42\")",
   "strcmp(argv[1], \"42\") == 0",
@@ -99,10 +99,10 @@ res0: List[String] = List(
 For example, say you'd like to query `X42`'s Code Property Graph for the value of the NAME property of all CALL nodes, and use the same query to get their number. If you simply store the query in a variable and then execute it twice, the second result will be `0` because the query has already been executed once:
 
 ```java
-ocular> var queryA = cpg.call 
+joern> var queryA = cpg.call 
 queryA: NodeSteps[Call] = io.shiftleft.semanticcpg.language.NodeSteps@7a71be09
 
-ocular> queryA.name.toList 
+joern> queryA.name.toList 
 res0: List[String] = List(
   "exit",
   "printf",
@@ -115,17 +115,17 @@ res0: List[String] = List(
   "<operator>.logicalAnd"
 )
 
-ocular> queryA.size 
+joern> queryA.size 
 res1: Int = 0
 ```
 
 But if instead you execute a copy of the query, the first query will return the expected results:
 
 ```java
-ocular> var queryA = cpg.call 
+joern> var queryA = cpg.call 
 queryA: NodeSteps[Call] = io.shiftleft.semanticcpg.language.NodeSteps@625955bb
 
-ocular> queryA.clone.name.toList 
+joern> queryA.clone.name.toList 
 res0: List[String] = List(
   "exit",
   "printf",
@@ -138,7 +138,7 @@ res0: List[String] = List(
   "<operator>.logicalAnd"
 )
 
-ocular> queryA.size 
+joern> queryA.size 
 res1: Int = 9
 ```
 

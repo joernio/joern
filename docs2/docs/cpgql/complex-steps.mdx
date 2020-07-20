@@ -13,7 +13,7 @@ _Complex Steps_ are steps which are made of combinations of basic steps. They ca
 `dump` is a _Complex Step_ which executes the traversal and returns the value of the CODE property of the nodes it suffixes with syntax-highlighting.
 
 ```java
-ocular> cpg.method.name("main").dump
+joern> cpg.method.name("main").dump
 res0: List[String] = List(
   """int main(int argc, char *argv[]) { /* <=== */
   if (argc > 1 && strcmp(argv[1], "42") == 0) {
@@ -32,7 +32,7 @@ res0: List[String] = List(
 `dumpRaw` is a _Complex Step_ which executes the traversal and returns the value of the CODE property of the nodes it suffixes.
 
 ```java
-ocular> cpg.method.name("main").dumpRaw
+joern> cpg.method.name("main").dumpRaw
 res0: List[String] = List(
   """int main(int argc, char *argv[]) { /* <=== */
   if (argc > 1 && strcmp(argv[1], "42") == 0) {
@@ -51,7 +51,7 @@ res0: List[String] = List(
 `tagList` is a _Complex Step_ which executes the traversal and returns the list of all TAG nodes found at each node visited by the traversal it suffixes.
 
 ```java
-ocular> cpg.method.tagList 
+joern> cpg.method.tagList 
 res0: List[List[TagBase]] = List(List(NewTag("MY_TAG", "")))
 ```
 
@@ -79,7 +79,7 @@ public class X42 {
 `callee` is a _Call Graph Step_ which lists all nodes representing Call Graph callees of the traversed nodes.
 
 ```java
-ocular> cpg.method.name("main").callee.name.l 
+joern> cpg.method.name("main").callee.name.l 
 res0: List[String] = List(
   "printf",
   "exit",
@@ -98,7 +98,7 @@ res0: List[String] = List(
 `caller` is a _Call Graph Step_ which lists all nodes representing Call Graph callers of the traversed nodes.
 
 ```java
-ocular> cpg.method.name("exit").caller.code.l 
+joern> cpg.method.name("exit").caller.code.l 
 res0: List[String] = List("main (int argc,char *argv[])", "main (int argc,char *argv[])")
 ```
 
@@ -107,7 +107,7 @@ res0: List[String] = List("main (int argc,char *argv[])", "main (int argc,char *
 `callIn` is a _Call Graph Step_ which lists all nodes representing Call Graph parent call-sites of the traversed nodes.
 
 ```java
-ocular> cpg.method.name("exit").callIn.code.l 
+joern> cpg.method.name("exit").callIn.code.l 
 res0: List[String] = List("exit(0)", "exit(42)")
 ```
 
@@ -116,7 +116,7 @@ res0: List[String] = List("exit(0)", "exit(42)")
 `inCall` is a _Call Graph Step_ which lists all nodes representing surrounding Call Graph call-sites of the traversed nodes.
 
 ```java
-ocular> cpg.call.name("<operator>.indirectIndexAccess").inCall.code.l 
+joern> cpg.call.name("<operator>.indirectIndexAccess").inCall.code.l 
 res0: List[String] = List("strcmp(argv[1], \"42\")")
 ```
 

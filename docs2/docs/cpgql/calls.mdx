@@ -20,7 +20,7 @@ Here the callsites are:
 In a similar manner, functional programming constructs such as closures, arrow functions (in Javascript) and lambdas also have their own call-site representations. For example, in Javascript, an arrow function called within a function is appended with a `:=>` in its name and hence can be searched similarly. Here is a CPGQL query that finds a 2nd level arrow function within in a Javascript function having `foo` in its name and then lists it call-sites:
 
 ```scala
-ocular> cpg.method.name(".*foo.*::=>:=>").callOut.code.l
+joern> cpg.method.name(".*foo.*::=>:=>").callOut.code.l
 ```
  
 ### Traversal Steps
@@ -51,7 +51,7 @@ Use `cpg.call.<TAB>` to explore more available options
  - List exact code strings of all the call-sites in the graph:
 
 ```scala
-ocular> cpg.call.code.l
+joern> cpg.call.code.l
 
 res45: List[String] = List(
   "exit(0)",
@@ -65,7 +65,7 @@ res45: List[String] = List(
  - Identify if an `exit()` call-site is called from within a conditional block (`if { }`) with a given condition. This can be done via first identifying a call named `exit` and then traversing the AST upwards (via `astParent`) until a `if` control structure is encountered. This only yields the specific `exit` which is withing the `if` block :
 
 ```scala
-ocular> cpg.call.name("exit").filter(_.repeat(_.astParent).until(_.isControlStructure.parserTypeName("If.*"))).code.l 
+joern> cpg.call.name("exit").filter(_.repeat(_.astParent).until(_.isControlStructure.parserTypeName("If.*"))).code.l 
 
 res69: List[String] = List("exit(42)")
 
@@ -74,7 +74,7 @@ res69: List[String] = List("exit(42)")
  - Identify all the call-sites of `exit()` function in code, along with line-number and filename:
 
 ```scala
-ocular> cpg.call.name("exit").map( c=> (c.name, c.location.lineNumber.get, c.location.filename)).l 
+joern> cpg.call.name("exit").map( c=> (c.name, c.location.lineNumber.get, c.location.filename)).l 
 
 res56: List[(String, Integer, String)] = List(
   ("exit", 11, "/tmp/x42/c/X42.c"),
@@ -85,7 +85,7 @@ res56: List[(String, Integer, String)] = List(
  - List the arguments of all the `exit()` functions called in the code:
 
 ```scala
-ocular> cpg.call.name("exit").map( c=> (c.name, c.start.argument.code.l, c.location.lineNumber.get)).l 
+joern> cpg.call.name("exit").map( c=> (c.name, c.start.argument.code.l, c.location.lineNumber.get)).l 
 
 res59: List[(String, List[String], Integer)] = List(
   ("exit", List("0"), 11),
