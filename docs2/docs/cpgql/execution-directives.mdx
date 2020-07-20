@@ -8,7 +8,7 @@ _Execution Directives_ are CPGQL Components which execute the queries they suffi
 ### toList
 
 ```java
-ocular> cpg.call.name.toList 
+joern> cpg.call.name.toList 
 res0: List[String] = List(
   "exit",
   "printf",
@@ -27,7 +27,7 @@ res0: List[String] = List(
 `toList` has a shorthand named `l`:
 
 ```java
-ocular> cpg.call.name.l 
+joern> cpg.call.name.l 
 res0: List[String] = List(
   "exit",
   "printf",
@@ -47,22 +47,22 @@ _Execution Directives_ sit at the border between CPQGL Queries and the Joern Int
 
 ```java
 // first import the namespace for Java I/O
-ocular> import java.io._ 
+joern> import java.io._ 
 import java.io._
 
 // afterwards open a file stream to a new file named `my-query-result.txt`
-ocular> val pw = new PrintWriter(new File("./my-query-result.txt" )) 
+joern> val pw = new PrintWriter(new File("./my-query-result.txt" )) 
 pw: PrintWriter = java.io.PrintWriter@fe4c8fc
 
 // execute your query and store the results in a constant
-ocular> val myQueryResult = cpg.call.size 
+joern> val myQueryResult = cpg.call.size 
 myQueryResult: Int = 9
 
 // cast myQueryResult to a string, and write it to the file stream
-ocular> pw.write(myQueryResult.toString()) 
+joern> pw.write(myQueryResult.toString()) 
 
 // close the file streasm
-ocular> pw.close() 
+joern> pw.close() 
 
 ```
 
@@ -76,7 +76,7 @@ $ cat my-query-result.txt
 Writing the results of a query to a file can also be done in a more concise way using the `|>` operator provided by the Joern Interpreter:
 
 ```java
-ocular> cpg.call.size.toString() |> "my-query-result.txt"
+joern> cpg.call.size.toString() |> "my-query-result.txt"
 ```
 
 ### p
@@ -84,7 +84,7 @@ ocular> cpg.call.size.toString() |> "my-query-result.txt"
 `p` executes the traversal and pretty-prints the results:
 
 ```java
-ocular> cpg.call.p 
+joern> cpg.call.p 
 res26: List[String] = List(
   "(CALL,31): ARGUMENT_INDEX: 3, CODE: exit(0), COLUMN_NUMBER: 2, DISPATCH_TYPE: STATIC_DISPATCH, LINE_NUMBER: 11, METHOD_FULL_NAME: exit, NAME: exit, ORDER: 3, SIGNATURE: TODO assignment signature, TYPE_FULL_NAME: ANY",
   "(CALL,29): ARGUMENT_INDEX: 2, CODE: printf(\"What is the meaning of life?\\n\"), COLUMN_NUMBER: 2, DISPATCH_TYPE: STATIC_DISPATCH, LINE_NUMBER: 10, METHOD_FULL_NAME: printf, NAME: printf, ORDER: 2, SIGNATURE: TODO assignment signature, TYPE_FULL_NAME: ANY",
@@ -103,7 +103,7 @@ res26: List[String] = List(
 `toJson` executes the traversal and returns the results in a JSON string:
 
 ```java
-ocular> cpg.call.name.toJson 
+joern> cpg.call.name.toJson 
 res28: String = "[\"exit\",\"printf\",\"exit\",\"fprintf\",\"<operator>.indirectIndexAccess\",\"strcmp\",\"<operator>.equals\",\"<operator>.greaterThan\",\"<operator>.logicalAnd\"]"
 ```
 
@@ -112,7 +112,7 @@ res28: String = "[\"exit\",\"printf\",\"exit\",\"fprintf\",\"<operator>.indirect
 `toJsonPretty` executes the traversal and returns the results in a pretty-printed JSON string:
 
 ```java
-ocular> cpg.call.name.toJsonPretty 
+joern> cpg.call.name.toJsonPretty 
 res29: String = """[
   "exit",
   "printf",
@@ -131,6 +131,6 @@ res29: String = """[
 `size` executes the traversal and returns the number of results:
 
 ```java
-ocular> cpg.call.size 
+joern> cpg.call.size 
 res0: Int = 9
 ```

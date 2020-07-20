@@ -23,7 +23,7 @@ export default function NodeStepsOverviewTable({ stepsInfo }) {
 
   return (
     <TableContainer>
-      <Table className={classes.table} aria-label="Overview of Ocular Node Type Steps">
+      <Table className={classes.table} aria-label="Overview of Node-Type Steps">
         <TableHead>
           <TableRow>
             <TableCell style={{ width: 200 }}>Step</TableCell>

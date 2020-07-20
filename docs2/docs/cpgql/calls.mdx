@@ -17,7 +17,7 @@ Here the callsites are:
  - `<operator>.assignment` with arguments as `x` and return of `a + foo(b)`
  - `foo` with argument `b`
 
-In a similar manner, functional programming constructs such as closures, arrow functions (in Javascript) and lambdas also have their own call-site representations. For example, in Javascript, an arrow function called within a function is appended with a `:=>` in its name and hence can be searched similarly. Here is a Joern query that finds a 2nd level arrow function within in a Javascript function having `foo` in its name and then lists it call-sites:
+In a similar manner, functional programming constructs such as closures, arrow functions (in Javascript) and lambdas also have their own call-site representations. For example, in Javascript, an arrow function called within a function is appended with a `:=>` in its name and hence can be searched similarly. Here is a CPGQL query that finds a 2nd level arrow function within in a Javascript function having `foo` in its name and then lists it call-sites:
 
 ```scala
 ocular> cpg.method.name(".*foo.*::=>:=>").callOut.code.l
