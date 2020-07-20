@@ -5,6 +5,7 @@ module.exports = {
 	'quickstart',
 	'shell',
 	'interpreter',
+	'server',
 	'organizing-projects',
 	'code-property-graph',
 	'traversal-basics',
