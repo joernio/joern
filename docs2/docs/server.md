@@ -37,10 +37,10 @@ This will spawn a web server on port 8080 with the following
 functionality: 
 
 
-| Route  | Method | POST Body         | Response Body     |
-| ------ | ------ | ------------      | -------------     |
-| /query | POST   | {"query": $query} | {"uuid": "$uuid"} |
-| /query?uuid=$uuid | GET    |  -     | {"success": "{true, false}", "stdout": "$stdout", "stderr" : "$stderr"} |
+| Route  | Description  | Method | POST Body         | Response Body     |
+| ------ | ------------ | ------ | ------------      | -------------     |
+| /query | Submit query | POST   | {"query": $query} | {"uuid": "$uuid"} |
+| /result?uuid=$uuid | Retrieve response | GET    |  -     | {"success": "{true, false}", "stdout": "$stdout", "stderr" : "$stderr"} |
 
 
 where `$query` is the query to be executed, `$uuid` is an id assigned
