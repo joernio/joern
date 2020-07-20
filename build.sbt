@@ -38,12 +38,11 @@ createDistribution := {
   val joernServerZip = (joernserver/Universal/packageBin).value
 
   val cliZip = "./joern-cli.zip"
-  val serverZip = "./joern-server.zip"
   IO.copy(
-    List((joernCliZip, file(cliZip)), (joernServerZip, file(serverZip))),
+    List((joernCliZip, file(cliZip))),
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
-  println(s"created distribution - resulting files: $cliZip, $serverZip")
+  println(s"created distribution - resulting files: $cliZip")
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
