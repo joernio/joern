@@ -13,8 +13,13 @@ import TableRow from '@material-ui/core/TableRow';
 const useStyles = makeStyles({
   table: {
     minWidth: 550,
+    color: '#ffffff',
   },
+  cell: {
+    color: 'white'
+  }
 });
+
 
 export default function NodeStepsOverviewTable({ stepsInfo }) {
   const classes = useStyles();
@@ -23,20 +28,20 @@ export default function NodeStepsOverviewTable({ stepsInfo }) {
 
   return (
     <TableContainer>
-      <Table className={classes.table} aria-label="Overview of Ocular Node Type Steps">
+      <Table className={classes.table} aria-label="Overview of Node-Type Steps">
         <TableHead>
           <TableRow>
-            <TableCell style={{ width: 200 }}>Step</TableCell>
-            <TableCell align="left">Description</TableCell>
+            <TableCell className={classes.cell} style={{ width: 200 }}>Step</TableCell>
+            <TableCell className={classes.cell} align="left">Description</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {stepsInfo.map((stepInfo) => (
             <TableRow key={stepInfo.kind}>
-              <TableCell component="th" scope="row">
+              <TableCell component="th" scope="row" >
                 <Link to={"#" + stepInfo.queryComponent.toLowerCase()}>{stepInfo.queryComponent}</Link>
               </TableCell>
-              <TableCell align="left">{stepInfo.description}</TableCell>
+              <TableCell align="left" className={classes.cell} >{stepInfo.description}</TableCell>
             </TableRow>
           ))}
         </TableBody>
