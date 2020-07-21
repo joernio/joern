@@ -13,13 +13,10 @@ import overflowdb._
 import overflowdb.traversal._
 import scala.annotation.tailrec
 
-def getTopLevelExpressions(expression: Node): Seq[Expression] = {
-  val wantedLabels = Set(NodeTypes.BLOCK, NodeTypes.CONTROL_STRUCTURE, NodeTypes.RETURN, NodeTypes.CALL)
+def getTopLevelExpressions(expression: Node): List[Expression] = {
   expression
     .out(EdgeTypes.AST)
-    // TODO use hasLabel(lbl1, lbl2) once available
-//    .hasLabel(NodeTypes.BLOCK, NodeTypes.CONTROL_STRUCTURE, NodeTypes.RETURN, NodeTypes.CALL)
-    .asScala.filter(n => wantedLabels.contains(n.label))
+    .hasLabel(NodeTypes.BLOCK, NodeTypes.CONTROL_STRUCTURE, NodeTypes.RETURN, NodeTypes.CALL)
     .cast[nodes.Expression]
     .l
 }
