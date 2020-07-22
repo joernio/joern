@@ -97,10 +97,10 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues((node.inE("AST", "CFG").l ++ node.outE("AST", "CFG").l).map(_.asJson))),
-      ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
+      ("properties", Json.fromValues(node.propertyMap.asScala.toList.map { case (key, value) =>
         Json.obj(
-          ("key", Json.fromString(p.key())),
-          ("value", Json.fromString(p.value().toString))
+          ("key", Json.fromString(key)),
+          ("value", Json.fromString(value.toString))
         )
       }))
     )
