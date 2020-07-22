@@ -4,16 +4,16 @@
  */
 
 import ammonite.ops._
-import org.apache.tinkerpop.gremlin.structure.{ Direction, Vertex }
 
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Expression
 import java.nio.file.Paths
 import java.net.URI
-
+import overflowdb._
+import overflowdb.traversal._
 import scala.annotation.tailrec
 
-def getTopLevelExpressions(expression: Vertex): List[Expression] = {
+def getTopLevelExpressions(expression: Node): List[Expression] = {
   expression
     .out(EdgeTypes.AST)
     .hasLabel(NodeTypes.BLOCK, NodeTypes.CONTROL_STRUCTURE, NodeTypes.RETURN, NodeTypes.CALL)

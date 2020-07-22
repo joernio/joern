@@ -64,11 +64,9 @@
               // ...
  */
 
-import gremlin.scala._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import org.apache.tinkerpop.gremlin.structure.{Edge, VertexProperty}
 
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.dataflowengineoss.language._
@@ -76,6 +74,8 @@ import io.shiftleft.joern.console.JoernConsole._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
+import overflowdb._
+import overflowdb.traversal._
 
 import java.io.{PrintWriter, File => JFile}
 
@@ -83,12 +83,12 @@ import scala.jdk.CollectionConverters._
 
 implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
-      ("in", Json.fromString(edge.inVertex().toString)),
-      ("out", Json.fromString(edge.outVertex().toString))
+      ("in", Json.fromString(edge.inNode.toString)),
+      ("out", Json.fromString(edge.outNode.toString))
     )
 
 implicit val encodeVertex: Encoder[nodes.CfgNode] =
@@ -97,10 +97,10 @@ implicit val encodeVertex: Encoder[nodes.CfgNode] =
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues((node.inE("AST", "CFG").l ++ node.outE("AST", "CFG").l).map(_.asJson))),
-      ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
+      ("properties", Json.fromValues(node.propertyMap.asScala.toList.map { case (key, value) =>
         Json.obj(
-          ("key", Json.fromString(p.key())),
-          ("value", Json.fromString(p.value().toString))
+          ("key", Json.fromString(key)),
+          ("value", Json.fromString(value.toString))
         )
       }))
     )
