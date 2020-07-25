@@ -56,7 +56,6 @@ a, a:active, a:focus {
 }
 
 .navbar {
-  background-color: #000000;
   box-shadow: none;
   border-bottom: 1px solid rgba(235, 241, 235, 1);
   z-index: 0;
@@ -127,7 +126,6 @@ a, a:hover {
     padding-top: 1.5rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-    background-color: black;
 }
 
 #content-wrapper {
