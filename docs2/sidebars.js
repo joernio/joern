@@ -10,6 +10,7 @@ module.exports = {
     'code-property-graph',
     'traversal-basics',
     'c-syntaxtree',
+    'glossary',
       {
         type: 'category',
         label: 'CPGQL Reference',
