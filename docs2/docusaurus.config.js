@@ -7,7 +7,7 @@ module.exports = {
   baseUrl: '/',
   favicon: 'img/website-icon.png',
   themeConfig: {
-	    disableDarkMode:  true,
+	    disableDarkMode:  false,
 	    defaultDarkMode:  true,
     navbar: {
       title: '',
