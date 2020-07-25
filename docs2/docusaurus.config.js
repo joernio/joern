@@ -6,7 +6,8 @@ module.exports = {
   url: 'https://docs.joern.io',
   baseUrl: '/',
   favicon: 'img/website-icon.png',
-    themeConfig: {
+  themeConfig: {
+	    disableDarkMode:  true,
 	    defaultDarkMode:  true,
     navbar: {
       title: '',
