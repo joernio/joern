@@ -15,6 +15,12 @@ The server can be spawned as follows:
 joern --server
 ```
 
+Or, with HTTP endpoints protected by basic authentication:
+
+```
+joern --server --server-auth-username username --server-auth-password password
+```
+
 A sample client is available for Python at:
 
 https://github.com/ShiftLeftSecurity/cpgqls-client-python#example-usage
@@ -64,8 +70,7 @@ the web socket.
 
 :::note
 Note that the server exclusively implements remote access to an
-interpreter, it does not implement security mechanisms such as
-authentication or sandboxing. As such, it is not to be considered a
-security boundary and sandboxing and authentication must be achieved
+interpreter, it does not implement sandboxing. As such, it is not
+to be considered a security boundary and sandboxing must be achieved
 via other means in production environments.
 :::
