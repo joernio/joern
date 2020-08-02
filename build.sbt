@@ -8,8 +8,8 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.0"
 ThisBuild /Test /fork := true
 
-val cpgVersion = "0.11.338"
-val fuzzyc2cpgVersion = "1.1.58"
+val cpgVersion = "0.11.352+0-22e2bd6a+20200801-1337"
+val fuzzyc2cpgVersion = "1.1.69"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,

@@ -1,9 +1,6 @@
 package io.shiftleft.joern
 
-import java.util.concurrent.LinkedBlockingQueue
-
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
-import io.shiftleft.proto.cpg.Cpg.CpgStruct
 import org.slf4j.LoggerFactory
 
 import scala.util.control.NonFatal
@@ -25,9 +22,7 @@ object JoernParse extends App {
   def generateCpg(config: ParserConfig): Unit = {
 
     if (!config.enhanceOnly) {
-      val queue = new LinkedBlockingQueue[CpgStruct.Builder]()
-      val factory = new io.shiftleft.fuzzyc2cpg.output.overflowdb.OutputModuleFactory(config.outputCpgFile, queue)
-      val fuzzyc = new FuzzyC2Cpg(factory)
+      val fuzzyc = new FuzzyC2Cpg()
       if (config.preprocessorConfig.usePreprocessor) {
         fuzzyc.runWithPreprocessorAndOutput(
           config.inputPaths,
@@ -39,7 +34,7 @@ object JoernParse extends App {
           config.preprocessorConfig.preprocessorExecutable
         )
       } else {
-        fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions)
+        fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions, Some(config.outputCpgFile)).close()
       }
     }
 
