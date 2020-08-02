@@ -7,12 +7,12 @@
   --ifm-color-primary-lighter: #5a91ea;
   --ifm-color-primary-lightest: #80aaef;
 
-  --ifm-link-color: rgba(29, 104, 225, 1);
-  --ifm-link-hover-color: #5140e6;
+  --ifm-link-color: rgba(85, 212, 0, 1);
+  --ifm-link-hover-color: rgba(85, 212, 0, 0.5);
 
-  --ifm-navbar-link-color: rgba(29, 104, 225, 1);
-  --ifm-navbar-link-hover-color: rgba(29, 104, 225, 1);
-  --ifm-menu-color-active: rgba(29, 104, 225, 1);
+  --ifm-navbar-link-color: rgba(85, 212, 0, 1);
+  --ifm-navbar-link-hover-color: rgba(85, 212, 0, 1);
+  --ifm-menu-color-active: rgba(85, 212, 0, 1);
 
   --ifm-color-info: #3ecf8e;
 
@@ -56,7 +56,6 @@ a, a:active, a:focus {
 }
 
 .navbar {
-  background-color: #000000;
   box-shadow: none;
   border-bottom: 1px solid rgba(235, 241, 235, 1);
   z-index: 0;
@@ -127,7 +126,6 @@ a, a:hover {
     padding-top: 1.5rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-    background-color: black;
 }
 
 #content-wrapper {

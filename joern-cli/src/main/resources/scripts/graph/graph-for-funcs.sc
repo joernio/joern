@@ -36,9 +36,8 @@ import io.shiftleft.semanticcpg.language.types.expressions.Call
 import io.shiftleft.semanticcpg.language.types.structure.Local
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 
-import gremlin.scala._
-import org.apache.tinkerpop.gremlin.structure.Edge
-import org.apache.tinkerpop.gremlin.structure.VertexProperty
+import overflowdb._
+import overflowdb.traversal._
 
 final case class GraphForFuncsFunction(function: String,
                                        id: String,
@@ -47,12 +46,12 @@ final case class GraphForFuncsFunction(function: String,
                                        PDG: List[nodes.AstNode])
 final case class GraphForFuncsResult(functions: List[GraphForFuncsFunction])
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
-      ("in", Json.fromString(edge.inVertex().toString)),
-      ("out", Json.fromString(edge.outVertex().toString))
+      ("in", Json.fromString(edge.inNode.toString)),
+      ("out", Json.fromString(edge.outNode.toString))
     )
 
 implicit val encodeNode: Encoder[nodes.AstNode] =
@@ -61,10 +60,10 @@ implicit val encodeNode: Encoder[nodes.AstNode] =
       ("id", Json.fromString(node.toString)),
       ("edges",
         Json.fromValues((node.inE("AST", "CFG").l ++ node.outE("AST", "CFG").l).map(_.asJson))),
-      ("properties", Json.fromValues(node.properties().asScala.toList.map { p: VertexProperty[_] =>
+      ("properties", Json.fromValues(node.propertyMap.asScala.toList.map { case (key, value) =>
         Json.obj(
-          ("key", Json.fromString(p.key())),
-          ("value", Json.fromString(p.value().toString))
+          ("key", Json.fromString(key)),
+          ("value", Json.fromString(value.toString))
         )
       }))
     )

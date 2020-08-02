@@ -1,0 +1,101 @@
+---
+id: node-type-steps
+title: Node-Type Steps
+---
+
+import NodeStepsOverviewTable from '@site/src/components/NodeTypeStepsOverviewTable';
+import NodeStepDetail from '@site/src/components/NodeStepDetail';
+
+import { cpgqlRef, StepKind, StepFamily } from '@site/src/cpgqlref';
+
+Node-Type Steps are CPGQL Steps that traverse nodes based on their type.
+
+### Overview
+
+<NodeStepsOverviewTable stepsInfo={cpgqlRef.stepsInfoForFamily(StepFamily.NodeTypeStep)} />
+
+### all
+
+The `all` Node-Type Step represents a traversal which visits all nodes of a Code Property Graph. It supports the two only _Property Directives_ which are common to all _Node-Type Steps_, `id` and `label`.
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.All)} />
+
+### block
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Block)} />
+
+### call
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Call)} />
+
+### comment
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Comment)} />
+
+### file
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.File)} />
+
+### identifier
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Identifier)} />
+
+### literal
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Literal)} />
+
+### local
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Local)} />
+
+### member
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Member)} />
+
+### metaData
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.MetaData)} />
+
+### method
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Method)} />
+
+### methodRef
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.MethodRef)} />
+
+### methodReturn
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.MethodReturn)} />
+
+### modifier
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Modifier)} />
+
+### namespaceBlock
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.NamespaceBlock)} />
+
+### namespace
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Namespace)} />
+
+### parameter
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Parameter)} />
+
+### returns
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Returns)} />
+
+### tag
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Tag)} />
+
+### typeDecl
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.TypeDecl)} />
+
+### typ
+
+<NodeStepDetail stepInfo={cpgqlRef.stepInfoForKind(StepKind.Typ)} />

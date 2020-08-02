@@ -1,0 +1,170 @@
+---
+id: repeat-steps
+title: Repeat Steps
+---
+
+Repeat Steps are CPGQL Steps which repeat another traversal multiple times.
+
+### repeat..times
+
+```java
+joern> cpg.method.name("main").repeat(_.astChildren).times(4).l
+res123: List[AstNode] = List(
+  Call(
+    id -> 13L,
+    code -> "argc > 1",
+    name -> "<operator>.greaterThan",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 16L,
+    code -> "strcmp(argv[1], \"42\") == 0",
+    name -> "<operator>.equals",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 24L,
+    code -> "fprintf(stderr, \"It depends!\\n\")",
+    name -> "fprintf",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 27L,
+    code -> "exit(42)",
+    name -> "exit",
+// ...output trimmed for brevity
+  )
+)
+```
+
+### repeat..until
+
+```java
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isCall).l
+res124: List[AstNode] = List(
+  Call(
+    id -> 29L,
+    code -> "printf(\"What is the meaning of life?\\n\")",
+    name -> "printf",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 31L,
+    code -> "exit(0)",
+    name -> "exit",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 12L,
+    code -> "argc > 1 && strcmp(argv[1], \"42\") == 0",
+    name -> "<operator>.logicalAnd",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 24L,
+    code -> "fprintf(stderr, \"It depends!\\n\")",
+    name -> "fprintf",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 27L,
+    code -> "exit(42)",
+    name -> "exit",
+// ...output trimmed for brevity
+  )
+)
+```
+
+```java
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isCall.name("exit")).l 
+res125: List[AstNode] = List(
+  Call(
+    id -> 31L,
+    code -> "exit(0)",
+    name -> "exit",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 27L,
+    code -> "exit(42)",
+    name -> "exit",
+// ...output trimmed for brevity
+  )
+)
+```
+
+### repeat..emit..times
+
+
+```java
+joern> cpg.method.name("main").repeat(_.astChildren).emit(_.isControlStructure).times(4).l
+res130: List[AstNode] = List(
+  ControlStructure(
+    id -> 11L,
+    code -> "if (argc > 1 && strcmp(argv[1], \"42\") == 0)",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 13L,
+    code -> "argc > 1",
+    name -> "<operator>.greaterThan",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 16L,
+    code -> "strcmp(argv[1], \"42\") == 0",
+    name -> "<operator>.equals",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 24L,
+    code -> "fprintf(stderr, \"It depends!\\n\")",
+    name -> "fprintf",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 27L,
+    code -> "exit(42)",
+    name -> "exit",
+// ...output trimmed for brevity
+  )
+)
+```
+
+### repeat..emit..until
+
+```java
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isCall).l
+res124: List[AstNode] = List(
+  Call(
+    id -> 29L,
+    code -> "printf(\"What is the meaning of life?\\n\")",
+    name -> "printf",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 31L,
+    code -> "exit(0)",
+    name -> "exit",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 12L,
+    code -> "argc > 1 && strcmp(argv[1], \"42\") == 0",
+    name -> "<operator>.logicalAnd",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 24L,
+    code -> "fprintf(stderr, \"It depends!\\n\")",
+    name -> "fprintf",
+// ...output trimmed for brevity
+  ),
+  Call(
+    id -> 27L,
+    code -> "exit(42)",
+    name -> "exit",
+// ...output trimmed for brevity
+  )
+)
+```

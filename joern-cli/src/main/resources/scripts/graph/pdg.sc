@@ -10,26 +10,25 @@
    and the second entry contains the code stored in the vertex.
 */
 
-import gremlin.scala.{Edge, GremlinScala}
-
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-
+import overflowdb._
+import overflowdb.traversal._
 import scala.collection.mutable
 
-type EdgeEntry = (AnyRef, AnyRef)
-type VertexEntry = (AnyRef, String)
+type EdgeEntry = (Long, Long)
+type VertexEntry = (Long, String)
 type Pdg = (Option[String], List[EdgeEntry], List[VertexEntry])
 
 
-private def pdgFromEdges(edges: GremlinScala[Edge]): (List[EdgeEntry], List[VertexEntry]) = {
-  val filteredEdges = edges.filter(edge => edge.hasLabel(EdgeTypes.REACHING_DEF, EdgeTypes.CDG)).dedup.l
+private def pdgFromEdges(edges: Traversal[OdbEdge]): (List[EdgeEntry], List[VertexEntry]) = {
+  val filteredEdges = edges.hasLabel(EdgeTypes.REACHING_DEF, EdgeTypes.CDG).dedup.l
 
   val (edgeResult, vertexResult) =
     filteredEdges.foldLeft((mutable.Set.empty[EdgeEntry], mutable.Set.empty[VertexEntry])) {
       case ((edgeList, vertexList), edge) =>
-        val edgeEntry = (edge.inVertex().id, edge.outVertex().id)
-        val inVertexEntry = (edge.inVertex().id, edge.inVertex().property("CODE").orElse(""))
-        val outVertexEntry = (edge.outVertex().id, edge.outVertex().property("CODE").orElse(""))
+        val edgeEntry = (edge.inNode.id, edge.outNode.id)
+        val inVertexEntry = (edge.inNode.id, edge.inNode.propertyOption(NodeKeysOdb.CODE).getOrElse(""))
+        val outVertexEntry = (edge.outNode.id, edge.outNode.propertyOption(NodeKeysOdb.CODE).getOrElse(""))
 
         (edgeList += edgeEntry, vertexList ++= Set(inVertexEntry, outVertexEntry))
     }
@@ -39,12 +38,12 @@ private def pdgFromEdges(edges: GremlinScala[Edge]): (List[EdgeEntry], List[Vert
 
 @main def main(methodRegex: String = ""): List[Pdg] = {
   if (methodRegex.isEmpty) {
-    val (edgeEntries, vertexEntries) = pdgFromEdges(cpg.scalaGraph.E())
+    val (edgeEntries, vertexEntries) = pdgFromEdges(cpg.graph.E())
     List((None, edgeEntries, vertexEntries))
   } else {
     cpg.method(methodRegex).l.map { method =>
       val methodFile = method.location.filename
-      val (edgeEntries, vertexEntries) = pdgFromEdges(method.asScala.out().flatMap(_.asScala.outE()))
+      val (edgeEntries, vertexEntries) = pdgFromEdges(method.out.outE)
 
       (Some(methodFile), edgeEntries, vertexEntries)
     }

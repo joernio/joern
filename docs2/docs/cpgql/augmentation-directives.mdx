@@ -1,0 +1,83 @@
+---
+id: augmentation-directives
+title: Augmentation Directives
+---
+
+Augmentation Directives are CPGQL Directives which extend a Code Property Graph with nodes, properties and edges.
+
+Take the following simple program named `X42`:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+  if (argc > 1 && strcmp(argv[1], "42") == 0) {
+    fprintf(stderr, "It depends!\n");
+    exit(42);
+  }
+  printf("What is the meaning of life?\n");
+  exit(0);
+}
+```
+
+
+### newTagNode
+
+`newTagNode` is an _Augmentation Directive_ that adds tags with user-defined keys to the nodes that are part of the traversal they're suffixing. It works together with the `store` CPGQL Component which creates the actual nodes representing the tags, and the `run.commit` [Top-Level Command](/joern/top-level-commands) which merges those nodes in the active _Code Property Graph_.
+
+Say for example that you'd like to add tags to all the nodes of `X42`'s Code Property Graph that represent calls to `exit`. That is, these two:
+
+```java
+// list all CALL nodes in the X42 program with the string "exit" in their CALL property
+joern> cpg.call.name("exit").code.l 
+res0: List[String] = List("exit(0)", "exit(42)")
+```
+And say that you'd like to use the key `MY_KIND_OF_EXIT` for the tags you want to create:
+
+```java
+// create tags with the key MY_KIND_OF_EXIT for all CALL nodes which have the string "exit" in the value of their NAME property
+joern> cpg.call.name("exit").newTagNode("MY_KIND_OF_EXIT").store 
+
+// apply the diffgraph to the currently active Code Property Graph
+joern> run.commit 
+2020-07-02 14:07:02.041 [main] INFO Enhancement io.shiftleft.console.Commit$$anon$1 completed in 0 milliseconds
+The graph has been modified. You may want to use the `save` command to persist changes to disk.  All changes will also be saved collectively on exit
+res1: Cpg = io.shiftleft.codepropertygraph.Cpg@97c920b
+
+// list the newly created tags
+joern> cpg.tag.name("MY_KIND_OF_EXIT").l 
+res2: List[nodes.Tag] = List(
+  Tag(id -> 42L, name -> "MY_KIND_OF_EXIT", value -> ""),
+  Tag(id -> 41L, name -> "MY_KIND_OF_EXIT", value -> "")
+)
+
+// list the CODE property of all CALL nodes attached to the newly created tags
+joern> cpg.tag.name("MY_KIND_OF_EXIT").call.code.l 
+res3: List[String] = List("exit(42)", "exit(0)")
+```
+
+### newTagNodePair
+
+`newTagNodePair` is very similar to `newTagNode`: it is an _Augmentation Directive_ that adds tags with user-defined keys and user-defined values to the nodes that are part of the traversal they're suffixing. It also works together with `store` and `run.commit`, but you can specify both a key and a value for the nodes created:
+
+
+```java
+joern> cpg.call.name("exit").newTagNodePai("MY_OTHER_KIND_OF_EXIT", "MY_VALUE").store 
+
+joern> run.commit 
+2020-07-02 14:07:02.041 [main] INFO Enhancement io.shiftleft.console.Commit$$anon$1 completed in 0 milliseconds
+The graph has been modified. You may want to use the `save` command to persist changes to disk.  All changes will also be saved collectively on exit
+res1: Cpg = io.shiftleft.codepropertygraph.Cpg@97c920b
+
+joern> cpg.tag.name("MY_OTHER_KIND_OF_EXIT").l 
+res2: List[nodes.Tag] = List(
+  Tag(id -> 44L, name -> "MY_OTHER_KIND_OF_EXIT", value -> "MY_VALUE"),
+  Tag(id -> 43L, name -> "MY_OTHER_KIND_OF_EXIT", value -> "MY_VALUE")
+)
+
+joern> cpg.tag.value("MY_VALUE").call.code.l 
+res3: List[String] = List("exit(42)", "exit(0)")
+```
+
