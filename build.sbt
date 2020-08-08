@@ -8,7 +8,7 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.0"
 ThisBuild /Test /fork := true
 
-val cpgVersion = "0.11.356"
+val cpgVersion = "0.11.364"
 val fuzzyc2cpgVersion = "1.1.72"
 
 ThisBuild / resolvers ++= Seq(
