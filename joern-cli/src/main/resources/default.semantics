@@ -1,13 +1,29 @@
-<operator>.assignment, 1
-<operator>.assignmentAnd, 1
-<operators>.assignmentArithmeticShiftRight, 1
-<operator>.assignmentDivision, 1
-<operators>.assignmentExponentiation, 1
-<operators>.assignmentLogicalShifRight, 1
-<operator>.assignmentMinus, 1
-<operators>.assignmentModulo, 1
-<operator>.assignmentMultiplication, 1
-<operators>.assignmentOr, 1
-<operator>.assignmentPlus, 1
-<operators>.assignmentShiftLeft, 1
-<operators>.assignmentXor, 1
+"<operator>.assignment" 2->1
+"<operators>.assignmentAnd" 2->1 1->1
+"<operators>.assignmentArithmeticShiftRight" 2->1 1->1
+"<operator>.assignmentDivision" 2->1 1->1
+"<operators>.assignmentExponentiation" 2->1 1->1
+"<operators>.assignmentLogicalShiftRight" 2->1 1->1
+"<operator>.assignmentMinus" 2->1 1->1
+"<operators>.assignmentModulo" 2->1 1->1
+"<operator>.assignmentMultiplication" 2->1 1->1
+"<operators>.assignmentOr" 2->1 1->1
+"<operator>.assignmentPlus" 2->1 1->1
+"<operators>.assignmentShiftLeft" 2->1 1->1
+"<operators>.assignmentXor" 2->1 1->1
+"<operator>.postDecrement" 1->1
+"<operator>.preDecrement" 1->1
+"<operator>.postIncrement" 1->1
+"<operator>.preIncrement" 1->1
+"<operator>.memberAccess" 1->-1
+"<operator>.indirectComputedMemberAccess" 1->-1
+"<operator>.indirectMemberAccess" 1->-1
+"<operator>.computedMemberAccess" 1->-1
+"<operator>.indirection" 1->-1
+"<operator>.addressOf" 1->-1
+"<operator>.fieldAccess" 1->-1
+"<operator>.indirectFieldAccess" 1->-1
+"<operator>.indexAccess" 1->-1
+"<operator>.indirectIndexAccess" 1->-1
+"<operator>.pointerShift" 1->-1
+"<operator>.getElementPtr" 1->-1

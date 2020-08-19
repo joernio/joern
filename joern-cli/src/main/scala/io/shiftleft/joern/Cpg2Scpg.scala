@@ -1,9 +1,7 @@
 package io.shiftleft.joern
 
 import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.dataflowengineoss.semanticsloader.SemanticsLoader
 import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Scpg}
-import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 
