@@ -1,6 +1,5 @@
 package io.shiftleft.joern
 
-import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}

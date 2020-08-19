@@ -86,9 +86,9 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
     File(getClass.getClassLoader.getResource("testcode/leak"))) { cpg: Cpg =>
     "work correctly for 'malloc-leak.sc'" in {
       val calls =
-        console.JoernConsole.runScriptTest("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[Call]]
+        console.JoernConsole.runScriptTest("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[String]]
 
-      calls.map(_.code) should contain theSameElementsAs Set("* leak = malloc(sizeof(int))")
+      calls should contain theSameElementsAs Set("leak")
     }
   }
 
@@ -117,8 +117,7 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
           "modify_const_struct_member_c_cast",
           "modify_const_struct_member",
           "modify_const_struct_cpp_cast",
-          "modify_const_struct_c_cast",
-          "modify_const_struct"
+          "modify_const_struct_c_cast"
         )
     }
   }

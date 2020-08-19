@@ -3,11 +3,6 @@ void modify_non_const_struct(struct Foo* foo) {
   return;
 }
 
-void modify_const_struct(const struct Foo* foo) {
-  foo = NULL;
-  return;
-}
-
 void modify_const_struct_c_cast(const struct Foo* foo) {
   struct Foo* foo2 = (Foo*) foo;
   foo2 = NULL;
