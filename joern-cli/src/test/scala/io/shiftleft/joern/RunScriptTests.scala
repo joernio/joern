@@ -115,7 +115,6 @@ class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
         Set(
           "modify_const_struct_member_cpp_cast",
           "modify_const_struct_member_c_cast",
-          "modify_const_struct_member",
           "modify_const_struct_cpp_cast",
           "modify_const_struct_c_cast"
         )

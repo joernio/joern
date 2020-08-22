@@ -39,7 +39,7 @@ object JoernParse extends App {
     }
 
     if (config.enhance) {
-      Cpg2Scpg.run(config.outputCpgFile, config.dataFlow, config.semanticsFile).close()
+      Cpg2Scpg.run(config.outputCpgFile, config.dataFlow).close()
     }
 
   }
@@ -49,7 +49,6 @@ object JoernParse extends App {
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
                           enhanceOnly: Boolean = false,
-                          semanticsFile: String = CpgLoader.defaultSemanticsFile,
                           sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"),
                           preprocessorConfig: PreprocessorConfig = PreprocessorConfig())
 
@@ -82,9 +81,6 @@ object JoernParse extends App {
       opt[Unit]("nodataflow")
         .text("do not perform data flow analysis")
         .action((x, c) => c.copy(dataFlow = false))
-      opt[String]("semanticsfile")
-        .text("data flow semantics file")
-        .action((x, c) => c.copy(semanticsFile = x))
       opt[String]("source-file-ext")
         .unbounded()
         .text("source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
