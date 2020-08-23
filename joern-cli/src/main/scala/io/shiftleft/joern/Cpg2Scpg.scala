@@ -13,7 +13,7 @@ object Cpg2Scpg extends App {
 
   parseConfig.foreach { config =>
     try {
-      val cpg = run(config.inputPath, config.dataFlow, config.semanticsFile)
+      val cpg = run(config.inputPath, config.dataFlow)
       logger.info(s"Closing Cpg...")
       val startTime = System.currentTimeMillis()
       cpg.close()
@@ -27,7 +27,7 @@ object Cpg2Scpg extends App {
     System.exit(0)
   }
 
-  case class Config(inputPath: String, dataFlow: Boolean, semanticsFile: String)
+  case class Config(inputPath: String, dataFlow: Boolean)
   def parseConfig: Option[Config] =
     new scopt.OptionParser[Config](getClass.getSimpleName) {
       arg[String]("<cpg>")
@@ -36,23 +36,20 @@ object Cpg2Scpg extends App {
       opt[Unit]("nodataflow")
         .text("do not perform data flow analysis")
         .action((x, c) => c.copy(dataFlow = false))
-      opt[String]("semanticsfile")
-        .text("data flow semantics file")
-        .action((x, c) => c.copy(semanticsFile = x))
 
-    }.parse(args, Config(DEFAULT_CPG_IN_FILE, true, CpgLoader.defaultSemanticsFile))
+    }.parse(args, Config(DEFAULT_CPG_IN_FILE, true))
 
   /**
     * Load the CPG at `storeFilename` and add enhancements,
     * turning the CPG into an SCPG.
     * @param storeFilename the filename of the cpg
     * */
-  def run(storeFilename: String, dataFlow: Boolean, semanticsFilename: String): Cpg = {
+  def run(storeFilename: String, dataFlow: Boolean): Cpg = {
     val cpg = CpgLoader.loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)
     new Scpg().run(context)
     if (dataFlow) {
-      val options = new OssDataFlowOptions(semanticsFilename)
+      val options = new OssDataFlowOptions()
       new OssDataFlow(options).run(context)
     }
     cpg

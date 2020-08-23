@@ -1,22 +1,56 @@
 package io.shiftleft.joern.console
 
-import java.nio.file.Path
+import java.nio.file.{FileSystems, Files, Path, Paths}
 
-import better.files.File
+import better.files._
+import better.files.Dsl._
+
+import scala.jdk.CollectionConverters._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
 import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
-import io.shiftleft.joern.CpgLoader
+import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
-class JoernWorkspaceLoader extends WorkspaceLoader[Project] {
-  override def createProject(projectFile: ProjectFile, path: Path): Project = {
-    Project(projectFile, path)
+object JoernWorkspaceLoader {
+  val semanticsFilename = "semantics"
+
+  lazy val defaultSemanticsFile: String = {
+    val file = Files.createTempFile("joern-default", ".semantics")
+    val defaultFile = this.getClass.getClassLoader.getResource("default.semantics").toURI
+
+    // Weird, yes, but necessary when running as a distribution.
+    // See (https://docs.oracle.com/javase/7/docs/technotes/guides/io/fsp/zipfilesystemprovider.html)
+    if (defaultFile.getScheme.contains("jar")) {
+      FileSystems.newFileSystem(defaultFile, Map("create" -> "false").asJava)
+    }
+    val fileLines = Files.readAllLines(Paths.get(defaultFile))
+    Files.write(file, fileLines, java.nio.charset.StandardCharsets.UTF_8).toString
+  }
+
+  def defaultSemantics: Semantics = Semantics.fromList(
+    new Parser().parseFile(defaultSemanticsFile)
+  )
+
+}
+
+class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
+  override def createProject(projectFile: ProjectFile, path: Path): JoernProject = {
+    val project = new JoernProject(projectFile, path)
+    val semanticFileInProject = path.resolve(JoernWorkspaceLoader.semanticsFilename)
+    cp(File(JoernWorkspaceLoader.defaultSemanticsFile), File(semanticFileInProject))
+    project.semantics = JoernWorkspaceLoader.defaultSemantics
+    project
   }
 }
 
-class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
+class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
 
   override def config: ConsoleConfig = JoernConsole.config
+
+  implicit def semantics: Semantics =
+    workspace.getActiveProject
+      .map(_.asInstanceOf[JoernProject].semantics)
+      .getOrElse(JoernWorkspaceLoader.defaultSemantics)
 
   def banner(): Unit = {
     println("""
@@ -39,14 +73,6 @@ class JoernConsole extends Console[Project](JoernAmmoniteExecutor, new JoernWork
     ""
   }
 
-  /**
-    * (Re)-apply semantics stored in `semanticsFilenameOpt`.
-    * If `semanticsFilenameOpt` is None default semantics
-    * are applied.
-    * */
-  def applySemantics(semanticsFilenameOpt: Option[String]): Unit =
-    CpgLoader.applySemantics(cpg, semanticsFilenameOpt)
-
   def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
     importCpg(inputPath)
@@ -60,6 +86,9 @@ object JoernConsole {
 
   def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
+      override val semantics: Semantics = Semantics.fromList(
+        new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)
+      )
       override def config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
       )
