@@ -92,6 +92,9 @@ object JoernConsole {
 
   def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
+      override val semantics: Semantics = Semantics.fromList(
+        new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)
+      )
       override def config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
       )
