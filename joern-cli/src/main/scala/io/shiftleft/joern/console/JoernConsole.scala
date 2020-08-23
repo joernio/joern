@@ -27,6 +27,10 @@ object JoernWorkspaceLoader {
     Files.write(file, fileLines, java.nio.charset.StandardCharsets.UTF_8).toString
   }
 
+  def defaultSemantics: Semantics = Semantics.fromList(
+    new Parser().parseFile(defaultSemanticsFile)
+  )
+
 }
 
 class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
@@ -34,9 +38,7 @@ class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
     val project = new JoernProject(projectFile, path)
     val semanticFileInProject = path.resolve(JoernWorkspaceLoader.semanticsFilename)
     cp(File(JoernWorkspaceLoader.defaultSemanticsFile), File(semanticFileInProject))
-    project.semantics = Semantics.fromList(
-      new Parser().parseFile(semanticFileInProject.toAbsolutePath.toString)
-    )
+    project.semantics = JoernWorkspaceLoader.defaultSemantics
     project
   }
 }
@@ -48,15 +50,7 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
   implicit def semantics: Semantics =
     workspace.getActiveProject
       .map(_.asInstanceOf[JoernProject].semantics)
-      .getOrElse(Semantics.empty)
-
-  override def open: Option[Project] = {
-    super.open.collect {
-      case project: JoernProject =>
-        // TODO ...
-        project
-    }
-  }
+      .getOrElse(JoernWorkspaceLoader.defaultSemantics)
 
   def banner(): Unit = {
     println("""
