@@ -9,6 +9,7 @@ import scala.jdk.CollectionConverters._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
 import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
+import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
 object JoernWorkspaceLoader {
@@ -38,7 +39,7 @@ class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
     val project = new JoernProject(projectFile, path)
     val semanticFileInProject = path.resolve(JoernWorkspaceLoader.semanticsFilename)
     cp(File(JoernWorkspaceLoader.defaultSemanticsFile), File(semanticFileInProject))
-    project.semantics = JoernWorkspaceLoader.defaultSemantics
+    project.context = EngineContext(JoernWorkspaceLoader.defaultSemantics)
     project
   }
 }
@@ -47,10 +48,10 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
 
   override def config: ConsoleConfig = JoernConsole.config
 
-  implicit def semantics: Semantics =
+  implicit def context: EngineContext =
     workspace.getActiveProject
-      .map(_.asInstanceOf[JoernProject].semantics)
-      .getOrElse(JoernWorkspaceLoader.defaultSemantics)
+      .map(x => EngineContext(x.asInstanceOf[JoernProject].context.semantics))
+      .getOrElse(EngineContext(JoernWorkspaceLoader.defaultSemantics))
 
   def banner(): Unit = {
     println("""
@@ -86,9 +87,11 @@ object JoernConsole {
 
   def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
-      override val semantics: Semantics = Semantics.fromList(
-        new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)
-      )
+      override def context: EngineContext =
+        EngineContext(
+          Semantics.fromList(
+            new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)
+          ))
       override def config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
       )

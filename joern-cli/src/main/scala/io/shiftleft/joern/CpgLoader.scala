@@ -26,7 +26,7 @@ object CpgLoader {
   }
 
   /**
-    * Load code property graph from overflowDB and apply semantics
+    * Load code property graph from overflowDB
     * @param filename name of the file that stores the cpg
     * */
   def loadFromOdb(filename: String): Cpg = {
