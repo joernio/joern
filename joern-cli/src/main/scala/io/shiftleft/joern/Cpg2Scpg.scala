@@ -3,7 +3,9 @@ package io.shiftleft.joern
 import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Scpg}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import org.slf4j.LoggerFactory
+import overflowdb.OdbConfig
 
 object Cpg2Scpg extends App {
 
@@ -45,7 +47,7 @@ object Cpg2Scpg extends App {
     * @param storeFilename the filename of the cpg
     * */
   def run(storeFilename: String, dataFlow: Boolean): Cpg = {
-    val cpg = CpgLoader.loadFromOdb(storeFilename)
+    val cpg = loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)
     new Scpg().run(context)
     if (dataFlow) {
@@ -53,6 +55,16 @@ object Cpg2Scpg extends App {
       new OssDataFlow(options).run(context)
     }
     cpg
+  }
+
+  /**
+    * Load code property graph from overflowDB
+    * @param filename name of the file that stores the cpg
+    * */
+  private def loadFromOdb(filename: String): Cpg = {
+    val odbConfig = OdbConfig.withDefaults().withStorageLocation(filename)
+    val config = CpgLoaderConfig().withOverflowConfig(odbConfig).doNotCreateIndexesOnLoad
+    io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
   }
 
 }
