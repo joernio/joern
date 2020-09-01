@@ -126,7 +126,7 @@ final case class PdgForFuncsFunction(function: String, id: String, PDG: List[nod
         .hasLabel(NodeTypes.BLOCK)
         .out(EdgeTypes.AST)
         .hasLabel(NodeTypes.LOCAL)
-        .cast[nodes.Local])
+        .cast[nodes.Local]
 
     val sink = local.referencingIdentifiers.dedup
     val source = method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call].nameNot("<operator>.*").dedup

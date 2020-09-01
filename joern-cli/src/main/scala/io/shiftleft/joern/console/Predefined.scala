@@ -1,6 +1,6 @@
 package io.shiftleft.joern.console
 
-import io.shiftleft.console.{AmmoniteCodeBlockSeparator, Help, Run}
+import io.shiftleft.console.{Help, Run}
 
 object Predefined {
 
@@ -18,14 +18,13 @@ object Predefined {
         |import io.shiftleft.dataflowengineoss.language.{`package` => _, _}
         |import io.shiftleft.semanticcpg.language.{`package` => _, _}
         |import overflowdb._
-        |import overflowdb.traversal._
+        |import overflowdb.traversal.{help => _, _}
         |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
       """.stripMargin
 
   val forInteractiveShell: String =
     shared +
-      AmmoniteCodeBlockSeparator +
       """
         |import io.shiftleft.joern.console.Joern._
       """.stripMargin +
