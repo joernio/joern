@@ -1,6 +1,7 @@
 package io.shiftleft.joern.console
 
-import io.shiftleft.console.{Help, Run}
+import io.shiftleft.console.{AmmoniteCodeBlockSeparator, Help, Run}
+
 object Predefined {
 
   /* ammonite tab completion is partly broken for scala > 2.12.8
@@ -21,20 +22,27 @@ object Predefined {
         |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
         |
-        |
       """.stripMargin
 
-  val forInteractiveShell: String = shared +
-    """
-      |import io.shiftleft.joern.console.Joern._
-      |
-    """.stripMargin + dynamicPredef()
+  val forInteractiveShell: String =
+    shared +
+      AmmoniteCodeBlockSeparator +
+      """
+        |import io.shiftleft.joern.console.Joern._
+        |
+      """.stripMargin +
+      AmmoniteCodeBlockSeparator +
+      dynamicPredef()
 
-  val forScripts: String = shared +
-    """
-      |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
-      |
-  """.stripMargin + dynamicPredef()
+  val forScripts: String =
+    shared +
+      AmmoniteCodeBlockSeparator +
+      """
+        |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
+        |
+      """.stripMargin +
+      AmmoniteCodeBlockSeparator +
+      dynamicPredef()
 
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +

@@ -5,12 +5,8 @@
 
 import ammonite.ops._
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.Expression
 import java.nio.file.Paths
 import java.net.URI
-import overflowdb._
-import overflowdb.traversal._
 import scala.annotation.tailrec
 
 def getTopLevelExpressions(expression: Node): List[Expression] = {

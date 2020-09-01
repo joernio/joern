@@ -46,8 +46,8 @@ final case class GraphForFuncsFunction(function: String,
                                        PDG: List[nodes.AstNode])
 final case class GraphForFuncsResult(functions: List[GraphForFuncsFunction])
 
-implicit val encodeEdge: Encoder[OdbEdge] =
-  (edge: OdbEdge) =>
+implicit val encodeEdge: Encoder[Edge] =
+  (edge: Edge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inNode.toString)),

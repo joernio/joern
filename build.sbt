@@ -8,7 +8,6 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.0"
 ThisBuild /Test /fork := true
 
-
 val cpgVersion = "0.12.2"
 val fuzzyc2cpgVersion = "1.1.75"
 

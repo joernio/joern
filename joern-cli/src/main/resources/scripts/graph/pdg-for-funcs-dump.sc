@@ -83,8 +83,8 @@ import scala.jdk.CollectionConverters._
 
 implicit val encodeFuncFunction: Encoder[PdgForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[OdbEdge] =
-  (edge: OdbEdge) =>
+implicit val encodeEdge: Encoder[Edge] =
+  (edge: Edge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inNode.toString)),
