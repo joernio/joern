@@ -21,7 +21,6 @@ object Predefined {
         |import overflowdb.traversal._
         |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
-        |
       """.stripMargin
 
   val forInteractiveShell: String =
@@ -29,19 +28,14 @@ object Predefined {
       AmmoniteCodeBlockSeparator +
       """
         |import io.shiftleft.joern.console.Joern._
-        |
       """.stripMargin +
-      AmmoniteCodeBlockSeparator +
       dynamicPredef()
 
   val forScripts: String =
     shared +
-      AmmoniteCodeBlockSeparator +
       """
         |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
-        |
       """.stripMargin +
-      AmmoniteCodeBlockSeparator +
       dynamicPredef()
 
   def dynamicPredef(): String = {

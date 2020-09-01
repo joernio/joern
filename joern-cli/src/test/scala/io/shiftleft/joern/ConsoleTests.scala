@@ -49,21 +49,4 @@ class ConsoleTests extends WordSpec with Matchers {
       }
     }
   }
-
-  "help" should {
-    "allow getting long description via help object" in ConsoleFixture({ dir =>
-      new TestJoernConsole(dir)
-    }) { (console, codeDir) =>
-      File.usingTemporaryFile("console") { myScript =>
-        console.importCode(codeDir.toString)
-        val cpg = console.cpg
-        myScript.write(s"""
-                            | if (help.cpg.toString.isEmpty)
-                            |     throw new RuntimeException
-                            |""".stripMargin)
-        console.CpgScriptRunner(cpg).runScript(myScript.toString)
-      }
-    }
-  }
-
 }
