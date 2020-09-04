@@ -3,7 +3,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, FieldId
 import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension._
-import overflowdb.traversal._
 
 private def expressionIsPointer(argument: Expression, isSubExpression: Boolean = false): Boolean = {
   argument match {
@@ -19,9 +18,9 @@ private def expressionIsPointer(argument: Expression, isSubExpression: Boolean =
 }
 
 @main def main(): List[nodes.Call] = {
-  cpg.assignment
-    .filter(assign => assign.source.isInstanceOf[Call] && assign.target.isInstanceOf[Identifier])
-    .filter { assignment =>
+  (cpg: Cpg).assignment
+    .where(assign => assign.source.isInstanceOf[Call] && assign.target.isInstanceOf[Identifier])
+    .where { assignment =>
       val target = assignment.target.asInstanceOf[Identifier]
       val source = assignment.source.asInstanceOf[Call]
 

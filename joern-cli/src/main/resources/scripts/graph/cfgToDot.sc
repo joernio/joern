@@ -50,11 +50,11 @@ def vertexToStr(vertex: Node): String = {
       case _ => "NA"
     }
 
-    s"${Paths.get(fileName).getFileName.toString}: ${vertex.property(NodeKeys.LINE_NUMBER)} ${vertex.property(NodeKeys.CODE)}"
+    s"${Paths.get(fileName).getFileName.toString}: ${vertex.property(NodeKeysOdb.LINE_NUMBER)} ${vertex.property(NodeKeysOdb.CODE)}"
   } catch { case _: Exception => "" }
 }
 
-def toDot(graph: Graph): String = {
+def toDot(graph: OdbGraph): String = {
   val buf = new StringBuffer()
 
   buf.append("digraph g {\n node[shape=plaintext];\n")

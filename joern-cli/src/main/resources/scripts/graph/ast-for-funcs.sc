@@ -88,8 +88,8 @@ final case class AstForFuncsResult(functions: List[AstForFuncsFunction])
 implicit val encodeFuncResult: Encoder[AstForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[AstForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inNode.toString)),
