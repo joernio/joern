@@ -5,8 +5,12 @@
 
 import ammonite.ops._
 
+import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes.Expression
 import java.nio.file.Paths
 import java.net.URI
+import overflowdb._
+import overflowdb.traversal._
 import scala.annotation.tailrec
 
 def getTopLevelExpressions(expression: Node): List[Expression] = {
@@ -49,6 +53,7 @@ def dotFromMethod(method: Method): List[String] = {
   }
 
   val methodExpressions = method
+    .asInstanceOf[Vertex] //TODO MP drop as soon as we have the remainder of the below in ODB graph api
     .out(EdgeTypes.AST)
     .hasLabel(NodeTypes.BLOCK)
     .out(EdgeTypes.AST)

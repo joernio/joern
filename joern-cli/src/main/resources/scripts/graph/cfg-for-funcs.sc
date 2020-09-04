@@ -87,8 +87,8 @@ final case class CfgForFuncsResult(functions: List[CfgForFuncsFunction])
 implicit val encodeFuncResult: Encoder[CfgForFuncsResult] = deriveEncoder
 implicit val encodeFuncFunction: Encoder[CfgForFuncsFunction] = deriveEncoder
 
-implicit val encodeEdge: Encoder[Edge] =
-  (edge: Edge) =>
+implicit val encodeEdge: Encoder[OdbEdge] =
+  (edge: OdbEdge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inNode.toString)),

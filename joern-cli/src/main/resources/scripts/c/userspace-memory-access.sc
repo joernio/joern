@@ -16,5 +16,5 @@ private val calls: Set[String] = Set(
 )
 
 @main def main(): List[Call] = {
-  cpg.call.filter(call => calls.contains(call.name)).l
+  (cpg: Cpg).call.where(call => calls.contains(call.name)).l
 }
