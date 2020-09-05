@@ -16,4 +16,4 @@ To run the Joern tools, you must have version 8 or above of the Java Runtime Env
 
 Migrations
 ---
-Joern [1.1.1](https://github.com/ShiftLeftSecurity/joern/releases/tag/v1.1.1) introduced a major rearchitecture of the cpg query language (CPGQL) - please make sure to read the changelog!
+Joern [1.1.1](https://github.com/ShiftLeftSecurity/joern/releases/tag/v1.1.1) introduced a major rearchitecture of the cpg query language (CPGQL) - please make sure to read [upgrade guide](https://docs.joern.io/upgrade-guides)
