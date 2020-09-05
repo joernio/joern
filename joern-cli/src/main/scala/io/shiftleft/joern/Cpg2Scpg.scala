@@ -4,7 +4,6 @@ import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlow
 import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Scpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
-import overflowdb.OdbConfig
 
 object Cpg2Scpg {
 
@@ -31,7 +30,7 @@ object Cpg2Scpg {
     * @param filename name of the file that stores the cpg
     * */
   private def loadFromOdb(filename: String): Cpg = {
-    val odbConfig = OdbConfig.withDefaults().withStorageLocation(filename)
+    val odbConfig = overflowdb.Config.withDefaults().withStorageLocation(filename)
     val config = CpgLoaderConfig().withOverflowConfig(odbConfig).doNotCreateIndexesOnLoad
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
   }

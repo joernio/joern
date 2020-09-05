@@ -46,8 +46,8 @@ final case class GraphForFuncsFunction(function: String,
                                        PDG: List[nodes.AstNode])
 final case class GraphForFuncsResult(functions: List[GraphForFuncsFunction])
 
-implicit val encodeEdge: Encoder[OdbEdge] =
-  (edge: OdbEdge) =>
+implicit val encodeEdge: Encoder[Edge] =
+  (edge: Edge) =>
     Json.obj(
       ("id", Json.fromString(edge.toString)),
       ("in", Json.fromString(edge.inNode.toString)),
@@ -76,20 +76,19 @@ implicit val encodeFuncResult: Encoder[GraphForFuncsResult] = deriveEncoder
     cpg.method.map { method =>
       val methodName = method.fullName
       val methodId = method.toString
-      val methodVertex: Vertex = method //TODO MP drop as soon as we have the remainder of the below in ODB graph api
 
       val astChildren = method.astMinusRoot.l
       val cfgChildren = method.out(EdgeTypes.CONTAINS).asScala.collect { case node: nodes.CfgNode => node }.toList
 
-      val local = new NodeSteps(
-        methodVertex
+      val local =
+        method
           .out(EdgeTypes.CONTAINS)
           .hasLabel(NodeTypes.BLOCK)
           .out(EdgeTypes.AST)
           .hasLabel(NodeTypes.LOCAL)
-          .cast[nodes.Local])
+          .cast[nodes.Local]
       val sink = local.evalType(".*").referencingIdentifiers.dedup
-      val source = new NodeSteps(methodVertex.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call]).nameNot("<operator>.*").dedup
+      val source = method.out(EdgeTypes.CONTAINS).hasLabel(NodeTypes.CALL).cast[nodes.Call].nameNot("<operator>.*").dedup
 
       val pdgChildren = sink
         .reachableByFlows(source)
