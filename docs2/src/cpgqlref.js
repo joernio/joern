@@ -166,10 +166,9 @@ export const Steps = {
   [StepKind.Typ]: makeStep('typ', StepFamily.NodeTypeStep, 'Visits TYPE nodes'),
 
   // filter step
-  [StepKind.FilterFilter]: makeParameterizedStep('filter', StepFamily.FilterStep, StepParameterType.StepReturningExpression, ReturnType.Step, 'TODO'),
-  [StepKind.FilterNotFilter]: makeParameterizedStep('filterNot', StepFamily.FilterStep, StepParameterType.StepReturningExpression, ReturnType.Step, 'TODO'),
-  [StepKind.WhereFilter]: makeParameterizedStep('where', StepFamily.FilterStep, StepParameterType.BooleanReturningExpression, ReturnType.Step, 'TODO'),
-  [StepKind.WhereNonEmptyFilter]: makeParameterizedStep('whereNonEmpty', StepFamily.FilterStep, StepParameterType.StepReturningExpression, ReturnType.Step, 'TODO'),
+  [StepKind.FilterFilter]: makeParameterizedStep('filter', StepFamily.FilterStep, StepParameterType.BooleanReturningExpression, ReturnType.Step, 'TODO'),
+  [StepKind.WhereFilter]: makeParameterizedStep('where', StepFamily.FilterStep, StepParameterType.StepReturningExpression, ReturnType.Step, 'TODO'),
+  [StepKind.WhereNotFilter]: makeParameterizedStep('whereNot', StepFamily.FilterStep, StepParameterType.StepReturningExpression, ReturnType.Step, 'TODO'),
 
   // complex steps
   [StepKind.AliasTypeDecl]: makeStep('aliasTypeDecl', StepFamily.ComplexStep, 'TODO'),
