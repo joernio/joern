@@ -17,8 +17,8 @@ object Predefined {
         |import io.shiftleft.codepropertygraph.generated.edges._
         |import io.shiftleft.dataflowengineoss.language.{`package` => _, _}
         |import io.shiftleft.semanticcpg.language.{`package` => _, _}
-        |import overflowdb._
-        |import overflowdb.traversal.{help => _, _}
+        |import overflowdb.{`package` => _, _}
+        |import overflowdb.traversal.{`package` => _, help => _, _}
         |import scala.jdk.CollectionConverters._
         |implicit val resolver: ICallResolver = NoResolve
       """.stripMargin
