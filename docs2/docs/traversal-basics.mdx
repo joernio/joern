@@ -46,7 +46,7 @@ $ JAVA_OPTS='-Xmx4g' joern
 Then create a [Project](/Joern/organizing-projects) from the JAR file of the `X42` program using the `importCode` [top-level command](/Joern/top-level-commands):
 
 ```java
-Joern> importCode("./x42/c/", "x42")
+joern> importCode("./x42/c/", "x42")
 Creating project `x42` for code at `x42/c/`
 ... output omitted
 res0: Option[Cpg] = Some(io.shiftleft.codepropertygraph.Cpg@31ed46c5)
@@ -57,20 +57,20 @@ res0: Option[Cpg] = Some(io.shiftleft.codepropertygraph.Cpg@31ed46c5)
 For our first traversal, our objective is to determine the `LANGUAGE` property of the `METADATA` node in the Code Property Graph of the `X42` program. At the Joern prompt, type `cpg` and press `ENTER`:
 
 ```java
-Joern> cpg 
+joern> cpg 
 res1: Cpg = io.shiftleft.codepropertygraph.Cpg@ab90fdab
 ```
 
 The executed query consists only of the root object `cpg`. The return value of that execution is a reference to the Code Property Graph and  the reference itself is suffixed by a hexadecimal string (in this case `@ab90fdab`) that uniquely identifies it. We proceed to add the `metaData` node-type step to the query. This step represents a traversal to all nodes of type `METADATA` (of which there is only one):
 
 ```java
-Joern> cpg.metaData 
+joern> cpg.metaData 
 res2: NodeSteps[MetaData] = io.shiftleft.semanticcpg.language.NodeSteps@13802183
 ```
 
 When evaluating this new query, the result is not the content of the `METADATA` node, but a traversal that visits the `METADATA` node. Paying attention to the hexadecimal suffix of the return value and evaluating the query multiple times, we see that it changes on each evaluation (here from `@13802183` to `@584c99b4`).
 ```java
-Joern> cpg.metaData 
+joern> cpg.metaData 
 res9: NodeSteps[MetaData] = io.shiftleft.semanticcpg.language.NodeSteps@584c99b4
 ```
 
@@ -79,7 +79,7 @@ This behaviour points to the ephemeral nature of queries: each query is separate
 Traversals are executed - as opposed to just to being held in memory - using execution directives such as `toList`. The directive `toList` executes the traversal and returns results in a list: 
 
 ```java
-Joern> cpg.metaData.toList 
+joern> cpg.metaData.toList 
 res3: List[MetaData] = List(
   MetaData(
     id -> 1L,
@@ -94,7 +94,7 @@ res3: List[MetaData] = List(
 
 In the result of this query, we already see the `LANGUAGE` field and that it is `C`. For the sake of completeness and to illustrate property directives, let us add the property directive `language` to the query. Property directives provide access to individual node properties. Each node-type step can be combined with different property directives, and they usually match the properties defined on the node type represented by the node-type step:
 ```java
-Joern> cpg.metaData.language.toList 
+joern> cpg.metaData.language.toList 
 res4: List[AnyRef] = "C"
 ```
 
@@ -147,7 +147,7 @@ We will look into the details of node-type steps in a different article. For now
 _Filter Steps_ are atomic traversals that filter nodes according to given criteria. A common filter step is `where`,  which continues the traversal in the step it suffixes for all nodes which pass its criterion. Its criterion is represented by a lamba function which has access to the node of the previous step and returns a boolean.  Continuing with the previous example, let us execute a query which returns all `METHOD` nodes of the Code Property Graph for `X42`, but only if their `IS_EXTERNAL` property is set to `false`:
 
 ```java
-Joern> cpg.method.where(_.isExternal == false).name.toList 
+joern> cpg.method.where(_.isExternal == false).name.toList 
 res11: List[String] = List("main")
 ```
 
@@ -156,7 +156,7 @@ Disecting this query, we have `cpg` as the root object, a node-type step `method
 A shorter version of a query which returns the same results as the one above can be written using a _Property-Filter Step_. Property-filter steps are _Filter Steps_ which continue the traversal only for nodes which have a specific value in the property the _Property Filter Step_ refers to:
 
 ```java
-Joern> cpg.method.isExternal(false).name.toList 
+joern> cpg.method.isExternal(false).name.toList 
 res11: List[String] = List("main")
 ```
 
@@ -176,7 +176,7 @@ c) `cpg.method.isExternal.name.toList` is an invalid query which will not execut
 A final _Filter Step_ we will look at is aptly-named `filter`. Just like `where`, `filter` is a _Filter Step_ which continues the traversal it suffixes for all nodes which pass its criterion. Different from `where` however is the criterion, which also has access to the node of the previous step, but differs in that it returns another _Step_ instead of a boolean. The previous query that used a _Property Filter Step_ can be re-written using `filter` like so:
 
 ```java
-Joern> cpg.method.filter(_.isExternal(false)).name.toList 
+joern> cpg.method.filter(_.isExternal(false)).name.toList 
 res24: List[String] = List("main")
 ```
 
@@ -187,7 +187,7 @@ Maybe not particulary useful-seeming given this specific example, but keep it in
 _Map Steps_ are traversals that map a set of nodes into a different form given a function. _Map Steps_ are a powerful mechanism when you need to transform results to fit your specifics. For example, say you'd like to return both the `IS_EXTERNAL` and the `NAME` properties of all `METHOD` nodes in `X42`'s Code Property Graph. You can achieve that with the following query:
 
 ```java
-Joern> cpg.method.map(node => (node.isExternal, node.name)).toList
+joern> cpg.method.map(node => (node.isExternal, node.name)).toList
 res6: List[(java.lang.Boolean, String)] = List(
   (true, "<operator>.logicalAnd"),
   (true, "strcmp"),
@@ -226,21 +226,21 @@ int main(int argc, char *argv[]) {
 Earlier we queried it for all `METHOD` nodes which had their `IS_EXTERNAL` property set to `false` using the `isExternal(false)` _Property Filter Step_. Two results came up, even though only one method is explicitly defined:
 
 ```java
-Joern> cpg.method.isExternal(false).name.l 
+joern> cpg.method.isExternal(false).name.l 
 res103: List[String] = List("main")
 ```
 
 Two useful _Complex Steps_ are `astParent` and `astChildren`, which allow you to steer your traversals through the abstract syntax tree of the program under analysis. Say you'd like to have a query that returns the `CODE` property for all nodes of type `LITERAL` which are AST child nodes of `CALL` nodes that have `println` in their `NAME` property:
 
 ```java
-Joern> cpg.call.name("println").astChildren.isLiteral.code.l 
+joern> cpg.call.name("println").astChildren.isLiteral.code.l 
 res87: List[String] = List("\"What is the meaning of life?\"", "\"It depends!\"")
 ```
 
 Or taken the other way around, a query which returns the property of all `CALL` nodes which have AST parent nodes of type `LITERAL` that have their `CODE` property set to `\"What is the meaning of life?\"`:
 
 ```java
-Joern> cpg.literal.where(_.code == "\"What is the meaning of life?\\n\"").astParent.isCall.name.toList
+joern> cpg.literal.where(_.code == "\"What is the meaning of life?\\n\"").astParent.isCall.name.toList
 res100: List[String] = List("println")
 ```
 
@@ -254,7 +254,7 @@ There are cases in which queries have repetitions in them and become too long. I
 For example, say you'd like to find nodes of type `LITERAL` in `X42`'s Code Property Graph that are directly reachable from the node which represents the `main` method. One way of doing that is by using three `astChildren` _Complex Steps_ in combination with `isLiteral`, which is another _Complex Step_ that filters for AST nodes of type `LITERAL` and maps them to actual `LITERAL` nodes,  plus the `code("42")` _Property Filter Step_:
 
 ```java
-Joern> cpg.method.name("main").astChildren.astChildren.astChildren.isLiteral.code("42").toList 
+joern> cpg.method.name("main").astChildren.astChildren.astChildren.isLiteral.code("42").toList 
 res137: List[Literal] = List(
   Literal(
     id -> 1000000050L,
@@ -274,7 +274,7 @@ res137: List[Literal] = List(
 The query might do the job, but it is hard to read and change. `repeat-times` makes the query clearer:
 
 ```java
-Joern> cpg.method.name("main").repeat(_.astChildren).times(3).isLiteral.code("42").l 
+joern> cpg.method.name("main").repeat(_.astChildren).times(3).isLiteral.code("42").l 
 res138: List[Literal] = List(
   Literal(
     id -> 1000000050L,
@@ -294,7 +294,7 @@ res138: List[Literal] = List(
 And even better is another variant of `repeat`, namely `repeat-until`:
 
 ```java
-Joern> cpg.method.name("main").repeat(_.astChildren).until(_.isLiteral.code("42")).l 
+joern> cpg.method.name("main").repeat(_.astChildren).until(_.isLiteral.code("42")).l 
 res139: List[AstNode] = List(
   Literal(
     id -> 1000000050L,
