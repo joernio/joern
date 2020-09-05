@@ -21,7 +21,7 @@ const useStyles = makeStyles({
 });
 
 
-export default function NodeStepsOverviewTable({ stepsInfo }) {
+export default function TraversalOverviewTable({ stepsInfo }) {
   const classes = useStyles();
 
   const rows = stepsInfo;
