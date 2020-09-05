@@ -65,14 +65,10 @@ The executed query consists only of the root object `cpg`. The return value of t
 
 ```java
 joern> cpg.metaData 
-res2: NodeSteps[MetaData] = io.shiftleft.semanticcpg.language.NodeSteps@13802183
+res2: Traversal[MetaData] = Traversal
 ```
 
-When evaluating this new query, the result is not the content of the `METADATA` node, but a traversal that visits the `METADATA` node. Paying attention to the hexadecimal suffix of the return value and evaluating the query multiple times, we see that it changes on each evaluation (here from `@13802183` to `@584c99b4`).
-```java
-joern> cpg.metaData 
-res9: NodeSteps[MetaData] = io.shiftleft.semanticcpg.language.NodeSteps@584c99b4
-```
+Note that the result is not the content of the `METADATA` node, but a traversal that visits the `METADATA` node. In other words, Traversals are lazyly evaluated - you can compose them and at some later point execute them, as we will see. 
 
 This behaviour points to the ephemeral nature of queries: each query is separate from the other, and Joern holds distinct in-memory representations for them. The only object shared between queries is the root object (`cpg`).
 
@@ -144,10 +140,10 @@ We will look into the details of node-type steps in a different article. For now
 
 ### Filter Steps
 
-_Filter Steps_ are atomic traversals that filter nodes according to given criteria. A common filter step is `where`,  which continues the traversal in the step it suffixes for all nodes which pass its criterion. Its criterion is represented by a lamba function which has access to the node of the previous step and returns a boolean.  Continuing with the previous example, let us execute a query which returns all `METHOD` nodes of the Code Property Graph for `X42`, but only if their `IS_EXTERNAL` property is set to `false`:
+_Filter Steps_ are atomic traversals that filter nodes according to given criteria. The most common filter step is aptly-named `filter`,  which continues the traversal in the step it suffixes for all nodes which pass its criterion. Its criterion is represented by a lamba function which has access to the node of the previous step and returns a boolean.  Continuing with the previous example, let us execute a query which returns all `METHOD` nodes of the Code Property Graph for `X42`, but only if their `IS_EXTERNAL` property is set to `false`:
 
 ```java
-joern> cpg.method.where(_.isExternal == false).name.toList 
+joern> cpg.method.filter(_.isExternal == false).name.toList 
 res11: List[String] = List("main")
 ```
 
@@ -173,10 +169,10 @@ b) `cpg.method.isExternal.toList` returns the value of the `IS_EXTERNAL` propert
 c) `cpg.method.isExternal.name.toList` is an invalid query which will not execute
 :::
 
-A final _Filter Step_ we will look at is aptly-named `filter`. Just like `where`, `filter` is a _Filter Step_ which continues the traversal it suffixes for all nodes which pass its criterion. Different from `where` however is the criterion, which also has access to the node of the previous step, but differs in that it returns another _Step_ instead of a boolean. The previous query that used a _Property Filter Step_ can be re-written using `filter` like so:
+A final _Filter Step_ we will look at is named `where`. Unlike `filter`, this doesn't take a simple predicate `A => Boolean`, but instead takes a `Traversal[A] => Traversal[_]`. I.e. you supply a traversal which will be executed at the current position. The resulting Traversal will preserves elements if the provided traversal has _at least one_ result. The previous query that used a _Property Filter Step_ can be re-written using `where` like so:
 
 ```java
-joern> cpg.method.filter(_.isExternal(false)).name.toList 
+joern> cpg.method.where(_.isExternal(false)).name.toList 
 res24: List[String] = List("main")
 ```
 
@@ -240,7 +236,7 @@ res87: List[String] = List("\"What is the meaning of life?\"", "\"It depends!\""
 Or taken the other way around, a query which returns the property of all `CALL` nodes which have AST parent nodes of type `LITERAL` that have their `CODE` property set to `\"What is the meaning of life?\"`:
 
 ```java
-joern> cpg.literal.where(_.code == "\"What is the meaning of life?\\n\"").astParent.isCall.name.toList
+joern> cpg.literal.filter(_.code == "\"What is the meaning of life?\\n\"").astParent.isCall.name.toList
 res100: List[String] = List("println")
 ```
 
