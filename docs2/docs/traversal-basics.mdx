@@ -247,10 +247,10 @@ One final _Joern Query Component_ we'll examine in this article is the _Repeat S
 ### Repeat Steps
 
 There are cases in which queries have repetitions in them and become too long. In order to make them more readable, you can use _Repeat Steps_. _Repeat Steps_ are traversals that repeat other traversals a number of times.
-For example, say you'd like to find nodes of type `LITERAL` in `X42`'s Code Property Graph that are directly reachable from the node which represents the `main` method. One way of doing that is by using three `astChildren` _Complex Steps_ in combination with `isLiteral`, which is another _Complex Step_ that filters for AST nodes of type `LITERAL` and maps them to actual `LITERAL` nodes,  plus the `code("42")` _Property Filter Step_:
+For example, say you'd like to find nodes of type `LITERAL` in `X42`'s Code Property Graph that are directly reachable from the node which represents the `main` method. One way of doing that is by using five `astChildren` _Complex Steps_ in combination with `isLiteral`, which is another _Complex Step_ that filters for AST nodes of type `LITERAL` and maps them to actual `LITERAL` nodes,  plus the `code("42")` _Property Filter Step_:
 
 ```java
-joern> cpg.method.name("main").astChildren.astChildren.astChildren.isLiteral.code("42").toList 
+joern> cpg.method.name("main").astChildren.astChildren.astChildren.astChildren.astChildren.isLiteral.code("42").toList 
 res137: List[Literal] = List(
   Literal(
     id -> 1000000050L,
@@ -270,7 +270,7 @@ res137: List[Literal] = List(
 The query might do the job, but it is hard to read and change. `repeat-times` makes the query clearer:
 
 ```java
-joern> cpg.method.name("main").repeat(_.astChildren).times(3).isLiteral.code("42").l 
+joern> cpg.method.name("main").repeat(_.astChildren)(_.times(5)).isLiteral.code("42").l 
 res138: List[Literal] = List(
   Literal(
     id -> 1000000050L,
@@ -290,7 +290,7 @@ res138: List[Literal] = List(
 And even better is another variant of `repeat`, namely `repeat-until`:
 
 ```java
-joern> cpg.method.name("main").repeat(_.astChildren).until(_.isLiteral.code("42")).l 
+joern> cpg.method.name("main").repeat(_.astChildren)(_.until(_.isLiteral.code("42"))).l 
 res139: List[AstNode] = List(
   Literal(
     id -> 1000000050L,

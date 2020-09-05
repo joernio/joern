@@ -65,7 +65,7 @@ res45: List[String] = List(
  - Identify if an `exit()` call-site is called from within a conditional block (`if { }`) with a given condition. This can be done via first identifying a call named `exit` and then traversing the AST upwards (via `astParent`) until a `if` control structure is encountered. This only yields the specific `exit` which is withing the `if` block :
 
 ```scala
-joern> cpg.call.name("exit").filter(_.repeat(_.astParent).until(_.isControlStructure.parserTypeName("If.*"))).code.l 
+joern> cpg.call.name("exit").where(_.repeat(_.astParent)(_.until(_.isControlStructure.parserTypeName("If.*")))).code.l 
 
 res69: List[String] = List("exit(42)")
 
