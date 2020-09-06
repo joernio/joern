@@ -9,7 +9,7 @@ joern_shared: true
 This release introduces a major rearchitecture of the cpg query language (CPGQL). Most changes happened under the hood, however there are a few changes that are user facing. The migration should be straightforward, and in any case we're here to help.
 
 Background: CPGQL was previously based on tinkerpop gremlin (accessible via `.raw`), and is now based on [OverflowDb Traversal](https://github.com/ShiftLeftSecurity/overflowdb/blob/master/traversal/src/main/scala/overflowdb/traversal/Traversal.scala) instead. The main drivers behind this change are better performance, less complexity and less dependencies. OverflowDb Traversal is a Scala collection with additional graph steps, which means we now inherit many useful steps from the rich Scala standard collection library, where previously we'd need to convert between Traversal and Scala collection. 
-At the same time, Traversal offers largely the same steps (and semantics) as it's Tinkerpop predecessor. 
+At the same time, Traversal offers largely the same steps and semantics as its TinkerPop predecessor. 
 
 Here are the most important new parts - from our experience the swap of `filter` and `where` accounts for 90% of user-facing changes:
 1) `filter(A => Boolean)`: just like any other Scala collection, filter now simply takes a predicate (it used to take a Traversal). 
