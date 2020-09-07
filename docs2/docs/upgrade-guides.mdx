@@ -39,14 +39,17 @@ val methodList: cpg.method.l
 methodList.to(Traversal) //Traversal[Method]
 ```
 7) `.clone` doesn't exist any more - note that Traversals typically have Iterator semantics, i.e. they are consumed during iteration:
-```scala
+
+```java
 val source = cpg.identifier.name("foo")
 val sink = cpg.call.name("bar")
 sink.reachableByFlows(source).l  //contains flows (if any)
 sink.reachableByFlows(source).l  //always empty - both source and sink Traversals have been consumed!
 ```
+
 If you want to execute your traversals multiple times, simply define them as a function (`def`) rather than a value (`val`):
-```scala
+
+```java
 def source = cpg.identifier.name("foo")
 def sink = cpg.call.name("bar")
 sink.reachableByFlows(source).l  //contains flows (if any)
