@@ -27,5 +27,6 @@ module.exports = {
           'cpgql/calls',
         ]
       },
+    'upgrade-guides',
   ],
 };

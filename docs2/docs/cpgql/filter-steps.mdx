@@ -4,7 +4,7 @@ title: Filter Steps
 ---
 
 Filter Steps are CPGQL Steps which filter nodes in a traversal according to a criterion. Joern supports four _Generic Filter Steps_ which can be added to any other step, and number of specific filter steps called _Property Filter Steps_ which can be used on nodes of a certain type.
-The _Generic Filter Steps_ are  `where`, `whereNonEmpty`, `filter` and `filterNot`. The _Property Filter Steps_ for each node type correspond to the _Property Directives_ it has defined.
+The _Generic Filter Steps_ are `filter`, `filterNot`, `where` and `whereNot`. The _Property Filter Steps_ for each node type correspond to the _Property Directives_ it has defined.
 
 We will look at the behaviour of each of these steps while analyzing a simple program named `X42`:
 
@@ -61,62 +61,62 @@ res0: List[String] = List("exit(42)")
 ```
 
 
-### where
+### filter
 
-The `where` _Step_ is a _Filter Step_ which continues a traversal for all nodes which pass its criterion. The criterion of the `where` step is represented by an expression which has one argument, a variable that points to the node matched in the previous step, and which returns a boolean. For example, suppose you'd like to query the Code Property Graph of the `X42` program for all CALL nodes which have `exit` as the value of their NAME property, and return their CODE property in a list:
+The `filter` _Step_ is a _Filter Step_ which continues a traversal for all nodes which pass its criterion. The criterion of the `filter` step is represented by an expression which has one argument, a variable that points to the node matched in the previous step, and which returns a boolean. For example, suppose you'd like to query the Code Property Graph of the `X42` program for all CALL nodes which have `exit` as the value of their NAME property, and return their CODE property in a list:
 
 ```java
-joern> cpg.call.where(node => node.name == "exit").code.l
+joern> cpg.call.filter(node => node.name == "exit").code.l
 res0: List[String] = List("exit(0)", "exit(42)")
 ```
 
-`where` steps can be chained together:
+`filter` steps can be chained together:
 
 ```java
-joern> cpg.call.where(node => node.name == "exit").where(node => node.code.contains("42")).code.l 
+joern> cpg.call.filter(node => node.name == "exit").filter(node => node.code.contains("42")).code.l 
 res0: List[String] = List("exit(42)")
 ```
 
 And their expression can contain any combination of boolean statements:
 
 ```java
-joern> cpg.call.where(node => node.name == "exit" && node.code.contains("42")).code.l 
+joern> cpg.call.filter(node => node.name == "exit" && node.code.contains("42")).code.l 
 res0: List[String] = List("exit(42)")
 
 // equivalent in logic to the query above
-joern> cpg.call.where(node => true && 1 == 1 && node.name == "exit" && node.code.contains("42")).code.l 
+joern> cpg.call.filter(node => true && 1 == 1 && node.name == "exit" && node.code.contains("42")).code.l 
 res0: List[String] = List("exit(42)")
 ```
 
-One helpful trick is to use the shorthand `_` operator in `where` expressions, which points to the single argument that is passed into it, that is, the node.
+One helpful trick is to use the shorthand `_` operator in `filter` expressions, which points to the single argument that is passed into it, that is, the node.
 
 ```java
 // long form
-joern> cpg.call.where(node => node.name == "exit").code.l
+joern> cpg.call.filter(node => node.name == "exit").code.l
 res0: List[String] = List("exit(0)", "exit(42)")
 
 // short form
-joern> cpg.call.where(_.name == "exit").code.l
+joern> cpg.call.filter(_.name == "exit").code.l
 res1: List[String] = List("exit(0)", "exit(42)")
 ```
 
-### filter
+### where
 
-Just like `where`, the `filter` _Step_ is a _Filter Step_ (`ಠ~ಠ`) which continues a traversal for all nodes which pass its criterion. The expression representing the criterion takes in one argument, a variable that represents the traversal of the previous step, and returns another traversal. Say you'd like to query the Code Property Graph of the `X42` program again for all CALL nodes which have `exit` as the value of their NAME property, and return the value of their CODE property in a list:
+Just like `filter`, the `where` _Step_ is a _Filter Step_ (`ಠ~ಠ`) which continues a traversal for all nodes which pass its criterion. The expression representing the criterion takes in one argument, a variable that represents the traversal of the previous step, and returns another traversal. Say you'd like to query the Code Property Graph of the `X42` program again for all CALL nodes which have `exit` as the value of their NAME property, and return the value of their CODE property in a list:
 
 ```java
-joern> cpg.call.filter(node => node.name("exit")).code.l 
+joern> cpg.call.where(node => node.name("exit")).code.l 
 res0: List[String] = List("exit(0)", "exit(42)")
 
 // or using the `_` shorthand:
-joern> cpg.call.filter(_.name("exit")).code.l 
+joern> cpg.call.where(_.name("exit")).code.l 
 res1: list[string] = list("exit(0)", "exit(42)")
 ```
 
-`filter`'s expression supports traversals of any length:
+`where`'s expression supports traversals of any length:
 
 ```java
-joern> cpg.call.filter(_.name("exit").argument.code("42")).code.l 
+joern> cpg.call.where(_.name("exit").argument.code("42")).code.l 
 res0: List[String] = List("exit(42)")
 ```
 
@@ -124,16 +124,16 @@ And just like `where`, it supports chaining:
 
 ```java
 // equivalent to the previous query
-joern> cpg.call.filter(_.name("exit")).filter(_.argument.code("42")).code.l 
+joern> cpg.call.where(_.name("exit")).where(_.argument.code("42")).code.l 
 res0: List[String] = List("exit(42)")
 ```
 
-### filterNot
+### whereNot
 
-`filterNot` is the inverse operation of the `filter` _Step_.
+`whereNot` is the inverse operation of the `where` _Step_.
 
 ```java
-joern> cpg.call.filterNot(_.name("exit")).code.l 
+joern> cpg.call.whereNot(_.name("exit")).code.l 
 res0: List[String] = List(
   "printf(\"What is the meaning of life?\\n\")",
   "fprintf(stderr, \"It depends!\\n\")",
@@ -148,7 +148,7 @@ res0: List[String] = List(
 It supports chaining as well:
 
 ```java
-joern> cpg.call.filterNot(_.name("exit")).filterNot(_.name("strcmp")).code.l 
+joern> cpg.call.whereNot(_.name("exit")).whereNot(_.name("strcmp")).code.l 
 res0: List[String] = List(
   "printf(\"What is the meaning of life?\\n\")",
   "fprintf(stderr, \"It depends!\\n\")",
@@ -162,7 +162,7 @@ res0: List[String] = List(
 And traversals of any length:
 
 ```java
-joern> cpg.call.filterNot(_.name("exit").argument.code("42")).filterNot(_.name("strcmp")).code.l 
+joern> cpg.call.whereNot(_.name("exit").argument.code("42")).whereNot(_.name("strcmp")).code.l 
 res0: List[String] = List(
   "exit(0)",
   "printf(\"What is the meaning of life?\\n\")",
@@ -172,32 +172,6 @@ res0: List[String] = List(
   "argc > 1",
   "argc > 1 && strcmp(argv[1], \"42\") == 0"
 )
-```
-
-### whereNonEmpty
-
-`whereNonEmpty` is similar to `where`, only that the return value of its expression is a traversal:
-
-```java
-joern> cpg.method.whereNonEmpty(_.parameter).name.l 
-res0: List[String] = List(
-  "fprintf",
-  "<operator>.equals",
-  "strcmp",
-  "<operator>.logicalAnd",
-  "printf",
-  "<operator>.greaterThan",
-  "main",
-  "<operator>.indirectIndexAccess",
-  "exit"
-)
-```
-
-It also supports chaining and traversals of any length:
-
-```java
-joern> cpg.method.whereNonEmpty(_.parameter).whereNonEmpty(_.parameter.name("argc")).name.l 
-res0: List[String] = List("main")
 ```
 
 

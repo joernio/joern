@@ -42,10 +42,10 @@ title: Reference Card
 | Step | Description   |
 | ----------- | ------------- |
 | `and`  | The _and_ step is a filter with multiple _and_ related filter traversals. |
-| `filter`     | Traversal proceeds for steps with non-empty returns for the provided `predicate` |
-| `filterNot`  | Traversal proceeds for steps with empty returns for the provided `predicate` |
-| `where`      | Keep nodes for which the provided `predicate` returns true |
-| `whereNonEmpty` | Keep nodes for which the provided `predicate` returns a non-empty result |
+| `filter`      | Keep nodes for which the provided `predicate` returns true |
+| `filterNot`   | Keep nodes for which the provided `predicate` returns false |
+| `where`     | Traversal proceeds for steps with non-empty returns for the provided `predicate` |
+| `whereNot`  | Traversal proceeds for steps with empty returns for the provided `predicate` |
 | `or`  | The _or_ step is a filter with multiple _or_ related filter traversals. |
 
 ### Repeat Steps

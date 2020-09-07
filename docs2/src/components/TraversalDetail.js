@@ -16,7 +16,7 @@ const useStyles = makeStyles({
   }
 });
 
-const NodeStepDetail = ({ stepInfo }) => {
+const TraversalDetail = ({ stepInfo }) => {
   const classes = useStyles();
 
   const propertyDirectives = stepInfo.propertyDirectives;
@@ -108,5 +108,5 @@ const NodeStepDetail = ({ stepInfo }) => {
   );
 };
 
-export default NodeStepDetail;
+export default TraversalDetail;
 
