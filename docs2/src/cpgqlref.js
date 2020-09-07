@@ -107,8 +107,8 @@ export const StepKind = {
   // filter steps
   PropertyFilterStep: "PropertyFilterStep",
   WhereFilter: "WhereFilter",
+  WhereNotFilter: "WhereNotFilter",
   FilterFilter: "FilterFilter",
-  FilterNotFilter: "FilterNotFilter",
 
   // complex steps
   Argument: "Argument" ,
@@ -768,103 +768,103 @@ export const PropertyFilterStepConnections = {
 export const FilterStepConnections = {
   [StepKind.All]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Block]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Call]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Comment]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.File]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Identifier]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Literal]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Local]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Member]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Method]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.MethodRef]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.MethodReturn]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Modifier]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Namespace]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.NamespaceBlock]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Parameter]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Returns]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Tag]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.Typ]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
   [StepKind.TypeDecl]: [
     { kind: StepKind.FilterFilter, contextualDescription: null },
-    { kind: StepKind.FilterNotFilter, contextualDescription: null },
     { kind: StepKind.WhereFilter, contextualDescription: null },
+    { kind: StepKind.WhereNotFilter, contextualDescription: null },
   ],
 };
 
