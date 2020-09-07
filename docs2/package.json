@@ -6,6 +6,7 @@
     "start": "docusaurus start --host 0.0.0.0",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
+    "test": "npx jest",
     "deploy": "docusaurus deploy",
     "generateOQLRefScript": "npx babel-node generate_oqlref_script.js",
     "joernShared": "npx babel-node joern_shared.js"
