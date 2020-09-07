@@ -14,7 +14,8 @@ At the same time, Traversal offers largely the same steps and semantics as its T
 Here are the most important new parts - from our experience the swap of `filter` and `where` accounts for 90% of user-facing changes:
 
 1) `filter(A => Boolean)`: just like any other Scala collection, filter now simply takes a predicate (it used to take a Traversal). 
-2) `where(trav: Traversal[A] => Traversal[_])`: preserves elements if the provided traversal has at least one result. This is what filter used to be. 
+2. `where(trav: Traversal[A] => Traversal[_])`: preserves elements if the provided traversal has at least one result. This is what filter used to be. *Effectively, `filter` and `where` are swapped*. 
+
 *Effectively, `filter` and `where` are swapped*. 
 3) RIP `filterOnEnd` - this is now simply `filter`
 4) `repeat` now has a builder DSL to configure it's behaviour, which is more specific and easier to understand than tinkerpop's api, which relied on the order of modulators in the traversal. 
