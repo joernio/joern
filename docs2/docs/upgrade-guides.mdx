@@ -40,7 +40,7 @@ Tinkerpop has a long standing [issue](https://github.com/apache/tinkerpop/pull/8
 val someMethod = cpg.method.head
 someMethod.start.parameter //Traversal[MethodParameterIn]
 
-// 
+// using `.to(Traversal)` - standard scala collection mechanism
 val methodList: cpg.method.l
 methodList.to(Traversal) //Traversal[Method]
 ```
