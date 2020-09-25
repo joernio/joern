@@ -51,7 +51,7 @@ export const PropertyDirectiveKind = {
 
 
 export const PropertyDirectives = {
-  [PropertyDirectiveKind.ArgumentIndex]: makePropertyDirective('argIndex', ReturnType.Int, 'Identifies different AST children of CALL nodes or BLOCK nodes. Ordered 1 to N, with 0 reserved for implicit arguments like this or self'),
+  [PropertyDirectiveKind.ArgumentIndex]: makePropertyDirective('argumentIndex', ReturnType.Int, 'Identifies different AST children of CALL nodes or BLOCK nodes. Ordered 1 to N, with 0 reserved for implicit arguments like this or self'),
   [PropertyDirectiveKind.Code]: makePropertyDirective('code', ReturnType.String, 'The source code construct this node represents'),
   [PropertyDirectiveKind.DynamicTypeHintFullName]: makePropertyDirective('dynamicTypeHintFullName', ReturnType.String, 'TODO'),
   [PropertyDirectiveKind.EvaluationStrategy]: makePropertyDirective('evaluationStrategy', ReturnType.String, 'TODO'),
