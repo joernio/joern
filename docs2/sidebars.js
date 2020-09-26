@@ -5,6 +5,7 @@ module.exports = {
     'quickstart',
     'shell',
     'interpreter',
+    'exporting',
     'server',
     'organizing-projects',
     'code-property-graph',
