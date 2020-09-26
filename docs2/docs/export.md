@@ -7,9 +7,11 @@ Joern can be used to generate the following intra-procedural
 intermediate graph representations of code (among others):
 
 * Abstract Syntax Trees (AST)
-* Control flow graphs (CFG)
-* Control dependence graphs (CDG)
-* Data dependence graphs (DDG)
+* Control Flow Graphs (CFG)
+* Control Dependence Graphs (CDG)
+* Data Dependence Graphs (DDG)
+* Program Dependence graphs (PDG)
+* Code Property Graphs (CPG14)
 
 :::note
 The Program Dependence Graph (PDG) of a method corresponds to the
