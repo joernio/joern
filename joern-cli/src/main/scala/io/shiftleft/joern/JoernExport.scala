@@ -14,15 +14,16 @@ case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out
 object JoernExport extends App {
 
   parseConfig.foreach { config =>
-    if (!File(config.cpgFileName).exists) {
-      System.err.println(s"CPG at ${config.cpgFileName} does not exist. Bailing out.")
+    if (File(config.outDir).exists) {
+      System.err.println(s"Output directory ${config.outDir} already exists. Bailing out.")
     } else {
-      val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
-      addDataFlowOverlayIfNonExistent(cpg)
-      val context = new LayerCreatorContext(cpg)
-      if (File(config.outDir).exists) {
-        System.err.println(s"Output directory ${config.outDir} already exists. Bailing out.")
+      if (!File(config.cpgFileName).exists) {
+        System.err.println(s"CPG at ${config.cpgFileName} does not exist. Bailing out.")
       } else {
+        val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
+        addDataFlowOverlayIfNonExistent(cpg)
+        val context = new LayerCreatorContext(cpg)
+
         mkdir(File(config.outDir))
         implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
         if (semantics.elements.isEmpty) {
