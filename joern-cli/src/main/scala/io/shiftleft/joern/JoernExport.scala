@@ -14,10 +14,11 @@ case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out
 object JoernExport extends App {
 
   private def parseConfig: Option[ExporterConfig] =
-    new scopt.OptionParser[ExporterConfig](getClass.getSimpleName) {
+    new scopt.OptionParser[ExporterConfig]("joern-export") {
+      head("Dump intermediate graph representations of code onto disk")
       help("help")
       arg[String]("cpg")
-        .text("CPG file name")
+        .text("CPG file name ('cpg.bin' by default)")
         .optional()
         .action((x, c) => c.copy(cpgFileName = x))
       opt[String]("out")
