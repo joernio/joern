@@ -3,9 +3,11 @@ package io.shiftleft.joern
 import better.files.File
 import better.files.Dsl._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.shiftleft.dataflowengineoss.layers.dataflows.{Cpg14DumpOptions, DumpCpg14, OssDataFlow, OssDataFlowOptions}
+import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.joern.console.JoernWorkspaceLoader
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.layers.{AstDumpOptions, DumpAst, LayerCreatorContext}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out")
 
@@ -22,8 +24,12 @@ object JoernExport extends App {
         System.err.println(s"Output directory ${config.outDir} already exists. Bailing out.")
       } else {
         mkdir(File(config.outDir))
-        val opts = AstDumpOptions(config.outDir)
-        new DumpAst(opts).create(context)
+        implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
+        if (semantics.elements.isEmpty) {
+          System.err.println("Warning: semantics are empty.")
+        }
+        val opts = Cpg14DumpOptions(config.outDir)
+        new DumpCpg14(opts).create(context)
       }
     }
   }
