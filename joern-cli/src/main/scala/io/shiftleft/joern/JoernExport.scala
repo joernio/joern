@@ -13,6 +13,18 @@ case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out
 
 object JoernExport extends App {
 
+  private def parseConfig: Option[ExporterConfig] =
+    new scopt.OptionParser[ExporterConfig](getClass.getSimpleName) {
+      help("help")
+      arg[String]("cpg")
+        .text("CPG file name")
+        .optional()
+        .action((x, c) => c.copy(cpgFileName = x))
+      opt[String]("out")
+        .text("output directory")
+        .action((x, c) => c.copy(outDir = x))
+    }.parse(args, ExporterConfig())
+
   parseConfig.foreach { config =>
     if (File(config.outDir).exists) {
       System.err.println(s"Output directory ${config.outDir} already exists. Bailing out.")
@@ -43,17 +55,5 @@ object JoernExport extends App {
       new OssDataFlow(opts).run(context)
     }
   }
-
-  private def parseConfig: Option[ExporterConfig] =
-    new scopt.OptionParser[ExporterConfig](getClass.getSimpleName) {
-      help("help")
-      arg[String]("cpg")
-        .text("CPG file name")
-        .optional()
-        .action((x, c) => c.copy(cpgFileName = x))
-      opt[String]("out")
-        .text("output directory")
-        .action((x, c) => c.copy(cpgFileName = x))
-    }.parse(args, ExporterConfig())
 
 }
