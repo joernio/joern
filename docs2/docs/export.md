@@ -5,9 +5,9 @@ title: Exporting Graphs
 
 Joern is used extensively in academic research as a source for
 intermediate graph representations of code, particularly in machine
-learning applications [e.g., [1,2,3,4,5](#references)]. To support
+learning and vulnerability discovery applications [e.g., [1,2,3,4,5](#references)]. To support
 this use-case, Joern provides both plotting capabilities in the
-interative console as well as the `joern-export` command line
+interactive console as well as the `joern-export` command line
 utility.
 
 In summary, Joern can create the following graph representations for
