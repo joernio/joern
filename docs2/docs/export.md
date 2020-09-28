@@ -3,7 +3,7 @@ id: exporting
 title: Exporting Graphs
 ---
 
-Joern is used extensively in academic research as a source for
+Joern is used in academic research as a source for
 intermediate graph representations of code, particularly in machine
 learning and vulnerability discovery applications [e.g., [1,2,3,4,5](#references)]. To support
 this use-case, Joern provides both plotting capabilities in the
