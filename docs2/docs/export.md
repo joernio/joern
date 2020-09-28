@@ -3,28 +3,71 @@ id: exporting
 title: Exporting Graphs
 ---
 
-Joern can be used to generate the following intra-procedural
-intermediate graph representations of code (among others):
+Joern is used extensively in academic research as a source for
+intermediate graph representations of code, particularly in machine
+learning applications [e.g., [1,2,3,4,5](#references)]. To support
+this use-case, Joern provides both plotting capabilities in the
+interative console as well as the `joern-export` command line
+utility.
+
+In summary, Joern can create the following graph representations for
+C/C++ code:
 
 * Abstract Syntax Trees (AST)
 * Control Flow Graphs (CFG)
 * Control Dependence Graphs (CDG)
 * Data Dependence Graphs (DDG)
 * Program Dependence graphs (PDG)
-* Code Property Graphs (CPG14)
+* Code Property Graphs
+  ([CPG14](https://www.sec.cs.tu-bs.de/pubs/2014-ieeesp.pdf))
 
-:::note
-The Program Dependence Graph (PDG) of a method corresponds to the
-graph obtained by merging its control dependence graph and its data
-dependence graph.
-:::
 
+## The command line tool `joern-export`
 
 All of these representations can be plotted and exported into the
 graphviz dot format to enable processing with third party tools or via
 external scripts.
 
-## Example:
+To parse the code in `/src/directory` and dump Program Dependence
+Graphs for all methods into the directory `outdir`, you can run the
+following commands on the system shell:
+
+```
+joern-parse /src/directory
+joern-export --repr pdg --out outdir
+```
+
+For a complete overview of options, run `joern-export --help`.
+
+
+## Plotting and Exporting on the Joern Console
+
+If you would like to explore graph representations interactively, you
+can do so on the [Joern shell](/joern/shell). To this end, we define
+the following steps on `method` nodes to dump representations in dot
+format.
+
+```
+cpg.method($name).dotAst.l // output AST in dot format
+cpg.method($name).dotCfg.l // output CFG in dot format
+...
+cpg.method($name).dotCpg14.l // output CPG'14 in dot format
+```
+
+You can also plot and view representations using the following
+queries:
+
+```
+cpg.method($name).plotDotAst // plot AST
+cpg.method($name).ploDotCfg // plot CFG
+...
+cpg.method($name).plotDotCpg14 // plot CPG'14
+```
+
+Note that the `ossdataflow` layer needs to have been calculated for
+the source CPG via `run.ossdataflow`.
+
+### Example
 
 Generate the CPG along with the data flow layer for a sample function
 named `myfunc`.
@@ -91,18 +134,36 @@ res4: List[String] = List(
 )
 ```
 
-You can also dump all ASTs of all functions into the directory `out`:
+## Dumping representations for all functions from the shell
+
+You can also dump all representations into the directory `out` using
 
 ```
 run.dumpast
+run.dumpcfg
+...
+run.dumpcpg14
 ```
 
-Corresponding utility methods exist for all other representations,
-e.g.,
+## References
 
+Research that employs Joern as an extraction tool for intermediate
+representations of code:
 
-```
-run.dumpddg
-```
+(1) [Devign: Effective Vulnerability Identification by Learning
+Comprehensive Program Semantics via Graph Neural Networks, Zhou et al.,
+NIPS'19](https://papers.nips.cc/paper/9209-devign-effective-vulnerability-identification-by-learning-comprehensive-program-semantics-via-graph-neural-networks.pdf)
 
-will dump the data dependence graph.
+(2) [Source Code Authorship Attribution using LongShort-Term Memory
+Based Networks, Alsulami et al., ESORICS'17](https://www.cs.drexel.edu/~greenie/stylometry-esorics.pdf)
+
+(3)[VulPecker: an automated vulnerability detection system based on
+code similarity analysis, Li et al.,
+ACSAC'16](http://www.cs.utsa.edu/~shxu/socs/VulPecker.pdf)
+
+(4) [Git blame who?: Stylistic authorship attribution of small,
+incomplete source code fragments, Dauber et al.,
+PETS-19/3](https://content.sciendo.com/view/journals/popets/2019/3/article-p389.xml?language=en)
+
+(5) [SPIDER: Enabling Fast Patch Propagation In Related Software
+Repositories, Machiry et al., S&P'20](https://machiry.github.io/files/spider.pdf)
