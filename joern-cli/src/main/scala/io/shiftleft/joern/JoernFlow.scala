@@ -26,6 +26,8 @@ object JoernFlow extends App {
 
   parseConfig.foreach { config =>
     println(config)
+    val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
+    cpg.close()
   }
 
 }

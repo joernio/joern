@@ -2,6 +2,9 @@ package io.shiftleft.joern
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
+import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.language._
 
 object CpgBasedTool {
 
@@ -15,4 +18,12 @@ object CpgBasedTool {
     io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
   }
 
+  def addDataFlowOverlayIfNonExistent(cpg: Cpg): Unit = {
+    if (!cpg.metaData.overlays.exists(_ == OssDataFlow.overlayName)) {
+      System.err.println("CPG does not have dataflow overlay. Calculating.")
+      val opts = new OssDataFlowOptions()
+      val context = new LayerCreatorContext(cpg)
+      new OssDataFlow(opts).run(context)
+    }
+  }
 }
