@@ -1,6 +1,10 @@
 package io.shiftleft.joern
 
-case class FlowConfig(cpgFileName: String = "cpg.bin", srcRegex: String = ".*", dstRegex: String = ".*")
+case class FlowConfig(cpgFileName: String = "cpg.bin",
+                      srcRegex: String = ".*",
+                      dstRegex: String = ".*",
+                      srcParam: Option[Int] = None,
+                      dstParam: Option[Int] = None)
 
 object JoernFlow extends App {
 
@@ -17,6 +21,16 @@ object JoernFlow extends App {
         .text("destination regex")
         .action((x, c) => c.copy(dstRegex = x))
 
+      arg[Int]("srcParam")
+        .text("Source parameter")
+        .optional()
+        .action((x, c) => c.copy(dstParam = Some(x)))
+
+      arg[Int]("dstParam")
+        .text("Destination parameter")
+        .optional()
+        .action((x, c) => c.copy(dstParam = Some(x)))
+
       arg[String]("cpg")
         .text("CPG file name ('cpg.bin' by default)")
         .optional()
@@ -25,8 +39,10 @@ object JoernFlow extends App {
   }.parse(args, FlowConfig())
 
   parseConfig.foreach { config =>
-    println(config)
+    print("Loading graph... ")
     val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
+    println("[DONE]")
+
     cpg.close()
   }
 
