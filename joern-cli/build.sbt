@@ -39,7 +39,7 @@ lazy val downloadFuzzyPreprocessor = taskKey[File]("Download the FuzzyC2CPG prep
 downloadFuzzyPreprocessor := {
   val ppFilename = "fuzzyppcli.zip"
   val ppUrl = new URL(
-    s"https://github.com/ShiftLeftSecurity/fuzzyc2cpg/releases/download/v${Versions.fuzzyc2cpgVersion}/$ppFilename")
+    s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v${Versions.cpgVersion}/$ppFilename")
 
   val ppOutputDir = file("fuzzyppcli")
   println(s"downloading $ppUrl")
