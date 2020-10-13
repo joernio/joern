@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion,
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
-  "io.shiftleft" %% "fuzzyc2cpg" % Versions.fuzzyc2cpgVersion,
+  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
   "com.lihaoyi" %% "ammonite" % "2.0.4" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.8.0",
