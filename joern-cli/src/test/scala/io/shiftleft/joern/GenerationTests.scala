@@ -1,7 +1,8 @@
 package io.shiftleft.joern
 
 import better.files.File
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
 import io.shiftleft.semanticcpg.language._
 
@@ -9,7 +10,7 @@ import io.shiftleft.semanticcpg.language._
   * Test code that shows how code property graphs can be
   * generated using the FuzzyC language frontend
   * */
-class GenerationTests extends WordSpec with Matchers with AbstractJoernCliTest {
+class GenerationTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
 
   "should generate and load CPG for example code" in withTestCpg(
     File(getClass.getClassLoader.getResource("testcode/free"))) {
