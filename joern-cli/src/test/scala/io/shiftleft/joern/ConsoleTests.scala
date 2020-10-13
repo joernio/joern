@@ -5,7 +5,8 @@ import better.files.File
 import io.shiftleft.console.{ConsoleConfig, InstallConfig}
 import io.shiftleft.console.testing.TestCpgGenerator
 import io.shiftleft.joern.console.JoernConsole
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
 class TestJoernConsole(workspaceDir: String) extends JoernConsole {
   override def config = new ConsoleConfig(
@@ -32,7 +33,7 @@ object ConsoleFixture {
   }
 }
 
-class ConsoleTests extends WordSpec with Matchers {
+class ConsoleTests extends AnyWordSpec with Matchers {
 
   "run" should {
     "provide a human readable overview of overlay creators" in ConsoleFixture({ dir =>

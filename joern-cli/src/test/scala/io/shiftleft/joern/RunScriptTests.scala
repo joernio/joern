@@ -5,11 +5,12 @@ import better.files.Dsl._
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 
-class RunScriptTests extends WordSpec with Matchers with AbstractJoernCliTest {
+class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
 
   private def withCpgZip[T](file: File)(f: Cpg => T): T = {
     val cpgZip = File(".") / "cpg.bin"
