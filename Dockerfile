@@ -8,7 +8,7 @@ RUN ln -sf python3 /usr/bin/python
 ENV SBT_VERSION 1.3.13
 ENV SBT_HOME /usr/local/sbt
 ENV PATH ${PATH}:${SBT_HOME}/bin
-RUN curl -sL "https://piccolo.link/sbt-$SBT_VERSION.tgz" | gunzip | tar -x -C /usr/local
+RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SBT_VERSION.tgz" | gunzip | tar -x -C /usr/local
 
 # building joern
 RUN git clone https://github.com/ShiftLeftSecurity/joern.git && cd joern && sbt stage
