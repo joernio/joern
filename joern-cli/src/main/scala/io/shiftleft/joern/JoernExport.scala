@@ -63,7 +63,7 @@ object JoernExport extends App {
         System.err.println(s"CPG at ${config.cpgFileName} does not exist. Bailing out.")
       } else {
         val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
-        addDataFlowOverlayIfNonExistent(cpg)
+        CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
         val context = new LayerCreatorContext(cpg)
 
         mkdir(File(config.outDir))
@@ -88,16 +88,8 @@ object JoernExport extends App {
           case repr =>
             System.err.println(s"unknown representation: $repr. Baling out.")
         }
+        cpg.close()
       }
-    }
-  }
-
-  private def addDataFlowOverlayIfNonExistent(cpg: Cpg): Unit = {
-    if (!cpg.metaData.overlays.exists(_ == OssDataFlow.overlayName)) {
-      System.err.println("CPG does not have dataflow overlay. Calculating.")
-      val opts = new OssDataFlowOptions()
-      val context = new LayerCreatorContext(cpg)
-      new OssDataFlow(opts).run(context)
     }
   }
 
