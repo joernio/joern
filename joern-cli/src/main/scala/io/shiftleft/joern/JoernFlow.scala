@@ -73,7 +73,7 @@ object JoernFlow extends App {
     println(s"Sinks: ${sink.size}")
 
     implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
-    val engineConfig = EngineConfig(0)
+    val engineConfig = EngineConfig(1)
     println(s"Analysis depth: ${engineConfig.maxCallDepth}")
     implicit val context: EngineContext = EngineContext(semantics, engineConfig)
 
