@@ -79,7 +79,6 @@ object JoernFlow extends App {
 
     println("Determining flows...")
     sink.foreach { s =>
-      println("Inspecting: " + List(s).to(Traversal).location.head)
       List(s).to(Traversal).reachableByFlows(source.to(Traversal)).p.foreach(println)
     }
     println("[DONE]")
