@@ -52,13 +52,22 @@ object JoernFlow extends App {
 
     implicit val resolver: ICallResolver = NoResolve
 
-    val source = cpg.method(config.srcRegex).parameter.filter { p =>
-      config.srcParam.isEmpty || config.srcParam.contains(p.order)
-    }.l
+    val source = cpg
+      .method(config.srcRegex)
+      .parameter
+      .filter { p =>
+        config.srcParam.isEmpty || config.srcParam.contains(p.order)
+      }
+      .l
 
-    val sink = cpg.method(config.dstRegex).parameter.filter { p =>
-      config.dstParam.isEmpty || config.dstParam.contains(p.order)
-    }.argument.l
+    val sink = cpg
+      .method(config.dstRegex)
+      .parameter
+      .filter { p =>
+        config.dstParam.isEmpty || config.dstParam.contains(p.order)
+      }
+      .argument
+      .l
 
     println(s"Sources: ${source.size}")
     println(s"Sinks: ${sink.size}")
@@ -69,7 +78,7 @@ object JoernFlow extends App {
     implicit val context: EngineContext = EngineContext(semantics, engineConfig)
 
     println("Determining flows...")
-    sink.foreach{s =>
+    sink.foreach { s =>
       println("Inspecting: " + List(s).to(Traversal).location.head)
       List(s).to(Traversal).reachableByFlows(source.to(Traversal)).p.foreach(println)
     }
