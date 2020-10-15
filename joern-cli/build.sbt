@@ -35,25 +35,33 @@ topLevelDirectory := Some(packageName.value)
 
 mappings in (Compile, packageDoc) := Seq()
 
-lazy val downloadFuzzyPreprocessor = taskKey[File]("Download the FuzzyC2CPG preprocessor")
+lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
 downloadFuzzyPreprocessor := {
+  import scala.util.{Try, Success, Failure}
+  val log = streams.value.log
   val ppFilename = "fuzzyppcli.zip"
   val ppUrl = new URL(
     s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v${Versions.cpgVersion}/$ppFilename")
-
   val ppOutputDir = file("fuzzyppcli")
-  println(s"downloading $ppUrl")
-  IO.unzipURL(ppUrl, ppOutputDir)
 
-  ppOutputDir.listFiles().map(_.setExecutable(true))
-
-  ppOutputDir
+  log.info(s"trying to download fuzzypp from $ppUrl")
+  try {
+    IO.unzipURL(ppUrl, ppOutputDir)
+    ppOutputDir.listFiles().map(_.setExecutable(true))
+    Some(ppOutputDir)
+  } catch {
+    case ex: Exception =>
+      log.warn(s"unable to download fuzzypp from $ppUrl - if you are using a local release you can ignore this. Otherwise please investigate, since the cpg release build may have a problem.")
+      log.trace(ex)
+      None
+  }
 }
 
-import NativePackagerHelper.contentOf
-mappings in Universal ++= contentOf(downloadFuzzyPreprocessor.value).map {
-  case (binary, name) => binary -> s"/bin/$name"
-}
+mappings in Universal ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
+  NativePackagerHelper.contentOf(fuzzyppdir).map {
+    case (binary, name) => binary -> s"/bin/$name"
+  }
+}.getOrElse(Nil)
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
