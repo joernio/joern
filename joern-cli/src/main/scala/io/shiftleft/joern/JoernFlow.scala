@@ -70,7 +70,6 @@ object JoernFlow extends App {
     debugOut("[DONE]\n")
 
     implicit val resolver: ICallResolver = NoResolve
-
     val sources = params(cpg, config.srcRegex, config.srcParam)
     val sinks = params(cpg, config.dstRegex, config.dstParam)
 
