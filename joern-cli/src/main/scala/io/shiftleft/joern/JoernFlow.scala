@@ -51,6 +51,10 @@ object JoernFlow extends App {
         .optional()
         .action((x, c) => c.copy(depth = x))
 
+      opt[Unit]("verbose")
+        .text("Print debug information")
+        .optional()
+        .action((_, c) => c.copy(verbose = true))
     }
   }.parse(args, FlowConfig())
 
