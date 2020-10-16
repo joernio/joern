@@ -1,4 +1,6 @@
 package io.shiftleft.joern
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.dataflowengineoss.language._
 import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -7,10 +9,12 @@ import io.shiftleft.joern.console.JoernWorkspaceLoader
 import overflowdb.traversal.Traversal
 
 case class FlowConfig(cpgFileName: String = "cpg.bin",
+                      verbose: Boolean = false,
                       srcRegex: String = ".*",
                       dstRegex: String = ".*",
                       srcParam: Option[Int] = None,
-                      dstParam: Option[Int] = None)
+                      dstParam: Option[Int] = None,
+                      depth: Int = 1)
 
 object JoernFlow extends App {
 
@@ -42,50 +46,60 @@ object JoernFlow extends App {
         .optional()
         .action((x, c) => c.copy(dstParam = Some(x)))
 
+      opt[Int]("depth")
+        .text("Analysis depth (number of calls to expand)")
+        .optional()
+        .action((x, c) => c.copy(depth = x))
+
+      opt[Unit]("verbose")
+        .text("Print debug information")
+        .optional()
+        .action((_, c) => c.copy(verbose = true))
     }
   }.parse(args, FlowConfig())
 
   parseConfig.foreach { config =>
-    print("Loading graph... ")
+    def debugOut(msg: String): Unit = {
+      if (config.verbose) {
+        print(msg)
+      }
+    }
+
+    debugOut("Loading graph... ")
     val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
-    println("[DONE]")
+    debugOut("[DONE]\n")
 
     implicit val resolver: ICallResolver = NoResolve
+    val sources = params(cpg, config.srcRegex, config.srcParam)
+    val sinks = params(cpg, config.dstRegex, config.dstParam)
 
-    val source = cpg
-      .method(config.srcRegex)
-      .parameter
-      .filter { p =>
-        config.srcParam.isEmpty || config.srcParam.contains(p.order)
-      }
-      .l
-
-    val sink = cpg
-      .method(config.dstRegex)
-      .parameter
-      .filter { p =>
-        config.dstParam.isEmpty || config.dstParam.contains(p.order)
-      }
-      .argument
-      .l
-
-    println(s"Sources: ${source.size}")
-    println(s"Sinks: ${sink.size}")
+    debugOut(s"Number of sources: ${sources.size}\n")
+    debugOut(s"Number of sinks: ${sinks.size}\n")
 
     implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
-    val engineConfig = EngineConfig(1)
-    println(s"Analysis depth: ${engineConfig.maxCallDepth}")
+    val engineConfig = EngineConfig(config.depth)
+    debugOut(s"Analysis depth: ${engineConfig.maxCallDepth}\n")
     implicit val context: EngineContext = EngineContext(semantics, engineConfig)
 
-    println("Determining flows...")
-    sink.foreach { s =>
-      List(s).to(Traversal).reachableByFlows(source.to(Traversal)).p.foreach(println)
+    debugOut("Determining flows...")
+    sinks.foreach { s =>
+      List(s).to(Traversal).reachableByFlows(sources.to(Traversal)).p.foreach(println)
     }
-    println("[DONE]")
+    debugOut("[DONE]")
 
-    print("Closing graph... ")
+    debugOut("Closing graph... ")
     cpg.close()
-    println("[DONE]")
+    debugOut("[DONE]\n")
+  }
+
+  private def params(cpg: Cpg, methodNameRegex: String, paramIndex: Option[Int]): List[MethodParameterIn] = {
+    cpg
+      .method(methodNameRegex)
+      .parameter
+      .filter { p =>
+        paramIndex.isEmpty || paramIndex.contains(p.order)
+      }
+      .l
   }
 
 }
