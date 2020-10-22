@@ -41,6 +41,26 @@ res0: List[String] = List(
 )
 ```
 
+### head
+
+Executes the traversal and returns the first result
+
+```java
+joern> cpg.call.name.head
+res0: List[String] = List(
+  "exit",
+)
+```
+
+### size
+
+`size` executes the traversal and returns the size of the result set
+
+```java
+joern> cpg.call.size
+res0: Int = 9
+```
+
 ### Execution Directives and the Joern Interpreter
 
 _Execution Directives_ sit at the border between CPQGL Queries and the Joern Interpreter, that is at the border between querying Code Property Graphs, and using the results of those queries for further processing using the Scala programming language. For example, say you'd like to take the results of a query execution and write them to a text file:
