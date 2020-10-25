@@ -34,7 +34,7 @@ object JoernFlow extends App {
       arg[String]("cpg")
         .text("CPG file name ('cpg.bin' by default)")
         .optional()
-        .action((x, c) => c.copy(srcRegex = x))
+        .action((x, c) => c.copy(cpgFileName = x))
 
       opt[Int]("src-param")
         .text("Source parameter")
