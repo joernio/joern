@@ -36,7 +36,6 @@ object JoernStats extends App {
     println("TYPE_DECL " + cpg.typeDecl.size)
     println("METHOD    " + cpg.method.size)
     println("CALL      " + cpg.call.size)
-    println("FINDING   " + cpg.graph.nodes(NodeTypes.FINDING).size)
     cpg.close()
   }
 }
