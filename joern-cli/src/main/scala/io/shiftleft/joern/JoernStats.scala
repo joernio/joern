@@ -31,7 +31,6 @@ object JoernStats extends App {
       sys.exit(1)
     }
 
-    println("METADATA  " + cpg.metaData.size)
     println("NAMESPACE " + cpg.namespace.size)
     println("TYPE_DECL " + cpg.typeDecl.size)
     println("METHOD    " + cpg.method.size)
