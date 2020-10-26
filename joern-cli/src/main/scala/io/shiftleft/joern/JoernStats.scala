@@ -18,7 +18,7 @@ object JoernStats extends App {
       head("Prints statistics on various nodes found in Code Property Graphs")
       help("help")
 
-      arg[String]("cpg")
+      arg[String]("cpg.bin")
         .text("Path to the Code Property Graph file")
         .action((name, c) => c.copy(cpgFileName = name))
     }
