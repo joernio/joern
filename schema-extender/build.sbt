@@ -5,7 +5,7 @@ publish / skip := true
 scalaVersion := "2.12.11"
 
 libraryDependencies ++= Seq(
-  "io.shiftleft" %% "overflowdb-codegen" % "1.12",
+  "io.shiftleft" %% "overflowdb-codegen" % "1.35",
   "org.zeroturnaround" % "zt-zip" % "1.14",
   "com.github.pathikrit" %% "better-files" % "3.8.0",
   "com.github.scopt" %% "scopt" % "3.7.1",
