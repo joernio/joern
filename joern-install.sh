@@ -50,7 +50,7 @@ fi
 
 mkdir -p $JOERN_INSTALL_DIR
 
-echo -n "Would you like to create a symlink to the Joern tools? (default n) [Y/n]: "
+echo -n "Would you like to create a symlink to the Joern tools? [y/N]: "
 read -r JOERN_LINK_ANSWER
 
 if [ "$JOERN_LINK_ANSWER" = "Y" ] || [ "$JOERN_LINK_ANSWER" = "y" ]; then
