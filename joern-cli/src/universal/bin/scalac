@@ -220,15 +220,15 @@ IFS=" "$'\t'
 # note that variables which may intentionally be empty must not
 # be quoted: otherwise an empty string will appear as a command line
 # argument, and java will think that is the program to run.
-# execCommand \
-#   "${JAVACMD:=java}" \
-#   $JAVA_OPTS \
-#   "${java_args[@]}" \
-#   "${classpath_args[@]}" \
-#   -Dscala.home="$SCALA_HOME" \
-#   $OVERRIDE_USEJAVACP \
-#   $WINDOWS_OPT \
-#    scala.tools.nsc.Main  "$@"
+execCommand \
+  "${JAVACMD:=java}" \
+  $JAVA_OPTS \
+  "${java_args[@]}" \
+  "${classpath_args[@]}" \
+  -Dscala.home="$SCALA_HOME" \
+  $OVERRIDE_USEJAVACP \
+  $WINDOWS_OPT \
+   scala.tools.nsc.Main  "$@"
 
 # record the exit status lest it be overwritten:
 # then restore IFS, reenable echo and propagate the code.
@@ -236,6 +236,4 @@ scala_exit_status=$?
 
 unset IFS
 
-# onExit
-
-echo "scala-home: $SCALA_HOME"
+onExit
