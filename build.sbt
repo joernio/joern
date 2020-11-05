@@ -8,7 +8,7 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.0"
 ThisBuild /Test /fork := true
 
-val cpgVersion = "1.2.19+2-5184c6e1"
+val cpgVersion = "1.2.20"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
