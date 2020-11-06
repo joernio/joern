@@ -16,7 +16,7 @@ fi
 
 OLDPWD=$(pwd)
 cd $SCRIPT_ABS_DIR
-TARGET_JAR=$(ls ../lib/io.shiftleft.codepropertygraph_2.13-*)
+TARGET_JAR=$(ls ../lib/io.shiftleft.codepropertygraph-domain-classes_2.13-*)
 
 $SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m --target=$TARGET_JAR --scalac=../bin/scalac "$@"
 
