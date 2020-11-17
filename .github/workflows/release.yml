@@ -1,0 +1,31 @@
+name: release
+on:
+  push:
+    branches: [master, main]
+    tags: ["*"]
+jobs:
+  release:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: olafurpg/setup-scala@v10
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
+      - run: sbt scalafmtCheck test stage
+      - run: ./tests/scripts-test.sh
+      - run: sbt ciReleaseTagNextVersion createDistribution
+      - run: sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
+      - uses: actions/upload-artifact@v2
+        with:
+          name: joern-cli.zip
+          path: |
+            joern-install.sh
+            joern-cli.zip
+            joern-cli.zip.sha512
+      
