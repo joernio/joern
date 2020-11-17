@@ -1,0 +1,17 @@
+name: pr
+on: pull_request
+jobs:
+  pr:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - uses: olafurpg/setup-scala@v10
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
+      - run: sbt test
