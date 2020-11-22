@@ -39,8 +39,8 @@ Compiling (synthetic)/ammonite/predef/replBridge.sc
 Compiling (synthetic)/ammonite/predef/sourceBridge.sc
 Compiling (synthetic)/ammonite/predef/frontEndBridge.sc
 Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
-Compiling /home/claudiu/code/joern-cli/(console)
-creating workspace directory: /home/claudiu/code/joern-cli/workspace
+Compiling /home/user/joern-cli/(console)
+creating workspace directory: /home/user/joern-cli/workspace
 
      ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
      ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
