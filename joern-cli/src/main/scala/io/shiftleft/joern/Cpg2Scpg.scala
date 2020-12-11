@@ -13,9 +13,10 @@ object Cpg2Scpg {
     * turning the CPG into an SCPG.
     * @param storeFilename the filename of the cpg
     * */
-  def run(storeFilename: String, dataFlow: Boolean): Cpg = {val cpg = CpgBasedTool.loadFromOdb(storeFilename)
+  def run(storeFilename: String, dataFlow: Boolean): Cpg = {
+    val cpg = CpgBasedTool.loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)
-                                                            new Scpg().run(context)
+    new Scpg().run(context)
     if (dataFlow) {
       val options = new OssDataFlowOptions()
       new OssDataFlow(options).create(context)
