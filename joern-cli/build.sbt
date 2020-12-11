@@ -145,6 +145,9 @@ Universal/packageBin/mappings ++= {
   } yield file.toJava -> s"schema-extender/${dir.relativize(file.path)}"
 }
 
+import sbt.Path.directory
+Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
+
 lazy val foo = taskKey[Unit]("foo")
 foo := {
   import better.files.File
