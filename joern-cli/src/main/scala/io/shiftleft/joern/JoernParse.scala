@@ -22,7 +22,14 @@ object JoernParse extends App {
   def generateCpg(config: ParserConfig): Unit = {
 
     if (!config.enhanceOnly) {
-      createCpgFromCSourceCode(config)
+      println(config.language)
+      config.language match {
+        case "c" =>
+          createCpgFromCSourceCode(config)
+        case _ =>
+          logger.error(s"Language ${config.language} not recognized")
+          return
+      }
     }
 
     if (config.enhance) {
@@ -55,6 +62,7 @@ object JoernParse extends App {
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
                           enhanceOnly: Boolean = false,
+                          language : String = "c",
                           cFrontendConfig: CFrontendConfig = CFrontendConfig(),
                           preprocessorConfig: PreprocessorConfig = PreprocessorConfig())
 
@@ -89,6 +97,9 @@ object JoernParse extends App {
       opt[Unit]("nodataflow")
         .text("do not perform data flow analysis")
         .action((x, c) => c.copy(dataFlow = false))
+      opt[String]("language")
+          .text("source language: [c|java]")
+          .action((x, c) => c.copy(language = x))
       opt[String]("source-file-ext")
         .unbounded()
         .text("source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
