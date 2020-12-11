@@ -21,13 +21,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.1.1" % Test,
 )
 
-excludeDependencies ++= Seq(
-  // This project uses Logback in place of Log4j
-  ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl"),
-  ExclusionRule("org.slf4j", "slf4j-simple"),
-  ExclusionRule("ch.qos.logback", "logback-classic"),
-)
-
 enablePlugins(JavaAppPackaging)
 scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 

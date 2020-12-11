@@ -1,21 +1,18 @@
 package io.shiftleft.joern
 
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
-import org.slf4j.LoggerFactory
 
 import scala.util.control.NonFatal
 
 object JoernParse extends App {
   val DEFAULT_CPG_OUT_FILE = "cpg.bin"
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
   parseConfig.foreach { config =>
     try {
       generateCpg(config)
     } catch {
       case NonFatal(ex) =>
-        logger.error("Failed to enhance CPG.", ex)
+        println("Error: Failed to enhance CPG.", ex)
     }
   }
 
@@ -27,7 +24,7 @@ object JoernParse extends App {
         case "c" =>
           createCpgFromCSourceCode(config)
         case _ =>
-          logger.error(s"Language ${config.language} not recognized")
+          println(s"Error: Language ${config.language} not recognized")
           return
       }
     }
@@ -62,7 +59,7 @@ object JoernParse extends App {
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
                           enhanceOnly: Boolean = false,
-                          language : String = "c",
+                          language: String = "c",
                           cFrontendConfig: CFrontendConfig = CFrontendConfig(),
                           preprocessorConfig: PreprocessorConfig = PreprocessorConfig())
 
@@ -98,12 +95,14 @@ object JoernParse extends App {
         .text("do not perform data flow analysis")
         .action((x, c) => c.copy(dataFlow = false))
       opt[String]("language")
-          .text("source language: [c|java]")
-          .action((x, c) => c.copy(language = x))
+        .text("source language: [c|java]")
+        .action((x, c) => c.copy(language = x))
       opt[String]("source-file-ext")
         .unbounded()
         .text("source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
-        .action((pat, cfg) => cfg.copy(cFrontendConfig = cfg.cFrontendConfig.copy(sourceFileExtensions = cfg.cFrontendConfig.sourceFileExtensions + pat)))
+        .action((pat, cfg) =>
+          cfg.copy(cFrontendConfig =
+            cfg.cFrontendConfig.copy(sourceFileExtensions = cfg.cFrontendConfig.sourceFileExtensions + pat)))
       opt[String]("include")
         .unbounded()
         .text("header include files")
