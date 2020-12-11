@@ -23,5 +23,3 @@ object Cpg2Scpg {
     }
     cpg
   }
-
-}
