@@ -15,3 +15,17 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - run: sbt test
+
+      - name: Export ENV vars
+          run:
+              echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+                - name: Create Release
+                id: create_release
+                uses: actions/create-release@v1
+                env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                with:
+                  tag_name: ${{ env.LATEST_TAG }}
+                  release_name: ${{ env.LATEST_TAG }}
+                  draft: true
+                  prerelease: false
