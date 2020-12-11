@@ -1,5 +1,6 @@
 package io.shiftleft.joern
 
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 
 import scala.util.control.NonFatal
@@ -17,12 +18,12 @@ object JoernParse extends App {
   }
 
   def generateCpg(config: ParserConfig): Unit = {
-
     if (!config.enhanceOnly) {
-      println(config.language)
       config.language match {
         case "c" =>
           createCpgFromCSourceCode(config)
+        case "java" =>
+          createCpgFromJavaSourceCode(config)
         case _ =>
           println(s"Error: Language ${config.language} not recognized")
           return
@@ -52,6 +53,11 @@ object JoernParse extends App {
         .runAndOutput(config.inputPaths, config.cFrontendConfig.sourceFileExtensions, Some(config.outputCpgFile))
         .close()
     }
+  }
+
+  private def createCpgFromJavaSourceCode(config: JoernParse.ParserConfig): Unit = {
+    println("TODO: connect plume for Java CPG creation")
+    Cpg.withStorage(config.outputCpgFile).close()
   }
 
   case class ParserConfig(inputPaths: Set[String] = Set.empty,
