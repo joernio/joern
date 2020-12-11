@@ -22,20 +22,7 @@ object JoernParse extends App {
   def generateCpg(config: ParserConfig): Unit = {
 
     if (!config.enhanceOnly) {
-      val fuzzyc = new FuzzyC2Cpg()
-      if (config.preprocessorConfig.usePreprocessor) {
-        fuzzyc.runWithPreprocessorAndOutput(
-          config.inputPaths,
-          config.sourceFileExtensions,
-          config.preprocessorConfig.includeFiles,
-          config.preprocessorConfig.includePaths,
-          config.preprocessorConfig.defines,
-          config.preprocessorConfig.undefines,
-          config.preprocessorConfig.preprocessorExecutable
-        )
-      } else {
-        fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions, Some(config.outputCpgFile)).close()
-      }
+      createCpgFromCSourceCode(config)
     }
 
     if (config.enhance) {
@@ -44,13 +31,34 @@ object JoernParse extends App {
 
   }
 
+  private def createCpgFromCSourceCode(config: ParserConfig): Unit = {
+    val fuzzyc = new FuzzyC2Cpg()
+    if (config.preprocessorConfig.usePreprocessor) {
+      fuzzyc.runWithPreprocessorAndOutput(
+        config.inputPaths,
+        config.cFrontendConfig.sourceFileExtensions,
+        config.preprocessorConfig.includeFiles,
+        config.preprocessorConfig.includePaths,
+        config.preprocessorConfig.defines,
+        config.preprocessorConfig.undefines,
+        config.preprocessorConfig.preprocessorExecutable
+      )
+    } else {
+      fuzzyc
+        .runAndOutput(config.inputPaths, config.cFrontendConfig.sourceFileExtensions, Some(config.outputCpgFile))
+        .close()
+    }
+  }
+
   case class ParserConfig(inputPaths: Set[String] = Set.empty,
                           outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
                           enhanceOnly: Boolean = false,
-                          sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"),
+                          cFrontendConfig: CFrontendConfig = CFrontendConfig(),
                           preprocessorConfig: PreprocessorConfig = PreprocessorConfig())
+
+  case class CFrontendConfig(sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"))
 
   case class PreprocessorConfig(preprocessorExecutable: String = "./bin/fuzzyppcli",
                                 verbose: Boolean = true,
@@ -84,7 +92,7 @@ object JoernParse extends App {
       opt[String]("source-file-ext")
         .unbounded()
         .text("source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
-        .action((pat, cfg) => cfg.copy(sourceFileExtensions = cfg.sourceFileExtensions + pat))
+        .action((pat, cfg) => cfg.copy(cFrontendConfig = cfg.cFrontendConfig.copy(sourceFileExtensions = cfg.cFrontendConfig.sourceFileExtensions + pat)))
       opt[String]("include")
         .unbounded()
         .text("header include files")
