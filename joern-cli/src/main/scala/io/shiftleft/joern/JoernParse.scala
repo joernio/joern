@@ -1,8 +1,12 @@
 package io.shiftleft.joern
 
+import io.github.plume.oss.Extractor
+import io.github.plume.oss.drivers.{DriverFactory, GraphDatabase, OverflowDbDriver}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 
+import scala.tools.nsc.io.File
+import scala.util.Using
 import scala.util.control.NonFatal
 
 object JoernParse extends App {
@@ -56,8 +60,15 @@ object JoernParse extends App {
   }
 
   private def createCpgFromJavaSourceCode(config: JoernParse.ParserConfig): Unit = {
-    println("TODO: connect plume for Java CPG creation")
-    Cpg.withStorage(config.outputCpgFile).close()
+    Using(DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]) { driver =>
+      driver.dbfilename(config.outputCpgFile)
+      config.inputPaths.foreach { inputPath =>
+        val file = new java.io.File(inputPath)
+        val extractor = new Extractor(driver, file)
+        extractor.load(file)
+        extractor.project()
+      }
+    }
   }
 
   case class ParserConfig(inputPaths: Set[String] = Set.empty,
