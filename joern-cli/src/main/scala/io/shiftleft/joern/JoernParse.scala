@@ -17,7 +17,7 @@ object JoernParse extends App {
       generateCpg(config)
     } catch {
       case NonFatal(ex) =>
-        println("Error: Failed to enhance CPG.", ex)
+        println("Error: Failed to generate/enhance CPG.", ex)
     }
   }
 
@@ -98,27 +98,35 @@ object JoernParse extends App {
   }
 
   def parseConfig: Option[ParserConfig] =
-    new scopt.OptionParser[ParserConfig](getClass.getSimpleName) {
-      help("help")
-      arg[String]("<input-dir>")
+    new scopt.OptionParser[ParserConfig]("joern-parse") {
+
+      arg[String]("input-files")
         .unbounded()
-        .text("source directories containing C/C++ code")
+        .text("directories containing: C/C++ source | Java source code or classes")
         .action((x, c) => c.copy(inputPaths = c.inputPaths + x))
+
+      opt[String]("language")
+        .text("source language: [c|java]. Default: c")
+        .action((x, c) => c.copy(language = x))
+
       opt[String]("out")
         .text("output filename")
         .action((x, c) => c.copy(outputCpgFile = x))
+
+      note("Enhancement stage")
+
       opt[Unit]("noenhance")
-        .text("run language frontend but do not enhance the CPG to create an SCPG")
+        .text("do not run enhancement stage")
         .action((x, c) => c.copy(enhance = false))
       opt[Unit]("enhanceonly")
-        .text("Only run the enhancer")
+        .text("Only run the enhancement stage")
         .action((x, c) => c.copy(enhanceOnly = true))
       opt[Unit]("nodataflow")
-        .text("do not perform data flow analysis")
+        .text("do not perform data flow analysis in enhancement stage")
         .action((x, c) => c.copy(dataFlow = false))
-      opt[String]("language")
-        .text("source language: [c|java]")
-        .action((x, c) => c.copy(language = x))
+
+      note("Options for C/C++")
+
       opt[String]("source-file-ext")
         .unbounded()
         .text("source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
@@ -150,6 +158,8 @@ object JoernParse extends App {
       opt[String]("preprocessor-executable")
         .text("path to the preprocessor executable")
         .action((s, cfg) => cfg.copy(preprocessorConfig = cfg.preprocessorConfig.copy(preprocessorExecutable = s)))
+
+      note("Misc")
       help("help").text("display this help message")
     }.parse(args, ParserConfig())
 
