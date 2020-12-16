@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.github.plume-oss"    % "plume" % "0.0.1",
+  "io.github.plume-oss"    % "plume" % "0.0.2",
 
   "org.jetbrains.kotlin" % "kotlin-stdlib-jdk8" % "1.3.72" % Runtime,
   "org.jetbrains.kotlin" % "kotlin-reflect" % "1.3.72" % Runtime,

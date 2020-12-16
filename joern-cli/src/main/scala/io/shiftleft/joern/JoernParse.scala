@@ -61,10 +61,15 @@ object JoernParse extends App {
 
   private def createCpgFromJavaSourceCode(config: JoernParse.ParserConfig): Unit = {
     Using(DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]) { driver =>
-      driver.dbfilename(config.outputCpgFile)
+      val outFile = File(config.outputCpgFile)
+      if (outFile.exists) {
+        println(s"Output file ${config.outputCpgFile} exists. Removing first.")
+        outFile.delete()
+      }
+      driver.setStorageLocation(config.outputCpgFile)
       config.inputPaths.foreach { inputPath =>
         val file = new java.io.File(inputPath)
-        val extractor = new Extractor(driver, file)
+        val extractor = new Extractor(driver)
         extractor.load(file)
         extractor.project()
       }
