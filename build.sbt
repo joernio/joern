@@ -14,6 +14,7 @@ ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.bintrayRepo("shiftleft", "maven"),
   Resolver.bintrayRepo("mpollmeier", "maven"),
+  Resolver.bintrayRepo("plume-oss", "maven"),
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
 )
 
