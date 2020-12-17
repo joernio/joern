@@ -2,17 +2,23 @@ package io.shiftleft.joern
 
 import better.files.Dsl.mkdir
 import better.files.File
-import io.shiftleft.console.{ConsoleConfig, InstallConfig}
-import io.shiftleft.console.testing.TestCpgGenerator
+import io.shiftleft.console.cpgcreation.ImportCode
+import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
+import io.shiftleft.console.testing.TestCpgGeneratorFactory
+import io.shiftleft.console.workspacehandling.Project
 import io.shiftleft.joern.console.JoernConsole
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
+
+class MyImportCode[T <: Project](console: Console[T]) extends ImportCode(console) {
+  override val generatorFactory = new TestCpgGeneratorFactory(console.config)
+}
 
 class TestJoernConsole(workspaceDir: String) extends JoernConsole {
   override def config = new ConsoleConfig(
     install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
   )
-  override val cpgGenerator = new TestCpgGenerator(config)
+  override val importCode = new MyImportCode(this)
 }
 
 object ConsoleFixture {
