@@ -68,6 +68,7 @@ object JoernParse extends App {
       }
       driver.setStorageLocation(config.outputCpgFile)
       config.inputPaths.foreach { inputPath =>
+        println(inputPath)
         val file = new java.io.File(inputPath)
         val extractor = new Extractor(driver)
         extractor.load(file)
