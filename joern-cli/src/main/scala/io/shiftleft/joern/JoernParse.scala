@@ -1,12 +1,7 @@
 package io.shiftleft.joern
 
-import io.github.plume.oss.Extractor
-import io.github.plume.oss.drivers.{DriverFactory, GraphDatabase, OverflowDbDriver}
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
-
-import scala.tools.nsc.io.File
-import scala.util.Using
+import io.shiftleft.joern.plume.PlumeCpgGenerator
 import scala.util.control.NonFatal
 
 object JoernParse extends App {
@@ -26,8 +21,8 @@ object JoernParse extends App {
       config.language match {
         case "c" =>
           createCpgFromCSourceCode(config)
-        case "java" =>
-          createCpgFromJavaSourceCode(config)
+        case "java-bytecode" =>
+          PlumeCpgGenerator.createCpgForJava(config)
         case _ =>
           println(s"Error: Language ${config.language} not recognized")
           return
@@ -59,24 +54,6 @@ object JoernParse extends App {
     }
   }
 
-  private def createCpgFromJavaSourceCode(config: JoernParse.ParserConfig): Unit = {
-    Using(DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]) { driver =>
-      val outFile = File(config.outputCpgFile)
-      if (outFile.exists) {
-        println(s"Output file ${config.outputCpgFile} exists. Removing first.")
-        outFile.delete()
-      }
-      driver.setStorageLocation(config.outputCpgFile)
-      config.inputPaths.foreach { inputPath =>
-        println(inputPath)
-        val file = new java.io.File(inputPath)
-        val extractor = new Extractor(driver)
-        extractor.load(file)
-        extractor.project()
-      }
-    }
-  }
-
   case class ParserConfig(inputPaths: Set[String] = Set.empty,
                           outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
                           enhance: Boolean = true,
@@ -103,11 +80,11 @@ object JoernParse extends App {
 
       arg[String]("input-files")
         .unbounded()
-        .text("directories containing: C/C++ source | Java source code or classes")
+        .text("directories containing: C/C++ source | Java classes | a Java archive (JAR/WAR)")
         .action((x, c) => c.copy(inputPaths = c.inputPaths + x))
 
       opt[String]("language")
-        .text("source language: [c|java]. Default: c")
+        .text("source language: [c|java-bytecode]. Default: c")
         .action((x, c) => c.copy(language = x))
 
       opt[String]("out")
