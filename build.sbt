@@ -12,10 +12,12 @@ val cpgVersion = "1.3.15"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
+  Resolver.mavenCentral,
+  Resolver.jcenterRepo,
   Resolver.bintrayRepo("shiftleft", "maven"),
   Resolver.bintrayRepo("mpollmeier", "maven"),
   Resolver.bintrayRepo("plume-oss", "maven"),
-  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 )
 
 ThisBuild/scalacOptions ++= Seq(

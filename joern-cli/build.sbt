@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.github.plume-oss"    % "plume" % "0.0.2",
+  "io.github.plume-oss"    % "plume" % "0.0.3" exclude("io.github.plume-oss", "cpgconv"),
 
   "org.jetbrains.kotlin" % "kotlin-stdlib-jdk8" % "1.3.72" % Runtime,
   "org.jetbrains.kotlin" % "kotlin-reflect" % "1.3.72" % Runtime,
@@ -27,6 +27,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
   "org.scalatest" %% "scalatest" % "3.1.1" % Test,
 )
+
 
 enablePlugins(JavaAppPackaging)
 scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
