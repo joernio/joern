@@ -22,7 +22,6 @@ object PlumeCpgGenerator {
         }
       }
     }
-
   }
 
   private def createCpgForDirectory(inputPath: String, config: JoernParse.ParserConfig) = {

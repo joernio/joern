@@ -21,7 +21,7 @@ object JoernParse extends App {
       config.language match {
         case "c" =>
           createCpgFromCSourceCode(config)
-        case "java-bytecode" =>
+        case "java" =>
           PlumeCpgGenerator.createCpgForJava(config)
         case _ =>
           println(s"Error: Language ${config.language} not recognized")
@@ -84,7 +84,7 @@ object JoernParse extends App {
         .action((x, c) => c.copy(inputPaths = c.inputPaths + x))
 
       opt[String]("language")
-        .text("source language: [c|java-bytecode]. Default: c")
+        .text("source language: [c|java]. Default: c")
         .action((x, c) => c.copy(language = x))
 
       opt[String]("out")
