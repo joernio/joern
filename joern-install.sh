@@ -33,39 +33,50 @@ check_installed() {
 # Confirm install with user.
 JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
+JOERN_DEFAULT_VERSION=""
 
-echo -n "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
-read -r JOERN_PROMPT_ANSWER
-
-if [ "$JOERN_PROMPT_ANSWER" = "N" ] && [ "$JOERN_PROMPT_ANSWER" = "n" ]; then
-  exit 0
-fi
-
-echo -n "Enter an install location or press enter for the default ($JOERN_DEFAULT_INSTALL_DIR): "
-read -r JOERN_INSTALL_DIR
-
-if [ "$JOERN_INSTALL_DIR" = "" ]; then
+if [ "$1" = "--non-interactive" ]; then
+  echo "non-interactive mode, using defaults"
   JOERN_INSTALL_DIR=$JOERN_DEFAULT_INSTALL_DIR
+  JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
+  JOERN_VERSION=$JOERN_DEFAULT_VERSION
+else
+    echo -n "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
+    read -r JOERN_PROMPT_ANSWER
+
+    if [ "$JOERN_PROMPT_ANSWER" = "N" ] && [ "$JOERN_PROMPT_ANSWER" = "n" ]; then
+	exit 0
+    fi
+
+    echo -n "Enter an install location or press enter for the default ($JOERN_DEFAULT_INSTALL_DIR): "
+    read -r JOERN_INSTALL_DIR
+
+    if [ "$JOERN_INSTALL_DIR" = "" ]; then
+	JOERN_INSTALL_DIR=$JOERN_DEFAULT_INSTALL_DIR
+    fi
+
+    echo -n "Would you like to create a symlink to the Joern tools? [y/N]: "
+    read -r JOERN_LINK_ANSWER
+
+    if [ "$JOERN_LINK_ANSWER" = "Y" ] || [ "$JOERN_LINK_ANSWER" = "y" ]; then
+	echo -n "Where would you like to link the Joern tools? (default $JOERN_DEFAULT_LINK_DIR): "
+	read -r JOERN_LINK_DIR
+	if [ "$JOERN_LINK_DIR" = "" ]; then
+	    JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
+	fi
+    fi
+
+    echo -n "Please enter a Joern version/tag or press enter for the latest version: "
+    read -r JOERN_VERSION
+
 fi
+
 
 mkdir -p $JOERN_INSTALL_DIR
-
-echo -n "Would you like to create a symlink to the Joern tools? [y/N]: "
-read -r JOERN_LINK_ANSWER
-
-if [ "$JOERN_LINK_ANSWER" = "Y" ] || [ "$JOERN_LINK_ANSWER" = "y" ]; then
-  echo -n "Where would you like to link the Joern tools? (default $JOERN_DEFAULT_LINK_DIR): "
-  read -r JOERN_LINK_DIR
-  if [ "$JOERN_LINK_DIR" = "" ]; then
-    JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
-  fi
-fi
-
 # Download and extract the Joern CLI
 check_installed "curl"
 
-echo -n "Please enter a Joern version/tag or press enter for the latest version: "
-read -r JOERN_VERSION
+
 if [ "$JOERN_VERSION" = "" ]; then
   curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
 else
@@ -78,9 +89,9 @@ rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 # Link to JOERN_LINK_DIR if desired by the user
 if [ -n "${JOERN_LINK_DIR+dummy}" ]; then
   echo "Creating symlinks to Joern tools in $JOERN_LINK_DIR"
-  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR"
-  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-cpg2scpg "$JOERN_LINK_DIR"
-  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR"
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-cpg2scpg "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR" || true
 fi
 
 echo "Install complete!"
