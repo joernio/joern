@@ -35,7 +35,7 @@ JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 JOERN_DEFAULT_VERSION=""
 
-if [ "$1" = "--non-interactive" ]; then
+if [ $# -ne 0 ] && [ "$1" = "--non-interactive" ]; then
   echo "non-interactive mode, using defaults"
   JOERN_INSTALL_DIR=$JOERN_DEFAULT_INSTALL_DIR
   JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
@@ -87,11 +87,13 @@ unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
 # Link to JOERN_LINK_DIR if desired by the user
-if [ -n "${JOERN_LINK_DIR+dummy}" ]; then
+if [ -n "${JOERN_LINK_DIR+dummy}" ] && [`whoami` == "root"]; then
   echo "Creating symlinks to Joern tools in $JOERN_LINK_DIR"
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-cpg2scpg "$JOERN_LINK_DIR" || true
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR" || true
 fi
 
+echo "Installing default queries"
+$JOERN_INSTALL_DIR/joern-cli/joern-scan --updatedb
 echo "Install complete!"
