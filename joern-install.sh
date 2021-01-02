@@ -30,17 +30,37 @@ check_installed() {
   fi
 }
 
-# Confirm install with user.
+NON_INTERACTIVE=false
+NO_DOWNLOAD=false
+
+while test $# -gt 0
+do
+    case "$1" in
+        --non-interactive)
+          NON_INTERACTIVE=true
+            ;;
+        --no-download)
+          NO_DOWNLOAD=true
+            ;;
+        --*) echo "bad option $1"
+            ;;
+        *) echo "argument $1"
+            ;;
+    esac
+    shift
+done
+
 JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 JOERN_DEFAULT_VERSION=""
 
-if [ $# -ne 0 ] && [ "$1" = "--non-interactive" ]; then
+if [ $NON_INTERACTIVE = true ]; then
   echo "non-interactive mode, using defaults"
   JOERN_INSTALL_DIR=$JOERN_DEFAULT_INSTALL_DIR
   JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
   JOERN_VERSION=$JOERN_DEFAULT_VERSION
 else
+    # Confirm install with user.
     printf "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
     read -r JOERN_PROMPT_ANSWER
 
@@ -74,14 +94,19 @@ fi
 
 mkdir -p $JOERN_INSTALL_DIR
 # Download and extract the Joern CLI
+
 check_installed "curl"
 
-
-if [ "$JOERN_VERSION" = "" ]; then
-  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+if [ $NO_DOWNLOAD ]; then
+    sbt createDistribution
 else
-  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+  if [ "$JOERN_VERSION" = "" ]; then
+    curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+  else
+    curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+  fi
 fi
+
 
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 rm "$SCRIPT_ABS_DIR"/joern-cli.zip
