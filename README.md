@@ -10,8 +10,9 @@ Joern's Documentation is available here: https://docs.joern.io/home
 
 ```
 wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-install.sh
-sudo ./joern-install.sh --non-interactive
-joern
+./joern-install.sh
+cd ~/bin/joern/joern-cli/
+./joern
 
 Compiling (synthetic)/ammonite/predef/interpBridge.sc
 Compiling (synthetic)/ammonite/predef/replBridge.sc
