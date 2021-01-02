@@ -126,7 +126,8 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
     val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider())
     val allQueries: List[Query] = queryDb.allQueries
     if (allQueries.isEmpty) {
-      println("You have not installed any query bundles")
+      println("You have not installed any query bundles. Try:")
+      println("joern-scan --updatedb")
     }
     runPass(new ScanPass(context.cpg, allQueries), context, storeUndoInfo)
     outputFindings(context.cpg)
