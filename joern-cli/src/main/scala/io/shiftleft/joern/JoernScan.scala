@@ -5,10 +5,12 @@ import io.shiftleft.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, 
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.joern.console.AmmoniteBridge
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import org.json4s.{Formats, NoTypeHints}
+import org.json4s.native.Serialization
 
 import scala.reflect.runtime.universe._
 
-case class JoernScanConfig(src: String = "", overwrite: Boolean = false, store: Boolean = false)
+case class JoernScanConfig(src: String = "", overwrite: Boolean = false, store: Boolean = false, dump: Boolean = false)
 
 object JoernScan extends App with BridgeBase {
 
@@ -26,19 +28,40 @@ object JoernScan extends App with BridgeBase {
 
       opt[Unit]("store")
         .action((_, c) => c.copy(store = true))
-        .text("Store graph changes made by bundle")
+        .text("Store graph changes made by scanner")
+
+      opt[Unit]("dump")
+        .action((_, c) => c.copy(dump = true))
+        .text("Dump available queries to `querydb.json`")
     }
   }.parse(args, JoernScanConfig())
 
-  parseScanConfig(args).foreach { config =>
-    val shellConfig = io.shiftleft.console
-      .Config()
-      .copy(bundleToRun = Some("scan"), src = Some(config.src), overwrite = config.overwrite, store = config.store)
-    runAmmonite(shellConfig, JoernProduct)
+  if (args.contains("--dump")) {
+    dumpQueries()
+  } else {
+    parseScanConfig(args).foreach { config =>
+      val shellConfig = io.shiftleft.console
+        .Config()
+        .copy(bundleToRun = Some("scan"), src = Some(config.src), overwrite = config.overwrite, store = config.store)
+      runAmmonite(shellConfig, JoernProduct)
+    }
   }
 
-  override protected def predefPlus(lines: List[String]) = AmmoniteBridge.predefPlus(lines)
-  override protected def shutdownHooks = AmmoniteBridge.shutdownHooks
+  private def dumpQueries(): Unit = {
+    implicit val engineContext: EngineContext = null
+    implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
+    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider())
+    val outFileName = "querydb.json"
+    better.files
+      .File(outFileName)
+      .write(
+        Serialization.write(queryDb.allQueries)
+      )
+    println(s"Queries written to: $outFileName")
+  }
+
+  override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
+  override protected def shutdownHooks: List[String] = AmmoniteBridge.shutdownHooks
   override protected def promptStr() = AmmoniteBridge.promptStr()
 }
 
