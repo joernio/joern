@@ -115,8 +115,12 @@ rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 if [ -n "${JOERN_LINK_DIR+dummy}" ] && [ "$(whoami)" = "root" ]; then
   echo "Creating symlinks to Joern tools in $JOERN_LINK_DIR"
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
-  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-cpg2scpg "$JOERN_LINK_DIR" || true
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/fuzzyc2cpg.sh "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-export "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-flow "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-scan "$JOERN_LINK_DIR" || true
+  ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-stats "$JOERN_LINK_DIR" || true
 fi
 
 echo "Installing default queries"
