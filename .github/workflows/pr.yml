@@ -10,5 +10,6 @@ jobs:
       with:
         java-version: 1.8
     - name: Run tests
-      run: sbt test scalafmtCheck
-      run: ./install.sh --non-interactive
+      run: |
+      sbt test scalafmtCheck
+      ./install.sh --non-interactive
