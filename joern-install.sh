@@ -41,32 +41,32 @@ if [ $# -ne 0 ] && [ "$1" = "--non-interactive" ]; then
   JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
   JOERN_VERSION=$JOERN_DEFAULT_VERSION
 else
-    echo -n "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
+    printf "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
     read -r JOERN_PROMPT_ANSWER
 
     if [ "$JOERN_PROMPT_ANSWER" = "N" ] && [ "$JOERN_PROMPT_ANSWER" = "n" ]; then
 	exit 0
     fi
 
-    echo -n "Enter an install location or press enter for the default ($JOERN_DEFAULT_INSTALL_DIR): "
+    printf '%s' "Enter an install location or press enter for the default ($JOERN_DEFAULT_INSTALL_DIR): "
     read -r JOERN_INSTALL_DIR
 
     if [ "$JOERN_INSTALL_DIR" = "" ]; then
 	JOERN_INSTALL_DIR=$JOERN_DEFAULT_INSTALL_DIR
     fi
 
-    echo -n "Would you like to create a symlink to the Joern tools? [y/N]: "
+    printf "Would you like to create a symlink to the Joern tools? [y/N]: "
     read -r JOERN_LINK_ANSWER
 
     if [ "$JOERN_LINK_ANSWER" = "Y" ] || [ "$JOERN_LINK_ANSWER" = "y" ]; then
-	echo -n "Where would you like to link the Joern tools? (default $JOERN_DEFAULT_LINK_DIR): "
+	printf '%s' "Where would you like to link the Joern tools? (default $JOERN_DEFAULT_LINK_DIR): "
 	read -r JOERN_LINK_DIR
 	if [ "$JOERN_LINK_DIR" = "" ]; then
 	    JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
 	fi
     fi
 
-    echo -n "Please enter a Joern version/tag or press enter for the latest version: "
+    printf "Please enter a Joern version/tag or press enter for the latest version: "
     read -r JOERN_VERSION
 
 fi
@@ -87,7 +87,7 @@ unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
 # Link to JOERN_LINK_DIR if desired by the user
-if [ -n "${JOERN_LINK_DIR+dummy}" ] && [ "$(whoami)" == "root" ]; then
+if [ -n "${JOERN_LINK_DIR+dummy}" ] && [ "$(whoami)" = "root" ]; then
   echo "Creating symlinks to Joern tools in $JOERN_LINK_DIR"
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
   ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-cpg2scpg "$JOERN_LINK_DIR" || true
@@ -95,8 +95,8 @@ if [ -n "${JOERN_LINK_DIR+dummy}" ] && [ "$(whoami)" == "root" ]; then
 fi
 
 echo "Installing default queries"
-CURDIR=`pwd`
+CURDIR=$(pwd)
 cd $JOERN_INSTALL_DIR/joern-cli
 ./joern-scan --updatedb
-cd $CURDIR
+cd "$CURDIR"
 echo "Install complete!"
