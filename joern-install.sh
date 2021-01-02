@@ -95,5 +95,8 @@ if [ -n "${JOERN_LINK_DIR+dummy}" ] && [ "$(whoami)" == "root" ]; then
 fi
 
 echo "Installing default queries"
-$JOERN_INSTALL_DIR/joern-cli/joern-scan --updatedb
+CURDIR=`pwd`
+cd $JOERN_INSTALL_DIR/joern-cli
+./joern-scan --updatedb
+cd $CURDIR
 echo "Install complete!"
