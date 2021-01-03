@@ -136,7 +136,7 @@ mkdir -p $JOERN_INSTALL_DIR
 
 check_installed "curl"
 
-if [ $NO_DOWNLOAD ]; then
+if [ $NO_DOWNLOAD = true ]; then
     sbt createDistribution
 else
   if [ "$JOERN_VERSION" = "" ]; then
