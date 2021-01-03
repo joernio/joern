@@ -76,7 +76,7 @@ else
     printf "This script will download and install the Joern tools on your machine. Proceed? [Y/n]: "
     read -r JOERN_PROMPT_ANSWER
 
-    if [ "$JOERN_PROMPT_ANSWER" = "N" ] && [ "$JOERN_PROMPT_ANSWER" = "n" ]; then
+    if [ "$JOERN_PROMPT_ANSWER" = "N" ] || [ "$JOERN_PROMPT_ANSWER" = "n" ]; then
 	exit 0
     fi
 
