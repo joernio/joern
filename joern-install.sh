@@ -60,13 +60,6 @@ do
     shift
 done
 
-if [ $NON_INTERACTIVE = true ] && [ "$(whoami)" != "root" ]; then
-  echo "==============================================================="
-  echo "WARNING: you are NOT root and you are running non-interactively"
-  echo "Symlinks will not be created"
-  echo "==============================================================="
-fi
-
 JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 JOERN_DEFAULT_VERSION=""
@@ -138,6 +131,7 @@ check_installed "curl"
 
 if [ $NO_DOWNLOAD = true ]; then
     sbt createDistribution
+    sbt clean
 else
   if [ "$JOERN_VERSION" = "" ]; then
     curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
@@ -150,17 +144,24 @@ fi
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
-# Link to JOERN_LINK_DIR if desired by the user
-if [ -n "${JOERN_LINK_DIR+dummy}" ]; then
-  echo "Creating symlinks to Joern tools in $JOERN_LINK_DIR"
-  echo "If you are not root, please enter your password now:"
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR" || true
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/fuzzyc2cpg.sh "$JOERN_LINK_DIR" || true
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-export "$JOERN_LINK_DIR" || true
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-flow "$JOERN_LINK_DIR" || true
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-scan "$JOERN_LINK_DIR" || true
-  sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-stats "$JOERN_LINK_DIR" || true
+if [ $NON_INTERACTIVE = true ] && [ "$(whoami)" != "root" ]; then
+  echo "==============================================================="
+  echo "WARNING: you are NOT root and you are running non-interactively"
+  echo "Symlinks will not be created"
+  echo "==============================================================="
+else
+    # Link to JOERN_LINK_DIR if desired by the user
+    if [ -n "${JOERN_LINK_DIR+dummy}" ]; then
+	echo "Creating symlinks to Joern tools in $JOERN_LINK_DIR"
+	echo "If you are not root, please enter your password now:"
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR" || true
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/fuzzyc2cpg.sh "$JOERN_LINK_DIR" || true
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-export "$JOERN_LINK_DIR" || true
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-flow "$JOERN_LINK_DIR" || true
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-scan "$JOERN_LINK_DIR" || true
+	sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-stats "$JOERN_LINK_DIR" || true
+    fi
 fi
 
 chown -R $USER_ID $JOERN_INSTALL_DIR
