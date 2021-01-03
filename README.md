@@ -10,7 +10,7 @@ Joern's Documentation is available here: https://docs.joern.io/home
 
 ```
 wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-install.sh
-sudo ./joern-install.sh --non-interactive
+sudo ./joern-install.sh
 joern
 
 Compiling (synthetic)/ammonite/predef/interpBridge.sc
@@ -27,4 +27,9 @@ Compiling /home/tmp/shiftleft/joern/(console)
 
 joern>
 
+```
+
+If the installation script fails for any reason, try
+```
+./joern-install --interactive
 ```
