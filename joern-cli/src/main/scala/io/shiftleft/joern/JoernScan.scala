@@ -93,10 +93,12 @@ object JoernScan extends App with BridgeBase {
       val absPath = queryDbZip.path.toAbsolutePath.toString
       queryDbZip.writeBytes(r.bytes.iterator)
       println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
+      println("Removing current version of query database")
       val rmPluginConfig = io.shiftleft.console
         .Config()
         .copy(rmPlugin = Some("querydb"))
       runAmmonite(rmPluginConfig, JoernProduct)
+      println("Adding updated version of query database")
       val addPluginConfig = io.shiftleft.console
         .Config()
         .copy(addPlugin = Some(absPath))
