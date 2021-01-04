@@ -59,6 +59,9 @@ do
         --install-dir=*)
             CUSTOM_INSTALL_DIR="${1#*=}"
           ;;
+        --version=*)
+          CUSTOM_VERSION="${1#*=}"
+          ;;
         --*) echo "bad option $1"
             ;;
         *) echo "argument $1"
@@ -74,9 +77,10 @@ JOERN_DEFAULT_VERSION=""
 if [ $INTERACTIVE = false ]; then
   echo "non-interactive mode, using defaults"
   JOERN_INSTALL_DIR="${CUSTOM_INSTALL_DIR:-$JOERN_DEFAULT_INSTALL_DIR}"
+  JOERN_VERSION="${CUSTOM_VERSION:-$JOERN_DEFAULT_VERSION}"
   JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
-  JOERN_VERSION=$JOERN_DEFAULT_VERSION
   echo "Installation dir: $JOERN_INSTALL_DIR"
+  echo "Version: $JOERN_VERSION"
   echo "Symbolic links in: $JOERN_LINK_DIR"
 else
     # Confirm install with user.
