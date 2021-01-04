@@ -64,7 +64,7 @@ object JoernScan extends App with BridgeBase {
       }
       val shellConfig = io.shiftleft.console
         .Config()
-        .copy(bundleToRun = Some("scan"), src = Some(config.src), overwrite = config.overwrite, store = config.store)
+        .copy(pluginToRun = Some("scan"), src = Some(config.src), overwrite = config.overwrite, store = config.store)
       runAmmonite(shellConfig, JoernProduct)
     }
   }
