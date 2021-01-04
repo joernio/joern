@@ -56,6 +56,9 @@ do
         --without-plugins)
             INSTALL_DEFAULT_PLUGINS=false
             ;;
+        --install-dir=*)
+            CUSTOM_INSTALL_DIR="${1#*=}"
+          ;;
         --*) echo "bad option $1"
             ;;
         *) echo "argument $1"
@@ -70,7 +73,7 @@ JOERN_DEFAULT_VERSION=""
 
 if [ $INTERACTIVE = false ]; then
   echo "non-interactive mode, using defaults"
-  JOERN_INSTALL_DIR=$JOERN_DEFAULT_INSTALL_DIR
+  JOERN_INSTALL_DIR="${CUSTOM_INSTALL_DIR:-$JOERN_DEFAULT_INSTALL_DIR}"
   JOERN_LINK_DIR=$JOERN_DEFAULT_LINK_DIR
   JOERN_VERSION=$JOERN_DEFAULT_VERSION
   echo "Installation dir: $JOERN_INSTALL_DIR"
@@ -113,8 +116,8 @@ if [ -d "$JOERN_INSTALL_DIR/joern-cli" ]; then
     printf "Should I remove it? [y/N]"
     read -r ANSWER
     if [ $ANSWER = "y" ] || [ $ANSWER = "Y" ]; then
-      echo "rm -rf $JOERN_INSTALL_DIR/joern-cli"
-      rm -rf "$JOERN_INSTALL_DIR/joern-cli"
+      echo "rm -r $JOERN_INSTALL_DIR/joern-cli"
+      rm -r "$JOERN_INSTALL_DIR/joern-cli"
     else
         exit
     fi
@@ -124,10 +127,15 @@ if [ -d "$JOERN_INSTALL_DIR/joern-cli" ]; then
       exit
     else
       echo "Removing: $JOERN_INSTALL_DIR/joern-cli"
-      echo "rm -rf $JOERN_INSTALL_DIR/joern-cli"
-      rm -rf "$JOERN_INSTALL_DIR/joern-cli"
+      echo "rm -r $JOERN_INSTALL_DIR/joern-cli"
+      rm -r "$JOERN_INSTALL_DIR/joern-cli"
     fi
   fi
+fi
+
+if [ ! -d $JOERN_INSTALL_DIR ]; then
+  echo "$JOERN_INSTALL_DIR does not exist. Creating"
+  mkdir -p $JOERN_INSTALL_DIR
 fi
 
 mkdir -p $JOERN_INSTALL_DIR
