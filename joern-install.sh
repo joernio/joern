@@ -39,6 +39,7 @@ check_installed() {
 INTERACTIVE=false
 NO_DOWNLOAD=false
 REINSTALL=false
+INSTALL_DEFAULT_PLUGINS=true
 
 while test $# -gt 0
 do
@@ -51,6 +52,9 @@ do
             ;;
         --reinstall)
           REINSTALL=true
+            ;;
+        --without-plugins)
+            INSTALL_DEFAULT_PLUGINS=false
             ;;
         --*) echo "bad option $1"
             ;;
@@ -168,9 +172,12 @@ fi
 
 chown -R $USER_ID $JOERN_INSTALL_DIR
 
-echo "Installing default queries"
-CURDIR=$(pwd)
-cd $JOERN_INSTALL_DIR/joern-cli
-./joern-scan --updatedb
-cd "$CURDIR"
+if [ $INSTALL_DEFAULT_PLUGINS = true ]; then
+  echo "Installing default plugins"
+  CURDIR=$(pwd)
+  cd $JOERN_INSTALL_DIR/joern-cli
+  ./joern-scan --updatedb
+  cd "$CURDIR"
+fi
+
 echo "Install complete!"
