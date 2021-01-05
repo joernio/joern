@@ -2,7 +2,7 @@ package io.shiftleft.joern
 
 import io.shiftleft.console.scan.{ScanPass, outputFindings}
 import io.shiftleft.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
+import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.joern.console.AmmoniteBridge
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import org.json4s.{Formats, NoTypeHints}
@@ -72,7 +72,7 @@ object JoernScan extends App with BridgeBase {
   private def dumpQueries(): Unit = {
     implicit val engineContext: EngineContext = null
     implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
-    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider())
+    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     // TODO allow specifying file from the outside and make this portable
     val outFileName = "/tmp/querydb.json"
     better.files
@@ -114,10 +114,10 @@ object JoernScan extends App with BridgeBase {
 object Scan {
   val overlayName = "scan"
   val description = "Joern Code Scanner"
-  def defaultOpts = new ScanOptions()
+  def defaultOpts = new ScanOptions(maxCallDepth = 2)
 }
 
-class ScanOptions() extends LayerCreatorOptions {}
+class ScanOptions(var maxCallDepth: Int) extends LayerCreatorOptions {}
 
 class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends LayerCreator {
 
@@ -125,7 +125,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   override val description: String = Scan.description
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider())
+    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(options.maxCallDepth))
     val allQueries: List[Query] = queryDb.allQueries
     if (allQueries.isEmpty) {
       println("You have not installed any query bundles. Try:")
@@ -136,11 +136,11 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   }
 }
 
-class JoernDefaultArgumentProvider(implicit context: EngineContext) extends DefaultArgumentProvider {
+class JoernDefaultArgumentProvider(maxCallDepth: Int)(implicit context: EngineContext) extends DefaultArgumentProvider {
 
   override def defaultArgument(method: MethodSymbol, im: InstanceMirror, x: Symbol, i: Int): Option[Any] = {
     if (x.typeSignature.toString.endsWith("EngineContext")) {
-      Some(context)
+      Some(context.copy(config = EngineConfig(maxCallDepth = maxCallDepth)))
     } else {
       super.defaultArgument(method, im, x, i)
     }
