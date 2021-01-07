@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Layer
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 import better.files._
-import better.files.Dsl._
+import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 
 import scala.reflect.runtime.universe._
 
@@ -70,7 +70,7 @@ object JoernScan extends App with BridgeBase {
   }
 
   private def dumpQueries(): Unit = {
-    implicit val engineContext: EngineContext = null
+    implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
     implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
     val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     // TODO allow specifying file from the outside and make this portable
