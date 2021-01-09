@@ -93,18 +93,6 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
     }
   }
 
-  "Executing scripts for example code 'testcode/const-funcs" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/const-funcs"))) { cpg: Cpg =>
-    "work correctly for 'const-funcs.sc'" in {
-      val methods =
-        console.JoernConsole.runScriptTest("c/const-funcs.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
-
-      // "side_effect_number" is included here as we are simply trying to emulate a side effect.
-      methods.map(_.name) should contain theSameElementsAs
-        Set("eligible", "eligible_params", "side_effect_number")
-    }
-  }
-
   "Executing scripts for example code 'testcode/const-ish" should withCpgZip(
     File(getClass.getClassLoader.getResource("testcode/const-ish"))) { cpg: Cpg =>
     "work correctly for 'const-ish.sc'" in {
