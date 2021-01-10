@@ -10,6 +10,7 @@ Joern's Documentation is available here: https://docs.joern.io/home
 
 ```
 wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-install.sh
+chmod +x ./joern-install.sh
 sudo ./joern-install.sh
 joern
 
