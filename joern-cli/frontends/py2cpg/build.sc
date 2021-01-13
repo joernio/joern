@@ -1,8 +1,9 @@
 import coursier.MavenRepository
 import mill._
+import mill.scalalib.scalafmt.ScalafmtModule
 import scalalib._
 
-object py2cpg extends SbtModule {
+object py2cpg extends SbtModule with ScalafmtModule {
   def scalaVersion = "2.13.1"
   def jfrogUri: String = "https://shiftleft.jfrog.io/shiftleft/libs-release-local"
 
