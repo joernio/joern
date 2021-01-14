@@ -2,10 +2,10 @@ package io.shiftleft.py2cpg
 
 import io.shiftleft.passes.DiffGraph
 import org.python.pydev.core.IGrammarVersionProvider
-import org.python.pydev.parser.{IGrammar, PyParser}
+import org.python.pydev.parser.PyParser
 import org.python.pydev.parser.jython.SimpleNode
 
-class CodeToAst(sourceCode: String) {
+class CodeToCpg(sourceCode: String) {
   def convert(): Iterator[DiffGraph] = {
     if (sourceCode.isEmpty) {
       // For some reason the PyDev parser cannot handle empty input.

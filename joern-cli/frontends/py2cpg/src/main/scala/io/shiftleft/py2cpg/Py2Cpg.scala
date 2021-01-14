@@ -24,8 +24,8 @@ class Py2Cpg(config: Py2CpgConfig) {
 
     val inputFiles = collectInputFiles(config.inputFileOrDir)
 
-    val astPass = new AstPass(cpg, inputFiles, keyPool)
-    astPass.createAndApply()
+    val filesToCpgPass = new FilesToCpgPass(cpg, inputFiles, keyPool)
+    filesToCpgPass.createAndApply()
   }
 
   private def initCpg(outputFileStr: String): Cpg = {
