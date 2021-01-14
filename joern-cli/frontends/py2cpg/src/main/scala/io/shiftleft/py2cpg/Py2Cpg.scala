@@ -2,6 +2,7 @@ package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
+import org.slf4j.LoggerFactory
 import overflowdb.Graph
 
 import java.nio.file.attribute.BasicFileAttributes
@@ -9,14 +10,20 @@ import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import scala.collection.mutable
 
 case class Py2CpgConfig(outputFile: String,
-                        inputDir: String)
+                        inputFileOrDir: String)
+
+object Py2Cpg {
+  private val logger = LoggerFactory.getLogger(getClass)
+}
 
 class Py2Cpg(config: Py2CpgConfig) {
+  import Py2Cpg._
+
   def buildCpg(): Unit = {
     val cpg = initCpg(config.outputFile)
     val keyPool = new IntervalKeyPool(1, Long.MaxValue)
 
-    val inputFiles = collectInputFiles(config.inputDir)
+    val inputFiles = collectInputFiles(config.inputFileOrDir)
 
     val astPass = new AstPass(cpg, inputFiles, keyPool)
     astPass.createAndApply()
@@ -35,16 +42,17 @@ class Py2Cpg(config: Py2CpgConfig) {
     new Cpg(graph)
   }
 
-  private def collectInputFiles(inputDirStr: String): Iterable[String] = {
-    val inputDir = Paths.get(inputDirStr)
+  private def collectInputFiles(inputFileOrDir: String): Iterable[String] = {
+    val inputPath = Paths.get(inputFileOrDir)
 
-    if (!Files.exists(inputDir)) {
-      // TODO log
+    if (!Files.exists(inputPath)) {
+      logger.error(s"Cannot find $inputFileOrDir")
+      return Iterable.empty
     }
 
     val inputFiles = mutable.ArrayBuffer.empty[String]
 
-    Files.walkFileTree(inputDir, new SimpleFileVisitor[Path] {
+    Files.walkFileTree(inputPath, new SimpleFileVisitor[Path] {
       override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
         val fileStr = file.toString
         if (fileStr.endsWith(".py")) {

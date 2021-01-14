@@ -36,8 +36,13 @@ object py2cpg extends SbtModule with ScalafmtModule {
     ivy"org.python.pydev:shared_core:8.1.0",
     ivy"org.eclipse.platform:org.eclipse.core.resources:3.13.900",
     ivy"org.eclipse.platform:org.eclipse.text:3.10.400",
-    ivy"commons-io:commons-io:2.8.0",
+    ivy"org.slf4j:slf4j-api:1.7.30",
   )
+
+  override def runIvyDeps =
+    Agg(
+      ivy"org.apache.logging.log4j:log4j-slf4j-impl:2.13.3",
+    )
 
   object test extends Tests {
     override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.2")
