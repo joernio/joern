@@ -9,8 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import scala.collection.mutable
 
-case class Py2CpgConfig(outputFile: String,
-                        inputFileOrDir: String)
+case class Py2CpgConfig(outputFile: String, inputFileOrDir: String)
 
 object Py2Cpg {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -36,9 +35,11 @@ class Py2Cpg(config: Py2CpgConfig) {
     }
 
     val odbConfig = overflowdb.Config.withDefaults.withStorageLocation(outputFileStr)
-    val graph = Graph.open(odbConfig,
+    val graph = Graph.open(
+      odbConfig,
       io.shiftleft.codepropertygraph.generated.nodes.Factories.allAsJava,
-      io.shiftleft.codepropertygraph.generated.edges.Factories.allAsJava)
+      io.shiftleft.codepropertygraph.generated.edges.Factories.allAsJava
+    )
     new Cpg(graph)
   }
 
@@ -52,15 +53,18 @@ class Py2Cpg(config: Py2CpgConfig) {
 
     val inputFiles = mutable.ArrayBuffer.empty[String]
 
-    Files.walkFileTree(inputPath, new SimpleFileVisitor[Path] {
-      override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-        val fileStr = file.toString
-        if (fileStr.endsWith(".py")) {
-          inputFiles.append(fileStr)
+    Files.walkFileTree(
+      inputPath,
+      new SimpleFileVisitor[Path] {
+        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+          val fileStr = file.toString
+          if (fileStr.endsWith(".py")) {
+            inputFiles.append(fileStr)
+          }
+          FileVisitResult.CONTINUE
         }
-        FileVisitResult.CONTINUE
       }
-    })
+    )
 
     inputFiles
   }
