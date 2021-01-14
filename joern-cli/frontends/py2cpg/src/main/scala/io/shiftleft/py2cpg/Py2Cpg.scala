@@ -43,7 +43,7 @@ class Py2Cpg(config: Py2CpgConfig) {
     new Cpg(graph)
   }
 
-  private def collectInputFiles(inputFileOrDir: String): Iterable[String] = {
+  private def collectInputFiles(inputFileOrDir: String): Iterable[Path] = {
     val inputPath = Paths.get(inputFileOrDir)
 
     if (!Files.exists(inputPath)) {
@@ -51,7 +51,7 @@ class Py2Cpg(config: Py2CpgConfig) {
       return Iterable.empty
     }
 
-    val inputFiles = mutable.ArrayBuffer.empty[String]
+    val inputFiles = mutable.ArrayBuffer.empty[Path]
 
     Files.walkFileTree(
       inputPath,
@@ -59,7 +59,7 @@ class Py2Cpg(config: Py2CpgConfig) {
         override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
           val fileStr = file.toString
           if (fileStr.endsWith(".py")) {
-            inputFiles.append(fileStr)
+            inputFiles.append(file)
           }
           FileVisitResult.CONTINUE
         }

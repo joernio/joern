@@ -2,13 +2,31 @@ package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import org.slf4j.LoggerFactory
 
-class AstPass(cpg: Cpg, sourceFiles: Iterable[String], keyPool: IntervalKeyPool)
-    extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(sourceFiles.size))) {
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
 
-  override def partIterator: Iterator[String] = sourceFiles.iterator
+object AstPass {
+  private val logger = LoggerFactory.getLogger(getClass)
+}
 
-  override def runOnPart(sourceFile: String): Iterator[DiffGraph] = {
-    Iterator.empty
+class AstPass(cpg: Cpg, sourceFiles: Iterable[Path], keyPool: IntervalKeyPool)
+    extends ParallelCpgPass[Path](cpg, keyPools = Some(keyPool.split(sourceFiles.size))) {
+  import AstPass._
+
+  override def partIterator: Iterator[Path] = sourceFiles.iterator
+
+  override def runOnPart(sourceFile: Path): Iterator[DiffGraph] = {
+    try {
+      val content = Files.readAllBytes(sourceFile)
+      val contentStr = new String(content, StandardCharsets.UTF_8)
+
+      new CodeToAst(contentStr).convert()
+    } catch {
+      case exception: Throwable =>
+        logger.error(s"Failed to convert $sourceFile.", exception)
+        Iterator.empty
+    }
   }
 }

@@ -14,8 +14,6 @@ class ParsedArguments(arguments: Seq[String]) extends ScallopConf(arguments) {
 }
 
 object Main extends App {
-  println("py2cpg")
-
   val parsedArguments = new ParsedArguments(args)
 
   val py2CpgConfig =
