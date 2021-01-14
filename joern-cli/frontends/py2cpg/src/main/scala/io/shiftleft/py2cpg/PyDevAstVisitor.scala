@@ -65,14 +65,28 @@ import org.python.pydev.parser.jython.ast.{
   Yield
 }
 
+object PyDevAstVisitor {
+  private implicit class ToNewNodeConverter(node: AnyRef) {
+    def cast: nodes.NewNode = {
+      node.asInstanceOf[nodes.NewNode]
+    }
+  }
+}
+
 class PyDevAstVisitor extends VisitorIF {
+  import PyDevAstVisitor._
+
   private val diffGraph = new DiffGraph.Builder()
+  private val nodeBuilder = new NodeBuilder(diffGraph)
 
   def getDiffGraph: DiffGraph = {
     diffGraph.build()
   }
 
-  override def visitModule(module: ast.Module): nodes.NewNode = {}
+  override def visitModule(module: ast.Module): nodes.NewNode = {
+    module.traverse(this)
+    null
+  }
 
   override def visitInteractive(interactive: Interactive): nodes.NewNode = ???
 
@@ -124,7 +138,9 @@ class PyDevAstVisitor extends VisitorIF {
 
   override def visitNonLocal(nonLocal: NonLocal): nodes.NewNode = ???
 
-  override def visitExpr(expr: Expr): nodes.NewNode = ???
+  override def visitExpr(expr: Expr): nodes.NewNode = {
+    expr.value.accept(this).cast
+  }
 
   override def visitPass(pass: Pass): nodes.NewNode = ???
 
@@ -162,13 +178,23 @@ class PyDevAstVisitor extends VisitorIF {
 
   override def visitCompare(compare: Compare): nodes.NewNode = ???
 
-  override def visitCall(call: Call): nodes.NewNode = ???
+  override def visitCall(call: Call): nodes.NewNode = {
+    val receiverNode = call.func.accept(this).cast
+
+    val argumentNodes = call.args.map(_.accept(this).cast)
+
+    val callNode = nodeBuilder.callNode().cast
+
+    callNode
+  }
 
   override def visitRepr(repr: Repr): nodes.NewNode = ???
 
   override def visitNum(num: Num): nodes.NewNode = ???
 
-  override def visitStr(str: Str): nodes.NewNode = ???
+  override def visitStr(str: Str): nodes.NewNode = {
+    nodeBuilder.literalNode(str.s)
+  }
 
   override def visitStrJoin(strJoin: StrJoin): nodes.NewNode = ???
 
@@ -178,7 +204,9 @@ class PyDevAstVisitor extends VisitorIF {
 
   override def visitStarred(starred: Starred): nodes.NewNode = ???
 
-  override def visitName(name: Name): nodes.NewNode = ???
+  override def visitName(name: Name): nodes.NewNode = {
+    nodeBuilder.identifierNode(name.id)
+  }
 
   override def visitList(list: ast.List): nodes.NewNode = ???
 
