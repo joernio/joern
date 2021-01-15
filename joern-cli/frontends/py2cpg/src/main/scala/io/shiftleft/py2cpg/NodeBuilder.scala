@@ -1,7 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewMetaData}
 import io.shiftleft.passes.DiffGraph
 
 class NodeBuilder(diffGraph: DiffGraph.Builder) {
@@ -28,5 +28,13 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       code = code
     )
     addNodeToDiff(literalNode)
+  }
+
+  def metaNode(language: String, version: String): nodes.NewMetaData = {
+    val metaNode = new NewMetaData(
+      language = language,
+      version = version
+    )
+    addNodeToDiff(metaNode)
   }
 }
