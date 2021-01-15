@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 object Py2Cpg {
-  case class InputPair(file: String, content: String)
+  case class InputPair(content: String, file: String)
   type InputProvider = () => InputPair
 }
 

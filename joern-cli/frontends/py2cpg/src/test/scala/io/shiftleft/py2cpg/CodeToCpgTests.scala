@@ -6,9 +6,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class CodeToCpgTests extends AnyWordSpec with Matchers {
   "foo" in {
-    val fixture = new Fixture("""print("Foo")""")
+    val cpg = Py2CpgTest.newContext.buildCpg("""print("Foo")""")
 
-    val x = fixture.cpg.literal.l
+    val x = cpg.literal.l
     println(x)
   }
 

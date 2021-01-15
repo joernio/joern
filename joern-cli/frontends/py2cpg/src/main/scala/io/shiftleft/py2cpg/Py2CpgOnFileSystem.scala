@@ -16,7 +16,7 @@ object Py2CpgOnFileSystem {
 
   /**
    * Entry point for files system based cpg generation from python code.
-   * @param config Configurtion for cpg generation.
+   * @param config Configuration for cpg generation.
    */
   def buildCpg(config: Py2CpgOnFileSystemConfig): Unit = {
     val cpg = initCpg(config.outputFile)
@@ -26,7 +26,7 @@ object Py2CpgOnFileSystem {
       () => {
         val content = Files.readAllBytes(inputFile)
         val contentStr = new String(content, StandardCharsets.UTF_8)
-        Py2Cpg.InputPair(inputFile.toString, contentStr)
+        Py2Cpg.InputPair(contentStr, inputFile.toString)
       }
     }
 
