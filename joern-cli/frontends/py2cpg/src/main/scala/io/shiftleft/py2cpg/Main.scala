@@ -17,8 +17,8 @@ object Main extends App {
   val parsedArguments = new ParsedArguments(args)
 
   val py2CpgConfig =
-    new Py2CpgConfig(parsedArguments.output.toOption.get, parsedArguments.input.toOption.get)
+    new Py2CpgOnFileSystemConfig(parsedArguments.output.toOption.get, parsedArguments.input.toOption.get)
 
-  val py2cpg = new Py2Cpg(py2CpgConfig)
+  val py2cpg = new Py2CpgOnFileSystem(py2CpgConfig)
   py2cpg.buildCpg()
 }
