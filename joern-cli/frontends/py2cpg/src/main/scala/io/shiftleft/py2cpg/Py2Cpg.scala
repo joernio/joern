@@ -9,8 +9,7 @@ object Py2Cpg {
   type InputProvider = () => InputPair
 }
 
-class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider],
-             outputCpg: Cpg) {
+class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
   private val diffGraph = new DiffGraph.Builder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
 
@@ -19,9 +18,7 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider],
 
     nodeBuilder.metaNode(Languages.PYTHON, version = "")
 
-
     DiffGraph.Applier.applyDiff(diffGraph.build, outputCpg, keyPool = Some(keyPool))
-
 
     inputProviders.foreach { inputProviders =>
       val inputPair = inputProviders()
