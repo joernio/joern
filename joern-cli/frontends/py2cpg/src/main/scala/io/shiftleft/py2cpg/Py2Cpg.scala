@@ -10,12 +10,11 @@ object Py2Cpg {
   type InputProvider = () => InputPair
 }
 
-/**
- * Entry point for general cpg generation from python code.
- * @param inputProviders Set of functions which provide InputPairs.
- *                       The functions must be safe to call from different threads.
- * @param outputCpg Empty target cpg which will be populated.
- */
+/** Entry point for general cpg generation from python code.
+  * @param inputProviders Set of functions which provide InputPairs.
+  *                       The functions must be safe to call from different threads.
+  * @param outputCpg Empty target cpg which will be populated.
+  */
 class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
   private val diffGraph = new DiffGraph.Builder()
   private val nodeBuilder = new NodeBuilder(diffGraph)

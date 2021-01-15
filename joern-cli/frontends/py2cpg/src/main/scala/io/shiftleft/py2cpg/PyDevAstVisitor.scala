@@ -1,6 +1,6 @@
 package io.shiftleft.py2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
 import org.python.pydev.parser.jython.ast
 import org.python.pydev.parser.jython.ast.{
@@ -62,7 +62,8 @@ import org.python.pydev.parser.jython.ast.{
   While,
   With,
   WithItem,
-  Yield
+  Yield,
+  operatorType
 }
 
 object PyDevAstVisitor {
@@ -78,9 +79,14 @@ class PyDevAstVisitor extends VisitorIF {
 
   private val diffGraph = new DiffGraph.Builder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
+  private val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def getDiffGraph: DiffGraph = {
     diffGraph.build()
+  }
+
+  private def codeOf(node: nodes.NewNode): String = {
+    node.asInstanceOf[nodes.HasCode].code
   }
 
   override def visitModule(module: ast.Module): nodes.NewNode = {
@@ -152,7 +158,43 @@ class PyDevAstVisitor extends VisitorIF {
 
   override def visitNamedExpr(namedExpr: NamedExpr): nodes.NewNode = ???
 
-  override def visitBinOp(binOp: BinOp): nodes.NewNode = ???
+  override def visitBinOp(binOp: BinOp): nodes.NewNode = {
+    val lhsNode = binOp.left.accept(this).cast
+    val rhsNode = binOp.right.accept(this).cast
+
+    val (operatorCode, methodFullName) =
+      binOp.op match {
+        case operatorType.Add    => (" + ", Operators.addition)
+        case operatorType.Sub    => (" - ", Operators.subtraction)
+        case operatorType.Mult   => (" * ", Operators.multiplication)
+        case operatorType.Div    => (" / ", Operators.division)
+        case operatorType.Mod    => (" % ", Operators.modulo)
+        case operatorType.Pow    => (" ** ", Operators.exponentiation)
+        case operatorType.LShift => (" << ", Operators.shiftLeft)
+        case operatorType.RShift => (" << ", Operators.arithmeticShiftRight)
+        case operatorType.BitOr  => (" | ", Operators.or)
+        case operatorType.BitXor => (" ^ ", Operators.xor)
+        case operatorType.BitAnd => (" & ", Operators.and)
+        case operatorType.BitAnd =>
+          (" // ", "<operator>.floorDiv") // TODO make this a define and add policy for this
+      }
+
+    val code = codeOf(lhsNode) + operatorCode + codeOf(rhsNode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      methodFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      binOp.beginLine,
+      binOp.beginColumn
+    )
+
+    edgeBuilder.astEdge(lhsNode, callNode, 1)
+    edgeBuilder.argumentEdge(lhsNode, callNode, 1)
+    edgeBuilder.astEdge(rhsNode, callNode, 2)
+    edgeBuilder.argumentEdge(rhsNode, callNode, 2)
+
+    callNode
+  }
 
   override def visitUnaryOp(unaryOp: UnaryOp): nodes.NewNode = ???
 
@@ -183,17 +225,21 @@ class PyDevAstVisitor extends VisitorIF {
 
     val argumentNodes = call.args.map(_.accept(this).cast)
 
-    val callNode = nodeBuilder.callNode().cast
+    val callNode = nodeBuilder
+      .callNode("TODO", "TODO", DispatchTypes.DYNAMIC_DISPATCH, call.beginLine, call.beginColumn)
+      .cast
 
     callNode
   }
 
   override def visitRepr(repr: Repr): nodes.NewNode = ???
 
-  override def visitNum(num: Num): nodes.NewNode = ???
+  override def visitNum(num: Num): nodes.NewNode = {
+    nodeBuilder.literalNode(num.num, num.beginLine, num.beginColumn)
+  }
 
   override def visitStr(str: Str): nodes.NewNode = {
-    nodeBuilder.literalNode(str.s)
+    nodeBuilder.literalNode(str.s, str.beginLine, str.beginColumn)
   }
 
   override def visitStrJoin(strJoin: StrJoin): nodes.NewNode = ???
@@ -205,7 +251,7 @@ class PyDevAstVisitor extends VisitorIF {
   override def visitStarred(starred: Starred): nodes.NewNode = ???
 
   override def visitName(name: Name): nodes.NewNode = {
-    nodeBuilder.identifierNode(name.id)
+    nodeBuilder.identifierNode(name.id, name.beginLine, name.beginColumn)
   }
 
   override def visitList(list: ast.List): nodes.NewNode = ???

@@ -11,21 +11,38 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     node
   }
 
-  def callNode(): nodes.NewCall = {
-    val callNode = new nodes.NewCall()
+  def callNode(
+      code: String,
+      name: String,
+      dispatchType: String,
+      lineNumber: Int,
+      columnNumber: Int
+  ): nodes.NewCall = {
+    val callNode = new nodes.NewCall(
+      code = code,
+      name = name,
+      methodFullName = name,
+      dispatchType = dispatchType,
+      lineNumber = Some(lineNumber),
+      columnNumber = Some(columnNumber)
+    )
     addNodeToDiff(callNode)
   }
 
-  def identifierNode(name: String): nodes.NewIdentifier = {
+  def identifierNode(name: String, lineNumber: Int, columnNumber: Int): nodes.NewIdentifier = {
     val identifierNode = new NewIdentifier(
-      name = name
+      name = name,
+      lineNumber = Some(lineNumber),
+      columnNumber = Some(columnNumber)
     )
     addNodeToDiff(identifierNode)
   }
 
-  def literalNode(code: String): nodes.NewLiteral = {
+  def literalNode(code: String, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
     val literalNode = new NewLiteral(
-      code = code
+      code = code,
+      lineNumber = Some(lineNumber),
+      columnNumber = Some(columnNumber)
     )
     addNodeToDiff(literalNode)
   }
