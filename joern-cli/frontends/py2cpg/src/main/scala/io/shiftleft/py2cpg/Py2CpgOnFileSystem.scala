@@ -13,12 +13,12 @@ case class Py2CpgOnFileSystemConfig(outputFile: String, inputFileOrDir: String)
 
 object Py2CpgOnFileSystem {
   private val logger = LoggerFactory.getLogger(getClass)
-}
 
-class Py2CpgOnFileSystem(config: Py2CpgOnFileSystemConfig) {
-  import Py2CpgOnFileSystem._
-
-  def buildCpg(): Unit = {
+  /**
+   * Entry point for files system based cpg generation from python code.
+   * @param config Configurtion for cpg generation.
+   */
+  def buildCpg(config: Py2CpgOnFileSystemConfig): Unit = {
     val cpg = initCpg(config.outputFile)
 
     val inputFiles = collectInputFiles(config.inputFileOrDir)
