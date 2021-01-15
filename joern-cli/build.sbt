@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
 
   "com.lihaoyi" %% "requests" % "0.6.5",
 
-  "com.lihaoyi" %% "ammonite" % "2.0.4" cross CrossVersion.full,
+  "com.lihaoyi" %% "ammonite" % "2.3.8-4-88785969" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.8.0",
   "io.circe" %% "circe-generic" % "0.12.2",
