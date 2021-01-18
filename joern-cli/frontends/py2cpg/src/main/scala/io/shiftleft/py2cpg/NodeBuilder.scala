@@ -31,6 +31,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
 
   def identifierNode(name: String, lineNumber: Int, columnNumber: Int): nodes.NewIdentifier = {
     val identifierNode = new NewIdentifier(
+      code = name,
       name = name,
       lineNumber = Some(lineNumber),
       columnNumber = Some(columnNumber)

@@ -63,6 +63,7 @@ import org.python.pydev.parser.jython.ast.{
   With,
   WithItem,
   Yield,
+  boolopType,
   operatorType,
   unaryopType
 }
@@ -155,7 +156,33 @@ class PyDevAstVisitor extends VisitorIF {
 
   override def visitContinue(aContinue: Continue): nodes.NewNode = ???
 
-  override def visitBoolOp(boolOp: BoolOp): nodes.NewNode = ???
+  override def visitBoolOp(boolOp: BoolOp): nodes.NewNode = {
+    val argNodes = boolOp.values.map(_.accept(this).cast)
+
+    val (operatorCode, methodFullName) =
+      boolOp.op match {
+        case boolopType.And => (" and ", Operators.logicalAnd)
+        case boolopType.Or  => (" or ", Operators.logicalOr)
+      }
+
+    val code = argNodes.map(argNode => codeOf(argNode)).mkString(operatorCode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      methodFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      boolOp.beginLine,
+      boolOp.beginColumn
+    )
+
+    var orderAndArgIndex = 1
+    argNodes.foreach { argNode =>
+      edgeBuilder.astEdge(argNode, callNode, orderAndArgIndex)
+      edgeBuilder.argumentEdge(argNode, callNode, orderAndArgIndex)
+      orderAndArgIndex += 1
+    }
+
+    callNode
+  }
 
   override def visitNamedExpr(namedExpr: NamedExpr): nodes.NewNode = ???
 
