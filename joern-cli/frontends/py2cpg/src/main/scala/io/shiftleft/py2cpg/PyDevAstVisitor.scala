@@ -114,7 +114,30 @@ class PyDevAstVisitor extends VisitorIF {
 
   override def visitDelete(delete: Delete): nodes.NewNode = ???
 
-  override def visitAssign(assign: Assign): nodes.NewNode = ???
+  override def visitAssign(assign: Assign): nodes.NewNode = {
+    if (assign.targets.size == 1) {
+      val lhsNode = assign.targets(0).accept(this).cast
+      val rhsNode = assign.value.accept(this).cast
+
+      val code = codeOf(lhsNode) + " = " + codeOf(rhsNode)
+      val callNode = nodeBuilder.callNode(
+        code,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        assign.beginLine,
+        assign.beginColumn
+      )
+
+      edgeBuilder.astEdge(lhsNode, callNode, 1)
+      edgeBuilder.argumentEdge(lhsNode, callNode, 1)
+      edgeBuilder.astEdge(rhsNode, callNode, 2)
+      edgeBuilder.argumentEdge(rhsNode, callNode, 2)
+
+      callNode
+    } else {
+      throw new RuntimeException("Not yet implemented.")
+    }
+  }
 
   override def visitAugAssign(augAssign: AugAssign): nodes.NewNode = ???
 
