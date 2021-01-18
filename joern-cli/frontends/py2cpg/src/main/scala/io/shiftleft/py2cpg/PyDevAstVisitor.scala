@@ -63,7 +63,8 @@ import org.python.pydev.parser.jython.ast.{
   With,
   WithItem,
   Yield,
-  operatorType
+  operatorType,
+  unaryopType
 }
 
 object PyDevAstVisitor {
@@ -196,7 +197,31 @@ class PyDevAstVisitor extends VisitorIF {
     callNode
   }
 
-  override def visitUnaryOp(unaryOp: UnaryOp): nodes.NewNode = ???
+  override def visitUnaryOp(unaryOp: UnaryOp): nodes.NewNode = {
+    val operandNode = unaryOp.operand.accept(this).cast
+
+    val (operatorCode, methodFullName) =
+      unaryOp.op match {
+        case unaryopType.Invert => ("~", Operators.not)
+        case unaryopType.Not    => ("not ", Operators.logicalNot)
+        case unaryopType.UAdd   => ("+", Operators.plus)
+        case unaryopType.USub   => ("-", Operators.minus)
+      }
+
+    val code = operatorCode + codeOf(operandNode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      methodFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      unaryOp.beginLine,
+      unaryOp.beginColumn
+    )
+
+    edgeBuilder.astEdge(operandNode, callNode, 1)
+    edgeBuilder.argumentEdge(operandNode, callNode, 1)
+
+    callNode
+  }
 
   override def visitLambda(lambda: Lambda): nodes.NewNode = ???
 
