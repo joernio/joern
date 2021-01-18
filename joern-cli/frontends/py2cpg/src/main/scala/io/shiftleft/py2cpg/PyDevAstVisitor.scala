@@ -76,19 +76,15 @@ object PyDevAstVisitor {
   }
 }
 
-class PyDevAstVisitor extends VisitorIF {
+class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
   import PyDevAstVisitor._
 
   private val diffGraph = new DiffGraph.Builder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
-  private val edgeBuilder = new EdgeBuilder(diffGraph)
+  protected val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def getDiffGraph: DiffGraph = {
     diffGraph.build()
-  }
-
-  private def codeOf(node: nodes.NewNode): String = {
-    node.asInstanceOf[nodes.HasCode].code
   }
 
   override def visitModule(module: ast.Module): nodes.NewNode = {
@@ -128,10 +124,7 @@ class PyDevAstVisitor extends VisitorIF {
         assign.beginColumn
       )
 
-      edgeBuilder.astEdge(lhsNode, callNode, 1)
-      edgeBuilder.argumentEdge(lhsNode, callNode, 1)
-      edgeBuilder.astEdge(rhsNode, callNode, 2)
-      edgeBuilder.argumentEdge(rhsNode, callNode, 2)
+      addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
 
       callNode
     } else {
@@ -197,12 +190,7 @@ class PyDevAstVisitor extends VisitorIF {
       boolOp.beginColumn
     )
 
-    var orderAndArgIndex = 1
-    argNodes.foreach { argNode =>
-      edgeBuilder.astEdge(argNode, callNode, orderAndArgIndex)
-      edgeBuilder.argumentEdge(argNode, callNode, orderAndArgIndex)
-      orderAndArgIndex += 1
-    }
+    addAstChildrenAsArguments(callNode, 1, argNodes)
 
     callNode
   }
@@ -239,10 +227,7 @@ class PyDevAstVisitor extends VisitorIF {
       binOp.beginColumn
     )
 
-    edgeBuilder.astEdge(lhsNode, callNode, 1)
-    edgeBuilder.argumentEdge(lhsNode, callNode, 1)
-    edgeBuilder.astEdge(rhsNode, callNode, 2)
-    edgeBuilder.argumentEdge(rhsNode, callNode, 2)
+    addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
 
     callNode
   }
@@ -267,8 +252,7 @@ class PyDevAstVisitor extends VisitorIF {
       unaryOp.beginColumn
     )
 
-    edgeBuilder.astEdge(operandNode, callNode, 1)
-    edgeBuilder.argumentEdge(operandNode, callNode, 1)
+    addAstChildrenAsArguments(callNode, 1, operandNode)
 
     callNode
   }
