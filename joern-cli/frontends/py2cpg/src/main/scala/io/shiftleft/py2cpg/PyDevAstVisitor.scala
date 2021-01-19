@@ -120,17 +120,21 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
       if (targetWithAccessChains.size == 1) {
         // Case with single entity one the left hand side.
         // We always have an empty acces chain in this case.
-        val targetNode = target.accept(this).cast
         val valueNode = assign.value.accept(this).cast
+        val targetNode = target.accept(this).cast
 
-        createAssignment(targetNode, valueNode, lineAndColOf(assign))
         createAssignment(targetNode, valueNode, lineAndColOf(assign))
       } else {
         // Case with a list of entities on the left hand side.
         val valueNode = assign.value.accept(this).cast
         val tmpVariableName = getUnusedName()
 
-        val assignmentNodes =
+        val tmpIdentifierNode =
+          nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(assign))
+        val tmpVariableAssignNode =
+          createAssignment(tmpIdentifierNode, valueNode, lineAndColOf(assign))
+
+        val targetAssignNodes =
           targetWithAccessChains.map { case (target, accessChain) =>
             val targetNode = target.accept(this).cast
             val tmpIdentifierNode =
@@ -149,7 +153,9 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
           }
 
         val blockNode = nodeBuilder.blockNode(lineAndColOf(assign))
-        addAstChildNodes(blockNode, 1, assignmentNodes)
+        var order = 1
+        order = addAstChildNodes(blockNode, order, tmpVariableAssignNode)
+        addAstChildNodes(blockNode, order, targetAssignNodes)
         blockNode
       }
     } else {
