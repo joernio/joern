@@ -3,10 +3,10 @@ package io.shiftleft.py2cpg.cpg
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
+import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class BoolOpCpgTests extends AnyWordSpec with Matchers {
+class BoolOpCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg(
     """x or y or z""".stripMargin
   )

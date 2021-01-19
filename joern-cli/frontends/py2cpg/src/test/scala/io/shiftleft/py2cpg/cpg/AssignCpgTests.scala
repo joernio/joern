@@ -1,13 +1,13 @@
 package io.shiftleft.py2cpg.cpg
 
-import io.shiftleft.codepropertygraph.generated.{nodes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
+import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class AssignCpgTests extends AnyWordSpec with Matchers {
-  "single target assign" should {
+class AssignCpgTests extends AnyFreeSpec with Matchers {
+  "single target assign" - {
     lazy val cpg = Py2CpgTestContext.buildCpg(
       """x = 2""".stripMargin
     )
@@ -31,7 +31,7 @@ class AssignCpgTests extends AnyWordSpec with Matchers {
     }
   }
 
-  "multi target assign" should {
+  "multi target assign" - {
     // Multi target assign statements get lowered to a block with
     // a local variable for the right hand side and an assignment
     // inside the block for each element in the target list.
@@ -71,7 +71,7 @@ class AssignCpgTests extends AnyWordSpec with Matchers {
     }
   }
 
-  "nested multi target assign" should {
+  "nested multi target assign" - {
     // Nested multi target assign statements get lowered to a block with
     // a local variable for the right hand side, an assignment of the
     // right hand side to the local and an assignment
