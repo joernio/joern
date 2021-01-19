@@ -1,6 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import org.python.pydev.parser.jython.SimpleNode
 import org.python.pydev.parser.jython.ast.{Tuple, exprType}
 
 import scala.collection.mutable
@@ -9,6 +10,10 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
 
   protected def codeOf(node: nodes.NewNode): String = {
     node.asInstanceOf[nodes.HasCode].code
+  }
+
+  protected def lineAndColOf(node: SimpleNode): LineAndColumn = {
+    new LineAndColumn(node.beginLine, node.beginColumn)
   }
 
   protected def getUnusedName(): String = {
@@ -39,16 +44,14 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
   protected def createAssignment(
       lhsNode: nodes.NewNode,
       rhsNode: nodes.NewNode,
-      lineNumber: Int,
-      columnNumber: Int
+      lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     val code = codeOf(lhsNode) + " = " + codeOf(rhsNode)
     val callNode = nodeBuilder.callNode(
       code,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
-      lineNumber,
-      columnNumber
+      lineAndColumn
     )
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
@@ -59,16 +62,14 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
   protected def createIndexAccess(
       baseNode: nodes.NewNode,
       indexNode: nodes.NewNode,
-      lineNumber: Int,
-      columnNumber: Int
+      lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     val code = codeOf(baseNode) + "[" + codeOf(indexNode) + "]"
     val indexAccessNode = nodeBuilder.callNode(
       code,
       Operators.indexAccess,
       DispatchTypes.STATIC_DISPATCH,
-      lineNumber,
-      columnNumber
+      lineAndColumn
     )
 
     addAstChildrenAsArguments(indexAccessNode, 1, baseNode, indexNode)
@@ -79,15 +80,14 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
   protected def createIndexAccessChain(
       rootNode: nodes.NewNode,
       accessChain: List[Int],
-      lineNumber: Int,
-      columnNumber: Int
+      lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     accessChain match {
       case accessIndex :: tail =>
-        val baseNode = createIndexAccessChain(rootNode, tail, lineNumber, columnNumber)
-        val indexNode = nodeBuilder.numberLiteralNode(accessIndex, lineNumber, columnNumber)
+        val baseNode = createIndexAccessChain(rootNode, tail, lineAndColumn)
+        val indexNode = nodeBuilder.numberLiteralNode(accessIndex, lineAndColumn)
 
-        createIndexAccess(baseNode, indexNode, lineNumber, columnNumber)
+        createIndexAccess(baseNode, indexNode, lineAndColumn)
       case Nil =>
         rootNode
     }

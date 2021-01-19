@@ -123,7 +123,8 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
         val targetNode = target.accept(this).cast
         val valueNode = assign.value.accept(this).cast
 
-        createAssignment(targetNode, valueNode, assign.beginLine, assign.beginColumn)
+        createAssignment(targetNode, valueNode, lineAndColOf(assign))
+        createAssignment(targetNode, valueNode, lineAndColOf(assign))
       } else {
         // Case with a list of entities on the left hand side.
         val valueNode = assign.value.accept(this).cast
@@ -133,23 +134,21 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
           targetWithAccessChains.map { case (target, accessChain) =>
             val targetNode = target.accept(this).cast
             val tmpIdentifierNode =
-              nodeBuilder.identifierNode(tmpVariableName, assign.beginLine, assign.beginColumn)
+              nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(assign))
             val indexTmpIdentifierNode = createIndexAccessChain(
               tmpIdentifierNode,
               accessChain,
-              assign.beginLine,
-              assign.beginColumn
+              lineAndColOf(assign)
             )
 
             createAssignment(
               targetNode,
               indexTmpIdentifierNode,
-              assign.beginLine,
-              assign.beginColumn
+              lineAndColOf(assign)
             )
           }
 
-        val blockNode = nodeBuilder.blockNode(assign.beginLine, assign.beginColumn)
+        val blockNode = nodeBuilder.blockNode(lineAndColOf(assign))
         addAstChildNodes(blockNode, 1, assignmentNodes)
         blockNode
       }
@@ -212,8 +211,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
       code,
       methodFullName,
       DispatchTypes.STATIC_DISPATCH,
-      boolOp.beginLine,
-      boolOp.beginColumn
+      lineAndColOf(boolOp)
     )
 
     addAstChildrenAsArguments(callNode, 1, argNodes)
@@ -240,7 +238,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
         case operatorType.BitOr  => (" | ", Operators.or)
         case operatorType.BitXor => (" ^ ", Operators.xor)
         case operatorType.BitAnd => (" & ", Operators.and)
-        case operatorType.BitAnd =>
+        case operatorType.FloorDiv =>
           (" // ", "<operator>.floorDiv") // TODO make this a define and add policy for this
       }
 
@@ -249,8 +247,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
       code,
       methodFullName,
       DispatchTypes.STATIC_DISPATCH,
-      binOp.beginLine,
-      binOp.beginColumn
+      lineAndColOf(binOp)
     )
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
@@ -274,8 +271,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
       code,
       methodFullName,
       DispatchTypes.STATIC_DISPATCH,
-      unaryOp.beginLine,
-      unaryOp.beginColumn
+      lineAndColOf(unaryOp)
     )
 
     addAstChildrenAsArguments(callNode, 1, operandNode)
@@ -311,7 +307,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     val argumentNodes = call.args.map(_.accept(this).cast)
 
     val callNode = nodeBuilder
-      .callNode("TODO", "TODO", DispatchTypes.DYNAMIC_DISPATCH, call.beginLine, call.beginColumn)
+      .callNode("TODO", "TODO", DispatchTypes.DYNAMIC_DISPATCH, lineAndColOf(call))
       .cast
 
     callNode
@@ -320,11 +316,11 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
   override def visitRepr(repr: Repr): nodes.NewNode = ???
 
   override def visitNum(num: Num): nodes.NewNode = {
-    nodeBuilder.numberLiteralNode(num.num, num.beginLine, num.beginColumn)
+    nodeBuilder.numberLiteralNode(num.num, lineAndColOf(num))
   }
 
   override def visitStr(str: Str): nodes.NewNode = {
-    nodeBuilder.stringLiteralNode(str.s, str.beginLine, str.beginColumn)
+    nodeBuilder.stringLiteralNode(str.s, lineAndColOf(str))
   }
 
   override def visitStrJoin(strJoin: StrJoin): nodes.NewNode = ???
@@ -336,7 +332,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
   override def visitStarred(starred: Starred): nodes.NewNode = ???
 
   override def visitName(name: Name): nodes.NewNode = {
-    nodeBuilder.identifierNode(name.id, name.beginLine, name.beginColumn)
+    nodeBuilder.identifierNode(name.id, lineAndColOf(name))
   }
 
   override def visitList(list: ast.List): nodes.NewNode = ???

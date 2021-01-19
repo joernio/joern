@@ -14,56 +14,55 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       code: String,
       name: String,
       dispatchType: String,
-      lineNumber: Int,
-      columnNumber: Int
+      lineAndColumn: LineAndColumn
   ): nodes.NewCall = {
     val callNode = new nodes.NewCall(
       code = code,
       name = name,
       methodFullName = name,
       dispatchType = dispatchType,
-      lineNumber = Some(lineNumber),
-      columnNumber = Some(columnNumber)
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
     )
     addNodeToDiff(callNode)
   }
 
-  def identifierNode(name: String, lineNumber: Int, columnNumber: Int): nodes.NewIdentifier = {
+  def identifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
     val identifierNode = new nodes.NewIdentifier(
       code = name,
       name = name,
-      lineNumber = Some(lineNumber),
-      columnNumber = Some(columnNumber)
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
     )
     addNodeToDiff(identifierNode)
   }
 
-  def numberLiteralNode(number: Int, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
-    numberLiteralNode(number.toString, lineNumber, columnNumber)
+  def numberLiteralNode(number: Int, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+    numberLiteralNode(number.toString, lineAndColumn)
   }
 
-  def numberLiteralNode(number: String, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
+  def numberLiteralNode(number: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
     val literalNode = new nodes.NewLiteral(
       code = number.toString,
-      lineNumber = Some(lineNumber),
-      columnNumber = Some(columnNumber)
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
     )
     addNodeToDiff(literalNode)
   }
 
-  def stringLiteralNode(string: String, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
+  def stringLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
     val literalNode = new nodes.NewLiteral(
       code = string,
-      lineNumber = Some(lineNumber),
-      columnNumber = Some(columnNumber)
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
     )
     addNodeToDiff(literalNode)
   }
 
-  def blockNode(lineNumber: Int, columnNumber: Int): nodes.NewBlock = {
+  def blockNode(lineAndColumn: LineAndColumn): nodes.NewBlock = {
     val blockNode = new nodes.NewBlock(
-      lineNumber = Some(lineNumber),
-      columnNumber = Some(columnNumber)
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
     )
     addNodeToDiff(blockNode)
   }
