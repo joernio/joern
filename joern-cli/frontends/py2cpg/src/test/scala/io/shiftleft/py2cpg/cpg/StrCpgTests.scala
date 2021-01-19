@@ -7,13 +7,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class StrCpgTests extends AnyWordSpec with Matchers {
-  val testContext = Py2CpgTestContext.newContext.addSource(
+  lazy val cpg = Py2CpgTestContext.buildCpg(
     """"abc"""".stripMargin
   )
 
   "test string literal node properties" in {
-    val cpg = testContext.buildCpg
-
     val literal = cpg.literal.head
     literal.code shouldBe "abc"
     literal.lineNumber shouldBe Some(1)

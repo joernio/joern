@@ -6,13 +6,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class NumCpgTests extends AnyWordSpec with Matchers {
-  val testContext = Py2CpgTestContext.newContext.addSource(
+  lazy val cpg = Py2CpgTestContext.buildCpg(
     """1""".stripMargin
   )
 
   "test num literal node properties" in {
-    val cpg = testContext.buildCpg
-
     val literal = cpg.literal.head
     literal.code shouldBe "1"
     literal.lineNumber shouldBe Some(1)

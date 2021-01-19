@@ -7,13 +7,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class UnaryOpCpgTests extends AnyWordSpec with Matchers {
-  val testContext = Py2CpgTestContext.newContext.addSource(
+  lazy val cpg = Py2CpgTestContext.buildCpg(
     """~1""".stripMargin
   )
 
   "test unaryOp 'invert' call node properties" in {
-    val cpg = testContext.buildCpg
-
     val plusCall = cpg.call.methodFullName(Operators.not).head
     plusCall.code shouldBe "~1"
     plusCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -22,14 +20,10 @@ class UnaryOpCpgTests extends AnyWordSpec with Matchers {
   }
 
   "test unaryOp 'invert' ast children" in {
-    val cpg = testContext.buildCpg
-
     cpg.call.methodFullName(Operators.not).astChildren.order(1).isLiteral.head.code shouldBe "1"
   }
 
   "test unaryOp 'invert' arguments" in {
-    val cpg = testContext.buildCpg
-
     cpg.call.methodFullName(Operators.not).argument.argumentIndex(1).isLiteral.head.code shouldBe "1"
   }
 }
