@@ -9,8 +9,7 @@ object Py2CpgTestContext {
     new Py2CpgTestContext()
   }
 
-  /**
-    * This is a shorthand for newContext.addSource().buildCpg
+  /** This is a shorthand for newContext.addSource().buildCpg
     */
   def buildCpg(code: String, file: String = "test.py"): Cpg = {
     val context = new Py2CpgTestContext()

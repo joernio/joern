@@ -47,7 +47,7 @@ object py2cpg extends SbtModule with ScalafmtModule {
       ivy"org.apache.logging.log4j:log4j-slf4j-impl:2.13.3",
     )
 
-  object test extends Tests {
+  object test extends Tests with ScalafmtModule {
     override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.2")
     def testFrameworks = Seq("org.scalatest.tools.Framework")
   }

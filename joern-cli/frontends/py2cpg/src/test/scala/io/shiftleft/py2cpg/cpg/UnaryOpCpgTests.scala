@@ -24,6 +24,12 @@ class UnaryOpCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test unaryOp 'invert' arguments" in {
-    cpg.call.methodFullName(Operators.not).argument.argumentIndex(1).isLiteral.head.code shouldBe "1"
+    cpg.call
+      .methodFullName(Operators.not)
+      .argument
+      .argumentIndex(1)
+      .isLiteral
+      .head
+      .code shouldBe "1"
   }
 }

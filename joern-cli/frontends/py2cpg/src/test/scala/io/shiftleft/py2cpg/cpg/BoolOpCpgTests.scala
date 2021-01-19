@@ -20,14 +20,50 @@ class BoolOpCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test boolOp 'or' ast children" in {
-    cpg.call.methodFullName(Operators.logicalOr).astChildren.order(1).isIdentifier.head.code shouldBe "x"
-    cpg.call.methodFullName(Operators.logicalOr).astChildren.order(2).isIdentifier.head.code shouldBe "y"
-    cpg.call.methodFullName(Operators.logicalOr).astChildren.order(3).isIdentifier.head.code shouldBe "z"
+    cpg.call
+      .methodFullName(Operators.logicalOr)
+      .astChildren
+      .order(1)
+      .isIdentifier
+      .head
+      .code shouldBe "x"
+    cpg.call
+      .methodFullName(Operators.logicalOr)
+      .astChildren
+      .order(2)
+      .isIdentifier
+      .head
+      .code shouldBe "y"
+    cpg.call
+      .methodFullName(Operators.logicalOr)
+      .astChildren
+      .order(3)
+      .isIdentifier
+      .head
+      .code shouldBe "z"
   }
 
   "test boolOp 'or' arguments" in {
-    cpg.call.methodFullName(Operators.logicalOr).argument.argumentIndex(1).isIdentifier.head.code shouldBe "x"
-    cpg.call.methodFullName(Operators.logicalOr).argument.argumentIndex(2).isIdentifier.head.code shouldBe "y"
-    cpg.call.methodFullName(Operators.logicalOr).argument.argumentIndex(3).isIdentifier.head.code shouldBe "z"
+    cpg.call
+      .methodFullName(Operators.logicalOr)
+      .argument
+      .argumentIndex(1)
+      .isIdentifier
+      .head
+      .code shouldBe "x"
+    cpg.call
+      .methodFullName(Operators.logicalOr)
+      .argument
+      .argumentIndex(2)
+      .isIdentifier
+      .head
+      .code shouldBe "y"
+    cpg.call
+      .methodFullName(Operators.logicalOr)
+      .argument
+      .argumentIndex(3)
+      .isIdentifier
+      .head
+      .code shouldBe "z"
   }
 }

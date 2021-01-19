@@ -20,12 +20,36 @@ class BinOpCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test binOp 'add' ast children" in {
-    cpg.call.methodFullName(Operators.addition).astChildren.order(1).isLiteral.head.code shouldBe "1"
-    cpg.call.methodFullName(Operators.addition).astChildren.order(2).isLiteral.head.code shouldBe "2"
+    cpg.call
+      .methodFullName(Operators.addition)
+      .astChildren
+      .order(1)
+      .isLiteral
+      .head
+      .code shouldBe "1"
+    cpg.call
+      .methodFullName(Operators.addition)
+      .astChildren
+      .order(2)
+      .isLiteral
+      .head
+      .code shouldBe "2"
   }
 
   "test binOp 'add' arguments" in {
-    cpg.call.methodFullName(Operators.addition).argument.argumentIndex(1).isLiteral.head.code shouldBe "1"
-    cpg.call.methodFullName(Operators.addition).argument.argumentIndex(2).isLiteral.head.code shouldBe "2"
+    cpg.call
+      .methodFullName(Operators.addition)
+      .argument
+      .argumentIndex(1)
+      .isLiteral
+      .head
+      .code shouldBe "1"
+    cpg.call
+      .methodFullName(Operators.addition)
+      .argument
+      .argumentIndex(2)
+      .isLiteral
+      .head
+      .code shouldBe "2"
   }
 }

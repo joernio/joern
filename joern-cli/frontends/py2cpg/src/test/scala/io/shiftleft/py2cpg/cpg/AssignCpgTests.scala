@@ -21,13 +21,37 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test assignment node ast children" in {
-      cpg.call.methodFullName(Operators.assignment).astChildren.order(1).isIdentifier.head.code shouldBe "x"
-      cpg.call.methodFullName(Operators.assignment).astChildren.order(2).isLiteral.head.code shouldBe "2"
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .astChildren
+        .order(1)
+        .isIdentifier
+        .head
+        .code shouldBe "x"
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .astChildren
+        .order(2)
+        .isLiteral
+        .head
+        .code shouldBe "2"
     }
 
     "test assignment node arguments" in {
-      cpg.call.methodFullName(Operators.assignment).argument.argumentIndex(1).isIdentifier.head.code shouldBe "x"
-      cpg.call.methodFullName(Operators.assignment).argument.argumentIndex(2).isLiteral.head.code shouldBe "2"
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .argument
+        .argumentIndex(1)
+        .isIdentifier
+        .head
+        .code shouldBe "x"
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .argument
+        .argumentIndex(2)
+        .isLiteral
+        .head
+        .code shouldBe "2"
     }
   }
 
@@ -40,11 +64,11 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     )
 
     "test block exists" in {
-      cpg.all.collect { case block: nodes.Block => block}.size shouldBe 1
+      cpg.all.collect { case block: nodes.Block => block }.size shouldBe 1
     }
 
     "test block node properties" in {
-      val block = cpg.all.collect { case block: nodes.Block => block}.head
+      val block = cpg.all.collect { case block: nodes.Block => block }.head
       block.code shouldBe
         """tmp = list
           |x = tmp[0]
@@ -54,12 +78,12 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test local node" in {
-      val block = cpg.all.collect { case block: nodes.Block => block}.head
+      val block = cpg.all.collect { case block: nodes.Block => block }.head
       block.astChildren.isLocal.head.code shouldBe "tmp"
     }
 
     "test tmp variable assignment" in {
-      val block = cpg.all.collect { case block: nodes.Block => block}.head
+      val block = cpg.all.collect { case block: nodes.Block => block }.head
       val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
       tmpAssignNode.code shouldBe "tmp = list"
       tmpAssignNode.methodFullName shouldBe Operators.assignment
@@ -67,9 +91,13 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test assignments to targets" in {
-      val block = cpg.all.collect { case block: nodes.Block => block}.head
+      val block = cpg.all.collect { case block: nodes.Block => block }.head
       val assignNodes = block.astChildren.isCall.sortBy(_.order).tail
-      assignNodes.map(_.code) should contain theSameElementsInOrderAs List("x = tmp[0]", "y = tmp[1][0]", "z = tmp[1][1]")
+      assignNodes.map(_.code) should contain theSameElementsInOrderAs List(
+        "x = tmp[0]",
+        "y = tmp[1][0]",
+        "z = tmp[1][1]"
+      )
       assignNodes.map(_.lineNumber.get) should contain theSameElementsInOrderAs List(1, 1, 1)
     }
   }
