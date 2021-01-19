@@ -129,6 +129,8 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
         val valueNode = assign.value.accept(this).cast
         val tmpVariableName = getUnusedName()
 
+        val localNode = nodeBuilder.localNode(tmpVariableName)
+
         val tmpIdentifierNode =
           nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(assign))
         val tmpVariableAssignNode =
@@ -154,7 +156,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
 
         val blockNode = nodeBuilder.blockNode(lineAndColOf(assign))
         var order = 1
-        order = addAstChildNodes(blockNode, order, tmpVariableAssignNode)
+        order = addAstChildNodes(blockNode, order, localNode, tmpVariableAssignNode)
         addAstChildNodes(blockNode, order, targetAssignNodes)
         blockNode
       }

@@ -52,25 +52,32 @@ class AssignCpgTests extends AnyWordSpec with Matchers {
       block.lineNumber shouldBe Some(1)
     }
 
-    "test multi target tmp variable assignment" in {
+    "test multi target assign local node" in {
       val cpg = testContext.buildCpg
 
       val block = cpg.all.collect { case block: nodes.Block => block}.head
-      block.astChildren.order(1).isCall.head.code shouldBe "tmp = list"
+      block.astChildren.order(1).isLocal.head.code shouldBe "tmp"
+    }
+
+    "test multi target assign tmp variable assignment" in {
+      val cpg = testContext.buildCpg
+
+      val block = cpg.all.collect { case block: nodes.Block => block}.head
+      block.astChildren.order(2).isCall.head.code shouldBe "tmp = list"
     }
 
     "test multi target assign block ast children" in {
       val cpg = testContext.buildCpg
 
       val block = cpg.all.collect { case block: nodes.Block => block}.head
-      block.astChildren.order(2).isCall.head.code shouldBe "x = tmp[0]"
-      block.astChildren.order(3).isCall.head.code shouldBe "y = tmp[1]"
+      block.astChildren.order(3).isCall.head.code shouldBe "x = tmp[0]"
+      block.astChildren.order(4).isCall.head.code shouldBe "y = tmp[1]"
     }
 
     "test multi target assign lowering to assignment for variable x" in {
       val cpg = testContext.buildCpg
 
-      val assignCall = cpg.call.methodFullName(Operators.assignment).order(2).head
+      val assignCall = cpg.call.methodFullName(Operators.assignment).order(3).head
       assignCall.code shouldBe "x = tmp[0]"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
@@ -96,25 +103,32 @@ class AssignCpgTests extends AnyWordSpec with Matchers {
       block.lineNumber shouldBe Some(1)
     }
 
-    "test multi target tmp variable assignment" in {
+    "test multi target assign local node" in {
       val cpg = testContext.buildCpg
 
       val block = cpg.all.collect { case block: nodes.Block => block}.head
-      block.astChildren.order(1).isCall.head.code shouldBe "tmp = list"
+      block.astChildren.order(1).isLocal.head.code shouldBe "tmp"
+    }
+
+    "test multi target assign tmp variable assignment" in {
+      val cpg = testContext.buildCpg
+
+      val block = cpg.all.collect { case block: nodes.Block => block}.head
+      block.astChildren.order(2).isCall.head.code shouldBe "tmp = list"
     }
 
     "test multi target assign block ast children" in {
       val cpg = testContext.buildCpg
 
       val block = cpg.all.collect { case block: nodes.Block => block}.head
-      block.astChildren.order(2).isCall.head.code shouldBe "x = tmp[0]"
-      block.astChildren.order(3).isCall.head.code shouldBe "y = tmp[1][0]"
+      block.astChildren.order(3).isCall.head.code shouldBe "x = tmp[0]"
+      block.astChildren.order(4).isCall.head.code shouldBe "y = tmp[1][0]"
     }
 
     "test multi target assign lowering to assignment for variable y" in {
       val cpg = testContext.buildCpg
 
-      val assignCall = cpg.call.methodFullName(Operators.assignment).order(3).head
+      val assignCall = cpg.call.methodFullName(Operators.assignment).order(4).head
       assignCall.code shouldBe "y = tmp[1][0]"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)

@@ -67,6 +67,14 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(blockNode)
   }
 
+  def localNode(name: String): nodes.NewLocal = {
+    val localNode = new nodes.NewLocal(
+      code = name,
+      name = name
+    )
+    addNodeToDiff(localNode)
+  }
+
   def metaNode(language: String, version: String): nodes.NewMetaData = {
     val metaNode = new nodes.NewMetaData(
       language = language,
