@@ -59,8 +59,9 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(literalNode)
   }
 
-  def blockNode(lineAndColumn: LineAndColumn): nodes.NewBlock = {
+  def blockNode(code: String, lineAndColumn: LineAndColumn): nodes.NewBlock = {
     val blockNode = new nodes.NewBlock(
+      code = code,
       lineNumber = Some(lineAndColumn.line),
       columnNumber = Some(lineAndColumn.column)
     )
