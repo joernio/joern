@@ -158,31 +158,6 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     }
   }
 
-  protected def getUnusedName(): String = {
-    //TODO
-    "tmp"
-  }
-
-  protected def getTargetsWithAccessChains(target: exprType): Iterable[(exprType, List[Int])] = {
-    val result = mutable.ArrayBuffer.empty[(exprType, List[Int])]
-    getTargetsInternal(target, Nil)
-
-    def getTargetsInternal(target: exprType, indexChain: List[Int]): Unit = {
-      target match {
-        case tuple: Tuple =>
-          var tupleIndex = 0
-          tuple.elts.foreach { tupleElement =>
-            getTargetsInternal(tupleElement, tupleIndex :: indexChain)
-            tupleIndex += 1
-          }
-        case _ =>
-          result.append((target, indexChain))
-      }
-    }
-
-    result
-  }
-
   override def visitAugAssign(augAssign: AugAssign): nodes.NewNode = ???
 
   override def visitPrint(print: Print): nodes.NewNode = ???

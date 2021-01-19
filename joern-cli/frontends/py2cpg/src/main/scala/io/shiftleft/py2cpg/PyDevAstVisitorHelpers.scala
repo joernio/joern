@@ -1,11 +1,39 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import org.python.pydev.parser.jython.ast.{Tuple, exprType}
+
+import scala.collection.mutable
 
 trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
 
   protected def codeOf(node: nodes.NewNode): String = {
     node.asInstanceOf[nodes.HasCode].code
+  }
+
+  protected def getUnusedName(): String = {
+    //TODO
+    "tmp"
+  }
+
+  protected def getTargetsWithAccessChains(target: exprType): Iterable[(exprType, List[Int])] = {
+    val result = mutable.ArrayBuffer.empty[(exprType, List[Int])]
+    getTargetsInternal(target, Nil)
+
+    def getTargetsInternal(target: exprType, indexChain: List[Int]): Unit = {
+      target match {
+        case tuple: Tuple =>
+          var tupleIndex = 0
+          tuple.elts.foreach { tupleElement =>
+            getTargetsInternal(tupleElement, tupleIndex :: indexChain)
+            tupleIndex += 1
+          }
+        case _ =>
+          result.append((target, indexChain))
+      }
+    }
+
+    result
   }
 
   protected def createAssignment(
