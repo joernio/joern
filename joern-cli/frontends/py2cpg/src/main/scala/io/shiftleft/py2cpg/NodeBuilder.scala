@@ -1,7 +1,6 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewMetaData}
 import io.shiftleft.passes.DiffGraph
 
 class NodeBuilder(diffGraph: DiffGraph.Builder) {
@@ -30,7 +29,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
   }
 
   def identifierNode(name: String, lineNumber: Int, columnNumber: Int): nodes.NewIdentifier = {
-    val identifierNode = new NewIdentifier(
+    val identifierNode = new nodes.NewIdentifier(
       code = name,
       name = name,
       lineNumber = Some(lineNumber),
@@ -39,17 +38,38 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(identifierNode)
   }
 
-  def literalNode(code: String, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
-    val literalNode = new NewLiteral(
-      code = code,
+  def numberLiteralNode(number: Int, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
+    numberLiteralNode(number.toString, lineNumber, columnNumber)
+  }
+
+  def numberLiteralNode(number: String, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
+    val literalNode = new nodes.NewLiteral(
+      code = number.toString,
       lineNumber = Some(lineNumber),
       columnNumber = Some(columnNumber)
     )
     addNodeToDiff(literalNode)
   }
 
+  def stringLiteralNode(string: String, lineNumber: Int, columnNumber: Int): nodes.NewLiteral = {
+    val literalNode = new nodes.NewLiteral(
+      code = string,
+      lineNumber = Some(lineNumber),
+      columnNumber = Some(columnNumber)
+    )
+    addNodeToDiff(literalNode)
+  }
+
+  def blockNode(lineNumber: Int, columnNumber: Int): nodes.NewBlock = {
+    val blockNode = new nodes.NewBlock(
+      lineNumber = Some(lineNumber),
+      columnNumber = Some(columnNumber)
+    )
+    addNodeToDiff(blockNode)
+  }
+
   def metaNode(language: String, version: String): nodes.NewMetaData = {
-    val metaNode = new NewMetaData(
+    val metaNode = new nodes.NewMetaData(
       language = language,
       version = version
     )

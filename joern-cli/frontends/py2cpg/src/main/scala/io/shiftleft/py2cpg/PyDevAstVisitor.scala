@@ -64,9 +64,12 @@ import org.python.pydev.parser.jython.ast.{
   WithItem,
   Yield,
   boolopType,
+  exprType,
   operatorType,
   unaryopType
 }
+
+import scala.collection.mutable
 
 object PyDevAstVisitor {
   private implicit class ToNewNodeConverter(node: AnyRef) {
@@ -80,7 +83,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
   import PyDevAstVisitor._
 
   private val diffGraph = new DiffGraph.Builder()
-  private val nodeBuilder = new NodeBuilder(diffGraph)
+  protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def getDiffGraph: DiffGraph = {
@@ -112,24 +115,72 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
 
   override def visitAssign(assign: Assign): nodes.NewNode = {
     if (assign.targets.size == 1) {
-      val lhsNode = assign.targets(0).accept(this).cast
-      val rhsNode = assign.value.accept(this).cast
+      val target = assign.targets(0)
+      val targetWithAccessChains = getTargetsWithAccessChains(target)
+      if (targetWithAccessChains.size == 1) {
+        // Case with single entity one the left hand side.
+        // We always have an empty acces chain in this case.
+        val targetNode = target.accept(this).cast
+        val valueNode = assign.value.accept(this).cast
 
-      val code = codeOf(lhsNode) + " = " + codeOf(rhsNode)
-      val callNode = nodeBuilder.callNode(
-        code,
-        Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH,
-        assign.beginLine,
-        assign.beginColumn
-      )
+        createAssignment(targetNode, valueNode, assign.beginLine, assign.beginColumn)
+      } else {
+        // Case with a list of entities on the left hand side.
+        val valueNode = assign.value.accept(this).cast
+        val tmpVariableName = getUnusedName()
 
-      addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
+        val assignmentNodes =
+          targetWithAccessChains.map { case (target, accessChain) =>
+            val targetNode = target.accept(this).cast
+            val tmpIdentifierNode =
+              nodeBuilder.identifierNode(tmpVariableName, assign.beginLine, assign.beginColumn)
+            val indexTmpIdentifierNode = createIndexAccessChain(
+              tmpIdentifierNode,
+              accessChain,
+              assign.beginLine,
+              assign.beginColumn
+            )
 
-      callNode
+            createAssignment(
+              targetNode,
+              indexTmpIdentifierNode,
+              assign.beginLine,
+              assign.beginColumn
+            )
+          }
+
+        val blockNode = nodeBuilder.blockNode(assign.beginLine, assign.beginColumn)
+        addAstChildNodes(blockNode, 1, assignmentNodes)
+        blockNode
+      }
     } else {
-      throw new RuntimeException("Not yet implemented.")
+      throw new RuntimeException("Unexpected assign with more than one target.")
     }
+  }
+
+  protected def getUnusedName(): String = {
+    //TODO
+    "tmp"
+  }
+
+  protected def getTargetsWithAccessChains(target: exprType): Iterable[(exprType, List[Int])] = {
+    val result = mutable.ArrayBuffer.empty[(exprType, List[Int])]
+    getTargetsInternal(target, Nil)
+
+    def getTargetsInternal(target: exprType, indexChain: List[Int]): Unit = {
+      target match {
+        case tuple: Tuple =>
+          var tupleIndex = 0
+          tuple.elts.foreach { tupleElement =>
+            getTargetsInternal(tupleElement, tupleIndex :: indexChain)
+            tupleIndex += 1
+          }
+        case _ =>
+          result.append((target, indexChain))
+      }
+    }
+
+    result
   }
 
   override def visitAugAssign(augAssign: AugAssign): nodes.NewNode = ???
@@ -294,11 +345,11 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
   override def visitRepr(repr: Repr): nodes.NewNode = ???
 
   override def visitNum(num: Num): nodes.NewNode = {
-    nodeBuilder.literalNode(num.num, num.beginLine, num.beginColumn)
+    nodeBuilder.numberLiteralNode(num.num, num.beginLine, num.beginColumn)
   }
 
   override def visitStr(str: Str): nodes.NewNode = {
-    nodeBuilder.literalNode(str.s, str.beginLine, str.beginColumn)
+    nodeBuilder.stringLiteralNode(str.s, str.beginLine, str.beginColumn)
   }
 
   override def visitStrJoin(strJoin: StrJoin): nodes.NewNode = ???
