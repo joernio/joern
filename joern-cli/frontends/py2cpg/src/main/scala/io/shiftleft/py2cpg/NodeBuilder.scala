@@ -1,7 +1,6 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.passes.DiffGraph
 
 class NodeBuilder(diffGraph: DiffGraph.Builder) {
@@ -28,6 +27,39 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(callNode)
   }
 
+  def typeNode(name: String, fullName: String): nodes.NewType = {
+    val typeNode = new nodes.NewType(
+      name = name,
+      fullName = fullName,
+      typeDeclFullName = fullName
+    )
+    addNodeToDiff(typeNode)
+  }
+
+  def typeDeclNode(name: String, fullName: String): nodes.NewTypeDecl = {
+    val typeDeclNode = new nodes.NewTypeDecl(
+      name = name,
+      fullName = fullName,
+      isExternal = false
+    )
+    addNodeToDiff(typeDeclNode)
+  }
+
+  def typeRefNode(code: String, lineAndColumn: LineAndColumn): nodes.NewTypeRef = {
+    val typeRefNode = new nodes.NewTypeRef(
+      code = code,
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
+    )
+    addNodeToDiff(typeRefNode)
+  }
+
+  def methodNode(lineAndColumn: LineAndColumn): nodes.NewMethod = {
+    val methodNode = new nodes.NewMethod(
+    )
+    addNodeToDiff(methodNode)
+  }
+
   def identifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
     val identifierNode = new nodes.NewIdentifier(
       code = name,
@@ -39,7 +71,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
   }
 
   def fieldIdentifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewFieldIdentifier = {
-    val fieldIdentifierNode = new NewFieldIdentifier(
+    val fieldIdentifierNode = new nodes.NewFieldIdentifier(
       code = name,
       canonicalName = name,
       lineNumber = Some(lineAndColumn.line),
