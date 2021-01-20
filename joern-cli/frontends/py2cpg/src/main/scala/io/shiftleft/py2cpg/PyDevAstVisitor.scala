@@ -3,73 +3,6 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
 import org.python.pydev.parser.jython.ast
-import org.python.pydev.parser.jython.ast.{
-  Assert,
-  Assign,
-  Attribute,
-  AugAssign,
-  Await,
-  BinOp,
-  BoolOp,
-  Break,
-  Call,
-  ClassDef,
-  Compare,
-  Comprehension,
-  Continue,
-  Delete,
-  Dict,
-  DictComp,
-  Ellipsis,
-  Exec,
-  Expr,
-  Expression,
-  ExtSlice,
-  For,
-  FunctionDef,
-  GeneratorExp,
-  Global,
-  If,
-  IfExp,
-  Import,
-  ImportFrom,
-  Index,
-  Interactive,
-  Lambda,
-  ListComp,
-  Name,
-  NameTok,
-  NamedExpr,
-  NonLocal,
-  Num,
-  Pass,
-  Print,
-  Raise,
-  Repr,
-  Return,
-  SetComp,
-  Slice,
-  Starred,
-  Str,
-  StrJoin,
-  Subscript,
-  Suite,
-  TryExcept,
-  TryFinally,
-  Tuple,
-  UnaryOp,
-  VisitorIF,
-  While,
-  With,
-  WithItem,
-  Yield,
-  boolopType,
-  exprType,
-  operatorType,
-  unaryopType
-}
-
-import scala.collection.mutable
 
 object PyDevAstVisitor {
   private implicit class ToNewNodeConverter(node: AnyRef) {
@@ -79,7 +12,7 @@ object PyDevAstVisitor {
   }
 }
 
-class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
+class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
   import PyDevAstVisitor._
 
   private val diffGraph = new DiffGraph.Builder()
@@ -95,27 +28,27 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     null
   }
 
-  override def visitInteractive(interactive: Interactive): nodes.NewNode = ???
+  override def visitInteractive(interactive: ast.Interactive): nodes.NewNode = ???
 
-  override def visitExpression(expression: Expression): nodes.NewNode = ???
+  override def visitExpression(expression: ast.Expression): nodes.NewNode = ???
 
-  override def visitNameTok(nameTok: NameTok): nodes.NewNode = {
+  override def visitNameTok(nameTok: ast.NameTok): nodes.NewNode = {
     nodeBuilder.fieldIdentifierNode(nameTok.id, lineAndColOf(nameTok))
   }
 
-  override def visitSuite(suite: Suite): nodes.NewNode = ???
+  override def visitSuite(suite: ast.Suite): nodes.NewNode = ???
 
-  override def visitWithItem(withItem: WithItem): nodes.NewNode = ???
+  override def visitWithItem(withItem: ast.WithItem): nodes.NewNode = ???
 
-  override def visitFunctionDef(functionDef: FunctionDef): nodes.NewNode = ???
+  override def visitFunctionDef(functionDef: ast.FunctionDef): nodes.NewNode = ???
 
-  override def visitClassDef(classDef: ClassDef): nodes.NewNode = ???
+  override def visitClassDef(classDef: ast.ClassDef): nodes.NewNode = ???
 
-  override def visitReturn(aReturn: Return): nodes.NewNode = ???
+  override def visitReturn(aReturn: ast.Return): nodes.NewNode = ???
 
-  override def visitDelete(delete: Delete): nodes.NewNode = ???
+  override def visitDelete(delete: ast.Delete): nodes.NewNode = ???
 
-  override def visitAssign(assign: Assign): nodes.NewNode = {
+  override def visitAssign(assign: ast.Assign): nodes.NewNode = {
     if (assign.targets.size == 1) {
       val target = assign.targets(0)
       val targetWithAccessChains = getTargetsWithAccessChains(target)
@@ -169,53 +102,53 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     }
   }
 
-  override def visitAugAssign(augAssign: AugAssign): nodes.NewNode = ???
+  override def visitAugAssign(augAssign: ast.AugAssign): nodes.NewNode = ???
 
-  override def visitPrint(print: Print): nodes.NewNode = ???
+  override def visitPrint(print: ast.Print): nodes.NewNode = ???
 
-  override def visitFor(aFor: For): nodes.NewNode = ???
+  override def visitFor(aFor: ast.For): nodes.NewNode = ???
 
-  override def visitWhile(aWhile: While): nodes.NewNode = ???
+  override def visitWhile(aWhile: ast.While): nodes.NewNode = ???
 
-  override def visitIf(anIf: If): nodes.NewNode = ???
+  override def visitIf(anIf: ast.If): nodes.NewNode = ???
 
-  override def visitWith(`with`: With): nodes.NewNode = ???
+  override def visitWith(`with`: ast.With): nodes.NewNode = ???
 
-  override def visitRaise(raise: Raise): nodes.NewNode = ???
+  override def visitRaise(raise: ast.Raise): nodes.NewNode = ???
 
-  override def visitTryExcept(tryExcept: TryExcept): nodes.NewNode = ???
+  override def visitTryExcept(tryExcept: ast.TryExcept): nodes.NewNode = ???
 
-  override def visitTryFinally(tryFinally: TryFinally): nodes.NewNode = ???
+  override def visitTryFinally(tryFinally: ast.TryFinally): nodes.NewNode = ???
 
-  override def visitAssert(anAssert: Assert): nodes.NewNode = ???
+  override def visitAssert(anAssert: ast.Assert): nodes.NewNode = ???
 
-  override def visitImport(anImport: Import): nodes.NewNode = ???
+  override def visitImport(anImport: ast.Import): nodes.NewNode = ???
 
-  override def visitImportFrom(importFrom: ImportFrom): nodes.NewNode = ???
+  override def visitImportFrom(importFrom: ast.ImportFrom): nodes.NewNode = ???
 
-  override def visitExec(exec: Exec): nodes.NewNode = ???
+  override def visitExec(exec: ast.Exec): nodes.NewNode = ???
 
-  override def visitGlobal(global: Global): nodes.NewNode = ???
+  override def visitGlobal(global: ast.Global): nodes.NewNode = ???
 
-  override def visitNonLocal(nonLocal: NonLocal): nodes.NewNode = ???
+  override def visitNonLocal(nonLocal: ast.NonLocal): nodes.NewNode = ???
 
-  override def visitExpr(expr: Expr): nodes.NewNode = {
+  override def visitExpr(expr: ast.Expr): nodes.NewNode = {
     expr.value.accept(this).cast
   }
 
-  override def visitPass(pass: Pass): nodes.NewNode = ???
+  override def visitPass(pass: ast.Pass): nodes.NewNode = ???
 
-  override def visitBreak(aBreak: Break): nodes.NewNode = ???
+  override def visitBreak(aBreak: ast.Break): nodes.NewNode = ???
 
-  override def visitContinue(aContinue: Continue): nodes.NewNode = ???
+  override def visitContinue(aContinue: ast.Continue): nodes.NewNode = ???
 
-  override def visitBoolOp(boolOp: BoolOp): nodes.NewNode = {
+  override def visitBoolOp(boolOp: ast.BoolOp): nodes.NewNode = {
     val argNodes = boolOp.values.map(_.accept(this).cast)
 
     val (operatorCode, methodFullName) =
       boolOp.op match {
-        case boolopType.And => (" and ", Operators.logicalAnd)
-        case boolopType.Or  => (" or ", Operators.logicalOr)
+        case ast.boolopType.And => (" and ", Operators.logicalAnd)
+        case ast.boolopType.Or  => (" or ", Operators.logicalOr)
       }
 
     val code = argNodes.map(argNode => codeOf(argNode)).mkString(operatorCode)
@@ -231,26 +164,26 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     callNode
   }
 
-  override def visitNamedExpr(namedExpr: NamedExpr): nodes.NewNode = ???
+  override def visitNamedExpr(namedExpr: ast.NamedExpr): nodes.NewNode = ???
 
-  override def visitBinOp(binOp: BinOp): nodes.NewNode = {
+  override def visitBinOp(binOp: ast.BinOp): nodes.NewNode = {
     val lhsNode = binOp.left.accept(this).cast
     val rhsNode = binOp.right.accept(this).cast
 
     val (operatorCode, methodFullName) =
       binOp.op match {
-        case operatorType.Add    => (" + ", Operators.addition)
-        case operatorType.Sub    => (" - ", Operators.subtraction)
-        case operatorType.Mult   => (" * ", Operators.multiplication)
-        case operatorType.Div    => (" / ", Operators.division)
-        case operatorType.Mod    => (" % ", Operators.modulo)
-        case operatorType.Pow    => (" ** ", Operators.exponentiation)
-        case operatorType.LShift => (" << ", Operators.shiftLeft)
-        case operatorType.RShift => (" << ", Operators.arithmeticShiftRight)
-        case operatorType.BitOr  => (" | ", Operators.or)
-        case operatorType.BitXor => (" ^ ", Operators.xor)
-        case operatorType.BitAnd => (" & ", Operators.and)
-        case operatorType.FloorDiv =>
+        case ast.operatorType.Add    => (" + ", Operators.addition)
+        case ast.operatorType.Sub    => (" - ", Operators.subtraction)
+        case ast.operatorType.Mult   => (" * ", Operators.multiplication)
+        case ast.operatorType.Div    => (" / ", Operators.division)
+        case ast.operatorType.Mod    => (" % ", Operators.modulo)
+        case ast.operatorType.Pow    => (" ** ", Operators.exponentiation)
+        case ast.operatorType.LShift => (" << ", Operators.shiftLeft)
+        case ast.operatorType.RShift => (" << ", Operators.arithmeticShiftRight)
+        case ast.operatorType.BitOr  => (" | ", Operators.or)
+        case ast.operatorType.BitXor => (" ^ ", Operators.xor)
+        case ast.operatorType.BitAnd => (" & ", Operators.and)
+        case ast.operatorType.FloorDiv =>
           (" // ", "<operator>.floorDiv") // TODO make this a define and add policy for this
       }
 
@@ -267,15 +200,15 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     callNode
   }
 
-  override def visitUnaryOp(unaryOp: UnaryOp): nodes.NewNode = {
+  override def visitUnaryOp(unaryOp: ast.UnaryOp): nodes.NewNode = {
     val operandNode = unaryOp.operand.accept(this).cast
 
     val (operatorCode, methodFullName) =
       unaryOp.op match {
-        case unaryopType.Invert => ("~", Operators.not)
-        case unaryopType.Not    => ("not ", Operators.logicalNot)
-        case unaryopType.UAdd   => ("+", Operators.plus)
-        case unaryopType.USub   => ("-", Operators.minus)
+        case ast.unaryopType.Invert => ("~", Operators.not)
+        case ast.unaryopType.Not    => ("not ", Operators.logicalNot)
+        case ast.unaryopType.UAdd   => ("+", Operators.plus)
+        case ast.unaryopType.USub   => ("-", Operators.minus)
       }
 
     val code = operatorCode + codeOf(operandNode)
@@ -291,27 +224,27 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     callNode
   }
 
-  override def visitLambda(lambda: Lambda): nodes.NewNode = ???
+  override def visitLambda(lambda: ast.Lambda): nodes.NewNode = ???
 
-  override def visitIfExp(ifExp: IfExp): nodes.NewNode = ???
+  override def visitIfExp(ifExp: ast.IfExp): nodes.NewNode = ???
 
-  override def visitDict(dict: Dict): nodes.NewNode = ???
+  override def visitDict(dict: ast.Dict): nodes.NewNode = ???
 
   override def visitSet(set: ast.Set): nodes.NewNode = ???
 
-  override def visitListComp(listComp: ListComp): nodes.NewNode = ???
+  override def visitListComp(listComp: ast.ListComp): nodes.NewNode = ???
 
-  override def visitSetComp(setComp: SetComp): nodes.NewNode = ???
+  override def visitSetComp(setComp: ast.SetComp): nodes.NewNode = ???
 
-  override def visitDictComp(dictComp: DictComp): nodes.NewNode = ???
+  override def visitDictComp(dictComp: ast.DictComp): nodes.NewNode = ???
 
-  override def visitGeneratorExp(generatorExp: GeneratorExp): nodes.NewNode = ???
+  override def visitGeneratorExp(generatorExp: ast.GeneratorExp): nodes.NewNode = ???
 
-  override def visitYield(`yield`: Yield): nodes.NewNode = ???
+  override def visitYield(`yield`: ast.Yield): nodes.NewNode = ???
 
-  override def visitAwait(await: Await): nodes.NewNode = ???
+  override def visitAwait(await: ast.Await): nodes.NewNode = ???
 
-  override def visitCompare(compare: Compare): nodes.NewNode = ???
+  override def visitCompare(compare: ast.Compare): nodes.NewNode = ???
 
   /** TODO
     * For now this function compromises on the correctness of the
@@ -342,7 +275,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     *    fixed.
     * 3. No named parameter support. CPG does not supports this.
     */
-  override def visitCall(call: Call): nodes.NewNode = {
+  override def visitCall(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(_.accept(this).cast)
     val receiverNode = call.func.accept(this).cast
 
@@ -357,7 +290,7 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     orderIndex += 1
 
     call.func match {
-      case attribute: Attribute =>
+      case attribute: ast.Attribute =>
         val instanceNode = attribute.value.accept(this).cast
         edgeBuilder.astEdge(instanceNode, callNode, orderIndex)
         edgeBuilder.argumentEdge(instanceNode, callNode, 0)
@@ -376,48 +309,48 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
     callNode
   }
 
-  override def visitRepr(repr: Repr): nodes.NewNode = ???
+  override def visitRepr(repr: ast.Repr): nodes.NewNode = ???
 
-  override def visitNum(num: Num): nodes.NewNode = {
+  override def visitNum(num: ast.Num): nodes.NewNode = {
     nodeBuilder.numberLiteralNode(num.num, lineAndColOf(num))
   }
 
-  override def visitStr(str: Str): nodes.NewNode = {
+  override def visitStr(str: ast.Str): nodes.NewNode = {
     nodeBuilder.stringLiteralNode(str.s, lineAndColOf(str))
   }
 
-  override def visitStrJoin(strJoin: StrJoin): nodes.NewNode = ???
+  override def visitStrJoin(strJoin: ast.StrJoin): nodes.NewNode = ???
 
   /** TODO
     * We currently ignore possible attribute access provider/interception
     * mechanisms like __getattr__, __getattribute__ and __get__.
     */
-  override def visitAttribute(attribute: Attribute): nodes.NewNode = {
+  override def visitAttribute(attribute: ast.Attribute): nodes.NewNode = {
     val baseNode = attribute.value.accept(this).cast
     val fieldIdNode = attribute.attr.accept(this).cast
 
     createFieldAccess(baseNode, fieldIdNode, lineAndColOf(attribute))
   }
 
-  override def visitSubscript(subscript: Subscript): nodes.NewNode = ???
+  override def visitSubscript(subscript: ast.Subscript): nodes.NewNode = ???
 
-  override def visitStarred(starred: Starred): nodes.NewNode = ???
+  override def visitStarred(starred: ast.Starred): nodes.NewNode = ???
 
-  override def visitName(name: Name): nodes.NewNode = {
+  override def visitName(name: ast.Name): nodes.NewNode = {
     nodeBuilder.identifierNode(name.id, lineAndColOf(name))
   }
 
   override def visitList(list: ast.List): nodes.NewNode = ???
 
-  override def visitTuple(tuple: Tuple): nodes.NewNode = ???
+  override def visitTuple(tuple: ast.Tuple): nodes.NewNode = ???
 
-  override def visitEllipsis(ellipsis: Ellipsis): nodes.NewNode = ???
+  override def visitEllipsis(ellipsis: ast.Ellipsis): nodes.NewNode = ???
 
-  override def visitSlice(slice: Slice): nodes.NewNode = ???
+  override def visitSlice(slice: ast.Slice): nodes.NewNode = ???
 
-  override def visitExtSlice(extSlice: ExtSlice): nodes.NewNode = ???
+  override def visitExtSlice(extSlice: ast.ExtSlice): nodes.NewNode = ???
 
-  override def visitIndex(index: Index): nodes.NewNode = ???
+  override def visitIndex(index: ast.Index): nodes.NewNode = ???
 
-  override def visitComprehension(comprehension: Comprehension): nodes.NewNode = ???
+  override def visitComprehension(comprehension: ast.Comprehension): nodes.NewNode = ???
 }
