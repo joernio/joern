@@ -7,6 +7,8 @@ object py2cpg extends SbtModule with ScalafmtModule {
   def scalaVersion = "2.13.1"
   def jfrogUri: String = "https://shiftleft.jfrog.io/shiftleft/libs-release-local"
 
+  val log4jSlf4jImplDependency = ivy"org.apache.logging.log4j:log4j-slf4j-impl:2.13.3"
+
   // We only have one module in this build. Thus we dont need
   // the usual directory level introduced by the module name.
   // So our source will be in src/main/scala and not
@@ -44,11 +46,15 @@ object py2cpg extends SbtModule with ScalafmtModule {
 
   override def runIvyDeps =
     Agg(
-      ivy"org.apache.logging.log4j:log4j-slf4j-impl:2.13.3",
+      log4jSlf4jImplDependency,
     )
 
   object test extends Tests with ScalafmtModule {
     override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.2")
     def testFrameworks = Seq("org.scalatest.tools.Framework")
+    override def runIvyDeps =
+      Agg(
+        log4jSlf4jImplDependency,
+      )
   }
 }
