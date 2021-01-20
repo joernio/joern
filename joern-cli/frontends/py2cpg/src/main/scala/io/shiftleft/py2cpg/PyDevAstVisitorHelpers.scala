@@ -41,9 +41,11 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
     result
   }
 
-  protected def createBlock(locals: Iterable[nodes.NewLocal],
-                            blockElements: Iterable[nodes.NewNode],
-                            lineAndColumn: LineAndColumn): nodes.NewNode = {
+  protected def createBlock(
+      locals: Iterable[nodes.NewLocal],
+      blockElements: Iterable[nodes.NewNode],
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
     val blockCode = blockElements.map(codeOf).mkString("\n")
     val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
 

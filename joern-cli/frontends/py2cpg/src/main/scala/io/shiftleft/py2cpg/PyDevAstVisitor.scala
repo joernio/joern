@@ -36,7 +36,11 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
     nodeBuilder.fieldIdentifierNode(nameTok.id, lineAndColOf(nameTok))
   }
 
-  override def visitSuite(suite: ast.Suite): nodes.NewNode = ???
+  override def visitSuite(suite: ast.Suite): nodes.NewNode = {
+    val suiteStmtNodes = suite.body.map(_.accept(this).cast)
+    val suiteBlockNode = createBlock(Iterable.empty, suiteStmtNodes, lineAndColOf(suite))
+    suiteBlockNode
+  }
 
   override def visitWithItem(withItem: ast.WithItem): nodes.NewNode = ???
 
@@ -109,7 +113,19 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
 
   override def visitFor(aFor: ast.For): nodes.NewNode = ???
 
-  override def visitWhile(aWhile: ast.While): nodes.NewNode = ???
+  override def visitWhile(astWhile: ast.While): nodes.NewNode = {
+    val conditionNode = astWhile.test.accept(this).cast
+    val bodyStmtNodes = astWhile.body.map(_.accept(this).cast)
+    val elseNode = astWhile.orelse.accept(this).cast
+
+    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
+
+    val controlStructureNode = nodeBuilder.controlStructureNode(lineAndColOf(astWhile))
+    edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
+    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode, elseNode)
+
+    controlStructureNode
+  }
 
   override def visitIf(anIf: ast.If): nodes.NewNode = ???
 
@@ -137,7 +153,15 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
     expr.value.accept(this).cast
   }
 
-  override def visitPass(pass: ast.Pass): nodes.NewNode = ???
+  override def visitPass(pass: ast.Pass): nodes.NewNode = {
+    val callNode = nodeBuilder.callNode(
+      "pass",
+      "<operator>.pass",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(pass)
+    )
+    callNode
+  }
 
   override def visitBreak(aBreak: ast.Break): nodes.NewNode = ???
 

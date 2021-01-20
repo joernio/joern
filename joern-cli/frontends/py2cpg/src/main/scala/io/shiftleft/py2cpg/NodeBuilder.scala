@@ -111,6 +111,15 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(blockNode)
   }
 
+  def controlStructureNode(lineAndColumn: LineAndColumn): nodes.NewControlStructure = {
+    val controlStructureNode = new nodes.NewControlStructure(
+      code = "while ... : ...",
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
+    )
+    addNodeToDiff(controlStructureNode)
+  }
+
   def localNode(name: String): nodes.NewLocal = {
     val localNode = new nodes.NewLocal(
       code = name,
