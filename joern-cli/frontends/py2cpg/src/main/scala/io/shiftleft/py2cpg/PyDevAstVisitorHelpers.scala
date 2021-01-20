@@ -41,6 +41,19 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
     result
   }
 
+  protected def createBlock(locals: Iterable[nodes.NewLocal],
+                            blockElements: Iterable[nodes.NewNode],
+                            lineAndColumn: LineAndColumn): nodes.NewNode = {
+    val blockCode = blockElements.map(codeOf).mkString("\n")
+    val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
+
+    var orderIndex = 1
+    orderIndex = addAstChildNodes(blockNode, orderIndex, locals)
+    addAstChildNodes(blockNode, orderIndex, blockElements)
+
+    blockNode
+  }
+
   protected def createAssignment(
       lhsNode: nodes.NewNode,
       rhsNode: nodes.NewNode,

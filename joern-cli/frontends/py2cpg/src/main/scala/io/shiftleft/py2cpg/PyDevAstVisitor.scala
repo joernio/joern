@@ -89,12 +89,13 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
             )
           }
 
-        val blockCode = (codeOf(tmpVariableAssignNode) :: targetAssignNodes.map(codeOf).toList)
-          .mkString("\n")
-        val blockNode = nodeBuilder.blockNode(blockCode, lineAndColOf(assign))
-        var order = 1
-        order = addAstChildNodes(blockNode, order, localNode, tmpVariableAssignNode)
-        addAstChildNodes(blockNode, order, targetAssignNodes)
+        val blockNode =
+          createBlock(
+            Iterable.single(localNode),
+            tmpVariableAssignNode :: targetAssignNodes.toList,
+            lineAndColOf(assign)
+          )
+
         blockNode
       }
     } else {
