@@ -168,18 +168,21 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
   }
 
   override def visitPass(pass: ast.Pass): nodes.NewNode = {
-    val callNode = nodeBuilder.callNode(
+    nodeBuilder.callNode(
       "pass",
       "<operator>.pass",
       DispatchTypes.STATIC_DISPATCH,
       lineAndColOf(pass)
     )
-    callNode
   }
 
-  override def visitBreak(aBreak: ast.Break): nodes.NewNode = ???
+  override def visitBreak(astBreak: ast.Break): nodes.NewNode = {
+    nodeBuilder.controlStructureNode("break", "BreakStatement", lineAndColOf(astBreak))
+  }
 
-  override def visitContinue(aContinue: ast.Continue): nodes.NewNode = ???
+  override def visitContinue(astContinue: ast.Continue): nodes.NewNode = {
+    nodeBuilder.controlStructureNode("continue", "ContinueStatement", lineAndColOf(astContinue))
+  }
 
   override def visitBoolOp(boolOp: ast.BoolOp): nodes.NewNode = {
     val argNodes = boolOp.values.map(_.accept(this).cast)
