@@ -120,14 +120,28 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
 
     val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
 
-    val controlStructureNode = nodeBuilder.controlStructureNode(lineAndColOf(astWhile))
+    val controlStructureNode =
+      nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColOf(astWhile))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode, elseNode)
 
     controlStructureNode
   }
 
-  override def visitIf(anIf: ast.If): nodes.NewNode = ???
+  override def visitIf(astIf: ast.If): nodes.NewNode = {
+    val conditionNode = astIf.test.accept(this).cast
+    val bodyStmtNodes = astIf.body.map(_.accept(this).cast)
+    val elseNode = astIf.orelse.accept(this).cast
+
+    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astIf))
+
+    val controlStructureNode =
+      nodeBuilder.controlStructureNode("if ... : ...", "IfStatement", lineAndColOf(astIf))
+    edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
+    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode, elseNode)
+
+    controlStructureNode
+  }
 
   override def visitWith(`with`: ast.With): nodes.NewNode = ???
 

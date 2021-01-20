@@ -6,9 +6,9 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class WhileCpgTests extends AnyFreeSpec with Matchers {
+class IfCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg(
-    """while x :
+    """if x :
       |  y
       |else:
       |  z""".stripMargin
@@ -16,8 +16,8 @@ class WhileCpgTests extends AnyFreeSpec with Matchers {
 
   "test control structure node properties" in {
     val controlStructureNode = cpg.controlStructure.head
-    controlStructureNode.code shouldBe "while ... : ..."
-    controlStructureNode.parserTypeName shouldBe "WhileStatement"
+    controlStructureNode.code shouldBe "if ... : ..."
+    controlStructureNode.parserTypeName shouldBe "IfStatement"
     controlStructureNode.lineNumber shouldBe Some(1)
   }
 
