@@ -99,7 +99,9 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
 
   override def visitExpression(expression: Expression): nodes.NewNode = ???
 
-  override def visitNameTok(nameTok: NameTok): nodes.NewNode = ???
+  override def visitNameTok(nameTok: NameTok): nodes.NewNode = {
+    nodeBuilder.fieldIdentifierNode(nameTok.id, lineAndColOf(nameTok))
+  }
 
   override def visitSuite(suite: Suite): nodes.NewNode = ???
 
@@ -311,14 +313,65 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
 
   override def visitCompare(compare: Compare): nodes.NewNode = ???
 
+  /** TODO
+    * For now this function compromises on the correctness of the
+    * lowering in order to get some data flow tracking going.
+    * 1. For constructs like x.func() we assume x to be the
+    *    instance which is passed into func. This is not true
+    *    since the instance method object gets the instance
+    *    already bound/captured during function access.
+    *    This becomes relevant for constructs like:
+    *    x.func = y.func <- y.func is class method object
+    *    x.func()
+    *    In this case the instance passed into func is y and
+    *    not x. We cannot represent this in th CPG and thus
+    *    stick to the assumption that the part before the "."
+    *    and the bound/captured instance will be the same.
+    *    For reference see:
+    *    https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy
+    *    search for "Instance methods"
+    *
+    * 2. Due to the decision in 1. for calls like x.func() the
+    *    expression x is part of the call receiver AST and its
+    *    instance AST. This would be only ok if x is side effect
+    *    free which is not necessarily the case if x == getX().
+    *    Currently we ignore this fact and just emit the expression
+    *    twice. A fix would mean to emit a tmp variable which holds
+    *    the expression result.
+    *    Not yet implemented because this gets obsolete if 1. is
+    *    fixed.
+    * 3. No named parameter support. CPG does not supports this.
+    */
   override def visitCall(call: Call): nodes.NewNode = {
+    val argumentNodes = call.args.map(_.accept(this).cast)
     val receiverNode = call.func.accept(this).cast
 
-    val argumentNodes = call.args.map(_.accept(this).cast)
-
+    val code = codeOf(receiverNode) + "(" + argumentNodes.map(codeOf).mkString(", ") + ")"
     val callNode = nodeBuilder
-      .callNode("TODO", "TODO", DispatchTypes.DYNAMIC_DISPATCH, lineAndColOf(call))
+      .callNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, lineAndColOf(call))
       .cast
+
+    var orderIndex = 0
+    edgeBuilder.receiverEdge(receiverNode, callNode)
+    edgeBuilder.astEdge(receiverNode, callNode, orderIndex)
+    orderIndex += 1
+
+    call.func match {
+      case attribute: Attribute =>
+        val instanceNode = attribute.value.accept(this).cast
+        edgeBuilder.astEdge(instanceNode, callNode, orderIndex)
+        edgeBuilder.argumentEdge(instanceNode, callNode, 0)
+        orderIndex += 1
+      case _ =>
+    }
+
+    var argIndex = 1
+    argumentNodes.foreach { argumentNode =>
+      edgeBuilder.astEdge(argumentNode, callNode, orderIndex)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argIndex)
+      orderIndex += 1
+      argIndex += 1
+    }
 
     callNode
   }
@@ -335,7 +388,16 @@ class PyDevAstVisitor extends VisitorIF with PyDevAstVisitorHelpers {
 
   override def visitStrJoin(strJoin: StrJoin): nodes.NewNode = ???
 
-  override def visitAttribute(attribute: Attribute): nodes.NewNode = ???
+  /** TODO
+    * We currently ignore possible attribute access provider/interception
+    * mechanisms like __getattr__, __getattribute__ and __get__.
+    */
+  override def visitAttribute(attribute: Attribute): nodes.NewNode = {
+    val baseNode = attribute.value.accept(this).cast
+    val fieldIdNode = attribute.attr.accept(this).cast
+
+    createFieldAccess(baseNode, fieldIdNode, lineAndColOf(attribute))
+  }
 
   override def visitSubscript(subscript: Subscript): nodes.NewNode = ???
 

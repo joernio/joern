@@ -23,3 +23,11 @@ PyDev artifact deployment:
         writing this is way 8.1.0. Please stick to the schema.
     4.6 Select the "Generate Default POM" checkbox.
     4.7 Click deploy.
+       
+Shortcomings of Python CPG representation:
+  - No named parameter support
+  - Incorrect instance argument for call like x.func.
+    See source code comment.
+  - No handling of __getattr__, __setattr__, etc.   
+    
+    

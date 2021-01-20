@@ -93,6 +93,23 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
     }
   }
 
+  protected def createFieldAccess(
+      baseNode: nodes.NewNode,
+      fieldIdNode: nodes.NewNode,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
+    val code = codeOf(baseNode) + "." + codeOf(fieldIdNode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      Operators.fieldAccess,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 1, baseNode, fieldIdNode)
+    callNode
+  }
+
   protected def addAstChildNodes(
       parentNode: nodes.NewNode,
       startIndex: Int,

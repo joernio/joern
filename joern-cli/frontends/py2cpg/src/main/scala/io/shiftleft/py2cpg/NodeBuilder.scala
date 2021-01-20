@@ -1,6 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.passes.DiffGraph
 
 class NodeBuilder(diffGraph: DiffGraph.Builder) {
@@ -35,6 +36,16 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       columnNumber = Some(lineAndColumn.column)
     )
     addNodeToDiff(identifierNode)
+  }
+
+  def fieldIdentifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewFieldIdentifier = {
+    val fieldIdentifierNode = new NewFieldIdentifier(
+      code = name,
+      canonicalName = name,
+      lineNumber = Some(lineAndColumn.line),
+      columnNumber = Some(lineAndColumn.column)
+    )
+    addNodeToDiff(fieldIdentifierNode)
   }
 
   def numberLiteralNode(number: Int, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
