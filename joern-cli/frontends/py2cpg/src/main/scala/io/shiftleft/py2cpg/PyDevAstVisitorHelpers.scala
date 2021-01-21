@@ -56,6 +56,57 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
     blockNode
   }
 
+  protected def createCall(receiverNode: nodes.NewNode,
+                           lineAndColumn: LineAndColumn,
+                           argumentNodes: nodes.NewNode*): nodes.NewCall = {
+    val code = codeOf(receiverNode) + "(" + argumentNodes.map(codeOf).mkString(", ") + ")"
+    val callNode = nodeBuilder.callNode(
+      code,
+      "",
+      DispatchTypes.DYNAMIC_DISPATCH,
+      lineAndColumn
+    )
+
+    edgeBuilder.astEdge(receiverNode, callNode, 0)
+    edgeBuilder.receiverEdge(receiverNode, callNode)
+
+    var index = 1
+    argumentNodes.foreach { argumentNode =>
+      edgeBuilder.astEdge(argumentNode, callNode, order = index)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argIndex = index)
+      index += 1
+    }
+
+    callNode
+  }
+
+  protected def createInstanceCall(receiverNode: nodes.NewNode,
+                                   instanceNode: nodes.NewNode,
+                                   lineAndColumn: LineAndColumn,
+                                   argumentNodes: nodes.NewNode*): nodes.NewCall = {
+    val code = codeOf(receiverNode) + "(" + argumentNodes.map(codeOf).mkString(", ") + ")"
+    val callNode = nodeBuilder.callNode(
+      code,
+      "",
+      DispatchTypes.DYNAMIC_DISPATCH,
+      lineAndColumn
+    )
+
+    edgeBuilder.astEdge(receiverNode, callNode, 0)
+    edgeBuilder.receiverEdge(receiverNode, callNode)
+    edgeBuilder.astEdge(instanceNode, callNode, 1)
+    edgeBuilder.argumentEdge(instanceNode, callNode, 0)
+
+    var argIndex = 1
+    argumentNodes.foreach { argumentNode =>
+      edgeBuilder.astEdge(argumentNode, callNode, argIndex + 1)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argIndex)
+      argIndex += 1
+    }
+
+    callNode
+  }
+
   protected def createAssignment(
       lhsNode: nodes.NewNode,
       rhsNode: nodes.NewNode,
@@ -109,10 +160,19 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
   }
 
   protected def createFieldAccess(
+                                   baseNode: nodes.NewNode,
+                                   fieldName: String,
+                                   lineAndColumn: LineAndColumn
+                                 ): nodes.NewCall = {
+    val fieldIdNode = nodeBuilder.fieldIdentifierNode(fieldName, lineAndColumn)
+    createFieldAccess(baseNode, fieldIdNode, lineAndColumn)
+  }
+
+  protected def createFieldAccess(
       baseNode: nodes.NewNode,
       fieldIdNode: nodes.NewNode,
       lineAndColumn: LineAndColumn
-  ): nodes.NewNode = {
+  ): nodes.NewCall = {
     val code = codeOf(baseNode) + "." + codeOf(fieldIdNode)
     val callNode = nodeBuilder.callNode(
       code,

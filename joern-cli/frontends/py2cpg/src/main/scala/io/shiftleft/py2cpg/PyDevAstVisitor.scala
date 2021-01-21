@@ -4,6 +4,8 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes
 import io.shiftleft.passes.DiffGraph
 import org.python.pydev.parser.jython.ast
 
+import scala.collection.mutable
+
 object PyDevAstVisitor {
   private implicit class ToNewNodeConverter(node: AnyRef) {
     def cast: nodes.NewNode = {
@@ -321,34 +323,13 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
     val argumentNodes = call.args.map(_.accept(this).cast)
     val receiverNode = call.func.accept(this).cast
 
-    val code = codeOf(receiverNode) + "(" + argumentNodes.map(codeOf).mkString(", ") + ")"
-    val callNode = nodeBuilder
-      .callNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, lineAndColOf(call))
-      .cast
-
-    var orderIndex = 0
-    edgeBuilder.receiverEdge(receiverNode, callNode)
-    edgeBuilder.astEdge(receiverNode, callNode, orderIndex)
-    orderIndex += 1
-
     call.func match {
       case attribute: ast.Attribute =>
         val instanceNode = attribute.value.accept(this).cast
-        edgeBuilder.astEdge(instanceNode, callNode, orderIndex)
-        edgeBuilder.argumentEdge(instanceNode, callNode, 0)
-        orderIndex += 1
+        createInstanceCall(receiverNode, instanceNode, lineAndColOf(call), argumentNodes: _*)
       case _ =>
+        createCall(receiverNode, lineAndColOf(call), argumentNodes: _*)
     }
-
-    var argIndex = 1
-    argumentNodes.foreach { argumentNode =>
-      edgeBuilder.astEdge(argumentNode, callNode, orderIndex)
-      edgeBuilder.argumentEdge(argumentNode, callNode, argIndex)
-      orderIndex += 1
-      argIndex += 1
-    }
-
-    callNode
   }
 
   override def visitRepr(repr: ast.Repr): nodes.NewNode = ???
@@ -382,7 +363,41 @@ class PyDevAstVisitor extends ast.VisitorIF with PyDevAstVisitorHelpers {
     nodeBuilder.identifierNode(name.id, lineAndColOf(name))
   }
 
-  override def visitList(list: ast.List): nodes.NewNode = ???
+  /**
+    * Lowering of [1, 2]:
+    *   {
+    *     tmp = list
+    *     tmp.append(1)
+    *     tmp.append(2)
+    *     tmp
+    *   }
+    */
+  override def visitList(list: ast.List): nodes.NewNode = {
+    val tmpVariableName = getUnusedName()
+    val localNode = nodeBuilder.localNode(tmpVariableName)
+
+    val listInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+    val listIdNode = nodeBuilder.identifierNode("list", lineAndColOf(list))
+    val listConstructorCall = createCall(listIdNode, lineAndColOf(list))
+    val listInstanceAssignment = createAssignment(listInstanceId, listConstructorCall, lineAndColOf(list))
+
+    val appendCallNodes = list.elts.map { listElement =>
+      val listInstanceIdForReceiver = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+      val appendFieldAccessNode = createFieldAccess(listInstanceIdForReceiver, "append", lineAndColOf(list))
+
+      val listeInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+      val elementNode = listElement.accept(this).cast
+      createInstanceCall(appendFieldAccessNode, listeInstanceId, lineAndColOf(list), elementNode)
+    }
+
+    val listInstanceIdForReturn = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+
+    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
+    blockElements.append(listInstanceAssignment)
+    blockElements.appendAll(appendCallNodes)
+    blockElements.append(listInstanceIdForReturn)
+    createBlock(Iterable.single(localNode), blockElements, lineAndColOf(list))
+  }
 
   override def visitTuple(tuple: ast.Tuple): nodes.NewNode = ???
 
