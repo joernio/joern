@@ -16,7 +16,8 @@ case class JoernScanConfig(src: String = "",
                            overwrite: Boolean = false,
                            store: Boolean = false,
                            dump: Boolean = false,
-                           updateQueryDb: Boolean = false)
+                           updateQueryDb: Boolean = false,
+                           maxCallDepth: Int = 2)
 
 object JoernScan extends App with BridgeBase {
 
@@ -45,6 +46,11 @@ object JoernScan extends App with BridgeBase {
       opt[Unit]("updatedb")
         .action((_, c) => c.copy(updateQueryDb = true))
         .text("Update query database")
+
+      opt[Int]("depth")
+        .action((x, c) => c.copy(maxCallDepth = x))
+        .text("Set call depth for interprocedural analysis")
+
     }
   }.parse(args, JoernScanConfig())
 
@@ -62,6 +68,7 @@ object JoernScan extends App with BridgeBase {
         println("Please specify a source code directory to scan")
         return
       }
+      Scan.defaultOpts.maxCallDepth = config.maxCallDepth
       val shellConfig = io.shiftleft.console
         .Config()
         .copy(pluginToRun = Some("scan"), src = Some(config.src), overwrite = config.overwrite, store = config.store)
