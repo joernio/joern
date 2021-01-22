@@ -17,6 +17,7 @@ case class JoernScanConfig(src: String = "",
                            store: Boolean = false,
                            dump: Boolean = false,
                            updateQueryDb: Boolean = false,
+                           queryDbVersion: Option[String] = None,
                            maxCallDepth: Int = 2)
 
 object JoernScan extends App with BridgeBase {
@@ -47,6 +48,10 @@ object JoernScan extends App with BridgeBase {
         .action((_, c) => c.copy(updateQueryDb = true))
         .text("Update query database")
 
+      opt[String]("dbversion")
+        .action((x, c) => c.copy(queryDbVersion = Some(x)))
+        .text("Version of query database `updatedb`-operation installs")
+
       opt[Int]("depth")
         .action((x, c) => c.copy(maxCallDepth = x))
         .text("Set call depth for interprocedural analysis")
@@ -62,7 +67,7 @@ object JoernScan extends App with BridgeBase {
     if (config.dump) {
       dumpQueries()
     } else if (config.updateQueryDb) {
-      updateQueryDatabase()
+      updateQueryDatabase(config.queryDbVersion)
     } else {
       if (config.src == "") {
         println("Please specify a source code directory to scan")
@@ -90,11 +95,10 @@ object JoernScan extends App with BridgeBase {
     println(s"Queries written to: $outFileName")
   }
 
-  private def updateQueryDatabase(): Unit = {
-    val url = "https://github.com/joernio/query-database/releases/latest/download/querydb.zip"
+  private def updateQueryDatabase(version: Option[String]): Unit = {
+    val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
     val r = requests.get(url)
-    println(r.statusCode)
     File.usingTemporaryDirectory("joern-scan") { dir =>
       val queryDbZip = (dir / "querydb.zip")
       val absPath = queryDbZip.path.toAbsolutePath.toString
@@ -110,6 +114,14 @@ object JoernScan extends App with BridgeBase {
         .Config()
         .copy(addPlugin = Some(absPath))
       runAmmonite(addPluginConfig, JoernProduct)
+    }
+  }
+
+  private def urlForVersion(version: Option[String]): String = {
+    if (version.isEmpty) {
+      "https://github.com/joernio/query-database/releases/latest/download/querydb.zip"
+    } else {
+      s"https://github.com/joernio/query-database/releases/download/v${version.get}/querydb.zip"
     }
   }
 
