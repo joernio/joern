@@ -42,6 +42,8 @@ object py2cpg extends SbtModule with ScalafmtModule {
     ivy"org.slf4j:slf4j-api:1.7.30",
     ivy"org.rogach::scallop:4.0.1",
     ivy"org.scala-lang.modules::scala-parallel-collections:1.0.0",
+    ivy"io.bullet::borer-core:1.6.3",
+    ivy"io.bullet::borer-derivation:1.6.3",
   )
 
   override def runIvyDeps =
