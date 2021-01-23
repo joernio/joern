@@ -12,12 +12,16 @@ import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 
 import scala.reflect.runtime.universe._
 
+object JoernScanConfig {
+  val defaultDbVersion: String = "0.0.48"
+}
+
 case class JoernScanConfig(src: String = "",
                            overwrite: Boolean = false,
                            store: Boolean = false,
                            dump: Boolean = false,
                            updateQueryDb: Boolean = false,
-                           queryDbVersion: Option[String] = None,
+                           queryDbVersion: String = JoernScanConfig.defaultDbVersion,
                            maxCallDepth: Int = 2)
 
 object JoernScan extends App with BridgeBase {
@@ -49,7 +53,7 @@ object JoernScan extends App with BridgeBase {
         .text("Update query database")
 
       opt[String]("dbversion")
-        .action((x, c) => c.copy(queryDbVersion = Some(x)))
+        .action((x, c) => c.copy(queryDbVersion = x))
         .text("Version of query database `updatedb`-operation installs")
 
       opt[Int]("depth")
@@ -95,7 +99,7 @@ object JoernScan extends App with BridgeBase {
     println(s"Queries written to: $outFileName")
   }
 
-  private def updateQueryDatabase(version: Option[String]): Unit = {
+  private def updateQueryDatabase(version: String): Unit = {
     val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
     val r = requests.get(url)
@@ -117,12 +121,8 @@ object JoernScan extends App with BridgeBase {
     }
   }
 
-  private def urlForVersion(version: Option[String]): String = {
-    if (version.isEmpty) {
-      "https://github.com/joernio/query-database/releases/latest/download/querydb.zip"
-    } else {
-      s"https://github.com/joernio/query-database/releases/download/v${version.get}/querydb.zip"
-    }
+  private def urlForVersion(version: String): String = {
+    s"https://github.com/joernio/query-database/releases/download/v$version/querydb.zip"
   }
 
   override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
