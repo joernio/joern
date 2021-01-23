@@ -13,7 +13,7 @@ import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.48"
+  val defaultDbVersion: String = "0.0.49"
 }
 
 case class JoernScanConfig(src: String = "",
