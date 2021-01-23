@@ -11,7 +11,7 @@ jobs:
         java-version: 1.8
     - name: Run tests
       run: |
-        sbt test scalafmtCheck
+        sbt test scalafmtCheck stage
         mkdir /tmp/foo
         echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
         ./joern-scan --updatedb
