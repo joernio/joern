@@ -122,7 +122,11 @@ object JoernScan extends App with BridgeBase {
   }
 
   private def urlForVersion(version: String): String = {
-    s"https://github.com/joernio/query-database/releases/download/v$version/querydb.zip"
+    if (version == "latest") {
+      "https://github.com/joernio/query-database/releases/latest/download/querydb.zip"
+    } else {
+      s"https://github.com/joernio/query-database/releases/download/v$version/querydb.zip"
+    }
   }
 
   override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
