@@ -12,16 +12,9 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.github.plume-oss"    % "plume" % "0.1.0" exclude("io.github.plume-oss", "cpgconv"),
-
-  // Plume
-  "org.jetbrains.kotlin" % "kotlin-stdlib-jdk8" % "1.3.72" % Runtime,
-  "org.jetbrains.kotlin" % "kotlin-reflect" % "1.3.72" % Runtime,
-  "org.lz4" % "lz4-java" % "1.7.1" % Runtime,
-  "org.soot-oss" % "soot" % "4.2.1" % Runtime,
+  "io.github.plume-oss"    % "plume" % "0.1.1" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
-
   "com.lihaoyi" %% "ammonite" % "2.3.8-4-88785969" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.8.0",
