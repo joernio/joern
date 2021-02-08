@@ -214,6 +214,41 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("x & y & z")
   }
 
+  "shiftExpr rule tests" in {
+    testT("x << y")
+    testT("x >> y")
+    testT("x << y << z")
+    testT("x >> y >> z")
+  }
+
+  "sum rule tests" in {
+    testT("x + y")
+    testT("x - y")
+    testT("x + y + z")
+    testT("x - y - z")
+  }
+
+  "term rule tests" in {
+    testT("x * y")
+    testT("x / y")
+    testT("x // y")
+    testT("x % y")
+    testT("x @ y")
+    testT("x * y / z")
+  }
+
+  "factor rule tests" in {
+    testT("+x")
+    testT("-x")
+    testT("~x")
+    testT("+-x")
+  }
+
+  "power rule tests" in {
+    testT("x ** y")
+    testT("x ** -y")
+  }
+
   "primary rule tests" in {
     testT("x.y")
     testT("x.y.z")

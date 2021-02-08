@@ -92,8 +92,10 @@ TOKEN: {
 | <MINUS: "-">
 | <AT: "@">
 | <DIV: "/">
+| <FLOOR_DIV: "//">
 | <MOD: "%">
 | <POW: "^^">
+| <INVERT: "~">
 | <LSHIFT: "<<">
 | <RSHIFT: ">>">
 | <BIT_OR: "|">
@@ -943,12 +945,84 @@ iexpr bitwiseAnd(): {
 }
 
 iexpr shiftExpr(): {
-  iexpr expression;
+  iexpr expr;
+  iexpr nextExpr;
+  ioperator op;
 } {
-  expression = primary()
-  {
-    return expression;
-  }
+  expr = sum()
+  (
+    (<LSHIFT> { op = LShift$.MODULE$; } | <RSHIFT> { op = RShift$.MODULE$; })
+    nextExpr = sum()
+    { expr = new BinOp(expr, op, nextExpr, attributes(expr, token)); }
+  )*
+  { return expr; }
+}
+
+iexpr sum(): {
+  iexpr expr;
+  iexpr nextExpr;
+  ioperator op;
+} {
+  expr = term()
+  (
+    (<PLUS> { op = Add$.MODULE$; } | <MINUS> { op = Sub$.MODULE$; })
+    nextExpr = term()
+    { expr = new BinOp(expr, op, nextExpr, attributes(expr, token)); }
+  )*
+  { return expr; }
+}
+
+iexpr term(): {
+  iexpr expr;
+  iexpr nextExpr;
+  ioperator op;
+} {
+  expr = factor()
+  (
+    (
+      <STAR> { op = Mult$.MODULE$; }
+    | <DIV> { op = Div$.MODULE$; }
+    | <FLOOR_DIV> { op = FloorDiv$.MODULE$; }
+    | <MOD> { op = Mod$.MODULE$; }
+    | <AT> { op = MatMult$.MODULE$; }
+    )
+    nextExpr = factor()
+    { expr = new BinOp(expr, op, nextExpr, attributes(expr, token)); }
+  )*
+  { return expr; }
+}
+
+iexpr factor(): {
+  Token startToken;
+  iexpr expr;
+  iunaryop op;
+} {
+  (
+  (
+    (
+      <PLUS> { op = UAdd$.MODULE$; }
+    | <MINUS> { op = USub$.MODULE$; }
+    | <INVERT> { op = Invert$.MODULE$; }
+    )
+    { startToken = token; }
+    expr = factor()
+    { expr = new UnaryOp(op, expr, attributes(startToken, token)); }
+  )
+| expr = power()
+  )
+  { return expr; }
+}
+
+iexpr power(): {
+  iexpr expr;
+  iexpr exponentExpr;
+} {
+  expr = primary()
+  (
+    <DOUBLE_STAR> exponentExpr = factor()
+    { expr = new BinOp(expr, Pow$.MODULE$, exponentExpr, attributes(expr, token)); }
+  )?
+  { return expr; }
 }
 
 iexpr primary(): {

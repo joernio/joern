@@ -368,7 +368,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(pow: Pow.type): String = {
-    "^^"
+    "**"
   }
 
   override def visit(lShift: LShift.type): String = {
