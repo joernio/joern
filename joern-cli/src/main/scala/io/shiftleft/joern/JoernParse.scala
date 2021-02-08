@@ -29,7 +29,7 @@ object JoernParse extends App {
       }
     }
 
-    if (config.enhance) {
+    if (config.enhance && config.language != "java") {
       Cpg2Scpg.run(config.outputCpgFile, config.dataFlow).close()
     }
 
