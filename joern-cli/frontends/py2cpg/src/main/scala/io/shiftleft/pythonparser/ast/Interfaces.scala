@@ -1,9 +1,10 @@
 package io.shiftleft.pythonparser.ast
 
+import io.shiftleft.pythonparser.AstVisitor
+
 trait iast {
-  def print: String = toString
-  protected def indent(printString: String, indentString: String = "\t"): String = {
-    indentString + printString.replaceAll("\n", "\n" + indentString)
+  def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 trait imod extends iast

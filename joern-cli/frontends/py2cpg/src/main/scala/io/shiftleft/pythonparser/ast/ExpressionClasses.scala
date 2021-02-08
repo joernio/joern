@@ -1,16 +1,22 @@
 package io.shiftleft.pythonparser.ast
 
+import io.shiftleft.pythonparser.AstVisitor
+
 import java.util
 import scala.jdk.CollectionConverters._
 
-sealed trait iexpr extends iast with iattributes
+sealed trait iexpr extends iast with iattributes {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 case class Name(id: String, lineno: Int, col_offset: Int) extends iexpr {
   def this(id: String, attributeProvider: AttributeProvider) = {
     this(id, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    id
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -18,13 +24,8 @@ case class Tuple(elts: Iterable[iexpr], lineno: Int, col_offset: Int) extends ie
   def this(elts: util.ArrayList[iexpr], attributeProvider: AttributeProvider) = {
     this(elts.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-
-  override def print: String = {
-    if (elts.size == 1) {
-      "(" + elts.head.print + ",)"
-    } else {
-      "(" + elts.map(_.print).mkString(",") + ")"
-    }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -32,8 +33,8 @@ case class Constant(value: iconstant, lineno: Int, col_offset: Int) extends iexp
   def this(value: iconstant, attributeProvider: AttributeProvider) = {
     this(value, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    value.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -41,8 +42,8 @@ case class IfExp(test: iexpr, body: iexpr, orElse: iexpr, lineno: Int, col_offse
   def this(test: iexpr, body: iexpr, orElse: iexpr, attributeProvider: AttributeProvider) = {
     this(test, body, orElse, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    body.print + " if " + test.print + " else " + orElse.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -50,9 +51,8 @@ case class BoolOp(op: iboolop, values: Iterable[iexpr], lineno: Int, col_offset:
   def this(op: iboolop, values: util.ArrayList[iexpr], attributeProvider: AttributeProvider) = {
     this(op, values.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    val opString = " " + op.print + " "
-    values.map(_.print).mkString(opString)
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -60,14 +60,8 @@ case class UnaryOp(op: iunaryop, operand: iexpr, lineno: Int, col_offset: Int) e
   def this(op: iunaryop, operand: iexpr, attributeProvider: AttributeProvider) = {
     this(op, operand, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    val opString = op match {
-      case Not =>
-        op.print + " "
-      case _ =>
-        op.print
-    }
-    opString + operand.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -83,10 +77,8 @@ case class Compare(left: iexpr,
     this(left, ops.asScala, comparators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
 
-  override def print: String = {
-    left.print + ops.zip(comparators).map { case (op, comparator) =>
-      " " + op.print + " " + comparator.print
-    }.mkString("")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -102,8 +94,8 @@ case class BinOp(left: iexpr,
     this(left, op, right, attributeProvider.lineno, attributeProvider.col_offset)
   }
 
-  override def print: String = {
-    left.print + " " + op.print + " " + right.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -111,8 +103,8 @@ case class Attribute(value: iexpr, attr: String, lineno: Int, col_offset: Int) e
   def this(value: iexpr, attr: String, attributeProvider: AttributeProvider) = {
     this(value, attr, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    value.print + "." + attr
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -120,8 +112,8 @@ case class NamedExpr(target: iexpr, value: iexpr, lineno: Int, col_offset: Int) 
   def this(target: iexpr, value: iexpr, attributeProvider: AttributeProvider) = {
     this(target, value, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    target.print + " := " + value.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -129,8 +121,8 @@ case class Starred(value: iexpr, lineno: Int, col_offset: Int) extends iexpr {
   def this(value: iexpr, attributeProvider: AttributeProvider) = {
     this(value, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "*" + value.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -145,10 +137,9 @@ case class Call(func: iexpr,
            attributeProvider: AttributeProvider) = {
     this(func, args.asScala, keywords.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    val optionArgEndComma = if (args.nonEmpty && keywords.nonEmpty) ", " else ""
-    func.print + "(" + args.map(_.print).mkString(", ") + optionArgEndComma +
-      keywords.map(_.print).mkString(", ") + ")"
+
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -156,8 +147,8 @@ case class Subscript(value: iexpr, slice: iexpr, lineno: Int, col_offset: Int) e
   def this(value: iexpr, slice: iexpr, attributeProvider: AttributeProvider) = {
     this(value, slice, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    value.print + "[" + slice.print + "]"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -170,10 +161,8 @@ case class Slice(lower: Option[iexpr],
     this(Option(lower), Option(upper), Option(step),
       attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    lower.map(_.print).getOrElse("") +
-      ":" + upper.map(_.print).getOrElse("") +
-      step.map(expr => ":" + expr.print).getOrElse("")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -181,8 +170,8 @@ case class Yield(value: Option[iexpr], lineno: Int, col_offset: Int) extends iex
   def this(value: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(value), attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "yield" + value.map(v => " " + v.print).getOrElse("")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -190,7 +179,7 @@ case class YieldFrom(value: iexpr, lineno: Int, col_offset: Int) extends iexpr {
   def this(value: iexpr, attributeProvider: AttributeProvider) = {
     this(value, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "yield from " + value.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }

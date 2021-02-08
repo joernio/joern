@@ -1,19 +1,21 @@
 package io.shiftleft.pythonparser.ast
 
-sealed trait iconstant extends iast
+import io.shiftleft.pythonparser.AstVisitor
+
+sealed trait iconstant extends iast {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 case class StringConstant(value: String) extends iconstant {
-  override def print: String = {
-    value
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 case class BoolConstant(value: Boolean) extends iconstant {
-  override def print: String = {
-    if (value) {
-      "True"
-    } else {
-      "False"
-    }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 // Python integer class is unbounded. Lets use BigInt to
@@ -22,17 +24,17 @@ case class IntConstant(value: BigInt) extends iconstant {
   def this(value: String) = {
     this(BigInt(value))
   }
-  override def print: String = {
-    value.toString()
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 case object NoneConstant extends iconstant {
-  override def print: String = {
-    "None"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 case object EllipsisConstant extends iconstant {
-  override def print: String = {
-    "..."
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }

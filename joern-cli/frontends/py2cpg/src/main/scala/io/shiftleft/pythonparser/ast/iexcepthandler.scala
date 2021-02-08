@@ -1,9 +1,15 @@
 package io.shiftleft.pythonparser.ast
 
+import io.shiftleft.pythonparser.AstVisitor
+
 import java.util
 import scala.jdk.CollectionConverters._
 
-sealed trait iexcepthandler extends iast with iattributes
+sealed trait iexcepthandler extends iast with iattributes {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 case class ExceptHandler(typ: Option[iexpr],
                          name: Option[String],
@@ -20,12 +26,7 @@ case class ExceptHandler(typ: Option[iexpr],
       attributeProvider.lineno,
       attributeProvider.col_offset)
   }
-
-  override def print: String = {
-    "except" +
-      typ.map(t => " " + t.print).getOrElse("") +
-      name.map(n => " as " + n).getOrElse("") +
-      ":" +
-      body.map(s => indent(s.print)).mkString("\n", "\n", "")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }

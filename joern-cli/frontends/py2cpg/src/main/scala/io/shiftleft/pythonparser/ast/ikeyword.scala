@@ -1,6 +1,13 @@
 package io.shiftleft.pythonparser.ast
 
-sealed trait ikeyword extends iast
+import io.shiftleft.pythonparser.AstVisitor
+
+sealed trait ikeyword extends iast {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
 case class Keyword(arg: Option[String],
                    value: iexpr,
                    lineno: Int,
@@ -8,12 +15,7 @@ case class Keyword(arg: Option[String],
   def this(arg: String, value: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(arg), value, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    arg match {
-      case Some(argName) =>
-        argName + " = " + value.print
-      case None =>
-        "**" + value.print
-    }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }

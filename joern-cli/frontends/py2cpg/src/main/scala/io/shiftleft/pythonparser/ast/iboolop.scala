@@ -1,15 +1,21 @@
 package io.shiftleft.pythonparser.ast
 
-sealed trait iboolop extends iast
+import io.shiftleft.pythonparser.AstVisitor
+
+sealed trait iboolop extends iast {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 object And extends iboolop {
-  override def print: String = {
-    "and"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
 case object Or extends iboolop {
-  override def print: String = {
-    "or"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }

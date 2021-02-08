@@ -1,0 +1,101 @@
+package io.shiftleft.pythonparser
+
+import io.shiftleft.pythonparser.ast._
+
+trait AstVisitor[T] {
+  def visit(ast: iast): T
+
+  def visit(mod: imod): T
+  def visit(module: Module): T
+
+  def visit(stmt: istmt): T
+  def visit(classDef: ClassDef): T
+  def visit(ret: Return): T
+  def visit(assign: Assign): T
+  def visit(annAssign: AnnAssign): T
+  def visit(augAssign: AugAssign): T
+  def visit(whileStmt: While): T
+  def visit(ifStmt: If): T
+  def visit(raise: Raise): T
+  def visit(tryStmt: Try): T
+  def visit(assert: Assert): T
+  def visit(importStmt: Import): T
+  def visit(importFrom: ImportFrom): T
+  def visit(global: Global): T
+  def visit(nonlocal: Nonlocal): T
+  def visit(expr: Expr): T
+  def visit(pass: Pass): T
+  def visit(break: Break): T
+  def visit(continue: Continue): T
+
+  def visit(expr: iexpr): T
+  def visit(boolOp: BoolOp): T
+  def visit(namedExpr: NamedExpr): T
+  def visit(binOp: BinOp): T
+  def visit(unaryOp: UnaryOp): T
+  def visit(ifExp: IfExp): T
+  def visit(yieldExpr: Yield): T
+  def visit(yieldFrom: YieldFrom): T
+  def visit(compare: Compare): T
+  def visit(call: Call): T
+  def visit(constant: Constant): T
+  def visit(attribute: Attribute): T
+  def visit(subscript: Subscript): T
+  def visit(starred: Starred): T
+  def visit(name: Name): T
+  def visit(tuple: Tuple): T
+  def visit(slice: Slice): T
+
+  def visit(alias: ialias): T
+  def visit(alias: Alias): T
+
+  def visit(boolop: iboolop): T
+  def visit(and: And.type): T
+  def visit(or: Or.type): T
+
+  def visit(compop: icompop): T
+  def visit(eq: Eq.type): T
+  def visit(notEq: NotEq.type): T
+  def visit(lt: Lt.type): T
+  def visit(ltE: LtE.type): T
+  def visit(gt: Gt.type): T
+  def visit(gtE: GtE.type): T
+  def visit(is: Is.type): T
+  def visit(isNot: IsNot.type): T
+  def visit(in: In.type): T
+  def visit(notIn: NotIn.type): T
+
+  def visit(constant: iconstant): T
+  def visit(stringConstant: StringConstant): T
+  def visit(boolConstant: BoolConstant): T
+  def visit(intConstant: IntConstant): T
+  def visit(noneConstant: NoneConstant.type): T
+  def visit(ellipsisConstant: EllipsisConstant.type): T
+
+  def visit(exceptHandler: iexcepthandler): T
+  def visit(exceptHandler: ExceptHandler): T
+
+  def visit(keyword: ikeyword): T
+  def visit(keyword: Keyword): T
+
+  def visit(operator: ioperator): T
+  def visit(add: Add.type): T
+  def visit(sub: Sub.type): T
+  def visit(mult: Mult.type): T
+  def visit(matMult: MatMult.type): T
+  def visit(div: Div.type): T
+  def visit(mod: Mod.type): T
+  def visit(pow: Pow.type): T
+  def visit(lShift: LShift.type): T
+  def visit(rShift: RShift.type): T
+  def visit(bitOr: BitOr.type): T
+  def visit(bitXor: BitXor.type): T
+  def visit(bitAnd: BitAnd.type): T
+  def visit(floorDiv: FloorDiv.type): T
+
+  def visit(unaryop: iunaryop): T
+  def visit(invert: Invert.type): T
+  def visit(not: Not.type): T
+  def visit(uAdd: UAdd.type): T
+  def visit(uSub: USub.type): T
+}

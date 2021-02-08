@@ -11,7 +11,8 @@ class ParserTests extends AnyFreeSpec with Matchers {
     val ast = PyParser.parse(code)
     val compareTo = if (expected != null) expected else code
 
-    ast.print shouldBe compareTo
+    val astPrinter = new AstPrinter("\t")
+    astPrinter.print(ast) shouldBe compareTo
   }
 
   "statements" - {

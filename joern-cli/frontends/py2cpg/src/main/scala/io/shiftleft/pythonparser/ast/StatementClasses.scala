@@ -1,10 +1,16 @@
 package io.shiftleft.pythonparser.ast
 
 
+import io.shiftleft.pythonparser.AstVisitor
+
 import java.util
 import scala.jdk.CollectionConverters._
 
-trait istmt extends iast with iattributes
+trait istmt extends iast with iattributes {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 case class ErrorStatement(lineno: Int, col_offset: Int) extends istmt
 
@@ -12,9 +18,8 @@ case class Module(stmts: Iterable[istmt]) extends imod {
   def this(stmts: util.ArrayList[istmt]) = {
     this(stmts.asScala)
   }
-
-  override def print: String = {
-    stmts.map(_.print).mkString("\n")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -34,8 +39,8 @@ case class Assign(targets: Iterable[iexpr],
            attributeProvider: AttributeProvider) = {
     this(targets.asScala, value, None, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    targets.map(_.print).mkString(", ") + " = " + value.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -77,8 +82,8 @@ case class Expr(value: iexpr, lineno: Int, col_offset: Int) extends istmt {
   def this(value: iexpr) = {
     this(value, value.lineno, value.col_offset)
   }
-  override def print: String = {
-    value.print
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -86,8 +91,8 @@ case class Return(value: Option[iexpr], lineno: Int, col_offset: Int) extends is
   def this(value: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(value), attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "return" + value.map(v => " " + v.print).getOrElse("")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -95,8 +100,8 @@ case class Import(names: Iterable[ialias], lineno: Int, col_offset: Int) extends
   def this(names: util.ArrayList[ialias], attributeProvider: AttributeProvider) = {
     this(names.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "import " + names.map(_.print).mkString(", ")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -108,15 +113,8 @@ case class ImportFrom(module: Option[String],
   def this(module: String, names: util.ArrayList[ialias], level: Int, attributeProvider: AttributeProvider) = {
     this(Option(module), names.asScala, level, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    val relativeImportDots =
-      if (level != 0) {
-        " " + "." * level
-      } else {
-        ""
-      }
-    "from" + relativeImportDots + module.map(m => " " + m) .getOrElse("") +
-      " import " + names.map(_.print).mkString(", ")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -124,8 +122,8 @@ case class Raise(exc: Option[iexpr], cause: Option[iexpr], lineno: Int, col_offs
   def this(exc: iexpr, cause: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(exc), Option(cause), attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "raise" + exc.map(e => " " + e.print).getOrElse("") + cause.map(c => " from " + c.print).getOrElse("")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -133,8 +131,8 @@ case class Pass(lineno: Int, col_offset: Int) extends istmt {
   def this(attributeProvider: AttributeProvider) = {
     this(attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "pass"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -144,8 +142,8 @@ case class Assert(test: iexpr, msg: Option[iexpr], lineno: Int, col_offset: Int)
   def this(test: iexpr, msg: iexpr, attributeProvider: AttributeProvider) = {
     this(test, Option(msg), attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "assert " + test.print + msg.map(m => ", " + m.print).getOrElse("")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -153,8 +151,8 @@ case class Break(lineno: Int, col_offset: Int) extends istmt {
   def this(attributeProvider: AttributeProvider) = {
     this(attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "break"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -162,8 +160,8 @@ case class Continue(lineno: Int, col_offset: Int) extends istmt {
   def this(attributeProvider: AttributeProvider) = {
     this(attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "continue"
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -171,8 +169,8 @@ case class Global(names: Iterable[String], lineno: Int, col_offset: Int) extends
   def this(names: util.ArrayList[String], attributeProvider: AttributeProvider) = {
     this(names.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "global " + names.mkString(", ")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -180,8 +178,8 @@ case class Nonlocal(names: Iterable[String], lineno: Int, col_offset: Int) exten
   def this(names: util.ArrayList[String], attributeProvider: AttributeProvider) = {
     this(names.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "nonlocal " + names.mkString(", ")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -196,21 +194,8 @@ case class If(test: iexpr,
            attributeProvider: AttributeProvider) = {
     this(test, body.asScala, orelse.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    val elseString =
-      orelse.size match {
-        case 0 => ""
-        case 1 if orelse.head.isInstanceOf[If] =>
-          "\nel" + orelse.head.print
-        case _ =>
-          "\nelse:" +
-            orelse.map(s => indent(s.print)).mkString("\n", "\n", "")
-      }
-
-
-    "if " + test.print + ":" +
-      body.map(s => indent(s.print)).mkString("\n", "\n", "") +
-      elseString
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -225,14 +210,8 @@ case class While(test: iexpr,
            attributeProvider: AttributeProvider) = {
     this(test, body.asScala, orelse.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
-  override def print: String = {
-    "while " + test.print + ":" +
-      body.map(s => indent(s.print)).mkString("\n", "\n", "") +
-      (if (orelse.nonEmpty)
-        "\nelse:" +
-          orelse.map(s => indent(s.print)).mkString("\n", "\n", "")
-      else ""
-        )
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -254,28 +233,8 @@ case class Try(body: Iterable[istmt],
       attributeProvider.lineno,
       attributeProvider.col_offset)
   }
-  override def print: String = {
-    val elseString =
-      if (orelse.nonEmpty) {
-        "\nelse:" +
-          orelse.map(s => indent(s.print)).mkString("\n", "\n", "")
-      } else {
-        ""
-      }
-
-    val finallyString =
-      if (finalbody.nonEmpty) {
-        "\nfinally:" +
-          finalbody.map(s => indent(s.print)).mkString("\n", "\n", "")
-      } else {
-        ""
-      }
-
-    "try:" +
-      body.map(s => indent(s.print)).mkString("\n", "\n", "") +
-      handlers.map(_.print).mkString("\n", "\n", "") +
-      elseString +
-      finallyString
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -300,16 +259,7 @@ case class ClassDef(name: String,
       attributeProvider.lineno,
       attributeProvider.col_offset)
   }
-  override def print: String = {
-    val optionArgEndComma = if (bases.nonEmpty && keywords.nonEmpty) ", " else ""
-
-    decorator_list.map(d => "@" + d.print + "\n").mkString("") +
-    "class " + name +
-      "(" +
-      bases.map(_.print).mkString(", ") +
-      optionArgEndComma +
-      keywords.map(_.print).mkString(", ") +
-      ")" + ":" +
-      body.map(s => indent(s.print)).mkString("\n", "\n", "")
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
