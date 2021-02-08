@@ -4,12 +4,13 @@ name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.4"
 ThisBuild /Test /fork := true
-val cpgVersion = "1.3.49"
+val cpgVersion = "1.3.62"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.mavenCentral,
   Resolver.jcenterRepo,
+  "jitpack" at "https://jitpack.io",
   Resolver.bintrayRepo("shiftleft", "maven"),
   Resolver.bintrayRepo("mpollmeier", "maven"),
   Resolver.bintrayRepo("plume-oss", "maven"),
