@@ -96,9 +96,17 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
         ""
       }
 
+    val handlersString = {
+      if (tryStmt.handlers.nonEmpty) {
+        tryStmt.handlers.map(print).mkString("\n", "\n", "")
+      } else {
+        ""
+      }
+    }
+
     "try:" +
       tryStmt.body.map(printIndented).mkString("\n", "\n", "") +
-      tryStmt.handlers.map(print).mkString("\n", "\n", "") +
+      handlersString +
       elseString +
       finallyString
   }

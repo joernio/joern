@@ -7,52 +7,60 @@ class ParserTests extends AnyFreeSpec with Matchers {
   // code is parsed and the resulting AST is printed and compared against code.
   // expected is optional and if present the printed AST is compare against it
   // instead of code.
-  def test(code: String, expected: String = null): Unit = {
+  def test(code: String, expected: String, indentStr: String): Unit = {
     val ast = PyParser.parse(code)
     val compareTo = if (expected != null) expected else code
 
-    val astPrinter = new AstPrinter("\t")
+    val astPrinter = new AstPrinter(indentStr)
     astPrinter.print(ast) shouldBe compareTo
+  }
+
+  def testS(code: String, expected: String = null): Unit = {
+    test(code, expected, "  ")
+  }
+
+  def testT(code: String, expected: String = null): Unit = {
+    test(code, expected, "\t")
   }
 
   "statements" - {
     "return statement tests" in {
-      test("return")
-      test("return x")
-      test("return x, y", "return (x,y)")
-      test("return *x")
-      test("return *x, *y", "return (*x,*y)")
+      testT("return")
+      testT("return x")
+      testT("return x, y", "return (x,y)")
+      testT("return *x")
+      testT("return *x, *y", "return (*x,*y)")
     }
 
     "import statement tests" in {
-      test("import x")
-      test("import x, y")
-      test("import x.y")
-      test("import x.y, z.a")
-      test("import x as y")
-      test("import x as y, z as a")
-      test("import x.y as z")
-      test("from . import x")
-      test("from .. import x")
-      test("from ... import x")
-      test("from .... import x")
-      test("from x import y")
-      test("from . x import y")
-      test("from x import y, z")
-      test("from x import (y, z)", "from x import y, z")
-      test("from x import (y, z,)", "from x import y, z")
-      test("from x import y as z")
-      test("from x import (y as z, a as b)", "from x import y as z, a as b")
+      testT("import x")
+      testT("import x, y")
+      testT("import x.y")
+      testT("import x.y, z.a")
+      testT("import x as y")
+      testT("import x as y, z as a")
+      testT("import x.y as z")
+      testT("from . import x")
+      testT("from .. import x")
+      testT("from ... import x")
+      testT("from .... import x")
+      testT("from x import y")
+      testT("from . x import y")
+      testT("from x import y, z")
+      testT("from x import (y, z)", "from x import y, z")
+      testT("from x import (y, z,)", "from x import y, z")
+      testT("from x import y as z")
+      testT("from x import (y as z, a as b)", "from x import y as z, a as b")
     }
 
     "raise statement tests" in {
-      test("raise")
-      test("raise x")
-      test("raise x from y")
+      testT("raise")
+      testT("raise x")
+      testT("raise x from y")
     }
 
     "pass statement tests" in {
-      test("pass")
+      testT("pass")
     }
 
     "del statement tests" in {
@@ -60,155 +68,189 @@ class ParserTests extends AnyFreeSpec with Matchers {
     }
 
     "yield statement tests" in {
-      test("yield")
-      test("yield x")
-      test("yield x, y", "yield (x,y)")
-      test("yield from x")
+      testT("yield")
+      testT("yield x")
+      testT("yield x, y", "yield (x,y)")
+      testT("yield from x")
     }
 
     "assert statement tests" in {
-      test("assert x")
-      test("assert x, y")
+      testT("assert x")
+      testT("assert x, y")
     }
 
     "break statement tests" in {
-      test("break")
+      testT("break")
     }
 
     "continue statement tests" in {
-      test("continue")
+      testT("continue")
     }
 
     "global statement tests" in {
-      test("global x")
-      test("global x, y")
+      testT("global x")
+      testT("global x, y")
     }
 
     "nonlocal statement tests" in {
-      test("nonlocal x")
-      test("nonlocal x, y")
+      testT("nonlocal x")
+      testT("nonlocal x, y")
     }
 
     "if statement tests" in {
-      test("if x: y;", "if x:\n\ty")
-      test("if x:\n\ty")
-      test("if x:\n\ty\nelse:\n\tz")
-      test("if x:\n\ty\nelif z:\n\ta")
+      testT("if x: y;", "if x:\n\ty")
+      testT("if x:\n\ty")
+      testT("if x:\n\ty\nelse:\n\tz")
+      testT("if x:\n\ty\nelif z:\n\ta")
     }
 
     "class def statement tests" in {
-      test("class x():\n\tpass")
-      test("class x(y):\n\tpass")
-      test("class x(y, z):\n\tpass")
-      test("class x(y = z):\n\tpass")
-      test("class x(y, z = a):\n\tpass")
-      test("@x\nclass y():\n\tpass")
-      test("@x\n@y\nclass z():\n\tpass")
+      testT("class x():\n\tpass")
+      testT("class x(y):\n\tpass")
+      testT("class x(y, z):\n\tpass")
+      testT("class x(y = z):\n\tpass")
+      testT("class x(y, z = a):\n\tpass")
+      testT("@x\nclass y():\n\tpass")
+      testT("@x\n@y\nclass z():\n\tpass")
     }
 
     "try statement tests" in {
-      test("try:\n\tpass\nexcept:\n\tpass")
-      // TODO more try tests
+      testS(
+        """try:
+          |  x
+          |except:
+          |  y""".stripMargin)
+      testS(
+        """try:
+          |  x
+          |except e:
+          |  y""".stripMargin)
+      testS(
+        """try:
+          |  x
+          |except e as f:
+          |  y""".stripMargin)
+      testS(
+        """try:
+          |  x
+          |except e as f:
+          |  y
+          |except g as h:
+          |  z""".stripMargin)
+      testS(
+        """try:
+          |  x
+          |finally:
+          |  y""".stripMargin)
+      testS(
+        """try:
+          |  x
+          |except e as f:
+          |  y
+          |else:
+          |  z
+          |finally:
+          |  a""".stripMargin)
     }
 
     "while statement tests" in {
-      test("while x: y;", "while x:\n\ty")
-      test("while x:\n\ty")
-      test("while x:\n\twhile y:\n\t\tz")
-      test("while x:\n\ty\nelse:\n\tz")
+      testT("while x: y;", "while x:\n\ty")
+      testT("while x:\n\ty")
+      testT("while x:\n\twhile y:\n\t\tz")
+      testT("while x:\n\ty\nelse:\n\tz")
     }
   }
 
   "error recovery tests" in {
-    test("<error>", "")
-    test("x;<error>", "x")
-    test("<error>;x", "x")
-    test("x;<error>;y", "x\ny")
-    test("x;<error>;y;<error>", "x\ny")
-    test("x\n<error>", "x")
-    test("<error>\nx", "x")
-    test("x\n<error>\ny", "x\ny")
-    test("x\n<error>\ny\n<error>", "x\ny")
+    testT("<error>", "")
+    testT("x;<error>", "x")
+    testT("<error>;x", "x")
+    testT("x;<error>;y", "x\ny")
+    testT("x;<error>;y;<error>", "x\ny")
+    testT("x\n<error>", "x")
+    testT("<error>\nx", "x")
+    testT("x\n<error>\ny", "x\ny")
+    testT("x\n<error>\ny\n<error>", "x\ny")
   }
 
   "parser tests" in {
-    test("x,y = z", "(x,y) = z")
-    test("x if y else z")
-    test("x or y")
-    test("x and y")
-    test("x and y or z")
+    testT("x,y = z", "(x,y) = z")
+    testT("x if y else z")
+    testT("x or y")
+    testT("x and y")
+    testT("x and y or z")
   }
 
   "inversion rule tests" in {
-    test("not x")
-    test("not not x")
+    testT("not x")
+    testT("not not x")
   }
 
   "comparison rule tests" in {
-    test("x == y")
-    test("x != y")
-    test("x < y")
-    test("x <= y")
-    test("x > y")
-    test("x >= y")
-    test("x is y")
-    test("x is not y")
-    test("x in y")
-    test("x not in y")
+    testT("x == y")
+    testT("x != y")
+    testT("x < y")
+    testT("x <= y")
+    testT("x > y")
+    testT("x >= y")
+    testT("x is y")
+    testT("x is not y")
+    testT("x in y")
+    testT("x not in y")
   }
 
   "bitwiseOr rule tests" in {
-    test("x | y")
-    test("x | y | z")
+    testT("x | y")
+    testT("x | y | z")
   }
 
   "bitwiseXor rule tests" in {
-    test("x ^ y")
-    test("x ^ y ^ z")
+    testT("x ^ y")
+    testT("x ^ y ^ z")
   }
 
   "bitwiseAnd rule tests" in {
-    test("x & y")
-    test("x & y & z")
+    testT("x & y")
+    testT("x & y & z")
   }
 
   "primary rule tests" in {
-    test("x.y")
-    test("x.y.z")
-    test("func(x)")
-    test("func(x, y)")
-    test("func(*x)")
-    test("func(*x, *y)")
-    test("func(x, *y)")
-    test("func(*x, y)")
-    test("func(x := y)")
-    test("func(x := y, z)")
-    test("func(x, y := z)")
-    test("func(x,)", "func(x)")
-    test("func(x = y)")
-    test("func(x = y, z = a)")
-    test("func(**x)")
-    test("func(**x, **y)")
-    test("func(x, y = z, **a)")
-    test("obj[x]")
-    test("obj[x, y]", "obj[(x,y)]")
-    test("obj[:]")
-    test("obj[::]", "obj[:]")
-    test("obj[x::]", "obj[x:]")
-    test("obj[:y:]", "obj[:y]")
-    test("obj[::z]")
-    test("obj[x:y:]", "obj[x:y]")
-    test("obj[:y:z]")
-    test("obj[x:y:z]")
+    testT("x.y")
+    testT("x.y.z")
+    testT("func(x)")
+    testT("func(x, y)")
+    testT("func(*x)")
+    testT("func(*x, *y)")
+    testT("func(x, *y)")
+    testT("func(*x, y)")
+    testT("func(x := y)")
+    testT("func(x := y, z)")
+    testT("func(x, y := z)")
+    testT("func(x,)", "func(x)")
+    testT("func(x = y)")
+    testT("func(x = y, z = a)")
+    testT("func(**x)")
+    testT("func(**x, **y)")
+    testT("func(x, y = z, **a)")
+    testT("obj[x]")
+    testT("obj[x, y]", "obj[(x,y)]")
+    testT("obj[:]")
+    testT("obj[::]", "obj[:]")
+    testT("obj[x::]", "obj[x:]")
+    testT("obj[:y:]", "obj[:y]")
+    testT("obj[::z]")
+    testT("obj[x:y:]", "obj[x:y]")
+    testT("obj[:y:z]")
+    testT("obj[x:y:z]")
   }
 
   "atom rule tests" in {
-    test("x")
-    test("True")
-    test("False")
-    test("None")
-    test("123")
-    test("...")
+    testT("x")
+    testT("True")
+    testT("False")
+    testT("None")
+    testT("123")
+    testT("...")
   }
 
   "extra" in {
