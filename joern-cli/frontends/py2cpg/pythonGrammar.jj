@@ -1,0 +1,1096 @@
+options {
+    DEBUG_TOKEN_MANAGER = false;
+    DEBUG_PARSER = true;
+}
+PARSER_BEGIN(PythonParser)
+package io.shiftleft.pythonparser;
+import java.util.ArrayList;
+import io.shiftleft.pythonparser.IndentStack;
+import io.shiftleft.pythonparser.ast.*;
+public class PythonParser {
+  TokenAttributeProvider attributes(Token startToken, Token endToken) {
+    return new TokenAttributeProvider(startToken);
+  }
+  NodeAttributeProvider attributes(iattributes attributeAstNode, Token endToken) {
+    return new NodeAttributeProvider(attributeAstNode);
+  }
+}
+PARSER_END(PythonParser)
+
+TOKEN_MGR_DECLS:
+{
+  int indentPos = 0;
+  int dedentsToEmit;
+  boolean createIndentToken = false;
+  boolean createMissdentToken = false;
+  IndentStack indentStack = new IndentStack();
+
+  void indentCheck(int indentKind) {
+    if (createMissdentToken) {
+      // If the indentation is already wrong we just consume
+      // further indentation tokens and wait for the first
+      // non indent token.
+      return;
+    }
+    if (indentPos < indentStack.size()) {
+      if (indentStack.getKind(indentPos) != indentKind) {
+        createMissdentToken = true;
+      }
+    } else {
+      indentStack.push(indentKind);
+      createIndentToken = true;
+    }
+    indentPos += 1;
+  }
+}
+
+TOKEN: {
+  <IF: "if">
+| <ELSE: "else">
+| <ELIF: "elif">
+| <OR: "or">
+| <AND: "and">
+| <NOT: "not">
+| <FAIL: "fail">
+| <RETURN: "return">
+| <TRY: "try">
+| <EXCEPT: "except">
+| <FINALLY: "finally">
+| <CLASS: "class">
+| <WHILE: "while">
+| <IMPORT: "import">
+| <FROM: "from">
+| <AS: "as">
+| <RAISE: "raise">
+| <PASS: "pass">
+| <DEL: "del">
+| <YIELD: "yield">
+| <ASSERT: "assert">
+| <BREAK: "break">
+| <CONTINUE: "continue">
+| <GLOBAL: "global">
+| <NONLOCAL: "nonlocal">
+| <NONE: "None">
+| <TRUE: "True">
+| <FALSE: "False">
+| <ELLIPSIS: "...">
+| <COLON: ":">
+| <SEMICOLON: ";">
+| <COMMA: ",">
+| <ASSIGN: "=">
+| <COLON_ASSIGN: ":=">
+| <PLUS_ASSIGN: "+=">
+| <EQ: "==">
+| <NEQ: "!=">
+| <LT: "<">
+| <LTE: "<=">
+| <GT: ">">
+| <GTE: ">=">
+| <IS: "is">
+| <IN: "in">
+| <PLUS: "+">
+| <MINUS: "-">
+| <AT: "@">
+| <DIV: "/">
+| <MOD: "%">
+| <POW: "^^">
+| <LSHIFT: "<<">
+| <RSHIFT: ">>">
+| <BIT_OR: "|">
+| <BIT_XOR: "^">
+| <BIT_AND: "&">
+| <PAREN_OPEN: "(">
+| <PAREN_CLOSE: ")">
+| <SQUARE_OPEN: "[">
+| <SQUARE_CLOSE: "]">
+| <CURLY_OPEN: "{">
+| <CURLY_CLOSE: "}">
+| <DOT: ".">
+| <STAR: "*">
+| <DOUBLE_STAR: "**">
+}
+
+SKIP: {
+  <SPACE: " " | "\t">
+}
+
+// Number tokens:
+TOKEN: {
+  <DECINTEGER: ["1" - "9"] (("_")? <DIGIT>)* | "0" (("_")? "0")*>
+| <#DIGIT: ["0" - "9"] >
+}
+
+TOKEN: {
+  <NAME: <LETTER> (<LETTER> | <DIGIT>)*>
+| <LETTER: ["a" - "z", "A" - "Z"] >
+| <NEWLINE: "\n" | "\r" | "\n\r">: INDENT_CHECK
+}
+
+<INDENT_CHECK> SKIP: {
+  <INDENT_CHECK_SPACE: " "> { indentCheck(IndentStack$.MODULE$.SPACE()); }
+| <INDENT_CHECK_TAB: "\t">  { indentCheck(IndentStack$.MODULE$.TAB()); }
+| <INDENT_CHECK_END: ~[]> {
+    // Rewind input stream by the one consumed character because we dont
+    // really wont to skip it. We just used it as the end marker for the
+    // indentation check. The documentation says input_stream is read only
+    // so we are a little bit of the beaten path here but so far it works.
+    input_stream.backup(1);
+
+    if (createMissdentToken) {
+      createMissdentToken = false;
+      SwitchTo(MISSDENT_EMIT);
+    } else if (createIndentToken) {
+      createIndentToken = false;
+      indentStack.markCodeLevel();
+      SwitchTo(INDENT_EMIT);
+    } else if (indentPos < indentStack.size()) {
+      if (indentPos == 0 || indentStack.isCodeLevel(indentPos - 1)) {
+        assert(dedentsToEmit == 0);
+        for (int i = indentStack.size() - 1; i >= indentPos; i--) {
+          if (indentStack.isCodeLevel(i)) {
+            dedentsToEmit += 1;
+          }
+          indentStack.pop();
+        }
+        SwitchTo(DEDENT_EMIT);
+      } else {
+        // If we dont end up on one of the previous indentation levels
+        // while dedenting, this is a missdent.
+        SwitchTo(MISSDENT_EMIT);
+      }
+    } else {
+      SwitchTo(DEFAULT);
+    }
+    indentPos = 0;
+  }
+}
+
+<MISSDENT_EMIT> TOKEN: {
+  // Defining this as ""|"" causes javaCC to produce better readable debug output
+  // in the form a proper tokenImage string <MISSDENT> instead of "". This has no
+  // impact on the generated matching code in the state.
+  <MISSINDENT: "" | ""> {
+      SwitchTo(DEFAULT);
+  }
+}
+
+<INDENT_EMIT> TOKEN: {
+  // Defining this as ""|"" causes javaCC to produce better readable debug output
+  // in the form a proper tokenImage string <INDENT> instead of "". This has no
+  // impact on the generated matching code in the state.
+  <INDENT: "" | ""> {
+      SwitchTo(DEFAULT);
+  }
+}
+
+<DEDENT_EMIT> TOKEN: {
+  // Defining this as ""|"" causes javaCC to produce better readable debug output
+  // in the form a proper tokenImage string <DEDENT> instead of "". This has no
+  // impact on the generated matching code in the state.
+  <DEDENT: "" | ""> {
+      dedentsToEmit -= 1;
+      if (dedentsToEmit == 0) {
+        SwitchTo(DEFAULT);
+      }
+      // This disables the build in infinite loop detection.
+      // We take care of not looping forever by decrementing
+      // dedentsToEmit.
+      jjbeenHere[DEDENT_EMIT] = false;
+  }
+}
+
+// String tokens:
+MORE: {
+  <DOUBLE_QUOTE: "\"">:  STRING_LEX
+}
+
+<STRING_LEX> MORE: {
+  <STRING_CONTENT: ~["\""]>
+}
+
+<STRING_LEX> TOKEN: {
+  <STRING: "\"">: DEFAULT
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Parser rules start:
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+Module module(): {
+  ArrayList<istmt> stmts;
+} {
+  stmts = statementsAndDedentOrEof()
+  { return new Module(stmts); }
+}
+
+// This is the "statements" rule from the CPython 3.9 grammar with modifications:
+// 1. Handle empty lines. CPython seems to handle those in the lexer.
+// 2. Also consume the <DEDENT> or <EOF> which must follow.
+//    We do this for easy of error handling.
+ArrayList<istmt> statementsAndDedentOrEof(): {
+  ArrayList<istmt> allStmts = new ArrayList<istmt>();
+  ArrayList<istmt> simpleStmts;
+  istmt stmt;
+} {
+  try {
+    (
+      stmt = compoundStatement() { allStmts.add(stmt); }
+    | simpleStmts = simpleStatement() { allStmts.addAll(simpleStmts); }
+    | <NEWLINE>
+    )+
+    (<DEDENT> | <EOF>)
+    { return allStmts; }
+  } catch (ParseException exception) {
+    do {
+      getNextToken();
+    } while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF);
+    if (token.kind != EOF) {
+      ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
+      allStmts.addAll(postRecoverStmts);
+    }
+    return allStmts;
+  }
+}
+
+// Error handling strategy:
+// In case of a parse exception we search in the token stream for the next
+// <SEMICOLON>, <NEWLINE> or <EOF> and than return the so far parsed statements.
+// To not return "accidental" statements, a small statement is considered pending
+// until a following <SEMICOLON>, <NEWLINE> or <EOF> was parsed.
+// An "accidental" statement would be the "x" in "x y = 1". At first we successfully
+// parse a <NAME> and after that we are missing a ";" or got one "y" too much. But
+// only in the first case returning an "x" statement would be ok and since we dont
+// know that we rather not return anything that was not terminated by the above
+// special characters.
+ArrayList<istmt> simpleStatement(): {
+  istmt pendingStmt;
+  ArrayList<istmt> stmts = new ArrayList<istmt>();
+} {
+  try {
+    (pendingStmt = smallStatement())
+    (LOOKAHEAD(2)
+      <SEMICOLON> { stmts.add(pendingStmt); }
+      pendingStmt = smallStatement()
+    )*
+    (<SEMICOLON> { stmts.add(pendingStmt); pendingStmt = null; })?
+    (<NEWLINE>|<EOF>)
+    {
+      if (pendingStmt != null) {
+        stmts.add(pendingStmt);
+      }
+      return stmts;
+    }
+  } catch (ParseException exception) {
+    do {
+      getNextToken();
+    } while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF);
+    return stmts;
+  }
+}
+
+istmt smallStatement(): {
+  istmt stmt;
+} {
+  (
+  stmt = assignmentOrExpr()
+| stmt = returnStatement()
+| stmt = importStatement()
+| stmt = raiseStatement()
+| stmt = passStatement()
+//| stmt = delStatement()
+| stmt = yieldStatement()
+| stmt = assertStatement()
+| stmt = breakStatement()
+| stmt = continueStatement()
+| stmt = globalStatement()
+| stmt = nonlocalStatement()
+  )
+  {
+    return stmt;
+  }
+}
+
+// We are little bit less restrictive than the python 3.9 grammar because
+// we allow logical expressions in star expressions to be returned.
+// E.g. "return * x and y" the python 3.9 grammar would require parenthesis:
+// "return *(x and y)".
+Return returnStatement(): {
+  iexpr expression = null;
+  Token startToken;
+} {
+  <RETURN> { startToken = token; } (expression = starExpressionsAsTuple())?
+  {
+    return new Return(expression, attributes(startToken, token));
+  }
+}
+
+istmt importStatement(): {
+  istmt stmt;
+} {
+  (
+    stmt = importName()
+  | stmt = importFrom()
+  )
+  { return stmt; }
+}
+
+Import importName(): {
+  ArrayList<ialias> names;
+  Token startToken;
+} {
+  <IMPORT> { startToken = token; } names = dottedAsNames()
+  { return new Import(names, attributes(startToken, token)); }
+}
+
+ArrayList<ialias> dottedAsNames(): {
+  ialias name;
+  ArrayList<ialias> names = new ArrayList<ialias>();
+} {
+  name = dottedAsName() { names.add(name); }
+  (<COMMA> name = dottedAsName() { names.add(name); })*
+  { return names; }
+}
+
+ialias dottedAsName(): {
+  String dottedName;
+  String asName = null;
+} {
+  dottedName = dottedName() (<AS> <NAME>{ asName = token.image; })?
+  { return new Alias(dottedName, asName); }
+}
+
+String dottedName(): {
+  String dottedName;
+} {
+  <NAME> { dottedName = token.image; }
+  (<DOT> <NAME> { dottedName = dottedName + "." + token.image; })*
+  { return dottedName; }
+}
+
+ImportFrom importFrom(): {
+  int level = 0;
+  String module = null;
+  ArrayList<ialias> names;
+  Token startToken;
+} {
+  <FROM> { startToken = token; }
+  (<DOT> { level += 1; } | <ELLIPSIS> { level += 3; })*
+  (module = dottedName())?
+  <IMPORT>
+  names = importFromTargets()
+  {
+    if (level != 0 || module != null) {
+      return new ImportFrom(module, names, level, attributes(startToken, token));
+    } else {
+      throw new ParseException("TODO");
+    }
+  }
+}
+
+ArrayList<ialias> importFromTargets(): {
+  ialias name;
+  ArrayList<ialias> names;
+} {
+  (
+  <STAR> {
+    names = new ArrayList<ialias>();
+    names.add(new Alias(token.image, (String)null));
+  }
+| <PAREN_OPEN> names = importFromAsNames() <PAREN_CLOSE>
+| names = importFromAsNames()
+  )
+  { return names; }
+}
+
+ArrayList<ialias> importFromAsNames(): {
+  ialias name;
+  ArrayList<ialias> names = new ArrayList<ialias>();
+} {
+  name = importFromAsName() { names.add(name); }
+  (LOOKAHEAD(2)
+    <COMMA> name = importFromAsName() { names.add(name); }
+  )*
+  (<COMMA>)?
+  { return names; }
+}
+
+ialias importFromAsName(): {
+  String name;
+  String asName = null;
+} {
+  <NAME> { name = token.image; } (<AS> <NAME> { asName = token.image; })?
+  { return new Alias(name, asName); }
+}
+
+Raise raiseStatement(): {
+  Token startToken;
+  iexpr exceptionExpr = null;
+  iexpr causeExpr = null;
+} {
+  <RAISE> { startToken = token; }
+  (
+    exceptionExpr = expression()
+    (
+      <FROM>
+      causeExpr = expression()
+    )?
+  )?
+  { return new Raise(exceptionExpr, causeExpr, attributes(startToken, token)); }
+}
+
+Pass passStatement(): {
+} {
+  <PASS> { return new Pass(attributes(token, token)); }
+}
+
+Expr yieldStatement(): {
+  iexpr yieldExpr;
+} {
+  yieldExpr = yieldExpression()
+  { return new Expr(yieldExpr); }
+}
+
+Assert assertStatement(): {
+  Token startToken;
+  iexpr testExpr;
+  iexpr msgExpr = null;
+} {
+  <ASSERT> { startToken = token; }
+  testExpr = expression()
+  (<COMMA> msgExpr = expression())?
+  { return new Assert(testExpr, msgExpr, attributes(startToken, token)); }
+}
+
+Break breakStatement(): {
+} {
+  <BREAK> { return new Break(attributes(token, token)); }
+}
+
+Continue continueStatement(): {
+} {
+  <CONTINUE> { return new Continue(attributes(token, token)); }
+}
+
+Global globalStatement(): {
+  Token startToken;
+  ArrayList<String> names = new ArrayList<String>();
+} {
+  <GLOBAL> { startToken = token; }
+  <NAME> { names.add(token.image); }
+  (<COMMA> <NAME> { names.add(token.image); })*
+  { return new Global(names, attributes(startToken, token)); }
+}
+
+Nonlocal nonlocalStatement(): {
+  Token startToken;
+  ArrayList<String> names = new ArrayList<String>();
+} {
+  <NONLOCAL> { startToken = token; }
+  <NAME> { names.add(token.image); }
+  (<COMMA> <NAME> { names.add(token.image); })*
+  { return new Nonlocal(names, attributes(startToken, token)); }
+}
+
+istmt compoundStatement(): {
+  istmt stmt;
+} {
+  (
+  stmt = ifStatement()
+| stmt = classDef()
+| stmt = tryStatement()
+| stmt = whileStatement()
+  )
+  { return stmt; }
+}
+
+If ifStatement(): {
+  Token startToken;
+  iexpr testExpr;
+  ArrayList<istmt> blockStmts;
+  ArrayList<istmt> elseStmts;
+} {
+  <IF> { startToken = token; }
+  testExpr = namedExpression()
+  <COLON>
+  blockStmts = block()
+  (elseStmts = elifBlock() | elseStmts = elseBlock() | { elseStmts = new ArrayList<istmt>(); })
+  { return new If(testExpr, blockStmts, elseStmts, attributes(startToken, token)); }
+}
+
+// Returns a list with one If statement to ease usage of this rule.
+ArrayList<istmt> elifBlock(): {
+  Token startToken;
+  iexpr testExpr;
+  ArrayList<istmt> blockStmts;
+  ArrayList<istmt> elseStmts;
+} {
+  <ELIF> { startToken = token; }
+  testExpr = namedExpression()
+  <COLON>
+  blockStmts = block()
+  (elseStmts = elifBlock() | elseStmts = elseBlock() | { elseStmts = new ArrayList<istmt>(); })
+  {
+    ArrayList<istmt> stmts = new ArrayList<istmt>();
+    stmts.add(new If(testExpr, blockStmts, elseStmts, attributes(startToken, token)));
+    return stmts;
+  }
+}
+
+ArrayList<istmt> elseBlock(): {
+  ArrayList<istmt> stmts;
+} {
+  <ELSE> <COLON> stmts = block() { return stmts; }
+}
+
+ClassDef classDef(): {
+  ArrayList<iexpr> decorators;
+  Token startToken;
+  String name;
+  ArrayList<iexpr> bases = new ArrayList<iexpr>();
+  ArrayList<ikeyword> keywords = new ArrayList<ikeyword>();
+  ArrayList<istmt> blockStmts;
+} {
+  (decorators = decorators() | { decorators = new ArrayList<iexpr>(); })
+  <CLASS> { startToken = token; } <NAME> { name = token.image; }
+  <PAREN_OPEN> arguments(bases, keywords) <PAREN_CLOSE>
+  <COLON>
+  blockStmts = block()
+  { return new ClassDef(name, bases, keywords, blockStmts, decorators,
+     attributes(startToken, token)); }
+}
+
+ArrayList<iexpr> decorators(): {
+  iexpr namedExpression;
+  ArrayList<iexpr> decoratorExpressions = new ArrayList<iexpr>();
+} {
+  (
+    <AT>
+    namedExpression = namedExpression() { decoratorExpressions.add(namedExpression); }
+    <NEWLINE>
+  )+
+  { return decoratorExpressions; }
+}
+
+Try tryStatement(): {
+  Token startToken;
+  ArrayList<istmt> blockStmts;
+  iexcepthandler exceptHandler;
+  ArrayList<iexcepthandler> exceptHandlers = new ArrayList<iexcepthandler>();
+  ArrayList<istmt> elseStmts;
+  ArrayList<istmt> finallyStmts;
+} {
+  <TRY> { startToken = token; }
+  <COLON>
+  blockStmts = block()
+  (
+    finallyStmts = finallyBlock()
+    { return new Try(blockStmts, exceptHandlers, new ArrayList<istmt>(), finallyStmts,
+     attributes(startToken, token)); }
+  | (
+      (exceptHandler = exceptBlock() { exceptHandlers.add(exceptHandler); })+
+      (elseStmts = elseBlock() | { elseStmts = new ArrayList<istmt>(); })
+      (finallyStmts = finallyBlock() | { finallyStmts = new ArrayList<istmt>(); })
+      { return new Try(blockStmts, exceptHandlers, elseStmts, finallyStmts,
+       attributes(startToken, token)); }
+    )
+  )
+}
+
+iexcepthandler exceptBlock(): {
+  Token startToken;
+  iexpr typeExpr = null;
+  String name = null;
+  ArrayList<istmt> blockStmts;
+} {
+  <EXCEPT> { startToken = token; }
+  (
+    typeExpr = expression()
+    (
+      <AS> <NAME> { name = token.image; }
+    )?
+  )?
+  <COLON>
+  blockStmts = block()
+  { return new ExceptHandler(typeExpr, name, blockStmts, attributes(startToken, token)); }
+}
+
+ArrayList<istmt> finallyBlock(): {
+  ArrayList<istmt> blockStmts;
+} {
+  <FINALLY>
+  <COLON>
+  blockStmts = block()
+  { return blockStmts; }
+}
+
+While whileStatement(): {
+  Token startToken;
+  iexpr testExpr;
+  ArrayList<istmt> blockStmts;
+  ArrayList<istmt> elseStmts;
+} {
+  <WHILE> { startToken = token; }
+  testExpr = namedExpression()
+  <COLON>
+  blockStmts = block()
+  (elseStmts = elseBlock() | { elseStmts = new ArrayList<istmt>(); })
+  { return new While(testExpr, blockStmts, elseStmts, attributes(startToken, token)); }
+}
+
+ArrayList<istmt> block(): {
+  ArrayList<istmt> stmts;
+} {
+  ((
+  <NEWLINE>
+  <INDENT>
+  stmts = statementsAndDedentOrEof()
+  )
+| stmts = simpleStatement()) {
+    return stmts;
+ }
+}
+
+istmt assignmentOrExpr(): {
+  Token assignToken;
+  iexpr lhsExpression;
+  iexpr expression = null;
+  iexpr annotationExpression = null;
+  boolean isPureNameLhs = false;
+  ArrayList<iexpr> expressions = new ArrayList<iexpr>();
+  Token lastAssignToken = null;
+} {
+  lhsExpression = expressionsAsTuple() { expressions.add(lhsExpression); }
+  (<COLON> annotationExpression = expression()
+  )?
+  ((<ASSIGN> |<PLUS_ASSIGN>) {
+     if (lastAssignToken == null) {
+       lastAssignToken = token;
+     } else if (lastAssignToken.kind != ASSIGN || token.kind != ASSIGN) {
+       throw new ParseException("TODO");
+     }
+    }
+    expression = expressionsAsTuple() { expressions.add(expression); isPureNameLhs = token.kind == NAME; }
+  )* {
+    if (annotationExpression != null) {
+      boolean isSimple = isPureNameLhs;
+      if (expressions.size() > 1) {
+        iexpr value = expression;
+        return new AnnAssign(lhsExpression, annotationExpression, value, isSimple,
+         attributes(lhsExpression, token));
+      } else {
+        return new AnnAssign(lhsExpression, annotationExpression, isSimple,
+         attributes(lhsExpression, token));
+      }
+    }
+    if (expressions.size() == 1) {
+      return new Expr(lhsExpression);
+    }
+    iexpr value = expressions.remove(expressions.size() - 1);
+    if(lastAssignToken.kind == ASSIGN) {
+      return new Assign(expressions, value, attributes(lhsExpression, token));
+    } else {
+      ioperator op;
+      switch (lastAssignToken.kind) {
+        case PLUS_ASSIGN:
+          op = Add$.MODULE$;
+          break;
+        default:
+          throw new ParseException("Unexpected token kind.");
+      }
+      return new AugAssign(lhsExpression, op, value, attributes(lhsExpression, token));
+    }
+  }
+}
+
+// Returns the expression list elements as tuple or
+// a single express if the expression list contains only
+// one element and does not end with a comma.
+iexpr expressionsAsTuple(): {
+  iexpr firstExpression;
+  iexpr expression;
+  ArrayList<iexpr> expressions = new ArrayList<iexpr>();
+} {
+  firstExpression = expression() { expressions.add(firstExpression); }
+  (LOOKAHEAD(2)
+   <COMMA> expression = expression() { expressions.add(expression); }
+  )*
+  (<COMMA>)?
+  {
+    if (token.kind != COMMA && expressions.size() == 1) {
+      return expressions.get(0);
+    } else {
+      return new Tuple(expressions, attributes(firstExpression, token));
+    }
+  }
+}
+
+iexpr starExpressionsAsTuple(): {
+  iexpr firstExpression;
+  iexpr expression;
+  ArrayList<iexpr> expressions = new ArrayList<iexpr>();
+} {
+  (
+    firstExpression = expression()
+  | firstExpression = starredExpression()
+  ) { expressions.add(firstExpression); }
+  (LOOKAHEAD(2)
+    <COMMA>
+    (
+      expression = expression()
+    | expression = starredExpression()
+    ) { expressions.add(expression); }
+  )*
+  (<COMMA>)?
+  {
+    if (token.kind != COMMA && expressions.size() == 1) {
+      return expressions.get(0);
+    } else {
+      return new Tuple(expressions, attributes(firstExpression, token));
+    }
+  }
+}
+
+iexpr yieldExpression(): {
+  Token startToken;
+  iexpr valueExpr = null;
+} {
+  <YIELD> { startToken = token; }
+  (
+    <FROM> valueExpr = expression()
+    { return new YieldFrom(valueExpr, attributes(startToken, token)); }
+  | valueExpr = starExpressionsAsTuple()
+    { return new Yield(valueExpr, attributes(startToken, token)); }
+  | { return new Yield(null, attributes(startToken, token)); }
+  )
+}
+
+iexpr namedExpression(): {
+  iexpr expression;
+  iexpr value;
+} {
+  expression = expression()
+  (
+  <COLON_ASSIGN> value = expression()
+  {
+    // To only accept valid code we would need to check that expression is
+    // a NAME at this point. But since we want to work on best effort basis
+    // we just dont check.
+    expression = new NamedExpr(expression, value, attributes(expression, token)); }
+  )?
+  {
+    return expression;;
+  }
+}
+
+// TODO lamba
+iexpr expression(): {
+  iexpr expression;
+  iexpr testExpression = null;
+  iexpr elseExpression = null;
+} {
+  expression = disjunction()
+  (<IF> testExpression = disjunction() <ELSE> elseExpression = expression()
+  )? {
+    if (testExpression != null) {
+      return new IfExp(testExpression, expression, elseExpression, attributes(expression, token));
+    }
+    return expression;
+  }
+}
+
+iexpr disjunction(): {
+  iexpr expression;
+  iexpr nextExpression;
+  ArrayList<iexpr> allExpressions = null;
+} {
+  expression = conjunction()
+  (<OR> nextExpression = conjunction() {
+    if (allExpressions == null) {
+      allExpressions = new ArrayList<iexpr>();
+      allExpressions.add(expression);
+    }
+    allExpressions.add(nextExpression);
+  }
+  )* {
+    if (allExpressions != null) {
+      return new BoolOp(Or$.MODULE$, allExpressions, attributes(expression, token));
+    } else {
+      return expression;
+    }
+  }
+}
+
+iexpr conjunction(): {
+  iexpr expression;
+  iexpr nextExpression;
+  ArrayList<iexpr> allExpressions = null;
+} {
+  expression = inversion()
+  (<AND> nextExpression = inversion() {
+    if (allExpressions == null) {
+      allExpressions = new ArrayList<iexpr>();
+      allExpressions.add(expression);
+    }
+    allExpressions.add(nextExpression);
+  }
+  )* {
+    if (allExpressions != null) {
+      return new BoolOp(And$.MODULE$, allExpressions, attributes(expression, token));
+    } else {
+      return expression;
+    }
+  }
+}
+
+iexpr inversion(): {
+  iexpr expression;
+  Token startToken;
+} {
+  (<NOT> { startToken = token; }
+   expression = inversion() {
+     return new UnaryOp(Not$.MODULE$, expression, attributes(startToken, token)); }
+  )
+| expression = comparison() { return expression; }
+}
+
+iexpr comparison(): {
+  iexpr expression;
+  iexpr nextExpression = null;
+  icompop op;
+  boolean isNot = false;
+  ArrayList<icompop> operators = null;
+  ArrayList<iexpr> comparators = null;
+} {
+  expression = bitwiseOr()
+  ((
+  <EQ> { op = Eq$.MODULE$; }
+| <NEQ> { op = NotEq$.MODULE$; }
+| <LT> { op = Lt$.MODULE$; }
+| <LTE> { op = LtE$.MODULE$; }
+| <GT> { op = Gt$.MODULE$; }
+| <GTE> { op = GtE$.MODULE$; }
+| <IS> (<NOT>{ isNot = true; })? { op = isNot ? IsNot$.MODULE$:Is$.MODULE$; }
+| <IN> { op = In$.MODULE$; }
+| <NOT> <IN> { op = NotIn$.MODULE$; }
+  )
+  nextExpression = bitwiseOr() {
+    if (operators == null) {
+      operators = new ArrayList<icompop>();
+    }
+    operators.add(op);
+
+    if (comparators == null) {
+      comparators = new ArrayList<iexpr>();
+    }
+    comparators.add(nextExpression);
+ }
+  )*
+  {
+    if (nextExpression != null) {
+      return new Compare(expression, operators, comparators, attributes(expression, token));
+    } else {
+      return expression;
+    }
+  }
+}
+
+iexpr bitwiseOr(): {
+  iexpr expression;
+  iexpr nextExpression;
+} {
+  expression = bitwiseXor()
+  (
+    <BIT_OR> nextExpression = bitwiseXor()
+    { expression =
+        new BinOp(expression, BitOr$.MODULE$, nextExpression, attributes(expression, token)); }
+  )*
+  {
+    return expression;
+  }
+}
+
+iexpr bitwiseXor(): {
+  iexpr expression;
+  iexpr nextExpression;
+} {
+  expression = bitwiseAnd()
+  (
+    <BIT_XOR> nextExpression = bitwiseAnd()
+    { expression =
+        new BinOp(expression, BitXor$.MODULE$, nextExpression, attributes(expression, token)); }
+  )*
+  {
+    return expression;
+  }
+}
+
+iexpr bitwiseAnd(): {
+  iexpr expression;
+  iexpr nextExpression;
+} {
+  expression = shiftExpr()
+  (
+    <BIT_AND> nextExpression = shiftExpr()
+    { expression =
+        new BinOp(expression, BitAnd$.MODULE$, nextExpression, attributes(expression, token)); }
+  )*
+  {
+    return expression;
+  }
+}
+
+iexpr shiftExpr(): {
+  iexpr expression;
+} {
+  expression = primary()
+  {
+    return expression;
+  }
+}
+
+iexpr primary(): {
+  iexpr expression;
+  ArrayList<iexpr> posArgs;
+  ArrayList<ikeyword> keyArgs;
+  iexpr sliceExpression;
+} {
+  expression = atom()
+  (
+    (
+      <PAREN_OPEN> { posArgs = new ArrayList<iexpr>(); keyArgs = new ArrayList<ikeyword>(); }
+      arguments(posArgs, keyArgs)
+      <PAREN_CLOSE>
+      { expression = new Call(expression, posArgs, keyArgs, attributes(expression, token)); }
+    )
+  | (
+      <SQUARE_OPEN>
+      sliceExpression = slices()
+      <SQUARE_CLOSE>
+      { expression = new Subscript(expression, sliceExpression, attributes(expression, token)); }
+    )
+  | (
+      <DOT> <NAME> { expression = new Attribute(expression, token.image, attributes(expression, token)); }
+    )
+  )*
+  { return expression; }
+}
+
+void arguments(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs): {
+} {
+  (
+    argument(positionalArgs, keywordArgs)
+    (
+      LOOKAHEAD(2)
+      <COMMA> argument(positionalArgs, keywordArgs)
+    )*
+    (<COMMA>)?
+  )?
+}
+
+// TODO comp_for
+void argument(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs): {
+  iexpr expression;
+  iexpr valueExpression;
+  Token startToken;
+} {
+  (
+    expression = starredExpression() { positionalArgs.add(expression); }
+  | <DOUBLE_STAR> { startToken = token; } expression = expression()
+   { keywordArgs.add(new Keyword(null, expression, attributes(startToken, token))); }
+  | expression = expression()
+    ( <ASSIGN> valueExpression = expression()
+      { if (expression instanceof Name) {
+          String keywordName = ((Name)expression).id();
+          keywordArgs.add(new Keyword(keywordName, valueExpression, attributes(expression, token)));
+        } else {
+          throw new ParseException("TODO");
+        }
+      }
+    | <COLON_ASSIGN> valueExpression = expression()
+      { positionalArgs.add(new NamedExpr(expression, valueExpression, attributes(expression, token))); }
+    | { positionalArgs.add(expression); }
+    )
+  )
+}
+
+iexpr slices(): {
+  iexpr expression;
+  iexpr nextExpression;
+  ArrayList<iexpr> tupleExpressions = null;
+} {
+  expression = slice()
+  (
+    LOOKAHEAD(2)
+    <COMMA> nextExpression = slice() {
+      if (tupleExpressions == null) {
+        tupleExpressions = new ArrayList<iexpr>();
+        tupleExpressions.add(expression);
+      }
+      tupleExpressions.add(nextExpression);
+    }
+  )*
+  (<COMMA>)?
+  {
+    if (tupleExpressions != null) {
+      return new Tuple(tupleExpressions, attributes(expression, token));
+    } else {
+      return expression;
+    }
+  }
+}
+
+iexpr slice(): {
+  iexpr lower = null;
+  iexpr upper = null;
+  iexpr step = null;
+  Token startToken = null;
+} {
+
+  (lower = expression())?
+  (<COLON>{ startToken = token; } (upper = expression())? (<COLON> (step = expression())?)?)?
+  {
+    if (startToken != null) {
+      if (lower != null) {
+        return new Slice(lower, upper, step, attributes(lower, token));
+      } else {
+        return new Slice(lower, upper, step, attributes(startToken, token));
+      }
+    } else {
+      return lower;
+    }
+  }
+}
+
+iexpr starredExpression(): {
+  iexpr value;
+  Token startToken;
+} {
+  <STAR> { startToken = token; }
+  value = expression()
+  {
+    return new Starred(value, attributes(startToken, token));
+  }
+}
+
+iexpr atom(): {
+  iexpr expression;
+} {
+  <NAME> { return new Name(token.image, attributes(token, token)); }
+| <TRUE> { return new Constant(new BoolConstant(true), attributes(token, token)); }
+| <FALSE> { return new Constant(new BoolConstant(false), attributes(token, token)); }
+| <NONE> { return new Constant(NoneConstant$.MODULE$, attributes(token, token)); }
+| <ELLIPSIS> { return new Constant(EllipsisConstant$.MODULE$, attributes(token, token)); }
+| <DECINTEGER> { return new Constant(new IntConstant(token.image), attributes(token, token)); }
+| expression = string() { return expression; }
+}
+
+// TODO so far only strings in its most basic form are supported.
+Constant string(): {
+} {
+  <STRING> { return new Constant(new StringConstant(token.image), attributes(token, token)); }
+}
+
+
