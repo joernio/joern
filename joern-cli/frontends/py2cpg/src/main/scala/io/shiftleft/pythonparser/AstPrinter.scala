@@ -183,6 +183,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     print(ifExp.body) + " if " + print(ifExp.test) + " else " + print(ifExp.orElse)
   }
 
+  override def visit(await: Await): String = {
+    "await " + print(await.value)
+  }
+
   override def visit(yieldExpr: Yield): String = {
     "yield" + yieldExpr.value.map(v => " " + print(v)).getOrElse("")
   }

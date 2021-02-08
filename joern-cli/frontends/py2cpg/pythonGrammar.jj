@@ -70,6 +70,7 @@ TOKEN: {
 | <CONTINUE: "continue">
 | <GLOBAL: "global">
 | <NONLOCAL: "nonlocal">
+| <AWAIT: "await">
 | <NONE: "None">
 | <TRUE: "True">
 | <FALSE: "False">
@@ -1017,12 +1018,19 @@ iexpr power(): {
   iexpr expr;
   iexpr exponentExpr;
 } {
-  expr = primary()
+  expr = awaitPrimary()
   (
     <DOUBLE_STAR> exponentExpr = factor()
     { expr = new BinOp(expr, Pow$.MODULE$, exponentExpr, attributes(expr, token)); }
   )?
   { return expr; }
+}
+
+iexpr awaitPrimary(): {
+  iexpr expr;
+} {
+  expr = primary() { return expr; }
+| <AWAIT> expr = primary() { return new Await(expr); }
 }
 
 iexpr primary(): {

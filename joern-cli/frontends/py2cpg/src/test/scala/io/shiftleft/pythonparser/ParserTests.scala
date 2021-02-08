@@ -249,6 +249,10 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("x ** -y")
   }
 
+  "await primary rule tests" in {
+    testT("await x")
+  }
+
   "primary rule tests" in {
     testT("x.y")
     testT("x.y.z")

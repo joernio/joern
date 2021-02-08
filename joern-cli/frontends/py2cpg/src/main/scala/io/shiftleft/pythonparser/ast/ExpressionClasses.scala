@@ -183,3 +183,12 @@ case class YieldFrom(value: iexpr, lineno: Int, col_offset: Int) extends iexpr {
     visitor.visit(this)
   }
 }
+
+case class Await(value: iexpr, lineno: Int, col_offset: Int) extends iexpr {
+  def this(value: iexpr) = {
+    this(value, value.lineno, value.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}

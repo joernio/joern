@@ -34,6 +34,7 @@ trait AstVisitor[T] {
   def visit(binOp: BinOp): T
   def visit(unaryOp: UnaryOp): T
   def visit(ifExp: IfExp): T
+  def visit(await: Await): T
   def visit(yieldExpr: Yield): T
   def visit(yieldFrom: YieldFrom): T
   def visit(compare: Compare): T
