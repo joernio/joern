@@ -23,9 +23,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   override def visit(stmt: istmt): String = ???
 
   override def visit(functionDef: FunctionDef): String = {
-    "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
+    functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
+      "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
-    ":" +  functionDef.body.map(printIndented).mkString("\n", "\n", "")
+      ":" +  functionDef.body.map(printIndented).mkString("\n", "\n", "")
 
   }
 

@@ -511,17 +511,29 @@ istmt compoundStatement(): {
   istmt stmt;
 } {
   (
-  stmt = functionDef()
-| stmt = ifStatement()
-| stmt = classDef()
-| stmt = tryStatement()
-| stmt = whileStatement()
+    stmt = decoratedStatement()
+  | stmt = functionDef(new ArrayList<iexpr>())
+  | stmt = ifStatement()
+  | stmt = classDef(new ArrayList<iexpr>())
+  | stmt = tryStatement()
+  | stmt = whileStatement()
   )
   { return stmt; }
 }
 
-FunctionDef functionDef(): {
-  ArrayList<iexpr> decorators = new ArrayList<iexpr>();
+istmt decoratedStatement(): {
+  ArrayList<iexpr> decorators;
+  istmt stmt;
+} {
+  decorators = decorators()
+  (
+    stmt = functionDef(decorators)
+  | stmt = classDef(decorators)
+  )
+  { return stmt; }
+}
+
+FunctionDef functionDef(ArrayList<iexpr> decorators): {
   Token startToken;
   boolean isAsync = false;
   String name;
@@ -530,7 +542,6 @@ FunctionDef functionDef(): {
   ArrayList<istmt> blockStmts;
 } {
   // TODO
-  //(decorators = decorators() | { decorators = new ArrayList<iexpr>(); })
   //(<ASYNC> { isAsync = true;  startToken = token; })?
   <DEF> { startToken = token; }
   <NAME> { name = token.image; }
@@ -603,6 +614,7 @@ iarguments parameters(): {
     )
   | starAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
   | kwArg.object = doubleStarParameters()
+  | {}
   )
   {
     return new Arguments(posOnlyArgs, args, varArg.object, kwOnlyArgs,
@@ -693,7 +705,6 @@ void kwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
   )*
 }
 
-// Corresponds to "tfpdef" rule from CPhython 3.8 grammar.
 iarg typedFunctionParameterDef(): {
   Token startToken;
   String name;
@@ -743,15 +754,13 @@ ArrayList<istmt> elseBlock(): {
   <ELSE> <COLON> stmts = block() { return stmts; }
 }
 
-ClassDef classDef(): {
-  ArrayList<iexpr> decorators;
+ClassDef classDef(ArrayList<iexpr> decorators): {
   Token startToken;
   String name;
   ArrayList<iexpr> bases = new ArrayList<iexpr>();
   ArrayList<ikeyword> keywords = new ArrayList<ikeyword>();
   ArrayList<istmt> blockStmts;
 } {
-  (decorators = decorators() | { decorators = new ArrayList<iexpr>(); })
   <CLASS> { startToken = token; } <NAME> { name = token.image; }
   <PAREN_OPEN> arguments(bases, keywords) <PAREN_CLOSE>
   <COLON>
