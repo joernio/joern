@@ -192,3 +192,12 @@ case class Await(value: iexpr, lineno: Int, col_offset: Int) extends iexpr {
     visitor.visit(this)
   }
 }
+
+case class Lambda(arg: iarguments, body: iexpr, lineno: Int, col_offset: Int) extends iexpr {
+  def this(arg: iarguments, body: iexpr, attributeProvider: AttributeProvider) = {
+    this(arg, body, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}

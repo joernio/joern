@@ -337,6 +337,43 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("...")
   }
 
+  "lambda rule tests" in {
+    testT("lambda: e")
+    testT("lambda x: e")
+    testT("lambda x,: e", "lambda x: e")
+    testT("lambda x = 1: e")
+    testT("lambda x = 1,: e", "lambda x = 1: e")
+    testT("lambda x, y: e")
+    testT("lambda x, y = 2: e")
+    testT("lambda x = 1, y = 2: e")
+    testT("lambda x, y,: e", "lambda x, y: e")
+    testT("lambda x, /, y: e")
+    testT("lambda x, /: e")
+    testT("lambda x, /,: e", "lambda x, /: e")
+    testT("lambda x, *y: e")
+    testT("lambda x, *y, z: e")
+    testT("lambda x, *y, z, **a: e")
+    testT("lambda x, *y, **z: e")
+    testT("lambda x, **y: e")
+
+    testT("lambda *x: e")
+    testT("lambda *x,: e", "lambda *x: e")
+    testT("lambda *x, y: e")
+    testT("lambda *x, y, : e", "lambda *x, y: e")
+    testT("lambda *x, y = 1: e")
+    testT("lambda *x, y, z: e")
+    testT("lambda *x, y = 1, z = 2: e")
+    testT("lambda *x, y = 1, z: e")
+    testT("lambda *x, y, z = 2: e")
+    testT("lambda *x, y, **z: e")
+    testT("lambda *x, **z: e")
+    testT("lambda *, x: e")
+    testT("lambda *, x, : e", "lambda *, x: e")
+    testT("lambda *, x, **y: e")
+    testT("lambda **x: e")
+    testT("lambda **x, : e", "lambda **x: e")
+  }
+
   "extra" in {
   }
 }

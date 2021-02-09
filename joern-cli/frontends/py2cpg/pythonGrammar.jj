@@ -61,6 +61,7 @@ TOKEN: {
 | <FAIL: "fail">
 | <DEF: "def">
 | <ASYNC: "async">
+| <LAMBDA: "lambda">
 | <RETURN: "return">
 | <TRY: "try">
 | <EXCEPT: "except">
@@ -561,7 +562,11 @@ istmt functionDef(ArrayList<iexpr> decorators): {
   }
 }
 
+// Sister function of lambdaParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
 // This rule matches always because its contend is purely optional.
+//
 // This is a fully factored out version of the CPython 3.9 parameters parser rule
 // minus the support for type comments which are currently swallowed by the lexer.
 // Dont be confused by the inconsistent use of argument and parameter identifiers.
@@ -628,6 +633,9 @@ iarguments parameters(): {
   }
 }
 
+// Sister function of lambdaStarAndFollowingParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
 void starAndFollowingParameters(BoxedObject<iarg> varArg,
                                 ArrayList<iarg> kwOnlyArgs,
                                 ArrayList<iexpr> kwDefaults,
@@ -664,6 +672,9 @@ void starAndFollowingParameters(BoxedObject<iarg> varArg,
   )
 }
 
+// Sister function of lambdaDoubleStarParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
 iarg doubleStarParameters(): {
   iarg kwArg;
 } {
@@ -672,6 +683,9 @@ iarg doubleStarParameters(): {
   { return kwArg; }
 }
 
+// Sister function of lambdaPositionalParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
 boolean positionalParameters(boolean initialDefaultRequired,
                              ArrayList<iarg> params, ArrayList<iexpr> defaults): {
   iarg param;
@@ -693,6 +707,9 @@ boolean positionalParameters(boolean initialDefaultRequired,
   { return defaultRequired; }
 }
 
+// Sister function of lambdaKwOnlyParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
 void kwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
   iarg param;
   iexpr defaultExpr;
@@ -719,6 +736,172 @@ iarg typedFunctionParameterDef(): {
   <NAME> { startToken = token; name = token.image; }
   (<COLON> defaultExpr = expression())?
   { return new Arg(name, defaultExpr, null, attributes(startToken, token)); }
+}
+
+// Sister function of parameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
+iarguments lambdaParameters(): {
+  ArrayList<iarg> posOnlyArgs = new ArrayList<iarg>();
+  ArrayList<iarg> args = new ArrayList<iarg>();
+  // Contains the defaults for posOnlyArgs and args.
+  ArrayList<iexpr> defaults = new ArrayList<iexpr>();
+  BoxedObject<iarg> varArg = new BoxedObject<iarg>(null);
+  ArrayList<iarg> kwOnlyArgs = new ArrayList<iarg>();
+  // Contains the defaults for kwOnlyArgs. If such an
+  // argument has no default, null is added instead.
+  ArrayList<iexpr> kwDefaults = new ArrayList<iexpr>();
+  BoxedObject<iarg> kwArg = new BoxedObject<iarg>(null);
+
+  boolean defaultRequired = false;
+  ArrayList<iarg> tmpArgs = new ArrayList<iarg>();
+} {
+  (
+    (
+      defaultRequired = lambdaPositionalParameters(defaultRequired, args, defaults)
+      (
+        <COMMA>
+        (
+          (
+            <DIV>
+            { posOnlyArgs = args; args = new ArrayList<iarg>(); }
+            (
+              <COMMA>
+              (
+                (
+                  lambdaPositionalParameters(defaultRequired, args, defaults)
+                  (
+                    <COMMA>
+                    (
+                      lambdaStarAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+                      | kwArg.object = lambdaDoubleStarParameters()
+                      | {}
+                    )
+                  )?
+                )
+              | lambdaStarAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+              | kwArg.object = lambdaDoubleStarParameters()
+              | {}
+              )
+            )?
+          )
+        | lambdaStarAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+        | kwArg.object = lambdaDoubleStarParameters()
+        | {}
+        )
+      )?
+    )
+  | lambdaStarAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+  | kwArg.object = lambdaDoubleStarParameters()
+  | {}
+  )
+  {
+    return new Arguments(posOnlyArgs, args, varArg.object, kwOnlyArgs,
+     kwDefaults, kwArg.object, defaults);
+  }
+}
+
+// Sister function of starAndFollowingParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
+void lambdaStarAndFollowingParameters(BoxedObject<iarg> varArg,
+                                      ArrayList<iarg> kwOnlyArgs,
+                                      ArrayList<iexpr> kwDefaults,
+                                      BoxedObject<iarg> kwArg): {
+} {
+  <STAR>
+  (
+    (
+      varArg.object = lambdaFunctionParameterDef()
+      (
+        <COMMA>
+        (
+          (
+            lambdaKwOnlyParameters(kwOnlyArgs, kwDefaults)
+            (
+              <COMMA>
+              (kwArg.object = lambdaDoubleStarParameters())?
+            )?
+          )
+        | (
+            kwArg.object = lambdaDoubleStarParameters()
+          )
+        | {}
+        )
+      )?
+    )
+  | (
+      <COMMA> lambdaKwOnlyParameters(kwOnlyArgs, kwDefaults)
+     (
+       <COMMA>
+       (kwArg.object = lambdaDoubleStarParameters())?
+     )?
+    )
+  )
+}
+
+// Sister function of doubleStarParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
+iarg lambdaDoubleStarParameters(): {
+  iarg kwArg;
+} {
+  <DOUBLE_STAR> kwArg = lambdaFunctionParameterDef()
+  (<COMMA>)?
+  { return kwArg; }
+}
+
+// Sister function of positionalParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
+boolean lambdaPositionalParameters(boolean initialDefaultRequired,
+                                   ArrayList<iarg> params, ArrayList<iexpr> defaults): {
+  iarg param;
+  iexpr defaultExpr;
+  boolean defaultRequired = initialDefaultRequired;
+} {
+  param = lambdaFunctionParameterDef() { params.add(param); }
+  (
+    <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); defaultRequired = true; }
+  | { if (defaultRequired) { throw new ParseException("TODO"); } }
+  )
+  (LOOKAHEAD(2)
+    <COMMA> param = lambdaFunctionParameterDef() { params.add(param); }
+    (
+      <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); defaultRequired = true; }
+    | { if (defaultRequired) { throw new ParseException("TODO"); } }
+    )
+  )*
+  { return defaultRequired; }
+}
+
+// Sister function of kwOnlyParameters.
+// Only difference that type annotations and type comment are not allowed in this
+// version. Changes made here should also be done in the sister function.
+void lambdaKwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
+  iarg param;
+  iexpr defaultExpr;
+} {
+  param = lambdaFunctionParameterDef() { params.add(param); }
+  (
+    <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); }
+  | { defaults.add(null); }
+  )
+  (LOOKAHEAD(2)
+    <COMMA> param = lambdaFunctionParameterDef() { params.add(param); }
+    (
+      <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); }
+    | { defaults.add(null); }
+    )
+  )*
+}
+
+iarg lambdaFunctionParameterDef(): {
+  Token startToken;
+  String name;
+} {
+  <NAME> { startToken = token; name = token.image; }
+  { return new Arg(name, null, null, attributes(startToken, token)); }
 }
 
 If ifStatement(): {
@@ -998,20 +1181,35 @@ iexpr namedExpression(): {
   }
 }
 
-// TODO lamba
 iexpr expression(): {
   iexpr expression;
   iexpr testExpression = null;
   iexpr elseExpression = null;
 } {
-  expression = disjunction()
-  (<IF> testExpression = disjunction() <ELSE> elseExpression = expression()
-  )? {
+  (
+    (
+      expression = disjunction()
+      (<IF> testExpression = disjunction() <ELSE> elseExpression = expression())?
+    )
+  | expression = lambda()
+  )
+  {
     if (testExpression != null) {
       return new IfExp(testExpression, expression, elseExpression, attributes(expression, token));
     }
     return expression;
   }
+}
+
+iexpr lambda(): {
+  Token startToken;
+  iarguments parameters;
+  iexpr body;
+} {
+  <LAMBDA> { startToken = token; }
+  parameters = lambdaParameters()
+  <COLON> body = expression()
+  { return new Lambda(parameters, body, attributes(startToken, token)); }
 }
 
 iexpr disjunction(): {
