@@ -292,3 +292,32 @@ case class FunctionDef(name: String,
     visitor.visit(this)
   }
 }
+
+case class AsyncFunctionDef(name: String,
+                            args: iarguments,
+                            body: Iterable[istmt],
+                            decorator_list: Iterable[iexpr],
+                            returns: Option[iexpr],
+                            type_comment: Option[String],
+                            lineno: Int,
+                            col_offset: Int) extends istmt {
+  def this(name: String,
+           args: iarguments,
+           body: util.ArrayList[istmt],
+           decorator_list: util.ArrayList[iexpr],
+           returns: iexpr,
+           type_comment: String,
+           attributeProvider: AttributeProvider) = {
+    this(name,
+      args,
+      body.asScala,
+      decorator_list.asScala,
+      Option(returns),
+      Option(type_comment),
+      attributeProvider.lineno,
+      attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}

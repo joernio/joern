@@ -133,8 +133,13 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("def func(**x):\n\tpass")
       testT("def func(**x, ):\n\tpass", "def func(**x):\n\tpass")
 
+      testT("def func() -> x:\n\tpass")
+
       testT("@x\ndef func():\n\tpass")
       testT("@x\n@y\ndef func():\n\tpass")
+
+      testT("async def func():\n\tpass")
+      testT("@x\nasync def func():\n\tpass")
     }
 
     "if statement tests" in {

@@ -533,17 +533,16 @@ istmt decoratedStatement(): {
   { return stmt; }
 }
 
-FunctionDef functionDef(ArrayList<iexpr> decorators): {
-  Token startToken;
+istmt functionDef(ArrayList<iexpr> decorators): {
+  Token startToken = null;
   boolean isAsync = false;
   String name;
   iarguments parameters;
   iexpr returnExpr = null;
   ArrayList<istmt> blockStmts;
 } {
-  // TODO
-  //(<ASYNC> { isAsync = true;  startToken = token; })?
-  <DEF> { startToken = token; }
+  (<ASYNC> { isAsync = true;  startToken = token; })?
+  <DEF> { if (!isAsync) {startToken = token;} }
   <NAME> { name = token.image; }
   <PAREN_OPEN>
   parameters = parameters()
@@ -551,8 +550,15 @@ FunctionDef functionDef(ArrayList<iexpr> decorators): {
   (<ARROW> returnExpr = expression())?
   <COLON>
   blockStmts = block()
-  { return new FunctionDef(name, parameters, blockStmts, decorators,
-   returnExpr, null, attributes(startToken, token)); }
+  {
+    if (isAsync) {
+      return new AsyncFunctionDef(name, parameters, blockStmts, decorators,
+        returnExpr, null, attributes(startToken, token));
+    } else {
+      return new FunctionDef(name, parameters, blockStmts, decorators,
+        returnExpr, null, attributes(startToken, token));
+    }
+  }
 }
 
 // This rule matches always because its contend is purely optional.

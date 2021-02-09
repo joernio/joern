@@ -10,6 +10,7 @@ trait AstVisitor[T] {
 
   def visit(stmt: istmt): T
   def visit(functionDef: FunctionDef): T
+  def visit(functionDef: AsyncFunctionDef): T
   def visit(classDef: ClassDef): T
   def visit(ret: Return): T
   def visit(assign: Assign): T

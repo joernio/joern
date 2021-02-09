@@ -30,6 +30,14 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   }
 
+  override def visit(functionDef: AsyncFunctionDef): String = {
+    functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
+      "async def " + functionDef.name + "(" + print(functionDef.args) + ")" +
+      functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
+      ":" +  functionDef.body.map(printIndented).mkString("\n", "\n", "")
+
+  }
+
   override def visit(classDef: ClassDef): String = {
     val optionArgEndComma = if (classDef.bases.nonEmpty && classDef.keywords.nonEmpty) ", " else ""
 
