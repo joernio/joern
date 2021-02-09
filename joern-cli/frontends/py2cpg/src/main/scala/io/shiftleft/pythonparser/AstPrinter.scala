@@ -22,6 +22,13 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(stmt: istmt): String = ???
 
+  override def visit(functionDef: FunctionDef): String = {
+    "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
+      functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
+    ":" +  functionDef.body.map(printIndented).mkString("\n", "\n", "")
+
+  }
+
   override def visit(classDef: ClassDef): String = {
     val optionArgEndComma = if (classDef.bases.nonEmpty && classDef.keywords.nonEmpty) ", " else ""
 
@@ -415,5 +422,71 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(uSub: USub.type): String = {
     "-"
+  }
+
+  override def visit(arg: iarg): String = ???
+
+  override def visit(arg: Arg): String = {
+    arg.arg + arg.annotation.map(a => ": " + print(a)).getOrElse("")
+  }
+
+  override def visit(arguments: iarguments): String = ???
+
+  override def visit(arguments: Arguments): String = {
+    var result = ""
+    var separatorString = ""
+    val combinedPosArgSize = arguments.posonlyargs.size + arguments.args.size
+    val defaultArgs = List.fill(combinedPosArgSize - arguments.defaults.size)(None) ++
+      arguments.defaults.map(Option.apply)
+
+    if (arguments.posonlyargs.nonEmpty) {
+      val posOnlyArgsString =
+        arguments.posonlyargs.zip(defaultArgs).map { case (arg, defaultOption) =>
+          print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
+        }.mkString("", ", ", ", /")
+
+      result += posOnlyArgsString
+      separatorString = ", "
+    }
+
+    if (arguments.args.nonEmpty) {
+      val defaultsForArgs = defaultArgs.drop(arguments.posonlyargs.size)
+      val argsString =
+        arguments.args.zip(defaultsForArgs).map { case (arg, defaultOption) =>
+          print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
+        }.mkString(separatorString, ", ", "")
+
+      result += argsString
+      separatorString = ", "
+    }
+
+    arguments.vararg match {
+      case Some(v) =>
+        result += separatorString
+        result += "*" + print(v)
+        separatorString = ", "
+      case None if arguments.kwonlyargs.nonEmpty =>
+        result += separatorString
+        result += "*"
+        separatorString = ", "
+      case None =>
+    }
+
+    if (arguments.kwonlyargs.nonEmpty) {
+      val kwOnlyArgsString =
+        arguments.kwonlyargs.zip(arguments.kw_defaults).map { case (arg, defaultOption) =>
+          print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
+        }.mkString(separatorString, ", ", "")
+
+      result += kwOnlyArgsString
+      separatorString = ", "
+    }
+
+    arguments.kw_arg.foreach { k =>
+      result += separatorString
+      result += "**" + print(k)
+    }
+
+    result
   }
 }

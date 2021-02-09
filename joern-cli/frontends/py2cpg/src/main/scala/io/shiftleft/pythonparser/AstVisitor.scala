@@ -9,6 +9,7 @@ trait AstVisitor[T] {
   def visit(module: Module): T
 
   def visit(stmt: istmt): T
+  def visit(functionDef: FunctionDef): T
   def visit(classDef: ClassDef): T
   def visit(ret: Return): T
   def visit(assign: Assign): T
@@ -99,4 +100,10 @@ trait AstVisitor[T] {
   def visit(not: Not.type): T
   def visit(uAdd: UAdd.type): T
   def visit(uSub: USub.type): T
+
+  def visit(arg: iarg): T
+  def visit(arg: Arg): T
+
+  def visit(arguments: iarguments): T
+  def visit(arguments: Arguments): T
 }

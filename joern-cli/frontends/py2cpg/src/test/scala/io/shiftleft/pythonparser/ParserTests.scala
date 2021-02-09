@@ -97,6 +97,42 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("nonlocal x, y")
     }
 
+    "function def statement tests" in {
+      testT("def func(x):\n\tpass")
+      testT("def func(x,):\n\tpass", "def func(x):\n\tpass")
+      testT("def func(x = 1):\n\tpass")
+      testT("def func(x = 1,):\n\tpass", "def func(x = 1):\n\tpass")
+      testT("def func(x, y):\n\tpass")
+      testT("def func(x, y = 2):\n\tpass")
+      testT("def func(x = 1, y = 2):\n\tpass")
+      testT("def func(x, y,):\n\tpass", "def func(x, y):\n\tpass")
+      testT("def func(x, /, y):\n\tpass")
+      testT("def func(x, /):\n\tpass")
+      testT("def func(x, /,):\n\tpass", "def func(x, /):\n\tpass")
+      testT("def func(x, *y):\n\tpass")
+      testT("def func(x, *y, z):\n\tpass")
+      testT("def func(x, *y, z, **a):\n\tpass")
+      testT("def func(x, *y, **z):\n\tpass")
+      testT("def func(x, **y):\n\tpass")
+
+      testT("def func(*x):\n\tpass")
+      testT("def func(*x,):\n\tpass", "def func(*x):\n\tpass")
+      testT("def func(*x, y):\n\tpass")
+      testT("def func(*x, y, ):\n\tpass", "def func(*x, y):\n\tpass")
+      testT("def func(*x, y = 1):\n\tpass")
+      testT("def func(*x, y, z):\n\tpass")
+      testT("def func(*x, y = 1, z = 2):\n\tpass")
+      testT("def func(*x, y = 1, z):\n\tpass")
+      testT("def func(*x, y, z = 2):\n\tpass")
+      testT("def func(*x, y, **z):\n\tpass")
+      testT("def func(*x, **z):\n\tpass")
+      testT("def func(*, x):\n\tpass")
+      testT("def func(*, x, ):\n\tpass", "def func(*, x):\n\tpass")
+      testT("def func(*, x, **y):\n\tpass")
+      testT("def func(**x):\n\tpass")
+      testT("def func(**x, ):\n\tpass", "def func(**x):\n\tpass")
+    }
+
     "if statement tests" in {
       testT("if x: y;", "if x:\n\ty")
       testT("if x:\n\ty")

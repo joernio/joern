@@ -5,9 +5,16 @@ options {
 PARSER_BEGIN(PythonParser)
 package io.shiftleft.pythonparser;
 import java.util.ArrayList;
+import java.util.Collections;
 import io.shiftleft.pythonparser.IndentStack;
 import io.shiftleft.pythonparser.ast.*;
 public class PythonParser {
+  static class BoxedObject<T> {
+    T object;
+    BoxedObject(T object) {
+      this.object = object;
+    }
+  }
   TokenAttributeProvider attributes(Token startToken, Token endToken) {
     return new TokenAttributeProvider(startToken);
   }
@@ -52,6 +59,8 @@ TOKEN: {
 | <AND: "and">
 | <NOT: "not">
 | <FAIL: "fail">
+| <DEF: "def">
+| <ASYNC: "async">
 | <RETURN: "return">
 | <TRY: "try">
 | <EXCEPT: "except">
@@ -74,6 +83,7 @@ TOKEN: {
 | <NONE: "None">
 | <TRUE: "True">
 | <FALSE: "False">
+| <ARROW: "->">
 | <ELLIPSIS: "...">
 | <COLON: ":">
 | <SEMICOLON: ";">
@@ -501,12 +511,197 @@ istmt compoundStatement(): {
   istmt stmt;
 } {
   (
-  stmt = ifStatement()
+  stmt = functionDef()
+| stmt = ifStatement()
 | stmt = classDef()
 | stmt = tryStatement()
 | stmt = whileStatement()
   )
   { return stmt; }
+}
+
+FunctionDef functionDef(): {
+  ArrayList<iexpr> decorators = new ArrayList<iexpr>();
+  Token startToken;
+  boolean isAsync = false;
+  String name;
+  iarguments parameters;
+  iexpr returnExpr = null;
+  ArrayList<istmt> blockStmts;
+} {
+  // TODO
+  //(decorators = decorators() | { decorators = new ArrayList<iexpr>(); })
+  //(<ASYNC> { isAsync = true;  startToken = token; })?
+  <DEF> { startToken = token; }
+  <NAME> { name = token.image; }
+  <PAREN_OPEN>
+  parameters = parameters()
+  <PAREN_CLOSE>
+  (<ARROW> returnExpr = expression())?
+  <COLON>
+  blockStmts = block()
+  { return new FunctionDef(name, parameters, blockStmts, decorators,
+   returnExpr, null, attributes(startToken, token)); }
+}
+
+// This rule matches always because its contend is purely optional.
+// This is a fully factored out version of the CPython 3.9 parameters parser rule
+// minus the support for type comments which are currently swallowed by the lexer.
+// Dont be confused by the inconsistent use of argument and parameter identifiers.
+// iarg, iarguments, Arg and Argument class names are part of the user facing API
+// with which we mimic the CPython AST API and thus their names are what they are.
+// They should rather be named iparam, iparameters etc..
+iarguments parameters(): {
+  ArrayList<iarg> posOnlyArgs = new ArrayList<iarg>();
+  ArrayList<iarg> args = new ArrayList<iarg>();
+  // Contains the defaults for posOnlyArgs and args.
+  ArrayList<iexpr> defaults = new ArrayList<iexpr>();
+  BoxedObject<iarg> varArg = new BoxedObject<iarg>(null);
+  ArrayList<iarg> kwOnlyArgs = new ArrayList<iarg>();
+  // Contains the defaults for kwOnlyArgs. If such an
+  // argument has no default, null is added instead.
+  ArrayList<iexpr> kwDefaults = new ArrayList<iexpr>();
+  BoxedObject<iarg> kwArg = new BoxedObject<iarg>(null);
+
+  boolean defaultRequired = false;
+  ArrayList<iarg> tmpArgs = new ArrayList<iarg>();
+} {
+  (
+    (
+      defaultRequired = positionalParameters(defaultRequired, args, defaults)
+      (
+        <COMMA>
+        (
+          (
+            <DIV>
+            { posOnlyArgs = args; args = new ArrayList<iarg>(); }
+            (
+              <COMMA>
+              (
+                (
+                  positionalParameters(defaultRequired, args, defaults)
+                  (
+                    <COMMA>
+                    (
+                      starAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+                      | kwArg.object = doubleStarParameters()
+                      | {}
+                    )
+                  )?
+                )
+              | starAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+              | kwArg.object = doubleStarParameters()
+              | {}
+              )
+            )?
+          )
+        | starAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+        | kwArg.object = doubleStarParameters()
+        | {}
+        )
+      )?
+    )
+  | starAndFollowingParameters(varArg, kwOnlyArgs, kwDefaults, kwArg)
+  | kwArg.object = doubleStarParameters()
+  )
+  {
+    return new Arguments(posOnlyArgs, args, varArg.object, kwOnlyArgs,
+     kwDefaults, kwArg.object, defaults);
+  }
+}
+
+void starAndFollowingParameters(BoxedObject<iarg> varArg,
+                                ArrayList<iarg> kwOnlyArgs,
+                                ArrayList<iexpr> kwDefaults,
+                                BoxedObject<iarg> kwArg): {
+} {
+  <STAR>
+  (
+    (
+      varArg.object = typedFunctionParameterDef()
+      (
+        <COMMA>
+        (
+          (
+            kwOnlyParameters(kwOnlyArgs, kwDefaults)
+            (
+              <COMMA>
+              (kwArg.object = doubleStarParameters())?
+            )?
+          )
+        | (
+            kwArg.object = doubleStarParameters()
+          )
+        | {}
+        )
+      )?
+    )
+  | (
+      <COMMA> kwOnlyParameters(kwOnlyArgs, kwDefaults)
+     (
+       <COMMA>
+       (kwArg.object = doubleStarParameters())?
+     )?
+    )
+  )
+}
+
+iarg doubleStarParameters(): {
+  iarg kwArg;
+} {
+  <DOUBLE_STAR> kwArg = typedFunctionParameterDef()
+  (<COMMA>)?
+  { return kwArg; }
+}
+
+boolean positionalParameters(boolean initialDefaultRequired,
+                             ArrayList<iarg> params, ArrayList<iexpr> defaults): {
+  iarg param;
+  iexpr defaultExpr;
+  boolean defaultRequired = initialDefaultRequired;
+} {
+  param = typedFunctionParameterDef() { params.add(param); }
+  (
+    <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); defaultRequired = true; }
+  | { if (defaultRequired) { throw new ParseException("TODO"); } }
+  )
+  (LOOKAHEAD(2)
+    <COMMA> param = typedFunctionParameterDef() { params.add(param); }
+    (
+      <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); defaultRequired = true; }
+    | { if (defaultRequired) { throw new ParseException("TODO"); } }
+    )
+  )*
+  { return defaultRequired; }
+}
+
+void kwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
+  iarg param;
+  iexpr defaultExpr;
+} {
+  param = typedFunctionParameterDef() { params.add(param); }
+  (
+    <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); }
+  | { defaults.add(null); }
+  )
+  (LOOKAHEAD(2)
+    <COMMA> param = typedFunctionParameterDef() { params.add(param); }
+    (
+      <ASSIGN> defaultExpr = expression() { defaults.add(defaultExpr); }
+    | { defaults.add(null); }
+    )
+  )*
+}
+
+// Corresponds to "tfpdef" rule from CPhython 3.8 grammar.
+iarg typedFunctionParameterDef(): {
+  Token startToken;
+  String name;
+  iexpr defaultExpr = null;
+} {
+  <NAME> { startToken = token; name = token.image; }
+  (<COLON> defaultExpr = expression())?
+  { return new Arg(name, defaultExpr, null, attributes(startToken, token)); }
 }
 
 If ifStatement(): {
