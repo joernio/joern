@@ -64,7 +64,12 @@ class ParserTests extends AnyFreeSpec with Matchers {
     }
 
     "del statement tests" in {
-      //TODO
+      testT("del x")
+      testT("del x,", "del x")
+      testT("del x, y")
+      testT("del x, y,", "del x, y")
+      testT("del x.y")
+      testT("del x().y")
     }
 
     "yield statement tests" in {

@@ -55,6 +55,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     "return" + ret.value.map(v => " " + print(v)).getOrElse("")
   }
 
+  override def visit(delete: Delete): String = {
+    "del " + delete.targets.map(print).mkString(", ")
+  }
+
   override def visit(assign: Assign): String = {
     assign.targets.map(print).mkString(", ") + " = " + print(assign.value)
   }

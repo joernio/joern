@@ -316,7 +316,7 @@ istmt smallStatement(): {
 | stmt = importStatement()
 | stmt = raiseStatement()
 | stmt = passStatement()
-//| stmt = delStatement()
+| stmt = delStatement()
 | stmt = yieldStatement()
 | stmt = assertStatement()
 | stmt = breakStatement()
@@ -460,6 +460,21 @@ Raise raiseStatement(): {
 Pass passStatement(): {
 } {
   <PASS> { return new Pass(attributes(token, token)); }
+}
+
+Delete delStatement(): {
+  Token startToken;
+  iexpr target;
+  ArrayList<iexpr> targets = new ArrayList<iexpr>();
+} {
+  <DEL> { startToken = token; }
+  target = primary() { targets.add(target); }
+  (LOOKAHEAD(2)
+    <COMMA>
+    target = primary() { targets.add(target); }
+  )*
+  (<COMMA>)?
+  { return new Delete(targets, attributes(startToken, token)); }
 }
 
 Expr yieldStatement(): {

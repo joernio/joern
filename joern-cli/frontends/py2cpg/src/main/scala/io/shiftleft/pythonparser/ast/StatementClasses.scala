@@ -136,7 +136,14 @@ case class Pass(lineno: Int, col_offset: Int) extends istmt {
   }
 }
 
-case class Del()
+case class Delete(targets: Iterable[iexpr], lineno: Int, col_offset: Int) extends istmt {
+  def this(targets: util.ArrayList[iexpr], attributeProvider: AttributeProvider) = {
+    this(targets.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 case class Assert(test: iexpr, msg: Option[iexpr], lineno: Int, col_offset: Int) extends istmt {
   def this(test: iexpr, msg: iexpr, attributeProvider: AttributeProvider) = {
