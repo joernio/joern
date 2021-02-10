@@ -90,6 +90,16 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       elseString
   }
 
+  override def visit(withStmt: With): String = {
+    "with " + withStmt.items.map(print).mkString(", ") + ":" +
+      withStmt.body.map(printIndented).mkString("\n", "\n", "")
+  }
+
+  override def visit(withStmt: AsyncWith): String = {
+    "async with " + withStmt.items.map(print).mkString(", ") + ":" +
+      withStmt.body.map(printIndented).mkString("\n", "\n", "")
+  }
+
   override def visit(raise: Raise): String = {
     "raise" + raise.exc.map(e => " " + print(e)).getOrElse("") +
       raise.cause.map(c => " from " + print(c)).getOrElse("")
@@ -506,5 +516,11 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     }
 
     result
+  }
+
+  override def visit(withItem: iwithitem): String = ???
+
+  override def visit(withItem: WithItem): String = {
+    print(withItem.context_expr) + withItem.optional_vars.map(o => " as " + print(o)).getOrElse("")
   }
 }

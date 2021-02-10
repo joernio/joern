@@ -18,6 +18,8 @@ trait AstVisitor[T] {
   def visit(augAssign: AugAssign): T
   def visit(whileStmt: While): T
   def visit(ifStmt: If): T
+  def visit(withStmt: With): T
+  def visit(withStmt: AsyncWith): T
   def visit(raise: Raise): T
   def visit(tryStmt: Try): T
   def visit(assert: Assert): T
@@ -108,4 +110,7 @@ trait AstVisitor[T] {
 
   def visit(arguments: iarguments): T
   def visit(arguments: Arguments): T
+
+  def visit(withItem: iwithitem): T
+  def visit(withItem: WithItem): T
 }

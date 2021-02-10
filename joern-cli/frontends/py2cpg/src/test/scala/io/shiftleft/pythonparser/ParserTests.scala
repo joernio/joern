@@ -204,6 +204,26 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("while x:\n\twhile y:\n\t\tz")
       testT("while x:\n\ty\nelse:\n\tz")
     }
+
+    "with statement tests" in {
+      testT("with x:\n\tpass")
+      testT("with x, :\n\tpass", "with x:\n\tpass")
+      testT("with x, y:\n\tpass")
+      testT("with x, y, z:\n\tpass")
+      testT("with (x):\n\tpass", "with x:\n\tpass")
+      testT("with (x,):\n\tpass", "with x:\n\tpass")
+      testT("with (x, y):\n\tpass", "with x, y:\n\tpass")
+      testT("with (x, y, z):\n\tpass", "with x, y, z:\n\tpass")
+      testT("with x + 1:\n\tpass")
+      testT("with x + 1, y + 2:\n\tpass")
+      testT("with (x + 1):\n\tpass", "with x + 1:\n\tpass")
+      testT("with (x + 1, y + 2):\n\tpass", "with x + 1, y + 2:\n\tpass")
+      testT("with x as y:\n\tpass")
+      testT("with x as *y:\n\tpass")
+      testT("with x as y, z:\n\tpass")
+      testT("with x as y, z as a:\n\tpass")
+      testT("with x as y, z as a,:\n\tpass", "with x as y, z as a:\n\tpass")
+    }
   }
 
   "error recovery tests" in {

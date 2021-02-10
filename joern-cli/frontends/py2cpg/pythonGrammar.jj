@@ -62,6 +62,7 @@ TOKEN: {
 | <DEF: "def">
 | <ASYNC: "async">
 | <LAMBDA: "lambda">
+| <WITH: "with">
 | <RETURN: "return">
 | <TRY: "try">
 | <EXCEPT: "except">
@@ -513,9 +514,11 @@ istmt compoundStatement(): {
 } {
   (
     stmt = decoratedStatement()
-  | stmt = functionDef(new ArrayList<iexpr>())
+  | stmt = asyncStatement()
+  | stmt = functionDef(new ArrayList<iexpr>(), false, null)
   | stmt = ifStatement()
   | stmt = classDef(new ArrayList<iexpr>())
+  | stmt = withStatement(false, null)
   | stmt = tryStatement()
   | stmt = whileStatement()
   )
@@ -524,25 +527,37 @@ istmt compoundStatement(): {
 
 istmt decoratedStatement(): {
   ArrayList<iexpr> decorators;
+  Token asyncToken;
   istmt stmt;
 } {
   decorators = decorators()
   (
-    stmt = functionDef(decorators)
+    stmt = functionDef(decorators, false, null)
+  | (<ASYNC> { asyncToken = token; } stmt = functionDef(decorators, true, asyncToken))
   | stmt = classDef(decorators)
   )
   { return stmt; }
 }
 
-istmt functionDef(ArrayList<iexpr> decorators): {
-  Token startToken = null;
-  boolean isAsync = false;
+istmt asyncStatement(): {
+  Token asyncToken;
+  istmt stmt;
+} {
+  <ASYNC> { asyncToken = token; }
+  (
+    stmt = functionDef(new ArrayList<iexpr>(), true, asyncToken)
+  | stmt = withStatement(true, asyncToken)
+  )
+  { return stmt; }
+}
+
+istmt functionDef(ArrayList<iexpr> decorators, boolean isAsync, Token asyncToken): {
+  Token startToken = asyncToken;
   String name;
   iarguments parameters;
   iexpr returnExpr = null;
   ArrayList<istmt> blockStmts;
 } {
-  (<ASYNC> { isAsync = true;  startToken = token; })?
   <DEF> { if (!isAsync) {startToken = token;} }
   <NAME> { name = token.image; }
   <PAREN_OPEN>
@@ -968,6 +983,60 @@ ArrayList<iexpr> decorators(): {
     <NEWLINE>
   )+
   { return decoratorExpressions; }
+}
+
+istmt withStatement(boolean isAsync, Token asyncToken): {
+  Token startToken = asyncToken;
+  ArrayList<iwithitem> items;
+  ArrayList<istmt> blockStmts;
+} {
+  <WITH> { if (!isAsync) {startToken = token;} }
+  // The following choice starts with an ambiguity because the first WithItem could
+  // be a parenthesized expression. Without LOOKAHEAD(2) JavaCC thus complains as
+  // expected. With LOOKAHEAD(2) there is still an ambiguity but JavaCC for whatever
+  // reason stops complaining an opportunistically takes the first choice if possible
+  // which is what we want here, although i dont fully understand it.
+  (LOOKAHEAD(2)
+    (
+      <PAREN_OPEN>
+      items = withItems()
+      <PAREN_CLOSE>
+    )
+  | (
+      items = withItems()
+    )
+  )
+  <COLON>
+  blockStmts = block()
+  {
+    if (isAsync) {
+      return new AsyncWith(items, blockStmts, null, attributes(startToken, token));
+    } else {
+      return new With(items, blockStmts, null, attributes(startToken, token));
+    }
+  }
+}
+
+ArrayList<iwithitem> withItems(): {
+  ArrayList<iwithitem> items = new ArrayList<iwithitem>();
+  iwithitem item;
+} {
+  item = withItem() { items.add(item); }
+  (LOOKAHEAD(2)
+    <COMMA>
+    item = withItem() { items.add(item); }
+  )*
+  (<COMMA>)?
+  { return items; }
+}
+
+iwithitem withItem(): {
+  iexpr contextExpr;
+  iexpr optionalVars = null;
+} {
+  contextExpr = expression()
+  (<AS> (optionalVars = expression() | optionalVars = starredExpression()))?
+  { return new WithItem(contextExpr, optionalVars); }
 }
 
 Try tryStatement(): {

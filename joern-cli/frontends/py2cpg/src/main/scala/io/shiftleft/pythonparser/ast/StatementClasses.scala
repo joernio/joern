@@ -321,3 +321,43 @@ case class AsyncFunctionDef(name: String,
     visitor.visit(this)
   }
 }
+
+case class With(items: Iterable[iwithitem],
+                body: Iterable[istmt],
+                type_comment: Option[String],
+                lineno: Int,
+                col_offset: Int) extends istmt {
+  def this(items: util.ArrayList[iwithitem],
+           body: util.ArrayList[istmt],
+           type_comment: String,
+           attributeProvider: AttributeProvider) = {
+    this(items.asScala,
+      body.asScala,
+      Option(type_comment),
+      attributeProvider.lineno,
+      attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class AsyncWith(items: Iterable[iwithitem],
+                     body: Iterable[istmt],
+                     type_comment: Option[String],
+                     lineno: Int,
+                     col_offset: Int) extends istmt {
+  def this(items: util.ArrayList[iwithitem],
+           body: util.ArrayList[istmt],
+           type_comment: String,
+           attributeProvider: AttributeProvider) = {
+    this(items.asScala,
+      body.asScala,
+      Option(type_comment),
+      attributeProvider.lineno,
+      attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
