@@ -1245,7 +1245,7 @@ iexpr starExpressions(): {
 } {
   (
     firstExpression = expression()
-  | firstExpression = starredExpression()
+  | firstExpression = starredBitwiseOr()
   )
   (LOOKAHEAD(2)
     <COMMA>
@@ -1257,7 +1257,7 @@ iexpr starExpressions(): {
     }
     (
       expression = expression()
-    | expression = starredExpression()
+    | expression = starredBitwiseOr()
     ) { expressions.add(expression); }
   )*
   (<COMMA>)?
@@ -1686,6 +1686,17 @@ iexpr starredExpression(): {
 } {
   <STAR> { startToken = token; }
   value = expression()
+  {
+    return new Starred(value, attributes(startToken, token));
+  }
+}
+
+iexpr starredBitwiseOr(): {
+  iexpr value;
+  Token startToken;
+} {
+  <STAR> { startToken = token; }
+  value = bitwiseOr()
   {
     return new Starred(value, attributes(startToken, token));
   }
