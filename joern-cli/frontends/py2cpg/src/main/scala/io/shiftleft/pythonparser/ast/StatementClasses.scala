@@ -361,3 +361,55 @@ case class AsyncWith(items: Iterable[iwithitem],
     visitor.visit(this)
   }
 }
+
+case class For(target: iexpr,
+               iter: iexpr,
+               body: Iterable[istmt],
+               orelse: Iterable[istmt],
+               type_comment: Option[String],
+               lineno: Int,
+               col_offset: Int) extends istmt {
+  def this(target: iexpr,
+           iter: iexpr,
+           body: util.ArrayList[istmt],
+           orelse: util.ArrayList[istmt],
+           type_comment: String,
+           attributeProvider: AttributeProvider) = {
+    this(target,
+      iter,
+      body.asScala,
+      orelse.asScala,
+      Option(type_comment),
+      attributeProvider.lineno,
+      attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class AsyncFor(target: iexpr,
+                    iter: iexpr,
+                    body: Iterable[istmt],
+                    orelse: Iterable[istmt],
+                    type_comment: Option[String],
+                    lineno: Int,
+                    col_offset: Int) extends istmt {
+  def this(target: iexpr,
+           iter: iexpr,
+           body: util.ArrayList[istmt],
+           orelse: util.ArrayList[istmt],
+           type_comment: String,
+           attributeProvider: AttributeProvider) = {
+    this(target,
+      iter,
+      body.asScala,
+      orelse.asScala,
+      Option(type_comment),
+      attributeProvider.lineno,
+      attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}

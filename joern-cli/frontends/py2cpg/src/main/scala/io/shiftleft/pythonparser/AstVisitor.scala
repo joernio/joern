@@ -16,6 +16,8 @@ trait AstVisitor[T] {
   def visit(assign: Assign): T
   def visit(annAssign: AnnAssign): T
   def visit(augAssign: AugAssign): T
+  def visit(forStmt: For): T
+  def visit(forStmt: AsyncFor): T
   def visit(whileStmt: While): T
   def visit(ifStmt: If): T
   def visit(withStmt: With): T

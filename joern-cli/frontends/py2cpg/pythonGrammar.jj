@@ -62,6 +62,7 @@ TOKEN: {
 | <DEF: "def">
 | <ASYNC: "async">
 | <LAMBDA: "lambda">
+| <FOR: "for">
 | <WITH: "with">
 | <RETURN: "return">
 | <TRY: "try">
@@ -336,7 +337,7 @@ Return returnStatement(): {
   iexpr expression = null;
   Token startToken;
 } {
-  <RETURN> { startToken = token; } (expression = starExpressionsAsTuple())?
+  <RETURN> { startToken = token; } (expression = starExpressions())?
   {
     return new Return(expression, attributes(startToken, token));
   }
@@ -518,6 +519,7 @@ istmt compoundStatement(): {
   | stmt = functionDef(new ArrayList<iexpr>(), false, null)
   | stmt = ifStatement()
   | stmt = classDef(new ArrayList<iexpr>())
+  | stmt = forStatement(false, null)
   | stmt = withStatement(false, null)
   | stmt = tryStatement()
   | stmt = whileStatement()
@@ -546,6 +548,7 @@ istmt asyncStatement(): {
   <ASYNC> { asyncToken = token; }
   (
     stmt = functionDef(new ArrayList<iexpr>(), true, asyncToken)
+  | stmt = forStatement(true, asyncToken)
   | stmt = withStatement(true, asyncToken)
   )
   { return stmt; }
@@ -985,6 +988,29 @@ ArrayList<iexpr> decorators(): {
   { return decoratorExpressions; }
 }
 
+istmt forStatement(boolean isAsync, Token asyncToken): {
+  Token startToken = asyncToken;
+  iexpr target;
+  iexpr iter;
+  ArrayList<istmt> blockStmts;
+  ArrayList<istmt> elseStmts;
+} {
+  <FOR> { if (!isAsync) {startToken = token;} }
+  target = starTargets()
+  <IN>
+  iter = starExpressions()
+  <COLON>
+  blockStmts = block()
+  (elseStmts = elseBlock() | { elseStmts = new ArrayList<istmt>(); })
+  {
+    if (isAsync) {
+      return new AsyncFor(target, iter, blockStmts, elseStmts, null, attributes(startToken, token));
+    } else {
+      return new For(target, iter, blockStmts, elseStmts, null, attributes(startToken, token));
+    }
+  }
+}
+
 istmt withStatement(boolean isAsync, Token asyncToken): {
   Token startToken = asyncToken;
   ArrayList<iwithitem> items;
@@ -1035,7 +1061,7 @@ iwithitem withItem(): {
   iexpr optionalVars = null;
 } {
   contextExpr = expression()
-  (<AS> (optionalVars = expression() | optionalVars = starredExpression()))?
+  (<AS> optionalVars = starTarget())?
   { return new WithItem(contextExpr, optionalVars); }
 }
 
@@ -1192,17 +1218,25 @@ iexpr expressionsAsTuple(): {
   }
 }
 
-iexpr starExpressionsAsTuple(): {
+// Returns a tuple for multiple expressions and single expression with trailing comma.
+// Otherwise returns the single expression.
+iexpr starExpressions(): {
   iexpr firstExpression;
   iexpr expression;
-  ArrayList<iexpr> expressions = new ArrayList<iexpr>();
+  ArrayList<iexpr> expressions = null;
 } {
   (
     firstExpression = expression()
   | firstExpression = starredExpression()
-  ) { expressions.add(firstExpression); }
+  )
   (LOOKAHEAD(2)
     <COMMA>
+    {
+      if (expressions == null) {
+        expressions = new ArrayList<iexpr>();
+        expressions.add(firstExpression);
+      }
+    }
     (
       expression = expression()
     | expression = starredExpression()
@@ -1210,11 +1244,16 @@ iexpr starExpressionsAsTuple(): {
   )*
   (<COMMA>)?
   {
-    if (token.kind != COMMA && expressions.size() == 1) {
-      return expressions.get(0);
-    } else {
-      return new Tuple(expressions, attributes(firstExpression, token));
+    if (expressions == null && token.kind != COMMA) {
+      // Single expression no trailing comma.
+      return firstExpression;
     }
+    if (expressions == null) {
+      // Single expression, trailing comma.
+      expressions = new ArrayList<iexpr>();
+      expressions.add(firstExpression);
+    }
+    return new Tuple(expressions, attributes(firstExpression, token));
   }
 }
 
@@ -1226,7 +1265,7 @@ iexpr yieldExpression(): {
   (
     <FROM> valueExpr = expression()
     { return new YieldFrom(valueExpr, attributes(startToken, token)); }
-  | valueExpr = starExpressionsAsTuple()
+  | valueExpr = starExpressions()
     { return new Yield(valueExpr, attributes(startToken, token)); }
   | { return new Yield(null, attributes(startToken, token)); }
   )
@@ -1650,6 +1689,60 @@ iexpr atom(): {
 Constant string(): {
 } {
   <STRING> { return new Constant(new StringConstant(token.image), attributes(token, token)); }
+}
+
+// Returns a tuple for multiple targets and single target with trailing comma.
+// Otherwise returns the single target expression.
+iexpr starTargets(): {
+  ArrayList<iexpr> targets = null;
+  iexpr firstTarget;
+  iexpr target;
+} {
+  firstTarget = starTarget()
+  (LOOKAHEAD(2)
+    <COMMA>
+    {
+      if (targets == null) {
+        targets = new ArrayList<iexpr>();
+        targets.add(firstTarget);
+      }
+    }
+    target = starTarget() { targets.add(target); }
+  )*
+  (<COMMA>)?
+  {
+    if (targets == null && token.kind != COMMA) {
+      // Single target no trailing comma.
+      return firstTarget;
+    }
+    if (targets == null) {
+      // Single target, trailing comma.
+      targets = new ArrayList<iexpr>();
+      targets.add(firstTarget);
+    }
+    return new Tuple(targets, attributes(firstTarget, token));
+  }
+}
+
+// This is not as restrictive as the corresponding CPython 3.9 star_target rule
+// because we except a primary as target which includes e.g. number literals
+// which would be invalid Python code.
+iexpr starTarget(): {
+  boolean starred = false;
+  Token startToken = null;
+  iexpr targetExpr;
+  iexpr baseExpr;
+  iexpr sliceExpr;
+} {
+  (<STAR> { starred = true; startToken = token; })?
+  targetExpr = primary()
+  {
+    if (starred) {
+      return new Starred(targetExpr, attributes(startToken, token));
+    } else {
+      return targetExpr;
+    }
+  }
 }
 
 

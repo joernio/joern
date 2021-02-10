@@ -224,6 +224,21 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("with x as y, z as a:\n\tpass")
       testT("with x as y, z as a,:\n\tpass", "with x as y, z as a:\n\tpass")
     }
+
+    "for statement tests" in {
+      testT("for x in l:\n\tpass")
+      testT("for x, in l:\n\tpass", "for (x,) in l:\n\tpass")
+      testT("for x, y in l:\n\tpass", "for (x,y) in l:\n\tpass")
+      testT("for x, y, in l:\n\tpass", "for (x,y) in l:\n\tpass")
+      testT("for *x in l:\n\tpass")
+      testT("for x.y in l:\n\tpass")
+      testT("for x in l,:\n\tpass", "for x in (l,):\n\tpass")
+      testT("for x in *l:\n\tpass")
+      testT("for x in l.m:\n\tpass")
+      testT("for x in l, m:\n\tpass", "for x in (l,m):\n\tpass")
+      testT("for x in l, m,:\n\tpass", "for x in (l,m):\n\tpass")
+      // TODO test with parenthesized target an iter
+    }
   }
 
   "error recovery tests" in {

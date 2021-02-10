@@ -63,6 +63,26 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(augAssign: AugAssign): String = ???
 
+  override def visit(forStmt: For): String = {
+    "for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
+      forStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      (if (forStmt.orelse.nonEmpty)
+        "\nelse:" +
+          forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+      else ""
+        )
+  }
+
+  override def visit(forStmt: AsyncFor): String = {
+    "async for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
+      forStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      (if (forStmt.orelse.nonEmpty)
+        "\nelse:" +
+          forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+      else ""
+        )
+  }
+
   override def visit(whileStmt: While): String = {
     "while " + print(whileStmt.test) + ":" +
       whileStmt.body.map(printIndented).mkString("\n", "\n", "") +
