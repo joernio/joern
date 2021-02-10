@@ -462,6 +462,9 @@ Pass passStatement(): {
   <PASS> { return new Pass(attributes(token, token)); }
 }
 
+// This is not as restrictive as the corresponding CPython 3.9 rule
+// because we except a primary as target which includes e.g. number literals
+// which would be invalid Python code.
 Delete delStatement(): {
   Token startToken;
   iexpr target;
