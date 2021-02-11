@@ -243,8 +243,31 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     print(ifExp.body) + " if " + print(ifExp.test) + " else " + print(ifExp.orElse)
   }
 
+  override def visit(dict: Dict): String = {
+    "{" + dict.keys.zip(dict.values).map { case (key, value) =>
+      print(key) + ":" + print(value).mkString(", ")
+    } + "}"
+  }
+
+  override def visit(set: Set): String = {
+    "{" + set.elts.map(print).mkString(", ") + "}"
+  }
+
   override def visit(listComp: ListComp): String = {
     "[" + print(listComp.elt) + listComp.generators.map(print).mkString("") + "]"
+  }
+
+  override def visit(setComp: SetComp): String = {
+    "{" + print(setComp.elt) + setComp.generators.map(print).mkString("") + "}"
+  }
+
+  override def visit(dictComp: DictComp): String = {
+    "{" + print(dictComp.key) + ":" + print(dictComp.value) +
+      dictComp.generators.map(print).mkString("") + "}"
+  }
+
+  override def visit(generatorExp: GeneratorExp): String = {
+    "(" + print(generatorExp.elt) + generatorExp.generators.map(print).mkString("") + ")"
   }
 
   override def visit(await: Await): String = {

@@ -427,6 +427,19 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("[x for x in y for y in z]")
   }
 
+  "tupleOrGeneratorExpOrGroup rule tests" in {
+    testT("()")
+    testT("(x,)")
+    testT("(x,y)")
+    testT("(x,y,)", "(x,y)")
+    testT("(x :=y )", "x := y")
+    testT("(*x)", "*x")
+    testT("(yield x)", "yield x")
+    testT("(x for x in y)")
+    testT("(x for x in y if z)")
+    testT("(x for x in y for y in z)")
+  }
+
   "extra" in {
   }
 }

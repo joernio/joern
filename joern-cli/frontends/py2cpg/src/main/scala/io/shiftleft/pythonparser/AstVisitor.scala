@@ -42,7 +42,12 @@ trait AstVisitor[T] {
   def visit(unaryOp: UnaryOp): T
   def visit(lambda: Lambda): T
   def visit(ifExp: IfExp): T
+  def visit(dict: Dict): T
+  def visit(set: Set): T
   def visit(listComp: ListComp): T
+  def visit(setComp: SetComp): T
+  def visit(dictComp: DictComp): T
+  def visit(generatorExp: GeneratorExp): T
   def visit(await: Await): T
   def visit(yieldExpr: Yield): T
   def visit(yieldFrom: YieldFrom): T

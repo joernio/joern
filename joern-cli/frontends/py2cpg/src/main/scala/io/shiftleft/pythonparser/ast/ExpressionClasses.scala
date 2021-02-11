@@ -227,3 +227,73 @@ case class ListComp(elt: iexpr,
     visitor.visit(this)
   }
 }
+
+case class Dict(keys: Iterable[iexpr],
+                values: Iterable[iexpr],
+                lineno: Int,
+                col_offset: Int) extends iexpr {
+  def this(keys: util.ArrayList[iexpr],
+           values: util.ArrayList[iexpr],
+           attributeProvider: AttributeProvider) = {
+    this(keys.asScala, values.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class DictComp(key: iexpr,
+                    value: iexpr,
+                    generators: Iterable[icomprehension],
+                    lineno: Int,
+                    col_offset: Int) extends iexpr {
+  def this(key: iexpr,
+           value: iexpr,
+           generators: util.ArrayList[icomprehension],
+           attributeProvider: AttributeProvider) = {
+    this(key, value, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class Set(elts: Iterable[iexpr],
+               lineno: Int,
+               col_offset: Int) extends iexpr {
+  def this(elts: util.ArrayList[iexpr],
+           attributeProvider: AttributeProvider) = {
+    this(elts.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class SetComp(elt: iexpr,
+                   generators: Iterable[icomprehension],
+                   lineno: Int,
+                   col_offset: Int) extends iexpr {
+  def this(elt: iexpr,
+           generators: util.ArrayList[icomprehension],
+           attributeProvider: AttributeProvider) = {
+    this(elt, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class GeneratorExp(elt: iexpr,
+                        generators: Iterable[icomprehension],
+                        lineno: Int,
+                        col_offset: Int) extends iexpr {
+  def this(elt: iexpr,
+           generators: util.ArrayList[icomprehension],
+           attributeProvider: AttributeProvider) = {
+    this(elt, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}

@@ -1713,6 +1713,7 @@ iexpr atom(): {
 | <DECINTEGER> { return new Constant(new IntConstant(token.image), attributes(token, token)); }
 | expression = string() { return expression; }
 | expression = listOrListComprehension() { return expression; }
+| expression = tupleOrGeneratorExpOrGroup() { return expression; }
 }
 
 // TODO so far only strings in its most basic form are supported.
@@ -1814,6 +1815,57 @@ iexpr listOrListComprehension(): {
       return new List(expressions, attributes(startToken, token));
     } else {
       return new ListComp(firstExpr, comprehensions, attributes(startToken, token));
+    }
+  }
+}
+
+iexpr tupleOrGeneratorExpOrGroup(): {
+  Token startToken;
+  iexpr yieldExpr = null;
+  iexpr firstExpr = null;
+  iexpr expr;
+  ArrayList<icomprehension> comprehensions = null;
+  ArrayList<iexpr> expressions = null;
+  boolean isTuple = false;
+} {
+  <PAREN_OPEN> { startToken = token; }
+  (
+    (yieldExpr = yieldExpression())
+  | (
+      (firstExpr = namedExpression() | firstExpr = starredBitwiseOr())
+      (
+        (
+          comprehensions = forIfClauses()
+        )
+      |
+        (
+          {
+            if (expressions == null) {
+              expressions = new ArrayList<iexpr>();
+              expressions.add(firstExpr);
+            }
+          }
+          (LOOKAHEAD(2)
+            <COMMA>
+            (expr = namedExpression() | expr = starredBitwiseOr())
+            { expressions.add(expr); isTuple = true; }
+          )*
+          (<COMMA> { isTuple = true; })?
+        )
+      )
+    )
+  | { expressions = new ArrayList<iexpr>(); isTuple = true; }
+  )
+  <PAREN_CLOSE>
+  {
+    if (yieldExpr != null) {
+      return yieldExpr;
+    } else if (comprehensions != null) {
+      return new GeneratorExp(firstExpr, comprehensions, attributes(startToken, token));
+    } else if (isTuple) {
+      return new Tuple(expressions, attributes(startToken, token));
+    } else {
+      return firstExpr;
     }
   }
 }
