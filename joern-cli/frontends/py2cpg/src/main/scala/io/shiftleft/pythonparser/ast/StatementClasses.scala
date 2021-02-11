@@ -30,12 +30,6 @@ case class Assign(targets: Iterable[iexpr],
                   col_offset: Int) extends istmt {
   def this(targets: util.ArrayList[iexpr],
            value: iexpr,
-           typeComment: Option[String],
-           attributeProvider: AttributeProvider) = {
-    this(targets.asScala, value, typeComment, attributeProvider.lineno, attributeProvider.col_offset)
-  }
-  def this(targets: util.ArrayList[iexpr],
-           value: iexpr,
            attributeProvider: AttributeProvider) = {
     this(targets.asScala, value, None, attributeProvider.lineno, attributeProvider.col_offset)
   }
@@ -52,16 +46,13 @@ case class AnnAssign(target: iexpr,
                      col_offset: Int) extends istmt {
   def this(target: iexpr,
            annotation: iexpr,
-           simple: Boolean,
-           attributeProvider: AttributeProvider) = {
-    this(target, annotation, None, simple, attributeProvider.lineno, attributeProvider.col_offset)
-  }
-  def this(target: iexpr,
-           annotation: iexpr,
            value: iexpr,
            simple: Boolean,
            attributeProvider: AttributeProvider) = {
-    this(target, annotation, Some(value), simple, attributeProvider.lineno, attributeProvider.col_offset)
+    this(target, annotation, Option(value), simple, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 
@@ -75,6 +66,9 @@ case class AugAssign(target: iexpr,
            value: iexpr,
            attributeProvider: AttributeProvider) = {
     this(target, op, value, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
   }
 }
 

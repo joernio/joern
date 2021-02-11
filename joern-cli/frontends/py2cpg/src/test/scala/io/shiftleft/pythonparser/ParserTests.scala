@@ -244,6 +244,44 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("for x in l, m,:\n\tpass", "for x in (l,m):\n\tpass")
       // TODO test with parenthesized target an iter
     }
+
+    "assign statement tests" in {
+      testT("x = 1")
+      testT("x = y = 1")
+      testT("x = y = z = 1")
+      testT("x, = 1", "(x,) = 1")
+      testT("x,y = 1", "(x,y) = 1")
+      testT("*x = 1")
+      testT("*x, *y = 1", "(*x,*y) = 1")
+      testT("x = yield y")
+    }
+
+    "annotated assign statement tests" in {
+      testT("x: y")
+      testT("x: y = 1")
+      testT("x: y = *z")
+      testT("x: y = yield z")
+      testT("x, y: z = 1", "(x,y): z = 1")
+    }
+
+    "augmented assign statement tests" in {
+      testT("x += 1")
+      testT("x += *y")
+      testT("x += yield y")
+
+      testT("x -= 1")
+      testT("x *= 1")
+      testT("x @= 1")
+      testT("x /= 1")
+      testT("x %= 1")
+      testT("x &= 1")
+      testT("x |= 1")
+      testT("x ^= 1")
+      testT("x <<= 1")
+      testT("x >>= 1")
+      testT("x **= 1")
+      testT("x //= 1")
+    }
   }
 
   "error recovery tests" in {

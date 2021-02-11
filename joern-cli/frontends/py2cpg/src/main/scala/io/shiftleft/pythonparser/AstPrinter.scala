@@ -61,12 +61,20 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(assign: Assign): String = {
-    assign.targets.map(print).mkString(", ") + " = " + print(assign.value)
+    assign.targets.map(print).mkString("", " = ", " = ") + print(assign.value)
   }
 
-  override def visit(annAssign: AnnAssign): String = ???
+  override def visit(annAssign: AnnAssign): String = {
+    print(annAssign.target) +
+      ": " + print(annAssign.annotation) +
+      annAssign.value.map(v => " = " + print(v)).getOrElse("")
+  }
 
-  override def visit(augAssign: AugAssign): String = ???
+  override def visit(augAssign: AugAssign): String = {
+    print(augAssign.target) +
+      " " + print(augAssign.op) + "= " +
+      print(augAssign.value)
+  }
 
   override def visit(forStmt: For): String = {
     "for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
@@ -589,10 +597,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(comprehension: Comprehension): String = {
     val prefix =
-      if (comprehension.is_async == 0) {
-        " for "
-      } else {
+      if (comprehension.is_async) {
         " async for "
+      } else {
+        " for "
       }
 
     prefix + print(comprehension.target) + " in " + print(comprehension.iter) +

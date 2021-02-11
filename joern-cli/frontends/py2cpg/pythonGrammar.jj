@@ -94,6 +94,18 @@ TOKEN: {
 | <ASSIGN: "=">
 | <COLON_ASSIGN: ":=">
 | <PLUS_ASSIGN: "+=">
+| <MINUS_ASSIGN: "-=">
+| <STAR_ASSIGN: "*=">
+| <AT_ASSIGN: "@=">
+| <DIV_ASSIGN: "/=">
+| <MOD_ASSIGN: "%=">
+| <BIT_AND_ASSIGN: "&=">
+| <BIT_OR_ASSIGN: "|=">
+| <BIT_XOR_ASSIGN: "^=">
+| <LSHIFT_ASSIGN: "<<=">
+| <RSHIFT_ASSIGN: ">>=">
+| <POW_ASSIGN: "**=">
+| <FLOOR_DIV_ASSIGN: "//=">
 | <EQ: "==">
 | <NEQ: "!=">
 | <LT: "<">
@@ -108,7 +120,6 @@ TOKEN: {
 | <DIV: "/">
 | <FLOOR_DIV: "//">
 | <MOD: "%">
-| <POW: "^^">
 | <INVERT: "~">
 | <LSHIFT: "<<">
 | <RSHIFT: ">>">
@@ -1163,55 +1174,62 @@ ArrayList<istmt> block(): {
 }
 
 istmt assignmentOrExpr(): {
-  Token assignToken;
-  iexpr lhsExpression;
-  iexpr expression = null;
-  iexpr annotationExpression = null;
-  boolean isPureNameLhs = false;
-  ArrayList<iexpr> expressions = new ArrayList<iexpr>();
-  Token lastAssignToken = null;
+  iexpr targetExpr;
+  iexpr expr = null;
+  iexpr valueExpr = null;
+  iexpr annotationExpr = null;
+  boolean isSimple = false;
+  ArrayList<iexpr> targets;
+  ioperator op;
 } {
-  lhsExpression = expressionsAsTuple() { expressions.add(lhsExpression); }
-  (<COLON> annotationExpression = expression()
-  )?
-  ((<ASSIGN> |<PLUS_ASSIGN>) {
-     if (lastAssignToken == null) {
-       lastAssignToken = token;
-     } else if (lastAssignToken.kind != ASSIGN || token.kind != ASSIGN) {
-       throw new ParseException("TODO");
-     }
-    }
-    expression = expressionsAsTuple() { expressions.add(expression); isPureNameLhs = token.kind == NAME; }
-  )* {
-    if (annotationExpression != null) {
-      boolean isSimple = isPureNameLhs;
-      if (expressions.size() > 1) {
-        iexpr value = expression;
-        return new AnnAssign(lhsExpression, annotationExpression, value, isSimple,
-         attributes(lhsExpression, token));
-      } else {
-        return new AnnAssign(lhsExpression, annotationExpression, isSimple,
-         attributes(lhsExpression, token));
+  targetExpr = starExpressions() { isSimple = token.kind == NAME; }
+  (
+    (
+      <COLON> annotationExpr = expression()
+      (
+        <ASSIGN> (valueExpr = yieldExpression() | valueExpr = starExpressions())
+      )?
+      {
+        return new AnnAssign(targetExpr, annotationExpr, valueExpr, isSimple,
+         attributes(targetExpr, token));
       }
-    }
-    if (expressions.size() == 1) {
-      return new Expr(lhsExpression);
-    }
-    iexpr value = expressions.remove(expressions.size() - 1);
-    if(lastAssignToken.kind == ASSIGN) {
-      return new Assign(expressions, value, attributes(lhsExpression, token));
-    } else {
-      ioperator op;
-      switch (lastAssignToken.kind) {
-        case PLUS_ASSIGN:
-          op = Add$.MODULE$;
-          break;
-        default:
-          throw new ParseException("Unexpected token kind.");
+    )
+  | (
+      (
+        <PLUS_ASSIGN> { op = Add$.MODULE$; }
+      | <MINUS_ASSIGN> { op = Sub$.MODULE$;}
+      | <STAR_ASSIGN> { op = Mult$.MODULE$;}
+      | <AT_ASSIGN> { op = MatMult$.MODULE$;}
+      | <DIV_ASSIGN> { op = Div$.MODULE$;}
+      | <MOD_ASSIGN> { op = Mod$.MODULE$;}
+      | <BIT_AND_ASSIGN> { op = BitAnd$.MODULE$;}
+      | <BIT_OR_ASSIGN> { op = BitOr$.MODULE$;}
+      | <BIT_XOR_ASSIGN> { op = BitXor$.MODULE$;}
+      | <LSHIFT_ASSIGN> { op = LShift$.MODULE$;}
+      | <RSHIFT_ASSIGN> { op = RShift$.MODULE$;}
+      | <POW_ASSIGN> { op = Pow$.MODULE$;}
+      | <FLOOR_DIV_ASSIGN> { op = FloorDiv$.MODULE$;}
+      )
+      (valueExpr = yieldExpression() | valueExpr = starExpressions())
+      { return new AugAssign(targetExpr, op, valueExpr, attributes(targetExpr, token)); }
+    )
+  | (
+      {
+        targets = new ArrayList<iexpr>();
+        targets.add(targetExpr);
       }
-      return new AugAssign(lhsExpression, op, value, attributes(lhsExpression, token));
-    }
-  }
+      (
+        <ASSIGN>
+        (expr = yieldExpression() | expr = starExpressions())
+        { targets.add(expr); }
+      )+
+      {
+        valueExpr = targets.remove(targets.size() - 1);
+        return new Assign(targets, valueExpr, attributes(targetExpr, token));
+      }
+    )
+  | { return new Expr(targetExpr); }
+  )
 }
 
 // Returns the expression list elements as tuple or
@@ -1983,13 +2001,13 @@ ArrayList<icomprehension> forIfClauses(): {
 }
 
 icomprehension forIfClause(): {
-  int isAsync = 0;
+  boolean isAsync = false;
   iexpr target;
   iexpr iter;
   ArrayList<iexpr> ifs = new ArrayList<iexpr>();
   iexpr ifExpr;
 } {
-  (<ASYNC> { isAsync = 1; })?
+  (<ASYNC> { isAsync = true; })?
   <FOR>
   target = starTargets()
   <IN>

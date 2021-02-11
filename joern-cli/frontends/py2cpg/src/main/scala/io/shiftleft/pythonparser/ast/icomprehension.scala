@@ -13,11 +13,11 @@ trait icomprehension extends iast {
 case class Comprehension(target: iexpr,
                          iter: iexpr,
                          ifs: Iterable[iexpr],
-                         is_async: Int) extends icomprehension {
+                         is_async: Boolean) extends icomprehension {
   def this(target: iexpr,
            iter: iexpr,
            ifs: util.ArrayList[iexpr],
-           is_async: Int) = {
+           is_async: Boolean) = {
     this(target, iter, ifs.asScala, is_async)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
