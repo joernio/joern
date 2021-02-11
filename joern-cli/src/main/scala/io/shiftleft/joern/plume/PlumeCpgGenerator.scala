@@ -17,10 +17,8 @@ object PlumeCpgGenerator {
     try {
       existing.foreach { inputPath =>
         val inFile = File(inputPath)
-        if (inFile.isDirectory) {
-          createCpgForDirectory(inputPath, config)
-        } else if (inFile.isRegularFile) {
-          createCpgForArchive(inputPath, config)
+        if (inFile.isDirectory || inFile.isRegularFile) {
+          createCpgForInputPath(inputPath, config)
         } else {
           Try { throw new RuntimeException(s"$inputPath is neither a file nor a directory") }
         }
@@ -31,8 +29,8 @@ object PlumeCpgGenerator {
     }
   }
 
-  private def createCpgForDirectory(inputPath: String, config: JoernParse.ParserConfig): Unit = {
-    println(s"Creating CPG for directory: $inputPath")
+  private def createCpgForInputPath(inputPath: String, config: JoernParse.ParserConfig): Unit = {
+    println(s"Creating CPG for: $inputPath")
     Using(DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]) { driver =>
       deleteIfExists(config.outputCpgFile)
       driver.setStorageLocation(config.outputCpgFile)
@@ -43,14 +41,6 @@ object PlumeCpgGenerator {
       case Success(_)   =>
       case Failure(exc) => throw exc
     }
-  }
-
-  private def createCpgForArchive(inputPath: String, config: JoernParse.ParserConfig): Unit = {
-    println("Archive detected. Extracting.")
-    val dir = File(inputPath).unzip()
-    dir.listRecursively.foreach(println)
-    createCpgForDirectory(dir.path.toString, config)
-    dir.delete()
   }
 
   private def deleteIfExists(fileName: String) = {
