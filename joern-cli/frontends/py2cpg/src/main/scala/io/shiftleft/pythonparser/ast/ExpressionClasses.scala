@@ -228,14 +228,14 @@ case class ListComp(elt: iexpr,
   }
 }
 
-case class Dict(keys: Iterable[iexpr],
+case class Dict(keys: Iterable[Option[iexpr]],
                 values: Iterable[iexpr],
                 lineno: Int,
                 col_offset: Int) extends iexpr {
   def this(keys: util.ArrayList[iexpr],
            values: util.ArrayList[iexpr],
            attributeProvider: AttributeProvider) = {
-    this(keys.asScala, values.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+    this(keys.asScala.map(Option.apply), values.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)

@@ -1714,6 +1714,7 @@ iexpr atom(): {
 | expression = string() { return expression; }
 | expression = listOrListComprehension() { return expression; }
 | expression = tupleOrGeneratorExpOrGroup() { return expression; }
+| expression = setOrDictOrSetCompOrDictComp() { return expression; }
 }
 
 // TODO so far only strings in its most basic form are supported.
@@ -1778,26 +1779,21 @@ iexpr starTarget(): {
 
 iexpr listOrListComprehension(): {
   Token startToken;
-  iexpr firstExpr = null;
-  iexpr expr;
+  iexpr expr = null;
   ArrayList<icomprehension> comprehensions = null;
   ArrayList<iexpr> expressions = null;
 } {
   <SQUARE_OPEN> { startToken = token; }
   (
     (
-      (firstExpr = namedExpression() | firstExpr = starredBitwiseOr())
+      (expr = namedExpression() | expr = starredBitwiseOr())
       (
-        (
-          comprehensions = forIfClauses()
-        )
+        (comprehensions = forIfClauses())
       |
         (
           {
-            if (expressions == null) {
-              expressions = new ArrayList<iexpr>();
-              expressions.add(firstExpr);
-            }
+            expressions = new ArrayList<iexpr>();
+            expressions.add(expr);
           }
           (LOOKAHEAD(2)
             <COMMA>
@@ -1814,7 +1810,7 @@ iexpr listOrListComprehension(): {
     if (comprehensions == null) {
       return new List(expressions, attributes(startToken, token));
     } else {
-      return new ListComp(firstExpr, comprehensions, attributes(startToken, token));
+      return new ListComp(expr, comprehensions, attributes(startToken, token));
     }
   }
 }
@@ -1822,8 +1818,7 @@ iexpr listOrListComprehension(): {
 iexpr tupleOrGeneratorExpOrGroup(): {
   Token startToken;
   iexpr yieldExpr = null;
-  iexpr firstExpr = null;
-  iexpr expr;
+  iexpr expr = null;
   ArrayList<icomprehension> comprehensions = null;
   ArrayList<iexpr> expressions = null;
   boolean isTuple = false;
@@ -1832,18 +1827,14 @@ iexpr tupleOrGeneratorExpOrGroup(): {
   (
     (yieldExpr = yieldExpression())
   | (
-      (firstExpr = namedExpression() | firstExpr = starredBitwiseOr())
+      (expr = namedExpression() | expr = starredBitwiseOr())
       (
-        (
-          comprehensions = forIfClauses()
-        )
+        (comprehensions = forIfClauses())
       |
         (
           {
-            if (expressions == null) {
-              expressions = new ArrayList<iexpr>();
-              expressions.add(firstExpr);
-            }
+            expressions = new ArrayList<iexpr>();
+            expressions.add(expr);
           }
           (LOOKAHEAD(2)
             <COMMA>
@@ -1861,11 +1852,124 @@ iexpr tupleOrGeneratorExpOrGroup(): {
     if (yieldExpr != null) {
       return yieldExpr;
     } else if (comprehensions != null) {
-      return new GeneratorExp(firstExpr, comprehensions, attributes(startToken, token));
+      return new GeneratorExp(expr, comprehensions, attributes(startToken, token));
     } else if (isTuple) {
       return new Tuple(expressions, attributes(startToken, token));
     } else {
-      return firstExpr;
+      return expr;
+    }
+  }
+}
+
+iexpr setOrDictOrSetCompOrDictComp(): {
+
+  Token startToken;
+  iexpr dictKeyOrSetValueExpr = null;
+  iexpr doubleStarExpr = null;
+  iexpr dictValueExpr = null;
+  ArrayList<iexpr> keyExpressions = new ArrayList<iexpr>();
+  ArrayList<iexpr> valueExpressions = new ArrayList<iexpr>();
+  ArrayList<icomprehension> comprehensions = null;
+  // If isSet is false it is a dict.
+  boolean isSet = true;
+} {
+  <CURLY_OPEN> { startToken = token; }
+  (
+    (
+      (
+        dictKeyOrSetValueExpr = expression()
+      | dictKeyOrSetValueExpr = starredBitwiseOr()
+      | (<DOUBLE_STAR> doubleStarExpr = expression() { isSet = false; })
+      )
+      (
+        <COLON> dictValueExpr = expression()
+        {
+          if (doubleStarExpr != null) {
+            throw new ParseException("TODO");
+          }
+          isSet = false;
+        }
+      )?
+      (
+        (comprehensions = forIfClauses())
+      | (
+          {
+            keyExpressions = new ArrayList<iexpr>();
+            valueExpressions = new ArrayList<iexpr>();
+            if (dictKeyOrSetValueExpr != null) {
+              keyExpressions.add(dictKeyOrSetValueExpr);
+            }
+            if (dictValueExpr != null) {
+              valueExpressions.add(dictValueExpr);
+            }
+            if (doubleStarExpr != null) {
+              keyExpressions.add(null);
+              valueExpressions.add(doubleStarExpr);
+            }
+          }
+          (LOOKAHEAD(2)
+            <COMMA>
+            (
+              (
+                dictKeyOrSetValueExpr = expression()
+                { keyExpressions.add(dictKeyOrSetValueExpr); doubleStarExpr = null;}
+              )
+            | (
+                dictKeyOrSetValueExpr = starredBitwiseOr()
+                { keyExpressions.add(dictKeyOrSetValueExpr); doubleStarExpr = null;}
+              )
+            | (
+                <DOUBLE_STAR> doubleStarExpr = expression()
+                {
+                  if (isSet) {
+                    throw new ParseException("TODO");
+                  }
+                  keyExpressions.add(null);
+                  valueExpressions.add(doubleStarExpr);
+                }
+              )
+            )
+            (
+              (
+                <COLON> dictValueExpr = expression()
+                {
+                  if (isSet) {
+                    throw new ParseException("TODO");
+                  }
+                  valueExpressions.add(dictValueExpr);
+                }
+              )
+            | {
+                if (!isSet && doubleStarExpr == null) {
+                  throw new ParseException("TODO");
+                }
+              }
+            )
+          )*
+          (<COMMA>)?
+        )
+      )
+    )
+  | {}
+  )
+  <CURLY_CLOSE>
+  {
+    if (isSet) {
+      if (comprehensions == null) {
+        return new Set(keyExpressions, attributes(startToken, token));
+      } else {
+        return new SetComp(dictKeyOrSetValueExpr, comprehensions, attributes(startToken, token));
+      }
+    } else {
+      if (comprehensions == null) {
+        return new Dict(keyExpressions, valueExpressions, attributes(startToken, token));
+      } else {
+        if (doubleStarExpr != null) {
+          throw new ParseException("TODO");
+        }
+        return new DictComp(dictKeyOrSetValueExpr, dictValueExpr, comprehensions,
+         attributes(startToken, token));
+      }
     }
   }
 }

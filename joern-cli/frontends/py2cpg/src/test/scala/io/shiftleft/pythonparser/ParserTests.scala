@@ -425,6 +425,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("[x for x in y if z if a if b]")
     testT("[x for x in y if z if a if b]")
     testT("[x for x in y for y in z]")
+    testT("[x for x in y if z for y in a]")
   }
 
   "tupleOrGeneratorExpOrGroup rule tests" in {
@@ -438,6 +439,34 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("(x for x in y)")
     testT("(x for x in y if z)")
     testT("(x for x in y for y in z)")
+  }
+
+  "setOrDictOrSetCompOrDictComp rule tests" in {
+    testT("{}")
+    testT("{x}")
+    testT("{x,}", "{x}")
+    testT("{x, y}")
+    testT("{x, y,}", "{x, y}")
+    testT("{x, y, z}")
+    testT("{x for x in y}")
+    testT("{x for x in y if z}")
+    testT("{x for x in y for y in z}")
+    testT("{x:1}")
+    testT("{x:1,}", "{x:1}")
+    testT("{x:1, y:2}")
+    testT("{x:1, y:2,}", "{x:1, y:2}")
+    testT("{**x}")
+    testT("{**x, **y}")
+    testT("{**x, y:1}")
+    testT("{**x, y:1, **z}")
+    testT("{**x, y:1, **z, a:2}")
+    testT("{x:1, **y, z:2, **a}")
+    testT("{x:1, **y}")
+    testT("{x:1, **y, z:2}")
+    testT("{x:1, **y, z:2, **a}")
+    testT("{x:1, **y, z:2, **a}")
+    testT("{x:y for (x,y) in z}")
+    testT("{x:y for x,y in z}", "{x:y for (x,y) in z}")
   }
 
   "extra" in {

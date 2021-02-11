@@ -245,8 +245,13 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(dict: Dict): String = {
     "{" + dict.keys.zip(dict.values).map { case (key, value) =>
-      print(key) + ":" + print(value).mkString(", ")
-    } + "}"
+      key match {
+        case Some(k) =>
+          print(k) + ":" + print(value)
+        case None =>
+          "**" + print(value)
+      }
+    }.mkString(", ") + "}"
   }
 
   override def visit(set: Set): String = {
