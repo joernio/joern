@@ -42,6 +42,7 @@ trait AstVisitor[T] {
   def visit(unaryOp: UnaryOp): T
   def visit(lambda: Lambda): T
   def visit(ifExp: IfExp): T
+  def visit(listComp: ListComp): T
   def visit(await: Await): T
   def visit(yieldExpr: Yield): T
   def visit(yieldFrom: YieldFrom): T
@@ -52,6 +53,7 @@ trait AstVisitor[T] {
   def visit(subscript: Subscript): T
   def visit(starred: Starred): T
   def visit(name: Name): T
+  def visit(list: List): T
   def visit(tuple: Tuple): T
   def visit(slice: Slice): T
 
@@ -116,4 +118,7 @@ trait AstVisitor[T] {
 
   def visit(withItem: iwithitem): T
   def visit(withItem: WithItem): T
+
+  def visit(comprehension: icomprehension): T
+  def visit(comprehension: Comprehension): T
 }

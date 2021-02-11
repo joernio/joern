@@ -1712,6 +1712,7 @@ iexpr atom(): {
 | <ELLIPSIS> { return new Constant(EllipsisConstant$.MODULE$, attributes(token, token)); }
 | <DECINTEGER> { return new Constant(new IntConstant(token.image), attributes(token, token)); }
 | expression = string() { return expression; }
+| expression = listOrListComprehension() { return expression; }
 }
 
 // TODO so far only strings in its most basic form are supported.
@@ -1774,4 +1775,70 @@ iexpr starTarget(): {
   }
 }
 
+iexpr listOrListComprehension(): {
+  Token startToken;
+  iexpr firstExpr = null;
+  iexpr expr;
+  ArrayList<icomprehension> comprehensions = null;
+  ArrayList<iexpr> expressions = null;
+} {
+  <SQUARE_OPEN> { startToken = token; }
+  (
+    (
+      (firstExpr = namedExpression() | firstExpr = starredBitwiseOr())
+      (
+        (
+          comprehensions = forIfClauses()
+        )
+      |
+        (
+          {
+            if (expressions == null) {
+              expressions = new ArrayList<iexpr>();
+              expressions.add(firstExpr);
+            }
+          }
+          (LOOKAHEAD(2)
+            <COMMA>
+            (expr = namedExpression() | expr = starredBitwiseOr()) { expressions.add(expr); }
+          )*
+          (<COMMA>)?
+        )
+      )
+    )
+  | { expressions = new ArrayList<iexpr>(); }
+  )
+  <SQUARE_CLOSE>
+  {
+    if (comprehensions == null) {
+      return new List(expressions, attributes(startToken, token));
+    } else {
+      return new ListComp(firstExpr, comprehensions, attributes(startToken, token));
+    }
+  }
+}
+
+ArrayList<icomprehension> forIfClauses(): {
+  ArrayList<icomprehension> comprehensions = new ArrayList<icomprehension>();
+  icomprehension comprehension;
+} {
+  (comprehension = forIfClause() { comprehensions.add(comprehension); })+
+  { return comprehensions; }
+}
+
+icomprehension forIfClause(): {
+  int isAsync = 0;
+  iexpr target;
+  iexpr iter;
+  ArrayList<iexpr> ifs = new ArrayList<iexpr>();
+  iexpr ifExpr;
+} {
+  (<ASYNC> { isAsync = 1; })?
+  <FOR>
+  target = starTargets()
+  <IN>
+  iter = disjunction()
+  (<IF> ifExpr = disjunction() { ifs.add(ifExpr); })*
+  { return new Comprehension(target, iter, ifs, isAsync); }
+}
 

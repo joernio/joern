@@ -1,5 +1,6 @@
 package io.shiftleft.pythonparser
 import io.shiftleft.pythonparser.ast._
+import scala.collection.immutable
 
 class AstPrinter(indentStr: String) extends AstVisitor[String] {
   def print(astNode: iast): String = {
@@ -242,6 +243,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     print(ifExp.body) + " if " + print(ifExp.test) + " else " + print(ifExp.orElse)
   }
 
+  override def visit(listComp: ListComp): String = {
+    "[" + print(listComp.elt) + listComp.generators.map(print).mkString("") + "]"
+  }
+
   override def visit(await: Await): String = {
     "await " + print(await.value)
   }
@@ -284,6 +289,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(name: Name): String = {
     name.id
+  }
+
+  override def visit(list: List): String = {
+    "[" + list.elts.map(print).mkString(", ") + "]"
   }
 
   override def visit(tuple: Tuple): String = {
@@ -488,7 +497,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     var result = ""
     var separatorString = ""
     val combinedPosArgSize = arguments.posonlyargs.size + arguments.args.size
-    val defaultArgs = List.fill(combinedPosArgSize - arguments.defaults.size)(None) ++
+    val defaultArgs = immutable.List.fill(combinedPosArgSize - arguments.defaults.size)(None) ++
       arguments.defaults.map(Option.apply)
 
     if (arguments.posonlyargs.nonEmpty) {
@@ -546,5 +555,19 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(withItem: WithItem): String = {
     print(withItem.context_expr) + withItem.optional_vars.map(o => " as " + print(o)).getOrElse("")
+  }
+
+  override def visit(comprehension: icomprehension): String = ???
+
+  override def visit(comprehension: Comprehension): String = {
+    val prefix =
+      if (comprehension.is_async == 0) {
+        " for "
+      } else {
+        " async for "
+      }
+
+    prefix + print(comprehension.target) + " in " + print(comprehension.iter) +
+      comprehension.ifs.map(i => " if " + print(i)).mkString("")
   }
 }

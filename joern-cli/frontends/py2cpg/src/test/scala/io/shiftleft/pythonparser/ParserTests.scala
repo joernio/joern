@@ -414,6 +414,19 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("lambda **x, : e", "lambda **x: e")
   }
 
+  "listOrListComprehension rule tests" in {
+    testT("[]")
+    testT("[x]")
+    testT("[x, y]")
+    testT("[x, y, z]")
+    testT("[x for x in y]")
+    testT("[x for x in y if z]")
+    testT("[x for x in y if z if a]")
+    testT("[x for x in y if z if a if b]")
+    testT("[x for x in y if z if a if b]")
+    testT("[x for x in y for y in z]")
+  }
+
   "extra" in {
   }
 }

@@ -201,3 +201,29 @@ case class Lambda(arg: iarguments, body: iexpr, lineno: Int, col_offset: Int) ex
     visitor.visit(this)
   }
 }
+
+case class List(elts: Iterable[iexpr],
+                lineno: Int,
+                col_offset: Int) extends iexpr {
+  def this(elts: util.ArrayList[iexpr],
+           attributeProvider: AttributeProvider) = {
+    this(elts.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+case class ListComp(elt: iexpr,
+                    generators: Iterable[icomprehension],
+                    lineno: Int,
+                    col_offset: Int) extends iexpr {
+  def this(elt: iexpr,
+           generators: util.ArrayList[icomprehension],
+           attributeProvider: AttributeProvider) = {
+    this(elt, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
