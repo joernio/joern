@@ -312,6 +312,55 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |    y
         |z""".stripMargin)
     testT("if True:\n\t x\n \t y", "if True:\n\tx\n\ty")
+    testS(
+      """if True:
+        |  z = (x
+        |,y)
+        |a""".stripMargin,
+      """if True:
+        |  z = (x,y)
+        |a""".stripMargin,
+    )
+  }
+
+  "implicit line joining tests" in {
+    testS(
+      """if True:
+        |  z = (x
+        |,y)
+        |  a""".stripMargin,
+      """if True:
+        |  z = (x,y)
+        |  a""".stripMargin,
+    )
+    testS(
+      """if True:
+        |  z = {x
+        |,y}
+        |  a""".stripMargin,
+      """if True:
+        |  z = {x, y}
+        |  a""".stripMargin,
+    )
+    testS(
+      """if True:
+        |  z = [x
+        |,y]
+        |  a""".stripMargin,
+      """if True:
+        |  z = [x, y]
+        |  a""".stripMargin,
+    )
+    testS(
+      """if True:
+        |  z = [(x
+        |,y)
+        |   ]
+        |  a""".stripMargin,
+      """if True:
+        |  z = [(x,y)]
+        |  a""".stripMargin,
+    )
   }
 
   "inversion rule tests" in {
