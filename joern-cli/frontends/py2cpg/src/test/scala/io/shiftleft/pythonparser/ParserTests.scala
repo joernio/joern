@@ -387,6 +387,15 @@ class ParserTests extends AnyFreeSpec with Matchers {
     )
   }
 
+  "multi character new line tests" in {
+    testT("if True:\n\r\tx", "if True:\n\tx")
+    testT("if True:\r\n\tx", "if True:\n\tx")
+    testT("if True:\n\n\r\tx", "if True:\n\tx")
+    testT("if True:\n\r\n\tx", "if True:\n\tx")
+    testT("if True:\n\t(x,\n\ry)", "if True:\n\t(x,y)")
+    testT("if True:\n\t(x,\r\ny)", "if True:\n\t(x,y)")
+  }
+
   "inversion rule tests" in {
     testT("not x")
     testT("not not x")

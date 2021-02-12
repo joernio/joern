@@ -122,22 +122,6 @@ TOKEN: {
 | <DOUBLE_STAR: "**">
 }
 
-SKIP: {
-  <SPACE: " " | "\t">
-| <SKIPPED_NEWLINE: "\n" | "\r"> {
-    if (openParentheses == 0) {
-      SwitchTo(NEWLINE_EMIT);
-    }
-  }
-| <LINE_JOIN: "\\" ("\n" | "\r")>
-}
-
-<NEWLINE_EMIT> TOKEN: {
-  <NEWLINE: ""> {
-    SwitchTo(INDENT_CHECK);
-  }
-}
-
 // Number tokens:
 TOKEN: {
   <DECINTEGER: ["1" - "9"] (("_")? <DIGIT>)* | "0" (("_")? "0")*>
@@ -147,6 +131,21 @@ TOKEN: {
 TOKEN: {
   <NAME: <LETTER> (<LETTER> | <DIGIT>)*>
 | <LETTER: ["a" - "z", "A" - "Z"] >
+}
+
+SKIP: {
+  <SPACE: " " | "\t">
+  // Here and for all other places where we match newline,
+  // it is not necessary to separately match the combined
+  // versions like "\n\r". This is ok because interpreting
+  // the second character as a separate newline is always
+  // fine because bland lines are ignored.
+| <SKIPPED_NEWLINE: "\n" | "\r"> {
+    if (openParentheses == 0) {
+      SwitchTo(NEWLINE_EMIT);
+    }
+  }
+| <LINE_JOIN: "\\" ("\n" | "\r")>
 }
 
 <INDENT_CHECK> SKIP: {
@@ -216,6 +215,15 @@ TOKEN: {
       // We take care of not looping forever by decrementing
       // dedentsToEmit.
       jjbeenHere[DEDENT_EMIT] = false;
+  }
+}
+
+<NEWLINE_EMIT> TOKEN: {
+  // Defining this as ""|"" causes javaCC to produce better readable debug output
+  // in the form a proper tokenImage string <MISSDENT> instead of "". This has no
+  // impact on the generated matching code in the state.
+  <NEWLINE: "" | ""> {
+    SwitchTo(INDENT_CHECK);
   }
 }
 
