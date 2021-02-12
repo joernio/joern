@@ -124,12 +124,12 @@ TOKEN: {
 
 SKIP: {
   <SPACE: " " | "\t">
-| <SKIPPED_NEWLINE: "\n" | "\r" | "\n\r"> {
+| <SKIPPED_NEWLINE: "\n" | "\r"> {
     if (openParentheses == 0) {
       SwitchTo(NEWLINE_EMIT);
     }
   }
-| <LINE_JOIN: "\\" ("\n" | "\r" | "\n\r")>
+| <LINE_JOIN: "\\" ("\n" | "\r")>
 }
 
 <NEWLINE_EMIT> TOKEN: {
@@ -152,7 +152,7 @@ TOKEN: {
 <INDENT_CHECK> SKIP: {
   <INDENT_CHECK_SPACE: " "> { currentIndent += 1; }
 | <INDENT_CHECK_TAB: "\t">  { currentIndent = currentIndent / 8 + 8; }
-| <INDENT_CHECK_NEWLINE: "\n" | "\r" | "\n\r"> { currentIndent = 0; }
+| <INDENT_CHECK_NEWLINE: "\n" | "\r"> { currentIndent = 0; }
 | <INDENT_CHECK_END: ~[]> {
     // Rewind input stream by the one consumed character because we dont
     // really wont to skip it. We just used it as the end marker for the
