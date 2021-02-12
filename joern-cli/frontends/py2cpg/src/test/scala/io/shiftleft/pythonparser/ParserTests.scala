@@ -323,6 +323,18 @@ class ParserTests extends AnyFreeSpec with Matchers {
     )
   }
 
+  "explicit line joining tests" in {
+    testS(
+      """if True:
+        |  z = x + \
+        |y
+        |  a""".stripMargin,
+      """if True:
+        |  z = x + y
+        |  a""".stripMargin,
+    )
+  }
+
   "implicit line joining tests" in {
     testS(
       """if True:

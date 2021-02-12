@@ -124,11 +124,12 @@ TOKEN: {
 
 SKIP: {
   <SPACE: " " | "\t">
-|  <SKIPPED_NEWLINE: "\n" | "\r" | "\n\r"> {
+| <SKIPPED_NEWLINE: "\n" | "\r" | "\n\r"> {
     if (openParentheses == 0) {
       SwitchTo(NEWLINE_EMIT);
     }
   }
+| <LINE_JOIN: "\\" ("\n" | "\r" | "\n\r")>
 }
 
 <NEWLINE_EMIT> TOKEN: {
