@@ -152,6 +152,7 @@ TOKEN: {
 <INDENT_CHECK> SKIP: {
   <INDENT_CHECK_SPACE: " "> { currentIndent += 1; }
 | <INDENT_CHECK_TAB: "\t">  { currentIndent = currentIndent / 8 + 8; }
+| <INDENT_CHECK_NEWLINE: "\n" | "\r" | "\n\r"> { currentIndent = 0; }
 | <INDENT_CHECK_END: ~[]> {
     // Rewind input stream by the one consumed character because we dont
     // really wont to skip it. We just used it as the end marker for the
@@ -245,10 +246,9 @@ Module module(): {
   { return new Module(stmts); }
 }
 
-// This is the "statements" rule from the CPython 3.9 grammar with modifications:
-// 1. Handle empty lines. CPython seems to handle those in the lexer.
-// 2. Also consume the <DEDENT> or <EOF> which must follow.
-//    We do this for easy of error handling.
+// This is the "statements" rule from the CPython 3.9 grammar with a modification:
+// Also consume the <DEDENT> or <EOF> which must follow.
+// We do this for easy of error handling.
 ArrayList<istmt> statementsAndDedentOrEof(): {
   ArrayList<istmt> allStmts = new ArrayList<istmt>();
   ArrayList<istmt> simpleStmts;
@@ -258,7 +258,6 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
     (
       stmt = compoundStatement() { allStmts.add(stmt); }
     | simpleStmts = simpleStatement() { allStmts.addAll(simpleStmts); }
-    | <NEWLINE>
     )+
     (<DEDENT> | <EOF>)
     { return allStmts; }

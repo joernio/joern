@@ -375,6 +375,18 @@ class ParserTests extends AnyFreeSpec with Matchers {
     )
   }
 
+  "blank line tests" in {
+    testS(
+      """if True:
+        |  z = x + y
+        |
+        |  a""".stripMargin,
+      """if True:
+        |  z = x + y
+        |  a""".stripMargin,
+    )
+  }
+
   "inversion rule tests" in {
     testT("not x")
     testT("not not x")
