@@ -304,6 +304,15 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("x and y or z")
   }
 
+  "comment tests" in {
+    testT("x#comment", "x")
+    testT("x#comment\ny", "x\ny")
+    testT("x#comment\ny#comment\nz", "x\ny\nz")
+    testT("x\n#comment", "x")
+    testT("x\n  #comment", "x")
+    testT("x\n  #comment\ny", "x\ny")
+  }
+
   "indentation tests" in {
     testS(
       """if True:

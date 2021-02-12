@@ -148,6 +148,15 @@ SKIP: {
 | <LINE_JOIN: "\\" ("\n" | "\r")>
 }
 
+SPECIAL_TOKEN: {
+  <COMMENT: "#" (~["\n", "\r"])*>
+}
+
+
+<INDENT_CHECK> SPECIAL_TOKEN: {
+  <INDENT_CHECK_COMMENT: "#" (~["\n", "\r"])*>
+}
+
 <INDENT_CHECK> SKIP: {
   <INDENT_CHECK_SPACE: " "> { currentIndent += 1; }
 | <INDENT_CHECK_TAB: "\t">  { currentIndent = currentIndent / 8 + 8; }
