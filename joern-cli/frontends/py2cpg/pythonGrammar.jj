@@ -6,7 +6,7 @@ PARSER_BEGIN(PythonParser)
 package io.shiftleft.pythonparser;
 import java.util.ArrayList;
 import java.util.Collections;
-import io.shiftleft.pythonparser.IndentStack;
+import java.util.Stack;
 import io.shiftleft.pythonparser.ast.*;
 public class PythonParser {
   static class BoxedObject<T> {
@@ -26,28 +26,11 @@ PARSER_END(PythonParser)
 
 TOKEN_MGR_DECLS:
 {
-  int indentPos = 0;
+  int currentIndent = 0;
   int dedentsToEmit;
-  boolean createIndentToken = false;
-  boolean createMissdentToken = false;
-  IndentStack indentStack = new IndentStack();
-
-  void indentCheck(int indentKind) {
-    if (createMissdentToken) {
-      // If the indentation is already wrong we just consume
-      // further indentation tokens and wait for the first
-      // non indent token.
-      return;
-    }
-    if (indentPos < indentStack.size()) {
-      if (indentStack.getKind(indentPos) != indentKind) {
-        createMissdentToken = true;
-      }
-    } else {
-      indentStack.push(indentKind);
-      createIndentToken = true;
-    }
-    indentPos += 1;
+  Stack<Integer> indentStack = new Stack<Integer>();
+  {
+    indentStack.push(0);
   }
 }
 
@@ -154,8 +137,8 @@ TOKEN: {
 }
 
 <INDENT_CHECK> SKIP: {
-  <INDENT_CHECK_SPACE: " "> { indentCheck(IndentStack$.MODULE$.SPACE()); }
-| <INDENT_CHECK_TAB: "\t">  { indentCheck(IndentStack$.MODULE$.TAB()); }
+  <INDENT_CHECK_SPACE: " "> { currentIndent += 1; }
+| <INDENT_CHECK_TAB: "\t">  { currentIndent = currentIndent / 8 + 8; }
 | <INDENT_CHECK_END: ~[]> {
     // Rewind input stream by the one consumed character because we dont
     // really wont to skip it. We just used it as the end marker for the
@@ -163,32 +146,28 @@ TOKEN: {
     // so we are a little bit of the beaten path here but so far it works.
     input_stream.backup(1);
 
-    if (createMissdentToken) {
-      createMissdentToken = false;
-      SwitchTo(MISSDENT_EMIT);
-    } else if (createIndentToken) {
-      createIndentToken = false;
-      indentStack.markCodeLevel();
+    int lastIndent = indentStack.peek();
+    if (currentIndent > lastIndent) {
+      indentStack.push(currentIndent);
       SwitchTo(INDENT_EMIT);
-    } else if (indentPos < indentStack.size()) {
-      if (indentPos == 0 || indentStack.isCodeLevel(indentPos - 1)) {
-        assert(dedentsToEmit == 0);
-        for (int i = indentStack.size() - 1; i >= indentPos; i--) {
-          if (indentStack.isCodeLevel(i)) {
-            dedentsToEmit += 1;
-          }
-          indentStack.pop();
-        }
+    } else if (currentIndent < lastIndent) {
+      assert(dedentsToEmit == 0);
+
+      while (currentIndent < lastIndent) {
+        dedentsToEmit += 1;
+        indentStack.pop();
+        lastIndent = indentStack.peek();
+      }
+
+      if (currentIndent == lastIndent) {
         SwitchTo(DEDENT_EMIT);
       } else {
-        // If we dont end up on one of the previous indentation levels
-        // while dedenting, this is a missdent.
         SwitchTo(MISSDENT_EMIT);
       }
     } else {
       SwitchTo(DEFAULT);
     }
-    indentPos = 0;
+    currentIndent = 0;
   }
 }
 

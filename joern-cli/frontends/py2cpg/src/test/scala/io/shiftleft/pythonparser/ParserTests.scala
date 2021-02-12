@@ -304,6 +304,16 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("x and y or z")
   }
 
+  "indentation tests" in {
+    testS(
+      """if True:
+        |  x
+        |  if True:
+        |    y
+        |z""".stripMargin)
+    testT("if True:\n\t x\n \t y", "if True:\n\tx\n\ty")
+  }
+
   "inversion rule tests" in {
     testT("not x")
     testT("not not x")
