@@ -342,7 +342,7 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
     while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
     }
-    ErrorStatement errorStmt = new ErrorStatement(attributes(errorStartToken, token));
+    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
     errors.add(errorStmt);
     allStmts.add(errorStmt);
     if (token.kind != EOF) {
@@ -387,7 +387,7 @@ ArrayList<istmt> simpleStatement(): {
     while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
     }
-    ErrorStatement errorStmt = new ErrorStatement(attributes(errorStartToken, token));
+    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
     errors.add(errorStmt);
     stmts.add(errorStmt);
     return stmts;
@@ -1074,7 +1074,7 @@ ClassDef classDef(ArrayList<iexpr> decorators): {
   ArrayList<istmt> blockStmts;
 } {
   <CLASS> { startToken = token; } <NAME> { name = token.image; }
-  <PAREN_OPEN> arguments(bases, keywords) <PAREN_CLOSE>
+  (<PAREN_OPEN> arguments(bases, keywords) <PAREN_CLOSE>)?
   <COLON>
   blockStmts = block()
   { return new ClassDef(name, bases, keywords, blockStmts, decorators,
@@ -1688,6 +1688,8 @@ iexpr primary(): {
   { return expression; }
 }
 
+// Does no sanity checks like only allowing one GeneratorExp argument or only allowing ** after
+// positional arguments. For our purposes thats fine.
 void arguments(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs): {
 } {
   (
@@ -1700,11 +1702,11 @@ void arguments(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs)
   )?
 }
 
-// TODO comp_for
 void argument(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs): {
   iexpr expression;
   iexpr valueExpression;
   Token startToken;
+  ArrayList<icomprehension> comprehensions;
 } {
   (
     expression = starredExpression() { positionalArgs.add(expression); }
@@ -1721,6 +1723,8 @@ void argument(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs):
       }
     | <COLON_ASSIGN> valueExpression = expression()
       { positionalArgs.add(new NamedExpr(expression, valueExpression, attributes(expression, token))); }
+    | comprehensions = forIfClauses()
+      { positionalArgs.add(new GeneratorExp(expression, comprehensions, attributes(expression, token))); }
     | { positionalArgs.add(expression); }
     )
   )

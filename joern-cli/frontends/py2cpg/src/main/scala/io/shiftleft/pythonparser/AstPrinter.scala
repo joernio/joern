@@ -306,9 +306,15 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(call: Call): String = {
-    val optionArgEndComma = if (call.args.nonEmpty && call.keywords.nonEmpty) ", " else ""
-    print(call.func) + "(" + call.args.map(print).mkString(", ") + optionArgEndComma +
-      call.keywords.map(print).mkString(", ") + ")"
+    if (call.args.size == 1 && call.args.head.isInstanceOf[GeneratorExp]) {
+      // Special case in order to avoid double parenthesis since GeneratorExp adds a
+      // set of parenthesis on its own.
+      print(call.func) + print(call.args.head)
+    } else {
+      val optionArgEndComma = if (call.args.nonEmpty && call.keywords.nonEmpty) ", " else ""
+      print(call.func) + "(" + call.args.map(print).mkString(", ") + optionArgEndComma +
+        call.keywords.map(print).mkString(", ") + ")"
+    }
   }
 
   override def visit(constant: Constant): String = {

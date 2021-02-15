@@ -155,6 +155,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
     }
 
     "class def statement tests" in {
+      testT("class x:\n\tpass", "class x():\n\tpass")
       testT("class x():\n\tpass")
       testT("class x(y):\n\tpass")
       testT("class x(y, z):\n\tpass")
@@ -495,6 +496,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("func(**x)")
     testT("func(**x, **y)")
     testT("func(x, y = z, **a)")
+    testT("func(x for x in y)")
     testT("obj[x]")
     testT("obj[x, y]", "obj[(x,y)]")
     testT("obj[:]")

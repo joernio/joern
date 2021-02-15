@@ -12,9 +12,9 @@ trait istmt extends iast with iattributes {
   }
 }
 
-case class ErrorStatement(lineno: Int, col_offset: Int) extends istmt {
-  def this(attributeProvider: AttributeProvider) = {
-    this(attributeProvider.lineno, attributeProvider.col_offset)
+case class ErrorStatement(exception: Exception, lineno: Int, col_offset: Int) extends istmt {
+  def this(exception: Exception, attributeProvider: AttributeProvider) = {
+    this(exception, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
