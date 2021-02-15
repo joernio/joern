@@ -8,7 +8,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
   // expected is optional and if present the printed AST is compare against it
   // instead of code.
   def test(code: String, expected: String, indentStr: String): Unit = {
-    val ast = PyParser.parse(code)
+    val ast = new PyParser().parse(code)
     val compareTo = if (expected != null) expected else code
 
     val astPrinter = new AstPrinter(indentStr)

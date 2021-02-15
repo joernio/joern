@@ -21,6 +21,11 @@ public class PythonParser {
   NodeAttributeProvider attributes(iattributes attributeAstNode, Token endToken) {
     return new NodeAttributeProvider(attributeAstNode);
   }
+
+  private ArrayList<ErrorStatement> errors = new ArrayList<ErrorStatement>();
+  ArrayList<ErrorStatement> getErrors() {
+    return errors;
+  }
 }
 PARSER_END(PythonParser)
 
@@ -337,7 +342,9 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
     while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
     }
-    allStmts.add(new ErrorStatement(attributes(errorStartToken, token)));
+    ErrorStatement errorStmt = new ErrorStatement(attributes(errorStartToken, token));
+    errors.add(errorStmt);
+    allStmts.add(errorStmt);
     if (token.kind != EOF) {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
       allStmts.addAll(postRecoverStmts);
@@ -380,7 +387,9 @@ ArrayList<istmt> simpleStatement(): {
     while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
     }
-    stmts.add(new ErrorStatement(attributes(errorStartToken, token)));
+    ErrorStatement errorStmt = new ErrorStatement(attributes(errorStartToken, token));
+    errors.add(errorStmt);
+    stmts.add(errorStmt);
     return stmts;
   }
 }
