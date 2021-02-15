@@ -249,10 +249,14 @@ TOKEN: {
     { input_stream.backup(image.length() - 2); }
 | <UNICODE_STRING_PREFIX: ("u" | "U") ("\"" | "'" | "\"\"\"" | "'''")>
     { input_stream.backup(image.length() - 1); }
-| <RAW_FROMAT_STRING_PREFIX:
+| <FORMAT_STRING_PREFIX:
+    ("f" | "F")
+    ("\"" | "'" | "\"\"\"" | "'''")>
+    { input_stream.backup(image.length() - 1); }
+| <RAW_FORMAT_STRING_PREFIX:
     ("rf" | "rF" | "Rf" | "RF" | "fr" | "fR" | "Fr" | "FR")
     ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(1); SwitchTo(FORMAT_STRING_LEX); }
+    { input_stream.backup(image.length() - 1); }
 }
 
 MORE: {
@@ -1831,6 +1835,8 @@ Constant string(): {
   | <UNICODE_STRING_PREFIX> { isUnicode = true; }
   | <BYTE_STRING_PREFIX> { isByte = true; }
   | <RAW_BYTE_STRING_PREFIX> { isRaw = true; isByte = true; }
+  | <FORMAT_STRING_PREFIX>
+  | <RAW_FORMAT_STRING_PREFIX>
   )?
   (
     <SINGLE_DOUBLE_QUOTE_STRING>
