@@ -285,15 +285,15 @@ class ParserTests extends AnyFreeSpec with Matchers {
   }
 
   "error recovery tests" in {
-    testT("<error>", "")
-    testT("x;<error>", "x")
-    testT("<error>;x", "x")
-    testT("x;<error>;y", "x\ny")
-    testT("x;<error>;y;<error>", "x\ny")
-    testT("x\n<error>", "x")
-    testT("<error>\nx", "x")
-    testT("x\n<error>\ny", "x\ny")
-    testT("x\n<error>\ny\n<error>", "x\ny")
+    testT("<someErr>", "<error>")
+    testT("x;<someErr>", "x\n<error>")
+    testT("<someErr>;x", "<error>\nx")
+    testT("x;<someErr>;y", "x\n<error>\ny")
+    testT("x;<someErr>;y;<someErr>", "x\n<error>\ny\n<error>")
+    testT("x\n<someErr>", "x\n<error>")
+    testT("<someErr>\nx", "<error>\nx")
+    testT("x\n<someErr>\ny", "x\n<error>\ny")
+    testT("x\n<someErr>\ny\n<someErr>", "x\n<error>\ny\n<error>")
   }
 
   "parser tests" in {

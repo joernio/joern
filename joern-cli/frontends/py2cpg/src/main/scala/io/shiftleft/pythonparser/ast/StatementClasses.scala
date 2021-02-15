@@ -12,7 +12,14 @@ trait istmt extends iast with iattributes {
   }
 }
 
-case class ErrorStatement(lineno: Int, col_offset: Int) extends istmt
+case class ErrorStatement(lineno: Int, col_offset: Int) extends istmt {
+  def this(attributeProvider: AttributeProvider) = {
+    this(attributeProvider.lineno, attributeProvider.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 
 case class Module(stmts: Iterable[istmt]) extends imod {
   def this(stmts: util.ArrayList[istmt]) = {

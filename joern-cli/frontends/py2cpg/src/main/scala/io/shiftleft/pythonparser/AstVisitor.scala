@@ -9,6 +9,7 @@ trait AstVisitor[T] {
   def visit(module: Module): T
 
   def visit(stmt: istmt): T
+  def visit(errorStatement: ErrorStatement): T
   def visit(functionDef: FunctionDef): T
   def visit(functionDef: AsyncFunctionDef): T
   def visit(classDef: ClassDef): T

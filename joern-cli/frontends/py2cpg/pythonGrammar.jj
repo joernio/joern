@@ -279,9 +279,12 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
     (<DEDENT> | <EOF>)
     { return allStmts; }
   } catch (ParseException exception) {
-    do {
+    getNextToken();
+    Token errorStartToken = token;
+    while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
-    } while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF);
+    }
+    allStmts.add(new ErrorStatement(attributes(errorStartToken, token)));
     if (token.kind != EOF) {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
       allStmts.addAll(postRecoverStmts);
@@ -319,9 +322,12 @@ ArrayList<istmt> simpleStatement(): {
       return stmts;
     }
   } catch (ParseException exception) {
-    do {
+    getNextToken();
+    Token errorStartToken = token;
+    while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
-    } while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF);
+    }
+    stmts.add(new ErrorStatement(attributes(errorStartToken, token)));
     return stmts;
   }
 }
