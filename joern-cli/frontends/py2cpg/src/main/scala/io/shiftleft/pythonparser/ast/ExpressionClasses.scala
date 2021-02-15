@@ -297,3 +297,19 @@ case class GeneratorExp(elt: iexpr,
     visitor.visit(this)
   }
 }
+
+// This class is not part of the CPython AST definition at
+// https://docs.python.org/3/library/ast.html#ast.Constant
+// But since we do not want to combine strings like CPython does, we need
+// this extra kind of expression.
+// A StringExpList must always have at least 2 elements and its elements must
+// be either a Constant which contains a StringConstant or a JoinedString.
+case class StringExpList(elts: Iterable[iexpr], lineno: Int, col_offset: Int) extends iexpr {
+  assert(elts.size >= 2)
+  def this(elts: util.ArrayList[iexpr]) = {
+    this(elts.asScala, elts.asScala.head.lineno, elts.asScala.head.col_offset)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}

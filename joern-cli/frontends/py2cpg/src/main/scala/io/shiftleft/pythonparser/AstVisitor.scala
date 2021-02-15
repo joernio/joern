@@ -62,6 +62,7 @@ trait AstVisitor[T] {
   def visit(list: List): T
   def visit(tuple: Tuple): T
   def visit(slice: Slice): T
+  def visit(stringExpList: StringExpList): T
 
   def visit(alias: ialias): T
   def visit(alias: Alias): T

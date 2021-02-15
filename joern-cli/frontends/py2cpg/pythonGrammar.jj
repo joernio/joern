@@ -237,16 +237,65 @@ SPECIAL_TOKEN: {
 }
 
 // String tokens:
+// TODO Format strings.
+TOKEN: {
+  <RAW_STRING_PREFIX: ("r" | "R") ("\"" | "'" | "\"\"\"" | "'''")>
+    { input_stream.backup(image.length() - 1); }
+| <BYTE_STRING_PREFIX: ("b" | "B") ("\"" | "'" | "\"\"\"" | "'''")>
+    { input_stream.backup(image.length() - 1); }
+| <RAW_BYTE_STRING_PREFIX:
+    ("rb" | "rB" | "Rb" | "RB" | "br" | "bR" | "Br" | "BR")
+    ("\"" | "'" | "\"\"\"" | "'''")>
+    { input_stream.backup(image.length() - 2); }
+| <UNICODE_STRING_PREFIX: ("u" | "U") ("\"" | "'" | "\"\"\"" | "'''")>
+    { input_stream.backup(image.length() - 1); }
+| <RAW_FROMAT_STRING_PREFIX:
+    ("rf" | "rF" | "Rf" | "RF" | "fr" | "fR" | "Fr" | "FR")
+    ("\"" | "'" | "\"\"\"" | "'''")>
+    { input_stream.backup(1); SwitchTo(FORMAT_STRING_LEX); }
+}
+
 MORE: {
-  <DOUBLE_QUOTE: "\"">:  STRING_LEX
+  <SINGLE_DOUBLE_QUOTE: "\"">:  SINGLE_DOUBLE_QUOTE_STRING_LEX
+| <SINGLE_SINGLE_QUOTE: "'">:  SINGLE_SINGLE_QUOTE_STRING_LEX
+| <TRIPLE_DOUBLE_QUOTE: "\"\"\"">:  TRIPLE_DOUBLE_QUOTE_STRING_LEX
+| <TRIPLE_SINGLE_QUOTE: "'''">:  TRIPLE_SINGLE_QUOTE_STRING_LEX
 }
 
-<STRING_LEX> MORE: {
-  <STRING_CONTENT: ~["\""]>
+<SINGLE_DOUBLE_QUOTE_STRING_LEX> TOKEN: {
+  <SINGLE_DOUBLE_QUOTE_STRING: "\"">: DEFAULT
 }
 
-<STRING_LEX> TOKEN: {
-  <STRING: "\"">: DEFAULT
+<SINGLE_DOUBLE_QUOTE_STRING_LEX> MORE: {
+  <SINGLE_DOUBLE_QUOTE_STRING_CONTENT: ~[]>
+}
+
+<SINGLE_SINGLE_QUOTE_STRING_LEX> TOKEN: {
+  <SINGLE_SINGLE_QUOTE_STRING: "'">: DEFAULT
+}
+
+<SINGLE_SINGLE_QUOTE_STRING_LEX> MORE: {
+  <SINGLE_SINGLE_QUOTE_STRING_CONTENT: ~[]>
+}
+
+<TRIPLE_DOUBLE_QUOTE_STRING_LEX> TOKEN: {
+  <TRIPLE_DOUBLE_QUOTE_STRING: "\"\"\"">: DEFAULT
+}
+
+<TRIPLE_DOUBLE_QUOTE_STRING_LEX> MORE: {
+  <TRIPLE_DOUBLE_QUOTE_STRING_CONTENT: ~[]>
+}
+
+<TRIPLE_SINGLE_QUOTE_STRING_LEX> TOKEN: {
+  <TRIPLE_SINGLE_QUOTE_STRING: "'''">: DEFAULT
+}
+
+<TRIPLE_SINGLE_QUOTE_STRING_LEX> MORE: {
+  <TRIPLE_SINGLE_QUOTE_STRING_CONTENT: ~[]>
+}
+
+<FORMAT_STRING_LEX> TOKEN: {
+  <FSTRING: "">
 }
 
 
@@ -1743,16 +1792,54 @@ iexpr atom(): {
 | <NONE> { return new Constant(NoneConstant$.MODULE$, attributes(token, token)); }
 | <ELLIPSIS> { return new Constant(EllipsisConstant$.MODULE$, attributes(token, token)); }
 | <DECINTEGER> { return new Constant(new IntConstant(token.image), attributes(token, token)); }
-| expression = string() { return expression; }
+| expression = strings() { return expression; }
 | expression = listOrListComprehension() { return expression; }
 | expression = tupleOrGeneratorExpOrGroup() { return expression; }
 | expression = setOrDictOrSetCompOrDictComp() { return expression; }
 }
 
-// TODO so far only strings in its most basic form are supported.
-Constant string(): {
+iexpr strings(): {
+  iexpr expr;
+  ArrayList<iexpr> strings = null;
 } {
-  <STRING> { return new Constant(new StringConstant(token.image), attributes(token, token)); }
+  expr = string()
+  (
+    {
+      if (strings == null) {
+        strings = new ArrayList<iexpr>();
+        strings.add(expr);
+      }
+    }
+    expr = string() { strings.add(expr); }
+  )*
+  {
+    if (strings == null) {
+      return expr;
+    } else {
+      return new StringExpList(strings);
+    }
+  }
+}
+
+Constant string(): {
+  boolean isRaw = false;
+  boolean isUnicode = false;
+  boolean isByte = false;
+} {
+  (
+    <RAW_STRING_PREFIX> { isRaw = true; }
+  | <UNICODE_STRING_PREFIX> { isUnicode = true; }
+  | <BYTE_STRING_PREFIX> { isByte = true; }
+  | <RAW_BYTE_STRING_PREFIX> { isRaw = true; isByte = true; }
+  )?
+  (
+    <SINGLE_DOUBLE_QUOTE_STRING>
+  | <SINGLE_SINGLE_QUOTE_STRING>
+  | <TRIPLE_DOUBLE_QUOTE_STRING>
+  | <TRIPLE_SINGLE_QUOTE_STRING>
+  )
+  { return new Constant(new StringConstant(token.image, isRaw, isUnicode, isByte),
+   attributes(token, token)); }
 }
 
 // Returns a tuple for multiple targets and single target with trailing comma.

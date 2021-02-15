@@ -349,6 +349,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       slice.step.map(expr => ":" + print(expr)).getOrElse("")
   }
 
+  override def visit(stringExpList: StringExpList): String = {
+    stringExpList.elts.map(print).mkString(" ")
+  }
+
   override def visit(alias: ialias): String = ???
 
   override def visit(alias: Alias): String = {
@@ -410,7 +414,11 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   override def visit(constant: iconstant): String = ???
 
   override def visit(stringConstant: StringConstant): String = {
-    stringConstant.value
+    val rawPrefix = if (stringConstant.isRaw) "r" else ""
+    val unicodePrefix = if (stringConstant.isUnicode) "u" else ""
+    val bytePrefix = if (stringConstant.isByte) "b" else ""
+
+    rawPrefix + unicodePrefix + bytePrefix + stringConstant.value
   }
 
   override def visit(boolConstant: BoolConstant): String = {

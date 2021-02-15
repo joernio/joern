@@ -608,6 +608,34 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("{x:y for x,y in z}", "{x:y for (x,y) in z}")
   }
 
+  "string literal tests" in {
+    testT("\"abc\"")
+    testT("r\"abc\"")
+    testT("u\"abc\"")
+    testT("b\"abc\"")
+    testT("rb\"abc\"")
+
+    testT("'abc'")
+    testT("r'abc'")
+    testT("u'abc'")
+    testT("b'abc'")
+    testT("rb'abc'")
+
+    testT("\"\"\"abc\"\"\"")
+    testT("r\"\"\"abc\"\"\"")
+    testT("u\"\"\"abc\"\"\"")
+    testT("b\"\"\"abc\"\"\"")
+    testT("rb\"\"\"abc\"\"\"")
+
+    testT("'''abc'''")
+    testT("r'''abc'''")
+    testT("u'''abc'''")
+    testT("b'''abc'''")
+    testT("rb'''abc'''")
+
+    testT("'abc' 'def' \"ghi\"")
+  }
+
   "extra" in {
   }
 }

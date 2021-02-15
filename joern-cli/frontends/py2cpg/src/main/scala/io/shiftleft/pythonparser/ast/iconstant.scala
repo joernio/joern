@@ -8,7 +8,10 @@ sealed trait iconstant extends iast {
   }
 }
 
-case class StringConstant(value: String) extends iconstant {
+case class StringConstant(value: String,
+                          isRaw: Boolean,
+                          isUnicode: Boolean,
+                          isByte: Boolean) extends iconstant {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
