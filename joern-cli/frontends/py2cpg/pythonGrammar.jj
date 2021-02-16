@@ -1,6 +1,6 @@
 options {
     DEBUG_TOKEN_MANAGER = false;
-    DEBUG_PARSER = false;
+    DEBUG_PARSER = true;
 }
 PARSER_BEGIN(PythonParser)
 package io.shiftleft.pythonparser;
@@ -25,6 +25,17 @@ public class PythonParser {
   private ArrayList<ErrorStatement> errors = new ArrayList<ErrorStatement>();
   ArrayList<ErrorStatement> getErrors() {
     return errors;
+  }
+
+  ErrorStatement recoverAndCreateErrorStmt(Exception exception) {
+    getNextToken();
+    Token errorStartToken = token;
+    while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
+      getNextToken();
+    }
+    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
+    errors.add(errorStmt);
+    return errorStmt;
   }
 }
 PARSER_END(PythonParser)
@@ -319,13 +330,24 @@ MORE: {
 ///////////////////////////////////////////////////////////////////////////////
 
 Module module(): {
+  ArrayList<istmt> allStmts = new ArrayList<istmt>();
   ArrayList<istmt> stmts;
 } {
-  (
-    stmts = statementsAndDedentOrEof()
-  | (<EOF> { stmts = new ArrayList<istmt>(); })
-  )
-  { return new Module(stmts); }
+  try {
+    (
+      stmts = statementsAndDedentOrEof() { allStmts.addAll(stmts); }
+    | <EOF>
+    )
+    { return new Module(allStmts); }
+  } catch (ParseException exception) {
+    ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
+    allStmts.add(errorStmt);
+    if (token.kind != EOF) {
+      ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
+      allStmts.addAll(postRecoverStmts);
+    }
+    return new Module(allStmts);
+  }
 }
 
 // This is the "statements" rule from the CPython 3.9 grammar with a modification:
@@ -344,13 +366,7 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
     (<DEDENT> | <EOF>)
     { return allStmts; }
   } catch (ParseException exception) {
-    getNextToken();
-    Token errorStartToken = token;
-    while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
-      getNextToken();
-    }
-    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
-    errors.add(errorStmt);
+    ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
     allStmts.add(errorStmt);
     if (token.kind != EOF) {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
@@ -389,14 +405,10 @@ ArrayList<istmt> simpleStatement(): {
       return stmts;
     }
   } catch (ParseException exception) {
-    getNextToken();
-    Token errorStartToken = token;
-    while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
-      getNextToken();
-    }
-    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
-    errors.add(errorStmt);
+    ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
     stmts.add(errorStmt);
+    // We do not need to recursively invoke simpleStatement() here because the surrounding
+    // rule does that already.
     return stmts;
   }
 }
