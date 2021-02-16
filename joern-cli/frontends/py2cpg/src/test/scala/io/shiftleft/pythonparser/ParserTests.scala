@@ -668,6 +668,17 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("0x1_1")
   }
 
+  "float literal tests" in {
+    testT("1.")
+    testT("1.1")
+    testT("1.1e1")
+    testT(".1")
+    testT(".1e1")
+    testT("1e1")
+    testT("1e+1")
+    testT("1e-1")
+  }
+
   "empty input test" in {
     testT("")
   }

@@ -436,7 +436,11 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(intConstant: IntConstant): String = {
-    intConstant.value.toString()
+    intConstant.value
+  }
+
+  override def visit(floatConstant: FloatConstant): String = {
+    floatConstant.value
   }
 
   override def visit(noneConstant: NoneConstant.type): String = {

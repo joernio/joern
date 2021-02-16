@@ -21,8 +21,12 @@ case class BoolConstant(value: Boolean) extends iconstant {
     visitor.visit(this)
   }
 }
-
 case class IntConstant(value: String) extends iconstant {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+case class FloatConstant(value: String) extends iconstant {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }

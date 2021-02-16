@@ -149,6 +149,16 @@ TOKEN: {
 | <#BIN_DIGIT: "0" | "1" >
 | <#OCT_DIGIT: ["0" - "7"] >
 | <#HEX_DIGIT: ["0" - "9"] | ["a" - "f"] | ["A" - "F"] >
+| <FLOAT:
+  (
+    (<DIGIT> <DIGIT_PART> "." (<DIGIT> <DIGIT_PART>)? (<EXPONENT>)?)
+  | ("." <DIGIT> <DIGIT_PART> (<EXPONENT>)?)
+  | (<DIGIT> <DIGIT_PART> <EXPONENT>)
+  )
+  >
+| <#EXPONENT: ("e" | "E") ("+" | "-")? <DIGIT_PART>>
+| <#DIGIT_PART: (("_")? <DIGIT>)*>
+
 }
 
 TOKEN: {
@@ -1835,6 +1845,7 @@ iexpr atom(): {
 | <NONE> { return new Constant(NoneConstant$.MODULE$, attributes(token, token)); }
 | <ELLIPSIS> { return new Constant(EllipsisConstant$.MODULE$, attributes(token, token)); }
 | expression = integer() { return expression; }
+| expression = floatExpr() { return expression; }
 | expression = strings() { return expression; }
 | expression = listOrListComprehension() { return expression; }
 | expression = tupleOrGeneratorExpOrGroup() { return expression; }
@@ -1845,6 +1856,12 @@ Constant integer(): {
 } {
   (<DEC_INTEGER> | <BIN_INTEGER> | <OCT_INTEGER> | <HEX_INTEGER>)
   { return new Constant(new IntConstant(token.image), attributes(token, token)); }
+}
+
+Constant floatExpr(): {
+} {
+  <FLOAT>
+  { return new Constant(new FloatConstant(token.image), attributes(token, token)); }
 }
 
 iexpr strings(): {
