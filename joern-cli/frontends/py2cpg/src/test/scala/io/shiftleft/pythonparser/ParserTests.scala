@@ -306,12 +306,14 @@ class ParserTests extends AnyFreeSpec with Matchers {
   }
 
   "comment tests" in {
+    testT("#comment", "")
     testT("x#comment", "x")
     testT("x#comment\ny", "x\ny")
     testT("x#comment\ny#comment\nz", "x\ny\nz")
     testT("x\n#comment", "x")
     testT("x\n  #comment", "x")
     testT("x\n  #comment\ny", "x\ny")
+    testT("#\u2265", "")
   }
 
   "indentation tests" in {
