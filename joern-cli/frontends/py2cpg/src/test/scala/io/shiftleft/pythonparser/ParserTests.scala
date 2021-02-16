@@ -638,6 +638,15 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("'abc' 'def' \"ghi\"")
   }
 
+  // Check that an escaped string terminal character does not break
+  // tokenization.
+  "string literal terminal escape tests" in {
+    testT("\"\\\"\"")
+    testT("'\\''")
+    testT("'''\\''''")
+    testT("\"\"\"\\\"\"\"\"")
+  }
+
   "empty input test" in {
     testT("")
   }
