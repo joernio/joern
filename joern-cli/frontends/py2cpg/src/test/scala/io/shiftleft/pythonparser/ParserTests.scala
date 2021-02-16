@@ -638,6 +638,10 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("'abc' 'def' \"ghi\"")
   }
 
+  "empty input test" in {
+    testT("")
+  }
+
   "extra" in {
   }
 }

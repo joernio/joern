@@ -1,6 +1,6 @@
 options {
     DEBUG_TOKEN_MANAGER = false;
-    DEBUG_PARSER = true;
+    DEBUG_PARSER = false;
 }
 PARSER_BEGIN(PythonParser)
 package io.shiftleft.pythonparser;
@@ -317,7 +317,10 @@ MORE: {
 Module module(): {
   ArrayList<istmt> stmts;
 } {
-  stmts = statementsAndDedentOrEof()
+  (
+    stmts = statementsAndDedentOrEof()
+  | (<EOF> { stmts = new ArrayList<istmt>(); })
+  )
   { return new Module(stmts); }
 }
 
