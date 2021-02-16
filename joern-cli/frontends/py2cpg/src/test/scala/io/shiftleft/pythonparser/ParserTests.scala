@@ -643,8 +643,15 @@ class ParserTests extends AnyFreeSpec with Matchers {
   "string literal terminal escape tests" in {
     testT("\"\\\"\"")
     testT("'\\''")
-    testT("'''\\''''")
     testT("\"\"\"\\\"\"\"\"")
+    testT("'''\\''''")
+  }
+
+  "string literal escape tests" in {
+    testT("\"\\\\\"")
+    testT("'\\\\'")
+    testT("\"\"\"\\\\\"\"\"")
+    testT("'''\\\\'''")
   }
 
   "empty input test" in {
