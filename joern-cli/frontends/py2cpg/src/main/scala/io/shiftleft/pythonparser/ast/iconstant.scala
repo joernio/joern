@@ -31,6 +31,11 @@ case class FloatConstant(value: String) extends iconstant {
     visitor.visit(this)
   }
 }
+case class ImaginaryConstant(value: String) extends iconstant {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
 case object NoneConstant extends iconstant {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)

@@ -681,6 +681,19 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("1e-1")
   }
 
+  "imaginary literal tests" in {
+    testT("1j")
+    testT("1_1j")
+    testT("1.j")
+    testT("1.1j")
+    testT("1.1e1j")
+    testT(".1j")
+    testT(".1e1j")
+    testT("1e1j")
+    testT("1e+1j")
+    testT("1e-1j")
+  }
+
   "empty input test" in {
     testT("")
   }

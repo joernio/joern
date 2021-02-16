@@ -151,14 +151,14 @@ TOKEN: {
 | <#HEX_DIGIT: ["0" - "9"] | ["a" - "f"] | ["A" - "F"] >
 | <FLOAT:
   (
-    (<DIGIT> <DIGIT_PART> "." (<DIGIT> <DIGIT_PART>)? (<EXPONENT>)?)
-  | ("." <DIGIT> <DIGIT_PART> (<EXPONENT>)?)
-  | (<DIGIT> <DIGIT_PART> <EXPONENT>)
+    (<DIGIT_PART> "." (<DIGIT_PART>)? (<EXPONENT>)?)
+  | ("." <DIGIT_PART> (<EXPONENT>)?)
+  | (<DIGIT_PART> <EXPONENT>)
   )
   >
 | <#EXPONENT: ("e" | "E") ("+" | "-")? <DIGIT_PART>>
-| <#DIGIT_PART: (("_")? <DIGIT>)*>
-
+| <#DIGIT_PART: <DIGIT> (("_")? <DIGIT>)*>
+| <IMAGINARY: (<FLOAT> | <DIGIT_PART>) ("j" | "J")>
 }
 
 TOKEN: {
@@ -1844,24 +1844,29 @@ iexpr atom(): {
 | <FALSE> { return new Constant(new BoolConstant(false), attributes(token, token)); }
 | <NONE> { return new Constant(NoneConstant$.MODULE$, attributes(token, token)); }
 | <ELLIPSIS> { return new Constant(EllipsisConstant$.MODULE$, attributes(token, token)); }
-| expression = integer() { return expression; }
-| expression = floatExpr() { return expression; }
+| expression = number() { return expression; }
 | expression = strings() { return expression; }
 | expression = listOrListComprehension() { return expression; }
 | expression = tupleOrGeneratorExpOrGroup() { return expression; }
 | expression = setOrDictOrSetCompOrDictComp() { return expression; }
 }
 
-Constant integer(): {
+Constant number(): {
 } {
-  (<DEC_INTEGER> | <BIN_INTEGER> | <OCT_INTEGER> | <HEX_INTEGER>)
-  { return new Constant(new IntConstant(token.image), attributes(token, token)); }
-}
-
-Constant floatExpr(): {
-} {
-  <FLOAT>
-  { return new Constant(new FloatConstant(token.image), attributes(token, token)); }
+  (
+    (
+      (<DEC_INTEGER> | <BIN_INTEGER> | <OCT_INTEGER> | <HEX_INTEGER>)
+      { return new Constant(new IntConstant(token.image), attributes(token, token)); }
+    )
+  | (
+      <FLOAT>
+      { return new Constant(new FloatConstant(token.image), attributes(token, token)); }
+    )
+  | (
+      <IMAGINARY>
+      { return new Constant(new ImaginaryConstant(token.image), attributes(token, token)); }
+    )
+  )
 }
 
 iexpr strings(): {

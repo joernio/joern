@@ -88,6 +88,7 @@ trait AstVisitor[T] {
   def visit(boolConstant: BoolConstant): T
   def visit(intConstant: IntConstant): T
   def visit(intConstant: FloatConstant): T
+  def visit(imaginaryConstant: ImaginaryConstant): T
   def visit(noneConstant: NoneConstant.type): T
   def visit(ellipsisConstant: EllipsisConstant.type): T
 

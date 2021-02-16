@@ -443,6 +443,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     floatConstant.value
   }
 
+  override def visit(imaginaryConstant: ImaginaryConstant): String = {
+    imaginaryConstant.value
+  }
+
   override def visit(noneConstant: NoneConstant.type): String = {
     "None"
   }
