@@ -60,7 +60,6 @@ TOKEN: {
 | <OR: "or">
 | <AND: "and">
 | <NOT: "not">
-| <FAIL: "fail">
 | <DEF: "def">
 | <ASYNC: "async">
 | <LAMBDA: "lambda">

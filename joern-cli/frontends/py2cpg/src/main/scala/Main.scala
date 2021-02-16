@@ -13,7 +13,7 @@ object Main extends App {
   val files = Files.walk(Paths.get(inputDirOrFile)).collect(Collectors.toList[Path]).asScala
 
   files.foreach { file =>
-    if (!Files.isDirectory(file)) {
+    if (!Files.isDirectory(file) && file.toString.endsWith("py")) {
       println(s"Processing: $file")
       val module = parser.parse(new FileInputStream(file.toString))
       val errors = parser.errors
