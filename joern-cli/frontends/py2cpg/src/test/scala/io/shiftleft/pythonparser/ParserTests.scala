@@ -654,6 +654,20 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("'''\\\\'''")
   }
 
+  "integer literal tests" in {
+    testT("000")
+    testT("1")
+    testT("0b1")
+    testT("0B1")
+    testT("0b1_1")
+    testT("0o1")
+    testT("0O1")
+    testT("0o1_1")
+    testT("0x1")
+    testT("0X1")
+    testT("0x1_1")
+  }
+
   "empty input test" in {
     testT("")
   }

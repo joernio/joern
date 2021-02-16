@@ -21,12 +21,8 @@ case class BoolConstant(value: Boolean) extends iconstant {
     visitor.visit(this)
   }
 }
-// Python integer class is unbounded. Lets use BigInt to
-// reflect this and see whether that gets to expensive.
-case class IntConstant(value: BigInt) extends iconstant {
-  def this(value: String) = {
-    this(BigInt(value))
-  }
+
+case class IntConstant(value: String) extends iconstant {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
