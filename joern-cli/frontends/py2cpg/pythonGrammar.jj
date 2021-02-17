@@ -2,6 +2,7 @@ options {
     DEBUG_TOKEN_MANAGER = false;
     DEBUG_PARSER = false;
     JAVA_UNICODE_ESCAPE = true;
+    STATIC = false;
 }
 PARSER_BEGIN(PythonParser)
 package io.shiftleft.pythonparser;

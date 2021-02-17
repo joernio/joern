@@ -24,7 +24,7 @@ object pythonParser extends SbtModule with ScalafmtModule {
   }
 
   def javaCCGenerate = T {
-    Main.mainProgram(Array(s"-OUTPUT_DIRECTORY=${T.dest}/io/shiftleft/pythonparser", "-STATIC=false", javaCCSourceFile().path.toString))
+    Main.mainProgram(Array(s"-OUTPUT_DIRECTORY=${T.dest}/io/shiftleft/pythonparser", javaCCSourceFile().path.toString))
     os.walk(T.dest).filter(path => os.isFile(path) && path.ext == "java").map(PathRef(_))
   }
 
