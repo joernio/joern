@@ -64,39 +64,9 @@ trait AstVisitor[T] {
   def visit(slice: Slice): T
   def visit(stringExpList: StringExpList): T
 
-  def visit(alias: ialias): T
-  def visit(alias: Alias): T
-
   def visit(boolop: iboolop): T
   def visit(and: And.type): T
   def visit(or: Or.type): T
-
-  def visit(compop: icompop): T
-  def visit(eq: Eq.type): T
-  def visit(notEq: NotEq.type): T
-  def visit(lt: Lt.type): T
-  def visit(ltE: LtE.type): T
-  def visit(gt: Gt.type): T
-  def visit(gtE: GtE.type): T
-  def visit(is: Is.type): T
-  def visit(isNot: IsNot.type): T
-  def visit(in: In.type): T
-  def visit(notIn: NotIn.type): T
-
-  def visit(constant: iconstant): T
-  def visit(stringConstant: StringConstant): T
-  def visit(boolConstant: BoolConstant): T
-  def visit(intConstant: IntConstant): T
-  def visit(intConstant: FloatConstant): T
-  def visit(imaginaryConstant: ImaginaryConstant): T
-  def visit(noneConstant: NoneConstant.type): T
-  def visit(ellipsisConstant: EllipsisConstant.type): T
-
-  def visit(exceptHandler: iexcepthandler): T
-  def visit(exceptHandler: ExceptHandler): T
-
-  def visit(keyword: ikeyword): T
-  def visit(keyword: Keyword): T
 
   def visit(operator: ioperator): T
   def visit(add: Add.type): T
@@ -119,15 +89,48 @@ trait AstVisitor[T] {
   def visit(uAdd: UAdd.type): T
   def visit(uSub: USub.type): T
 
-  def visit(arg: iarg): T
-  def visit(arg: Arg): T
+  def visit(compop: icompop): T
+  def visit(eq: Eq.type): T
+  def visit(notEq: NotEq.type): T
+  def visit(lt: Lt.type): T
+  def visit(ltE: LtE.type): T
+  def visit(gt: Gt.type): T
+  def visit(gtE: GtE.type): T
+  def visit(is: Is.type): T
+  def visit(isNot: IsNot.type): T
+  def visit(in: In.type): T
+  def visit(notIn: NotIn.type): T
+
+  def visit(comprehension: icomprehension): T
+  def visit(comprehension: Comprehension): T
+
+  def visit(exceptHandler: iexcepthandler): T
+  def visit(exceptHandler: ExceptHandler): T
 
   def visit(arguments: iarguments): T
   def visit(arguments: Arguments): T
 
+  def visit(arg: iarg): T
+  def visit(arg: Arg): T
+
+  def visit(constant: iconstant): T
+  def visit(stringConstant: StringConstant): T
+  def visit(boolConstant: BoolConstant): T
+  def visit(intConstant: IntConstant): T
+  def visit(intConstant: FloatConstant): T
+  def visit(imaginaryConstant: ImaginaryConstant): T
+  def visit(noneConstant: NoneConstant.type): T
+  def visit(ellipsisConstant: EllipsisConstant.type): T
+
+  def visit(keyword: ikeyword): T
+  def visit(keyword: Keyword): T
+
+  def visit(alias: ialias): T
+  def visit(alias: Alias): T
+
   def visit(withItem: iwithitem): T
   def visit(withItem: WithItem): T
 
-  def visit(comprehension: icomprehension): T
-  def visit(comprehension: Comprehension): T
+  def visit(typeIgnore: itype_ignore): T
+  def visit(typeIgnore: TypeIgnore): T
 }

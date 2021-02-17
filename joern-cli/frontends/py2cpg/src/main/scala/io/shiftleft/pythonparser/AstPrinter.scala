@@ -632,4 +632,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     prefix + print(comprehension.target) + " in " + print(comprehension.iter) +
       comprehension.ifs.map(i => " if " + print(i)).mkString("")
   }
+
+  override def visit(typeIgnore: itype_ignore): String = ???
+
+  override def visit(typeIgnore: TypeIgnore): String = {
+    typeIgnore.tag
+  }
 }

@@ -355,7 +355,7 @@ Module module(): {
       stmts = statementsAndDedentOrEof() { allStmts.addAll(stmts); }
     | <EOF>
     )
-    { return new Module(allStmts); }
+    { return new Module(allStmts, new ArrayList<itype_ignore>()); }
   } catch (ParseException exception) {
     ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
     allStmts.add(errorStmt);
@@ -363,7 +363,7 @@ Module module(): {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
       allStmts.addAll(postRecoverStmts);
     }
-    return new Module(allStmts);
+    return new Module(allStmts, new ArrayList<itype_ignore>());
   }
 }
 
