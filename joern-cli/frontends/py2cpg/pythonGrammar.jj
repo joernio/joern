@@ -1061,7 +1061,7 @@ iarg lambdaFunctionParameterDef(): {
   String name;
 } {
   <NAME> { startToken = token; name = token.image; }
-  { return new Arg(name, null, null, attributes(startToken, token)); }
+  { return new Arg(name, null, (String)null, attributes(startToken, token)); }
 }
 
 If ifStatement(): {
@@ -1416,7 +1416,7 @@ iexpr yieldExpression(): {
     { return new YieldFrom(valueExpr, attributes(startToken, token)); }
   | valueExpr = starExpressions()
     { return new Yield(valueExpr, attributes(startToken, token)); }
-  | { return new Yield(null, attributes(startToken, token)); }
+  | { return new Yield((iexpr)null, attributes(startToken, token)); }
   )
 }
 
@@ -1748,7 +1748,7 @@ void argument(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs):
   (
     expression = starredExpression() { positionalArgs.add(expression); }
   | <DOUBLE_STAR> { startToken = token; } expression = expression()
-   { keywordArgs.add(new Keyword(null, expression, attributes(startToken, token))); }
+   { keywordArgs.add(new Keyword((String)null, expression, attributes(startToken, token))); }
   | expression = expression()
     ( <ASSIGN> valueExpression = expression()
       { if (expression instanceof Name) {
