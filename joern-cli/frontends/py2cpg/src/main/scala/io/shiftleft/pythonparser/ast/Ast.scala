@@ -38,19 +38,13 @@ import scala.jdk.CollectionConverters._
 // AST root trait
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 trait iast {
-  def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
+  def accept[T](visitor: AstVisitor[T]): T
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST module classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait imod extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait imod extends iast
 
 case class Module(stmts: CollType[istmt], type_ignores: CollType[itype_ignore]) extends imod {
   def this(stmts: util.ArrayList[istmt], type_ignores: util.ArrayList[itype_ignore]) = {
@@ -65,11 +59,7 @@ case class Module(stmts: CollType[istmt], type_ignores: CollType[itype_ignore]) 
 // AST statement classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-trait istmt extends iast with iattributes {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait istmt extends iast with iattributes
 
 case class FunctionDef(
     name: String,
@@ -553,11 +543,7 @@ case class ErrorStatement(exception: Exception, lineno: Int, col_offset: Int) ex
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST expression classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait iexpr extends iast with iattributes {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait iexpr extends iast with iattributes
 
 case class BoolOp(op: iboolop, values: CollType[iexpr], lineno: Int, col_offset: Int)
     extends iexpr {
@@ -899,11 +885,7 @@ case class StringExpList(elts: CollType[iexpr], lineno: Int, col_offset: Int) ex
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST boolop classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait iboolop extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait iboolop extends iast
 
 object And extends iboolop {
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -920,11 +902,7 @@ case object Or extends iboolop {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST operator classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait ioperator extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait ioperator extends iast
 
 case object Add extends ioperator {
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -995,11 +973,7 @@ case object FloorDiv extends ioperator {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST unaryop classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait iunaryop extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait iunaryop extends iast
 
 case object Invert extends iunaryop {
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -1028,11 +1002,7 @@ case object USub extends iunaryop {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST compop classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait icompop extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait icompop extends iast
 
 case object Eq extends icompop {
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -1088,11 +1058,7 @@ case object NotIn extends icompop {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST comprehension classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait icomprehension extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait icomprehension extends iast
 
 case class Comprehension(target: iexpr, iter: iexpr, ifs: CollType[iexpr], is_async: Boolean)
     extends icomprehension {
@@ -1107,11 +1073,7 @@ case class Comprehension(target: iexpr, iter: iexpr, ifs: CollType[iexpr], is_as
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST exceptHandler classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait iexcepthandler extends iast with iattributes {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait iexcepthandler extends iast with iattributes
 
 case class ExceptHandler(
     typ: Option[iexpr],
@@ -1142,11 +1104,7 @@ case class ExceptHandler(
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST arguments classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait iarguments extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait iarguments extends iast
 
 // Excerpt from the CPython docs:
 // posonlyargs, args and kwonlyargs are lists of arg nodes.
@@ -1191,11 +1149,7 @@ case class Arguments(
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST arg classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait iarg extends iast with iattributes {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait iarg extends iast with iattributes
 
 case class Arg(
     arg: String,
@@ -1226,11 +1180,7 @@ case class Arg(
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST keyword classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait ikeyword extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait ikeyword extends iast
 
 case class Keyword(arg: Option[String], value: iexpr, lineno: Int, col_offset: Int)
     extends ikeyword
@@ -1246,11 +1196,7 @@ case class Keyword(arg: Option[String], value: iexpr, lineno: Int, col_offset: I
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST alias classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait ialias extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait ialias extends iast
 
 case class Alias(name: String, asName: Option[String]) extends ialias {
   def this(name: String, asName: String) = {
@@ -1264,11 +1210,7 @@ case class Alias(name: String, asName: Option[String]) extends ialias {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST withitem classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait iwithitem extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait iwithitem extends iast
 
 case class WithItem(context_expr: iexpr, optional_vars: Option[iexpr]) extends iwithitem {
   def this(context_expr: iexpr, optional_vars: iexpr) = {
@@ -1282,11 +1224,7 @@ case class WithItem(context_expr: iexpr, optional_vars: Option[iexpr]) extends i
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST type_ignore classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait itype_ignore extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+trait itype_ignore extends iast
 
 case class TypeIgnore(lineno: Int, tag: String) extends itype_ignore {
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -1305,11 +1243,7 @@ trait iattributes {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST constant classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait iconstant extends iast {
-  override def accept[T](visitor: AstVisitor[T]): T = {
-    visitor.visit(this)
-  }
-}
+sealed trait iconstant extends iast
 
 case class StringConstant(value: String, isRaw: Boolean, isUnicode: Boolean, isByte: Boolean)
     extends iconstant {
