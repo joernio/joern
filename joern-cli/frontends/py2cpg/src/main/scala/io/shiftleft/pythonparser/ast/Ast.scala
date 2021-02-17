@@ -71,84 +71,102 @@ trait istmt extends iast with iattributes {
   }
 }
 
-case class FunctionDef(name: String,
-                       args: iarguments,
-                       body: CollType[istmt],
-                       decorator_list: CollType[iexpr],
-                       returns: Option[iexpr],
-                       type_comment: Option[String],
-                       lineno: Int,
-                       col_offset: Int) extends istmt {
-  def this(name: String,
-           args: iarguments,
-           body: util.ArrayList[istmt],
-           decorator_list: util.ArrayList[iexpr],
-           returns: iexpr,
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(name,
+case class FunctionDef(
+    name: String,
+    args: iarguments,
+    body: CollType[istmt],
+    decorator_list: CollType[iexpr],
+    returns: Option[iexpr],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      name: String,
+      args: iarguments,
+      body: util.ArrayList[istmt],
+      decorator_list: util.ArrayList[iexpr],
+      returns: iexpr,
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      name,
       args,
       body.asScala,
       decorator_list.asScala,
       Option(returns),
       Option(type_comment),
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class AsyncFunctionDef(name: String,
-                            args: iarguments,
-                            body: CollType[istmt],
-                            decorator_list: CollType[iexpr],
-                            returns: Option[iexpr],
-                            type_comment: Option[String],
-                            lineno: Int,
-                            col_offset: Int) extends istmt {
-  def this(name: String,
-           args: iarguments,
-           body: util.ArrayList[istmt],
-           decorator_list: util.ArrayList[iexpr],
-           returns: iexpr,
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(name,
+case class AsyncFunctionDef(
+    name: String,
+    args: iarguments,
+    body: CollType[istmt],
+    decorator_list: CollType[iexpr],
+    returns: Option[iexpr],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      name: String,
+      args: iarguments,
+      body: util.ArrayList[istmt],
+      decorator_list: util.ArrayList[iexpr],
+      returns: iexpr,
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      name,
       args,
       body.asScala,
       decorator_list.asScala,
       Option(returns),
       Option(type_comment),
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class ClassDef(name: String,
-                    bases: CollType[iexpr],
-                    keywords: CollType[ikeyword],
-                    body: CollType[istmt],
-                    decorator_list: CollType[iexpr],
-                    lineno: Int,
-                    col_offset: Int) extends istmt {
-  def this(name: String,
-           bases: util.ArrayList[iexpr],
-           keywords: util.ArrayList[ikeyword],
-           body: util.ArrayList[istmt],
-           decorator_list: util.ArrayList[iexpr],
-           attributeProvider: AttributeProvider) = {
-    this(name,
+case class ClassDef(
+    name: String,
+    bases: CollType[iexpr],
+    keywords: CollType[ikeyword],
+    body: CollType[istmt],
+    decorator_list: CollType[iexpr],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      name: String,
+      bases: util.ArrayList[iexpr],
+      keywords: util.ArrayList[ikeyword],
+      body: util.ArrayList[istmt],
+      decorator_list: util.ArrayList[iexpr],
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      name,
       bases.asScala,
       keywords.asScala,
       body.asScala,
       decorator_list.asScala,
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
@@ -173,14 +191,14 @@ case class Delete(targets: CollType[iexpr], lineno: Int, col_offset: Int) extend
   }
 }
 
-case class Assign(targets: CollType[iexpr],
-                  value: iexpr,
-                  typeComment: Option[String],
-                  lineno: Int,
-                  col_offset: Int) extends istmt {
-  def this(targets: util.ArrayList[iexpr],
-           value: iexpr,
-           attributeProvider: AttributeProvider) = {
+case class Assign(
+    targets: CollType[iexpr],
+    value: iexpr,
+    typeComment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(targets: util.ArrayList[iexpr], value: iexpr, attributeProvider: AttributeProvider) = {
     this(targets.asScala, value, None, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -188,15 +206,9 @@ case class Assign(targets: CollType[iexpr],
   }
 }
 
-case class AugAssign(target: iexpr,
-                     op: ioperator,
-                     value: iexpr,
-                     lineno: Int,
-                     col_offset: Int) extends istmt {
-  def this(target: iexpr,
-           op: ioperator,
-           value: iexpr,
-           attributeProvider: AttributeProvider) = {
+case class AugAssign(target: iexpr, op: ioperator, value: iexpr, lineno: Int, col_offset: Int)
+    extends istmt {
+  def this(target: iexpr, op: ioperator, value: iexpr, attributeProvider: AttributeProvider) = {
     this(target, op, value, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -204,85 +216,112 @@ case class AugAssign(target: iexpr,
   }
 }
 
-case class AnnAssign(target: iexpr,
-                     annotation: iexpr,
-                     value: Option[iexpr],
-                     simple: Boolean,
-                     lineno: Int,
-                     col_offset: Int) extends istmt {
-  def this(target: iexpr,
-           annotation: iexpr,
-           value: iexpr,
-           simple: Boolean,
-           attributeProvider: AttributeProvider) = {
-    this(target, annotation, Option(value), simple, attributeProvider.lineno, attributeProvider.col_offset)
+case class AnnAssign(
+    target: iexpr,
+    annotation: iexpr,
+    value: Option[iexpr],
+    simple: Boolean,
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      target: iexpr,
+      annotation: iexpr,
+      value: iexpr,
+      simple: Boolean,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      target,
+      annotation,
+      Option(value),
+      simple,
+      attributeProvider.lineno,
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class For(target: iexpr,
-               iter: iexpr,
-               body: CollType[istmt],
-               orelse: CollType[istmt],
-               type_comment: Option[String],
-               lineno: Int,
-               col_offset: Int) extends istmt {
-  def this(target: iexpr,
-           iter: iexpr,
-           body: util.ArrayList[istmt],
-           orelse: util.ArrayList[istmt],
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(target,
+case class For(
+    target: iexpr,
+    iter: iexpr,
+    body: CollType[istmt],
+    orelse: CollType[istmt],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      target: iexpr,
+      iter: iexpr,
+      body: util.ArrayList[istmt],
+      orelse: util.ArrayList[istmt],
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      target,
       iter,
       body.asScala,
       orelse.asScala,
       Option(type_comment),
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class AsyncFor(target: iexpr,
-                    iter: iexpr,
-                    body: CollType[istmt],
-                    orelse: CollType[istmt],
-                    type_comment: Option[String],
-                    lineno: Int,
-                    col_offset: Int) extends istmt {
-  def this(target: iexpr,
-           iter: iexpr,
-           body: util.ArrayList[istmt],
-           orelse: util.ArrayList[istmt],
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(target,
+case class AsyncFor(
+    target: iexpr,
+    iter: iexpr,
+    body: CollType[istmt],
+    orelse: CollType[istmt],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      target: iexpr,
+      iter: iexpr,
+      body: util.ArrayList[istmt],
+      orelse: util.ArrayList[istmt],
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      target,
       iter,
       body.asScala,
       orelse.asScala,
       Option(type_comment),
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class While(test: iexpr,
-                 body: CollType[istmt],
-                 orelse: CollType[istmt],
-                 lineno: Int,
-                 col_offset: Int) extends istmt {
-  def this(test: iexpr,
-           body: util.ArrayList[istmt],
-           orelse: util.ArrayList[istmt],
-           attributeProvider: AttributeProvider) = {
+case class While(
+    test: iexpr,
+    body: CollType[istmt],
+    orelse: CollType[istmt],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      test: iexpr,
+      body: util.ArrayList[istmt],
+      orelse: util.ArrayList[istmt],
+      attributeProvider: AttributeProvider
+  ) = {
     this(test, body.asScala, orelse.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -290,15 +329,19 @@ case class While(test: iexpr,
   }
 }
 
-case class If(test: iexpr,
-              body: CollType[istmt],
-              orelse: CollType[istmt],
-              lineno: Int,
-              col_offset: Int) extends istmt {
-  def this(test: iexpr,
-           body: util.ArrayList[istmt],
-           orelse: util.ArrayList[istmt],
-           attributeProvider: AttributeProvider) = {
+case class If(
+    test: iexpr,
+    body: CollType[istmt],
+    orelse: CollType[istmt],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      test: iexpr,
+      body: util.ArrayList[istmt],
+      orelse: util.ArrayList[istmt],
+      attributeProvider: AttributeProvider
+  ) = {
     this(test, body.asScala, orelse.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -306,47 +349,60 @@ case class If(test: iexpr,
   }
 }
 
-case class With(items: CollType[iwithitem],
-                body: CollType[istmt],
-                type_comment: Option[String],
-                lineno: Int,
-                col_offset: Int) extends istmt {
-  def this(items: util.ArrayList[iwithitem],
-           body: util.ArrayList[istmt],
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(items.asScala,
+case class With(
+    items: CollType[iwithitem],
+    body: CollType[istmt],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      items: util.ArrayList[iwithitem],
+      body: util.ArrayList[istmt],
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      items.asScala,
       body.asScala,
       Option(type_comment),
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class AsyncWith(items: CollType[iwithitem],
-                     body: CollType[istmt],
-                     type_comment: Option[String],
-                     lineno: Int,
-                     col_offset: Int) extends istmt {
-  def this(items: util.ArrayList[iwithitem],
-           body: util.ArrayList[istmt],
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(items.asScala,
+case class AsyncWith(
+    items: CollType[iwithitem],
+    body: CollType[istmt],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      items: util.ArrayList[iwithitem],
+      body: util.ArrayList[istmt],
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      items.asScala,
       body.asScala,
       Option(type_comment),
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class Raise(exc: Option[iexpr], cause: Option[iexpr], lineno: Int, col_offset: Int) extends istmt {
+case class Raise(exc: Option[iexpr], cause: Option[iexpr], lineno: Int, col_offset: Int)
+    extends istmt {
   def this(exc: iexpr, cause: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(exc), Option(cause), attributeProvider.lineno, attributeProvider.col_offset)
   }
@@ -355,23 +411,29 @@ case class Raise(exc: Option[iexpr], cause: Option[iexpr], lineno: Int, col_offs
   }
 }
 
-case class Try(body: CollType[istmt],
-               handlers: CollType[iexcepthandler],
-               orelse: CollType[istmt],
-               finalbody: CollType[istmt],
-               lineno: Int,
-               col_offset: Int) extends istmt {
-  def this(body: util.ArrayList[istmt],
-           handlers: util.ArrayList[iexcepthandler],
-           orelse: util.ArrayList[istmt],
-           finalbody: util.ArrayList[istmt],
-           attributeProvider: AttributeProvider) = {
-    this(body.asScala,
+case class Try(
+    body: CollType[istmt],
+    handlers: CollType[iexcepthandler],
+    orelse: CollType[istmt],
+    finalbody: CollType[istmt],
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      body: util.ArrayList[istmt],
+      handlers: util.ArrayList[iexcepthandler],
+      orelse: util.ArrayList[istmt],
+      finalbody: util.ArrayList[istmt],
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      body.asScala,
       handlers.asScala,
       orelse.asScala,
       finalbody.asScala,
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
@@ -396,13 +458,26 @@ case class Import(names: CollType[ialias], lineno: Int, col_offset: Int) extends
   }
 }
 
-case class ImportFrom(module: Option[String],
-                      names: CollType[ialias],
-                      level: Int,
-                      lineno: Int,
-                      col_offset: Int) extends istmt {
-  def this(module: String, names: util.ArrayList[ialias], level: Int, attributeProvider: AttributeProvider) = {
-    this(Option(module), names.asScala, level, attributeProvider.lineno, attributeProvider.col_offset)
+case class ImportFrom(
+    module: Option[String],
+    names: CollType[ialias],
+    level: Int,
+    lineno: Int,
+    col_offset: Int
+) extends istmt {
+  def this(
+      module: String,
+      names: util.ArrayList[ialias],
+      level: Int,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      Option(module),
+      names.asScala,
+      level,
+      attributeProvider.lineno,
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
@@ -484,7 +559,8 @@ sealed trait iexpr extends iast with iattributes {
   }
 }
 
-case class BoolOp(op: iboolop, values: CollType[iexpr], lineno: Int, col_offset: Int) extends iexpr {
+case class BoolOp(op: iboolop, values: CollType[iexpr], lineno: Int, col_offset: Int)
+    extends iexpr {
   def this(op: iboolop, values: util.ArrayList[iexpr], attributeProvider: AttributeProvider) = {
     this(op, values.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
@@ -502,15 +578,9 @@ case class NamedExpr(target: iexpr, value: iexpr, lineno: Int, col_offset: Int) 
   }
 }
 
-case class BinOp(left: iexpr,
-                 op: ioperator,
-                 right: iexpr,
-                 lineno: Int,
-                 col_offset: Int) extends iexpr {
-  def this(left: iexpr,
-           op: ioperator,
-           right: iexpr,
-           attributeProvider: AttributeProvider) = {
+case class BinOp(left: iexpr, op: ioperator, right: iexpr, lineno: Int, col_offset: Int)
+    extends iexpr {
+  def this(left: iexpr, op: ioperator, right: iexpr, attributeProvider: AttributeProvider) = {
     this(left, op, right, attributeProvider.lineno, attributeProvider.col_offset)
   }
 
@@ -537,7 +607,8 @@ case class Lambda(arg: iarguments, body: iexpr, lineno: Int, col_offset: Int) ex
   }
 }
 
-case class IfExp(test: iexpr, body: iexpr, orElse: iexpr, lineno: Int, col_offset: Int) extends iexpr {
+case class IfExp(test: iexpr, body: iexpr, orElse: iexpr, lineno: Int, col_offset: Int)
+    extends iexpr {
   def this(test: iexpr, body: iexpr, orElse: iexpr, attributeProvider: AttributeProvider) = {
     this(test, body, orElse, attributeProvider.lineno, attributeProvider.col_offset)
   }
@@ -546,25 +617,31 @@ case class IfExp(test: iexpr, body: iexpr, orElse: iexpr, lineno: Int, col_offse
   }
 }
 
-case class Dict(keys: CollType[Option[iexpr]],
-                values: CollType[iexpr],
-                lineno: Int,
-                col_offset: Int) extends iexpr {
-  def this(keys: util.ArrayList[iexpr],
-           values: util.ArrayList[iexpr],
-           attributeProvider: AttributeProvider) = {
-    this(keys.asScala.map(Option.apply), values.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+case class Dict(
+    keys: CollType[Option[iexpr]],
+    values: CollType[iexpr],
+    lineno: Int,
+    col_offset: Int
+) extends iexpr {
+  def this(
+      keys: util.ArrayList[iexpr],
+      values: util.ArrayList[iexpr],
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      keys.asScala.map(Option.apply),
+      values.asScala,
+      attributeProvider.lineno,
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
 }
 
-case class Set(elts: CollType[iexpr],
-               lineno: Int,
-               col_offset: Int) extends iexpr {
-  def this(elts: util.ArrayList[iexpr],
-           attributeProvider: AttributeProvider) = {
+case class Set(elts: CollType[iexpr], lineno: Int, col_offset: Int) extends iexpr {
+  def this(elts: util.ArrayList[iexpr], attributeProvider: AttributeProvider) = {
     this(elts.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -572,13 +649,13 @@ case class Set(elts: CollType[iexpr],
   }
 }
 
-case class ListComp(elt: iexpr,
-                    generators: CollType[icomprehension],
-                    lineno: Int,
-                    col_offset: Int) extends iexpr {
-  def this(elt: iexpr,
-           generators: util.ArrayList[icomprehension],
-           attributeProvider: AttributeProvider) = {
+case class ListComp(elt: iexpr, generators: CollType[icomprehension], lineno: Int, col_offset: Int)
+    extends iexpr {
+  def this(
+      elt: iexpr,
+      generators: util.ArrayList[icomprehension],
+      attributeProvider: AttributeProvider
+  ) = {
     this(elt, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -586,13 +663,13 @@ case class ListComp(elt: iexpr,
   }
 }
 
-case class SetComp(elt: iexpr,
-                   generators: CollType[icomprehension],
-                   lineno: Int,
-                   col_offset: Int) extends iexpr {
-  def this(elt: iexpr,
-           generators: util.ArrayList[icomprehension],
-           attributeProvider: AttributeProvider) = {
+case class SetComp(elt: iexpr, generators: CollType[icomprehension], lineno: Int, col_offset: Int)
+    extends iexpr {
+  def this(
+      elt: iexpr,
+      generators: util.ArrayList[icomprehension],
+      attributeProvider: AttributeProvider
+  ) = {
     this(elt, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -600,15 +677,19 @@ case class SetComp(elt: iexpr,
   }
 }
 
-case class DictComp(key: iexpr,
-                    value: iexpr,
-                    generators: CollType[icomprehension],
-                    lineno: Int,
-                    col_offset: Int) extends iexpr {
-  def this(key: iexpr,
-           value: iexpr,
-           generators: util.ArrayList[icomprehension],
-           attributeProvider: AttributeProvider) = {
+case class DictComp(
+    key: iexpr,
+    value: iexpr,
+    generators: CollType[icomprehension],
+    lineno: Int,
+    col_offset: Int
+) extends iexpr {
+  def this(
+      key: iexpr,
+      value: iexpr,
+      generators: util.ArrayList[icomprehension],
+      attributeProvider: AttributeProvider
+  ) = {
     this(key, value, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -616,13 +697,17 @@ case class DictComp(key: iexpr,
   }
 }
 
-case class GeneratorExp(elt: iexpr,
-                        generators: CollType[icomprehension],
-                        lineno: Int,
-                        col_offset: Int) extends iexpr {
-  def this(elt: iexpr,
-           generators: util.ArrayList[icomprehension],
-           attributeProvider: AttributeProvider) = {
+case class GeneratorExp(
+    elt: iexpr,
+    generators: CollType[icomprehension],
+    lineno: Int,
+    col_offset: Int
+) extends iexpr {
+  def this(
+      elt: iexpr,
+      generators: util.ArrayList[icomprehension],
+      attributeProvider: AttributeProvider
+  ) = {
     this(elt, generators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -657,16 +742,26 @@ case class YieldFrom(value: iexpr, lineno: Int, col_offset: Int) extends iexpr {
   }
 }
 
-case class Compare(left: iexpr,
-                   ops: CollType[icompop],
-                   comparators: CollType[iexpr],
-                   lineno: Int,
-                   col_offset: Int) extends iexpr {
-  def this(left: iexpr,
-           ops: util.ArrayList[icompop],
-           comparators: util.ArrayList[iexpr],
-           attributeProvider: AttributeProvider) = {
-    this(left, ops.asScala, comparators.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+case class Compare(
+    left: iexpr,
+    ops: CollType[icompop],
+    comparators: CollType[iexpr],
+    lineno: Int,
+    col_offset: Int
+) extends iexpr {
+  def this(
+      left: iexpr,
+      ops: util.ArrayList[icompop],
+      comparators: util.ArrayList[iexpr],
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      left,
+      ops.asScala,
+      comparators.asScala,
+      attributeProvider.lineno,
+      attributeProvider.col_offset
+    )
   }
 
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -674,16 +769,26 @@ case class Compare(left: iexpr,
   }
 }
 
-case class Call(func: iexpr,
-                args: CollType[iexpr],
-                keywords: CollType[ikeyword],
-                lineno: Int,
-                col_offset: Int) extends iexpr {
-  def this(func: iexpr,
-           args: util.ArrayList[iexpr],
-           keywords: util.ArrayList[ikeyword],
-           attributeProvider: AttributeProvider) = {
-    this(func, args.asScala, keywords.asScala, attributeProvider.lineno, attributeProvider.col_offset)
+case class Call(
+    func: iexpr,
+    args: CollType[iexpr],
+    keywords: CollType[ikeyword],
+    lineno: Int,
+    col_offset: Int
+) extends iexpr {
+  def this(
+      func: iexpr,
+      args: util.ArrayList[iexpr],
+      keywords: util.ArrayList[ikeyword],
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      func,
+      args.asScala,
+      keywords.asScala,
+      attributeProvider.lineno,
+      attributeProvider.col_offset
+    )
   }
 
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -736,11 +841,8 @@ case class Name(id: String, lineno: Int, col_offset: Int) extends iexpr {
   }
 }
 
-case class List(elts: CollType[iexpr],
-                lineno: Int,
-                col_offset: Int) extends iexpr {
-  def this(elts: util.ArrayList[iexpr],
-           attributeProvider: AttributeProvider) = {
+case class List(elts: CollType[iexpr], lineno: Int, col_offset: Int) extends iexpr {
+  def this(elts: util.ArrayList[iexpr], attributeProvider: AttributeProvider) = {
     this(elts.asScala, attributeProvider.lineno, attributeProvider.col_offset)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -757,14 +859,21 @@ case class Tuple(elts: CollType[iexpr], lineno: Int, col_offset: Int) extends ie
   }
 }
 
-case class Slice(lower: Option[iexpr],
-                 upper: Option[iexpr],
-                 step: Option[iexpr],
-                 lineno: Int,
-                 col_offset: Int) extends iexpr {
+case class Slice(
+    lower: Option[iexpr],
+    upper: Option[iexpr],
+    step: Option[iexpr],
+    lineno: Int,
+    col_offset: Int
+) extends iexpr {
   def this(lower: iexpr, upper: iexpr, step: iexpr, attributeProvider: AttributeProvider) = {
-    this(Option(lower), Option(upper), Option(step),
-      attributeProvider.lineno, attributeProvider.col_offset)
+    this(
+      Option(lower),
+      Option(upper),
+      Option(step),
+      attributeProvider.lineno,
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
@@ -985,14 +1094,9 @@ trait icomprehension extends iast {
   }
 }
 
-case class Comprehension(target: iexpr,
-                         iter: iexpr,
-                         ifs: CollType[iexpr],
-                         is_async: Boolean) extends icomprehension {
-  def this(target: iexpr,
-           iter: iexpr,
-           ifs: util.ArrayList[iexpr],
-           is_async: Boolean) = {
+case class Comprehension(target: iexpr, iter: iexpr, ifs: CollType[iexpr], is_async: Boolean)
+    extends icomprehension {
+  def this(target: iexpr, iter: iexpr, ifs: util.ArrayList[iexpr], is_async: Boolean) = {
     this(target, iter, ifs.asScala, is_async)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -1009,20 +1113,26 @@ sealed trait iexcepthandler extends iast with iattributes {
   }
 }
 
-case class ExceptHandler(typ: Option[iexpr],
-                         name: Option[String],
-                         body: CollType[istmt],
-                         lineno: Int,
-                         col_offset: Int) extends iexcepthandler {
-  def this(typ: iexpr,
-           name: String,
-           body: util.ArrayList[istmt],
-           attributeProvider: AttributeProvider) = {
-    this(Option(typ),
+case class ExceptHandler(
+    typ: Option[iexpr],
+    name: Option[String],
+    body: CollType[istmt],
+    lineno: Int,
+    col_offset: Int
+) extends iexcepthandler {
+  def this(
+      typ: iexpr,
+      name: String,
+      body: util.ArrayList[istmt],
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      Option(typ),
       Option(name),
       body.asScala,
       attributeProvider.lineno,
-      attributeProvider.col_offset)
+      attributeProvider.col_offset
+    )
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
@@ -1045,21 +1155,26 @@ trait iarguments extends iast {
 // If one is None, the corresponding argument is required.
 // defaults is a list of default values for arguments that can be passed positionally.
 // If there are fewer defaults, they correspond to the last n arguments.
-case class Arguments(posonlyargs: CollType[iarg],
-                     args: CollType[iarg],
-                     vararg: Option[iarg],
-                     kwonlyargs: CollType[iarg],
-                     kw_defaults: CollType[Option[iexpr]],
-                     kw_arg: Option[iarg],
-                     defaults: CollType[iexpr]) extends iarguments {
-  def this(posonlyargs: util.List[iarg],
-           args: util.List[iarg],
-           vararg: iarg,
-           kwonlyargs: util.List[iarg],
-           kw_defaults: util.List[iexpr],
-           kw_arg: iarg,
-           defaults: util.List[iexpr]) = {
-    this(posonlyargs.asScala,
+case class Arguments(
+    posonlyargs: CollType[iarg],
+    args: CollType[iarg],
+    vararg: Option[iarg],
+    kwonlyargs: CollType[iarg],
+    kw_defaults: CollType[Option[iexpr]],
+    kw_arg: Option[iarg],
+    defaults: CollType[iexpr]
+) extends iarguments {
+  def this(
+      posonlyargs: util.List[iarg],
+      args: util.List[iarg],
+      vararg: iarg,
+      kwonlyargs: util.List[iarg],
+      kw_defaults: util.List[iexpr],
+      kw_arg: iarg,
+      defaults: util.List[iexpr]
+  ) = {
+    this(
+      posonlyargs.asScala,
       args.asScala,
       Option(vararg),
       kwonlyargs.asScala,
@@ -1082,16 +1197,21 @@ trait iarg extends iast with iattributes {
   }
 }
 
-case class Arg(arg: String,
-               annotation: Option[iexpr],
-               type_comment: Option[String],
-               lineno: Int,
-               col_offset: Int) extends iarg {
-  def this(arg: String,
-           annotation: iexpr,
-           type_comment: String,
-           attributeProvider: AttributeProvider) = {
-    this(arg,
+case class Arg(
+    arg: String,
+    annotation: Option[iexpr],
+    type_comment: Option[String],
+    lineno: Int,
+    col_offset: Int
+) extends iarg {
+  def this(
+      arg: String,
+      annotation: iexpr,
+      type_comment: String,
+      attributeProvider: AttributeProvider
+  ) = {
+    this(
+      arg,
       Option(annotation),
       Option(type_comment),
       attributeProvider.lineno,
@@ -1112,10 +1232,9 @@ sealed trait ikeyword extends iast {
   }
 }
 
-case class Keyword(arg: Option[String],
-                   value: iexpr,
-                   lineno: Int,
-                   col_offset: Int) extends ikeyword with iattributes {
+case class Keyword(arg: Option[String], value: iexpr, lineno: Int, col_offset: Int)
+    extends ikeyword
+    with iattributes {
   def this(arg: String, value: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(arg), value, attributeProvider.lineno, attributeProvider.col_offset)
   }
@@ -1192,10 +1311,8 @@ sealed trait iconstant extends iast {
   }
 }
 
-case class StringConstant(value: String,
-                          isRaw: Boolean,
-                          isUnicode: Boolean,
-                          isByte: Boolean) extends iconstant {
+case class StringConstant(value: String, isRaw: Boolean, isUnicode: Boolean, isByte: Boolean)
+    extends iconstant {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }

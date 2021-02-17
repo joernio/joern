@@ -31,7 +31,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
       "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
-      ":" +  functionDef.body.map(printIndented).mkString("\n", "\n", "")
+      ":" + functionDef.body.map(printIndented).mkString("\n", "\n", "")
 
   }
 
@@ -39,7 +39,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
       "async def " + functionDef.name + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
-      ":" +  functionDef.body.map(printIndented).mkString("\n", "\n", "")
+      ":" + functionDef.body.map(printIndented).mkString("\n", "\n", "")
 
   }
 
@@ -84,30 +84,27 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     "for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
       forStmt.body.map(printIndented).mkString("\n", "\n", "") +
       (if (forStmt.orelse.nonEmpty)
-        "\nelse:" +
-          forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
-      else ""
-        )
+         "\nelse:" +
+           forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+       else "")
   }
 
   override def visit(forStmt: AsyncFor): String = {
     "async for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
       forStmt.body.map(printIndented).mkString("\n", "\n", "") +
       (if (forStmt.orelse.nonEmpty)
-        "\nelse:" +
-          forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
-      else ""
-        )
+         "\nelse:" +
+           forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+       else "")
   }
 
   override def visit(whileStmt: While): String = {
     "while " + print(whileStmt.test) + ":" +
       whileStmt.body.map(printIndented).mkString("\n", "\n", "") +
       (if (whileStmt.orelse.nonEmpty)
-        "\nelse:" +
-          whileStmt.orelse.map(printIndented).mkString("\n", "\n", "")
-      else ""
-        )
+         "\nelse:" +
+           whileStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+       else "")
   }
 
   override def visit(ifStmt: If): String = {
@@ -120,7 +117,6 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
           "\nelse:" +
             ifStmt.orelse.map(printIndented).mkString("\n", "\n", "")
       }
-
 
     "if " + print(ifStmt.test) + ":" +
       ifStmt.body.map(printIndented).mkString("\n", "\n", "") +
@@ -189,7 +185,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       } else {
         ""
       }
-    "from" + relativeImportDots + importFrom.module.map(m => " " + m) .getOrElse("") +
+    "from" + relativeImportDots + importFrom.module.map(m => " " + m).getOrElse("") +
       " import " + importFrom.names.map(print).mkString(", ")
   }
 
@@ -256,14 +252,17 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(dict: Dict): String = {
-    "{" + dict.keys.zip(dict.values).map { case (key, value) =>
-      key match {
-        case Some(k) =>
-          print(k) + ":" + print(value)
-        case None =>
-          "**" + print(value)
+    "{" + dict.keys
+      .zip(dict.values)
+      .map { case (key, value) =>
+        key match {
+          case Some(k) =>
+            print(k) + ":" + print(value)
+          case None =>
+            "**" + print(value)
+        }
       }
-    }.mkString(", ") + "}"
+      .mkString(", ") + "}"
   }
 
   override def visit(set: Set): String = {
@@ -300,9 +299,12 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(compare: Compare): String = {
-    print(compare.left) + compare.ops.zip(compare.comparators).map { case (op, comparator) =>
-      " " + print(op) + " " + print(comparator)
-    }.mkString("")
+    print(compare.left) + compare.ops
+      .zip(compare.comparators)
+      .map { case (op, comparator) =>
+        " " + print(op) + " " + print(comparator)
+      }
+      .mkString("")
   }
 
   override def visit(call: Call): String = {
@@ -367,7 +369,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(boolop: iboolop): String = ???
 
-  override def visit(and: And.type): String =  {
+  override def visit(and: And.type): String = {
     "and"
   }
 
@@ -564,9 +566,12 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
     if (arguments.posonlyargs.nonEmpty) {
       val posOnlyArgsString =
-        arguments.posonlyargs.zip(defaultArgs).map { case (arg, defaultOption) =>
-          print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
-        }.mkString("", ", ", ", /")
+        arguments.posonlyargs
+          .zip(defaultArgs)
+          .map { case (arg, defaultOption) =>
+            print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
+          }
+          .mkString("", ", ", ", /")
 
       result += posOnlyArgsString
       separatorString = ", "
@@ -575,9 +580,12 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     if (arguments.args.nonEmpty) {
       val defaultsForArgs = defaultArgs.drop(arguments.posonlyargs.size)
       val argsString =
-        arguments.args.zip(defaultsForArgs).map { case (arg, defaultOption) =>
-          print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
-        }.mkString(separatorString, ", ", "")
+        arguments.args
+          .zip(defaultsForArgs)
+          .map { case (arg, defaultOption) =>
+            print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
+          }
+          .mkString(separatorString, ", ", "")
 
       result += argsString
       separatorString = ", "
@@ -597,9 +605,12 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
     if (arguments.kwonlyargs.nonEmpty) {
       val kwOnlyArgsString =
-        arguments.kwonlyargs.zip(arguments.kw_defaults).map { case (arg, defaultOption) =>
-          print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
-        }.mkString(separatorString, ", ", "")
+        arguments.kwonlyargs
+          .zip(arguments.kw_defaults)
+          .map { case (arg, defaultOption) =>
+            print(arg) + defaultOption.map(d => " = " + print(d)).getOrElse("")
+          }
+          .mkString(separatorString, ", ", "")
 
       result += kwOnlyArgsString
       separatorString = ", "
