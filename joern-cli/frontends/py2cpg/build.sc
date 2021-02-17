@@ -5,7 +5,7 @@ import $ivy.`net.java.dev.javacc:javacc:7.0.4`
 import mill.scalalib.publish.{PomSettings, VersionControl}
 import org.javacc.parser.Main
 
-object pythonParser extends SbtModule with ScalafmtModule with PublishModule {
+object pythonparser extends SbtModule with ScalafmtModule with PublishModule {
   def scalaVersion = "2.13.1"
 
   // We only have one module in this build. Thus we dont need
