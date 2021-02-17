@@ -2,10 +2,10 @@ import mill._
 import mill.scalalib.scalafmt.ScalafmtModule
 import scalalib._
 import $ivy.`net.java.dev.javacc:javacc:7.0.4`
-import mill.define.Target
+import mill.scalalib.publish.{PomSettings, VersionControl}
 import org.javacc.parser.Main
 
-object pythonParser extends SbtModule with ScalafmtModule {
+object pythonParser extends SbtModule with ScalafmtModule with PublishModule {
   def scalaVersion = "2.13.1"
 
   // We only have one module in this build. Thus we dont need
@@ -31,6 +31,19 @@ object pythonParser extends SbtModule with ScalafmtModule {
   override def generatedSources = T {
     super.generatedSources() ++ javaCCGenerate()
   }
+
+  override def pomSettings = {
+    PomSettings(
+      description = "Python fuzzy parser",
+      organization = "io.shiftleft",
+      url = "shiftleft.io",
+      licenses = Nil,
+      versionControl = VersionControl.github("", ""),
+      developers = Nil,
+    )
+  }
+
+  override def publishVersion = "0.9.0"
 
   object test extends Tests with ScalafmtModule {
     override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.2")
