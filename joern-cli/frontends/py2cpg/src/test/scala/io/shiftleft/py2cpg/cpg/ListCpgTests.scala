@@ -10,8 +10,8 @@ class ListCpgTests extends AnyFreeSpec with Matchers {
     """[1,2,3]""".stripMargin
   )
 
-  "foo" in {
-
+  "foo" ignore {
+    //TODO
   }
 
 }

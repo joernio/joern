@@ -34,11 +34,7 @@ object py2cpg extends SbtModule with ScalafmtModule {
   override def ivyDeps = Agg(
     ivy"io.shiftleft::codepropertygraph:1.2.21",
     ivy"io.shiftleft::semanticcpg:1.2.21",
-    ivy"org.python.pydev:parser:8.1.0",
-    ivy"org.python.pydev:core:8.1.0",
-    ivy"org.python.pydev:shared_core:8.1.0",
-    ivy"org.eclipse.platform:org.eclipse.core.resources:3.13.900",
-    ivy"org.eclipse.platform:org.eclipse.text:3.10.400",
+    ivy"io.shiftleft::pythonparser:0.9.0",
     ivy"org.slf4j:slf4j-api:1.7.30",
     ivy"org.rogach::scallop:4.0.1",
     ivy"org.scala-lang.modules::scala-parallel-collections:1.0.0",

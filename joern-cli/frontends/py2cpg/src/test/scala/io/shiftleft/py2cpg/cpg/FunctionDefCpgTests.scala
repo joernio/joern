@@ -12,9 +12,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       |""".stripMargin
   )
 
-  "foo" in {
-    cpg
-
+  "foo" ignore {
+    // TODO
   }
 
 }

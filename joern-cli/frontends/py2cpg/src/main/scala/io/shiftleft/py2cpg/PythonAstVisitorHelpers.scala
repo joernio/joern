@@ -1,19 +1,18 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import org.python.pydev.parser.jython.SimpleNode
-import org.python.pydev.parser.jython.ast.{Tuple, exprType}
+import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
 
-trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
+trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
   protected def codeOf(node: nodes.NewNode): String = {
     node.asInstanceOf[nodes.HasCode].code
   }
 
-  protected def lineAndColOf(node: SimpleNode): LineAndColumn = {
-    new LineAndColumn(node.beginLine, node.beginColumn)
+  protected def lineAndColOf(node: ast.iattributes): LineAndColumn = {
+    new LineAndColumn(node.lineno, node.col_offset)
   }
 
   protected def getUnusedName(): String = {
@@ -21,13 +20,13 @@ trait PyDevAstVisitorHelpers { this: PyDevAstVisitor =>
     "tmp"
   }
 
-  protected def getTargetsWithAccessChains(target: exprType): Iterable[(exprType, List[Int])] = {
-    val result = mutable.ArrayBuffer.empty[(exprType, List[Int])]
+  protected def getTargetsWithAccessChains(target: ast.iexpr): Iterable[(ast.iexpr, List[Int])] = {
+    val result = mutable.ArrayBuffer.empty[(ast.iexpr, List[Int])]
     getTargetsInternal(target, Nil)
 
-    def getTargetsInternal(target: exprType, indexChain: List[Int]): Unit = {
+    def getTargetsInternal(target: ast.iexpr, indexChain: List[Int]): Unit = {
       target match {
-        case tuple: Tuple =>
+        case tuple: ast.Tuple =>
           var tupleIndex = 0
           tuple.elts.foreach { tupleElement =>
             getTargetsInternal(tupleElement, tupleIndex :: indexChain)

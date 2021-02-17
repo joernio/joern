@@ -12,7 +12,7 @@ class StrCpgTests extends AnyFreeSpec with Matchers {
 
   "test string literal node properties" in {
     val literal = cpg.literal.head
-    literal.code shouldBe "abc"
+    literal.code shouldBe "\"abc\""
     literal.lineNumber shouldBe Some(1)
     literal.columnNumber shouldBe Some(1)
   }

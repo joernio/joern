@@ -17,7 +17,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
       assignCall.code shouldBe "x = 2"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
-      assignCall.columnNumber shouldBe Some(3)
+      assignCall.columnNumber shouldBe Some(1)
     }
 
     "test assignment node ast children" in {
