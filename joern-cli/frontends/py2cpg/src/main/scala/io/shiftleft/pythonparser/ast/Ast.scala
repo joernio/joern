@@ -493,6 +493,28 @@ case class Continue(attributeProvider: AttributeProvider) extends istmt {
   }
 }
 
+// This is the python2 raise statement.
+// It is different enough from the python3 version to justify an
+// extra class.
+// Note that not all raise statements found in python2 code are
+// represented as and instance of this class. Only if the syntax
+// of a raise does not match the python3 syntax we represent it
+// as such a class.
+case class RaiseP2(typ: Option[iexpr],
+                   inst: Option[iexpr],
+                   tback: Option[iexpr],
+                   attributeProvider: AttributeProvider) extends istmt {
+  def this(typ: iexpr,
+           inst: iexpr,
+           tback: iexpr,
+           attributeProvider: AttributeProvider) = {
+    this(Option(typ), Option(inst), Option(tback), attributeProvider)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
 // This statement is not part of the CPython AST definition and
 // was added to represent parse errors inline with valid AST
 // statements.

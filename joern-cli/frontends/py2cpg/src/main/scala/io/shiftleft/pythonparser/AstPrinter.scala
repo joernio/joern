@@ -23,10 +23,6 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(stmt: istmt): String = ???
 
-  override def visit(errorStmt: ErrorStatement): String = {
-    "<error>"
-  }
-
   override def visit(functionDef: FunctionDef): String = {
     functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
       "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
@@ -211,6 +207,16 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(continue: Continue): String = {
     "continue"
+  }
+
+  override def visit(raise: RaiseP2): String = {
+    "raise" + raise.typ.map(t => " " +  print(t)).getOrElse("") +
+      raise.inst.map(i => ", " + print(i)).getOrElse("") +
+      raise.tback.map(t => ", " + print(t)).getOrElse("")
+  }
+
+  override def visit(errorStmt: ErrorStatement): String = {
+    "<error>"
   }
 
   override def visit(expr: iexpr): String = ???

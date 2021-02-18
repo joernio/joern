@@ -698,20 +698,33 @@ ialias importFromAsName(): {
   { return new Alias(name, asName); }
 }
 
-Raise raiseStatement(): {
+istmt raiseStatement(): {
   Token startToken;
   iexpr exceptionExpr = null;
   iexpr causeExpr = null;
+  iexpr instExpr = null;
+  iexpr tracebackExpr = null;
 } {
   <RAISE> { startToken = token; }
   (
     exceptionExpr = expression()
     (
-      <FROM>
-      causeExpr = expression()
+      (<FROM> causeExpr = expression())
+    | (
+        <COMMA> instExpr = expression()
+        (
+          <COMMA> tracebackExpr = expression()
+        )?
+      )
     )?
   )?
-  { return new Raise(exceptionExpr, causeExpr, attributes(startToken, token)); }
+  {
+    if (instExpr != null) {
+      return new RaiseP2(exceptionExpr, instExpr, tracebackExpr, attributes(startToken, token));
+    } else {
+      return new Raise(exceptionExpr, causeExpr, attributes(startToken, token));
+    }
+  }
 }
 
 Pass passStatement(): {

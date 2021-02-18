@@ -57,6 +57,9 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("raise")
       testT("raise x")
       testT("raise x from y")
+      // Python2 style raise syntax.
+      testT("raise x, y")
+      testT("raise x, y, z")
     }
 
     "pass statement tests" in {
