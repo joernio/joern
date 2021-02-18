@@ -5,6 +5,10 @@ import io.shiftleft.pythonparser.Token
 trait AttributeProvider {
   def lineno: Int
   def col_offset: Int
+
+  override def toString: String = {
+    s"$lineno,$col_offset"
+  }
 }
 
 class TokenAttributeProvider(token: Token) extends AttributeProvider {

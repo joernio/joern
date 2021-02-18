@@ -288,13 +288,16 @@ class ParserTests extends AnyFreeSpec with Matchers {
   "error recovery tests" in {
     testT("<someErr>", "<error>")
     testT("x;<someErr>", "x\n<error>")
+    testT("x;<someErr>;", "x\n<error>")
     testT("<someErr>;x", "<error>\nx")
+    testT("<someErr>;x;", "<error>\nx")
     testT("x;<someErr>;y", "x\n<error>\ny")
     testT("x;<someErr>;y;<someErr>", "x\n<error>\ny\n<error>")
     testT("x\n<someErr>", "x\n<error>")
     testT("<someErr>\nx", "<error>\nx")
     testT("x\n<someErr>\ny", "x\n<error>\ny")
     testT("x\n<someErr>\ny\n<someErr>", "x\n<error>\ny\n<error>")
+    testT("print x = y", "<error>")
   }
 
   "parser tests" in {
@@ -696,6 +699,25 @@ class ParserTests extends AnyFreeSpec with Matchers {
 
   "empty input test" in {
     testT("")
+  }
+
+  "python2 print statement tests" in {
+    testT("print x", "print(x)")
+    testT("print x; print y", "print(x)\nprint(y)")
+    testT("print x\nprint y", "print(x)\nprint(y)")
+    testT("valid1;print x;valid2", "valid1\nprint(x)\nvalid2")
+    testT("valid1\nprint x;valid2", "valid1\nprint(x)\nvalid2")
+    testT("valid1\nprint x\nvalid2", "valid1\nprint(x)\nvalid2")
+    testT("valid1;print x\nvalid2", "valid1\nprint(x)\nvalid2")
+  }
+
+  // These print statements are valid in python2 and python3
+  // but have different semantics in the respective versions.
+  // We favor the python2 interpretation.
+  "ambigious print statement tests" in {
+    testT("print (x), y", "print(x, y)")
+    testT("print (x, y), z", "print(x, y, z)")
+    testT("print (x, y), z, a", "print(x, y, z, a)")
   }
 
   "extra" in {

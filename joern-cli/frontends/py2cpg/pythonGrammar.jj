@@ -29,15 +29,57 @@ public class PythonParser {
     return errors;
   }
 
-  ErrorStatement recoverAndCreateErrorStmt(Exception exception) {
+  ErrorStatement recoverAndCreateErrorStmt(Token lastCorrectToken, Exception exception) {
     getNextToken();
-    Token errorStartToken = token;
     while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
       getNextToken();
     }
+    Token errorStartToken = lastCorrectToken.next;
     ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
     errors.add(errorStmt);
     return errorStmt;
+  }
+
+  // Since this grammar is handling python3 and python2 code, we need to deal with
+  // abiguities between those two python versions.
+  // One such ambiguity is caused by the print statements (not expressions) like:
+  //   print (x), y
+  // In python3 this is a Tuple(elts = [Call(func = print, args = [x]), y])
+  // whereas in python this is a Call(func = print, args = [Tuple(elts = [x]), y]).
+  // Our grammar parses this as a python3 style tuple and this method rewrites the
+  // tuple to the python2 style call.
+  // The reasoning for this is that a statement with a top level tuple used in no
+  // expression is superfluous and thus a rare unexpected case. One could argue
+  // that this case is also expected to be rare in python2 so only time will tell
+  // whether this was the right choice.
+  istmt printStatmentToPython2StyleRewrite(istmt stmt) {
+    if (stmt instanceof Expr) {
+      Expr expr = (Expr) stmt;
+      if (expr.value() instanceof Tuple) {
+        Tuple tuple = (Tuple)expr.value();
+        if (tuple.elts().nonEmpty() && tuple.elts().head() instanceof Call) {
+          Call call = (Call) tuple.elts().head();
+          if (call.func() instanceof Name) {
+            Name name = (Name) call.func();
+            if (name.id().equals("print") && call.keywords().isEmpty()) {
+              ArrayList<iexpr> combinedArgs = new ArrayList<iexpr>();
+              int argCount = call.args().size();
+              for (int i = 0; i < argCount; i++) {
+                combinedArgs.add(call.args().apply(i));
+              }
+              int elementCount = tuple.elts().size();
+              for (int i = 1; i < elementCount; i++) {
+                combinedArgs.add(tuple.elts().apply(i));
+              }
+              return stmt = new Expr(
+                new Call(call.func(), combinedArgs, new ArrayList<ikeyword>(),
+                 call.attributeProvider()));
+            }
+          }
+        }
+      }
+    }
+    return stmt;
   }
 }
 PARSER_END(PythonParser)
@@ -358,7 +400,7 @@ Module module(): {
     )
     { return new Module(allStmts, new ArrayList<itype_ignore>()); }
   } catch (ParseException exception) {
-    ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
+    ErrorStatement errorStmt = recoverAndCreateErrorStmt(token, exception);
     allStmts.add(errorStmt);
     if (token.kind != EOF) {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
@@ -384,7 +426,7 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
     (<DEDENT> | <EOF>)
     { return allStmts; }
   } catch (ParseException exception) {
-    ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
+    ErrorStatement errorStmt = recoverAndCreateErrorStmt(token, exception);
     allStmts.add(errorStmt);
     if (token.kind != EOF) {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
@@ -405,16 +447,16 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
 // know that we rather not return anything that was not terminated by the above
 // special characters.
 ArrayList<istmt> simpleStatement(): {
-  istmt pendingStmt;
+  istmt pendingStmt = null;
   ArrayList<istmt> stmts = new ArrayList<istmt>();
 } {
   try {
     (pendingStmt = smallStatement())
     (LOOKAHEAD(2)
-      <SEMICOLON> { stmts.add(pendingStmt); }
+      <SEMICOLON> { if (pendingStmt != null) stmts.add(pendingStmt); pendingStmt = null; }
       pendingStmt = smallStatement()
     )*
-    (<SEMICOLON> { stmts.add(pendingStmt); pendingStmt = null; })?
+    (<SEMICOLON> { if (pendingStmt != null) stmts.add(pendingStmt); pendingStmt = null; })?
     (<NEWLINE>|<EOF>)
     {
       if (pendingStmt != null) {
@@ -423,7 +465,27 @@ ArrayList<istmt> simpleStatement(): {
       return stmts;
     }
   } catch (ParseException exception) {
-    ErrorStatement errorStmt = recoverAndCreateErrorStmt(exception);
+    Token lastCorrectToken = token;
+    if (pendingStmt != null && pendingStmt instanceof Expr) {
+      Expr expr = (Expr)pendingStmt;
+      if (expr.value() instanceof Name) {
+        Name name = (Name)expr.value();
+        if (name.id().equals("print")) {
+          try {
+            // We got a parsing failure after a "print" Name expression.
+            // Try to interpret as python2 print statement.
+            istmt printStmt = printStatementPython2(token);
+            stmts.add(printStmt);
+            return stmts;
+          } catch (ParseException printException) {
+            // If something goes wrong trying to parse as python2 print
+            // statement, we can rely on the error recovery already for
+            // the initial parse error.
+          }
+        }
+      }
+    }
+    ErrorStatement errorStmt = recoverAndCreateErrorStmt(lastCorrectToken, exception);
     stmts.add(errorStmt);
     // We do not need to recursively invoke simpleStatement() here because the surrounding
     // rule does that already.
@@ -431,11 +493,38 @@ ArrayList<istmt> simpleStatement(): {
   }
 }
 
+// The "print" Name token is expected to already been parsed.
+// Since this rule is only expected to be called in error
+// recovery, it needs to consume trailing semicolons and
+// newline to finish the simpleStatement context and
+// allow normal parsing to continue.
+istmt printStatementPython2(Token printToken): {
+  iexpr expr;
+  ArrayList<iexpr> arguments = new ArrayList<iexpr>();
+} {
+  expr = expression() { arguments.add(expr); }
+  (LOOKAHEAD(2)
+    <COMMA>
+    expr = expression() { arguments.add(expr); }
+  )*
+  (<COMMA>)*
+  (
+    (<SEMICOLON> (<NEWLINE> | <EOF>)?)
+  | <NEWLINE>
+  | <EOF>
+  )
+  {
+    return new Expr(new Call(new Name(printToken.image, attributes(printToken, printToken)),
+      arguments, new ArrayList<ikeyword>(), attributes(printToken, token)));
+  }
+}
+
+
 istmt smallStatement(): {
   istmt stmt;
 } {
   (
-  stmt = assignmentOrExpr()
+  stmt = assignmentOrExpr() { stmt = printStatmentToPython2StyleRewrite(stmt); }
 | stmt = returnStatement()
 | stmt = importStatement()
 | stmt = raiseStatement()
