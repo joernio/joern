@@ -470,18 +470,24 @@ ArrayList<istmt> simpleStatement(): {
       Expr expr = (Expr)pendingStmt;
       if (expr.value() instanceof Name) {
         Name name = (Name)expr.value();
-        if (name.id().equals("print")) {
-          try {
+        try {
+          if (name.id().equals("print")) {
             // We got a parsing failure after a "print" Name expression.
             // Try to interpret as python2 print statement.
-            istmt printStmt = printStatementPython2(token);
+            istmt printStmt = printStatementPython2(name);
             stmts.add(printStmt);
             return stmts;
-          } catch (ParseException printException) {
-            // If something goes wrong trying to parse as python2 print
-            // statement, we can rely on the error recovery already for
-            // the initial parse error.
+          } else if (name.id().equals("exec")) {
+            // We got a parsing failure after a "exec" Name expression.
+            // Try to interpret as python2 exec statement.
+            istmt execStmt = execStatementPython2(name);
+            stmts.add(execStmt);
+            return stmts;
           }
+        } catch (ParseException printException) {
+          // If something goes wrong trying to parse as python2
+          // statement, we can rely on the error recovery already for
+          // the initial parse error.
         }
       }
     }
@@ -493,12 +499,12 @@ ArrayList<istmt> simpleStatement(): {
   }
 }
 
-// The "print" Name token is expected to already been parsed.
+// printName is the already parsed "print" Name expression.
 // Since this rule is only expected to be called in error
 // recovery, it needs to consume trailing semicolons and
 // newline to finish the simpleStatement context and
 // allow normal parsing to continue.
-istmt printStatementPython2(Token printToken): {
+istmt printStatementPython2(Name printName): {
   iexpr expr;
   ArrayList<iexpr> arguments = new ArrayList<iexpr>();
 } {
@@ -514,8 +520,46 @@ istmt printStatementPython2(Token printToken): {
   | <EOF>
   )
   {
-    return new Expr(new Call(new Name(printToken.image, attributes(printToken, printToken)),
-      arguments, new ArrayList<ikeyword>(), attributes(printToken, token)));
+    return new Expr(
+      new Call(printName, arguments, new ArrayList<ikeyword>(), attributes(printName, token)));
+  }
+}
+
+// execName is the already parsed "exec" Name expression.
+// Since this rule is only expected to be called in error
+// recovery, it needs to consume trailing semicolons and
+// newline to finish the simpleStatement context and
+// allow normal parsing to continue.
+istmt execStatementPython2(Name execName): {
+  iexpr codeExpr;
+  iexpr globalsExpr = null;
+  iexpr localsExpr = null;
+} {
+  codeExpr = bitwiseOr()
+  (
+    <IN>
+    globalsExpr = expression()
+    (
+      <COMMA>
+      localsExpr = expression()
+    )?
+  )?
+  (
+    (<SEMICOLON> (<NEWLINE> | <EOF>)?)
+  | <NEWLINE>
+  | <EOF>
+  )
+  {
+    ArrayList<iexpr> arguments = new ArrayList<iexpr>();
+    arguments.add(codeExpr);
+    if (globalsExpr != null) {
+      arguments.add(globalsExpr);
+    }
+    if (localsExpr != null) {
+      arguments.add(localsExpr);
+    }
+    return new Expr(
+      new Call(execName, arguments, new ArrayList<ikeyword>(), attributes(execName, token)));
   }
 }
 

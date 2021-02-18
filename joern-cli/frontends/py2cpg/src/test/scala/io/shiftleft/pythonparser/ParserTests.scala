@@ -731,6 +731,14 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("print (x, y), z, a", "print(x, y, z, a)")
   }
 
+  "python2 exec statement tests" in {
+    testT("exec x", "exec(x)")
+    testT("exec x in y", "exec(x, y)")
+    testT("exec x in y, z", "exec(x, y, z)")
+    testT("exec x; pass", "exec(x)\npass")
+    testT("exec x;\npass", "exec(x)\npass")
+  }
+
   "extra" in {
   }
 }
