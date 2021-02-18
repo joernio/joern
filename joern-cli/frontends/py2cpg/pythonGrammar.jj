@@ -185,7 +185,19 @@ TOKEN: {
 TOKEN: {
   <DEC_INTEGER: <NON_ZERO_DIGIT> (("_")? <DIGIT>)* | "0" (("_")? "0")*>
 | <BIN_INTEGER: "0" ("b" | "B") (("_")? <BIN_DIGIT>)+>
-| <OCT_INTEGER: "0" ("o" | "O") (("_")? <OCT_DIGIT>)+>
+| <OCT_INTEGER:
+  (
+    "0"  ("o" | "O") (("_")? <OCT_DIGIT>)+
+  | // Just a leading 0 without a following o or 0 is python2 style.
+    // This conflicts with the new python3 decimal integer style of writing
+    // zero as an arbitrary number of 0.
+    // This the DEC_INTEGER rule is defined first such a literal is
+    // tokenized as DEC_INTEGER. So we prioritize python3 here.
+    // Since the resulting integer value is in both cases zero the slight
+    // loss precession for python2 seems exceptable.
+  "0" (<OCT_DIGIT>)+
+  )
+  >
 | <HEX_INTEGER: "0" ("x" | "X") (("_")? <HEX_DIGIT>)+>
 | <#DIGIT: ["0" - "9"] >
 | <#NON_ZERO_DIGIT: ["1" - "9"] >

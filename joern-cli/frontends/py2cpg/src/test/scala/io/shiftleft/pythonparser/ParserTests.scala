@@ -675,6 +675,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
 
   "integer literal tests" in {
     testT("000")
+    testT("01")
     testT("1")
     testT("0b1")
     testT("0B1")
