@@ -202,6 +202,17 @@ class ParserTests extends AnyFreeSpec with Matchers {
           |  z
           |finally:
           |  a""".stripMargin)
+      // Python2 style COMMA syntax.
+      testS(
+        """try:
+          |  x
+          |except e, f:
+          |  y""".stripMargin,
+        """try:
+          |  x
+          |except e as f:
+          |  y""".stripMargin,
+      )
     }
 
     "while statement tests" in {

@@ -1331,7 +1331,8 @@ iexcepthandler exceptBlock(): {
   (
     typeExpr = expression()
     (
-      <AS> <NAME> { name = token.image; }
+      // The COMMA is only valid in python2.
+      (<AS> | <COMMA>) <NAME> { name = token.image; }
     )?
   )?
   <COLON>
