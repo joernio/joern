@@ -96,7 +96,31 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
 
   override def visit(annAssign: ast.AnnAssign): NewNode = ???
 
-  override def visit(augAssign: ast.AugAssign): NewNode = ???
+  override def visit(augAssign: ast.AugAssign): NewNode = {
+    val targetNode = augAssign.target.accept(this)
+    val valueNode = augAssign.value.accept(this)
+
+    val (operatorCode, operatorFullName) =
+      augAssign.op match {
+        case ast.Add    => ("+=", Operators.assignmentPlus)
+        case ast.Sub    => ("-=", Operators.assignmentMinus)
+        case ast.Mult   => ("*=", Operators.assignmentMultiplication)
+        case ast.MatMult =>
+          ("@=", "<operator>.assignmentMatMult") // TODO make this a define and add policy for this
+        case ast.Div    => ("/=", Operators.assignmentDivision)
+        case ast.Mod    => ("%=", Operators.assignmentModulo)
+        case ast.Pow    => ("**=", Operators.assignmentExponentiation)
+        case ast.LShift => ("<<=", Operators.assignmentShiftLeft)
+        case ast.RShift => ("<<=", Operators.assignmentArithmeticShiftRight)
+        case ast.BitOr  => ("|=", Operators.assignmentOr)
+        case ast.BitXor => ("^=", Operators.assignmentXor)
+        case ast.BitAnd => ("&=", Operators.assignmentAnd)
+        case ast.FloorDiv =>
+          ("//=", "<operator>.assignmentFloorDiv") // TODO make this a define and add policy for this
+      }
+
+    createAugAssignment(targetNode, operatorCode, valueNode, operatorFullName, lineAndColOf(augAssign))
+  }
 
   override def visit(forStmt: ast.For): NewNode = ???
 

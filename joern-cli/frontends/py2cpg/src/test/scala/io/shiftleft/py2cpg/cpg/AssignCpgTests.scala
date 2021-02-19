@@ -101,4 +101,52 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
       assignNodes.map(_.lineNumber.get) should contain theSameElementsInOrderAs List(1, 1, 1)
     }
   }
+
+  "augmented assign" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x += y""".stripMargin
+    )
+
+    "test assignment node properties" in {
+      val assignCall = cpg.call.methodFullName(Operators.assignmentPlus).head
+      assignCall.code shouldBe "x += y"
+      assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      assignCall.lineNumber shouldBe Some(1)
+      assignCall.columnNumber shouldBe Some(1)
+    }
+
+    "test assignment node ast children" in {
+      cpg.call
+        .methodFullName(Operators.assignmentPlus)
+        .astChildren
+        .order(1)
+        .isIdentifier
+        .head
+        .code shouldBe "x"
+      cpg.call
+        .methodFullName(Operators.assignmentPlus)
+        .astChildren
+        .order(2)
+        .isIdentifier
+        .head
+        .code shouldBe "y"
+    }
+
+    "test assignment node arguments" in {
+      cpg.call
+        .methodFullName(Operators.assignmentPlus)
+        .argument
+        .argumentIndex(1)
+        .isIdentifier
+        .head
+        .code shouldBe "x"
+      cpg.call
+        .methodFullName(Operators.assignmentPlus)
+        .argument
+        .argumentIndex(2)
+        .isIdentifier
+        .head
+        .code shouldBe "y"
+    }
+  }
 }

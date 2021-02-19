@@ -124,6 +124,26 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  protected def createAugAssignment(
+                                     lhsNode: nodes.NewNode,
+                                     operatorCode: String,
+                                     rhsNode: nodes.NewNode,
+                                     operatorFullName: String,
+                                     lineAndColumn: LineAndColumn
+                                ): nodes.NewNode = {
+    val code = codeOf(lhsNode) + " " + operatorCode + " " + codeOf(rhsNode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      operatorFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
+
+    callNode
+  }
+
   protected def createIndexAccess(
       baseNode: nodes.NewNode,
       indexNode: nodes.NewNode,
