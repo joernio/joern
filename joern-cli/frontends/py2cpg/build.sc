@@ -32,7 +32,7 @@ object py2cpg extends SbtModule with ScalafmtModule {
   }
 
   override def ivyDeps = Agg(
-    ivy"io.shiftleft::codepropertygraph:1.2.21",
+    ivy"io.shiftleft::codepropertygraph:1.3.68",
     ivy"io.shiftleft::semanticcpg:1.2.21",
     ivy"io.shiftleft::pythonparser:0.9.0",
     ivy"org.slf4j:slf4j-api:1.7.30",

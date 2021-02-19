@@ -16,67 +16,60 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       dispatchType: String,
       lineAndColumn: LineAndColumn
   ): nodes.NewCall = {
-    val callNode = new nodes.NewCall(
-      code = code,
-      name = name,
-      methodFullName = name,
-      dispatchType = dispatchType,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val callNode = nodes.NewCall()
+      .code(code)
+      .name(name)
+      .methodFullName(name)
+      .dispatchType(dispatchType)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(callNode)
   }
 
   def typeNode(name: String, fullName: String): nodes.NewType = {
-    val typeNode = new nodes.NewType(
-      name = name,
-      fullName = fullName,
-      typeDeclFullName = fullName
-    )
+    val typeNode = nodes.NewType()
+      .name(name)
+      .fullName(fullName)
+      .typeDeclFullName(fullName)
     addNodeToDiff(typeNode)
   }
 
   def typeDeclNode(name: String, fullName: String): nodes.NewTypeDecl = {
-    val typeDeclNode = new nodes.NewTypeDecl(
-      name = name,
-      fullName = fullName,
-      isExternal = false
-    )
+    val typeDeclNode = nodes.NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+      .isExternal(false)
     addNodeToDiff(typeDeclNode)
   }
 
   def typeRefNode(code: String, lineAndColumn: LineAndColumn): nodes.NewTypeRef = {
-    val typeRefNode = new nodes.NewTypeRef(
-      code = code,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val typeRefNode = nodes.NewTypeRef()
+      .code(code)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(typeRefNode)
   }
 
   def methodNode(lineAndColumn: LineAndColumn): nodes.NewMethod = {
-    val methodNode = new nodes.NewMethod(
-    )
+    val methodNode = nodes.NewMethod()
     addNodeToDiff(methodNode)
   }
 
   def identifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
-    val identifierNode = new nodes.NewIdentifier(
-      code = name,
-      name = name,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val identifierNode = nodes.NewIdentifier()
+      .code(name)
+      .name(name)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(identifierNode)
   }
 
   def fieldIdentifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewFieldIdentifier = {
-    val fieldIdentifierNode = new nodes.NewFieldIdentifier(
-      code = name,
-      canonicalName = name,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val fieldIdentifierNode = nodes.NewFieldIdentifier()
+      .code(name)
+      .canonicalName(name)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(fieldIdentifierNode)
   }
 
@@ -85,29 +78,26 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
   }
 
   def numberLiteralNode(number: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
-    val literalNode = new nodes.NewLiteral(
-      code = number.toString,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val literalNode = nodes.NewLiteral()
+      .code(number)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(literalNode)
   }
 
   def stringLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
-    val literalNode = new nodes.NewLiteral(
-      code = string,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val literalNode = nodes.NewLiteral()
+      .code(string)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(literalNode)
   }
 
   def blockNode(code: String, lineAndColumn: LineAndColumn): nodes.NewBlock = {
-    val blockNode = new nodes.NewBlock(
-      code = code,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val blockNode = nodes.NewBlock()
+      .code(code)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(blockNode)
   }
 
@@ -116,28 +106,25 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       parserTypeName: String,
       lineAndColumn: LineAndColumn
   ): nodes.NewControlStructure = {
-    val controlStructureNode = new nodes.NewControlStructure(
-      code = code,
-      parserTypeName = parserTypeName,
-      lineNumber = Some(lineAndColumn.line),
-      columnNumber = Some(lineAndColumn.column)
-    )
+    val controlStructureNode = nodes.NewControlStructure()
+      .code(code)
+      .parserTypeName(parserTypeName)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(controlStructureNode)
   }
 
   def localNode(name: String): nodes.NewLocal = {
-    val localNode = new nodes.NewLocal(
-      code = name,
-      name = name
-    )
+    val localNode = nodes.NewLocal()
+      .code(name)
+      .name(name)
     addNodeToDiff(localNode)
   }
 
   def metaNode(language: String, version: String): nodes.NewMetaData = {
-    val metaNode = new nodes.NewMetaData(
-      language = language,
-      version = version
-    )
+    val metaNode = nodes.NewMetaData()
+      .language(language)
+      .version(version)
     addNodeToDiff(metaNode)
   }
 }
