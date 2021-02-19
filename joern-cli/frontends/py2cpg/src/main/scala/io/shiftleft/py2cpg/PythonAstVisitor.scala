@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
-import io.shiftleft.pythonparser.ast.{Add, Alias, And, AnnAssign, Arg, Arguments, Assert, AsyncFor, AsyncFunctionDef, AsyncWith, AugAssign, Await, BitAnd, BitOr, BitXor, BoolConstant, ClassDef, Compare, Comprehension, Delete, Dict, DictComp, Div, EllipsisConstant, Eq, ErrorStatement, ExceptHandler, FloatConstant, FloorDiv, For, FunctionDef, GeneratorExp, Global, Gt, GtE, IfExp, ImaginaryConstant, Import, ImportFrom, In, IntConstant, Invert, Is, IsNot, Keyword, LShift, Lambda, ListComp, Lt, LtE, MatMult, Mod, Mult, NamedExpr, NoneConstant, Nonlocal, Not, NotEq, NotIn, Or, Pow, RShift, Raise, Return, SetComp, Slice, Starred, StringConstant, StringExpList, Sub, Subscript, Try, Tuple, TypeIgnore, UAdd, USub, With, WithItem, Yield, YieldFrom, ialias, iarg, iarguments, iboolop, icompop, icomprehension, iconstant, iexcepthandler, iexpr, ikeyword, imod, ioperator, istmt, itype_ignore, iunaryop, iwithitem}
 
 import scala.collection.mutable
 
@@ -21,26 +20,24 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
 
   override def visit(astNode: ast.iast): nodes.NewNode = ???
 
-  override def visit(mod: imod): NewNode = ???
+  override def visit(mod: ast.imod): NewNode = ???
 
   override def visit(module: ast.Module): nodes.NewNode = {
     module.stmts.foreach(_.accept(this))
     null
   }
 
-  override def visit(stmt: istmt): NewNode = ???
+  override def visit(stmt: ast.istmt): NewNode = ???
 
-  override def visit(errorStatement: ErrorStatement): NewNode = ???
+  override def visit(functionDef: ast.FunctionDef): NewNode = ???
 
-  override def visit(functionDef: FunctionDef): NewNode = ???
+  override def visit(functionDef: ast.AsyncFunctionDef): NewNode = ???
 
-  override def visit(functionDef: AsyncFunctionDef): NewNode = ???
+  override def visit(classDef: ast.ClassDef): NewNode = ???
 
-  override def visit(classDef: ClassDef): NewNode = ???
+  override def visit(ret: ast.Return): NewNode = ???
 
-  override def visit(ret: Return): NewNode = ???
-
-  override def visit(delete: Delete): NewNode = ???
+  override def visit(delete: ast.Delete): NewNode = ???
 
   override def visit(assign: ast.Assign): nodes.NewNode = {
     if (assign.targets.size == 1) {
@@ -97,13 +94,13 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     }
   }
 
-  override def visit(annAssign: AnnAssign): NewNode = ???
+  override def visit(annAssign: ast.AnnAssign): NewNode = ???
 
-  override def visit(augAssign: AugAssign): NewNode = ???
+  override def visit(augAssign: ast.AugAssign): NewNode = ???
 
-  override def visit(forStmt: For): NewNode = ???
+  override def visit(forStmt: ast.For): NewNode = ???
 
-  override def visit(forStmt: AsyncFor): NewNode = ???
+  override def visit(forStmt: ast.AsyncFor): NewNode = ???
 
   override def visit(astWhile: ast.While): nodes.NewNode = {
     val conditionNode = astWhile.test.accept(this)
@@ -137,23 +134,23 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     controlStructureNode
   }
 
-  override def visit(withStmt: With): NewNode = ???
+  override def visit(withStmt: ast.With): NewNode = ???
 
-  override def visit(withStmt: AsyncWith): NewNode = ???
+  override def visit(withStmt: ast.AsyncWith): NewNode = ???
 
-  override def visit(raise: Raise): NewNode = ???
+  override def visit(raise: ast.Raise): NewNode = ???
 
-  override def visit(tryStmt: Try): NewNode = ???
+  override def visit(tryStmt: ast.Try): NewNode = ???
 
-  override def visit(assert: Assert): NewNode = ???
+  override def visit(assert: ast.Assert): NewNode = ???
 
-  override def visit(importStmt: Import): NewNode = ???
+  override def visit(importStmt: ast.Import): NewNode = ???
 
-  override def visit(importFrom: ImportFrom): NewNode = ???
+  override def visit(importFrom: ast.ImportFrom): NewNode = ???
 
-  override def visit(global: Global): NewNode = ???
+  override def visit(global: ast.Global): NewNode = ???
 
-  override def visit(nonlocal: Nonlocal): NewNode = ???
+  override def visit(nonlocal: ast.Nonlocal): NewNode = ???
 
   override def visit(expr: ast.Expr): nodes.NewNode = {
     expr.value.accept(this)
@@ -176,7 +173,11 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     nodeBuilder.controlStructureNode("continue", "ContinueStatement", lineAndColOf(astContinue))
   }
 
-  override def visit(expr: iexpr): NewNode = ???
+  def visit(raise: ast.RaiseP2): NewNode = ???
+
+  override def visit(errorStatement: ast.ErrorStatement): NewNode = ???
+
+  override def visit(expr: ast.iexpr): NewNode = ???
 
   override def visit(boolOp: ast.BoolOp): nodes.NewNode = {
     val argNodes = boolOp.values.map(_.accept(this))
@@ -200,7 +201,7 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     callNode
   }
 
-  override def visit(namedExpr: NamedExpr): NewNode = ???
+  override def visit(namedExpr: ast.NamedExpr): NewNode = ???
 
   override def visit(binOp: ast.BinOp): nodes.NewNode = {
     val lhsNode = binOp.left.accept(this)
@@ -262,29 +263,29 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     callNode
   }
 
-  override def visit(lambda: Lambda): NewNode = ???
+  override def visit(lambda: ast.Lambda): NewNode = ???
 
-  override def visit(ifExp: IfExp): NewNode = ???
+  override def visit(ifExp: ast.IfExp): NewNode = ???
 
-  override def visit(dict: Dict): NewNode = ???
+  override def visit(dict: ast.Dict): NewNode = ???
 
   override def visit(set: ast.Set): NewNode = ???
 
-  override def visit(listComp: ListComp): NewNode = ???
+  override def visit(listComp: ast.ListComp): NewNode = ???
 
-  override def visit(setComp: SetComp): NewNode = ???
+  override def visit(setComp: ast.SetComp): NewNode = ???
 
-  override def visit(dictComp: DictComp): NewNode = ???
+  override def visit(dictComp: ast.DictComp): NewNode = ???
 
-  override def visit(generatorExp: GeneratorExp): NewNode = ???
+  override def visit(generatorExp: ast.GeneratorExp): NewNode = ???
 
-  override def visit(await: Await): NewNode = ???
+  override def visit(await: ast.Await): NewNode = ???
 
-  override def visit(yieldExpr: Yield): NewNode = ???
+  override def visit(yieldExpr: ast.Yield): NewNode = ???
 
-  override def visit(yieldFrom: YieldFrom): NewNode = ???
+  override def visit(yieldFrom: ast.YieldFrom): NewNode = ???
 
-  override def visit(compare: Compare): NewNode = ???
+  override def visit(compare: ast.Compare): NewNode = ???
 
   /** TODO
     * For now this function compromises on the correctness of the
@@ -349,9 +350,9 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     createFieldAccess(baseNode, fieldIdNode, lineAndColOf(attribute))
   }
 
-  override def visit(subscript: Subscript): NewNode = ???
+  override def visit(subscript: ast.Subscript): NewNode = ???
 
-  override def visit(starred: Starred): NewNode = ???
+  override def visit(starred: ast.Starred): NewNode = ???
 
   override def visit(name: ast.Name): nodes.NewNode = {
     nodeBuilder.identifierNode(name.id, lineAndColOf(name))
@@ -393,123 +394,123 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     createBlock(Iterable.single(localNode), blockElements, lineAndColOf(list))
   }
 
-  override def visit(tuple: Tuple): NewNode = ???
+  override def visit(tuple: ast.Tuple): NewNode = ???
 
-  override def visit(slice: Slice): NewNode = ???
+  override def visit(slice: ast.Slice): NewNode = ???
 
-  override def visit(stringExpList: StringExpList): NewNode = ???
+  override def visit(stringExpList: ast.StringExpList): NewNode = ???
 
-  override def visit(boolop: iboolop): NewNode = ???
+  override def visit(boolop: ast.iboolop): NewNode = ???
 
-  override def visit(and: And.type): NewNode = ???
+  override def visit(and: ast.And.type): NewNode = ???
 
-  override def visit(or: Or.type): NewNode = ???
+  override def visit(or: ast.Or.type): NewNode = ???
 
-  override def visit(operator: ioperator): NewNode = ???
+  override def visit(operator: ast.ioperator): NewNode = ???
 
-  override def visit(add: Add.type): NewNode = ???
+  override def visit(add: ast.Add.type): NewNode = ???
 
-  override def visit(sub: Sub.type): NewNode = ???
+  override def visit(sub: ast.Sub.type): NewNode = ???
 
-  override def visit(mult: Mult.type): NewNode = ???
+  override def visit(mult: ast.Mult.type): NewNode = ???
 
-  override def visit(matMult: MatMult.type): NewNode = ???
+  override def visit(matMult: ast.MatMult.type): NewNode = ???
 
-  override def visit(div: Div.type): NewNode = ???
+  override def visit(div: ast.Div.type): NewNode = ???
 
-  override def visit(mod: Mod.type): NewNode = ???
+  override def visit(mod: ast.Mod.type): NewNode = ???
 
-  override def visit(pow: Pow.type): NewNode = ???
+  override def visit(pow: ast.Pow.type): NewNode = ???
 
-  override def visit(lShift: LShift.type): NewNode = ???
+  override def visit(lShift: ast.LShift.type): NewNode = ???
 
-  override def visit(rShift: RShift.type): NewNode = ???
+  override def visit(rShift: ast.RShift.type): NewNode = ???
 
-  override def visit(bitOr: BitOr.type): NewNode = ???
+  override def visit(bitOr: ast.BitOr.type): NewNode = ???
 
-  override def visit(bitXor: BitXor.type): NewNode = ???
+  override def visit(bitXor: ast.BitXor.type): NewNode = ???
 
-  override def visit(bitAnd: BitAnd.type): NewNode = ???
+  override def visit(bitAnd: ast.BitAnd.type): NewNode = ???
 
-  override def visit(floorDiv: FloorDiv.type): NewNode = ???
+  override def visit(floorDiv: ast.FloorDiv.type): NewNode = ???
 
-  override def visit(unaryop: iunaryop): NewNode = ???
+  override def visit(unaryop: ast.iunaryop): NewNode = ???
 
-  override def visit(invert: Invert.type): NewNode = ???
+  override def visit(invert: ast.Invert.type): NewNode = ???
 
-  override def visit(not: Not.type): NewNode = ???
+  override def visit(not: ast.Not.type): NewNode = ???
 
-  override def visit(uAdd: UAdd.type): NewNode = ???
+  override def visit(uAdd: ast.UAdd.type): NewNode = ???
 
-  override def visit(uSub: USub.type): NewNode = ???
+  override def visit(uSub: ast.USub.type): NewNode = ???
 
-  override def visit(compop: icompop): NewNode = ???
+  override def visit(compop: ast.icompop): NewNode = ???
 
-  override def visit(eq: Eq.type): NewNode = ???
+  override def visit(eq: ast.Eq.type): NewNode = ???
 
-  override def visit(notEq: NotEq.type): NewNode = ???
+  override def visit(notEq: ast.NotEq.type): NewNode = ???
 
-  override def visit(lt: Lt.type): NewNode = ???
+  override def visit(lt: ast.Lt.type): NewNode = ???
 
-  override def visit(ltE: LtE.type): NewNode = ???
+  override def visit(ltE: ast.LtE.type): NewNode = ???
 
-  override def visit(gt: Gt.type): NewNode = ???
+  override def visit(gt: ast.Gt.type): NewNode = ???
 
-  override def visit(gtE: GtE.type): NewNode = ???
+  override def visit(gtE: ast.GtE.type): NewNode = ???
 
-  override def visit(is: Is.type): NewNode = ???
+  override def visit(is: ast.Is.type): NewNode = ???
 
-  override def visit(isNot: IsNot.type): NewNode = ???
+  override def visit(isNot: ast.IsNot.type): NewNode = ???
 
-  override def visit(in: In.type): NewNode = ???
+  override def visit(in: ast.In.type): NewNode = ???
 
-  override def visit(notIn: NotIn.type): NewNode = ???
+  override def visit(notIn: ast.NotIn.type): NewNode = ???
 
-  override def visit(comprehension: icomprehension): NewNode = ???
+  override def visit(comprehension: ast.icomprehension): NewNode = ???
 
-  override def visit(comprehension: Comprehension): NewNode = ???
+  override def visit(comprehension: ast.Comprehension): NewNode = ???
 
-  override def visit(exceptHandler: iexcepthandler): NewNode = ???
+  override def visit(exceptHandler: ast.iexcepthandler): NewNode = ???
 
-  override def visit(exceptHandler: ExceptHandler): NewNode = ???
+  override def visit(exceptHandler: ast.ExceptHandler): NewNode = ???
 
-  override def visit(arguments: iarguments): NewNode = ???
+  override def visit(arguments: ast.iarguments): NewNode = ???
 
-  override def visit(arguments: Arguments): NewNode = ???
+  override def visit(arguments: ast.Arguments): NewNode = ???
 
-  override def visit(arg: iarg): NewNode = ???
+  override def visit(arg: ast.iarg): NewNode = ???
 
-  override def visit(arg: Arg): NewNode = ???
+  override def visit(arg: ast.Arg): NewNode = ???
 
-  override def visit(constant: iconstant): NewNode = ???
+  override def visit(constant: ast.iconstant): NewNode = ???
 
-  override def visit(stringConstant: StringConstant): NewNode = ???
+  override def visit(stringConstant: ast.StringConstant): NewNode = ???
 
-  override def visit(boolConstant: BoolConstant): NewNode = ???
+  override def visit(boolConstant: ast.BoolConstant): NewNode = ???
 
-  override def visit(intConstant: IntConstant): NewNode = ???
+  override def visit(intConstant: ast.IntConstant): NewNode = ???
 
-  override def visit(intConstant: FloatConstant): NewNode = ???
+  override def visit(intConstant: ast.FloatConstant): NewNode = ???
 
-  override def visit(imaginaryConstant: ImaginaryConstant): NewNode = ???
+  override def visit(imaginaryConstant: ast.ImaginaryConstant): NewNode = ???
 
-  override def visit(noneConstant: NoneConstant.type): NewNode = ???
+  override def visit(noneConstant: ast.NoneConstant.type): NewNode = ???
 
-  override def visit(ellipsisConstant: EllipsisConstant.type): NewNode = ???
+  override def visit(ellipsisConstant: ast.EllipsisConstant.type): NewNode = ???
 
-  override def visit(keyword: ikeyword): NewNode = ???
+  override def visit(keyword: ast.ikeyword): NewNode = ???
 
-  override def visit(keyword: Keyword): NewNode = ???
+  override def visit(keyword: ast.Keyword): NewNode = ???
 
-  override def visit(alias: ialias): NewNode = ???
+  override def visit(alias: ast.ialias): NewNode = ???
 
-  override def visit(alias: Alias): NewNode = ???
+  override def visit(alias: ast.Alias): NewNode = ???
 
-  override def visit(withItem: iwithitem): NewNode = ???
+  override def visit(withItem: ast.iwithitem): NewNode = ???
 
-  override def visit(withItem: WithItem): NewNode = ???
+  override def visit(withItem: ast.WithItem): NewNode = ???
 
-  override def visit(typeIgnore: itype_ignore): NewNode = ???
+  override def visit(typeIgnore: ast.itype_ignore): NewNode = ???
 
-  override def visit(typeIgnore: TypeIgnore): NewNode = ???
+  override def visit(typeIgnore: ast.TypeIgnore): NewNode = ???
 }
