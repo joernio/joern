@@ -48,8 +48,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val blockCode = blockElements.map(codeOf).mkString("\n")
     val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
 
-    var orderIndex = 1
-    orderIndex = addAstChildNodes(blockNode, orderIndex, locals)
+    var orderIndex = new AutoIncIndex(1)
+    addAstChildNodes(blockNode, orderIndex, locals)
     addAstChildNodes(blockNode, orderIndex, blockElements)
 
     blockNode
@@ -186,44 +186,72 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
   protected def addAstChildNodes(
       parentNode: nodes.NewNode,
-      startIndex: Int,
+      startIndex: AutoIncIndex,
       childNodes: Iterable[nodes.NewNode]
-  ): Int = {
-    var orderIndex = startIndex
+  ): Unit = {
     childNodes.foreach { childNode =>
+      val orderIndex = startIndex.getAndInc
       edgeBuilder.astEdge(childNode, parentNode, orderIndex)
-      orderIndex += 1
     }
-    orderIndex
+  }
+
+  protected def addAstChildNodes(
+                                  parentNode: nodes.NewNode,
+                                  startIndex: Int,
+                                  childNodes: Iterable[nodes.NewNode]
+                                ): Unit = {
+    addAstChildNodes(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
   protected def addAstChildNodes(
       parentNode: nodes.NewNode,
-      startIndex: Int,
+      startIndex: AutoIncIndex,
       childNodes: nodes.NewNode*
-  ): Int = {
+  ): Unit = {
     addAstChildNodes(parentNode, startIndex, childNodes)
   }
 
-  protected def addAstChildrenAsArguments(
-      parentNode: nodes.NewNode,
-      startIndex: Int,
-      childNodes: Iterable[nodes.NewNode]
-  ): Int = {
-    var orderAndArgIndex = startIndex
-    childNodes.foreach { childNode =>
-      edgeBuilder.astEdge(childNode, parentNode, orderAndArgIndex)
-      edgeBuilder.argumentEdge(childNode, parentNode, orderAndArgIndex)
-      orderAndArgIndex += 1
-    }
-    orderAndArgIndex
+  protected def addAstChildNodes(
+                                  parentNode: nodes.NewNode,
+                                  startIndex: Int,
+                                  childNodes: nodes.NewNode*
+                                ): Unit = {
+    addAstChildNodes(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
   protected def addAstChildrenAsArguments(
       parentNode: nodes.NewNode,
-      startIndex: Int,
+      startIndex: AutoIncIndex,
+      childNodes: Iterable[nodes.NewNode]
+  ): Unit = {
+    childNodes.foreach { childNode =>
+      val orderAndArgIndex = startIndex.getAndInc
+      edgeBuilder.astEdge(childNode, parentNode, orderAndArgIndex)
+      edgeBuilder.argumentEdge(childNode, parentNode, orderAndArgIndex)
+    }
+  }
+
+  protected def addAstChildrenAsArguments(
+                                           parentNode: nodes.NewNode,
+                                           startIndex: Int,
+                                           childNodes: Iterable[nodes.NewNode]
+                                         ): Unit = {
+    addAstChildrenAsArguments(parentNode, new AutoIncIndex(startIndex), childNodes)
+  }
+
+  protected def addAstChildrenAsArguments(
+      parentNode: nodes.NewNode,
+      startIndex: AutoIncIndex,
       childNodes: nodes.NewNode*
-  ): Int = {
+  ): Unit = {
     addAstChildrenAsArguments(parentNode, startIndex, childNodes)
+  }
+
+  protected def addAstChildrenAsArguments(
+                                           parentNode: nodes.NewNode,
+                                           startIndex: Int,
+                                           childNodes: nodes.NewNode*
+                                         ): Unit = {
+    addAstChildrenAsArguments(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 }
