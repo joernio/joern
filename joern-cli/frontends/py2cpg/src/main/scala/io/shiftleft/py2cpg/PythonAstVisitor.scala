@@ -37,7 +37,20 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
 
   override def visit(ret: ast.Return): NewNode = ???
 
-  override def visit(delete: ast.Delete): NewNode = ???
+  override def visit(delete: ast.Delete): NewNode = {
+    val deleteArgs = delete.targets.map(_.accept(this))
+
+    val code = "del " + deleteArgs.map(codeOf).mkString(", ")
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.delete",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(delete)
+    )
+
+    addAstChildrenAsArguments(callNode, 1, deleteArgs)
+    callNode
+  }
 
   override def visit(assign: ast.Assign): nodes.NewNode = {
     if (assign.targets.size == 1) {
