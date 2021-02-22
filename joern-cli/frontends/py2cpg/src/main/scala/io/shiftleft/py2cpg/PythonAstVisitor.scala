@@ -107,7 +107,22 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
     }
   }
 
-  override def visit(annAssign: ast.AnnAssign): NewNode = ???
+  // TODO for now we ignore the annotation part and just emit the pure
+  // assignment.
+  override def visit(annotatedAssign: ast.AnnAssign): NewNode = {
+    val targetNode = annotatedAssign.target.accept(this)
+
+    annotatedAssign.value match {
+      case Some(value) =>
+        val valueNode = value.accept(this)
+        createAssignment(targetNode, valueNode, lineAndColOf(annotatedAssign))
+      case None =>
+        // If there is no value, this is just an expr: annotation and since
+        // we for now ignore the annotation we emit just the expr because
+        // it may have side effects.
+        targetNode
+    }
+  }
 
   override def visit(augAssign: ast.AugAssign): NewNode = {
     val targetNode = augAssign.target.accept(this)

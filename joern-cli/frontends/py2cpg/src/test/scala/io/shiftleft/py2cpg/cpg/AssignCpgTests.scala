@@ -102,6 +102,67 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "annotated assign" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x: y = z""".stripMargin
+    )
+
+    "test assignment node properties" in {
+      val assignCall = cpg.call.methodFullName(Operators.assignment).head
+      assignCall.code shouldBe "x = z"
+      assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      assignCall.lineNumber shouldBe Some(1)
+      assignCall.columnNumber shouldBe Some(1)
+    }
+
+    "test assignment node ast children" in {
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .astChildren
+        .order(1)
+        .isIdentifier
+        .head
+        .code shouldBe "x"
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .astChildren
+        .order(2)
+        .isIdentifier
+        .head
+        .code shouldBe "z"
+    }
+
+    "test assignment node arguments" in {
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .argument
+        .argumentIndex(1)
+        .isIdentifier
+        .head
+        .code shouldBe "x"
+      cpg.call
+        .methodFullName(Operators.assignment)
+        .argument
+        .argumentIndex(2)
+        .isIdentifier
+        .head
+        .code shouldBe "z"
+    }
+  }
+
+  "annotated assign without value" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x: y""".stripMargin
+    )
+
+    "test target expression node properties" in {
+      val assignCall = cpg.identifier.name("x").head
+      assignCall.code shouldBe "x"
+      assignCall.lineNumber shouldBe Some(1)
+      assignCall.columnNumber shouldBe Some(1)
+    }
+  }
+
   "augmented assign" - {
     lazy val cpg = Py2CpgTestContext.buildCpg(
       """x += y""".stripMargin
