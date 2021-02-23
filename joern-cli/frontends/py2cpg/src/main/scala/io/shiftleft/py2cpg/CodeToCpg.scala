@@ -3,22 +3,19 @@ package io.shiftleft.py2cpg
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.pythonparser.PyParser
 import io.shiftleft.pythonparser.ast.iast
+import io.shiftleft.py2cpg.Py2Cpg.InputPair
 
-class CodeToCpg(sourceCode: String) {
+class CodeToCpg(inputPair: InputPair) {
   def convert(): Iterator[DiffGraph] = {
-    if (sourceCode.isEmpty) {
-      // For some reason the PyDev parser cannot handle empty input.
-      return Iterator.empty
-    }
     val astRoot = parseSourceCode()
-    val pyDevAstVisitor = new PythonAstVisitor()
-    astRoot.accept(pyDevAstVisitor)
+    val astVisitor = new PythonAstVisitor(inputPair.file)
+    astRoot.accept(astVisitor)
 
-    Iterator(pyDevAstVisitor.getDiffGraph)
+    Iterator(astVisitor.getDiffGraph)
   }
 
   private def parseSourceCode(): iast = {
     val parser = new PyParser()
-    parser.parse(sourceCode)
+    parser.parse(inputPair.content)
   }
 }

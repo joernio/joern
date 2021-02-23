@@ -45,6 +45,14 @@ class EdgeBuilder(diffGraph: DiffGraph.Builder) {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.CONDITION)
   }
 
+  def refEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.REF)
+  }
+
+  def bindsEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.BINDS)
+  }
+
   private def addOrder(node: CpgNode, order: Int): Unit = node match {
     case n: NewTypeDecl          => n.order = order
     case n: NewBlock             => n.order = order

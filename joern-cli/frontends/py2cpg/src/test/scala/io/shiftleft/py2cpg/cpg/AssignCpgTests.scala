@@ -63,12 +63,17 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
       """x, (y, z) = list""".stripMargin
     )
 
+    def getSurroundingBlock: nodes.Block = {
+      cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
+    }
+
     "test block exists" in {
-      cpg.all.collect { case block: nodes.Block => block }.size shouldBe 1
+      // Throws if block does not exist.
+      getSurroundingBlock
     }
 
     "test block node properties" in {
-      val block = cpg.all.collect { case block: nodes.Block => block }.head
+      val block = getSurroundingBlock
       block.code shouldBe
         """tmp = list
           |x = tmp[0]
@@ -78,12 +83,12 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test local node" in {
-      val block = cpg.all.collect { case block: nodes.Block => block }.head
+      val block = getSurroundingBlock
       block.astChildren.isLocal.head.code shouldBe "tmp"
     }
 
     "test tmp variable assignment" in {
-      val block = cpg.all.collect { case block: nodes.Block => block }.head
+      val block = getSurroundingBlock
       val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
       tmpAssignNode.code shouldBe "tmp = list"
       tmpAssignNode.methodFullName shouldBe Operators.assignment
@@ -91,7 +96,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test assignments to targets" in {
-      val block = cpg.all.collect { case block: nodes.Block => block }.head
+      val block = getSurroundingBlock
       val assignNodes = block.astChildren.isCall.sortBy(_.order).tail
       assignNodes.map(_.code) should contain theSameElementsInOrderAs List(
         "x = tmp[0]",

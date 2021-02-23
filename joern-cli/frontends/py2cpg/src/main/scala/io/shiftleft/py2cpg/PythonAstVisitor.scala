@@ -1,18 +1,21 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
+import io.shiftleft.semanticcpg.language.toMethodForCallGraph
 
 import scala.collection.mutable
 
-class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHelpers {
+class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with PythonAstVisitorHelpers {
 
   private val diffGraph = new DiffGraph.Builder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
+
+  private val contextStack = new ContextStack()
 
   def getDiffGraph: DiffGraph = {
     diffGraph.build()
@@ -22,16 +25,129 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
 
   override def visit(mod: ast.imod): NewNode = ???
 
+  // Entry method for the visitor.
   override def visit(module: ast.Module): nodes.NewNode = {
-    module.stmts.foreach(_.accept(this))
+    val fileNode = nodeBuilder.fileNode(fileName)
+    val namespaceBlockNode = nodeBuilder.namespaceBlockNode(fileName)
+    edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
+
+    contextStack.pushNamespaceBlock(namespaceBlockNode)
+
+    val methodFullName = calcMethodFullNameFromContext("module")
+
+    createMethod("module",
+      methodFullName,
+      (_: nodes.NewMethod) => (),
+      body = module.stmts,
+      decoratorList = Nil,
+      returns = None,
+      isAsync = false,
+      LineAndColumn(1, 1)
+    )
+
+    contextStack.pop()
+
     null
   }
 
   override def visit(stmt: ast.istmt): NewNode = ???
 
-  override def visit(functionDef: ast.FunctionDef): NewNode = ???
+  override def visit(functionDef: ast.FunctionDef): NewNode = {
+    createMethodAndMethodRef(functionDef.name,
+      createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
+      functionDef.body,
+      functionDef.decorator_list,
+      functionDef.returns,
+      isAsync = false,
+      lineAndColOf(functionDef))
+  }
 
-  override def visit(functionDef: ast.AsyncFunctionDef): NewNode = ???
+  override def visit(functionDef: ast.AsyncFunctionDef): NewNode = {
+    createMethodAndMethodRef(functionDef.name,
+      createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
+      functionDef.body,
+      functionDef.decorator_list,
+      functionDef.returns,
+      isAsync = true,
+      lineAndColOf(functionDef))
+  }
+
+  private def createParameterProcessingFunction(parameters: ast.Arguments)
+                                               (methodNode: nodes.NewMethod): Unit = {
+    val parameterOrder = if (contextStack.isClassContext) {
+      new AutoIncIndex(0)
+    } else {
+      new AutoIncIndex(1)
+    }
+    parameters.posonlyargs.map(_.accept(this)).foreach { parameterNode =>
+      edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
+    }
+    parameters.args.map(_.accept(this)).foreach { parameterNode =>
+      edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
+    }
+    // TODO implement non position arguments and vararg.
+  }
+
+  private def createMethodAndMethodRef(methodName: String,
+                                       parameterProcessing: nodes.NewMethod => Unit,
+                                       body: Iterable[ast.istmt],
+                                       decoratorList: Iterable[ast.iexpr],
+                                       returns: Option[ast.iexpr],
+                                       isAsync: Boolean,
+                                       lineAndColumn: LineAndColumn): nodes.NewMethodRef = {
+    val methodFullName = calcMethodFullNameFromContext(methodName)
+
+    val methodNode =
+      createMethod(methodName,
+        methodFullName,
+        parameterProcessing,
+        body,
+        decoratorList,
+        returns,
+        isAsync = true,
+        lineAndColumn)
+
+    val typeNode = nodeBuilder.typeNode(methodName, methodFullName)
+    val typeDeclNode = nodeBuilder.typeDeclNode(methodName, methodFullName)
+    edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
+
+    createBinding(methodNode, typeDeclNode)
+
+    nodeBuilder.methodRefNode(methodName, methodFullName, lineAndColumn)
+  }
+
+  private def createMethod(name: String,
+                           fullName: String,
+                           parameterProcessing: nodes.NewMethod => Unit,
+                           body: Iterable[ast.istmt],
+                           decoratorList: Iterable[ast.iexpr],
+                           returns: Option[ast.iexpr],
+                           isAsync: Boolean,
+                           lineAndColumn: LineAndColumn): nodes.NewMethod = {
+    val methodNode = nodeBuilder.methodNode(name, fullName, lineAndColumn)
+    edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
+
+    contextStack.pushMethod(name, methodNode)
+
+    val virtualModifierNode = nodeBuilder.modifierNode(ModifierTypes.VIRTUAL)
+    edgeBuilder.astEdge(virtualModifierNode, methodNode, 0)
+
+    val blockNode = nodeBuilder.blockNode("", lineAndColumn)
+    edgeBuilder.astEdge(blockNode, methodNode, 1)
+
+    parameterProcessing(methodNode)
+
+    val methodReturnNode = nodeBuilder.methodReturnNode(lineAndColumn)
+    edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
+
+    val bodyOrder = new AutoIncIndex(1)
+    body.map(_.accept(this)).foreach { bodyStmt =>
+      edgeBuilder.astEdge(bodyStmt, blockNode, bodyOrder.getAndInc)
+    }
+
+    contextStack.pop()
+    methodNode
+  }
 
   override def visit(classDef: ast.ClassDef): NewNode = ???
 
@@ -532,7 +648,9 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
 
   override def visit(arg: ast.iarg): NewNode = ???
 
-  override def visit(arg: ast.Arg): NewNode = ???
+  override def visit(arg: ast.Arg): NewNode = {
+    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+  }
 
   override def visit(constant: ast.iconstant): NewNode = ???
 
@@ -565,4 +683,13 @@ class PythonAstVisitor extends AstVisitor[nodes.NewNode] with PythonAstVisitorHe
   override def visit(typeIgnore: ast.itype_ignore): NewNode = ???
 
   override def visit(typeIgnore: ast.TypeIgnore): NewNode = ???
+
+  private def calcMethodFullNameFromContext(name: String): String = {
+    val contextQualName = contextStack.qualName
+    if (contextQualName != "") {
+      fileName + ":" + contextQualName + "." + name
+    } else {
+      fileName + ":" + name
+    }
+  }
 }

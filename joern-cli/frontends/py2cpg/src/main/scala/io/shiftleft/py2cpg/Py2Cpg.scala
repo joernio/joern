@@ -29,7 +29,7 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
     inputProviders.to(parallel.ParIterable).foreach { inputProviders =>
       val inputPair = inputProviders()
 
-      val diffGraphs = new CodeToCpg(inputPair.content).convert()
+      val diffGraphs = new CodeToCpg(inputPair).convert()
       diffGraphs.foreach { diffGraph =>
         DiffGraph.Applier.applyDiff(diffGraph, outputCpg, keyPool = Some(keyPool))
       }

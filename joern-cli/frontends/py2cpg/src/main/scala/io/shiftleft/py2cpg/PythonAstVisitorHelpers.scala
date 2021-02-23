@@ -204,6 +204,15 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  protected def createBinding(methodNode: nodes.NewMethod,
+                    typeDeclNode: nodes.NewTypeDecl): nodes.NewBinding = {
+    val bindingNode = nodeBuilder.bindingNode()
+    edgeBuilder.bindsEdge(bindingNode, typeDeclNode)
+    edgeBuilder.refEdge(methodNode, bindingNode)
+
+    bindingNode
+  }
+
   protected def addAstChildNodes(
       parentNode: nodes.NewNode,
       startIndex: AutoIncIndex,

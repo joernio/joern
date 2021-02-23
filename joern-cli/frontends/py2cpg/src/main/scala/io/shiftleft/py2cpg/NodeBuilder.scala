@@ -1,6 +1,6 @@
 package io.shiftleft.py2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, nodes}
 import io.shiftleft.passes.DiffGraph
 
 class NodeBuilder(diffGraph: DiffGraph.Builder) {
@@ -50,9 +50,56 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(typeRefNode)
   }
 
-  def methodNode(lineAndColumn: LineAndColumn): nodes.NewMethod = {
+  def bindingNode(): nodes.NewBinding = {
+    val bindingNode = nodes.NewBinding()
+
+    addNodeToDiff(bindingNode)
+  }
+
+  def methodNode(name: String,
+                 fullName: String,
+                 lineAndColumn: LineAndColumn): nodes.NewMethod = {
     val methodNode = nodes.NewMethod()
+      .name(name)
+      .fullName(fullName)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(methodNode)
+  }
+
+  def methodRefNode(name: String,
+                    fullName: String,
+                    lineAndColumn: LineAndColumn): nodes.NewMethodRef = {
+    val methodRefNode = nodes.NewMethodRef()
+      .code(name)
+      .methodFullName(fullName)
+      .typeFullName(fullName)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
+    addNodeToDiff(methodRefNode)
+  }
+
+  def methodParameterNode(name: String,
+                          lineAndColumn: LineAndColumn): nodes.NewMethodParameterIn = {
+    val methodParameterNode = nodes.NewMethodParameterIn()
+      .name(name)
+      .code(name)
+      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .typeFullName(Constants.ANY)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
+    addNodeToDiff(methodParameterNode)
+  }
+
+  def methodReturnNode(lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
+    val methodReturnNode = nodes.NewMethodReturn()
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .typeFullName(Constants.ANY)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
+
+    addNodeToDiff(methodReturnNode)
   }
 
   def identifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
@@ -119,6 +166,26 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .code(name)
       .name(name)
     addNodeToDiff(localNode)
+  }
+
+  def fileNode(fileName: String): nodes.NewFile = {
+    val fileNode = nodes.NewFile()
+      .name(fileName)
+    addNodeToDiff(fileNode)
+  }
+
+  def namespaceBlockNode(fileName: String): nodes.NewNamespaceBlock = {
+    val namespaceBlockNode = nodes.NewNamespaceBlock()
+      .name("<global>")
+      .fullName(fileName + ":" + "<global>")
+      .filename(fileName)
+    addNodeToDiff(namespaceBlockNode)
+  }
+
+  def modifierNode(modifierType: String): nodes.NewModifier = {
+    val modifierNode = nodes.NewModifier()
+      .modifierType(modifierType)
+    addNodeToDiff(modifierNode)
   }
 
   def metaNode(language: String, version: String): nodes.NewMetaData = {
