@@ -151,7 +151,19 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
   override def visit(classDef: ast.ClassDef): NewNode = ???
 
-  override def visit(ret: ast.Return): NewNode = ???
+  override def visit(ret: ast.Return): NewNode = {
+    ret.value match {
+      case Some(value) =>
+        val valueNode = value.accept(this)
+        val code = "return " + codeOf(valueNode)
+        val returnNode = nodeBuilder.returnNode(code, lineAndColOf(ret))
+
+        addAstChildrenAsArguments(returnNode, 1, valueNode)
+        returnNode
+      case None =>
+        nodeBuilder.returnNode("return", lineAndColOf(ret))
+    }
+  }
 
   override def visit(delete: ast.Delete): NewNode = {
     val deleteArgs = delete.targets.map(_.accept(this))

@@ -102,6 +102,15 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(methodReturnNode)
   }
 
+  def returnNode(code: String, lineAndColumn: LineAndColumn): nodes.NewReturn = {
+    val returnNode = nodes.NewReturn()
+      .code(code)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
+
+    addNodeToDiff(returnNode)
+  }
+
   def identifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
     val identifierNode = nodes.NewIdentifier()
       .code(name)
