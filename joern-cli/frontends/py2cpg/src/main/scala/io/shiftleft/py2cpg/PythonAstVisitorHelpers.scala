@@ -106,6 +106,42 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  protected def createNAryOperatorCall(opCodeAndFullName: () => (String, String),
+                                     operands: Iterable[nodes.NewNode],
+                                     lineAndColumn: LineAndColumn): nodes.NewNode = {
+
+    val (operatorCode, methodFullName) = opCodeAndFullName()
+    val code = operands.map(operandNode => codeOf(operandNode)).mkString(" " + operatorCode + " ")
+    val callNode = nodeBuilder.callNode(
+      code,
+      methodFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 1, operands)
+
+    callNode
+  }
+
+  protected def createBinaryOperatorCall(lhsNode: nodes.NewNode,
+                                         opCodeAndFullName: () => (String, String),
+                                         rhsNode: nodes.NewNode,
+                                         lineAndColumn: LineAndColumn): nodes.NewCall = {
+    val (opCode, opFullName) = opCodeAndFullName()
+
+    val code = codeOf(lhsNode) + " " + opCode + " " + codeOf(rhsNode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      opFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
+    callNode
+  }
+
   protected def createAssignment(
       lhsNode: nodes.NewNode,
       rhsNode: nodes.NewNode,

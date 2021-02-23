@@ -360,25 +360,17 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
   override def visit(expr: ast.iexpr): NewNode = ???
 
   override def visit(boolOp: ast.BoolOp): nodes.NewNode = {
-    val argNodes = boolOp.values.map(_.accept(this))
-
-    val (operatorCode, methodFullName) =
-      boolOp.op match {
-        case ast.And => (" and ", Operators.logicalAnd)
-        case ast.Or  => (" or ", Operators.logicalOr)
+    def boolOpToCodeAndFullName(operator: ast.iboolop): () => (String, String) = {
+      () => {
+        operator match {
+          case ast.And => ("and", Operators.logicalAnd)
+          case ast.Or  => ("or", Operators.logicalOr)
+        }
       }
+    }
 
-    val code = argNodes.map(argNode => codeOf(argNode)).mkString(operatorCode)
-    val callNode = nodeBuilder.callNode(
-      code,
-      methodFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColOf(boolOp)
-    )
-
-    addAstChildrenAsArguments(callNode, 1, argNodes)
-
-    callNode
+    val operandNodes = boolOp.values.map(_.accept(this))
+    createNAryOperatorCall(boolOpToCodeAndFullName(boolOp.op), operandNodes, lineAndColOf(boolOp))
   }
 
   override def visit(namedExpr: ast.NamedExpr): NewNode = ???
@@ -465,7 +457,80 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
   override def visit(yieldFrom: ast.YieldFrom): NewNode = ???
 
-  override def visit(compare: ast.Compare): NewNode = ???
+  // In case of a single compare operation there is no lowering applied.
+  // So e.g. x < y stay untouched.
+  // Otherwise the lowering is as follows:
+  //  Src AST:
+  //    x < y < z < a
+  //  Lowering:
+  //    {
+  //      tmp1 = y
+  //      x < tmp1 && {
+  //        tmp2 = z
+  //        tmp1 < tmp2 && {
+  //          tmp2 < a
+  //        }
+  //      }
+  //    }
+  override def visit(compare: ast.Compare): NewNode = {
+    assert(compare.ops.size == compare.comparators.size)
+    var lhsNode = compare.left.accept(this)
+
+    val topLevelExprNodes = lowerComparatorChain(lhsNode, compare.ops, compare.comparators, lineAndColOf(compare))
+    if (topLevelExprNodes.size > 1) {
+      createBlock(Iterable.empty, topLevelExprNodes, lineAndColOf(compare))
+    } else {
+      topLevelExprNodes.head
+    }
+  }
+
+  private def compopToOpCodeAndFullName(compareOp: ast.icompop): () => (String, String) = {
+    () => {
+      compareOp match {
+        case ast.Eq => ("==", Operators.equals)
+        case ast.NotEq => ("!=", Operators.notEquals)
+        case ast.Lt => ("<", Operators.lessThan)
+        case ast.LtE => ("<=", Operators.lessEqualsThan)
+        case ast.Gt => (">", Operators.greaterThan)
+        case ast.GtE => (">=", Operators.greaterEqualsThan)
+        case ast.Is => ("is", "<operator>.is")
+        case ast.IsNot => ("is not", "<operator>.isNot")
+        case ast.In => ("in", "<operator>.in")
+        case ast.NotIn => ("not in", "<operator>.notIn")
+      }
+    }
+  }
+
+  def lowerComparatorChain(lhsNode: nodes.NewNode,
+                           compOperators: Iterable[ast.icompop],
+                           comparators: Iterable[ast.iexpr],
+                           lineAndColumn: LineAndColumn): Iterable[nodes.NewNode] = {
+    val rhsNode = comparators.head.accept(this)
+
+    if (compOperators.size == 1) {
+      val compareNode = createBinaryOperatorCall(lhsNode, compopToOpCodeAndFullName(compOperators.head), rhsNode, lineAndColumn)
+      Iterable.single(compareNode)
+    } else {
+      val tmpVariableName = getUnusedName()
+      val tmpLocalNode = nodeBuilder.localNode(tmpVariableName)
+      val tmpIdentifierAssign = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
+      val assignmentNode = createAssignment(tmpIdentifierAssign, rhsNode, lineAndColumn)
+
+      val tmpIdentifierCompare1 = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
+      val compareNode = createBinaryOperatorCall(lhsNode, compopToOpCodeAndFullName(compOperators.head), tmpIdentifierCompare1, lineAndColumn)
+
+      val tmpIdentifierCompare2 = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
+      val childNodes = lowerComparatorChain(tmpIdentifierCompare2, compOperators.tail, comparators.tail, lineAndColumn)
+
+      val blockNode = createBlock(Iterable.empty, childNodes, lineAndColumn)
+
+      Iterable(assignmentNode, createBinaryOperatorCall(compareNode, andOpCodeAndFullName(),  blockNode, lineAndColumn))
+    }
+  }
+
+  private def andOpCodeAndFullName(): () => (String, String) = {
+    () => ("and", Operators.logicalAnd)
+  }
 
   /** TODO
     * For now this function compromises on the correctness of the
