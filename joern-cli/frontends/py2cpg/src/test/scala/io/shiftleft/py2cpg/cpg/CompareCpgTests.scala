@@ -2,6 +2,7 @@ package io.shiftleft.py2cpg.cpg
 
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -38,8 +39,12 @@ class CompareCpgTests extends AnyFreeSpec with Matchers {
     )
 
     "test compare node" in {
-      // TODO do more than smoke test.
-      cpg
+      val assign1Node = cpg.call.code("tmp0 = y").head
+      val andNode = assign1Node.astParent.astChildren.order(assign1Node.order + 1).isCall.head
+      andNode.code shouldBe "x < tmp0 and tmp0 < z"
+      val x = andNode.astChildren.l
+      andNode.astChildren.order(1).isCall.code.head shouldBe "x < tmp0"
+      andNode.astChildren.order(2).isBlock.code.head shouldBe "tmp0 < z"
     }
 
   }

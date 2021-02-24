@@ -15,9 +15,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     new LineAndColumn(node.lineno, node.col_offset)
   }
 
+  private var tmpCounter = 0
+
   protected def getUnusedName(): String = {
-    //TODO
-    "tmp"
+    //TODO check that result name does not collide with existing variables.
+    val result = "tmp" + tmpCounter
+    tmpCounter += 1
+    result
   }
 
   protected def getTargetsWithAccessChains(target: ast.iexpr): Iterable[(ast.iexpr, List[Int])] = {
