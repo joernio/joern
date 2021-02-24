@@ -75,22 +75,22 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     "test block node properties" in {
       val block = getSurroundingBlock
       block.code shouldBe
-        """tmp = list
-          |x = tmp[0]
-          |y = tmp[1][0]
-          |z = tmp[1][1]""".stripMargin
+        """tmp0 = list
+          |x = tmp0[0]
+          |y = tmp0[1][0]
+          |z = tmp0[1][1]""".stripMargin
       block.lineNumber shouldBe Some(1)
     }
 
     "test local node" in {
       val block = getSurroundingBlock
-      block.astChildren.isLocal.head.code shouldBe "tmp"
+      block.astChildren.isLocal.head.code shouldBe "tmp0"
     }
 
     "test tmp variable assignment" in {
       val block = getSurroundingBlock
       val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
-      tmpAssignNode.code shouldBe "tmp = list"
+      tmpAssignNode.code shouldBe "tmp0 = list"
       tmpAssignNode.methodFullName shouldBe Operators.assignment
       tmpAssignNode.lineNumber shouldBe Some(1)
     }
@@ -99,9 +99,9 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
       val block = getSurroundingBlock
       val assignNodes = block.astChildren.isCall.sortBy(_.order).tail
       assignNodes.map(_.code) should contain theSameElementsInOrderAs List(
-        "x = tmp[0]",
-        "y = tmp[1][0]",
-        "z = tmp[1][1]"
+        "x = tmp0[0]",
+        "y = tmp0[1][0]",
+        "z = tmp0[1][1]"
       )
       assignNodes.map(_.lineNumber.get) should contain theSameElementsInOrderAs List(1, 1, 1)
     }

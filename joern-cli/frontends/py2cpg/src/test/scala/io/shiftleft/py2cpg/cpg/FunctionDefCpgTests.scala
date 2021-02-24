@@ -45,7 +45,6 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test function method ref" in {
-      val x = cpg.methodRef.l
       cpg.methodRef("test.py:module.func").referencedMethod.fullName.head shouldBe
         "test.py:module.func"
     }
@@ -57,8 +56,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       bindingTypeDecl.name shouldBe "func"
       bindingTypeDecl.fullName shouldBe "test.py:module.func"
 
-      bindingTypeDecl.referencingType.name shouldBe "func"
-      bindingTypeDecl.referencingType.fullName shouldBe "test.py:module.func"
+      bindingTypeDecl.referencingType.name.head shouldBe "func"
+      bindingTypeDecl.referencingType.fullName.head shouldBe "test.py:module.func"
     }
   }
 
