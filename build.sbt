@@ -10,9 +10,7 @@ ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.mavenCentral,
   Resolver.jcenterRepo,
-  Resolver.bintrayRepo("shiftleft", "maven"),
-  Resolver.bintrayRepo("mpollmeier", "maven"),
-  Resolver.bintrayRepo("plume-oss", "maven"),
+  "jitpack" at "https://jitpack.io",
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
 )
 

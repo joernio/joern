@@ -12,12 +12,12 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.github.plume-oss"    % "plume" % "0.1.1" exclude("io.github.plume-oss", "cpgconv"),
+  "io.github.plume-oss"    % "plume" % "0.1.8" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
   "com.lihaoyi" %% "ammonite" % "2.3.8-4-88785969" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",
-  "com.github.pathikrit" %% "better-files" % "3.8.0",
+  "com.github.pathikrit" %% "better-files" % "3.9.1",
   "io.circe" %% "circe-generic" % "0.12.2",
   "org.reflections" % "reflections" % "0.9.12",
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
@@ -144,22 +144,3 @@ Universal/packageBin/mappings ++= {
 
 import sbt.Path.directory
 Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
-
-lazy val foo = taskKey[Unit]("foo")
-foo := {
-  import better.files.File
-  val joernCliStaged = (Universal/stage).value
-  val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value.toPath
-  val tmpDir = File.newTemporaryDirectory("joern-cli-build").deleteOnExit
-
-  val cpgJarName = s"io.shiftleft.codepropertygraph-schema_${scalaBinaryVersion.value}-${Versions.cpgVersion}.jar"
-  val cpgJar = joernCliStaged/"lib"/cpgJarName
-  assert(cpgJar.exists, s"cpg jar not found at expected path: $cpgJar")
-  IO.unzip(cpgJar, tmpDir.toJava, _.startsWith("schemas/"))
-
-  val res = for {
-    dir <- List(tmpDir, File(schemaExtenderStaged))
-    file <- dir.listRecursively
-  } yield file.toJava -> s"schema-extender/${dir.relativize(file.path)}"
-  res.foreach(println)
-}

@@ -1,7 +1,8 @@
 package io.shiftleft.joern
 
+import io.joern.plume.PlumeCpgGenerator
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
-import io.shiftleft.joern.plume.PlumeCpgGenerator
+
 import scala.util.control.NonFatal
 
 object JoernParse extends App {
@@ -22,14 +23,14 @@ object JoernParse extends App {
         case "c" =>
           createCpgFromCSourceCode(config)
         case "java" =>
-          PlumeCpgGenerator.createCpgForJava(config)
+          PlumeCpgGenerator.createCpgForJava(config.inputPaths.toList.sorted, config.outputCpgFile)
         case _ =>
           println(s"Error: Language ${config.language} not recognized")
           return
       }
     }
 
-    if (config.enhance) {
+    if (config.enhance && config.language != "java") {
       Cpg2Scpg.run(config.outputCpgFile, config.dataFlow).close()
     }
 
