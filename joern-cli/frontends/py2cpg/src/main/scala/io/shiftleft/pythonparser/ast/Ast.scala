@@ -564,7 +564,7 @@ case class Lambda(arg: iarguments, body: iexpr, attributeProvider: AttributeProv
   }
 }
 
-case class IfExp(test: iexpr, body: iexpr, orElse: iexpr, attributeProvider: AttributeProvider)
+case class IfExp(test: iexpr, body: iexpr, orelse: iexpr, attributeProvider: AttributeProvider)
     extends iexpr {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)

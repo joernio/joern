@@ -254,7 +254,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(ifExp: IfExp): String = {
-    print(ifExp.body) + " if " + print(ifExp.test) + " else " + print(ifExp.orElse)
+    print(ifExp.body) + " if " + print(ifExp.test) + " else " + print(ifExp.orelse)
   }
 
   override def visit(dict: Dict): String = {
