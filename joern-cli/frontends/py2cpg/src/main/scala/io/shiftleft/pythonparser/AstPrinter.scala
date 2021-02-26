@@ -245,7 +245,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(lambda: Lambda): String = {
-    val argStr = print(lambda.arg)
+    val argStr = print(lambda.args)
     if (argStr.nonEmpty) {
       "lambda " + argStr + ": " + print(lambda.body)
     } else {

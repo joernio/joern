@@ -558,7 +558,7 @@ case class UnaryOp(op: iunaryop, operand: iexpr, attributeProvider: AttributePro
   }
 }
 
-case class Lambda(arg: iarguments, body: iexpr, attributeProvider: AttributeProvider) extends iexpr {
+case class Lambda(args: iarguments, body: iexpr, attributeProvider: AttributeProvider) extends iexpr {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
