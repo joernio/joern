@@ -33,7 +33,7 @@ object PlumeCpgGenerator {
     println(s"Creating CPG for: $inputPath")
     Using(DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]) { driver =>
       deleteIfExists(config.outputCpgFile)
-      driver.setStorageLocation(config.outputCpgFile)
+      driver.storageLocation(config.outputCpgFile)
       val extractor = new Extractor(driver)
       extractor.load(new java.io.File(inputPath))
       extractor.project()
