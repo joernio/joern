@@ -53,6 +53,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
   override def visit(stmt: ast.istmt): NewNode = ???
 
   override def visit(functionDef: ast.FunctionDef): NewNode = {
+    // TODO create local variable with same name as functionDef and assign the method reference
+    // to it.
     createMethodAndMethodRef(functionDef.name,
       createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
       functionDef.body,
@@ -63,6 +65,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
   }
 
   override def visit(functionDef: ast.AsyncFunctionDef): NewNode = {
+    // TODO create local variable with same name as functionDef and assign the method reference
+    // to it.
     createMethodAndMethodRef(functionDef.name,
       createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
       functionDef.body,
@@ -435,7 +439,17 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     callNode
   }
 
-  override def visit(lambda: ast.Lambda): NewNode = ???
+  override def visit(lambda: ast.Lambda): NewNode = {
+    // TODO test lambda expression.
+    createMethodAndMethodRef("lambda",
+      createParameterProcessingFunction(lambda.args.asInstanceOf[ast.Arguments]),
+      Iterable.single(new ast.Return(lambda.body, lambda.attributeProvider)),
+      decoratorList = Nil,
+      returns = None,
+      isAsync = false,
+      lineAndColOf(lambda)
+    )
+  }
 
   override def visit(ifExp: ast.IfExp): NewNode = ???
 
