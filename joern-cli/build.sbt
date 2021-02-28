@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.github.plume-oss"    % "plume" % "0.2.5" exclude("io.github.plume-oss", "cpgconv"),
+  "io.github.plume-oss"    % "plume" % "0.1.8" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
   "com.lihaoyi" %% "ammonite" % "2.3.8-4-88785969" cross CrossVersion.full,
