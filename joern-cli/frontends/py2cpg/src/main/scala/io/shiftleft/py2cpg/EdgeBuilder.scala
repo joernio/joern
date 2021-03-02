@@ -49,6 +49,10 @@ class EdgeBuilder(diffGraph: DiffGraph.Builder) {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.REF)
   }
 
+  def captureEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.CAPTURE)
+  }
+
   def bindsEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.BINDS)
   }

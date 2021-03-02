@@ -79,6 +79,14 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(methodRefNode)
   }
 
+  def closureBindingNode(closureBindingId: String, closureOriginalName: String): nodes.NewClosureBinding = {
+    val closureBindingNode = nodes.NewClosureBinding()
+      .closureBindingId(Some(closureBindingId))
+      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
+      .closureOriginalName(Some(closureOriginalName))
+    addNodeToDiff(closureBindingNode)
+  }
+
   def methodParameterNode(name: String,
                           lineAndColumn: LineAndColumn): nodes.NewMethodParameterIn = {
     val methodParameterNode = nodes.NewMethodParameterIn()
@@ -170,10 +178,12 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(controlStructureNode)
   }
 
-  def localNode(name: String): nodes.NewLocal = {
+  def localNode(name: String,
+                closureBindingId: Option[String] = None): nodes.NewLocal = {
     val localNode = nodes.NewLocal()
       .code(name)
       .name(name)
+      .closureBindingId(closureBindingId)
     addNodeToDiff(localNode)
   }
 
@@ -202,5 +212,16 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .language(language)
       .version(version)
     addNodeToDiff(metaNode)
+  }
+
+  def unknownNode(code: String,
+                  parserTypeName: String,
+                  lineAndColumn: LineAndColumn): nodes.NewUnknown = {
+    val unknownNode = nodes.NewUnknown()
+      .code(code)
+      .parserTypeName(parserTypeName)
+      .lineNumber(Some(lineAndColumn.line))
+      .columnNumber(Some(lineAndColumn.column))
+    addNodeToDiff(unknownNode)
   }
 }

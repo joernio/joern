@@ -5,11 +5,11 @@ import io.shiftleft.pythonparser.ast
 import scala.collection.mutable
 
 class AstNodeToMemoryOperationMap {
-  private class IdentityHashWrapper(astNode: ast.iast) {
+  private class IdentityHashWrapper(private val astNode: ast.iast) {
     override def equals(o: Any): Boolean = {
       o match {
-        case anyRef: AnyRef =>
-          astNode eq anyRef
+        case wrapper: IdentityHashWrapper =>
+          astNode eq wrapper.astNode
         case _ =>
           false
       }

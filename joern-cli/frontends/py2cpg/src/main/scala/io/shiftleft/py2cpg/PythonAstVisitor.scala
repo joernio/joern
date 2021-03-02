@@ -3,6 +3,7 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
+import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, MemoryOperation, MemoryOperationCalculator}
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
 import io.shiftleft.semanticcpg.language.toMethodForCallGraph
@@ -17,8 +18,20 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
   private val contextStack = new ContextStack()
 
+  private var memOpMap: AstNodeToMemoryOperationMap = _
+
   def getDiffGraph: DiffGraph = {
     diffGraph.build()
+  }
+
+  private def createIdentifierLinks(): Unit = {
+    contextStack.createIdentifierLinks(
+      nodeBuilder.localNode,
+      nodeBuilder.closureBindingNode,
+      edgeBuilder.astEdge,
+      edgeBuilder.refEdge,
+      edgeBuilder.captureEdge
+    )
   }
 
   override def visit(astNode: ast.iast): nodes.NewNode = ???
@@ -27,11 +40,14 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
   // Entry method for the visitor.
   override def visit(module: ast.Module): nodes.NewNode = {
+    val memOpCalculator = new MemoryOperationCalculator()
+    module.accept(memOpCalculator)
+    memOpMap = memOpCalculator.astNodeToMemOp
+
     val fileNode = nodeBuilder.fileNode(fileName)
     val namespaceBlockNode = nodeBuilder.namespaceBlockNode(fileName)
     edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
-
-    contextStack.pushNamespaceBlock(namespaceBlockNode)
+    contextStack.setFileNamespaceBlock(namespaceBlockNode)
 
     val methodFullName = calcMethodFullNameFromContext("module")
 
@@ -42,10 +58,11 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
       decoratorList = Nil,
       returns = None,
       isAsync = false,
+      methodRefNode = None,
       LineAndColumn(1, 1)
     )
 
-    contextStack.pop()
+    createIdentifierLinks()
 
     null
   }
@@ -84,9 +101,11 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
       new AutoIncIndex(1)
     }
     parameters.posonlyargs.map(_.accept(this)).foreach { parameterNode =>
+      contextStack.addParameter(parameterNode.asInstanceOf[nodes.NewMethodParameterIn])
       edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
     }
     parameters.args.map(_.accept(this)).foreach { parameterNode =>
+      contextStack.addParameter(parameterNode.asInstanceOf[nodes.NewMethodParameterIn])
       edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
     }
     // TODO implement non position arguments and vararg.
@@ -101,6 +120,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
                                        lineAndColumn: LineAndColumn): nodes.NewMethodRef = {
     val methodFullName = calcMethodFullNameFromContext(methodName)
 
+    val methodRefNode = nodeBuilder.methodRefNode(methodName, methodFullName, lineAndColumn)
+
     val methodNode =
       createMethod(methodName,
         methodFullName,
@@ -109,6 +130,7 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
         decoratorList,
         returns,
         isAsync = true,
+        Some(methodRefNode),
         lineAndColumn)
 
     val typeNode = nodeBuilder.typeNode(methodName, methodFullName)
@@ -117,7 +139,7 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
     createBinding(methodNode, typeDeclNode)
 
-    nodeBuilder.methodRefNode(methodName, methodFullName, lineAndColumn)
+    methodRefNode
   }
 
   private def createMethod(name: String,
@@ -127,17 +149,18 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
                            decoratorList: Iterable[ast.iexpr],
                            returns: Option[ast.iexpr],
                            isAsync: Boolean,
+                           methodRefNode: Option[nodes.NewMethodRef],
                            lineAndColumn: LineAndColumn): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
 
-    contextStack.pushMethod(name, methodNode)
+    val blockNode = nodeBuilder.blockNode("", lineAndColumn)
+    edgeBuilder.astEdge(blockNode, methodNode, 1)
+
+    contextStack.pushMethod(name, methodNode, blockNode, methodRefNode)
 
     val virtualModifierNode = nodeBuilder.modifierNode(ModifierTypes.VIRTUAL)
     edgeBuilder.astEdge(virtualModifierNode, methodNode, 0)
-
-    val blockNode = nodeBuilder.blockNode("", lineAndColumn)
-    edgeBuilder.astEdge(blockNode, methodNode, 1)
 
     parameterProcessing(methodNode)
 
@@ -332,9 +355,17 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
   override def visit(importFrom: ast.ImportFrom): NewNode = ???
 
-  override def visit(global: ast.Global): NewNode = ???
+  override def visit(global: ast.Global): NewNode = {
+    global.names.foreach(contextStack.addGlobalVariable)
+    val code = global.names.mkString("global ", ", ", "")
+    nodeBuilder.unknownNode(code, global.getClass.getName, lineAndColOf(global))
+  }
 
-  override def visit(nonlocal: ast.Nonlocal): NewNode = ???
+  override def visit(nonLocal: ast.Nonlocal): NewNode = {
+    nonLocal.names.foreach(contextStack.addNonLocalVariable)
+    val code = nonLocal.names.mkString("nonlocal ", ", ", "")
+    nodeBuilder.unknownNode(code, nonLocal.getClass.getName, lineAndColOf(nonLocal))
+  }
 
   override def visit(expr: ast.Expr): nodes.NewNode = {
     expr.value.accept(this)
@@ -614,7 +645,10 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
   override def visit(starred: ast.Starred): NewNode = ???
 
   override def visit(name: ast.Name): nodes.NewNode = {
-    nodeBuilder.identifierNode(name.id, lineAndColOf(name))
+    val identifierNode = nodeBuilder.identifierNode(name.id, lineAndColOf(name))
+    val memoryOperation = memOpMap.get(name).get
+    contextStack.addVariableReference(identifierNode, memoryOperation)
+    identifierNode
   }
 
   /**

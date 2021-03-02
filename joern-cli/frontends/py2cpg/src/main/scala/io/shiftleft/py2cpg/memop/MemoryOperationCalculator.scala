@@ -179,7 +179,9 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   override def visit(nonlocal: ast.Nonlocal): Unit = {}
 
   override def visit(expr: ast.Expr): Unit = {
-    expr.accept(this)
+    push(Load)
+    expr.value.accept(this)
+    pop()
   }
 
   override def visit(pass: ast.Pass): Unit = {}
