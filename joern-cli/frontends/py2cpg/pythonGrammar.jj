@@ -72,7 +72,7 @@ public class PythonParser {
                 combinedArgs.add(tuple.elts().apply(i));
               }
               return stmt = new Expr(
-                new Call(call.func(), combinedArgs, new ArrayList<ikeyword>(),
+                new Call(call.func(), combinedArgs, new ArrayList<Keyword>(),
                  call.attributeProvider()));
             }
           }
@@ -410,7 +410,7 @@ Module module(): {
       stmts = statementsAndDedentOrEof() { allStmts.addAll(stmts); }
     | <EOF>
     )
-    { return new Module(allStmts, new ArrayList<itype_ignore>()); }
+    { return new Module(allStmts, new ArrayList<TypeIgnore>()); }
   } catch (ParseException exception) {
     ErrorStatement errorStmt = recoverAndCreateErrorStmt(token, exception);
     allStmts.add(errorStmt);
@@ -418,7 +418,7 @@ Module module(): {
       ArrayList<istmt> postRecoverStmts = statementsAndDedentOrEof();
       allStmts.addAll(postRecoverStmts);
     }
-    return new Module(allStmts, new ArrayList<itype_ignore>());
+    return new Module(allStmts, new ArrayList<TypeIgnore>());
   }
 }
 
@@ -533,7 +533,7 @@ istmt printStatementPython2(Name printName): {
   )
   {
     return new Expr(
-      new Call(printName, arguments, new ArrayList<ikeyword>(), attributes(printName, token)));
+      new Call(printName, arguments, new ArrayList<Keyword>(), attributes(printName, token)));
   }
 }
 
@@ -571,7 +571,7 @@ istmt execStatementPython2(Name execName): {
       arguments.add(localsExpr);
     }
     return new Expr(
-      new Call(execName, arguments, new ArrayList<ikeyword>(), attributes(execName, token)));
+      new Call(execName, arguments, new ArrayList<Keyword>(), attributes(execName, token)));
   }
 }
 
@@ -623,23 +623,23 @@ istmt importStatement(): {
 }
 
 Import importName(): {
-  ArrayList<ialias> names;
+  ArrayList<Alias> names;
   Token startToken;
 } {
   <IMPORT> { startToken = token; } names = dottedAsNames()
   { return new Import(names, attributes(startToken, token)); }
 }
 
-ArrayList<ialias> dottedAsNames(): {
-  ialias name;
-  ArrayList<ialias> names = new ArrayList<ialias>();
+ArrayList<Alias> dottedAsNames(): {
+  Alias name;
+  ArrayList<Alias> names = new ArrayList<Alias>();
 } {
   name = dottedAsName() { names.add(name); }
   (<COMMA> name = dottedAsName() { names.add(name); })*
   { return names; }
 }
 
-ialias dottedAsName(): {
+Alias dottedAsName(): {
   String dottedName;
   String asName = null;
 } {
@@ -658,7 +658,7 @@ String dottedName(): {
 ImportFrom importFrom(): {
   int level = 0;
   String module = null;
-  ArrayList<ialias> names;
+  ArrayList<Alias> names;
   Token startToken;
 } {
   <FROM> { startToken = token; }
@@ -675,13 +675,13 @@ ImportFrom importFrom(): {
   }
 }
 
-ArrayList<ialias> importFromTargets(): {
-  ialias name;
-  ArrayList<ialias> names;
+ArrayList<Alias> importFromTargets(): {
+  Alias name;
+  ArrayList<Alias> names;
 } {
   (
   <STAR> {
-    names = new ArrayList<ialias>();
+    names = new ArrayList<Alias>();
     names.add(new Alias(token.image, (String)null));
   }
 | <PAREN_OPEN> names = importFromAsNames() <PAREN_CLOSE>
@@ -690,9 +690,9 @@ ArrayList<ialias> importFromTargets(): {
   { return names; }
 }
 
-ArrayList<ialias> importFromAsNames(): {
-  ialias name;
-  ArrayList<ialias> names = new ArrayList<ialias>();
+ArrayList<Alias> importFromAsNames(): {
+  Alias name;
+  ArrayList<Alias> names = new ArrayList<Alias>();
 } {
   name = importFromAsName() { names.add(name); }
   (LOOKAHEAD(2)
@@ -702,7 +702,7 @@ ArrayList<ialias> importFromAsNames(): {
   { return names; }
 }
 
-ialias importFromAsName(): {
+Alias importFromAsName(): {
   String name;
   String asName = null;
 } {
@@ -857,7 +857,7 @@ istmt asyncStatement(): {
 istmt functionDef(ArrayList<iexpr> decorators, boolean isAsync, Token asyncToken): {
   Token startToken = asyncToken;
   String name;
-  iarguments parameters;
+  Arguments parameters;
   iexpr returnExpr = null;
   ArrayList<istmt> blockStmts;
 } {
@@ -888,23 +888,23 @@ istmt functionDef(ArrayList<iexpr> decorators, boolean isAsync, Token asyncToken
 // This is a fully factored out version of the CPython 3.9 parameters parser rule
 // minus the support for type comments which are currently swallowed by the lexer.
 // Dont be confused by the inconsistent use of argument and parameter identifiers.
-// iarg, iarguments, Arg and Argument class names are part of the user facing API
+// Arg, Arguments, Arg and Argument class names are part of the user facing API
 // with which we mimic the CPython AST API and thus their names are what they are.
 // They should rather be named iparam, iparameters etc..
-iarguments parameters(): {
-  ArrayList<iarg> posOnlyArgs = new ArrayList<iarg>();
-  ArrayList<iarg> args = new ArrayList<iarg>();
+Arguments parameters(): {
+  ArrayList<Arg> posOnlyArgs = new ArrayList<Arg>();
+  ArrayList<Arg> args = new ArrayList<Arg>();
   // Contains the defaults for posOnlyArgs and args.
   ArrayList<iexpr> defaults = new ArrayList<iexpr>();
-  BoxedObject<iarg> varArg = new BoxedObject<iarg>(null);
-  ArrayList<iarg> kwOnlyArgs = new ArrayList<iarg>();
+  BoxedObject<Arg> varArg = new BoxedObject<Arg>(null);
+  ArrayList<Arg> kwOnlyArgs = new ArrayList<Arg>();
   // Contains the defaults for kwOnlyArgs. If such an
   // argument has no default, null is added instead.
   ArrayList<iexpr> kwDefaults = new ArrayList<iexpr>();
-  BoxedObject<iarg> kwArg = new BoxedObject<iarg>(null);
+  BoxedObject<Arg> kwArg = new BoxedObject<Arg>(null);
 
   boolean defaultRequired = false;
-  ArrayList<iarg> tmpArgs = new ArrayList<iarg>();
+  ArrayList<Arg> tmpArgs = new ArrayList<Arg>();
 } {
   (
     (
@@ -914,7 +914,7 @@ iarguments parameters(): {
         (
           (
             <DIV>
-            { posOnlyArgs = args; args = new ArrayList<iarg>(); }
+            { posOnlyArgs = args; args = new ArrayList<Arg>(); }
             (
               <COMMA>
               (
@@ -954,10 +954,10 @@ iarguments parameters(): {
 // Sister function of lambdaStarAndFollowingParameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-void starAndFollowingParameters(BoxedObject<iarg> varArg,
-                                ArrayList<iarg> kwOnlyArgs,
+void starAndFollowingParameters(BoxedObject<Arg> varArg,
+                                ArrayList<Arg> kwOnlyArgs,
                                 ArrayList<iexpr> kwDefaults,
-                                BoxedObject<iarg> kwArg): {
+                                BoxedObject<Arg> kwArg): {
 } {
   <STAR>
   (
@@ -993,8 +993,8 @@ void starAndFollowingParameters(BoxedObject<iarg> varArg,
 // Sister function of lambdaDoubleStarParameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-iarg doubleStarParameters(): {
-  iarg kwArg;
+Arg doubleStarParameters(): {
+  Arg kwArg;
 } {
   <DOUBLE_STAR> kwArg = typedFunctionParameterDef()
   (<COMMA>)?
@@ -1005,8 +1005,8 @@ iarg doubleStarParameters(): {
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
 boolean positionalParameters(boolean initialDefaultRequired,
-                             ArrayList<iarg> params, ArrayList<iexpr> defaults): {
-  iarg param;
+                             ArrayList<Arg> params, ArrayList<iexpr> defaults): {
+  Arg param;
   iexpr defaultExpr;
   boolean defaultRequired = initialDefaultRequired;
 } {
@@ -1028,8 +1028,8 @@ boolean positionalParameters(boolean initialDefaultRequired,
 // Sister function of lambdaKwOnlyParameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-void kwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
-  iarg param;
+void kwOnlyParameters(ArrayList<Arg> params, ArrayList<iexpr> defaults): {
+  Arg param;
   iexpr defaultExpr;
 } {
   param = typedFunctionParameterDef() { params.add(param); }
@@ -1046,7 +1046,7 @@ void kwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
   )*
 }
 
-iarg typedFunctionParameterDef(): {
+Arg typedFunctionParameterDef(): {
   Token startToken;
   String name;
   iexpr defaultExpr = null;
@@ -1059,20 +1059,20 @@ iarg typedFunctionParameterDef(): {
 // Sister function of parameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-iarguments lambdaParameters(): {
-  ArrayList<iarg> posOnlyArgs = new ArrayList<iarg>();
-  ArrayList<iarg> args = new ArrayList<iarg>();
+Arguments lambdaParameters(): {
+  ArrayList<Arg> posOnlyArgs = new ArrayList<Arg>();
+  ArrayList<Arg> args = new ArrayList<Arg>();
   // Contains the defaults for posOnlyArgs and args.
   ArrayList<iexpr> defaults = new ArrayList<iexpr>();
-  BoxedObject<iarg> varArg = new BoxedObject<iarg>(null);
-  ArrayList<iarg> kwOnlyArgs = new ArrayList<iarg>();
+  BoxedObject<Arg> varArg = new BoxedObject<Arg>(null);
+  ArrayList<Arg> kwOnlyArgs = new ArrayList<Arg>();
   // Contains the defaults for kwOnlyArgs. If such an
   // argument has no default, null is added instead.
   ArrayList<iexpr> kwDefaults = new ArrayList<iexpr>();
-  BoxedObject<iarg> kwArg = new BoxedObject<iarg>(null);
+  BoxedObject<Arg> kwArg = new BoxedObject<Arg>(null);
 
   boolean defaultRequired = false;
-  ArrayList<iarg> tmpArgs = new ArrayList<iarg>();
+  ArrayList<Arg> tmpArgs = new ArrayList<Arg>();
 } {
   (
     (
@@ -1082,7 +1082,7 @@ iarguments lambdaParameters(): {
         (
           (
             <DIV>
-            { posOnlyArgs = args; args = new ArrayList<iarg>(); }
+            { posOnlyArgs = args; args = new ArrayList<Arg>(); }
             (
               <COMMA>
               (
@@ -1122,10 +1122,10 @@ iarguments lambdaParameters(): {
 // Sister function of starAndFollowingParameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-void lambdaStarAndFollowingParameters(BoxedObject<iarg> varArg,
-                                      ArrayList<iarg> kwOnlyArgs,
+void lambdaStarAndFollowingParameters(BoxedObject<Arg> varArg,
+                                      ArrayList<Arg> kwOnlyArgs,
                                       ArrayList<iexpr> kwDefaults,
-                                      BoxedObject<iarg> kwArg): {
+                                      BoxedObject<Arg> kwArg): {
 } {
   <STAR>
   (
@@ -1161,8 +1161,8 @@ void lambdaStarAndFollowingParameters(BoxedObject<iarg> varArg,
 // Sister function of doubleStarParameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-iarg lambdaDoubleStarParameters(): {
-  iarg kwArg;
+Arg lambdaDoubleStarParameters(): {
+  Arg kwArg;
 } {
   <DOUBLE_STAR> kwArg = lambdaFunctionParameterDef()
   (<COMMA>)?
@@ -1173,8 +1173,8 @@ iarg lambdaDoubleStarParameters(): {
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
 boolean lambdaPositionalParameters(boolean initialDefaultRequired,
-                                   ArrayList<iarg> params, ArrayList<iexpr> defaults): {
-  iarg param;
+                                   ArrayList<Arg> params, ArrayList<iexpr> defaults): {
+  Arg param;
   iexpr defaultExpr;
   boolean defaultRequired = initialDefaultRequired;
 } {
@@ -1196,8 +1196,8 @@ boolean lambdaPositionalParameters(boolean initialDefaultRequired,
 // Sister function of kwOnlyParameters.
 // Only difference that type annotations and type comment are not allowed in this
 // version. Changes made here should also be done in the sister function.
-void lambdaKwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): {
-  iarg param;
+void lambdaKwOnlyParameters(ArrayList<Arg> params, ArrayList<iexpr> defaults): {
+  Arg param;
   iexpr defaultExpr;
 } {
   param = lambdaFunctionParameterDef() { params.add(param); }
@@ -1214,7 +1214,7 @@ void lambdaKwOnlyParameters(ArrayList<iarg> params, ArrayList<iexpr> defaults): 
   )*
 }
 
-iarg lambdaFunctionParameterDef(): {
+Arg lambdaFunctionParameterDef(): {
   Token startToken;
   String name;
 } {
@@ -1265,7 +1265,7 @@ ClassDef classDef(ArrayList<iexpr> decorators): {
   Token startToken;
   String name;
   ArrayList<iexpr> bases = new ArrayList<iexpr>();
-  ArrayList<ikeyword> keywords = new ArrayList<ikeyword>();
+  ArrayList<Keyword> keywords = new ArrayList<Keyword>();
   ArrayList<istmt> blockStmts;
 } {
   <CLASS> { startToken = token; } <NAME> { name = token.image; }
@@ -1313,7 +1313,7 @@ istmt forStatement(boolean isAsync, Token asyncToken): {
 
 istmt withStatement(boolean isAsync, Token asyncToken): {
   Token startToken = asyncToken;
-  ArrayList<iwithitem> items;
+  ArrayList<Withitem> items;
   ArrayList<istmt> blockStmts;
 } {
   <WITH> { if (!isAsync) {startToken = token;} }
@@ -1343,9 +1343,9 @@ istmt withStatement(boolean isAsync, Token asyncToken): {
   }
 }
 
-ArrayList<iwithitem> withItems(): {
-  ArrayList<iwithitem> items = new ArrayList<iwithitem>();
-  iwithitem item;
+ArrayList<Withitem> withItems(): {
+  ArrayList<Withitem> items = new ArrayList<Withitem>();
+  Withitem item;
 } {
   item = withItem() { items.add(item); }
   (LOOKAHEAD(2)
@@ -1356,7 +1356,7 @@ ArrayList<iwithitem> withItems(): {
   { return items; }
 }
 
-iwithitem withItem(): {
+Withitem withItem(): {
   iexpr contextExpr;
   iexpr optionalVars = null;
 } {
@@ -1368,8 +1368,8 @@ iwithitem withItem(): {
 Try tryStatement(): {
   Token startToken;
   ArrayList<istmt> blockStmts;
-  iexcepthandler exceptHandler;
-  ArrayList<iexcepthandler> exceptHandlers = new ArrayList<iexcepthandler>();
+  ExceptHandler exceptHandler;
+  ArrayList<ExceptHandler> exceptHandlers = new ArrayList<ExceptHandler>();
   ArrayList<istmt> elseStmts;
   ArrayList<istmt> finallyStmts;
 } {
@@ -1390,7 +1390,7 @@ Try tryStatement(): {
   )
 }
 
-iexcepthandler exceptBlock(): {
+ExceptHandler exceptBlock(): {
   Token startToken;
   iexpr typeExpr = null;
   String name = null;
@@ -1619,7 +1619,7 @@ iexpr expression(): {
 
 iexpr lambda(): {
   Token startToken;
-  iarguments parameters;
+  Arguments parameters;
   iexpr body;
 } {
   <LAMBDA> { startToken = token; }
@@ -1860,13 +1860,13 @@ iexpr awaitPrimary(): {
 iexpr primary(): {
   iexpr expression;
   ArrayList<iexpr> posArgs;
-  ArrayList<ikeyword> keyArgs;
+  ArrayList<Keyword> keyArgs;
   iexpr sliceExpression;
 } {
   expression = atom()
   (
     (
-      <PAREN_OPEN> { posArgs = new ArrayList<iexpr>(); keyArgs = new ArrayList<ikeyword>(); }
+      <PAREN_OPEN> { posArgs = new ArrayList<iexpr>(); keyArgs = new ArrayList<Keyword>(); }
       arguments(posArgs, keyArgs)
       <PAREN_CLOSE>
       { expression = new Call(expression, posArgs, keyArgs, attributes(expression, token)); }
@@ -1886,7 +1886,7 @@ iexpr primary(): {
 
 // Does no sanity checks like only allowing one GeneratorExp argument or only allowing ** after
 // positional arguments. For our purposes thats fine.
-void arguments(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs): {
+void arguments(ArrayList<iexpr> positionalArgs, ArrayList<Keyword> keywordArgs): {
 } {
   (
     argument(positionalArgs, keywordArgs)
@@ -1898,11 +1898,11 @@ void arguments(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs)
   )?
 }
 
-void argument(ArrayList<iexpr> positionalArgs, ArrayList<ikeyword> keywordArgs): {
+void argument(ArrayList<iexpr> positionalArgs, ArrayList<Keyword> keywordArgs): {
   iexpr expression;
   iexpr valueExpression;
   Token startToken;
-  ArrayList<icomprehension> comprehensions;
+  ArrayList<Comprehension> comprehensions;
 } {
   (
     expression = starredExpression() { positionalArgs.add(expression); }
@@ -2132,7 +2132,7 @@ iexpr starTarget(): {
 iexpr listOrListComprehension(): {
   Token startToken;
   iexpr expr = null;
-  ArrayList<icomprehension> comprehensions = null;
+  ArrayList<Comprehension> comprehensions = null;
   ArrayList<iexpr> expressions = null;
 } {
   <SQUARE_OPEN> { startToken = token; }
@@ -2171,7 +2171,7 @@ iexpr tupleOrGeneratorExpOrGroup(): {
   Token startToken;
   iexpr yieldExpr = null;
   iexpr expr = null;
-  ArrayList<icomprehension> comprehensions = null;
+  ArrayList<Comprehension> comprehensions = null;
   ArrayList<iexpr> expressions = null;
   boolean isTuple = false;
 } {
@@ -2221,7 +2221,7 @@ iexpr setOrDictOrSetCompOrDictComp(): {
   iexpr dictValueExpr = null;
   ArrayList<iexpr> keyExpressions = new ArrayList<iexpr>();
   ArrayList<iexpr> valueExpressions = new ArrayList<iexpr>();
-  ArrayList<icomprehension> comprehensions = null;
+  ArrayList<Comprehension> comprehensions = null;
   // If isSet is false it is a dict.
   boolean isSet = true;
 } {
@@ -2326,15 +2326,15 @@ iexpr setOrDictOrSetCompOrDictComp(): {
   }
 }
 
-ArrayList<icomprehension> forIfClauses(): {
-  ArrayList<icomprehension> comprehensions = new ArrayList<icomprehension>();
-  icomprehension comprehension;
+ArrayList<Comprehension> forIfClauses(): {
+  ArrayList<Comprehension> comprehensions = new ArrayList<Comprehension>();
+  Comprehension comprehension;
 } {
   (comprehension = forIfClause() { comprehensions.add(comprehension); })+
   { return comprehensions; }
 }
 
-icomprehension forIfClause(): {
+Comprehension forIfClause(): {
   boolean isAsync = false;
   iexpr target;
   iexpr iter;

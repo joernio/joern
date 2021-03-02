@@ -10,11 +10,11 @@ import scala.jdk.CollectionConverters._
 // https://docs.python.org/3/library/ast.html.
 // The base type from which all AST classes derive is iast.
 // For every left hand side entity in the CPython AST definition there is
-// a corresponding lower case trait with an "i" prefixed.
+// a corresponding lower case trait with an "i" prefixed, if there is
+// more than one right hand side entity. Otherwise the left hand side
+// entity becomes a class with a capitalized start character.
 // E.g. stmt => istmt
-// If the right hand side entities in the CPython AST are named there is
-// a corresponding case class of that name else the case class is named
-// as the left hand side with a capitalized start character.
+//      arguments => Arguments
 //
 // There are some deviations from the CPython AST.
 // 1. expr_context is omitted since deriving whether e.g. an attribute is
@@ -46,8 +46,8 @@ trait iast {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 trait imod extends iast
 
-case class Module(stmts: CollType[istmt], type_ignores: CollType[itype_ignore]) extends imod {
-  def this(stmts: util.ArrayList[istmt], type_ignores: util.ArrayList[itype_ignore]) = {
+case class Module(stmts: CollType[istmt], type_ignores: CollType[TypeIgnore]) extends imod {
+  def this(stmts: util.ArrayList[istmt], type_ignores: util.ArrayList[TypeIgnore]) = {
     this(stmts.asScala, type_ignores.asScala)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -62,22 +62,22 @@ case class Module(stmts: CollType[istmt], type_ignores: CollType[itype_ignore]) 
 trait istmt extends iast with iattributes
 
 case class FunctionDef(
-    name: String,
-    args: iarguments,
-    body: CollType[istmt],
-    decorator_list: CollType[iexpr],
-    returns: Option[iexpr],
-    type_comment: Option[String],
-    attributeProvider: AttributeProvider
+                        name: String,
+                        args: Arguments,
+                        body: CollType[istmt],
+                        decorator_list: CollType[iexpr],
+                        returns: Option[iexpr],
+                        type_comment: Option[String],
+                        attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      name: String,
-      args: iarguments,
-      body: util.ArrayList[istmt],
-      decorator_list: util.ArrayList[iexpr],
-      returns: iexpr,
-      type_comment: String,
-      attributeProvider: AttributeProvider
+            name: String,
+            args: Arguments,
+            body: util.ArrayList[istmt],
+            decorator_list: util.ArrayList[iexpr],
+            returns: iexpr,
+            type_comment: String,
+            attributeProvider: AttributeProvider
   ) = {
     this(
       name,
@@ -95,22 +95,22 @@ case class FunctionDef(
 }
 
 case class AsyncFunctionDef(
-    name: String,
-    args: iarguments,
-    body: CollType[istmt],
-    decorator_list: CollType[iexpr],
-    returns: Option[iexpr],
-    type_comment: Option[String],
-    attributeProvider: AttributeProvider
+                             name: String,
+                             args: Arguments,
+                             body: CollType[istmt],
+                             decorator_list: CollType[iexpr],
+                             returns: Option[iexpr],
+                             type_comment: Option[String],
+                             attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      name: String,
-      args: iarguments,
-      body: util.ArrayList[istmt],
-      decorator_list: util.ArrayList[iexpr],
-      returns: iexpr,
-      type_comment: String,
-      attributeProvider: AttributeProvider
+            name: String,
+            args: Arguments,
+            body: util.ArrayList[istmt],
+            decorator_list: util.ArrayList[iexpr],
+            returns: iexpr,
+            type_comment: String,
+            attributeProvider: AttributeProvider
   ) = {
     this(
       name,
@@ -128,20 +128,20 @@ case class AsyncFunctionDef(
 }
 
 case class ClassDef(
-    name: String,
-    bases: CollType[iexpr],
-    keywords: CollType[ikeyword],
-    body: CollType[istmt],
-    decorator_list: CollType[iexpr],
-    attributeProvider: AttributeProvider
+                     name: String,
+                     bases: CollType[iexpr],
+                     keywords: CollType[Keyword],
+                     body: CollType[istmt],
+                     decorator_list: CollType[iexpr],
+                     attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      name: String,
-      bases: util.ArrayList[iexpr],
-      keywords: util.ArrayList[ikeyword],
-      body: util.ArrayList[istmt],
-      decorator_list: util.ArrayList[iexpr],
-      attributeProvider: AttributeProvider
+            name: String,
+            bases: util.ArrayList[iexpr],
+            keywords: util.ArrayList[Keyword],
+            body: util.ArrayList[istmt],
+            decorator_list: util.ArrayList[iexpr],
+            attributeProvider: AttributeProvider
   ) = {
     this(
       name,
@@ -322,16 +322,16 @@ case class If(
 }
 
 case class With(
-    items: CollType[iwithitem],
-    body: CollType[istmt],
-    type_comment: Option[String],
-    attributeProvider: AttributeProvider
+                 items: CollType[Withitem],
+                 body: CollType[istmt],
+                 type_comment: Option[String],
+                 attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      items: util.ArrayList[iwithitem],
-      body: util.ArrayList[istmt],
-      type_comment: String,
-      attributeProvider: AttributeProvider
+            items: util.ArrayList[Withitem],
+            body: util.ArrayList[istmt],
+            type_comment: String,
+            attributeProvider: AttributeProvider
   ) = {
     this(
       items.asScala,
@@ -346,16 +346,16 @@ case class With(
 }
 
 case class AsyncWith(
-    items: CollType[iwithitem],
-    body: CollType[istmt],
-    type_comment: Option[String],
-    attributeProvider: AttributeProvider
+                      items: CollType[Withitem],
+                      body: CollType[istmt],
+                      type_comment: Option[String],
+                      attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      items: util.ArrayList[iwithitem],
-      body: util.ArrayList[istmt],
-      type_comment: String,
-      attributeProvider: AttributeProvider
+            items: util.ArrayList[Withitem],
+            body: util.ArrayList[istmt],
+            type_comment: String,
+            attributeProvider: AttributeProvider
   ) = {
     this(
       items.asScala,
@@ -380,18 +380,18 @@ case class Raise(exc: Option[iexpr], cause: Option[iexpr], attributeProvider: At
 }
 
 case class Try(
-    body: CollType[istmt],
-    handlers: CollType[iexcepthandler],
-    orelse: CollType[istmt],
-    finalbody: CollType[istmt],
-    attributeProvider: AttributeProvider
+                body: CollType[istmt],
+                handlers: CollType[ExceptHandler],
+                orelse: CollType[istmt],
+                finalbody: CollType[istmt],
+                attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      body: util.ArrayList[istmt],
-      handlers: util.ArrayList[iexcepthandler],
-      orelse: util.ArrayList[istmt],
-      finalbody: util.ArrayList[istmt],
-      attributeProvider: AttributeProvider
+            body: util.ArrayList[istmt],
+            handlers: util.ArrayList[ExceptHandler],
+            orelse: util.ArrayList[istmt],
+            finalbody: util.ArrayList[istmt],
+            attributeProvider: AttributeProvider
   ) = {
     this(
       body.asScala,
@@ -415,8 +415,8 @@ case class Assert(test: iexpr, msg: Option[iexpr], attributeProvider: AttributeP
   }
 }
 
-case class Import(names: CollType[ialias], attributeProvider: AttributeProvider) extends istmt {
-  def this(names: util.ArrayList[ialias], attributeProvider: AttributeProvider) = {
+case class Import(names: CollType[Alias], attributeProvider: AttributeProvider) extends istmt {
+  def this(names: util.ArrayList[Alias], attributeProvider: AttributeProvider) = {
     this(names.asScala, attributeProvider)
   }
   override def accept[T](visitor: AstVisitor[T]): T = {
@@ -425,16 +425,16 @@ case class Import(names: CollType[ialias], attributeProvider: AttributeProvider)
 }
 
 case class ImportFrom(
-    module: Option[String],
-    names: CollType[ialias],
-    level: Int,
-    attributeProvider: AttributeProvider
+                       module: Option[String],
+                       names: CollType[Alias],
+                       level: Int,
+                       attributeProvider: AttributeProvider
 ) extends istmt {
   def this(
-      module: String,
-      names: util.ArrayList[ialias],
-      level: Int,
-      attributeProvider: AttributeProvider
+            module: String,
+            names: util.ArrayList[Alias],
+            level: Int,
+            attributeProvider: AttributeProvider
   ) = {
     this(
       Option(module),
@@ -558,7 +558,7 @@ case class UnaryOp(op: iunaryop, operand: iexpr, attributeProvider: AttributePro
   }
 }
 
-case class Lambda(args: iarguments, body: iexpr, attributeProvider: AttributeProvider) extends iexpr {
+case class Lambda(args: Arguments, body: iexpr, attributeProvider: AttributeProvider) extends iexpr {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }
@@ -601,12 +601,12 @@ case class Set(elts: CollType[iexpr], attributeProvider: AttributeProvider) exte
   }
 }
 
-case class ListComp(elt: iexpr, generators: CollType[icomprehension], attributeProvider: AttributeProvider)
+case class ListComp(elt: iexpr, generators: CollType[Comprehension], attributeProvider: AttributeProvider)
     extends iexpr {
   def this(
-      elt: iexpr,
-      generators: util.ArrayList[icomprehension],
-      attributeProvider: AttributeProvider
+            elt: iexpr,
+            generators: util.ArrayList[Comprehension],
+            attributeProvider: AttributeProvider
   ) = {
     this(elt, generators.asScala, attributeProvider)
   }
@@ -615,12 +615,12 @@ case class ListComp(elt: iexpr, generators: CollType[icomprehension], attributeP
   }
 }
 
-case class SetComp(elt: iexpr, generators: CollType[icomprehension], attributeProvider: AttributeProvider)
+case class SetComp(elt: iexpr, generators: CollType[Comprehension], attributeProvider: AttributeProvider)
     extends iexpr {
   def this(
-      elt: iexpr,
-      generators: util.ArrayList[icomprehension],
-      attributeProvider: AttributeProvider
+            elt: iexpr,
+            generators: util.ArrayList[Comprehension],
+            attributeProvider: AttributeProvider
   ) = {
     this(elt, generators.asScala, attributeProvider)
   }
@@ -630,16 +630,16 @@ case class SetComp(elt: iexpr, generators: CollType[icomprehension], attributePr
 }
 
 case class DictComp(
-    key: iexpr,
-    value: iexpr,
-    generators: CollType[icomprehension],
-    attributeProvider: AttributeProvider
+                     key: iexpr,
+                     value: iexpr,
+                     generators: CollType[Comprehension],
+                     attributeProvider: AttributeProvider
 ) extends iexpr {
   def this(
-      key: iexpr,
-      value: iexpr,
-      generators: util.ArrayList[icomprehension],
-      attributeProvider: AttributeProvider
+            key: iexpr,
+            value: iexpr,
+            generators: util.ArrayList[Comprehension],
+            attributeProvider: AttributeProvider
   ) = {
     this(key, value, generators.asScala, attributeProvider)
   }
@@ -649,14 +649,14 @@ case class DictComp(
 }
 
 case class GeneratorExp(
-    elt: iexpr,
-    generators: CollType[icomprehension],
-    attributeProvider: AttributeProvider
+                         elt: iexpr,
+                         generators: CollType[Comprehension],
+                         attributeProvider: AttributeProvider
 ) extends iexpr {
   def this(
-      elt: iexpr,
-      generators: util.ArrayList[icomprehension],
-      attributeProvider: AttributeProvider
+            elt: iexpr,
+            generators: util.ArrayList[Comprehension],
+            attributeProvider: AttributeProvider
   ) = {
     this(elt, generators.asScala, attributeProvider)
   }
@@ -715,16 +715,16 @@ case class Compare(
 }
 
 case class Call(
-    func: iexpr,
-    args: CollType[iexpr],
-    keywords: CollType[ikeyword],
-    attributeProvider: AttributeProvider
+                 func: iexpr,
+                 args: CollType[iexpr],
+                 keywords: CollType[Keyword],
+                 attributeProvider: AttributeProvider
 ) extends iexpr {
   def this(
-      func: iexpr,
-      args: util.ArrayList[iexpr],
-      keywords: util.ArrayList[ikeyword],
-      attributeProvider: AttributeProvider
+            func: iexpr,
+            args: util.ArrayList[iexpr],
+            keywords: util.ArrayList[Keyword],
+            attributeProvider: AttributeProvider
   ) = {
     this(
       func,
@@ -998,10 +998,8 @@ case object NotIn extends icompop {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST comprehension classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait icomprehension extends iast
-
 case class Comprehension(target: iexpr, iter: iexpr, ifs: CollType[iexpr], is_async: Boolean)
-    extends icomprehension {
+    extends iast {
   def this(target: iexpr, iter: iexpr, ifs: util.ArrayList[iexpr], is_async: Boolean) = {
     this(target, iter, ifs.asScala, is_async)
   }
@@ -1013,14 +1011,12 @@ case class Comprehension(target: iexpr, iter: iexpr, ifs: CollType[iexpr], is_as
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST exceptHandler classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait iexcepthandler extends iast with iattributes
-
 case class ExceptHandler(
     typ: Option[iexpr],
     name: Option[String],
     body: CollType[istmt],
     attributeProvider: AttributeProvider
-) extends iexcepthandler {
+) extends iast with iattributes {
   def this(
       typ: iexpr,
       name: String,
@@ -1042,8 +1038,6 @@ case class ExceptHandler(
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST arguments classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait iarguments extends iast
-
 // Excerpt from the CPython docs:
 // posonlyargs, args and kwonlyargs are lists of arg nodes.
 // vararg and kwarg are single arg nodes, referring to the *args, **kwargs parameters.
@@ -1052,22 +1046,22 @@ trait iarguments extends iast
 // defaults is a list of default values for arguments that can be passed positionally.
 // If there are fewer defaults, they correspond to the last n arguments.
 case class Arguments(
-    posonlyargs: CollType[iarg],
-    args: CollType[iarg],
-    vararg: Option[iarg],
-    kwonlyargs: CollType[iarg],
-    kw_defaults: CollType[Option[iexpr]],
-    kw_arg: Option[iarg],
-    defaults: CollType[iexpr]
-) extends iarguments {
+                      posonlyargs: CollType[Arg],
+                      args: CollType[Arg],
+                      vararg: Option[Arg],
+                      kwonlyargs: CollType[Arg],
+                      kw_defaults: CollType[Option[iexpr]],
+                      kw_arg: Option[Arg],
+                      defaults: CollType[iexpr]
+) extends iast {
   def this(
-      posonlyargs: util.List[iarg],
-      args: util.List[iarg],
-      vararg: iarg,
-      kwonlyargs: util.List[iarg],
-      kw_defaults: util.List[iexpr],
-      kw_arg: iarg,
-      defaults: util.List[iexpr]
+            posonlyargs: util.List[Arg],
+            args: util.List[Arg],
+            vararg: Arg,
+            kwonlyargs: util.List[Arg],
+            kw_defaults: util.List[iexpr],
+            kw_arg: Arg,
+            defaults: util.List[iexpr]
   ) = {
     this(
       posonlyargs.asScala,
@@ -1087,14 +1081,12 @@ case class Arguments(
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST arg classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait iarg extends iast with iattributes
-
 case class Arg(
     arg: String,
     annotation: Option[iexpr],
     type_comment: Option[String],
     attributeProvider: AttributeProvider
-) extends iarg {
+) extends iast with iattributes {
   def this(
       arg: String,
       annotation: iexpr,
@@ -1116,10 +1108,8 @@ case class Arg(
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST keyword classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait ikeyword extends iast
-
 case class Keyword(arg: Option[String], value: iexpr, attributeProvider: AttributeProvider)
-    extends ikeyword
+    extends iast
     with iattributes {
   def this(arg: String, value: iexpr, attributeProvider: AttributeProvider) = {
     this(Option(arg), value, attributeProvider)
@@ -1132,9 +1122,8 @@ case class Keyword(arg: Option[String], value: iexpr, attributeProvider: Attribu
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST alias classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-sealed trait ialias extends iast
 
-case class Alias(name: String, asName: Option[String]) extends ialias {
+case class Alias(name: String, asName: Option[String]) extends iast {
   def this(name: String, asName: String) = {
     this(name, Option(asName))
   }
@@ -1146,9 +1135,7 @@ case class Alias(name: String, asName: Option[String]) extends ialias {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST withitem classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait iwithitem extends iast
-
-case class WithItem(context_expr: iexpr, optional_vars: Option[iexpr]) extends iwithitem {
+case class Withitem(context_expr: iexpr, optional_vars: Option[iexpr]) extends iast {
   def this(context_expr: iexpr, optional_vars: iexpr) = {
     this(context_expr, Option(optional_vars))
   }
@@ -1160,9 +1147,7 @@ case class WithItem(context_expr: iexpr, optional_vars: Option[iexpr]) extends i
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // AST type_ignore classes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-trait itype_ignore extends iast
-
-case class TypeIgnore(lineno: Int, tag: String) extends itype_ignore {
+case class TypeIgnore(lineno: Int, tag: String) extends iast {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }

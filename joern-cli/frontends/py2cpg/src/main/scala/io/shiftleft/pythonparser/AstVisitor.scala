@@ -102,16 +102,12 @@ trait AstVisitor[T] {
   def visit(in: In.type): T
   def visit(notIn: NotIn.type): T
 
-  def visit(comprehension: icomprehension): T
   def visit(comprehension: Comprehension): T
 
-  def visit(exceptHandler: iexcepthandler): T
   def visit(exceptHandler: ExceptHandler): T
 
-  def visit(arguments: iarguments): T
   def visit(arguments: Arguments): T
 
-  def visit(arg: iarg): T
   def visit(arg: Arg): T
 
   def visit(constant: iconstant): T
@@ -123,15 +119,11 @@ trait AstVisitor[T] {
   def visit(noneConstant: NoneConstant.type): T
   def visit(ellipsisConstant: EllipsisConstant.type): T
 
-  def visit(keyword: ikeyword): T
   def visit(keyword: Keyword): T
 
-  def visit(alias: ialias): T
   def visit(alias: Alias): T
 
-  def visit(withItem: iwithitem): T
-  def visit(withItem: WithItem): T
+  def visit(withItem: Withitem): T
 
-  def visit(typeIgnore: itype_ignore): T
   def visit(typeIgnore: TypeIgnore): T
 }

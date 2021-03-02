@@ -367,8 +367,6 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     stringExpList.elts.map(print).mkString(" ")
   }
 
-  override def visit(alias: ialias): String = ???
-
   override def visit(alias: Alias): String = {
     alias.name + alias.asName.map(n => " as " + n).getOrElse("")
   }
@@ -463,8 +461,6 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     "..."
   }
 
-  override def visit(exceptHandler: iexcepthandler): String = ???
-
   override def visit(exceptHandler: ExceptHandler): String = {
     "except" +
       exceptHandler.typ.map(t => " " + print(t)).getOrElse("") +
@@ -473,7 +469,6 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       exceptHandler.body.map(printIndented).mkString("\n", "\n", "")
   }
 
-  override def visit(keyword: ikeyword): String = ???
   override def visit(keyword: Keyword): String = {
     keyword.arg match {
       case Some(argName) =>
@@ -555,13 +550,9 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     "-"
   }
 
-  override def visit(arg: iarg): String = ???
-
   override def visit(arg: Arg): String = {
     arg.arg + arg.annotation.map(a => ": " + print(a)).getOrElse("")
   }
-
-  override def visit(arguments: iarguments): String = ???
 
   override def visit(arguments: Arguments): String = {
     var result = ""
@@ -630,13 +621,9 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     result
   }
 
-  override def visit(withItem: iwithitem): String = ???
-
-  override def visit(withItem: WithItem): String = {
+  override def visit(withItem: Withitem): String = {
     print(withItem.context_expr) + withItem.optional_vars.map(o => " as " + print(o)).getOrElse("")
   }
-
-  override def visit(comprehension: icomprehension): String = ???
 
   override def visit(comprehension: Comprehension): String = {
     val prefix =
@@ -649,8 +636,6 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     prefix + print(comprehension.target) + " in " + print(comprehension.iter) +
       comprehension.ifs.map(i => " if " + print(i)).mkString("")
   }
-
-  override def visit(typeIgnore: itype_ignore): String = ???
 
   override def visit(typeIgnore: TypeIgnore): String = {
     typeIgnore.tag
