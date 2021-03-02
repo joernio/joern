@@ -399,8 +399,6 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
 
   override def visit(notIn: ast.NotIn.type): Unit = {}
 
-  override def visit(comprehension: ast.icomprehension): Unit = {}
-
   override def visit(comprehension: ast.Comprehension): Unit = {
     assert(stack.head == Load)
     push(Store)
@@ -410,14 +408,10 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(comprehension.ifs)
   }
 
-  override def visit(exceptHandler: ast.iexcepthandler): Unit = ???
-
   override def visit(exceptHandler: ast.ExceptHandler): Unit = {
     accept(exceptHandler.typ)
     accept(exceptHandler.body)
   }
-
-  override def visit(arguments: ast.iarguments): Unit = ???
 
   override def visit(arguments: ast.Arguments): Unit = {
     accept(arguments.posonlyargs)
@@ -428,8 +422,6 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(arguments.kw_arg)
     accept(arguments.defaults)
   }
-
-  override def visit(arg: ast.iarg): Unit = ???
 
   override def visit(arg: ast.Arg): Unit = {
     accept(arg.annotation)
@@ -451,20 +443,14 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
 
   override def visit(ellipsisConstant: ast.EllipsisConstant.type): Unit = {}
 
-  override def visit(keyword: ast.ikeyword): Unit = ???
-
   override def visit(keyword: ast.Keyword): Unit = {
     assert(stack.head == Load)
     accept(keyword.value)
   }
 
-  override def visit(alias: ast.ialias): Unit = ???
-
   override def visit(alias: ast.Alias): Unit = {}
 
-  override def visit(withItem: ast.iwithitem): Unit = ???
-
-  override def visit(withItem: ast.WithItem): Unit = {
+  override def visit(withItem: ast.Withitem): Unit = {
     push(Load)
     accept(withItem.context_expr)
     pop()
@@ -472,8 +458,6 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(withItem.optional_vars)
     pop()
   }
-
-  override def visit(typeIgnore: ast.itype_ignore): Unit = ???
 
   override def visit(typeIgnore: ast.TypeIgnore): Unit = {}
 }

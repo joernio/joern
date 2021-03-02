@@ -811,19 +811,11 @@ class PythonAstVisitor(fileName: String)
 
   override def visit(notIn: ast.NotIn.type): NewNode = ???
 
-  override def visit(comprehension: ast.icomprehension): NewNode = ???
-
   override def visit(comprehension: ast.Comprehension): NewNode = ???
-
-  override def visit(exceptHandler: ast.iexcepthandler): NewNode = ???
 
   override def visit(exceptHandler: ast.ExceptHandler): NewNode = ???
 
-  override def visit(arguments: ast.iarguments): NewNode = ???
-
   override def visit(arguments: ast.Arguments): NewNode = ???
-
-  override def visit(arg: ast.iarg): NewNode = ???
 
   override def visit(arg: ast.Arg): NewNode = {
     nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
@@ -845,19 +837,11 @@ class PythonAstVisitor(fileName: String)
 
   override def visit(ellipsisConstant: ast.EllipsisConstant.type): NewNode = ???
 
-  override def visit(keyword: ast.ikeyword): NewNode = ???
-
   override def visit(keyword: ast.Keyword): NewNode = ???
-
-  override def visit(alias: ast.ialias): NewNode = ???
 
   override def visit(alias: ast.Alias): NewNode = ???
 
-  override def visit(withItem: ast.iwithitem): NewNode = ???
-
-  override def visit(withItem: ast.WithItem): NewNode = ???
-
-  override def visit(typeIgnore: ast.itype_ignore): NewNode = ???
+  override def visit(withItem: ast.Withitem): NewNode = ???
 
   override def visit(typeIgnore: ast.TypeIgnore): NewNode = ???
 
