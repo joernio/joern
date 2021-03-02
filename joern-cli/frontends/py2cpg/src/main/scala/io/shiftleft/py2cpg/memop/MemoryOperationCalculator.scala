@@ -236,7 +236,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   }
 
   override def visit(dict: ast.Dict): Unit = {
-    accept(dict.keys.collect { case Some(key) => key})
+    accept(dict.keys.collect { case Some(key) => key })
     accept(dict.values)
   }
 
@@ -424,7 +424,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(arguments.args)
     accept(arguments.vararg)
     accept(arguments.kwonlyargs)
-    accept(arguments.kw_defaults.collect{ case Some(default) => default})
+    accept(arguments.kw_defaults.collect { case Some(default) => default })
     accept(arguments.kw_arg)
     accept(arguments.defaults)
   }

@@ -3,14 +3,20 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, MemoryOperation, MemoryOperationCalculator}
+import io.shiftleft.py2cpg.memop.{
+  AstNodeToMemoryOperationMap,
+  MemoryOperation,
+  MemoryOperationCalculator
+}
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
 import io.shiftleft.semanticcpg.language.toMethodForCallGraph
 
 import scala.collection.mutable
 
-class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with PythonAstVisitorHelpers {
+class PythonAstVisitor(fileName: String)
+    extends AstVisitor[nodes.NewNode]
+    with PythonAstVisitorHelpers {
 
   private val diffGraph = new DiffGraph.Builder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -51,7 +57,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
     val methodFullName = calcMethodFullNameFromContext("module")
 
-    createMethod("module",
+    createMethod(
+      "module",
       methodFullName,
       (_: nodes.NewMethod) => (),
       body = module.stmts,
@@ -72,29 +79,34 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
   override def visit(functionDef: ast.FunctionDef): NewNode = {
     // TODO create local variable with same name as functionDef and assign the method reference
     // to it.
-    createMethodAndMethodRef(functionDef.name,
+    createMethodAndMethodRef(
+      functionDef.name,
       createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
       functionDef.body,
       functionDef.decorator_list,
       functionDef.returns,
       isAsync = false,
-      lineAndColOf(functionDef))
+      lineAndColOf(functionDef)
+    )
   }
 
   override def visit(functionDef: ast.AsyncFunctionDef): NewNode = {
     // TODO create local variable with same name as functionDef and assign the method reference
     // to it.
-    createMethodAndMethodRef(functionDef.name,
+    createMethodAndMethodRef(
+      functionDef.name,
       createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
       functionDef.body,
       functionDef.decorator_list,
       functionDef.returns,
       isAsync = true,
-      lineAndColOf(functionDef))
+      lineAndColOf(functionDef)
+    )
   }
 
-  private def createParameterProcessingFunction(parameters: ast.Arguments)
-                                               (methodNode: nodes.NewMethod): Unit = {
+  private def createParameterProcessingFunction(
+      parameters: ast.Arguments
+  )(methodNode: nodes.NewMethod): Unit = {
     val parameterOrder = if (contextStack.isClassContext) {
       new AutoIncIndex(0)
     } else {
@@ -111,19 +123,22 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     // TODO implement non position arguments and vararg.
   }
 
-  private def createMethodAndMethodRef(methodName: String,
-                                       parameterProcessing: nodes.NewMethod => Unit,
-                                       body: Iterable[ast.istmt],
-                                       decoratorList: Iterable[ast.iexpr],
-                                       returns: Option[ast.iexpr],
-                                       isAsync: Boolean,
-                                       lineAndColumn: LineAndColumn): nodes.NewMethodRef = {
+  private def createMethodAndMethodRef(
+      methodName: String,
+      parameterProcessing: nodes.NewMethod => Unit,
+      body: Iterable[ast.istmt],
+      decoratorList: Iterable[ast.iexpr],
+      returns: Option[ast.iexpr],
+      isAsync: Boolean,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethodRef = {
     val methodFullName = calcMethodFullNameFromContext(methodName)
 
     val methodRefNode = nodeBuilder.methodRefNode(methodName, methodFullName, lineAndColumn)
 
     val methodNode =
-      createMethod(methodName,
+      createMethod(
+        methodName,
         methodFullName,
         parameterProcessing,
         body,
@@ -131,7 +146,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
         returns,
         isAsync = true,
         Some(methodRefNode),
-        lineAndColumn)
+        lineAndColumn
+      )
 
     val typeNode = nodeBuilder.typeNode(methodName, methodFullName)
     val typeDeclNode = nodeBuilder.typeDeclNode(methodName, methodFullName)
@@ -142,15 +158,17 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     methodRefNode
   }
 
-  private def createMethod(name: String,
-                           fullName: String,
-                           parameterProcessing: nodes.NewMethod => Unit,
-                           body: Iterable[ast.istmt],
-                           decoratorList: Iterable[ast.iexpr],
-                           returns: Option[ast.iexpr],
-                           isAsync: Boolean,
-                           methodRefNode: Option[nodes.NewMethodRef],
-                           lineAndColumn: LineAndColumn): nodes.NewMethod = {
+  private def createMethod(
+      name: String,
+      fullName: String,
+      parameterProcessing: nodes.NewMethod => Unit,
+      body: Iterable[ast.istmt],
+      decoratorList: Iterable[ast.iexpr],
+      returns: Option[ast.iexpr],
+      isAsync: Boolean,
+      methodRefNode: Option[nodes.NewMethodRef],
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
 
@@ -285,9 +303,9 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
     val (operatorCode, operatorFullName) =
       augAssign.op match {
-        case ast.Add    => ("+=", Operators.assignmentPlus)
-        case ast.Sub    => ("-=", Operators.assignmentMinus)
-        case ast.Mult   => ("*=", Operators.assignmentMultiplication)
+        case ast.Add  => ("+=", Operators.assignmentPlus)
+        case ast.Sub  => ("-=", Operators.assignmentMinus)
+        case ast.Mult => ("*=", Operators.assignmentMultiplication)
         case ast.MatMult =>
           ("@=", "<operator>.assignmentMatMult") // TODO make this a define and add policy for this
         case ast.Div    => ("/=", Operators.assignmentDivision)
@@ -299,10 +317,19 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
         case ast.BitXor => ("^=", Operators.assignmentXor)
         case ast.BitAnd => ("&=", Operators.assignmentAnd)
         case ast.FloorDiv =>
-          ("//=", "<operator>.assignmentFloorDiv") // TODO make this a define and add policy for this
+          (
+            "//=",
+            "<operator>.assignmentFloorDiv"
+          ) // TODO make this a define and add policy for this
       }
 
-    createAugAssignment(targetNode, operatorCode, valueNode, operatorFullName, lineAndColOf(augAssign))
+    createAugAssignment(
+      targetNode,
+      operatorCode,
+      valueNode,
+      operatorFullName,
+      lineAndColOf(augAssign)
+    )
   }
 
   override def visit(forStmt: ast.For): NewNode = ???
@@ -315,7 +342,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     val elseStmtNodes = astWhile.orelse.map(_.accept(this))
 
     val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
-    val elseBlockNode = createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astWhile.orelse.head))
+    val elseBlockNode =
+      createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astWhile.orelse.head))
 
     val controlStructureNode =
       nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColOf(astWhile))
@@ -395,8 +423,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
   override def visit(expr: ast.iexpr): NewNode = ???
 
   override def visit(boolOp: ast.BoolOp): nodes.NewNode = {
-    def boolOpToCodeAndFullName(operator: ast.iboolop): () => (String, String) = {
-      () => {
+    def boolOpToCodeAndFullName(operator: ast.iboolop): () => (String, String) = { () =>
+      {
         operator match {
           case ast.And => ("and", Operators.logicalAnd)
           case ast.Or  => ("or", Operators.logicalOr)
@@ -416,9 +444,9 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
     val (operatorCode, methodFullName) =
       binOp.op match {
-        case ast.Add    => (" + ", Operators.addition)
-        case ast.Sub    => (" - ", Operators.subtraction)
-        case ast.Mult   => (" * ", Operators.multiplication)
+        case ast.Add  => (" + ", Operators.addition)
+        case ast.Sub  => (" - ", Operators.subtraction)
+        case ast.Mult => (" * ", Operators.multiplication)
         case ast.MatMult =>
           (" @ ", "<operator>.matMult") // TODO make this a define and add policy for this
         case ast.Div    => (" / ", Operators.division)
@@ -472,7 +500,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
 
   override def visit(lambda: ast.Lambda): NewNode = {
     // TODO test lambda expression.
-    createMethodAndMethodRef("lambda",
+    createMethodAndMethodRef(
+      "lambda",
       createParameterProcessingFunction(lambda.args.asInstanceOf[ast.Arguments]),
       Iterable.single(new ast.Return(lambda.body, lambda.attributeProvider)),
       decoratorList = Nil,
@@ -521,7 +550,8 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     assert(compare.ops.size == compare.comparators.size)
     var lhsNode = compare.left.accept(this)
 
-    val topLevelExprNodes = lowerComparatorChain(lhsNode, compare.ops, compare.comparators, lineAndColOf(compare))
+    val topLevelExprNodes =
+      lowerComparatorChain(lhsNode, compare.ops, compare.comparators, lineAndColOf(compare))
     if (topLevelExprNodes.size > 1) {
       createBlock(Iterable.empty, topLevelExprNodes, lineAndColOf(compare))
     } else {
@@ -529,31 +559,38 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     }
   }
 
-  private def compopToOpCodeAndFullName(compareOp: ast.icompop): () => (String, String) = {
-    () => {
+  private def compopToOpCodeAndFullName(compareOp: ast.icompop): () => (String, String) = { () =>
+    {
       compareOp match {
-        case ast.Eq => ("==", Operators.equals)
+        case ast.Eq    => ("==", Operators.equals)
         case ast.NotEq => ("!=", Operators.notEquals)
-        case ast.Lt => ("<", Operators.lessThan)
-        case ast.LtE => ("<=", Operators.lessEqualsThan)
-        case ast.Gt => (">", Operators.greaterThan)
-        case ast.GtE => (">=", Operators.greaterEqualsThan)
-        case ast.Is => ("is", "<operator>.is")
+        case ast.Lt    => ("<", Operators.lessThan)
+        case ast.LtE   => ("<=", Operators.lessEqualsThan)
+        case ast.Gt    => (">", Operators.greaterThan)
+        case ast.GtE   => (">=", Operators.greaterEqualsThan)
+        case ast.Is    => ("is", "<operator>.is")
         case ast.IsNot => ("is not", "<operator>.isNot")
-        case ast.In => ("in", "<operator>.in")
+        case ast.In    => ("in", "<operator>.in")
         case ast.NotIn => ("not in", "<operator>.notIn")
       }
     }
   }
 
-  def lowerComparatorChain(lhsNode: nodes.NewNode,
-                           compOperators: Iterable[ast.icompop],
-                           comparators: Iterable[ast.iexpr],
-                           lineAndColumn: LineAndColumn): Iterable[nodes.NewNode] = {
+  def lowerComparatorChain(
+      lhsNode: nodes.NewNode,
+      compOperators: Iterable[ast.icompop],
+      comparators: Iterable[ast.iexpr],
+      lineAndColumn: LineAndColumn
+  ): Iterable[nodes.NewNode] = {
     val rhsNode = comparators.head.accept(this)
 
     if (compOperators.size == 1) {
-      val compareNode = createBinaryOperatorCall(lhsNode, compopToOpCodeAndFullName(compOperators.head), rhsNode, lineAndColumn)
+      val compareNode = createBinaryOperatorCall(
+        lhsNode,
+        compopToOpCodeAndFullName(compOperators.head),
+        rhsNode,
+        lineAndColumn
+      )
       Iterable.single(compareNode)
     } else {
       val tmpVariableName = getUnusedName()
@@ -562,19 +599,32 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
       val assignmentNode = createAssignment(tmpIdentifierAssign, rhsNode, lineAndColumn)
 
       val tmpIdentifierCompare1 = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
-      val compareNode = createBinaryOperatorCall(lhsNode, compopToOpCodeAndFullName(compOperators.head), tmpIdentifierCompare1, lineAndColumn)
+      val compareNode = createBinaryOperatorCall(
+        lhsNode,
+        compopToOpCodeAndFullName(compOperators.head),
+        tmpIdentifierCompare1,
+        lineAndColumn
+      )
 
       val tmpIdentifierCompare2 = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
-      val childNodes = lowerComparatorChain(tmpIdentifierCompare2, compOperators.tail, comparators.tail, lineAndColumn)
+      val childNodes = lowerComparatorChain(
+        tmpIdentifierCompare2,
+        compOperators.tail,
+        comparators.tail,
+        lineAndColumn
+      )
 
       val blockNode = createBlock(Iterable.empty, childNodes, lineAndColumn)
 
-      Iterable(assignmentNode, createBinaryOperatorCall(compareNode, andOpCodeAndFullName(),  blockNode, lineAndColumn))
+      Iterable(
+        assignmentNode,
+        createBinaryOperatorCall(compareNode, andOpCodeAndFullName(), blockNode, lineAndColumn)
+      )
     }
   }
 
-  private def andOpCodeAndFullName(): () => (String, String) = {
-    () => ("and", Operators.logicalAnd)
+  private def andOpCodeAndFullName(): () => (String, String) = { () =>
+    ("and", Operators.logicalAnd)
   }
 
   /** TODO
@@ -651,8 +701,7 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     identifierNode
   }
 
-  /**
-    * Lowering of [1, 2]:
+  /** Lowering of [1, 2]:
     *   {
     *     tmp = list
     *     tmp.append(1)
@@ -667,11 +716,14 @@ class PythonAstVisitor(fileName: String) extends AstVisitor[nodes.NewNode] with 
     val listInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
     val listIdNode = nodeBuilder.identifierNode("list", lineAndColOf(list))
     val listConstructorCall = createCall(listIdNode, lineAndColOf(list))
-    val listInstanceAssignment = createAssignment(listInstanceId, listConstructorCall, lineAndColOf(list))
+    val listInstanceAssignment =
+      createAssignment(listInstanceId, listConstructorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
-      val listInstanceIdForReceiver = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
-      val appendFieldAccessNode = createFieldAccess(listInstanceIdForReceiver, "append", lineAndColOf(list))
+      val listInstanceIdForReceiver =
+        nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+      val appendFieldAccessNode =
+        createFieldAccess(listInstanceIdForReceiver, "append", lineAndColOf(list))
 
       val listeInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
       val elementNode = listElement.accept(this)

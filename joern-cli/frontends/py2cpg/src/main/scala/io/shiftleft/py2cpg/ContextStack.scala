@@ -1,7 +1,13 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewIdentifier, NewLocal, NewMethod, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewClosureBinding,
+  NewIdentifier,
+  NewLocal,
+  NewMethod,
+  NewNode
+}
 import io.shiftleft.py2cpg.memop._
 import org.slf4j.LoggerFactory
 
@@ -18,27 +24,28 @@ class ContextStack {
   private object MethodContext extends ContextType
   private object ClassContext extends ContextType
 
-  private class Context(val typ: ContextType,
-                        val name: String,
-                        val cpgNode: nodes.NewNode,
-                        val order: AutoIncIndex,
-                        val methodBlockNode: Option[nodes.NewBlock] = None,
-                        val methodRefNode: Option[nodes.NewMethodRef] = None,
-                        val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-                        val globalVariables: mutable.Set[String] = mutable.Set.empty,
-                        val nonLocalVariables: mutable.Set[String] = mutable.Set.empty) {
+  private class Context(
+      val typ: ContextType,
+      val name: String,
+      val cpgNode: nodes.NewNode,
+      val order: AutoIncIndex,
+      val methodBlockNode: Option[nodes.NewBlock] = None,
+      val methodRefNode: Option[nodes.NewMethodRef] = None,
+      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+      val globalVariables: mutable.Set[String] = mutable.Set.empty,
+      val nonLocalVariables: mutable.Set[String] = mutable.Set.empty
+  ) {}
 
-  }
-
-  private case class VariableReference(identifier: nodes.NewIdentifier,
-                                       memOp: MemoryOperation,
-                                       // Context stack as it was when VariableReference
-                                       // was created. Context objects are and need to
-                                       // shared between different VariableReference
-                                       // instances because the changes in the variable
-                                       // maps need to be in sync.
-                                       stack: List[Context])
-
+  private case class VariableReference(
+      identifier: nodes.NewIdentifier,
+      memOp: MemoryOperation,
+      // Context stack as it was when VariableReference
+      // was created. Context objects are and need to
+      // shared between different VariableReference
+      // instances because the changes in the variable
+      // maps need to be in sync.
+      stack: List[Context]
+  )
 
   private var stack = List[Context]()
   private val variableReferences = mutable.ArrayBuffer.empty[VariableReference]
@@ -50,12 +57,20 @@ class ContextStack {
     stack = context :: stack
   }
 
-  def pushMethod(name: String,
-                 methodNode: nodes.NewMethod,
-                 methodBlockNode: nodes.NewBlock,
-                 methodRefNode: Option[nodes.NewMethodRef]): Unit = {
-    val methodContext = new Context(MethodContext, name, methodNode, new AutoIncIndex(1),
-      Some(methodBlockNode), methodRefNode)
+  def pushMethod(
+      name: String,
+      methodNode: nodes.NewMethod,
+      methodBlockNode: nodes.NewBlock,
+      methodRefNode: Option[nodes.NewMethodRef]
+  ): Unit = {
+    val methodContext = new Context(
+      MethodContext,
+      name,
+      methodNode,
+      new AutoIncIndex(1),
+      Some(methodBlockNode),
+      methodRefNode
+    )
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
@@ -74,8 +89,7 @@ class ContextStack {
     fileNamespaceBlock = Some(namespaceBlock)
   }
 
-  def addVariableReference(identifier: nodes.NewIdentifier,
-                           memOp: MemoryOperation): Unit = {
+  def addVariableReference(identifier: nodes.NewIdentifier, memOp: MemoryOperation): Unit = {
     variableReferences.append(new VariableReference(identifier, memOp, stack))
   }
 
@@ -83,76 +97,109 @@ class ContextStack {
     contextStack.find(_.typ == MethodContext).get
   }
 
-  def createIdentifierLinks(createLocal: (String, Option[String]) => nodes.NewLocal,
-                            createClosureBinding: (String, String) => nodes.NewClosureBinding,
-                            createAstEdge: (nodes.NewNode, nodes.NewNode, Int) => Unit,
-                            createRefEdge: (nodes.NewNode, nodes.NewNode) => Unit,
-                            createCaptureEdge: (nodes.NewNode, nodes.NewNode) => Unit): Unit = {
+  def createIdentifierLinks(
+      createLocal: (String, Option[String]) => nodes.NewLocal,
+      createClosureBinding: (String, String) => nodes.NewClosureBinding,
+      createAstEdge: (nodes.NewNode, nodes.NewNode, Int) => Unit,
+      createRefEdge: (nodes.NewNode, nodes.NewNode) => Unit,
+      createCaptureEdge: (nodes.NewNode, nodes.NewNode) => Unit
+  ): Unit = {
     // Before we do any linking, we iterate over all variable references and
     // create a variable in the module method context for each global variable
     // with a store operation on it.
     // This is necessary because there might be load/delete operations
     // referencing the global variable which are syntactially before the store
     // operations.
-    variableReferences.foreach {
-      case VariableReference(identifier, memOp, stack) =>
-        val name = identifier.name
-        if (memOp == Store &&
-          stack.head.globalVariables.contains(name) &&
-          !moduleMethodContext.get.variables.contains(name)) {
-          val localNode = createLocal(name, None)
-          createAstEdge(localNode, moduleMethodContext.get.methodBlockNode.get, moduleMethodContext.get.order.getAndInc)
-          moduleMethodContext.get.variables.put(name, localNode)
-        }
+    variableReferences.foreach { case VariableReference(identifier, memOp, stack) =>
+      val name = identifier.name
+      if (
+        memOp == Store &&
+        stack.head.globalVariables.contains(name) &&
+        !moduleMethodContext.get.variables.contains(name)
+      ) {
+        val localNode = createLocal(name, None)
+        createAstEdge(
+          localNode,
+          moduleMethodContext.get.methodBlockNode.get,
+          moduleMethodContext.get.order.getAndInc
+        )
+        moduleMethodContext.get.variables.put(name, localNode)
+      }
     }
 
     // Variable references processing needs to be ordered by context depth in
     // order to make sure that variables captured into deeper nested contexts
     // are already created.
     val sortedVariableRefs = variableReferences.sortBy(_.stack.size)
-    sortedVariableRefs.foreach {
-      case VariableReference(identifier, memOp, contextStack) =>
-        val name = identifier.name
-        // Store and delete operations look up variable only in method scope.
-        // Load operations also look up captured or global variables.
-        // If a store and load/del happens in the same context, the store must
-        // come first. Otherwise it is not valid Python, which we assume here.
-        memOp match {
-          case Load =>
-            linkLocalOrCapturing(createLocal, createClosureBinding, createAstEdge, createRefEdge, createCaptureEdge, identifier, name, contextStack)
-          case _ if contextStack.head.globalVariables.contains(name) || contextStack.head.nonLocalVariables.contains(name) =>
-            linkLocalOrCapturing(createLocal, createClosureBinding, createAstEdge, createRefEdge, createCaptureEdge, identifier, name, contextStack)
-          case Store =>
-            var variableNode = lookupVariableInMethodContext(name, contextStack)
-            if (variableNode.isEmpty) {
-              val localNode = createLocal(name, None)
-              val enclosingMethodContext = findEnclosingMethodContext(contextStack)
-              createAstEdge(localNode, enclosingMethodContext.methodBlockNode.get, enclosingMethodContext.order.getAndInc)
-              enclosingMethodContext.variables.put(name, localNode)
-              variableNode = Some(localNode)
-            }
-            createRefEdge(variableNode.get, identifier)
-          case Del =>
-            val variableNode = lookupVariableInMethodContext(name, contextStack)
-            variableNode match {
-              case Some(variableNode) =>
-                createRefEdge(variableNode, identifier)
-              case None =>
-                logger.warn("Unable to link identifier. Resulting CPG will have invalid format.")
-            }
+    sortedVariableRefs.foreach { case VariableReference(identifier, memOp, contextStack) =>
+      val name = identifier.name
+      // Store and delete operations look up variable only in method scope.
+      // Load operations also look up captured or global variables.
+      // If a store and load/del happens in the same context, the store must
+      // come first. Otherwise it is not valid Python, which we assume here.
+      memOp match {
+        case Load =>
+          linkLocalOrCapturing(
+            createLocal,
+            createClosureBinding,
+            createAstEdge,
+            createRefEdge,
+            createCaptureEdge,
+            identifier,
+            name,
+            contextStack
+          )
+        case _
+            if contextStack.head.globalVariables.contains(
+              name
+            ) || contextStack.head.nonLocalVariables.contains(name) =>
+          linkLocalOrCapturing(
+            createLocal,
+            createClosureBinding,
+            createAstEdge,
+            createRefEdge,
+            createCaptureEdge,
+            identifier,
+            name,
+            contextStack
+          )
+        case Store =>
+          var variableNode = lookupVariableInMethodContext(name, contextStack)
+          if (variableNode.isEmpty) {
+            val localNode = createLocal(name, None)
+            val enclosingMethodContext = findEnclosingMethodContext(contextStack)
+            createAstEdge(
+              localNode,
+              enclosingMethodContext.methodBlockNode.get,
+              enclosingMethodContext.order.getAndInc
+            )
+            enclosingMethodContext.variables.put(name, localNode)
+            variableNode = Some(localNode)
+          }
+          createRefEdge(variableNode.get, identifier)
+        case Del =>
+          val variableNode = lookupVariableInMethodContext(name, contextStack)
+          variableNode match {
+            case Some(variableNode) =>
+              createRefEdge(variableNode, identifier)
+            case None =>
+              logger.warn("Unable to link identifier. Resulting CPG will have invalid format.")
+          }
 
-        }
+      }
     }
   }
 
-  private def linkLocalOrCapturing(createLocal: (String, Option[String]) => NewLocal,
-                                   createClosureBinding: (String, String) => NewClosureBinding,
-                                   createAstEdge: (NewNode, NewNode, Int) => Unit,
-                                   createRefEdge: (NewNode, NewNode) => Unit,
-                                   createCaptureEdge: (NewNode, NewNode) => Unit,
-                                   identifier: NewIdentifier,
-                                   name: String,
-                                   contextStack: List[Context]) = {
+  private def linkLocalOrCapturing(
+      createLocal: (String, Option[String]) => NewLocal,
+      createClosureBinding: (String, String) => NewClosureBinding,
+      createAstEdge: (NewNode, NewNode, Int) => Unit,
+      createRefEdge: (NewNode, NewNode) => Unit,
+      createCaptureEdge: (NewNode, NewNode) => Unit,
+      identifier: NewIdentifier,
+      name: String,
+      contextStack: List[Context]
+  ) = {
     var identifierOrClosureBindingToLink: nodes.NewNode = identifier
     val stackIt = contextStack.iterator
     var contextHasVariable = false
@@ -188,7 +235,10 @@ class ContextStack {
     }
   }
 
-  private def lookupVariableInMethodContext(name: String, stack: List[Context]): Option[nodes.NewNode] = {
+  private def lookupVariableInMethodContext(
+      name: String,
+      stack: List[Context]
+  ): Option[nodes.NewNode] = {
     var variableNode = Option.empty[nodes.NewNode]
 
     val stackIt = stack.iterator
@@ -216,15 +266,18 @@ class ContextStack {
 
   // Together with the file name this is used to compute full names.
   def qualName: String = {
-    stack.filter { element =>
-      element.typ == MethodContext || element.typ == ClassContext
-    }
-    .map(_.name).reverse.mkString(".")
+    stack
+      .filter { element =>
+        element.typ == MethodContext || element.typ == ClassContext
+      }
+      .map(_.name)
+      .reverse
+      .mkString(".")
   }
 
   def astParent: nodes.NewNode = {
     stack match {
-      case head::_ =>
+      case head :: _ =>
         head.cpgNode
       case Nil =>
         fileNamespaceBlock.get
@@ -233,7 +286,7 @@ class ContextStack {
 
   def order: AutoIncIndex = {
     stack match {
-      case head::_ =>
+      case head :: _ =>
         head.order
       case Nil =>
         fileNamespaceBlockOrder
@@ -243,6 +296,5 @@ class ContextStack {
   def isClassContext: Boolean = {
     stack.head.typ == ClassContext
   }
-
 
 }
