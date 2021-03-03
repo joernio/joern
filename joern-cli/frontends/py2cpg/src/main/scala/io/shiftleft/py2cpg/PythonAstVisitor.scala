@@ -750,13 +750,21 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(constant: ast.Constant): nodes.NewNode = {
     constant.value match {
-      case intConstant: ast.IntConstant =>
-        nodeBuilder.numberLiteralNode(intConstant.value, lineAndColOf(constant))
       case stringConstant: ast.StringConstant =>
         nodeBuilder.stringLiteralNode(stringConstant.value, lineAndColOf(constant))
       case boolConstant: ast.BoolConstant =>
         val boolStr = if (boolConstant.value) "True" else "False"
         nodeBuilder.stringLiteralNode(boolStr, lineAndColOf(constant))
+      case intConstant: ast.IntConstant =>
+        nodeBuilder.numberLiteralNode(intConstant.value, lineAndColOf(constant))
+      case floatConstant: ast.FloatConstant =>
+        nodeBuilder.numberLiteralNode(floatConstant.value, lineAndColOf(constant))
+      case imaginaryConstant: ast.ImaginaryConstant =>
+        nodeBuilder.numberLiteralNode(imaginaryConstant.value + "j", lineAndColOf(constant))
+      case ast.NoneConstant =>
+        nodeBuilder.numberLiteralNode("None", lineAndColOf(constant))
+      case ast.EllipsisConstant =>
+        nodeBuilder.numberLiteralNode("...", lineAndColOf(constant))
     }
   }
 
