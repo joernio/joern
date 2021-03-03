@@ -269,6 +269,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("*x = 1")
       testT("*x, *y = 1", "(*x,*y) = 1")
       testT("x = yield y")
+      testT("x = y, z = 1", "x = (y,z) = 1")
     }
 
     "annotated assign statement tests" in {
