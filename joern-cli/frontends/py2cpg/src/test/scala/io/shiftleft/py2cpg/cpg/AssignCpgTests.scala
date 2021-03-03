@@ -55,8 +55,8 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "nested multi target assign" - {
-    // Multi target assign statements get lowered to a block with
+  "nested decomposing assign" - {
+    // Nested decomposing assign statements get lowered to a block with
     // a local variable for the right hand side and an assignment
     // inside the block for each element in the target list.
     lazy val cpg = Py2CpgTestContext.buildCpg(
@@ -103,6 +103,55 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         "z = tmp0[1][1]"
       )
       assignNodes.map(_.lineNumber.get) should contain theSameElementsInOrderAs List(1, 1, 1)
+    }
+  }
+
+  "multi target assign" - {
+    // Multi target assign statements get lowered to a block with
+    // a local variable for the right hand side and an assignment
+    // inside the block for each element in the target list.
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x = y = list""".stripMargin
+    )
+
+    def getSurroundingBlock: nodes.Block = {
+      cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
+    }
+
+    "test block exists" in {
+      // Throws if block does not exist.
+      getSurroundingBlock
+    }
+
+    "test block node properties" in {
+      val block = getSurroundingBlock
+      block.code shouldBe
+        """tmp0 = list
+          |x = tmp0
+          |y = tmp0""".stripMargin
+      block.lineNumber shouldBe Some(1)
+    }
+
+    "test local node" in {
+      val block = cpg.method.name("module").local.name("tmp0").headOption should not be empty
+    }
+
+    "test tmp variable assignment" in {
+      val block = getSurroundingBlock
+      val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
+      tmpAssignNode.code shouldBe "tmp0 = list"
+      tmpAssignNode.methodFullName shouldBe Operators.assignment
+      tmpAssignNode.lineNumber shouldBe Some(1)
+    }
+
+    "test assignments to targets" in {
+      val block = getSurroundingBlock
+      val assignNodes = block.astChildren.isCall.sortBy(_.order).tail
+      assignNodes.map(_.code) should contain theSameElementsInOrderAs List(
+        "x = tmp0",
+        "y = tmp0",
+      )
+      assignNodes.map(_.lineNumber.get) should contain theSameElementsInOrderAs List(1, 1)
     }
   }
 

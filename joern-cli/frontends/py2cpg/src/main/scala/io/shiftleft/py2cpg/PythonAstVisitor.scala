@@ -274,59 +274,60 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(assign: ast.Assign): nodes.NewNode = {
-    if (assign.targets.size == 1) {
-      val target = assign.targets.head
-      val targetWithAccessChains = getTargetsWithAccessChains(target)
-      if (targetWithAccessChains.size == 1) {
-        // Case with single entity one the left hand side.
-        // We always have an empty acces chain in this case.
-        val valueNode = convert(assign.value)
-        val targetNode = convert(target)
+    if (assign.targets.size == 1 && !assign.targets.head.isInstanceOf[ast.Tuple]) {
+      // Case with single entity one the left hand side.
+      // No lowering or wrapping in a block is required.
+      val valueNode = convert(assign.value)
+      val targetNode = convert(assign.targets.head)
 
-        createAssignment(targetNode, valueNode, lineAndColOf(assign))
-      } else {
-        // Case with a tuple of entities on the left hand side.
-        // Lowering of x, (y,z) = a:
+      createAssignment(targetNode, valueNode, lineAndColOf(assign))
+    } else {
+        // Lowering of x, (y,z) = a = b = c:
         //   {
-        //     tmp = a
+        //     tmp = c
         //     x = tmp[0]
         //     y = tmp[1][0]
         //     z = tmp[1][1]
+        //     a = c
+        //     b = c
         //   }
-        val valueNode = convert(assign.value)
-        val tmpVariableName = getUnusedName()
+      val valueNode = convert(assign.value)
+      val tmpVariableName = getUnusedName()
 
-        val tmpVariableAssignNode =
-          createAssignmentToIdentifier(tmpVariableName, valueNode, lineAndColOf(assign))
+      val tmpVariableAssignNode =
+        createAssignmentToIdentifier(tmpVariableName, valueNode, lineAndColOf(assign))
 
-        val targetAssignNodes =
-          targetWithAccessChains.map { case (target, accessChain) =>
-            val targetNode = convert(target)
-            val tmpIdentifierNode =
-              createIdentifierNode(tmpVariableName, Load, lineAndColOf(assign))
-            val indexTmpIdentifierNode = createIndexAccessChain(
-              tmpIdentifierNode,
-              accessChain,
-              lineAndColOf(assign)
-            )
+      val loweredAssignNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
+      loweredAssignNodes.append(tmpVariableAssignNode)
 
-            createAssignment(
-              targetNode,
-              indexTmpIdentifierNode,
-              lineAndColOf(assign)
-            )
-          }
-
-        val blockNode =
-          createBlock(
-            tmpVariableAssignNode :: targetAssignNodes.toList,
+      assign.targets.foreach { target =>
+        val targetWithAccessChains = getTargetsWithAccessChains(target)
+        targetWithAccessChains.foreach { case (target, accessChain) =>
+          val targetNode = convert(target)
+          val tmpIdentifierNode =
+            createIdentifierNode(tmpVariableName, Load, lineAndColOf(assign))
+          val indexTmpIdentifierNode = createIndexAccessChain(
+            tmpIdentifierNode,
+            accessChain,
             lineAndColOf(assign)
           )
 
-        blockNode
+          val targetAssignNode = createAssignment(
+            targetNode,
+            indexTmpIdentifierNode,
+            lineAndColOf(assign)
+          )
+          loweredAssignNodes.append(targetAssignNode)
+        }
       }
-    } else {
-      throw new RuntimeException("Unexpected assign with more than one target.")
+
+      val blockNode =
+        createBlock(
+          loweredAssignNodes,
+          lineAndColOf(assign)
+        )
+
+      blockNode
     }
   }
 
