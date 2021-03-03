@@ -1,7 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import io.shiftleft.py2cpg.memop.MemoryOperation
+import io.shiftleft.py2cpg.memop.{MemoryOperation, Store}
 import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
@@ -169,6 +169,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
 
     callNode
+  }
+
+  protected def createAssignmentToIdentifier(identifierName: String,
+                                             rhsNode: nodes.NewNode,
+                                             lineAndColumn: LineAndColumn): nodes.NewNode = {
+    val identifierNode = createIdentifierNode(identifierName, Store, lineAndColumn)
+    createAssignment(identifierNode, rhsNode, lineAndColumn)
   }
 
   protected def createAugAssignment(

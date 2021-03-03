@@ -296,10 +296,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         val valueNode = convert(assign.value)
         val tmpVariableName = getUnusedName()
 
-        val tmpIdentifierNode =
-          createIdentifierNode(tmpVariableName, Store, lineAndColOf(assign))
         val tmpVariableAssignNode =
-          createAssignment(tmpIdentifierNode, valueNode, lineAndColOf(assign))
+          createAssignmentToIdentifier(tmpVariableName, valueNode, lineAndColOf(assign))
 
         val targetAssignNodes =
           targetWithAccessChains.map { case (target, accessChain) =>
@@ -683,8 +681,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       Iterable.single(compareNode)
     } else {
       val tmpVariableName = getUnusedName()
-      val tmpIdentifierAssign = createIdentifierNode(tmpVariableName, Store, lineAndColumn)
-      val assignmentNode = createAssignment(tmpIdentifierAssign, rhsNode, lineAndColumn)
+      val assignmentNode = createAssignmentToIdentifier(tmpVariableName, rhsNode, lineAndColumn)
 
       val tmpIdentifierCompare1 = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
       val compareNode = createBinaryOperatorCall(
