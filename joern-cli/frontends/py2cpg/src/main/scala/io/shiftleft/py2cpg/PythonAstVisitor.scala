@@ -750,7 +750,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         nodeBuilder.numberLiteralNode(intConstant.value, lineAndColOf(constant))
       case stringConstant: ast.StringConstant =>
         nodeBuilder.stringLiteralNode(stringConstant.value, lineAndColOf(constant))
-
+      case boolConstant: ast.BoolConstant =>
+        val boolStr = if (boolConstant.value) "True" else "False"
+        nodeBuilder.stringLiteralNode(boolStr, lineAndColOf(constant))
     }
   }
 
