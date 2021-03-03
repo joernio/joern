@@ -404,13 +404,17 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val bodyStmtNodes = astIf.body.map(convert)
     val elseStmtNodes = astIf.orelse.map(convert)
 
-    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astIf))
-    val elseBlockNode = createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astIf.orelse.head))
-
     val controlStructureNode =
       nodeBuilder.controlStructureNode("if ... : ...", "IfStatement", lineAndColOf(astIf))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
-    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode, elseBlockNode)
+
+    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astIf))
+    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+
+    if (astIf.orelse.nonEmpty) {
+      val elseBlockNode = createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astIf.orelse.head))
+      addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+    }
 
     controlStructureNode
   }
