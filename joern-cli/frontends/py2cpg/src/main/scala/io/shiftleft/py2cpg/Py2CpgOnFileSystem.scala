@@ -31,6 +31,7 @@ object Py2CpgOnFileSystem {
 
     val py2Cpg = new Py2Cpg(inputProviders, cpg)
     py2Cpg.buildCpg()
+    cpg.close
   }
 
   private def initCpg(outputFileStr: String): Cpg = {
