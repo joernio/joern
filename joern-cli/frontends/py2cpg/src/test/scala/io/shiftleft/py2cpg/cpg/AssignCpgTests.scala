@@ -83,8 +83,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test local node" in {
-      val block = getSurroundingBlock
-      block.astChildren.isLocal.head.code shouldBe "tmp0"
+      val block = cpg.method.name("module").local.name("tmp0").headOption should not be empty
     }
 
     "test tmp variable assignment" in {

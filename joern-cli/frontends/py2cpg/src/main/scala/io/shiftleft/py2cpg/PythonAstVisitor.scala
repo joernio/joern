@@ -6,7 +6,9 @@ import io.shiftleft.passes.DiffGraph
 import io.shiftleft.py2cpg.memop.{
   AstNodeToMemoryOperationMap,
   MemoryOperation,
-  MemoryOperationCalculator
+  MemoryOperationCalculator,
+  Store,
+  Load,
 }
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
@@ -20,7 +22,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
 
-  private val contextStack = new ContextStack()
+  protected val contextStack = new ContextStack()
 
   private var memOpMap: AstNodeToMemoryOperationMap = _
 
@@ -283,14 +285,19 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
         createAssignment(targetNode, valueNode, lineAndColOf(assign))
       } else {
-        // Case with a list of entities on the left hand side.
+        // Case with a tuple of entities on the left hand side.
+        // Lowering of x, (y,z) = a:
+        //   {
+        //     tmp = a
+        //     x = tmp[0]
+        //     y = tmp[1][0]
+        //     z = tmp[1][1]
+        //   }
         val valueNode = convert(assign.value)
         val tmpVariableName = getUnusedName()
 
-        val localNode = nodeBuilder.localNode(tmpVariableName)
-
         val tmpIdentifierNode =
-          nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(assign))
+          createIdentifierNode(tmpVariableName, Store, lineAndColOf(assign))
         val tmpVariableAssignNode =
           createAssignment(tmpIdentifierNode, valueNode, lineAndColOf(assign))
 
@@ -298,7 +305,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           targetWithAccessChains.map { case (target, accessChain) =>
             val targetNode = convert(target)
             val tmpIdentifierNode =
-              nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(assign))
+              createIdentifierNode(tmpVariableName, Load, lineAndColOf(assign))
             val indexTmpIdentifierNode = createIndexAccessChain(
               tmpIdentifierNode,
               accessChain,
@@ -314,7 +321,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
         val blockNode =
           createBlock(
-            Iterable.single(localNode),
             tmpVariableAssignNode :: targetAssignNodes.toList,
             lineAndColOf(assign)
           )
@@ -390,13 +396,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColOf(astWhile))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
-    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
+    val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astWhile))
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
 
     if (astWhile.orelse.nonEmpty) {
       val elseStmtNodes = astWhile.orelse.map(convert)
       val elseBlockNode =
-        createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astWhile.orelse.head))
+        createBlock(elseStmtNodes, lineAndColOf(astWhile.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
     }
 
@@ -411,12 +417,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       nodeBuilder.controlStructureNode("if ... : ...", "IfStatement", lineAndColOf(astIf))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
-    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astIf))
+    val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astIf))
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
 
     if (astIf.orelse.nonEmpty) {
       val elseStmtNodes = astIf.orelse.map(convert)
-      val elseBlockNode = createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astIf.orelse.head))
+      val elseBlockNode = createBlock(elseStmtNodes, lineAndColOf(astIf.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
     }
 
@@ -636,7 +642,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val topLevelExprNodes =
       lowerComparatorChain(lhsNode, compare.ops, compare.comparators, lineAndColOf(compare))
     if (topLevelExprNodes.size > 1) {
-      createBlock(Iterable.empty, topLevelExprNodes, lineAndColOf(compare))
+      createBlock(topLevelExprNodes, lineAndColOf(compare))
     } else {
       topLevelExprNodes.head
     }
@@ -677,11 +683,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       Iterable.single(compareNode)
     } else {
       val tmpVariableName = getUnusedName()
-      val tmpLocalNode = nodeBuilder.localNode(tmpVariableName)
-      val tmpIdentifierAssign = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
+      val tmpIdentifierAssign = createIdentifierNode(tmpVariableName, Store, lineAndColumn)
       val assignmentNode = createAssignment(tmpIdentifierAssign, rhsNode, lineAndColumn)
 
-      val tmpIdentifierCompare1 = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
+      val tmpIdentifierCompare1 = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
       val compareNode = createBinaryOperatorCall(
         lhsNode,
         compopToOpCodeAndFullName(compOperators.head),
@@ -689,7 +694,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         lineAndColumn
       )
 
-      val tmpIdentifierCompare2 = nodeBuilder.identifierNode(tmpVariableName, lineAndColumn)
+      val tmpIdentifierCompare2 = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
       val childNodes = lowerComparatorChain(
         tmpIdentifierCompare2,
         compOperators.tail,
@@ -697,7 +702,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         lineAndColumn
       )
 
-      val blockNode = createBlock(Iterable.empty, childNodes, lineAndColumn)
+      val blockNode = createBlock(childNodes, lineAndColumn)
 
       Iterable(
         assignmentNode,
@@ -788,10 +793,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(starred: ast.Starred): NewNode = ???
 
   def convert(name: ast.Name): nodes.NewNode = {
-    val identifierNode = nodeBuilder.identifierNode(name.id, lineAndColOf(name))
     val memoryOperation = memOpMap.get(name).get
-    contextStack.addVariableReference(identifierNode, memoryOperation)
-    identifierNode
+    createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
   }
 
   /** Lowering of [1, 2]:
@@ -804,32 +807,31 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     */
   def convert(list: ast.List): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
-    val localNode = nodeBuilder.localNode(tmpVariableName)
 
-    val listInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
-    val listIdNode = nodeBuilder.identifierNode("list", lineAndColOf(list))
+    val listInstanceId = createIdentifierNode(tmpVariableName, Store, lineAndColOf(list))
+    val listIdNode = createIdentifierNode("list", Load, lineAndColOf(list))
     val listConstructorCall = createCall(listIdNode, lineAndColOf(list))
     val listInstanceAssignment =
       createAssignment(listInstanceId, listConstructorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
       val listInstanceIdForReceiver =
-        nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+        createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
       val appendFieldAccessNode =
         createFieldAccess(listInstanceIdForReceiver, "append", lineAndColOf(list))
 
-      val listeInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+      val listeInstanceId = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
       val elementNode = convert(listElement)
       createInstanceCall(appendFieldAccessNode, listeInstanceId, lineAndColOf(list), elementNode)
     }
 
-    val listInstanceIdForReturn = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
+    val listInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
 
     val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
     blockElements.append(listInstanceAssignment)
     blockElements.appendAll(appendCallNodes)
     blockElements.append(listInstanceIdForReturn)
-    createBlock(Iterable.single(localNode), blockElements, lineAndColOf(list))
+    createBlock(blockElements, lineAndColOf(list))
   }
 
   def convert(tuple: ast.Tuple): NewNode = ???

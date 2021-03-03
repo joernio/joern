@@ -1,6 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.py2cpg.memop.MemoryOperation
 import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
@@ -45,7 +46,6 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createBlock(
-      locals: Iterable[nodes.NewLocal],
       blockElements: Iterable[nodes.NewNode],
       lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
@@ -53,7 +53,6 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
 
     var orderIndex = new AutoIncIndex(1)
-    addAstChildNodes(blockNode, orderIndex, locals)
     addAstChildNodes(blockNode, orderIndex, blockElements)
 
     blockNode
@@ -190,6 +189,17 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
 
     callNode
+  }
+
+  // Always use this method to create an identifier node instead of
+  // nodeBuilder.identifierNode() directly to avoid missing to add
+  // the variable reference.
+  protected def createIdentifierNode(name: String,
+                                     memOp: MemoryOperation,
+                                     lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
+    val identifierNode = nodeBuilder.identifierNode(name, lineAndColumn)
+    contextStack.addVariableReference(identifierNode, memOp)
+    identifierNode
   }
 
   protected def createIndexAccess(
