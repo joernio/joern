@@ -9,7 +9,7 @@ class CodeToCpg(inputPair: InputPair) {
   def convert(): Iterator[DiffGraph] = {
     val astRoot = parseSourceCode()
     val astVisitor = new PythonAstVisitor(inputPair.file)
-    astRoot.accept(astVisitor)
+    astVisitor.convert(astRoot)
 
     Iterator(astVisitor.getDiffGraph)
   }

@@ -14,9 +14,7 @@ import io.shiftleft.semanticcpg.language.toMethodForCallGraph
 
 import scala.collection.mutable
 
-class PythonAstVisitor(fileName: String)
-    extends AstVisitor[nodes.NewNode]
-    with PythonAstVisitorHelpers {
+class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   private val diffGraph = new DiffGraph.Builder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -40,12 +38,20 @@ class PythonAstVisitor(fileName: String)
     )
   }
 
-  override def visit(astNode: ast.iast): nodes.NewNode = ???
+  def convert(astNode: ast.iast): NewNode = {
+    astNode match {
+      case module: ast.Module => convert(module)
+    }
+  }
 
-  override def visit(mod: ast.imod): NewNode = ???
+  def convert(mod: ast.imod): NewNode = {
+    mod match {
+      case node: ast.Module => convert(node)
+    }
+  }
 
   // Entry method for the visitor.
-  override def visit(module: ast.Module): nodes.NewNode = {
+  def convert(module: ast.Module): NewNode = {
     val memOpCalculator = new MemoryOperationCalculator()
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
@@ -57,26 +63,61 @@ class PythonAstVisitor(fileName: String)
 
     val methodFullName = calcMethodFullNameFromContext("module")
 
-    createMethod(
-      "module",
-      methodFullName,
-      (_: nodes.NewMethod) => (),
-      body = module.stmts,
-      decoratorList = Nil,
-      returns = None,
-      isAsync = false,
-      methodRefNode = None,
-      LineAndColumn(1, 1)
-    )
+    val moduleMethodNode =
+      createMethod(
+        "module",
+        methodFullName,
+        (_: nodes.NewMethod) => (),
+        body = module.stmts,
+        decoratorList = Nil,
+        returns = None,
+        isAsync = false,
+        methodRefNode = None,
+        LineAndColumn(1, 1)
+      )
 
     createIdentifierLinks()
 
-    null
+    moduleMethodNode
   }
 
-  override def visit(stmt: ast.istmt): NewNode = ???
+  private def unhandledStmt(stmt: ast.istmt): Nothing = {
+    throw new NotImplementedError()
+  }
 
-  override def visit(functionDef: ast.FunctionDef): NewNode = {
+  private def convert(stmt: ast.istmt): NewNode = {
+    stmt match {
+      case node: ast.FunctionDef => convert(node)
+      case node: ast.AsyncFunctionDef => convert(node)
+      case node: ast.ClassDef => unhandledStmt(node)
+      case node: ast.Return => convert(node)
+      case node: ast.Delete => convert(node)
+      case node: ast.Assign => convert(node)
+      case node: ast.AnnAssign => convert(node)
+      case node: ast.AugAssign => convert(node)
+      case node: ast.For => unhandledStmt(node)
+      case node: ast.AsyncFor => unhandledStmt(node)
+      case node: ast.While => convert(node)
+      case node: ast.If => convert(node)
+      case node: ast.With => unhandledStmt(node)
+      case node: ast.AsyncWith => unhandledStmt(node)
+      case node: ast.Raise => unhandledStmt(node)
+      case node: ast.Try => unhandledStmt(node)
+      case node: ast.Assert => unhandledStmt(node)
+      case node: ast.Import => unhandledStmt(node)
+      case node: ast.ImportFrom => unhandledStmt(node)
+      case node: ast.Global => convert(node)
+      case node: ast.Nonlocal => convert(node)
+      case node: ast.Expr => convert(node)
+      case node: ast.Pass => convert(node)
+      case node: ast.Break => convert(node)
+      case node: ast.Continue => convert(node)
+      case node: ast.RaiseP2 => unhandledStmt(node)
+      case node: ast.ErrorStatement => unhandledStmt(node)
+    }
+  }
+
+  def convert(functionDef: ast.FunctionDef): NewNode = {
     // TODO create local variable with same name as functionDef and assign the method reference
     // to it.
     createMethodAndMethodRef(
@@ -90,7 +131,7 @@ class PythonAstVisitor(fileName: String)
     )
   }
 
-  override def visit(functionDef: ast.AsyncFunctionDef): NewNode = {
+  def convert(functionDef: ast.AsyncFunctionDef): NewNode = {
     // TODO create local variable with same name as functionDef and assign the method reference
     // to it.
     createMethodAndMethodRef(
@@ -112,11 +153,11 @@ class PythonAstVisitor(fileName: String)
     } else {
       new AutoIncIndex(1)
     }
-    parameters.posonlyargs.map(_.accept(this)).foreach { parameterNode =>
+    parameters.posonlyargs.map(convert).foreach { parameterNode =>
       contextStack.addParameter(parameterNode.asInstanceOf[nodes.NewMethodParameterIn])
       edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
     }
-    parameters.args.map(_.accept(this)).foreach { parameterNode =>
+    parameters.args.map(convert).foreach { parameterNode =>
       contextStack.addParameter(parameterNode.asInstanceOf[nodes.NewMethodParameterIn])
       edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
     }
@@ -186,7 +227,7 @@ class PythonAstVisitor(fileName: String)
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
 
     val bodyOrder = new AutoIncIndex(1)
-    body.map(_.accept(this)).foreach { bodyStmt =>
+    body.map(convert).foreach { bodyStmt =>
       edgeBuilder.astEdge(bodyStmt, blockNode, bodyOrder.getAndInc)
     }
 
@@ -194,12 +235,12 @@ class PythonAstVisitor(fileName: String)
     methodNode
   }
 
-  override def visit(classDef: ast.ClassDef): NewNode = ???
+  def convert(classDef: ast.ClassDef): NewNode = ???
 
-  override def visit(ret: ast.Return): NewNode = {
+  def convert(ret: ast.Return): NewNode = {
     ret.value match {
       case Some(value) =>
-        val valueNode = value.accept(this)
+        val valueNode = convert(value)
         val code = "return " + codeOf(valueNode)
         val returnNode = nodeBuilder.returnNode(code, lineAndColOf(ret))
 
@@ -210,8 +251,8 @@ class PythonAstVisitor(fileName: String)
     }
   }
 
-  override def visit(delete: ast.Delete): NewNode = {
-    val deleteArgs = delete.targets.map(_.accept(this))
+  def convert(delete: ast.Delete): NewNode = {
+    val deleteArgs = delete.targets.map(convert)
 
     val code = "del " + deleteArgs.map(codeOf).mkString(", ")
     val callNode = nodeBuilder.callNode(
@@ -225,20 +266,20 @@ class PythonAstVisitor(fileName: String)
     callNode
   }
 
-  override def visit(assign: ast.Assign): nodes.NewNode = {
+  def convert(assign: ast.Assign): nodes.NewNode = {
     if (assign.targets.size == 1) {
       val target = assign.targets.head
       val targetWithAccessChains = getTargetsWithAccessChains(target)
       if (targetWithAccessChains.size == 1) {
         // Case with single entity one the left hand side.
         // We always have an empty acces chain in this case.
-        val valueNode = assign.value.accept(this)
-        val targetNode = target.accept(this)
+        val valueNode = convert(assign.value)
+        val targetNode = convert(target)
 
         createAssignment(targetNode, valueNode, lineAndColOf(assign))
       } else {
         // Case with a list of entities on the left hand side.
-        val valueNode = assign.value.accept(this)
+        val valueNode = convert(assign.value)
         val tmpVariableName = getUnusedName()
 
         val localNode = nodeBuilder.localNode(tmpVariableName)
@@ -250,7 +291,7 @@ class PythonAstVisitor(fileName: String)
 
         val targetAssignNodes =
           targetWithAccessChains.map { case (target, accessChain) =>
-            val targetNode = target.accept(this)
+            val targetNode = convert(target)
             val tmpIdentifierNode =
               nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(assign))
             val indexTmpIdentifierNode = createIndexAccessChain(
@@ -282,12 +323,12 @@ class PythonAstVisitor(fileName: String)
 
   // TODO for now we ignore the annotation part and just emit the pure
   // assignment.
-  override def visit(annotatedAssign: ast.AnnAssign): NewNode = {
-    val targetNode = annotatedAssign.target.accept(this)
+  def convert(annotatedAssign: ast.AnnAssign): NewNode = {
+    val targetNode = convert(annotatedAssign.target)
 
     annotatedAssign.value match {
       case Some(value) =>
-        val valueNode = value.accept(this)
+        val valueNode = convert(value)
         createAssignment(targetNode, valueNode, lineAndColOf(annotatedAssign))
       case None =>
         // If there is no value, this is just an expr: annotation and since
@@ -297,9 +338,9 @@ class PythonAstVisitor(fileName: String)
     }
   }
 
-  override def visit(augAssign: ast.AugAssign): NewNode = {
-    val targetNode = augAssign.target.accept(this)
-    val valueNode = augAssign.value.accept(this)
+  def convert(augAssign: ast.AugAssign): NewNode = {
+    val targetNode = convert(augAssign.target)
+    val valueNode = convert(augAssign.value)
 
     val (operatorCode, operatorFullName) =
       augAssign.op match {
@@ -332,14 +373,14 @@ class PythonAstVisitor(fileName: String)
     )
   }
 
-  override def visit(forStmt: ast.For): NewNode = ???
+  def convert(forStmt: ast.For): NewNode = ???
 
-  override def visit(forStmt: ast.AsyncFor): NewNode = ???
+  def convert(forStmt: ast.AsyncFor): NewNode = ???
 
-  override def visit(astWhile: ast.While): nodes.NewNode = {
-    val conditionNode = astWhile.test.accept(this)
-    val bodyStmtNodes = astWhile.body.map(_.accept(this))
-    val elseStmtNodes = astWhile.orelse.map(_.accept(this))
+  def convert(astWhile: ast.While): nodes.NewNode = {
+    val conditionNode = convert(astWhile.test)
+    val bodyStmtNodes = astWhile.body.map(convert)
+    val elseStmtNodes = astWhile.orelse.map(convert)
 
     val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
     val elseBlockNode =
@@ -353,10 +394,10 @@ class PythonAstVisitor(fileName: String)
     controlStructureNode
   }
 
-  override def visit(astIf: ast.If): nodes.NewNode = {
-    val conditionNode = astIf.test.accept(this)
-    val bodyStmtNodes = astIf.body.map(_.accept(this))
-    val elseStmtNodes = astIf.orelse.map(_.accept(this))
+  def convert(astIf: ast.If): nodes.NewNode = {
+    val conditionNode = convert(astIf.test)
+    val bodyStmtNodes = astIf.body.map(convert)
+    val elseStmtNodes = astIf.orelse.map(convert)
 
     val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astIf))
     val elseBlockNode = createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astIf.orelse.head))
@@ -369,37 +410,37 @@ class PythonAstVisitor(fileName: String)
     controlStructureNode
   }
 
-  override def visit(withStmt: ast.With): NewNode = ???
+  def convert(withStmt: ast.With): NewNode = ???
 
-  override def visit(withStmt: ast.AsyncWith): NewNode = ???
+  def convert(withStmt: ast.AsyncWith): NewNode = ???
 
-  override def visit(raise: ast.Raise): NewNode = ???
+  def convert(raise: ast.Raise): NewNode = ???
 
-  override def visit(tryStmt: ast.Try): NewNode = ???
+  def convert(tryStmt: ast.Try): NewNode = ???
 
-  override def visit(assert: ast.Assert): NewNode = ???
+  def convert(assert: ast.Assert): NewNode = ???
 
-  override def visit(importStmt: ast.Import): NewNode = ???
+  def convert(importStmt: ast.Import): NewNode = ???
 
-  override def visit(importFrom: ast.ImportFrom): NewNode = ???
+  def convert(importFrom: ast.ImportFrom): NewNode = ???
 
-  override def visit(global: ast.Global): NewNode = {
+  def convert(global: ast.Global): NewNode = {
     global.names.foreach(contextStack.addGlobalVariable)
     val code = global.names.mkString("global ", ", ", "")
     nodeBuilder.unknownNode(code, global.getClass.getName, lineAndColOf(global))
   }
 
-  override def visit(nonLocal: ast.Nonlocal): NewNode = {
+  def convert(nonLocal: ast.Nonlocal): NewNode = {
     nonLocal.names.foreach(contextStack.addNonLocalVariable)
     val code = nonLocal.names.mkString("nonlocal ", ", ", "")
     nodeBuilder.unknownNode(code, nonLocal.getClass.getName, lineAndColOf(nonLocal))
   }
 
-  override def visit(expr: ast.Expr): nodes.NewNode = {
-    expr.value.accept(this)
+  def convert(expr: ast.Expr): nodes.NewNode = {
+    convert(expr.value)
   }
 
-  override def visit(pass: ast.Pass): nodes.NewNode = {
+  def convert(pass: ast.Pass): nodes.NewNode = {
     nodeBuilder.callNode(
       "pass",
       "<operator>.pass",
@@ -408,21 +449,54 @@ class PythonAstVisitor(fileName: String)
     )
   }
 
-  override def visit(astBreak: ast.Break): nodes.NewNode = {
+  def convert(astBreak: ast.Break): nodes.NewNode = {
     nodeBuilder.controlStructureNode("break", "BreakStatement", lineAndColOf(astBreak))
   }
 
-  override def visit(astContinue: ast.Continue): nodes.NewNode = {
+  def convert(astContinue: ast.Continue): nodes.NewNode = {
     nodeBuilder.controlStructureNode("continue", "ContinueStatement", lineAndColOf(astContinue))
   }
 
-  def visit(raise: ast.RaiseP2): NewNode = ???
+  def convert(raise: ast.RaiseP2): NewNode = ???
 
-  override def visit(errorStatement: ast.ErrorStatement): NewNode = ???
+  def convert(errorStatement: ast.ErrorStatement): NewNode = ???
 
-  override def visit(expr: ast.iexpr): NewNode = ???
+  private def unhandledExpr(expr: ast.iexpr): Nothing = {
+    throw new NotImplementedError()
+  }
 
-  override def visit(boolOp: ast.BoolOp): nodes.NewNode = {
+  private def convert(expr: ast.iexpr): NewNode = {
+    expr match {
+      case node: ast.BoolOp => convert(node)
+      case node: ast.NamedExpr => unhandledExpr(node)
+      case node: ast.BinOp => convert(node)
+      case node: ast.UnaryOp => convert(node)
+      case node: ast.Lambda => convert(node)
+      case node: ast.IfExp => unhandledExpr(node)
+      case node: ast.Dict => unhandledExpr(node)
+      case node: ast.Set => unhandledExpr(node)
+      case node: ast.ListComp => unhandledExpr(node)
+      case node: ast.SetComp => unhandledExpr(node)
+      case node: ast.DictComp => unhandledExpr(node)
+      case node: ast.GeneratorExp => unhandledExpr(node)
+      case node: ast.Await => unhandledExpr(node)
+      case node: ast.Yield => unhandledExpr(node)
+      case node: ast.YieldFrom => unhandledExpr(node)
+      case node: ast.Compare => convert(node)
+      case node: ast.Call => convert(node)
+      case node: ast.Constant => convert(node)
+      case node: ast.Attribute => convert(node)
+      case node: ast.Subscript => unhandledExpr(node)
+      case node: ast.Starred => unhandledExpr(node)
+      case node: ast.Name => convert(node)
+      case node: ast.List => convert(node)
+      case node: ast.Tuple => unhandledExpr(node)
+      case node: ast.Slice => unhandledExpr(node)
+      case node: ast.StringExpList => unhandledExpr(node)
+    }
+  }
+
+  def convert(boolOp: ast.BoolOp): nodes.NewNode = {
     def boolOpToCodeAndFullName(operator: ast.iboolop): () => (String, String) = { () =>
       {
         operator match {
@@ -432,15 +506,15 @@ class PythonAstVisitor(fileName: String)
       }
     }
 
-    val operandNodes = boolOp.values.map(_.accept(this))
+    val operandNodes = boolOp.values.map(convert)
     createNAryOperatorCall(boolOpToCodeAndFullName(boolOp.op), operandNodes, lineAndColOf(boolOp))
   }
 
-  override def visit(namedExpr: ast.NamedExpr): NewNode = ???
+  def convert(namedExpr: ast.NamedExpr): NewNode = ???
 
-  override def visit(binOp: ast.BinOp): nodes.NewNode = {
-    val lhsNode = binOp.left.accept(this)
-    val rhsNode = binOp.right.accept(this)
+  def convert(binOp: ast.BinOp): nodes.NewNode = {
+    val lhsNode = convert(binOp.left)
+    val rhsNode = convert(binOp.right)
 
     val (operatorCode, methodFullName) =
       binOp.op match {
@@ -474,8 +548,8 @@ class PythonAstVisitor(fileName: String)
     callNode
   }
 
-  override def visit(unaryOp: ast.UnaryOp): nodes.NewNode = {
-    val operandNode = unaryOp.operand.accept(this)
+  def convert(unaryOp: ast.UnaryOp): nodes.NewNode = {
+    val operandNode = convert(unaryOp.operand)
 
     val (operatorCode, methodFullName) =
       unaryOp.op match {
@@ -498,7 +572,7 @@ class PythonAstVisitor(fileName: String)
     callNode
   }
 
-  override def visit(lambda: ast.Lambda): NewNode = {
+  def convert(lambda: ast.Lambda): NewNode = {
     // TODO test lambda expression.
     createMethodAndMethodRef(
       "lambda",
@@ -511,25 +585,25 @@ class PythonAstVisitor(fileName: String)
     )
   }
 
-  override def visit(ifExp: ast.IfExp): NewNode = ???
+  def convert(ifExp: ast.IfExp): NewNode = ???
 
-  override def visit(dict: ast.Dict): NewNode = ???
+  def convert(dict: ast.Dict): NewNode = ???
 
-  override def visit(set: ast.Set): NewNode = ???
+  def convert(set: ast.Set): NewNode = ???
 
-  override def visit(listComp: ast.ListComp): NewNode = ???
+  def convert(listComp: ast.ListComp): NewNode = ???
 
-  override def visit(setComp: ast.SetComp): NewNode = ???
+  def convert(setComp: ast.SetComp): NewNode = ???
 
-  override def visit(dictComp: ast.DictComp): NewNode = ???
+  def convert(dictComp: ast.DictComp): NewNode = ???
 
-  override def visit(generatorExp: ast.GeneratorExp): NewNode = ???
+  def convert(generatorExp: ast.GeneratorExp): NewNode = ???
 
-  override def visit(await: ast.Await): NewNode = ???
+  def convert(await: ast.Await): NewNode = ???
 
-  override def visit(yieldExpr: ast.Yield): NewNode = ???
+  def convert(yieldExpr: ast.Yield): NewNode = ???
 
-  override def visit(yieldFrom: ast.YieldFrom): NewNode = ???
+  def convert(yieldFrom: ast.YieldFrom): NewNode = ???
 
   // In case of a single compare operation there is no lowering applied.
   // So e.g. x < y stay untouched.
@@ -546,9 +620,9 @@ class PythonAstVisitor(fileName: String)
   //        }
   //      }
   //    }
-  override def visit(compare: ast.Compare): NewNode = {
+  def convert(compare: ast.Compare): NewNode = {
     assert(compare.ops.size == compare.comparators.size)
-    var lhsNode = compare.left.accept(this)
+    var lhsNode = convert(compare.left)
 
     val topLevelExprNodes =
       lowerComparatorChain(lhsNode, compare.ops, compare.comparators, lineAndColOf(compare))
@@ -582,7 +656,7 @@ class PythonAstVisitor(fileName: String)
       comparators: Iterable[ast.iexpr],
       lineAndColumn: LineAndColumn
   ): Iterable[nodes.NewNode] = {
-    val rhsNode = comparators.head.accept(this)
+    val rhsNode = convert(comparators.head)
 
     if (compOperators.size == 1) {
       val compareNode = createBinaryOperatorCall(
@@ -656,20 +730,20 @@ class PythonAstVisitor(fileName: String)
     *    fixed.
     * 3. No named parameter support. CPG does not supports this.
     */
-  override def visit(call: ast.Call): nodes.NewNode = {
-    val argumentNodes = call.args.map(_.accept(this)).toSeq
-    val receiverNode = call.func.accept(this)
+  def convert(call: ast.Call): nodes.NewNode = {
+    val argumentNodes = call.args.map(convert).toSeq
+    val receiverNode = convert(call.func)
 
     call.func match {
       case attribute: ast.Attribute =>
-        val instanceNode = attribute.value.accept(this)
+        val instanceNode = convert(attribute.value)
         createInstanceCall(receiverNode, instanceNode, lineAndColOf(call), argumentNodes: _*)
       case _ =>
         createCall(receiverNode, lineAndColOf(call), argumentNodes: _*)
     }
   }
 
-  override def visit(constant: ast.Constant): nodes.NewNode = {
+  def convert(constant: ast.Constant): nodes.NewNode = {
     constant.value match {
       case intConstant: ast.IntConstant =>
         nodeBuilder.numberLiteralNode(intConstant.value, lineAndColOf(constant))
@@ -683,18 +757,18 @@ class PythonAstVisitor(fileName: String)
     * We currently ignore possible attribute access provider/interception
     * mechanisms like __getattr__, __getattribute__ and __get__.
     */
-  override def visit(attribute: ast.Attribute): nodes.NewNode = {
-    val baseNode = attribute.value.accept(this)
+  def convert(attribute: ast.Attribute): nodes.NewNode = {
+    val baseNode = convert(attribute.value)
     val fieldIdNode = nodeBuilder.fieldIdentifierNode(attribute.attr, lineAndColOf(attribute))
 
     createFieldAccess(baseNode, fieldIdNode, lineAndColOf(attribute))
   }
 
-  override def visit(subscript: ast.Subscript): NewNode = ???
+  def convert(subscript: ast.Subscript): NewNode = ???
 
-  override def visit(starred: ast.Starred): NewNode = ???
+  def convert(starred: ast.Starred): NewNode = ???
 
-  override def visit(name: ast.Name): nodes.NewNode = {
+  def convert(name: ast.Name): nodes.NewNode = {
     val identifierNode = nodeBuilder.identifierNode(name.id, lineAndColOf(name))
     val memoryOperation = memOpMap.get(name).get
     contextStack.addVariableReference(identifierNode, memoryOperation)
@@ -709,7 +783,7 @@ class PythonAstVisitor(fileName: String)
     *     tmp
     *   }
     */
-  override def visit(list: ast.List): nodes.NewNode = {
+  def convert(list: ast.List): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
     val localNode = nodeBuilder.localNode(tmpVariableName)
 
@@ -726,7 +800,7 @@ class PythonAstVisitor(fileName: String)
         createFieldAccess(listInstanceIdForReceiver, "append", lineAndColOf(list))
 
       val listeInstanceId = nodeBuilder.identifierNode(tmpVariableName, lineAndColOf(list))
-      val elementNode = listElement.accept(this)
+      val elementNode = convert(listElement)
       createInstanceCall(appendFieldAccessNode, listeInstanceId, lineAndColOf(list), elementNode)
     }
 
@@ -739,111 +813,29 @@ class PythonAstVisitor(fileName: String)
     createBlock(Iterable.single(localNode), blockElements, lineAndColOf(list))
   }
 
-  override def visit(tuple: ast.Tuple): NewNode = ???
+  def convert(tuple: ast.Tuple): NewNode = ???
 
-  override def visit(slice: ast.Slice): NewNode = ???
+  def convert(slice: ast.Slice): NewNode = ???
 
-  override def visit(stringExpList: ast.StringExpList): NewNode = ???
+  def convert(stringExpList: ast.StringExpList): NewNode = ???
 
-  override def visit(boolop: ast.iboolop): NewNode = ???
+  def convert(comprehension: ast.Comprehension): NewNode = ???
 
-  override def visit(and: ast.And.type): NewNode = ???
+  def convert(exceptHandler: ast.ExceptHandler): NewNode = ???
 
-  override def visit(or: ast.Or.type): NewNode = ???
+  def convert(arguments: ast.Arguments): NewNode = ???
 
-  override def visit(operator: ast.ioperator): NewNode = ???
-
-  override def visit(add: ast.Add.type): NewNode = ???
-
-  override def visit(sub: ast.Sub.type): NewNode = ???
-
-  override def visit(mult: ast.Mult.type): NewNode = ???
-
-  override def visit(matMult: ast.MatMult.type): NewNode = ???
-
-  override def visit(div: ast.Div.type): NewNode = ???
-
-  override def visit(mod: ast.Mod.type): NewNode = ???
-
-  override def visit(pow: ast.Pow.type): NewNode = ???
-
-  override def visit(lShift: ast.LShift.type): NewNode = ???
-
-  override def visit(rShift: ast.RShift.type): NewNode = ???
-
-  override def visit(bitOr: ast.BitOr.type): NewNode = ???
-
-  override def visit(bitXor: ast.BitXor.type): NewNode = ???
-
-  override def visit(bitAnd: ast.BitAnd.type): NewNode = ???
-
-  override def visit(floorDiv: ast.FloorDiv.type): NewNode = ???
-
-  override def visit(unaryop: ast.iunaryop): NewNode = ???
-
-  override def visit(invert: ast.Invert.type): NewNode = ???
-
-  override def visit(not: ast.Not.type): NewNode = ???
-
-  override def visit(uAdd: ast.UAdd.type): NewNode = ???
-
-  override def visit(uSub: ast.USub.type): NewNode = ???
-
-  override def visit(compop: ast.icompop): NewNode = ???
-
-  override def visit(eq: ast.Eq.type): NewNode = ???
-
-  override def visit(notEq: ast.NotEq.type): NewNode = ???
-
-  override def visit(lt: ast.Lt.type): NewNode = ???
-
-  override def visit(ltE: ast.LtE.type): NewNode = ???
-
-  override def visit(gt: ast.Gt.type): NewNode = ???
-
-  override def visit(gtE: ast.GtE.type): NewNode = ???
-
-  override def visit(is: ast.Is.type): NewNode = ???
-
-  override def visit(isNot: ast.IsNot.type): NewNode = ???
-
-  override def visit(in: ast.In.type): NewNode = ???
-
-  override def visit(notIn: ast.NotIn.type): NewNode = ???
-
-  override def visit(comprehension: ast.Comprehension): NewNode = ???
-
-  override def visit(exceptHandler: ast.ExceptHandler): NewNode = ???
-
-  override def visit(arguments: ast.Arguments): NewNode = ???
-
-  override def visit(arg: ast.Arg): NewNode = {
+  def convert(arg: ast.Arg): NewNode = {
     nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
   }
 
-  override def visit(constant: ast.iconstant): NewNode = ???
+  def convert(keyword: ast.Keyword): NewNode = ???
 
-  override def visit(stringConstant: ast.StringConstant): NewNode = ???
+  def convert(alias: ast.Alias): NewNode = ???
 
-  override def visit(boolConstant: ast.BoolConstant): NewNode = ???
+  def convert(withItem: ast.Withitem): NewNode = ???
 
-  override def visit(intConstant: ast.IntConstant): NewNode = ???
-
-  override def visit(intConstant: ast.FloatConstant): NewNode = ???
-
-  override def visit(imaginaryConstant: ast.ImaginaryConstant): NewNode = ???
-
-  override def visit(noneConstant: ast.NoneConstant.type): NewNode = ???
-
-  override def visit(ellipsisConstant: ast.EllipsisConstant.type): NewNode = ???
-
-  override def visit(keyword: ast.Keyword): NewNode = ???
-
-  override def visit(alias: ast.Alias): NewNode = ???
-
-  override def visit(withItem: ast.Withitem): NewNode = ???
-
-  override def visit(typeIgnore: ast.TypeIgnore): NewNode = ???
+  def convert(typeIgnore: ast.TypeIgnore): NewNode = ???
 
   private def calcMethodFullNameFromContext(name: String): String = {
     val contextQualName = contextStack.qualName
