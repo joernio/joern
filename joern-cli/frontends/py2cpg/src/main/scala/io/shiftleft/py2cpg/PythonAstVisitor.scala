@@ -81,39 +81,44 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     moduleMethodNode
   }
 
-  private def unhandledStmt(stmt: ast.istmt): Nothing = {
-    throw new NotImplementedError()
+  private def unhandled(node: ast.iast with ast.iattributes): NewNode = {
+    val unhandledAsUnknown = true
+    if (unhandledAsUnknown) {
+      nodeBuilder.unknownNode(node.toString, node.getClass.getName, lineAndColOf(node))
+    } else {
+      throw new NotImplementedError()
+    }
   }
 
   private def convert(stmt: ast.istmt): NewNode = {
     stmt match {
       case node: ast.FunctionDef => convert(node)
       case node: ast.AsyncFunctionDef => convert(node)
-      case node: ast.ClassDef => unhandledStmt(node)
+      case node: ast.ClassDef => unhandled(node)
       case node: ast.Return => convert(node)
       case node: ast.Delete => convert(node)
       case node: ast.Assign => convert(node)
       case node: ast.AnnAssign => convert(node)
       case node: ast.AugAssign => convert(node)
-      case node: ast.For => unhandledStmt(node)
-      case node: ast.AsyncFor => unhandledStmt(node)
+      case node: ast.For => unhandled(node)
+      case node: ast.AsyncFor => unhandled(node)
       case node: ast.While => convert(node)
       case node: ast.If => convert(node)
-      case node: ast.With => unhandledStmt(node)
-      case node: ast.AsyncWith => unhandledStmt(node)
-      case node: ast.Raise => unhandledStmt(node)
-      case node: ast.Try => unhandledStmt(node)
-      case node: ast.Assert => unhandledStmt(node)
-      case node: ast.Import => unhandledStmt(node)
-      case node: ast.ImportFrom => unhandledStmt(node)
+      case node: ast.With => unhandled(node)
+      case node: ast.AsyncWith => unhandled(node)
+      case node: ast.Raise => unhandled(node)
+      case node: ast.Try => unhandled(node)
+      case node: ast.Assert => unhandled(node)
+      case node: ast.Import => unhandled(node)
+      case node: ast.ImportFrom => unhandled(node)
       case node: ast.Global => convert(node)
       case node: ast.Nonlocal => convert(node)
       case node: ast.Expr => convert(node)
       case node: ast.Pass => convert(node)
       case node: ast.Break => convert(node)
       case node: ast.Continue => convert(node)
-      case node: ast.RaiseP2 => unhandledStmt(node)
-      case node: ast.ErrorStatement => unhandledStmt(node)
+      case node: ast.RaiseP2 => unhandled(node)
+      case node: ast.ErrorStatement => unhandled(node)
     }
   }
 
@@ -461,38 +466,34 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(errorStatement: ast.ErrorStatement): NewNode = ???
 
-  private def unhandledExpr(expr: ast.iexpr): Nothing = {
-    throw new NotImplementedError()
-  }
-
   private def convert(expr: ast.iexpr): NewNode = {
     expr match {
       case node: ast.BoolOp => convert(node)
-      case node: ast.NamedExpr => unhandledExpr(node)
+      case node: ast.NamedExpr => unhandled(node)
       case node: ast.BinOp => convert(node)
       case node: ast.UnaryOp => convert(node)
       case node: ast.Lambda => convert(node)
-      case node: ast.IfExp => unhandledExpr(node)
-      case node: ast.Dict => unhandledExpr(node)
-      case node: ast.Set => unhandledExpr(node)
-      case node: ast.ListComp => unhandledExpr(node)
-      case node: ast.SetComp => unhandledExpr(node)
-      case node: ast.DictComp => unhandledExpr(node)
-      case node: ast.GeneratorExp => unhandledExpr(node)
-      case node: ast.Await => unhandledExpr(node)
-      case node: ast.Yield => unhandledExpr(node)
-      case node: ast.YieldFrom => unhandledExpr(node)
+      case node: ast.IfExp => unhandled(node)
+      case node: ast.Dict => unhandled(node)
+      case node: ast.Set => unhandled(node)
+      case node: ast.ListComp => unhandled(node)
+      case node: ast.SetComp => unhandled(node)
+      case node: ast.DictComp => unhandled(node)
+      case node: ast.GeneratorExp => unhandled(node)
+      case node: ast.Await => unhandled(node)
+      case node: ast.Yield => unhandled(node)
+      case node: ast.YieldFrom => unhandled(node)
       case node: ast.Compare => convert(node)
       case node: ast.Call => convert(node)
       case node: ast.Constant => convert(node)
       case node: ast.Attribute => convert(node)
-      case node: ast.Subscript => unhandledExpr(node)
-      case node: ast.Starred => unhandledExpr(node)
+      case node: ast.Subscript => unhandled(node)
+      case node: ast.Starred => unhandled(node)
       case node: ast.Name => convert(node)
       case node: ast.List => convert(node)
-      case node: ast.Tuple => unhandledExpr(node)
-      case node: ast.Slice => unhandledExpr(node)
-      case node: ast.StringExpList => unhandledExpr(node)
+      case node: ast.Tuple => unhandled(node)
+      case node: ast.Slice => unhandled(node)
+      case node: ast.StringExpList => unhandled(node)
     }
   }
 
