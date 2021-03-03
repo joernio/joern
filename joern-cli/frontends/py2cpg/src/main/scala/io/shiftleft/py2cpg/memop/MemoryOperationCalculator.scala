@@ -305,7 +305,9 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     astNodeToMemOp.put(subscript, stack.head)
   }
 
-  override def visit(starred: ast.Starred): Unit = ???
+  override def visit(starred: ast.Starred): Unit = {
+    accept(starred.value)
+  }
 
   override def visit(name: ast.Name): Unit = {
     astNodeToMemOp.put(name, stack.head)
@@ -409,7 +411,9 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   }
 
   override def visit(exceptHandler: ast.ExceptHandler): Unit = {
+    push(Load)
     accept(exceptHandler.typ)
+    pop()
     accept(exceptHandler.body)
   }
 
