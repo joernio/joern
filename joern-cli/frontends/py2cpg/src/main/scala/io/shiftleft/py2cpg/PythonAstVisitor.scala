@@ -385,16 +385,20 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(astWhile: ast.While): nodes.NewNode = {
     val conditionNode = convert(astWhile.test)
     val bodyStmtNodes = astWhile.body.map(convert)
-    val elseStmtNodes = astWhile.orelse.map(convert)
-
-    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
-    val elseBlockNode =
-      createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astWhile.orelse.head))
 
     val controlStructureNode =
       nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColOf(astWhile))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
-    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode, elseBlockNode)
+
+    val bodyBlockNode = createBlock(Iterable.empty, bodyStmtNodes, lineAndColOf(astWhile))
+    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+
+    if (astWhile.orelse.nonEmpty) {
+      val elseStmtNodes = astWhile.orelse.map(convert)
+      val elseBlockNode =
+        createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astWhile.orelse.head))
+      addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+    }
 
     controlStructureNode
   }
@@ -402,7 +406,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(astIf: ast.If): nodes.NewNode = {
     val conditionNode = convert(astIf.test)
     val bodyStmtNodes = astIf.body.map(convert)
-    val elseStmtNodes = astIf.orelse.map(convert)
 
     val controlStructureNode =
       nodeBuilder.controlStructureNode("if ... : ...", "IfStatement", lineAndColOf(astIf))
@@ -412,6 +415,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
 
     if (astIf.orelse.nonEmpty) {
+      val elseStmtNodes = astIf.orelse.map(convert)
       val elseBlockNode = createBlock(Iterable.empty, elseStmtNodes, lineAndColOf(astIf.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
     }
