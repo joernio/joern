@@ -6,7 +6,7 @@ Idea integration:
     
 Stage and run:
   - Build and assemble py2cpg for local execution: mill _.assembly
-  - Run: ./py2cpg.sh <args>
+  - Run: ./py2cpg.sh <path/to/sourceDirOrFile> -o <path/to/outputCpg>
        
 Shortcomings of Python CPG representation:
   - No named parameter support
