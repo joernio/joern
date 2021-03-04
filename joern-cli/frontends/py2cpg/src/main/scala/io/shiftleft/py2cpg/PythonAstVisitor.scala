@@ -553,7 +553,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   private def convert(expr: ast.iexpr): NewNode = {
     expr match {
       case node: ast.BoolOp => convert(node)
-      case node: ast.NamedExpr => unhandled(node)
+      case node: ast.NamedExpr => convert(node)
       case node: ast.BinOp => convert(node)
       case node: ast.UnaryOp => convert(node)
       case node: ast.Lambda => convert(node)
@@ -595,7 +595,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createNAryOperatorCall(boolOpToCodeAndFullName(boolOp.op), operandNodes, lineAndColOf(boolOp))
   }
 
-  def convert(namedExpr: ast.NamedExpr): NewNode = ???
+  // TODO test
+  def convert(namedExpr: ast.NamedExpr): NewNode = {
+    val targetNode = namedExpr.target
+    val valueNode = namedExpr.value
+
+    createAssignment(targetNode, valueNode, lineAndColOf(namedExpr))
+  }
 
   def convert(binOp: ast.BinOp): nodes.NewNode = {
     val lhsNode = convert(binOp.left)
