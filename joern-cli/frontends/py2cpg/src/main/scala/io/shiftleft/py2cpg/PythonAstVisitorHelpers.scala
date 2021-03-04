@@ -1,7 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import io.shiftleft.py2cpg.memop.{MemoryOperation, Store}
+import io.shiftleft.py2cpg.memop.{Load, MemoryOperation, Store}
 import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
@@ -111,6 +111,33 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     }
 
     callNode
+  }
+
+  // If x may have side effects we lower as follows: x.y(<args>) =>
+  // {
+  //   tmp = x
+  //   CALL(recv = tmp.y, inst = tmp, args=<args>)
+  // }
+  protected def createXDotYCall(x: nodes.NewNode,
+                                y: String,
+                                xMayHaveSideEffects: Boolean,
+                                lineAndColumn: LineAndColumn,
+                                argumentNodes: nodes.NewNode*): nodes.NewNode = {
+    if (xMayHaveSideEffects) {
+      val tmpVarName = getUnusedName()
+      val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x, lineAndColumn)
+      val receiverNode =
+        createFieldAccess(
+          createIdentifierNode(tmpVarName, Load, lineAndColumn),
+          y,
+          lineAndColumn)
+      val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
+      val instanceCallNode = createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
+      createBlock(tmpAssignCall::instanceCallNode::Nil, lineAndColumn)
+    } else {
+      val receiverNode = createFieldAccess(x, y, lineAndColumn)
+      createInstanceCall(receiverNode, x, lineAndColumn, argumentNodes: _*)
+    }
   }
 
   protected def createNAryOperatorCall(

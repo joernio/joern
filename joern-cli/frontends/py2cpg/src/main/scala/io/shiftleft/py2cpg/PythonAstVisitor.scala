@@ -102,8 +102,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Assign => convert(node)
       case node: ast.AnnAssign => convert(node)
       case node: ast.AugAssign => convert(node)
-      case node: ast.For => unhandled(node)
-      case node: ast.AsyncFor => unhandled(node)
+      case node: ast.For => convert(node)
+      case node: ast.AsyncFor => convert(node)
       case node: ast.While => convert(node)
       case node: ast.If => convert(node)
       case node: ast.With => unhandled(node)
@@ -383,9 +383,59 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     )
   }
 
-  def convert(forStmt: ast.For): NewNode = ???
+  // TODO write test
+  def convert(forStmt: ast.For): NewNode = {
+    convertFor(forStmt.target, forStmt.iter, forStmt.body, forStmt.orelse, isAsync = false, lineAndColOf(forStmt))
+  }
 
-  def convert(forStmt: ast.AsyncFor): NewNode = ???
+  def convert(forStmt: ast.AsyncFor): NewNode = {
+    convertFor(forStmt.target, forStmt.iter, forStmt.body, forStmt.orelse, isAsync = true, lineAndColOf(forStmt))
+  }
+
+  // Lowering of for x in y: <statements>:
+  // {
+  //   iterator = y.__iter__()
+  //   while (UNKNOWN condition):
+  //     x = iterator.__next__()
+  //     <statements>
+  // }
+  private def convertFor(target: ast.iexpr,
+                         iter: ast.iexpr,
+                         body: Iterable[ast.istmt],
+                         orelse: Iterable[ast.istmt],
+                         isAsync: Boolean,
+                         lineAndColumn: LineAndColumn): NewNode = {
+    val iterVariableName = getUnusedName()
+    val iterExprIterCallNode =
+      createXDotYCall(convert(iter), "__iter__", xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
+        lineAndColumn)
+    val iterAssignNode = createAssignmentToIdentifier(iterVariableName, iterExprIterCallNode, lineAndColumn)
+
+    val conditionNode = nodeBuilder.unknownNode("iteratorNonEmptyOrException", "", lineAndColumn)
+
+    val controlStructureNode =
+      nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColumn)
+    edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
+
+    val iterNextCallNode =
+      createXDotYCall(createIdentifierNode(iterVariableName, Load, lineAndColumn), "__next__",
+        xMayHaveSideEffects = false,
+        lineAndColumn)
+    val assignToTargetNode = createAssignment(convert(target), iterNextCallNode, lineAndColumn)
+
+    val bodyStmtNodes = body.map(convert)
+    val bodyBlockNode = createBlock(assignToTargetNode :: bodyStmtNodes.toList, lineAndColumn)
+    addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+
+    if (orelse.nonEmpty) {
+      val elseStmtNodes = orelse.map(convert)
+      val elseBlockNode =
+        createBlock(elseStmtNodes, lineAndColOf(orelse.head))
+      addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+    }
+
+    createBlock(iterAssignNode::controlStructureNode::Nil, lineAndColumn)
+  }
 
   def convert(astWhile: ast.While): nodes.NewNode = {
     val conditionNode = convert(astWhile.test)
@@ -731,26 +781,18 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     *    https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy
     *    search for "Instance methods"
     *
-    * 2. Due to the decision in 1. for calls like x.func() the
-    *    expression x is part of the call receiver AST and its
-    *    instance AST. This would be only ok if x is side effect
-    *    free which is not necessarily the case if x == getX().
-    *    Currently we ignore this fact and just emit the expression
-    *    twice. A fix would mean to emit a tmp variable which holds
-    *    the expression result.
-    *    Not yet implemented because this gets obsolete if 1. is
-    *    fixed.
-    * 3. No named parameter support. CPG does not supports this.
+    * 2. No named parameter support. CPG does not supports this.
     */
   def convert(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(convert).toSeq
-    val receiverNode = convert(call.func)
 
     call.func match {
       case attribute: ast.Attribute =>
-        val instanceNode = convert(attribute.value)
-        createInstanceCall(receiverNode, instanceNode, lineAndColOf(call), argumentNodes: _*)
+        createXDotYCall(convert(attribute.value), attribute.attr,
+          xMayHaveSideEffects = !attribute.value.isInstanceOf[ast.Name],
+          lineAndColOf(call), argumentNodes: _*)
       case _ =>
+        val receiverNode = convert(call.func)
         createCall(receiverNode, lineAndColOf(call), argumentNodes: _*)
     }
   }
@@ -803,6 +845,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     *     tmp
     *   }
     */
+  // TODO test
   def convert(list: ast.List): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
 
@@ -813,14 +856,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createAssignment(listInstanceId, listConstructorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
-      val listInstanceIdForReceiver =
+      val listInstanceIdentifierNode =
         createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
-      val appendFieldAccessNode =
-        createFieldAccess(listInstanceIdForReceiver, "append", lineAndColOf(list))
 
-      val listeInstanceId = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
       val elementNode = convert(listElement)
-      createInstanceCall(appendFieldAccessNode, listeInstanceId, lineAndColOf(list), elementNode)
+
+      createXDotYCall(listInstanceIdentifierNode, "append", xMayHaveSideEffects = false, lineAndColOf(list), elementNode)
     }
 
     val listInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
