@@ -120,7 +120,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Break => convert(node)
       case node: ast.Continue => convert(node)
       case node: ast.RaiseP2 => unhandled(node)
-      case node: ast.ErrorStatement => unhandled(node)
+      case node: ast.ErrorStatement => convert(node)
     }
   }
 
@@ -544,7 +544,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(raise: ast.RaiseP2): NewNode = ???
 
-  def convert(errorStatement: ast.ErrorStatement): NewNode = ???
+  def convert(errorStatement: ast.ErrorStatement): NewNode = {
+    nodeBuilder.unknownNode(errorStatement.toString,
+      errorStatement.getClass.getName,
+      lineAndColOf(errorStatement))
+  }
 
   private def convert(expr: ast.iexpr): NewNode = {
     expr match {
