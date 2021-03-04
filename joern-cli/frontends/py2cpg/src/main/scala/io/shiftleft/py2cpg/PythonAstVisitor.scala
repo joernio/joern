@@ -110,7 +110,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.AsyncWith => unhandled(node)
       case node: ast.Raise => unhandled(node)
       case node: ast.Try => unhandled(node)
-      case node: ast.Assert => unhandled(node)
+      case node: ast.Assert => convert(node)
       case node: ast.Import => unhandled(node)
       case node: ast.ImportFrom => unhandled(node)
       case node: ast.Global => convert(node)
@@ -486,7 +486,24 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(tryStmt: ast.Try): NewNode = ???
 
-  def convert(assert: ast.Assert): NewNode = ???
+  def convert(assert: ast.Assert): NewNode = {
+    val testNode = convert(assert.test)
+    val msgNode = assert.msg.map(convert)
+
+    val code = "assert " + codeOf(testNode) + msgNode.map(m => ", " + codeOf(m)).getOrElse("")
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.assert",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(assert)
+    )
+
+    addAstChildrenAsArguments(callNode, 1, testNode)
+    if (msgNode.isDefined) {
+      addAstChildrenAsArguments(callNode, 2, msgNode)
+    }
+    callNode
+  }
 
   def convert(importStmt: ast.Import): NewNode = ???
 
