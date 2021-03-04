@@ -599,8 +599,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   // TODO test
   def convert(namedExpr: ast.NamedExpr): NewNode = {
-    val targetNode = namedExpr.target
-    val valueNode = namedExpr.value
+    val targetNode = convert(namedExpr.target)
+    val valueNode = convert(namedExpr.value)
 
     createAssignment(targetNode, valueNode, lineAndColOf(namedExpr))
   }
