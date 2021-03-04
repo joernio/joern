@@ -580,36 +580,26 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val lhsNode = convert(binOp.left)
     val rhsNode = convert(binOp.right)
 
-    val (operatorCode, methodFullName) =
+    val opCodeAndFullName =
       binOp.op match {
-        case ast.Add  => (" + ", Operators.addition)
-        case ast.Sub  => (" - ", Operators.subtraction)
-        case ast.Mult => (" * ", Operators.multiplication)
+        case ast.Add  => ("+", Operators.addition)
+        case ast.Sub  => ("-", Operators.subtraction)
+        case ast.Mult => ("*", Operators.multiplication)
         case ast.MatMult =>
-          (" @ ", "<operator>.matMult") // TODO make this a define and add policy for this
-        case ast.Div    => (" / ", Operators.division)
-        case ast.Mod    => (" % ", Operators.modulo)
-        case ast.Pow    => (" ** ", Operators.exponentiation)
-        case ast.LShift => (" << ", Operators.shiftLeft)
-        case ast.RShift => (" << ", Operators.arithmeticShiftRight)
-        case ast.BitOr  => (" | ", Operators.or)
-        case ast.BitXor => (" ^ ", Operators.xor)
-        case ast.BitAnd => (" & ", Operators.and)
+          ("@", "<operator>.matMult") // TODO make this a define and add policy for this
+        case ast.Div    => ("/", Operators.division)
+        case ast.Mod    => ("%", Operators.modulo)
+        case ast.Pow    => ("**", Operators.exponentiation)
+        case ast.LShift => ("<<", Operators.shiftLeft)
+        case ast.RShift => ("<<", Operators.arithmeticShiftRight)
+        case ast.BitOr  => ("|", Operators.or)
+        case ast.BitXor => ("^", Operators.xor)
+        case ast.BitAnd => ("&", Operators.and)
         case ast.FloorDiv =>
-          (" // ", "<operator>.floorDiv") // TODO make this a define and add policy for this
+          ("//", "<operator>.floorDiv") // TODO make this a define and add policy for this
       }
 
-    val code = codeOf(lhsNode) + operatorCode + codeOf(rhsNode)
-    val callNode = nodeBuilder.callNode(
-      code,
-      methodFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColOf(binOp)
-    )
-
-    addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
-
-    callNode
+    createBinaryOperatorCall(lhsNode, () => opCodeAndFullName, rhsNode, lineAndColOf(binOp))
   }
 
   def convert(unaryOp: ast.UnaryOp): nodes.NewNode = {
