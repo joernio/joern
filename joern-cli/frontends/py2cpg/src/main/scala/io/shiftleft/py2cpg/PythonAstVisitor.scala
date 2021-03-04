@@ -171,6 +171,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // TODO implement non position arguments and vararg.
   }
 
+  // TODO handle decoratorList
+  // TODO handle returns
   private def createMethodAndMethodRef(
       methodName: String,
       parameterProcessing: nodes.NewMethod => Unit,
