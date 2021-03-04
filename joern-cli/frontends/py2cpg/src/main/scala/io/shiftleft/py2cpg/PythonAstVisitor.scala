@@ -566,7 +566,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.SetComp => unhandled(node)
       case node: ast.DictComp => unhandled(node)
       case node: ast.GeneratorExp => unhandled(node)
-      case node: ast.Await => unhandled(node)
+      case node: ast.Await => convert(node)
       case node: ast.Yield => unhandled(node)
       case node: ast.YieldFrom => unhandled(node)
       case node: ast.Compare => convert(node)
@@ -682,7 +682,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(generatorExp: ast.GeneratorExp): NewNode = ???
 
-  def convert(await: ast.Await): NewNode = ???
+  def convert(await: ast.Await): NewNode = {
+    // Since the CPG format does not provide means to model async/await,
+    // we for now treat it as non existing.
+    convert(await.value)
+  }
 
   def convert(yieldExpr: ast.Yield): NewNode = ???
 
