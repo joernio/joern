@@ -381,12 +381,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   // TODO write test
   def convert(forStmt: ast.For): NewNode = {
-    convertFor(forStmt.target, forStmt.iter, Iterable.empty,
+    createForLowering(forStmt.target, forStmt.iter, Iterable.empty,
       forStmt.body.map(convert), forStmt.orelse.map(convert), isAsync = false, lineAndColOf(forStmt))
   }
 
   def convert(forStmt: ast.AsyncFor): NewNode = {
-    convertFor(forStmt.target, forStmt.iter, Iterable.empty,
+    createForLowering(forStmt.target, forStmt.iter, Iterable.empty,
       forStmt.body.map(convert), forStmt.orelse.map(convert), isAsync = true, lineAndColOf(forStmt))
   }
 
@@ -405,13 +405,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   //     x = iterator.__next__()
   //     <statements>
   // }
-  private def convertFor(target: ast.iexpr,
-                         iter: ast.iexpr,
-                         ifs: Iterable[ast.iexpr],
-                         bodyNodes: Iterable[nodes.NewNode],
-                         orelseNodes: Iterable[nodes.NewNode],
-                         isAsync: Boolean,
-                         lineAndColumn: LineAndColumn): NewNode = {
+  private def createForLowering(target: ast.iexpr,
+                                iter: ast.iexpr,
+                                ifs: Iterable[ast.iexpr],
+                                bodyNodes: Iterable[nodes.NewNode],
+                                orelseNodes: Iterable[nodes.NewNode],
+                                isAsync: Boolean,
+                                lineAndColumn: LineAndColumn): nodes.NewNode = {
     val iterVariableName = getUnusedName()
     val iterExprIterCallNode =
       createXDotYCall(convert(iter), "__iter__", xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
@@ -812,7 +812,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // list comprehensions element expression wrapped in an tmp.append() call.
     val nestedLoopBlockNode =
       listComp.generators.foldRight(listVarAppendCallNode) { case (comprehension, loopBodyNode) =>
-        convertFor(comprehension.target,
+        createForLowering(comprehension.target,
           comprehension.iter,
           comprehension.ifs,
           Iterable.single(loopBodyNode),
