@@ -574,7 +574,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Call => convert(node)
       case node: ast.Constant => convert(node)
       case node: ast.Attribute => convert(node)
-      case node: ast.Subscript => unhandled(node)
+      case node: ast.Subscript => convert(node)
       case node: ast.Starred => unhandled(node)
       case node: ast.Name => convert(node)
       case node: ast.List => convert(node)
@@ -852,7 +852,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createFieldAccess(baseNode, fieldIdNode, lineAndColOf(attribute))
   }
 
-  def convert(subscript: ast.Subscript): NewNode = ???
+  def convert(subscript: ast.Subscript): NewNode = {
+    createIndexAccess(convert(subscript.value), convert(subscript.slice), lineAndColOf(subscript))
+  }
 
   def convert(starred: ast.Starred): NewNode = ???
 
