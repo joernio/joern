@@ -687,6 +687,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createCall(
         createIdentifierNode("dict", Load, lineAndColOf(dict)),
         lineAndColOf(dict))
+    val dictVariableAssigNode =
+      createAssignmentToIdentifier(tmpVariableName, dictConstructorCallNode, lineAndColOf(dict))
 
     val dictElementAssignNodes = dict.keys.zip(dict.values).map { case (key, value) =>
       key match {
@@ -714,7 +716,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val dictInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict))
 
     val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
-    blockElements.append(dictConstructorCallNode)
+    blockElements.append(dictVariableAssigNode)
     blockElements.appendAll(dictElementAssignNodes)
     blockElements.append(dictInstanceReturnIdentifierNode)
     createBlock(blockElements, lineAndColOf(dict))
@@ -732,11 +734,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(set: ast.Set): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
 
-    val setInstanceId = createIdentifierNode(tmpVariableName, Store, lineAndColOf(set))
-    val setIdNode = createIdentifierNode("set", Load, lineAndColOf(set))
-    val setConstructorCall = createCall(setIdNode, lineAndColOf(set))
+    val setConstructorCall = createCall(createIdentifierNode("set", Load, lineAndColOf(set)), lineAndColOf(set))
     val setInstanceAssignment =
-      createAssignment(setInstanceId, setConstructorCall, lineAndColOf(set))
+      createAssignmentToIdentifier(tmpVariableName, setConstructorCall, lineAndColOf(set))
 
     val appendCallNodes = set.elts.map { setElement =>
       createXDotYCall(createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
@@ -955,11 +955,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(list: ast.List): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
 
-    val listInstanceId = createIdentifierNode(tmpVariableName, Store, lineAndColOf(list))
-    val listIdNode = createIdentifierNode("list", Load, lineAndColOf(list))
-    val listConstructorCall = createCall(listIdNode, lineAndColOf(list))
+    val listConstructorCall = createCall(createIdentifierNode("list", Load, lineAndColOf(list)), lineAndColOf(list))
     val listInstanceAssignment =
-      createAssignment(listInstanceId, listConstructorCall, lineAndColOf(list))
+      createAssignmentToIdentifier(tmpVariableName, listConstructorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
       val listInstanceIdentifierNode =
@@ -996,6 +994,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           createCall(
             createIdentifierNode("tuple", Load, lineAndColOf(tuple)),
             lineAndColOf(tuple))
+        val tupleVariableAssignNode =
+          createAssignmentToIdentifier(tmpVariableName, tupleConstructorCallNode, lineAndColOf(tuple))
 
         var index = 0
         val tupleElementAssignNodes = tuple.elts.map { tupleElement =>
@@ -1015,7 +1015,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         val tupleInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
 
         val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
-        blockElements.append(tupleConstructorCallNode)
+        blockElements.append(tupleVariableAssignNode)
         blockElements.appendAll(tupleElementAssignNodes)
         blockElements.append(tupleInstanceReturnIdentifierNode)
         createBlock(blockElements, lineAndColOf(tuple))
