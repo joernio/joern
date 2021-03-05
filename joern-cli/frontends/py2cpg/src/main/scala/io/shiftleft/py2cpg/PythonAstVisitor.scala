@@ -9,6 +9,7 @@ import io.shiftleft.py2cpg.memop.{
   MemoryOperationCalculator,
   Store,
   Load,
+  Del
 }
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
@@ -577,7 +578,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Starred => unhandled(node)
       case node: ast.Name => convert(node)
       case node: ast.List => convert(node)
-      case node: ast.Tuple => unhandled(node)
+      case node: ast.Tuple => convert(node)
       case node: ast.Slice => unhandled(node)
       case node: ast.StringExpList => unhandled(node)
     }
@@ -862,7 +863,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of [1, 2]:
     *   {
-    *     tmp = list
+    *     tmp = list()
     *     tmp.append(1)
     *     tmp.append(2)
     *     tmp
@@ -896,7 +897,50 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createBlock(blockElements, lineAndColOf(list))
   }
 
-  def convert(tuple: ast.Tuple): NewNode = ???
+  /** Lowering of (1, 2):
+    *   {
+    *     tmp = tuple()
+    *     tmp[0] = 1
+    *     tmp[1] = 2
+    *     tmp
+    *   }
+    */
+  // TODO test
+  def convert(tuple: ast.Tuple): NewNode = {
+    memOpMap.get(tuple).get match {
+      case Load =>
+        val tmpVariableName = getUnusedName()
+        val tupleConstructorCallNode =
+          createCall(
+            createIdentifierNode("tuple", Load, lineAndColOf(tuple)),
+            lineAndColOf(tuple))
+
+        var index = 0
+        val tupleElementAssignNodes = tuple.elts.map { tupleElement =>
+          val indexAccessNode = createIndexAccess(
+            createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple)),
+            nodeBuilder.numberLiteralNode(index, lineAndColOf(tuple)),
+            lineAndColOf(tuple)
+          )
+
+          index += 1
+
+          createAssignment(indexAccessNode,
+            convert(tupleElement),
+            lineAndColOf(tuple))
+        }
+
+        val tupleInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
+
+        val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
+        blockElements.append(tupleConstructorCallNode)
+        blockElements.appendAll(tupleElementAssignNodes)
+        blockElements.append(tupleInstanceReturnIdentifierNode)
+        createBlock(blockElements, lineAndColOf(tuple))
+      case Store | Del =>
+        unhandled(tuple)
+    }
+  }
 
   def convert(slice: ast.Slice): NewNode = ???
 
