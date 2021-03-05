@@ -3,14 +3,7 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.py2cpg.memop.{
-  AstNodeToMemoryOperationMap,
-  MemoryOperation,
-  MemoryOperationCalculator,
-  Store,
-  Load,
-  Del
-}
+import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperation, MemoryOperationCalculator, Store}
 import io.shiftleft.pythonparser.AstVisitor
 import io.shiftleft.pythonparser.ast
 import io.shiftleft.semanticcpg.language.toMethodForCallGraph
@@ -388,11 +381,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   // TODO write test
   def convert(forStmt: ast.For): NewNode = {
-    convertFor(forStmt.target, forStmt.iter, forStmt.body, forStmt.orelse, isAsync = false, lineAndColOf(forStmt))
+    convertFor(forStmt.target, forStmt.iter, Iterable.empty,
+      forStmt.body.map(convert), forStmt.orelse.map(convert), isAsync = false, lineAndColOf(forStmt))
   }
 
   def convert(forStmt: ast.AsyncFor): NewNode = {
-    convertFor(forStmt.target, forStmt.iter, forStmt.body, forStmt.orelse, isAsync = true, lineAndColOf(forStmt))
+    convertFor(forStmt.target, forStmt.iter, Iterable.empty,
+      forStmt.body.map(convert), forStmt.orelse.map(convert), isAsync = true, lineAndColOf(forStmt))
   }
 
   // Lowering of for x in y: <statements>:
@@ -402,10 +397,19 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   //     x = iterator.__next__()
   //     <statements>
   // }
+  // If "ifs" are present the lower of for x in y if z if a: ..,:
+  // {
+  //   iterator = y.__iter__()
+  //   while (UNKNOWN condition):
+  //     if (!(z and a)): continue
+  //     x = iterator.__next__()
+  //     <statements>
+  // }
   private def convertFor(target: ast.iexpr,
                          iter: ast.iexpr,
-                         body: Iterable[ast.istmt],
-                         orelse: Iterable[ast.istmt],
+                         ifs: Iterable[ast.iexpr],
+                         bodyNodes: Iterable[nodes.NewNode],
+                         orelseNodes: Iterable[nodes.NewNode],
                          isAsync: Boolean,
                          lineAndColumn: LineAndColumn): NewNode = {
     val iterVariableName = getUnusedName()
@@ -426,14 +430,30 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         lineAndColumn)
     val assignToTargetNode = createAssignment(convert(target), iterNextCallNode, lineAndColumn)
 
-    val bodyStmtNodes = body.map(convert)
-    val bodyBlockNode = createBlock(assignToTargetNode :: bodyStmtNodes.toList, lineAndColumn)
+    val blockStmtNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
+    blockStmtNodes.append(assignToTargetNode)
+
+    if (ifs.nonEmpty) {
+      val ifNotContinueNode = convert(new ast.If(
+        new ast.UnaryOp(
+          ast.Not,
+          new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider),
+          ifs.head.attributeProvider
+        ),
+        mutable.ArrayBuffer.empty[ast.istmt].append(new ast.Continue(ifs.head.attributeProvider)),
+        mutable.Seq.empty[ast.istmt],
+        ifs.head.attributeProvider
+      ))
+
+      blockStmtNodes.append(ifNotContinueNode)
+    }
+    bodyNodes.foreach(blockStmtNodes.append)
+
+    val bodyBlockNode = createBlock(blockStmtNodes, lineAndColumn)
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
 
-    if (orelse.nonEmpty) {
-      val elseStmtNodes = orelse.map(convert)
-      val elseBlockNode =
-        createBlock(elseStmtNodes, lineAndColOf(orelse.head))
+    if (orelseNodes.nonEmpty) {
+      val elseBlockNode = createBlock(orelseNodes, lineAndColumn)
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
     }
 
@@ -563,7 +583,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.IfExp => unhandled(node)
       case node: ast.Dict => convert(node)
       case node: ast.Set => convert(node)
-      case node: ast.ListComp => unhandled(node)
+      case node: ast.ListComp => convert(node)
       case node: ast.SetComp => unhandled(node)
       case node: ast.DictComp => unhandled(node)
       case node: ast.GeneratorExp => unhandled(node)
@@ -755,7 +775,57 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createBlock(blockElements, lineAndColOf(set))
   }
 
-  def convert(listComp: ast.ListComp): NewNode = ???
+  /**
+    * Lowering of [x for y in l for x in y]:
+    * {
+    *   tmp = list()
+    *   <loweringOf>(
+    *   for y in l:
+    *     for x in y:
+    *       tmp.append(x)
+    *   )
+    *   tmp
+    * }
+    */
+  // TODO test
+  // TODO comprehension.target: If it is a NAME, the corresponding variable needs to live
+  // in an extra block context for this comprehension and not in the usual method context.
+  def convert(listComp: ast.ListComp): NewNode = {
+    val tmpVariableName = getUnusedName()
+
+    val listConstructorCallNode = createCall(
+      createIdentifierNode("list", Load, lineAndColOf(listComp)),
+      lineAndColOf(listComp))
+    val listVariableAssignNode = createAssignmentToIdentifier(
+      tmpVariableName, listConstructorCallNode, lineAndColOf(listComp))
+
+    val listVarAppendCallNode = createXDotYCall(
+      createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp)),
+      "append",
+      xMayHaveSideEffects = false,
+      lineAndColOf(listComp),
+      convert(listComp.elt)
+    )
+
+    // Innermost generator is transformed first and becomes the body of the
+    // generator one layer up. The body of the innermost generator is the
+    // list comprehensions element expression wrapped in an tmp.append() call.
+    val nestedLoopBlockNode =
+      listComp.generators.foldRight(listVarAppendCallNode) { case (comprehension, loopBodyNode) =>
+        convertFor(comprehension.target,
+          comprehension.iter,
+          comprehension.ifs,
+          Iterable.single(loopBodyNode),
+          Iterable.empty,
+          comprehension.is_async,
+          lineAndColOf(listComp))
+      }
+
+    val returnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp))
+
+    createBlock(listVariableAssignNode::nestedLoopBlockNode::returnIdentifierNode::Nil,
+      lineAndColOf(listComp))
+  }
 
   def convert(setComp: ast.SetComp): NewNode = ???
 
