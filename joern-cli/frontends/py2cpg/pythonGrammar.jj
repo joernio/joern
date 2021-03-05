@@ -1317,7 +1317,7 @@ istmt withStatement(boolean isAsync, Token asyncToken): {
   ArrayList<istmt> blockStmts;
 } {
   <WITH> { if (!isAsync) {startToken = token;} }
-  // The following choice starts with an ambiguity because the first WithItem could
+  // The following choice starts with an ambiguity because the first Withitem could
   // be a parenthesized expression. Without LOOKAHEAD(2) JavaCC thus complains as
   // expected. With LOOKAHEAD(2) there is still an ambiguity but JavaCC for whatever
   // reason stops complaining an opportunistically takes the first choice if possible
@@ -1362,7 +1362,7 @@ Withitem withItem(): {
 } {
   contextExpr = expression()
   (<AS> optionalVars = starTarget())?
-  { return new WithItem(contextExpr, optionalVars); }
+  { return new Withitem(contextExpr, optionalVars); }
 }
 
 Try tryStatement(): {
