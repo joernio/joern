@@ -301,6 +301,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   override def visit(subscript: ast.Subscript): Unit = {
     push(Load)
     accept(subscript.value)
+    accept(subscript.slice)
     pop()
     astNodeToMemOp.put(subscript, stack.head)
   }
