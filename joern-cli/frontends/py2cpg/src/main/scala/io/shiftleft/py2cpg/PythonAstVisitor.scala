@@ -562,7 +562,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Lambda => convert(node)
       case node: ast.IfExp => unhandled(node)
       case node: ast.Dict => unhandled(node)
-      case node: ast.Set => unhandled(node)
+      case node: ast.Set => convert(node)
       case node: ast.ListComp => unhandled(node)
       case node: ast.SetComp => unhandled(node)
       case node: ast.DictComp => unhandled(node)
@@ -673,7 +673,40 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(dict: ast.Dict): NewNode = ???
 
-  def convert(set: ast.Set): NewNode = ???
+  /** Lowering of {1, 2}:
+    *   {
+    *     tmp = set()
+    *     tmp.add(1)
+    *     tmp.add(2)
+    *     tmp
+    *   }
+    */
+  // TODO test
+  def convert(set: ast.Set): nodes.NewNode = {
+    val tmpVariableName = getUnusedName()
+
+    val setInstanceId = createIdentifierNode(tmpVariableName, Store, lineAndColOf(set))
+    val setIdNode = createIdentifierNode("set", Load, lineAndColOf(set))
+    val setConstructorCall = createCall(setIdNode, lineAndColOf(set))
+    val setInstanceAssignment =
+      createAssignment(setInstanceId, setConstructorCall, lineAndColOf(set))
+
+    val appendCallNodes = set.elts.map { setElement =>
+      createXDotYCall(createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
+        "add",
+        xMayHaveSideEffects = false,
+        lineAndColOf(set),
+        convert(setElement))
+    }
+
+    val setInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(set))
+
+    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
+    blockElements.append(setInstanceAssignment)
+    blockElements.appendAll(appendCallNodes)
+    blockElements.append(setInstanceIdForReturn)
+    createBlock(blockElements, lineAndColOf(set))
+  }
 
   def convert(listComp: ast.ListComp): NewNode = ???
 
