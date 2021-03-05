@@ -561,7 +561,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.UnaryOp => convert(node)
       case node: ast.Lambda => convert(node)
       case node: ast.IfExp => unhandled(node)
-      case node: ast.Dict => unhandled(node)
+      case node: ast.Dict => convert(node)
       case node: ast.Set => convert(node)
       case node: ast.ListComp => unhandled(node)
       case node: ast.SetComp => unhandled(node)
@@ -671,7 +671,54 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(ifExp: ast.IfExp): NewNode = ???
 
-  def convert(dict: ast.Dict): NewNode = ???
+  /** Lowering of {x:1, y:2, **z}:
+    *   {
+    *     tmp = dict()
+    *     tmp[x] = 1
+    *     tmp[y] = 2
+    *     tmp.update(z)
+    *     tmp
+    *   }
+    */
+  // TODO test
+  def convert(dict: ast.Dict): NewNode = {
+    val tmpVariableName = getUnusedName()
+    val dictConstructorCallNode =
+      createCall(
+        createIdentifierNode("dict", Load, lineAndColOf(dict)),
+        lineAndColOf(dict))
+
+    val dictElementAssignNodes = dict.keys.zip(dict.values).map { case (key, value) =>
+      key match {
+        case Some(key) =>
+          val indexAccessNode = createIndexAccess(
+            createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
+            convert(key),
+            lineAndColOf(dict)
+          )
+
+          createAssignment(indexAccessNode,
+            convert(value),
+            lineAndColOf(dict))
+        case None =>
+          createXDotYCall(
+            createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
+            "update",
+            xMayHaveSideEffects = false,
+            lineAndColOf(dict),
+            convert(value)
+          )
+      }
+    }
+
+    val dictInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict))
+
+    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
+    blockElements.append(dictConstructorCallNode)
+    blockElements.appendAll(dictElementAssignNodes)
+    blockElements.append(dictInstanceReturnIdentifierNode)
+    createBlock(blockElements, lineAndColOf(dict))
+  }
 
   /** Lowering of {1, 2}:
     *   {
