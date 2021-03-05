@@ -1939,7 +1939,9 @@ iexpr slices(): {
         tupleExpressions = new ArrayList<iexpr>();
         tupleExpressions.add(expression);
       }
-      tupleExpressions.add(nextExpression);
+      if (nextExpression != null) {
+        tupleExpressions.add(nextExpression);
+      }
     }
   )*
   (<COMMA>)?
@@ -1952,6 +1954,9 @@ iexpr slices(): {
   }
 }
 
+// This rule matches any input in which case null is returned.
+// We do this because the slice grammar cannot by properly handled
+// by a ll(k) grammar.
 iexpr slice(): {
   iexpr lower = null;
   iexpr upper = null;

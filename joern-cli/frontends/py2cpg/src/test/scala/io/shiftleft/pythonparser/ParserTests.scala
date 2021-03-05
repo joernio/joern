@@ -527,6 +527,8 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("obj[x:y:]", "obj[x:y]")
     testT("obj[:y:z]")
     testT("obj[x:y:z]")
+    testT("obj[x,y]", "obj[(x,y)]")
+    testT("obj[x,]", "obj[(x,)]")
   }
 
   "atom rule tests" in {
