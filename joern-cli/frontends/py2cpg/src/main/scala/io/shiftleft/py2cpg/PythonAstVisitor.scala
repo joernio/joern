@@ -86,7 +86,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     }
   }
 
-  private def convert(stmt: ast.istmt): NewNode = {
+  def convert(stmt: ast.istmt): NewNode = {
     stmt match {
       case node: ast.FunctionDef => convert(node)
       case node: ast.AsyncFunctionDef => convert(node)
@@ -532,7 +532,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       lineAndColOf(errorStatement))
   }
 
-  private def convert(expr: ast.iexpr): NewNode = {
+  def convert(expr: ast.iexpr): NewNode = {
     expr match {
       case node: ast.BoolOp => convert(node)
       case node: ast.NamedExpr => convert(node)
