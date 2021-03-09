@@ -3,10 +3,8 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperation, MemoryOperationCalculator, Store}
-import io.shiftleft.pythonparser.AstVisitor
+import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Load, MemoryOperationCalculator}
 import io.shiftleft.pythonparser.ast
-import io.shiftleft.semanticcpg.language.toMethodForCallGraph
 
 import scala.collection.mutable
 
