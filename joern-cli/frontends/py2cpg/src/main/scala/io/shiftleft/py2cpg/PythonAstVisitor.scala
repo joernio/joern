@@ -123,7 +123,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // to it.
     createMethodAndMethodRef(
       functionDef.name,
-      createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
+      createParameterProcessingFunction(functionDef.args),
       functionDef.body,
       functionDef.decorator_list,
       functionDef.returns,
@@ -137,7 +137,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // to it.
     createMethodAndMethodRef(
       functionDef.name,
-      createParameterProcessingFunction(functionDef.args.asInstanceOf[ast.Arguments]),
+      createParameterProcessingFunction(functionDef.args),
       functionDef.body,
       functionDef.decorator_list,
       functionDef.returns,
@@ -650,8 +650,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(lambda: ast.Lambda): NewNode = {
     // TODO test lambda expression.
     createMethodAndMethodRef(
-      "lambda",
-      createParameterProcessingFunction(lambda.args.asInstanceOf[ast.Arguments]),
+      "<lambda>",
+      createParameterProcessingFunction(lambda.args),
       Iterable.single(new ast.Return(lambda.body, lambda.attributeProvider)),
       decoratorList = Nil,
       returns = None,
@@ -1193,8 +1193,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     blockNode
   }
-
-  def convert(arguments: ast.Arguments): NewNode = ???
 
   def convert(arg: ast.Arg): NewNode = {
     nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
