@@ -539,7 +539,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.BinOp => convert(node)
       case node: ast.UnaryOp => convert(node)
       case node: ast.Lambda => convert(node)
-      case node: ast.IfExp => unhandled(node)
+      case node: ast.IfExp => convert(node)
       case node: ast.Dict => convert(node)
       case node: ast.Set => convert(node)
       case node: ast.ListComp => convert(node)
@@ -648,7 +648,25 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     )
   }
 
-  def convert(ifExp: ast.IfExp): NewNode = ???
+  // TODO test
+  def convert(ifExp: ast.IfExp): NewNode = {
+    val bodyNode = convert(ifExp.body)
+    val testNode = convert(ifExp.test)
+    val orElseNode = convert(ifExp.orelse)
+
+    val code = codeOf(bodyNode) + " if " + codeOf(testNode) + " else " + codeOf(orElseNode)
+    val callNode = nodeBuilder.callNode(
+      code,
+      Operators.conditional,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(ifExp)
+    )
+
+    // testNode is first argument to match semantics of Operators.conditional.
+    addAstChildrenAsArguments(callNode, 1, testNode, bodyNode, orElseNode)
+
+    callNode
+  }
 
   /** Lowering of {x:1, y:2, **z}:
     *   {
