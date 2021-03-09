@@ -813,12 +813,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // list comprehensions element expression wrapped in an tmp.append() call.
     val nestedLoopBlockNode =
       listComp.generators.foldRight(listVarAppendCallNode) { case (comprehension, loopBodyNode) =>
-        comprehension.target match {
-          case name: ast.Name =>
-            val localNode = nodeBuilder.localNode(name.id, None)
-            specialTargetLocals.append(localNode)
-            contextStack.addSpecialVariable(localNode)
-          case _ =>
+        extractComprehensionSpecialVariableNames(comprehension.target).foreach { name =>
+          // For the target names we need to create special scoped variables.
+          val localNode = nodeBuilder.localNode(name.id, None)
+          specialTargetLocals.append(localNode)
+          contextStack.addSpecialVariable(localNode)
         }
         createForLowering(comprehension.target,
           comprehension.iter,
@@ -839,6 +838,22 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     addAstChildNodes(blockNode, 1, specialTargetLocals)
 
     blockNode
+  }
+
+  // Extracts plain names, starred names and name or starred name elements from tuples and lists.
+  private def extractComprehensionSpecialVariableNames(target: ast.iexpr): Iterable[ast.Name] = {
+    target match {
+      case name: ast.Name =>
+        name::Nil
+      case starred: ast.Starred =>
+         extractComprehensionSpecialVariableNames(starred.value)
+      case tuple: ast.Tuple =>
+        tuple.elts.flatMap( extractComprehensionSpecialVariableNames)
+      case list: ast.List =>
+        list.elts.flatMap( extractComprehensionSpecialVariableNames)
+      case _ =>
+        Nil
+    }
   }
 
   def convert(setComp: ast.SetComp): NewNode = ???

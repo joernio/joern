@@ -44,10 +44,37 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "comprehension scoped variable reference" - {
+  "comprehension variable reference" - {
     lazy val cpg = Py2CpgTestContext.buildCpg(
       """x = 1
         |[x for x in y]
+        |f(x)""".stripMargin
+    )
+
+    "test local variable exists in module method" in {
+      cpg.method.name("module").block.local.name("x").head
+    }
+
+    "test local variable exists in comprehension block" in {
+      cpg.local("x").filter(_.definingBlock.astParent.isMethod.isEmpty).head
+    }
+
+    "test identifiers in line 1 and 3 reference to module method x variable" in {
+      val localXNode = cpg.method.name("module").block.local.name("x").head
+      cpg.identifier("x").lineNumber(1).refsTo.head shouldBe localXNode
+      cpg.identifier("x").lineNumber(3).refsTo.head shouldBe localXNode
+    }
+
+    "test identifiers in line 2 reference to comprehension block x variable" in {
+      val localXNode = cpg.local("x").filter(_.definingBlock.astParent.isMethod.isEmpty).head
+      cpg.identifier("x").lineNumber(2).refsTo.foreach(local => local shouldBe localXNode)
+    }
+  }
+
+  "comprehension tuple variable reference" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x = 1
+        |[x for (x,) in y]
         |f(x)""".stripMargin
     )
 
