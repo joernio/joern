@@ -1,7 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperation, MemoryOperationCalculator, Store}
 import io.shiftleft.pythonparser.AstVisitor
@@ -103,7 +103,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.With => unhandled(node)
       case node: ast.AsyncWith => unhandled(node)
       case node: ast.Raise => unhandled(node)
-      case node: ast.Try => unhandled(node)
+      case node: ast.Try => convert(node)
       case node: ast.Assert => convert(node)
       case node: ast.Import => unhandled(node)
       case node: ast.ImportFrom => unhandled(node)
@@ -466,7 +466,19 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(raise: ast.Raise): NewNode = ???
 
-  def convert(tryStmt: ast.Try): NewNode = ???
+  def convert(tryStmt: ast.Try): NewNode = {
+    val controlStructureNode =
+      nodeBuilder.controlStructureNode("try: ...", ControlStructureTypes.TRY, lineAndColOf(tryStmt))
+
+    val bodyBlockNode = createBlock(tryStmt.body.map(convert), lineAndColOf(tryStmt))
+    val handlersBlockNode = createBlock(tryStmt.handlers.map(convert), lineAndColOf(tryStmt))
+    val finalBlockNode = createBlock(tryStmt.finalbody.map(convert), lineAndColOf(tryStmt))
+    val orElseBlockNode = createBlock(tryStmt.orelse.map(convert), lineAndColOf(tryStmt))
+
+    addAstChildNodes(controlStructureNode, 1, bodyBlockNode, handlersBlockNode, finalBlockNode, orElseBlockNode)
+
+    controlStructureNode
+  }
 
   def convert(assert: ast.Assert): NewNode = {
     val testNode = convert(assert.test)
@@ -1161,9 +1173,26 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(stringExpList: ast.StringExpList): NewNode = ???
 
-  def convert(comprehension: ast.Comprehension): NewNode = ???
+  // TODO Since there is now real concept of reflecting exception handlers
+  // semantically in the CPG we just make sure that the variable scoping
+  // is right and that we convert the exception handler body.
+  // TODO tests
+  def convert(exceptHandler: ast.ExceptHandler): NewNode = {
+    contextStack.pushSpecialContext()
+    val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
+    if (exceptHandler.name.isDefined) {
+      val localNode = nodeBuilder.localNode(exceptHandler.name.get, None)
+      specialTargetLocals.append(localNode)
+      contextStack.addSpecialVariable(localNode)
+    }
 
-  def convert(exceptHandler: ast.ExceptHandler): NewNode = ???
+    val blockNode = createBlock(exceptHandler.body.map(convert), lineAndColOf(exceptHandler))
+    addAstChildNodes(blockNode, 1, specialTargetLocals)
+
+    contextStack.pop()
+
+    blockNode
+  }
 
   def convert(arguments: ast.Arguments): NewNode = ???
 
