@@ -3,7 +3,7 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Load, MemoryOperationCalculator}
+import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Load, MemoryOperationCalculator, Store}
 import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
@@ -117,9 +117,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(functionDef: ast.FunctionDef): NewNode = {
-    // TODO create local variable with same name as functionDef and assign the method reference
-    // to it.
-    createMethodAndMethodRef(
+    val methodIdentifierNode = createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
+    val methodRefNode = createMethodAndMethodRef(
       functionDef.name,
       createParameterProcessingFunction(functionDef.args),
       functionDef.body,
@@ -128,12 +127,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       isAsync = false,
       lineAndColOf(functionDef)
     )
+    createAssignment(methodIdentifierNode, methodRefNode, lineAndColOf(functionDef))
   }
 
   def convert(functionDef: ast.AsyncFunctionDef): NewNode = {
-    // TODO create local variable with same name as functionDef and assign the method reference
-    // to it.
-    createMethodAndMethodRef(
+    val methodIdentifierNode = createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
+    val methodRefNode = createMethodAndMethodRef(
       functionDef.name,
       createParameterProcessingFunction(functionDef.args),
       functionDef.body,
@@ -142,6 +141,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       isAsync = true,
       lineAndColOf(functionDef)
     )
+    createAssignment(methodIdentifierNode, methodRefNode, lineAndColOf(functionDef))
   }
 
   private def createParameterProcessingFunction(

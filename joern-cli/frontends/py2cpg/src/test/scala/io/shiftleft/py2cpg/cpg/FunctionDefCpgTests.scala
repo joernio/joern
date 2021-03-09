@@ -49,6 +49,10 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         "test.py:module.func"
     }
 
+    "test assignment of method ref to local variable" in {
+      cpg.call.code("func = func").head
+    }
+
     "test corresponding type, typeDecl and binding" in {
       val bindingTypeDecl =
         cpg.method("test.py:module.func").referencingBinding.bindingTypeDecl.head
