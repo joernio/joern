@@ -25,6 +25,66 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     result
   }
 
+  // Used for assign statements, for loop target assignment and
+  // for comprehension target assignment.
+  // TODO handle Starred target
+  protected def createValueToTargetsDecomposition(targets: Iterable[ast.iexpr],
+                                                  valueNode: nodes.NewNode,
+                                                  lineAndColumn: LineAndColumn): Iterable[nodes.NewNode] = {
+    if (targets.size == 1 &&
+      !targets.head.isInstanceOf[ast.Tuple] &&
+      !targets.head.isInstanceOf[ast.List]) {
+      // No lowering or wrapping in a block is required if we have a single target and
+      // no decomposition.
+      val targetNode = convert(targets.head)
+
+      Iterable.single(createAssignment(targetNode, valueNode, lineAndColumn))
+    } else {
+      // Lowering of x, (y,z) = a = b = c:
+      // Note: No surrounding block is created. This is the duty of the caller.
+      //     tmp = c
+      //     x = tmp[0]
+      //     y = tmp[1][0]
+      //     z = tmp[1][1]
+      //     a = c
+      //     b = c
+      // Lowering of for x, (y, z) in c:
+      //     tmp = c
+      //     x = tmp[0]
+      //     y = tmp[1][0]
+      //     z = tmp[1][1]
+      val tmpVariableName = getUnusedName()
+
+      val tmpVariableAssignNode =
+        createAssignmentToIdentifier(tmpVariableName, valueNode, lineAndColumn)
+
+      val loweredAssignNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
+      loweredAssignNodes.append(tmpVariableAssignNode)
+
+      targets.foreach { target =>
+        val targetWithAccessChains = getTargetsWithAccessChains(target)
+        targetWithAccessChains.foreach { case (target, accessChain) =>
+          val targetNode = convert(target)
+          val tmpIdentifierNode =
+            createIdentifierNode(tmpVariableName, Load, lineAndColumn)
+          val indexTmpIdentifierNode = createIndexAccessChain(
+            tmpIdentifierNode,
+            accessChain,
+            lineAndColumn
+          )
+
+          val targetAssignNode = createAssignment(
+            targetNode,
+            indexTmpIdentifierNode,
+            lineAndColumn
+          )
+          loweredAssignNodes.append(targetAssignNode)
+        }
+      }
+      loweredAssignNodes
+    }
+  }
+
   protected def getTargetsWithAccessChains(target: ast.iexpr): Iterable[(ast.iexpr, List[Int])] = {
     val result = mutable.ArrayBuffer.empty[(ast.iexpr, List[Int])]
     getTargetsInternal(target, Nil)
@@ -32,10 +92,16 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     def getTargetsInternal(target: ast.iexpr, indexChain: List[Int]): Unit = {
       target match {
         case tuple: ast.Tuple =>
-          var tupleIndex = 0
-          tuple.elts.foreach { tupleElement =>
-            getTargetsInternal(tupleElement, tupleIndex :: indexChain)
-            tupleIndex += 1
+          var index = 0
+          tuple.elts.foreach { element =>
+            getTargetsInternal(element, index :: indexChain)
+            index += 1
+          }
+        case list: ast.List =>
+          var index = 0
+          list.elts.foreach { element =>
+            getTargetsInternal(element, index :: indexChain)
+            index += 1
           }
         case _ =>
           result.append((target, indexChain))

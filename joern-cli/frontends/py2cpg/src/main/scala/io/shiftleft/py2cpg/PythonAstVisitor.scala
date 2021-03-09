@@ -270,60 +270,17 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(assign: ast.Assign): nodes.NewNode = {
-    if (assign.targets.size == 1 && !assign.targets.head.isInstanceOf[ast.Tuple]) {
-      // Case with single entity one the left hand side.
-      // No lowering or wrapping in a block is required.
-      val valueNode = convert(assign.value)
-      val targetNode = convert(assign.targets.head)
+    val loweredNodes =
+      createValueToTargetsDecomposition(assign.targets, convert(assign.value), lineAndColOf(assign))
 
-      createAssignment(targetNode, valueNode, lineAndColOf(assign))
+    if (loweredNodes.size == 1) {
+      // Simple assignment can be returned directly.
+      loweredNodes.head
     } else {
-        // Lowering of x, (y,z) = a = b = c:
-        //   {
-        //     tmp = c
-        //     x = tmp[0]
-        //     y = tmp[1][0]
-        //     z = tmp[1][1]
-        //     a = c
-        //     b = c
-        //   }
-      val valueNode = convert(assign.value)
-      val tmpVariableName = getUnusedName()
-
-      val tmpVariableAssignNode =
-        createAssignmentToIdentifier(tmpVariableName, valueNode, lineAndColOf(assign))
-
-      val loweredAssignNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
-      loweredAssignNodes.append(tmpVariableAssignNode)
-
-      assign.targets.foreach { target =>
-        val targetWithAccessChains = getTargetsWithAccessChains(target)
-        targetWithAccessChains.foreach { case (target, accessChain) =>
-          val targetNode = convert(target)
-          val tmpIdentifierNode =
-            createIdentifierNode(tmpVariableName, Load, lineAndColOf(assign))
-          val indexTmpIdentifierNode = createIndexAccessChain(
-            tmpIdentifierNode,
-            accessChain,
-            lineAndColOf(assign)
-          )
-
-          val targetAssignNode = createAssignment(
-            targetNode,
-            indexTmpIdentifierNode,
-            lineAndColOf(assign)
-          )
-          loweredAssignNodes.append(targetAssignNode)
-        }
-      }
-
-      val blockNode =
-        createBlock(
-          loweredAssignNodes,
-          lineAndColOf(assign)
-        )
-
-      blockNode
+      createBlock(
+        loweredNodes,
+        lineAndColOf(assign)
+      )
     }
   }
 
@@ -394,7 +351,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   // {
   //   iterator = y.__iter__()
   //   while (UNKNOWN condition):
-  //     x = iterator.__next__()
+  //     <loweringOf>(x = iterator.__next__())
   //     <statements>
   // }
   // If "ifs" are present the lower of for x in y if z if a: ..,:
@@ -402,7 +359,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   //   iterator = y.__iter__()
   //   while (UNKNOWN condition):
   //     if (!(z and a)): continue
-  //     x = iterator.__next__()
+  //     <loweringOf>(x = iterator.__next__())
   //     <statements>
   // }
   private def createForLowering(target: ast.iexpr,
@@ -428,10 +385,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createXDotYCall(createIdentifierNode(iterVariableName, Load, lineAndColumn), "__next__",
         xMayHaveSideEffects = false,
         lineAndColumn)
-    val assignToTargetNode = createAssignment(convert(target), iterNextCallNode, lineAndColumn)
+
+    val loweredAssignNodes =
+      createValueToTargetsDecomposition(Iterable.single(target), iterNextCallNode, lineAndColumn)
 
     val blockStmtNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
-    blockStmtNodes.append(assignToTargetNode)
+    blockStmtNodes.appendAll(loweredAssignNodes)
 
     if (ifs.nonEmpty) {
       val ifNotContinueNode = convert(new ast.If(
@@ -1052,6 +1011,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     */
   // TODO test
   def convert(list: ast.List): nodes.NewNode = {
+    // Must be a List as part of a Load memory operation because a List literal
+    // is not permitted as argument to a Del and List as part of a Store does not
+    // reach here.
+    assert(memOpMap.get(list).get == Load)
     val tmpVariableName = getUnusedName()
 
     val listConstructorCall = createCall(createIdentifierNode("list", Load, lineAndColOf(list)), lineAndColOf(list))
@@ -1086,41 +1049,40 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     */
   // TODO test
   def convert(tuple: ast.Tuple): NewNode = {
-    memOpMap.get(tuple).get match {
-      case Load =>
-        val tmpVariableName = getUnusedName()
-        val tupleConstructorCallNode =
-          createCall(
-            createIdentifierNode("tuple", Load, lineAndColOf(tuple)),
-            lineAndColOf(tuple))
-        val tupleVariableAssignNode =
-          createAssignmentToIdentifier(tmpVariableName, tupleConstructorCallNode, lineAndColOf(tuple))
+    // Must be a tuple as part of a Load memory operation because a Tuple literal
+    // is not permitted as argument to a Del and Tuple as part of a Store does not
+    // reach here.
+    assert(memOpMap.get(tuple).get == Load)
+    val tmpVariableName = getUnusedName()
+    val tupleConstructorCallNode =
+      createCall(
+        createIdentifierNode("tuple", Load, lineAndColOf(tuple)),
+        lineAndColOf(tuple))
+    val tupleVariableAssignNode =
+      createAssignmentToIdentifier(tmpVariableName, tupleConstructorCallNode, lineAndColOf(tuple))
 
-        var index = 0
-        val tupleElementAssignNodes = tuple.elts.map { tupleElement =>
-          val indexAccessNode = createIndexAccess(
-            createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple)),
-            nodeBuilder.numberLiteralNode(index, lineAndColOf(tuple)),
-            lineAndColOf(tuple)
-          )
+    var index = 0
+    val tupleElementAssignNodes = tuple.elts.map { tupleElement =>
+      val indexAccessNode = createIndexAccess(
+        createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple)),
+        nodeBuilder.numberLiteralNode(index, lineAndColOf(tuple)),
+        lineAndColOf(tuple)
+      )
 
-          index += 1
+      index += 1
 
-          createAssignment(indexAccessNode,
-            convert(tupleElement),
-            lineAndColOf(tuple))
-        }
-
-        val tupleInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
-
-        val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
-        blockElements.append(tupleVariableAssignNode)
-        blockElements.appendAll(tupleElementAssignNodes)
-        blockElements.append(tupleInstanceReturnIdentifierNode)
-        createBlock(blockElements, lineAndColOf(tuple))
-      case Store | Del =>
-        unhandled(tuple)
+      createAssignment(indexAccessNode,
+        convert(tupleElement),
+        lineAndColOf(tuple))
     }
+
+    val tupleInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
+
+    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
+    blockElements.append(tupleVariableAssignNode)
+    blockElements.appendAll(tupleElementAssignNodes)
+    blockElements.append(tupleInstanceReturnIdentifierNode)
+    createBlock(blockElements, lineAndColOf(tuple))
   }
 
   def convert(slice: ast.Slice): NewNode = ???
