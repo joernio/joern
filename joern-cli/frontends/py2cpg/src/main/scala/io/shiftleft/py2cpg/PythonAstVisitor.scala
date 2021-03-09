@@ -788,9 +788,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     * }
     */
   // TODO test
-  // TODO comprehension.target: If it is a NAME, the corresponding variable needs to live
-  // in an extra block context for this comprehension and not in the usual method context.
   def convert(listComp: ast.ListComp): NewNode = {
+    contextStack.pushSpecialContext()
     val tmpVariableName = getUnusedName()
 
     val listConstructorCallNode = createCall(
@@ -807,11 +806,20 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       convert(listComp.elt)
     )
 
+    val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
+
     // Innermost generator is transformed first and becomes the body of the
     // generator one layer up. The body of the innermost generator is the
     // list comprehensions element expression wrapped in an tmp.append() call.
     val nestedLoopBlockNode =
       listComp.generators.foldRight(listVarAppendCallNode) { case (comprehension, loopBodyNode) =>
+        comprehension.target match {
+          case name: ast.Name =>
+            val localNode = nodeBuilder.localNode(name.id, None)
+            specialTargetLocals.append(localNode)
+            contextStack.addSpecialVariable(localNode)
+          case _ =>
+        }
         createForLowering(comprehension.target,
           comprehension.iter,
           comprehension.ifs,
@@ -823,8 +831,14 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     val returnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp))
 
-    createBlock(listVariableAssignNode::nestedLoopBlockNode::returnIdentifierNode::Nil,
+    contextStack.pop()
+
+    val blockNode = createBlock(listVariableAssignNode::nestedLoopBlockNode::returnIdentifierNode::Nil,
       lineAndColOf(listComp))
+
+    addAstChildNodes(blockNode, 1, specialTargetLocals)
+
+    blockNode
   }
 
   def convert(setComp: ast.SetComp): NewNode = ???

@@ -23,6 +23,17 @@ class ContextStack {
   private sealed trait ContextType
   private object MethodContext extends ContextType
   private object ClassContext extends ContextType
+  // Used to represent comprehension variable and exception
+  // handler context.
+  // E.g.: [x for x in y] creates an extra context with a
+  // local variable x which is different from a possible x
+  // in the surrounding method context. The same applies
+  // to x in:
+  // try:
+  //   pass
+  // except e as x:
+  //   pass
+  private object SpecialBlockContext extends ContextType
 
   private class Context(
       val typ: ContextType,
@@ -81,6 +92,10 @@ class ContextStack {
     push(new Context(ClassContext, name, classNode, new AutoIncIndex(1)))
   }
 
+  def pushSpecialContext(): Unit = {
+    push(new Context(SpecialBlockContext, "", stack.head.cpgNode, new AutoIncIndex(1)))
+  }
+
   def pop(): Unit = {
     stack = stack.tail
   }
@@ -110,11 +125,11 @@ class ContextStack {
     // This is necessary because there might be load/delete operations
     // referencing the global variable which are syntactially before the store
     // operations.
-    variableReferences.foreach { case VariableReference(identifier, memOp, stack) =>
+    variableReferences.foreach { case VariableReference(identifier, memOp, contextStack) =>
       val name = identifier.name
       if (
         memOp == Store &&
-        stack.head.globalVariables.contains(name) &&
+        findEnclosingMethodContext(contextStack).globalVariables.contains(name) &&
         !moduleMethodContext.get.variables.contains(name)
       ) {
         val localNode = createLocal(name, None)
@@ -137,8 +152,22 @@ class ContextStack {
       // Load operations also look up captured or global variables.
       // If a store and load/del happens in the same context, the store must
       // come first. Otherwise it is not valid Python, which we assume here.
-      memOp match {
-        case Load =>
+      if (memOp == Load) {
+        linkLocalOrCapturing(
+          createLocal,
+          createClosureBinding,
+          createAstEdge,
+          createRefEdge,
+          createCaptureEdge,
+          identifier,
+          name,
+          contextStack
+        )
+      } else {
+        val enclosingMethodContext = findEnclosingMethodContext(contextStack)
+
+        if (enclosingMethodContext.globalVariables.contains(name) ||
+          enclosingMethodContext.nonLocalVariables.contains(name)) {
           linkLocalOrCapturing(
             createLocal,
             createClosureBinding,
@@ -149,22 +178,8 @@ class ContextStack {
             name,
             contextStack
           )
-        case _
-            if contextStack.head.globalVariables.contains(
-              name
-            ) || contextStack.head.nonLocalVariables.contains(name) =>
-          linkLocalOrCapturing(
-            createLocal,
-            createClosureBinding,
-            createAstEdge,
-            createRefEdge,
-            createCaptureEdge,
-            identifier,
-            name,
-            contextStack
-          )
-        case Store =>
-          var variableNode = lookupVariableInMethodContext(name, contextStack)
+        } else if (memOp == Store) {
+          var variableNode = lookupVariableInMethod(name, contextStack)
           if (variableNode.isEmpty) {
             val localNode = createLocal(name, None)
             val enclosingMethodContext = findEnclosingMethodContext(contextStack)
@@ -177,8 +192,8 @@ class ContextStack {
             variableNode = Some(localNode)
           }
           createRefEdge(variableNode.get, identifier)
-        case Del =>
-          val variableNode = lookupVariableInMethodContext(name, contextStack)
+        } else if (memOp == Del) {
+          val variableNode = lookupVariableInMethod(name, contextStack)
           variableNode match {
             case Some(variableNode) =>
               createRefEdge(variableNode, identifier)
@@ -186,6 +201,7 @@ class ContextStack {
               logger.warn("Unable to link identifier. Resulting CPG will have invalid format.")
           }
 
+        }
       }
     }
   }
@@ -199,43 +215,52 @@ class ContextStack {
       identifier: NewIdentifier,
       name: String,
       contextStack: List[Context]
-  ) = {
+  ): Unit = {
     var identifierOrClosureBindingToLink: nodes.NewNode = identifier
     val stackIt = contextStack.iterator
     var contextHasVariable = false
     while (stackIt.hasNext && !contextHasVariable) {
       val context = stackIt.next
       contextHasVariable = context.variables.contains(name)
-      val closureBindingId = context.cpgNode.asInstanceOf[NewMethod].fullName + ":" + name
 
-      if (!contextHasVariable) {
-        if (context != moduleMethodContext.get) {
-          val localNode = createLocal(name, Some(closureBindingId))
-          createAstEdge(localNode, context.methodBlockNode.get, context.order.getAndInc)
-          context.variables.put(name, localNode)
-        } else {
-          // When we could not even find a matching variable in the module context we get
-          // here and create a local so that we can link something and fullfil the CPG
-          // format requirements.
-          // For example this happens when there are wildcard imports directly into the
-          // modules namespace.
-          val localNode = createLocal(name, None)
-          createAstEdge(localNode, context.methodBlockNode.get, context.order.getAndInc)
-          context.variables.put(name, localNode)
-        }
-      }
-      val localNodeInContext = context.variables.get(name).get
+      context.typ match {
+        case MethodContext =>
+          val closureBindingId = context.cpgNode.asInstanceOf[NewMethod].fullName + ":" + name
 
-      createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
+          if (!contextHasVariable) {
+            if (context != moduleMethodContext.get) {
+              val localNode = createLocal(name, Some(closureBindingId))
+              createAstEdge(localNode, context.methodBlockNode.get, context.order.getAndInc)
+              context.variables.put(name, localNode)
+            } else {
+              // When we could not even find a matching variable in the module context we get
+              // here and create a local so that we can link something and fullfil the CPG
+              // format requirements.
+              // For example this happens when there are wildcard imports directly into the
+              // modules namespace.
+              val localNode = createLocal(name, None)
+              createAstEdge(localNode, context.methodBlockNode.get, context.order.getAndInc)
+              context.variables.put(name, localNode)
+            }
+          }
+          val localNodeInContext = context.variables.get(name).get
 
-      if (!contextHasVariable && context != moduleMethodContext.get) {
-        identifierOrClosureBindingToLink = createClosureBinding(closureBindingId, name)
-        createCaptureEdge(identifierOrClosureBindingToLink, context.methodRefNode.get)
+          createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
+
+          if (!contextHasVariable && context != moduleMethodContext.get) {
+            identifierOrClosureBindingToLink = createClosureBinding(closureBindingId, name)
+            createCaptureEdge(identifierOrClosureBindingToLink, context.methodRefNode.get)
+          }
+        case SpecialBlockContext =>
+          if (contextHasVariable) {
+            val localNodeInContext = context.variables.get(name).get
+            createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
+          }
       }
     }
   }
 
-  private def lookupVariableInMethodContext(
+  private def lookupVariableInMethod(
       name: String,
       stack: List[Context]
   ): Option[nodes.NewNode] = {
@@ -256,12 +281,17 @@ class ContextStack {
     stack.head.variables.put(parameter.name, parameter)
   }
 
+  def addSpecialVariable(local: nodes.NewLocal): Unit = {
+    assert(stack.head.typ == SpecialBlockContext)
+    stack.head.variables.put(local.name, local)
+  }
+
   def addGlobalVariable(name: String): Unit = {
-    stack.head.globalVariables.add(name)
+    findEnclosingMethodContext(stack).globalVariables.add(name)
   }
 
   def addNonLocalVariable(name: String): Unit = {
-    stack.head.nonLocalVariables.add(name)
+    findEnclosingMethodContext(stack).nonLocalVariables.add(name)
   }
 
   // Together with the file name this is used to compute full names.
