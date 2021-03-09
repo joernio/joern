@@ -176,7 +176,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   ): nodes.NewMethodRef = {
     val methodFullName = calcMethodFullNameFromContext(methodName)
 
-    val methodRefNode = nodeBuilder.methodRefNode(methodName, methodFullName, lineAndColumn)
+    val methodRefNode = nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
 
     val methodNode =
       createMethod(
