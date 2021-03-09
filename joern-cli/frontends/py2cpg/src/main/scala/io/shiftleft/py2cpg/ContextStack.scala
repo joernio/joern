@@ -20,9 +20,33 @@ object ContextStack {
 class ContextStack {
   import ContextStack.logger
 
-  private sealed trait ContextType
-  private object MethodContext extends ContextType
-  private object ClassContext extends ContextType
+  private trait Context {
+    val astParent: nodes.NewNode
+    val order: AutoIncIndex
+    val variables: mutable.Map[String, nodes.NewNode]
+  }
+
+  private class MethodContext(
+                               val name: String,
+                               val astParent: nodes.NewNode,
+                               val order: AutoIncIndex,
+                               val methodBlockNode: Option[nodes.NewBlock] = None,
+                               val methodRefNode: Option[nodes.NewMethodRef] = None,
+                               val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+                               val globalVariables: mutable.Set[String] = mutable.Set.empty,
+                               val nonLocalVariables: mutable.Set[String] = mutable.Set.empty
+                             ) extends Context {
+
+  }
+
+  private class ClassContext(
+                              val name: String,
+                              val astParent: nodes.NewNode,
+                              val order: AutoIncIndex,
+                              val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+                            ) extends Context {
+  }
+
   // Used to represent comprehension variable and exception
   // handler context.
   // E.g.: [x for x in y] creates an extra context with a
@@ -33,19 +57,13 @@ class ContextStack {
   //   pass
   // except e as x:
   //   pass
-  private object SpecialBlockContext extends ContextType
+  private class SpecialBlockContext(
+                                     val astParent: nodes.NewNode,
+                                     val order: AutoIncIndex,
+                                     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+                                   ) extends Context {
 
-  private class Context(
-      val typ: ContextType,
-      val name: String,
-      val cpgNode: nodes.NewNode,
-      val order: AutoIncIndex,
-      val methodBlockNode: Option[nodes.NewBlock] = None,
-      val methodRefNode: Option[nodes.NewMethodRef] = None,
-      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-      val globalVariables: mutable.Set[String] = mutable.Set.empty,
-      val nonLocalVariables: mutable.Set[String] = mutable.Set.empty
-  ) {}
+  }
 
   private case class VariableReference(
       identifier: nodes.NewIdentifier,
@@ -60,7 +78,7 @@ class ContextStack {
 
   private var stack = List[Context]()
   private val variableReferences = mutable.ArrayBuffer.empty[VariableReference]
-  private var moduleMethodContext = Option.empty[Context]
+  private var moduleMethodContext = Option.empty[MethodContext]
   private var fileNamespaceBlock = Option.empty[nodes.NewNamespaceBlock]
   private var fileNamespaceBlockOrder = new AutoIncIndex(1)
 
@@ -74,8 +92,7 @@ class ContextStack {
       methodBlockNode: nodes.NewBlock,
       methodRefNode: Option[nodes.NewMethodRef]
   ): Unit = {
-    val methodContext = new Context(
-      MethodContext,
+    val methodContext = new MethodContext(
       name,
       methodNode,
       new AutoIncIndex(1),
@@ -89,11 +106,12 @@ class ContextStack {
   }
 
   def pushClass(name: String, classNode: nodes.NewTypeDecl): Unit = {
-    push(new Context(ClassContext, name, classNode, new AutoIncIndex(1)))
+    push(new ClassContext(name, classNode, new AutoIncIndex(1)))
   }
 
   def pushSpecialContext(): Unit = {
-    push(new Context(SpecialBlockContext, "", stack.head.cpgNode, new AutoIncIndex(1)))
+    val methodContext = findEnclosingMethodContext(stack)
+    push(new SpecialBlockContext(methodContext.astParent, methodContext.order))
   }
 
   def pop(): Unit = {
@@ -108,8 +126,8 @@ class ContextStack {
     variableReferences.append(new VariableReference(identifier, memOp, stack))
   }
 
-  private def findEnclosingMethodContext(contextStack: List[Context]): Context = {
-    contextStack.find(_.typ == MethodContext).get
+  private def findEnclosingMethodContext(contextStack: List[Context]): MethodContext = {
+    contextStack.find(_.isInstanceOf[MethodContext]).get.asInstanceOf[MethodContext]
   }
 
   def createIdentifierLinks(
@@ -223,15 +241,15 @@ class ContextStack {
       val context = stackIt.next
       contextHasVariable = context.variables.contains(name)
 
-      context.typ match {
-        case MethodContext =>
-          val closureBindingId = context.cpgNode.asInstanceOf[NewMethod].fullName + ":" + name
+      context match {
+        case methodContext: MethodContext =>
+          val closureBindingId = methodContext.astParent.asInstanceOf[NewMethod].fullName + ":" + name
 
           if (!contextHasVariable) {
             if (context != moduleMethodContext.get) {
               val localNode = createLocal(name, Some(closureBindingId))
-              createAstEdge(localNode, context.methodBlockNode.get, context.order.getAndInc)
-              context.variables.put(name, localNode)
+              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              methodContext.variables.put(name, localNode)
             } else {
               // When we could not even find a matching variable in the module context we get
               // here and create a local so that we can link something and fullfil the CPG
@@ -239,21 +257,21 @@ class ContextStack {
               // For example this happens when there are wildcard imports directly into the
               // modules namespace.
               val localNode = createLocal(name, None)
-              createAstEdge(localNode, context.methodBlockNode.get, context.order.getAndInc)
-              context.variables.put(name, localNode)
+              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              methodContext.variables.put(name, localNode)
             }
           }
-          val localNodeInContext = context.variables.get(name).get
+          val localNodeInContext = methodContext.variables.get(name).get
 
           createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
 
           if (!contextHasVariable && context != moduleMethodContext.get) {
             identifierOrClosureBindingToLink = createClosureBinding(closureBindingId, name)
-            createCaptureEdge(identifierOrClosureBindingToLink, context.methodRefNode.get)
+            createCaptureEdge(identifierOrClosureBindingToLink, methodContext.methodRefNode.get)
           }
-        case SpecialBlockContext =>
+        case specialBlockContext: SpecialBlockContext =>
           if (contextHasVariable) {
-            val localNodeInContext = context.variables.get(name).get
+            val localNodeInContext = specialBlockContext.variables.get(name).get
             createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
           }
       }
@@ -271,18 +289,18 @@ class ContextStack {
     while (stackIt.hasNext && variableNode.isEmpty && !lastContextWasMethod) {
       val context = stackIt.next
       variableNode = context.variables.get(name)
-      lastContextWasMethod = context.typ == MethodContext
+      lastContextWasMethod = context.isInstanceOf[MethodContext]
     }
     variableNode
   }
 
   def addParameter(parameter: nodes.NewMethodParameterIn): Unit = {
-    assert(stack.head.typ == MethodContext)
+    assert(stack.head.isInstanceOf[MethodContext])
     stack.head.variables.put(parameter.name, parameter)
   }
 
   def addSpecialVariable(local: nodes.NewLocal): Unit = {
-    assert(stack.head.typ == SpecialBlockContext)
+    assert(stack.head.isInstanceOf[SpecialBlockContext])
     stack.head.variables.put(local.name, local)
   }
 
@@ -297,10 +315,14 @@ class ContextStack {
   // Together with the file name this is used to compute full names.
   def qualName: String = {
     stack
-      .filter { element =>
-        element.typ == MethodContext || element.typ == ClassContext
+      .flatMap {
+        case methodContext: MethodContext =>
+          Some(methodContext.name)
+        case specialBlockContext: SpecialBlockContext =>
+          None
+        case classContext: ClassContext =>
+          Some(classContext.name)
       }
-      .map(_.name)
       .reverse
       .mkString(".")
   }
@@ -308,7 +330,7 @@ class ContextStack {
   def astParent: nodes.NewNode = {
     stack match {
       case head :: _ =>
-        head.cpgNode
+        head.astParent
       case Nil =>
         fileNamespaceBlock.get
     }
@@ -324,7 +346,7 @@ class ContextStack {
   }
 
   def isClassContext: Boolean = {
-    stack.head.typ == ClassContext
+    stack.head.isInstanceOf[ClassContext]
   }
 
 }
