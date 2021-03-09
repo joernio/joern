@@ -362,7 +362,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   //     <loweringOf>(x = iterator.__next__())
   //     <statements>
   // }
-  private def createForLowering(target: ast.iexpr,
+  protected def createForLowering(target: ast.iexpr,
                                 iter: ast.iexpr,
                                 ifs: Iterable[ast.iexpr],
                                 bodyNodes: Iterable[nodes.NewNode],
@@ -543,8 +543,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Dict => convert(node)
       case node: ast.Set => convert(node)
       case node: ast.ListComp => convert(node)
-      case node: ast.SetComp => unhandled(node)
-      case node: ast.DictComp => unhandled(node)
+      case node: ast.SetComp => convert(node)
+      case node: ast.DictComp => convert(node)
       case node: ast.GeneratorExp => unhandled(node)
       case node: ast.Await => convert(node)
       case node: ast.Yield => unhandled(node)
@@ -751,12 +751,14 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     contextStack.pushSpecialContext()
     val tmpVariableName = getUnusedName()
 
-    val listConstructorCallNode = createCall(
+    // Create tmp = list()
+    val constructorCallNode = createCall(
       createIdentifierNode("list", Load, lineAndColOf(listComp)),
       lineAndColOf(listComp))
-    val listVariableAssignNode = createAssignmentToIdentifier(
-      tmpVariableName, listConstructorCallNode, lineAndColOf(listComp))
+    val variableAssignNode = createAssignmentToIdentifier(
+      tmpVariableName, constructorCallNode, lineAndColOf(listComp))
 
+    // Create tmp.append(x)
     val listVarAppendCallNode = createXDotYCall(
       createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp)),
       "append",
@@ -765,59 +767,111 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       convert(listComp.elt)
     )
 
-    val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
-
-    // Innermost generator is transformed first and becomes the body of the
-    // generator one layer up. The body of the innermost generator is the
-    // list comprehensions element expression wrapped in an tmp.append() call.
-    val nestedLoopBlockNode =
-      listComp.generators.foldRight(listVarAppendCallNode) { case (comprehension, loopBodyNode) =>
-        extractComprehensionSpecialVariableNames(comprehension.target).foreach { name =>
-          // For the target names we need to create special scoped variables.
-          val localNode = nodeBuilder.localNode(name.id, None)
-          specialTargetLocals.append(localNode)
-          contextStack.addSpecialVariable(localNode)
-        }
-        createForLowering(comprehension.target,
-          comprehension.iter,
-          comprehension.ifs,
-          Iterable.single(loopBodyNode),
-          Iterable.empty,
-          comprehension.is_async,
-          lineAndColOf(listComp))
-      }
-
-    val returnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp))
+    val comprehensionBlockNode = createComprehensionLowering(
+      tmpVariableName,
+      variableAssignNode,
+      listVarAppendCallNode,
+      listComp.generators,
+      lineAndColOf(listComp)
+    )
 
     contextStack.pop()
 
-    val blockNode = createBlock(listVariableAssignNode::nestedLoopBlockNode::returnIdentifierNode::Nil,
-      lineAndColOf(listComp))
+    comprehensionBlockNode
+  }
+  /**
+    * Lowering of {x for y in l for x in y}:
+    * {
+    *   tmp = set()
+    *   <loweringOf>(
+    *   for y in l:
+    *     for x in y:
+    *       tmp.add(x)
+    *   )
+    *   tmp
+    * }
+    */
+  // TODO test
+  def convert(setComp: ast.SetComp): NewNode = {
+    contextStack.pushSpecialContext()
+    val tmpVariableName = getUnusedName()
 
-    addAstChildNodes(blockNode, 1, specialTargetLocals)
+    // Create tmp = set()
+    val constructorCallNode = createCall(
+      createIdentifierNode("set", Load, lineAndColOf(setComp)),
+      lineAndColOf(setComp))
+    val variableAssignNode = createAssignmentToIdentifier(
+      tmpVariableName, constructorCallNode, lineAndColOf(setComp))
 
-    blockNode
+    // Create tmp.add(x)
+    val setVarAddCallNode = createXDotYCall(
+      createIdentifierNode(tmpVariableName, Load, lineAndColOf(setComp)),
+      "add",
+      xMayHaveSideEffects = false,
+      lineAndColOf(setComp),
+      convert(setComp.elt)
+    )
+
+    val comprehensionBlockNode = createComprehensionLowering(
+      tmpVariableName,
+      variableAssignNode,
+      setVarAddCallNode,
+      setComp.generators,
+      lineAndColOf(setComp)
+    )
+
+    contextStack.pop()
+
+    comprehensionBlockNode
   }
 
-  // Extracts plain names, starred names and name or starred name elements from tuples and lists.
-  private def extractComprehensionSpecialVariableNames(target: ast.iexpr): Iterable[ast.Name] = {
-    target match {
-      case name: ast.Name =>
-        name::Nil
-      case starred: ast.Starred =>
-         extractComprehensionSpecialVariableNames(starred.value)
-      case tuple: ast.Tuple =>
-        tuple.elts.flatMap( extractComprehensionSpecialVariableNames)
-      case list: ast.List =>
-        list.elts.flatMap( extractComprehensionSpecialVariableNames)
-      case _ =>
-        Nil
-    }
+  /**
+    * Lowering of {k:v for y in l for k, v in y}:
+    * {
+    *   tmp = dict()
+    *   <loweringOf>(
+    *   for y in l:
+    *     for k, v in y:
+    *       tmp[k] = v
+    *   )
+    *   tmp
+    * }
+    */
+  // TODO test
+  def convert(dictComp: ast.DictComp): NewNode = {
+    contextStack.pushSpecialContext()
+    val tmpVariableName = getUnusedName()
+
+    // Create tmp = dict()
+    val constructorCallNode = createCall(
+      createIdentifierNode("dict", Load, lineAndColOf(dictComp)),
+      lineAndColOf(dictComp))
+    val variableAssignNode = createAssignmentToIdentifier(
+      tmpVariableName, constructorCallNode, lineAndColOf(dictComp))
+
+    // Create tmp[k] = v
+    val dictAssigNode = createAssignment(
+      createIndexAccess(
+        createIdentifierNode(tmpVariableName, Load, lineAndColOf(dictComp)),
+        convert(dictComp.key),
+        lineAndColOf(dictComp)
+      ),
+      convert(dictComp.value),
+      lineAndColOf(dictComp)
+    )
+
+    val comprehensionBlockNode = createComprehensionLowering(
+      tmpVariableName,
+      variableAssignNode,
+      dictAssigNode,
+      dictComp.generators,
+      lineAndColOf(dictComp)
+    )
+
+    contextStack.pop()
+
+    comprehensionBlockNode
   }
-
-  def convert(setComp: ast.SetComp): NewNode = ???
-
-  def convert(dictComp: ast.DictComp): NewNode = ???
 
   def convert(generatorExp: ast.GeneratorExp): NewNode = ???
 

@@ -111,6 +111,59 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     result
   }
 
+  protected def createComprehensionLowering(tmpVariableName: String,
+                                            containerInitAssignNode: nodes.NewNode,
+                                            innerMostLoopNode: nodes.NewNode,
+                                            comprehensions: Iterable[ast.Comprehension],
+                                            lineAndColumn: LineAndColumn): nodes.NewNode = {
+    val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
+
+    // Innermost generator is transformed first and becomes the body of the
+    // generator one layer up. The body of the innermost generator is the
+    // list comprehensions element expression wrapped in an tmp.append() call.
+    val nestedLoopBlockNode =
+    comprehensions.foldRight(innerMostLoopNode) { case (comprehension, loopBodyNode) =>
+      extractComprehensionSpecialVariableNames(comprehension.target).foreach { name =>
+        // For the target names we need to create special scoped variables.
+        val localNode = nodeBuilder.localNode(name.id, None)
+        specialTargetLocals.append(localNode)
+        contextStack.addSpecialVariable(localNode)
+      }
+      createForLowering(comprehension.target,
+        comprehension.iter,
+        comprehension.ifs,
+        Iterable.single(loopBodyNode),
+        Iterable.empty,
+        comprehension.is_async,
+        lineAndColumn)
+    }
+
+    val returnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
+
+    val blockNode = createBlock(containerInitAssignNode::nestedLoopBlockNode::returnIdentifierNode::Nil,
+      lineAndColumn)
+
+    addAstChildNodes(blockNode, 1, specialTargetLocals)
+
+    blockNode
+  }
+
+  // Extracts plain names, starred names and name or starred name elements from tuples and lists.
+  private def extractComprehensionSpecialVariableNames(target: ast.iexpr): Iterable[ast.Name] = {
+    target match {
+      case name: ast.Name =>
+        name::Nil
+      case starred: ast.Starred =>
+        extractComprehensionSpecialVariableNames(starred.value)
+      case tuple: ast.Tuple =>
+        tuple.elts.flatMap( extractComprehensionSpecialVariableNames)
+      case list: ast.List =>
+        list.elts.flatMap( extractComprehensionSpecialVariableNames)
+      case _ =>
+        Nil
+    }
+  }
+
   protected def createBlock(
       blockElements: Iterable[nodes.NewNode],
       lineAndColumn: LineAndColumn
