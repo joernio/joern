@@ -376,7 +376,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val conditionNode = nodeBuilder.unknownNode("iteratorNonEmptyOrException", "", lineAndColumn)
 
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColumn)
+      nodeBuilder.controlStructureNode("while ... : ...", ControlStructureTypes.WHILE, lineAndColumn)
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val iterNextCallNode =
@@ -422,7 +422,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val bodyStmtNodes = astWhile.body.map(convert)
 
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("while ... : ...", "WhileStatement", lineAndColOf(astWhile))
+      nodeBuilder.controlStructureNode("while ... : ...", ControlStructureTypes.WHILE, lineAndColOf(astWhile))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astWhile))
@@ -443,7 +443,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val bodyStmtNodes = astIf.body.map(convert)
 
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("if ... : ...", "IfStatement", lineAndColOf(astIf))
+      nodeBuilder.controlStructureNode("if ... : ...", ControlStructureTypes.IF, lineAndColOf(astIf))
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astIf))
@@ -527,11 +527,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(astBreak: ast.Break): nodes.NewNode = {
-    nodeBuilder.controlStructureNode("break", "BreakStatement", lineAndColOf(astBreak))
+    nodeBuilder.controlStructureNode("break", ControlStructureTypes.BREAK, lineAndColOf(astBreak))
   }
 
   def convert(astContinue: ast.Continue): nodes.NewNode = {
-    nodeBuilder.controlStructureNode("continue", "ContinueStatement", lineAndColOf(astContinue))
+    nodeBuilder.controlStructureNode("continue", ControlStructureTypes.CONTINUE, lineAndColOf(astContinue))
   }
 
   def convert(raise: ast.RaiseP2): NewNode = ???

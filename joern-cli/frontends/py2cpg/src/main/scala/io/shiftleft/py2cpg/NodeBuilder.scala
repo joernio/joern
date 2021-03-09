@@ -187,13 +187,13 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
 
   def controlStructureNode(
       code: String,
-      parserTypeName: String,
+      controlStructureName: String,
       lineAndColumn: LineAndColumn
   ): nodes.NewControlStructure = {
     val controlStructureNode = nodes
       .NewControlStructure()
       .code(code)
-      .parserTypeName(parserTypeName)
+      .controlStructureType(controlStructureName)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(controlStructureNode)
