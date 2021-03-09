@@ -2,7 +2,7 @@ package io.shiftleft.py2cpg.cpg
 
 import io.shiftleft.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, nodes}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,7 +16,7 @@ class IfCpgTests extends AnyFreeSpec with Matchers {
     "test control structure node properties" in {
       val controlStructureNode = cpg.controlStructure.head
       controlStructureNode.code shouldBe "if ... : ..."
-      controlStructureNode.parserTypeName shouldBe "IfStatement"
+      controlStructureNode.controlStructureType shouldBe ControlStructureTypes.IF
       controlStructureNode.lineNumber shouldBe Some(1)
     }
 
@@ -45,7 +45,7 @@ class IfCpgTests extends AnyFreeSpec with Matchers {
     "test control structure node properties" in {
       val controlStructureNode = cpg.controlStructure.head
       controlStructureNode.code shouldBe "if ... : ..."
-      controlStructureNode.parserTypeName shouldBe "IfStatement"
+      controlStructureNode.controlStructureType shouldBe ControlStructureTypes.IF
       controlStructureNode.lineNumber shouldBe Some(1)
     }
 
