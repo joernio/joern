@@ -395,14 +395,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       lineAndColumn: LineAndColumn
   ): nodes.NewCall = {
     val fieldIdNode = nodeBuilder.fieldIdentifierNode(fieldName, lineAndColumn)
-    createFieldAccess(baseNode, fieldIdNode, lineAndColumn)
-  }
 
-  protected def createFieldAccess(
-      baseNode: nodes.NewNode,
-      fieldIdNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn
-  ): nodes.NewCall = {
     val code = codeOf(baseNode) + "." + codeOf(fieldIdNode)
     val callNode = nodeBuilder.callNode(
       code,

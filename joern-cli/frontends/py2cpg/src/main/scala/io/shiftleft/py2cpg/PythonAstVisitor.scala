@@ -1067,9 +1067,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     */
   def convert(attribute: ast.Attribute): nodes.NewNode = {
     val baseNode = convert(attribute.value)
-    val fieldIdNode = nodeBuilder.fieldIdentifierNode(attribute.attr, lineAndColOf(attribute))
 
-    createFieldAccess(baseNode, fieldIdNode, lineAndColOf(attribute))
+    createFieldAccess(baseNode, attribute.attr, lineAndColOf(attribute))
   }
 
   def convert(subscript: ast.Subscript): NewNode = {
