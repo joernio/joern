@@ -94,3 +94,4 @@ $RECYCLE.BIN/
 
 /.bsp
 /gnupg-*
+/joern-cli/${sys:LOG_DIR}/
