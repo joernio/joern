@@ -192,7 +192,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       )
 
     val typeNode = nodeBuilder.typeNode(methodName, methodFullName)
-    val typeDeclNode = nodeBuilder.typeDeclNode(methodName, methodFullName)
+    val typeDeclNode = nodeBuilder.typeDeclNode(methodName, methodFullName, fileName)
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
     createBinding(methodNode, typeDeclNode)
@@ -211,7 +211,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       methodRefNode: Option[nodes.NewMethodRef],
       lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
-    val methodNode = nodeBuilder.methodNode(name, fullName, lineAndColumn)
+    val methodNode = nodeBuilder.methodNode(name, fullName, fileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
 
     val blockNode = nodeBuilder.blockNode("", lineAndColumn)

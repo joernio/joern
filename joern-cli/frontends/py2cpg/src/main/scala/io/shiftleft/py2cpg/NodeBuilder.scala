@@ -36,12 +36,15 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(typeNode)
   }
 
-  def typeDeclNode(name: String, fullName: String): nodes.NewTypeDecl = {
+  def typeDeclNode(name: String,
+                   fullName: String,
+                   fileName: String): nodes.NewTypeDecl = {
     val typeDeclNode = nodes
       .NewTypeDecl()
       .name(name)
       .fullName(fullName)
       .isExternal(false)
+      .filename(fileName)
     addNodeToDiff(typeDeclNode)
   }
 
@@ -60,11 +63,15 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(bindingNode)
   }
 
-  def methodNode(name: String, fullName: String, lineAndColumn: LineAndColumn): nodes.NewMethod = {
+  def methodNode(name: String,
+                 fullName: String,
+                 fileName: String,
+                 lineAndColumn: LineAndColumn): nodes.NewMethod = {
     val methodNode = nodes
       .NewMethod()
       .name(name)
       .fullName(fullName)
+      .filename(fileName)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(methodNode)
