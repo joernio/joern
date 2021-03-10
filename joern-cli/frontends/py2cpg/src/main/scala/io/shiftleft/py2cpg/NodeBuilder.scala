@@ -139,6 +139,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewIdentifier()
       .code(name)
       .name(name)
+      .typeFullName(Constants.ANY)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(identifierNode)
