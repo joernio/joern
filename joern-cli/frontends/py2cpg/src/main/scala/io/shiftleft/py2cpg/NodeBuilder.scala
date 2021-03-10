@@ -22,6 +22,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .name(name)
       .methodFullName(name)
       .dispatchType(dispatchType)
+      .typeFullName(Constants.ANY)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(callNode)
@@ -170,6 +171,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     val literalNode = nodes
       .NewLiteral()
       .code(number)
+      .typeFullName(Constants.ANY)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(literalNode)
@@ -179,6 +181,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     val literalNode = nodes
       .NewLiteral()
       .code(string)
+      .typeFullName(Constants.ANY)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(literalNode)
@@ -188,6 +191,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     val blockNode = nodes
       .NewBlock()
       .code(code)
+      .typeFullName(Constants.ANY)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(blockNode)
@@ -213,6 +217,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .code(name)
       .name(name)
       .closureBindingId(closureBindingId)
+      .typeFullName(Constants.ANY)
     addNodeToDiff(localNode)
   }
 
@@ -256,6 +261,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewUnknown()
       .code(code)
       .parserTypeName(parserTypeName)
+      .typeFullName(Constants.ANY)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(unknownNode)
