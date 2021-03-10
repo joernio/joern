@@ -55,11 +55,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
     contextStack.setFileNamespaceBlock(namespaceBlockNode)
 
-    val methodFullName = calcMethodFullNameFromContext("module")
+    val methodFullName = calcMethodFullNameFromContext("<module>")
 
     val moduleMethodNode =
       createMethod(
-        "module",
+        "<module>",
         methodFullName,
         (_: nodes.NewMethod) => (),
         body = module.stmts,

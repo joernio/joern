@@ -52,7 +52,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     )
 
     "test local variable exists in module method" in {
-      cpg.method.name("module").block.local.name("x").head
+      cpg.method.name("<module>").block.local.name("x").head
     }
 
     "test local variable exists in comprehension block" in {
@@ -60,7 +60,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test identifiers in line 1 and 3 reference to module method x variable" in {
-      val localXNode = cpg.method.name("module").block.local.name("x").head
+      val localXNode = cpg.method.name("<module>").block.local.name("x").head
       cpg.identifier("x").lineNumber(1).refsTo.head shouldBe localXNode
       cpg.identifier("x").lineNumber(3).refsTo.head shouldBe localXNode
     }
@@ -79,7 +79,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     )
 
     "test local variable exists in module method" in {
-      cpg.method.name("module").block.local.name("x").head
+      cpg.method.name("<module>").block.local.name("x").head
     }
 
     "test local variable exists in comprehension block" in {
@@ -87,7 +87,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test identifiers in line 1 and 3 reference to module method x variable" in {
-      val localXNode = cpg.method.name("module").block.local.name("x").head
+      val localXNode = cpg.method.name("<module>").block.local.name("x").head
       cpg.identifier("x").lineNumber(1).refsTo.head shouldBe localXNode
       cpg.identifier("x").lineNumber(3).refsTo.head shouldBe localXNode
     }
@@ -109,7 +109,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
 
     "test local variable exists" in {
       val localNode = cpg.method.name("f").local.name("x").head
-      localNode.closureBindingId shouldBe Some("test.py:module.f:x")
+      localNode.closureBindingId shouldBe Some("test.py:<module>.f:x")
     }
 
     "test identifier association to local" in {
@@ -119,21 +119,21 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding" in {
-      val methodRefNode = cpg.methodRef("test.py:module.f").head
+      val methodRefNode = cpg.methodRef("test.py:<module>.f").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next
-      closureBinding.closureBindingId shouldBe Some("test.py:module.f:x")
+      closureBinding.closureBindingId shouldBe Some("test.py:<module>.f:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.closureOriginalName shouldBe Some("x")
     }
 
     "test global variable exists" in {
-      val localNode = cpg.method.name("module").local.name("x").head
+      val localNode = cpg.method.name("<module>").local.name("x").head
       localNode.closureBindingId shouldBe None
     }
 
     "test closure binding reference to global" in {
-      val localNode = cpg.method.name("module").local.name("x").head
-      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:module.f:x")
+      val localNode = cpg.method.name("<module>").local.name("x").head
+      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:<module>.f:x")
     }
   }
 
@@ -147,7 +147,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
 
     "test local variable exists" in {
       val localNode = cpg.method.name("f").local.name("x").head
-      localNode.closureBindingId shouldBe Some("test.py:module.f:x")
+      localNode.closureBindingId shouldBe Some("test.py:<module>.f:x")
     }
 
     "test identifier association to local" in {
@@ -157,21 +157,21 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding" in {
-      val methodRefNode = cpg.methodRef("test.py:module.f").head
+      val methodRefNode = cpg.methodRef("test.py:<module>.f").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next
-      closureBinding.closureBindingId shouldBe Some("test.py:module.f:x")
+      closureBinding.closureBindingId shouldBe Some("test.py:<module>.f:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.closureOriginalName shouldBe Some("x")
     }
 
     "test global variable exists" in {
-      val localNode = cpg.method.name("module").local.name("x").head
+      val localNode = cpg.method.name("<module>").local.name("x").head
       localNode.closureBindingId shouldBe None
     }
 
     "test closure binding reference to global" in {
-      val localNode = cpg.method.name("module").local.name("x").head
-      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:module.f:x")
+      val localNode = cpg.method.name("<module>").local.name("x").head
+      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:<module>.f:x")
     }
   }
 
@@ -187,7 +187,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
 
     "test local variable exists in f" in {
       val localNode = cpg.method.name("f").local.name("x").head
-      localNode.closureBindingId shouldBe Some("test.py:module.g.f:x")
+      localNode.closureBindingId shouldBe Some("test.py:<module>.g.f:x")
     }
 
     "test identifier association to local in f" in {
@@ -197,16 +197,16 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding of f in g" in {
-      val methodRefNode = cpg.methodRef("test.py:module.g.f").head
+      val methodRefNode = cpg.methodRef("test.py:<module>.g.f").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next
-      closureBinding.closureBindingId shouldBe Some("test.py:module.g.f:x")
+      closureBinding.closureBindingId shouldBe Some("test.py:<module>.g.f:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.closureOriginalName shouldBe Some("x")
     }
 
     "test local variable exists in g" in {
       val localNode = cpg.method.name("g").local.name("x").head
-      localNode.closureBindingId shouldBe Some("test.py:module.g:x")
+      localNode.closureBindingId shouldBe Some("test.py:<module>.g:x")
     }
 
     "test identifier association to local in g" in {
@@ -214,21 +214,21 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding of g in module" in {
-      val methodRefNode = cpg.methodRef("test.py:module.g").head
+      val methodRefNode = cpg.methodRef("test.py:<module>.g").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next
-      closureBinding.closureBindingId shouldBe Some("test.py:module.g:x")
+      closureBinding.closureBindingId shouldBe Some("test.py:<module>.g:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.closureOriginalName shouldBe Some("x")
     }
 
     "test global variable exists" in {
-      val localNode = cpg.method.name("module").local.name("x").head
+      val localNode = cpg.method.name("<module>").local.name("x").head
       localNode.closureBindingId shouldBe None
     }
 
     "test closure binding reference to global" in {
-      val localNode = cpg.method.name("module").local.name("x").head
-      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:module.g:x")
+      val localNode = cpg.method.name("<module>").local.name("x").head
+      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:<module>.g:x")
     }
   }
 }
