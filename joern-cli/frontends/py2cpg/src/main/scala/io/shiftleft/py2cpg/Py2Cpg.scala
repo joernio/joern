@@ -3,6 +3,8 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
+import io.shiftleft.semanticcpg.passes.CfgCreationPass
+
 import scala.collection.parallel
 
 object Py2Cpg {
@@ -20,19 +22,17 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
   private val nodeBuilder = new NodeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
-    val keyPool = new IntervalKeyPool(1, Long.MaxValue)
+    val auxKeyPool = new IntervalKeyPool(1, 100000)
+    val keyPool = new IntervalKeyPool(100000, Long.MaxValue)
 
     nodeBuilder.metaNode(Languages.PYTHON, version = "")
 
-    DiffGraph.Applier.applyDiff(diffGraph.build, outputCpg, keyPool = Some(keyPool))
+    DiffGraph.Applier.applyDiff(diffGraph.build, outputCpg, keyPool = Some(auxKeyPool))
 
-    inputProviders.to(parallel.ParIterable).foreach { inputProviders =>
-      val inputPair = inputProviders()
+    new CodeToCpg(outputCpg, inputProviders, keyPool).createAndApply()
 
-      val diffGraphs = new CodeToCpg(inputPair).convert()
-      diffGraphs.foreach { diffGraph =>
-        DiffGraph.Applier.applyDiff(diffGraph, outputCpg, keyPool = Some(keyPool))
-      }
-    }
+    // We dont need keys for the CFG pass. Thus such an empty key pool is enough.
+    val cfgKeyPool = new IntervalKeyPool(0, 0)
+    new CfgCreationPass(outputCpg, cfgKeyPool).createAndApply()
   }
 }

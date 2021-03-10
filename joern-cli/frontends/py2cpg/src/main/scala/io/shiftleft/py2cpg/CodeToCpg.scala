@@ -1,21 +1,24 @@
 package io.shiftleft.py2cpg
 
-import io.shiftleft.passes.DiffGraph
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.py2cpg.Py2Cpg.InputProvider
 import io.shiftleft.pythonparser.PyParser
-import io.shiftleft.pythonparser.ast.iast
-import io.shiftleft.py2cpg.Py2Cpg.InputPair
 
-class CodeToCpg(inputPair: InputPair) {
-  def convert(): Iterator[DiffGraph] = {
-    val astRoot = parseSourceCode()
+class CodeToCpg(cpg: Cpg,
+                inputPairs: Iterable[InputProvider],
+                keyPool: IntervalKeyPool)
+  extends ParallelCpgPass[InputProvider](cpg, keyPools = Some(keyPool.split(inputPairs.size))) {
+
+  override def partIterator: Iterator[InputProvider] = inputPairs.iterator
+
+  override def runOnPart(inputProvider: InputProvider): Iterator[DiffGraph] = {
+    val inputPair = inputProvider()
+    val parser = new PyParser()
+    val astRoot = parser.parse(inputPair.content)
     val astVisitor = new PythonAstVisitor(inputPair.file)
     astVisitor.convert(astRoot)
 
-    Iterator(astVisitor.getDiffGraph)
-  }
-
-  private def parseSourceCode(): iast = {
-    val parser = new PyParser()
-    parser.parse(inputPair.content)
+    Iterator.single(astVisitor.getDiffGraph)
   }
 }
