@@ -1,2 +1,2 @@
 #!/bin/sh
-java -jar out/py2cpg/assembly/dest/out.jar $@
+java -jar `dirname $0`/out/py2cpg/assembly/dest/out.jar $@
