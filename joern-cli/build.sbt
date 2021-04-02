@@ -125,22 +125,22 @@ generateScaladocs := {
 }
 
 /* add schemas from codepropertygraph and schema-extender */
-Universal/packageBin/mappings ++= {
-  import better.files.File
-  val joernCliStaged = (Universal/stage).value
-  val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value.toPath
-  val tmpDir = File.newTemporaryDirectory("joern-cli-build").deleteOnExit
-
-  val cpgJarName = s"io.shiftleft.codepropertygraph-schema_${scalaBinaryVersion.value}-${Versions.cpgVersion}.jar"
-  val cpgJar = joernCliStaged/"lib"/cpgJarName
-  assert(cpgJar.exists, s"cpg jar not found at expected path: $cpgJar")
-  IO.unzip(cpgJar, tmpDir.toJava, _.startsWith("schemas/"))
-
-  for {
-    dir <- List(tmpDir, File(schemaExtenderStaged))
-    file <- dir.listRecursively
-  } yield file.toJava -> s"schema-extender/${dir.relativize(file.path)}"
-}
+// Universal/packageBin/mappings ++= {
+//   import better.files.File
+//   val joernCliStaged = (Universal/stage).value
+//   val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value.toPath
+//   val tmpDir = File.newTemporaryDirectory("joern-cli-build").deleteOnExit
+// 
+//   val cpgJarName = s"io.shiftleft.codepropertygraph-schema_${scalaBinaryVersion.value}-${Versions.cpgVersion}.jar"
+//   val cpgJar = joernCliStaged/"lib"/cpgJarName
+//   assert(cpgJar.exists, s"cpg jar not found at expected path: $cpgJar")
+//   IO.unzip(cpgJar, tmpDir.toJava, _.startsWith("schemas/"))
+// 
+//   for {
+//     dir <- List(tmpDir, File(schemaExtenderStaged))
+//     file <- dir.listRecursively
+//   } yield file.toJava -> s"schema-extender/${dir.relativize(file.path)}"
+// }
 
 import sbt.Path.directory
 Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
