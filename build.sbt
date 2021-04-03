@@ -24,7 +24,6 @@ homepage := Some(url("https://joern.io/"))
 licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 lazy val joerncli = Projects.joerncli
-lazy val schemaExtender = Projects.schemaExtender
 
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
