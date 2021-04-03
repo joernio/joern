@@ -6,17 +6,16 @@ import overflowdb.codegen._
 import sys.process._
 
 /**
-  * Allows to extend the cpg schema, by providing additional json files.
-  * The user-provided json schema is are merged with the original cpg schema, and the generated nodefiles are compiled again.
-  * Then, these are classes are overridden in the jar containing the old generated classes (must be passed in as parameter).
-  * To enable the user to perform the same operation again, the original jar is backed up.
-  *  */
+  * Allows to extend the default cpg schema.
+  * The user-provided schema is used to generate and compile all node/edge/... classes from scratch.
+  * Then, the default classes are overridden in the jar containing the old generated classes (must be passed in as parameter).
+  */
 object SchemaExtender extends App {
   case class Config(targetJar: File, scalacPath: String)
 
   def parseConfig =
     new scopt.OptionParser[Config](getClass.getSimpleName) {
-      opt[String]("target").required
+      opt[String]("target").required()
         .action { (x, c) =>
           c.copy(targetJar = File(x))
         }
@@ -25,7 +24,7 @@ object SchemaExtender extends App {
           else failure(s"$path does not exist")
         }
         .text("path to target jar which contains the generated nodes")
-      opt[String]("scalac").required
+      opt[String]("scalac").required()
         .action { (x, c) =>
           c.copy(scalacPath = x)
         }
@@ -63,18 +62,19 @@ object SchemaExtender extends App {
   }
 
   def generateDomainClassSources: Iterator[File] = {
-    val inputSchemaFiles = schemasDir.listRecursively.filter(_.name.endsWith(".json"))
-    val generatedSrcDir = File("generated/src")
-    val mergedSchemaFile = SchemaMerger.mergeCollections(inputSchemaFiles.map(_.toJava).toSeq)
-    new CodeGen(
-      mergedSchemaFile.getAbsolutePath,
-      "io.shiftleft.codepropertygraph.generated"
-    ).run(generatedSrcDir.toJava)
-    generatedSrcDir.listRecursively.filter(_.isRegularFile)
+    // val inputSchemaFiles = schemasDir.listRecursively.filter(_.name.endsWith(".json"))
+    // val generatedSrcDir = File("generated/src")
+    // val mergedSchemaFile = SchemaMerger.mergeCollections(inputSchemaFiles.map(_.toJava).toSeq)
+    // new CodeGen(
+    //   mergedSchemaFile.getAbsolutePath,
+    //   "io.shiftleft.codepropertygraph.generated"
+    // ).run(generatedSrcDir.toJava)
+    // generatedSrcDir.listRecursively.filter(_.isRegularFile)
+    ???
   }
 
   def compile(sources: Iterator[File]): Iterator[File] = {
-    classesOutDir.createDirectories.children.foreach(_.delete())
+    classesOutDir.createDirectories().children.foreach(_.delete())
     val exitCode =
       s"""$scalacPath -d $classesOutDir ${sources.mkString(" ")}""".!
     assert(exitCode == 0, s"error while invoking scalac. exit code was $exitCode")
