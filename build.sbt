@@ -38,4 +38,10 @@ createDistribution := {
   println(s"created distribution - resulting files: $cliZip")
 }
 
+val schemaExtenderPackageZip = taskKey[File]("create a tgz of the independent schema-extender project")
+schemaExtenderPackageZip := {
+  // TODO
+  ???
+}
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
