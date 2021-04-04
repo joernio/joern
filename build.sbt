@@ -27,7 +27,7 @@ lazy val joerncli = Projects.joerncli
 
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  (joerncli/Universal/packageZipTarball).value
+  val zip = (joerncli/Universal/packageZipTarball).value
   val joernCliZip = (joerncli/Universal/packageBin).value
 
   val cliZip = "./joern-cli.zip"
@@ -38,10 +38,11 @@ createDistribution := {
   println(s"created distribution - resulting files: $cliZip")
 }
 
-val schemaExtenderPackageZip = taskKey[File]("create a tgz of the independent schema-extender project")
-schemaExtenderPackageZip := {
-  // TODO
-  ???
+val createSchemaExtenderTar = taskKey[File]("create a tar of the independent schema-extender project")
+createSchemaExtenderTar := {
+  val outputFile = target.value / "schema-extender.tar"
+  FileUtils.createTar(outputFile, file("schema-extender"))
+  outputFile
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
