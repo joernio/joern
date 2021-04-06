@@ -1,7 +1,6 @@
 name := "schema-extender"
 
-// TODO replace during createDistribution or so...
-val cpgVersion = "1.3.109"
+val cpgVersion = "__CPG_VERSION__"
 
 val generateDomainClasses = taskKey[Seq[File]]("generate overflowdb domain classes for our schema")
 
@@ -23,8 +22,8 @@ replaceDomainClassesInJoern := {
 }
 
 ThisBuild/libraryDependencies ++= Seq(
-  "io.shiftleft" %% "codepropertygraph-schema" % cpgVersion,
-  "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion,
+  "io.shiftleft" %% "codepropertygraph-schema" % cpgVersion.value,
+  "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion.value,
 )
 ThisBuild/scalaVersion := "2.13.5"
 
