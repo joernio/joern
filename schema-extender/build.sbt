@@ -22,8 +22,8 @@ replaceDomainClassesInJoern := {
 }
 
 ThisBuild/libraryDependencies ++= Seq(
-  "io.shiftleft" %% "codepropertygraph-schema" % cpgVersion.value,
-  "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion.value,
+  "io.shiftleft" %% "codepropertygraph-schema" % cpgVersion,
+  "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion,
 )
 ThisBuild/scalaVersion := "2.13.5"
 
