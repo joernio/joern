@@ -1,6 +1,6 @@
 name := "schema-extender"
 
-val cpgVersion = "__CPG_VERSION__"
+val cpgVersion = sys.env.get("CPG_VERSION").getOrElse("system env `CPG_VERSION` must be defined, but isn't...")
 
 val generateDomainClasses = taskKey[Seq[File]]("generate overflowdb domain classes for our schema")
 
