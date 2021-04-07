@@ -1,8 +1,6 @@
 #!/usr/bin/env sh
 
-set -v
-
 cd schema-extender
-source ./cpg-version.sh 
+export CPG_VERSION=$(cat cpg-version)
 sbt clean replaceDomainClassesInJoern
 cd ..

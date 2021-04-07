@@ -25,25 +25,16 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 
 lazy val joerncli = Projects.joerncli
 
-lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
+lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
-  import java.io.File
-  import org.zeroturnaround.zip.ZipUtil
   val joernCliZip = (joerncli/Universal/packageBin).value
 
   val cliZip = file("./joern-cli.zip")
-  IO.copy(
-    List((joernCliZip, cliZip)),
-    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
-  )
-
-  val cpgVersionSh = target.value / "cpg-version.sh"
-  better.files.File(cpgVersionSh.toPath).write(
-    "export CPG_VERSION=\"" + cpgVersion + "\""
-  )
-  ZipUtil.addEntry(cliZip, "joern-cli/schema-extender/cpg-version.sh", cpgVersionSh)
+  IO.copyFile(joernCliZip, cliZip,
+    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
 
   println(s"created distribution - resulting files: $cliZip")
+  cliZip
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

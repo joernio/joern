@@ -5,8 +5,7 @@ val cpgVersion = sys.env.get("CPG_VERSION").getOrElse("system env `CPG_VERSION` 
 val generateDomainClasses = taskKey[Seq[File]]("generate overflowdb domain classes for our schema")
 
 val joernInstallPath = settingKey[String]("path to joern installation, e.g. `/home/username/bin/joern/joern-cli` or `../../joern/joern-cli`")
-// TODO change default so that it fit's the default distro
-joernInstallPath := "/home/mp/bin/joern/joern-cli"
+joernInstallPath := "../"
 
 val replaceDomainClassesInJoern = taskKey[Unit]("generates new domain classes based on the given schema, and installs them in the joern distribution")
 

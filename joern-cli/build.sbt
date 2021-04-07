@@ -34,7 +34,6 @@ mappings in (Compile, packageDoc) := Seq()
 
 lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
 downloadFuzzyPreprocessor := {
-  import scala.util.{Try, Success, Failure}
   val log = streams.value.log
   val ppFilename = "fuzzyppcli.zip"
   val ppUrl = new URL(
@@ -59,6 +58,15 @@ mappings in Universal ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
     case (binary, name) => binary -> s"/bin/$name"
   }
 }.getOrElse(Nil)
+
+
+lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
+cpgVersionFile := {
+  val ret = target.value / "cpg-version"
+  better.files.File(ret.getPath).writeText(Versions.cpgVersion)
+  ret
+}
+mappings in Universal += cpgVersionFile.value -> "schema-extender/cpg-version"
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
