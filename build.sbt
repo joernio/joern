@@ -27,13 +27,22 @@ lazy val joerncli = Projects.joerncli
 
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
+  import java.io.File
+  import org.zeroturnaround.zip.ZipUtil
   val joernCliZip = (joerncli/Universal/packageBin).value
 
-  val cliZip = "./joern-cli.zip"
+  val cliZip = file("./joern-cli.zip")
   IO.copy(
-    List((joernCliZip, file(cliZip))),
+    List((joernCliZip, cliZip)),
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
   )
+
+  val cpgVersionSh = target.value / "cpg-version.sh"
+  better.files.File(cpgVersionSh.toPath).write(
+    "export CPG_VERSION=\"" + cpgVersion + "\""
+  )
+  ZipUtil.addEntry(cliZip, "joern-cli/schema-extender/cpg-version.sh", cpgVersionSh)
+
   println(s"created distribution - resulting files: $cliZip")
 }
 
