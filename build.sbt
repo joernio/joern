@@ -27,15 +27,6 @@ lazy val joerncli = Projects.joerncli
 
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  // import org.zeroturnaround.zip.ZipUtil
-  // val zip = (joerncli/Universal/packageZipTarball).value
-  // val joernCliZip = (joerncli/Universal/packageBin).value
-  // val cliZip = file("./joern-cli.zip")
-
-  // ZipUtil.packEntry(joernCliZip, cliZip)
-  // println(s"created distribution - resulting files: $cliZip")
-
-  val tgz = (joerncli/Universal/packageZipTarball).value
   val joernCliZip = (joerncli/Universal/packageBin).value
 
   val cliZip = "./joern-cli.zip"
