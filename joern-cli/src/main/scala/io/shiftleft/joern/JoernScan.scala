@@ -24,7 +24,8 @@ case class JoernScanConfig(src: String = "",
                            queryDbVersion: String = JoernScanConfig.defaultDbVersion,
                            maxCallDepth: Int = 2,
                            onlyNames: String = "",
-                           onlyTags: String = "")
+                           onlyTags: String = "",
+                           language: Option[String] = None)
 
 object JoernScan extends App with BridgeBase {
 
@@ -70,6 +71,9 @@ object JoernScan extends App with BridgeBase {
         .action((x, c) => c.copy(maxCallDepth = x))
         .text("Set call depth for interprocedural analysis")
 
+      opt[String]("language")
+        .action((x, c) => c.copy(language = Some(x)))
+        .text("Source language")
     }
   }.parse(args, JoernScanConfig())
 
@@ -92,7 +96,11 @@ object JoernScan extends App with BridgeBase {
       Scan.defaultOpts.maxCallDepth = config.maxCallDepth
       val shellConfig = io.shiftleft.console
         .Config()
-        .copy(pluginToRun = Some("scan"), src = Some(config.src), overwrite = config.overwrite, store = config.store)
+        .copy(pluginToRun = Some("scan"),
+              src = Some(config.src),
+              overwrite = config.overwrite,
+              store = config.store,
+              language = config.language)
       runAmmonite(shellConfig, JoernProduct)
     }
   }
