@@ -32,3 +32,4 @@
 "<operator>.preIncrement" 1->1
 "free" 1->1
 "strcmp" 1->-1 2->-1
+"<operator>.sizeOf"
