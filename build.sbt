@@ -27,21 +27,23 @@ lazy val joerncli = Projects.joerncli
 
 lazy val createDistribution = taskKey[Unit]("Create a complete Joern distribution")
 createDistribution := {
-  import org.zeroturnaround.zip.ZipUtil
-  val zip = (joerncli/Universal/packageZipTarball).value
+  // import org.zeroturnaround.zip.ZipUtil
+  // val zip = (joerncli/Universal/packageZipTarball).value
+  // val joernCliZip = (joerncli/Universal/packageBin).value
+  // val cliZip = file("./joern-cli.zip")
+
+  // ZipUtil.packEntry(joernCliZip, cliZip)
+  // println(s"created distribution - resulting files: $cliZip")
+
+  val tgz = (joerncli/Universal/packageZipTarball).value
   val joernCliZip = (joerncli/Universal/packageBin).value
-  val schemaExtender = createSchemaExtenderTar.value
-  val cliZip = file("./joern-cli.zip")
 
-  ZipUtil.packEntries(Array(joernCliZip, schemaExtender), cliZip)
+  val cliZip = "./joern-cli.zip"
+  IO.copy(
+    List((joernCliZip, file(cliZip))),
+    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
+  )
   println(s"created distribution - resulting files: $cliZip")
-}
-
-val createSchemaExtenderTar = taskKey[File]("create a tar of the independent schema-extender project")
-createSchemaExtenderTar := {
-  val outputFile = target.value / "schema-extender.tar"
-  FileUtils.createTar(outputFile, file("schema-extender"))
-  outputFile
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
