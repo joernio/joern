@@ -2,5 +2,5 @@
 
 cd schema-extender
 export CPG_VERSION=$(cat cpg-version)
-sbt clean replaceDomainClassesInJoern
+./sbt clean replaceDomainClassesInJoern
 cd ..
