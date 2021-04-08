@@ -18,3 +18,5 @@ jobs:
         ./joern --src /tmp/foo --run scan
         ./joern-scan /tmp/foo
         ./joern-scan --dump
+        cd joern-cli/target/universal/stage
+        ./schema-extender/test.sh
