@@ -18,3 +18,4 @@ jobs:
         ./joern --src /tmp/foo --run scan
         ./joern-scan /tmp/foo
         ./joern-scan --dump
+        ./schema-extender/test.sh
