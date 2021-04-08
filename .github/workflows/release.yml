@@ -19,7 +19,10 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - run: sbt scalafmtCheck test stage
       - run: ./tests/scripts-test.sh
-      - run: ./schema-extender/test.sh
+      - run: |
+          cd joern-cli/target/universal/stage
+          ./schema-extender/test.sh
+          cd -
       - run: sbt ciReleaseTagNextVersion createDistribution
       - run: sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
       - name: Export ENV vars
