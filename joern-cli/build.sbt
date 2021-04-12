@@ -34,7 +34,6 @@ mappings in (Compile, packageDoc) := Seq()
 
 lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
 downloadFuzzyPreprocessor := {
-  import scala.util.{Try, Success, Failure}
   val log = streams.value.log
   val ppFilename = "fuzzyppcli.zip"
   val ppUrl = new URL(
@@ -59,6 +58,15 @@ mappings in Universal ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
     case (binary, name) => binary -> s"/bin/$name"
   }
 }.getOrElse(Nil)
+
+
+lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
+cpgVersionFile := {
+  val ret = target.value / "cpg-version"
+  better.files.File(ret.getPath).writeText(Versions.cpgVersion)
+  ret
+}
+mappings in Universal += cpgVersionFile.value -> "schema-extender/cpg-version"
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
@@ -122,24 +130,6 @@ generateScaladocs := {
   runDoc(srcs, cp, out, options, maxErrors.value, s.log)
 
   out
-}
-
-/* add schemas from codepropertygraph and schema-extender */
-Universal/packageBin/mappings ++= {
-  import better.files.File
-  val joernCliStaged = (Universal/stage).value
-  val schemaExtenderStaged = (Projects.schemaExtender/Universal/stage).value.toPath
-  val tmpDir = File.newTemporaryDirectory("joern-cli-build").deleteOnExit
-
-  val cpgJarName = s"io.shiftleft.codepropertygraph-schema_${scalaBinaryVersion.value}-${Versions.cpgVersion}.jar"
-  val cpgJar = joernCliStaged/"lib"/cpgJarName
-  assert(cpgJar.exists, s"cpg jar not found at expected path: $cpgJar")
-  IO.unzip(cpgJar, tmpDir.toJava, _.startsWith("schemas/"))
-
-  for {
-    dir <- List(tmpDir, File(schemaExtenderStaged))
-    file <- dir.listRecursively
-  } yield file.toJava -> s"schema-extender/${dir.relativize(file.path)}"
 }
 
 import sbt.Path.directory
