@@ -14,7 +14,7 @@ object CpgExtCodegen extends App {
   val cpgSchema = new CpgSchema(builder)
 
   // START extensions for this build - add your's here and remove the example properties
-  val exampleProperty = builder.addNodeProperty(
+  val exampleProperty = builder.addProperty(
     name = "EXAMPLE_PROPERTY",
     valueType = ValueTypes.STRING,
     cardinality = Cardinality.ZeroOrOne,
