@@ -23,8 +23,8 @@ case class JoernScanConfig(src: String = "",
                            updateQueryDb: Boolean = false,
                            queryDbVersion: String = JoernScanConfig.defaultDbVersion,
                            maxCallDepth: Int = 2,
-                           onlyNames: String = "",
-                           onlyTags: String = "",
+                           names: String = "",
+                           tags: String = "",
                            language: Option[String] = None)
 
 object JoernScan extends App with BridgeBase {
@@ -59,12 +59,12 @@ object JoernScan extends App with BridgeBase {
         .action((x, c) => c.copy(queryDbVersion = x))
         .text("Version of query database `updatedb`-operation installs")
 
-      opt[String]("only-names")
-        .action((x, c) => c.copy(onlyNames = x))
+      opt[String]("names")
+        .action((x, c) => c.copy(names = x))
         .text("Filter queries used for scanning by name, comma-separated string")
 
-      opt[String]("only-tags")
-        .action((x, c) => c.copy(onlyTags = x))
+      opt[String]("tags")
+        .action((x, c) => c.copy(tags = x))
         .text("Filter queries used for scanning by tags, comma-separated string")
 
       opt[Int]("depth")
@@ -91,8 +91,8 @@ object JoernScan extends App with BridgeBase {
         println("Please specify a source code directory to scan")
         return
       }
-      Scan.defaultOpts.onlyNames = config.onlyNames.split(",").filterNot(_.isEmpty)
-      Scan.defaultOpts.onlyTags = config.onlyTags.split(",").filterNot(_.isEmpty)
+      Scan.defaultOpts.onlyNames = config.names.split(",").filterNot(_.isEmpty)
+      Scan.defaultOpts.onlyTags = config.tags.split(",").filterNot(_.isEmpty)
       Scan.defaultOpts.maxCallDepth = config.maxCallDepth
       val shellConfig = io.shiftleft.console
         .Config()
@@ -192,7 +192,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
       } else {
         queries.filter { q =>
           onlyNames.contains(q.name)
-        }.toList
+        }
       }
 
     val filteredByTag =
