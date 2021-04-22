@@ -6,11 +6,11 @@ import io.shiftleft.py2cpg.Py2Cpg.InputProvider
 import io.shiftleft.pythonparser.PyParser
 
 class CodeToCpg(cpg: Cpg,
-                inputPairs: Iterable[InputProvider],
+                inputProvider: Iterable[InputProvider],
                 keyPool: IntervalKeyPool)
-  extends ParallelCpgPass[InputProvider](cpg, keyPools = Some(keyPool.split(inputPairs.size))) {
+  extends ParallelCpgPass[InputProvider](cpg, keyPools = Some(keyPool.split(inputProvider.size))) {
 
-  override def partIterator: Iterator[InputProvider] = inputPairs.iterator
+  override def partIterator: Iterator[InputProvider] = inputProvider.iterator
 
   override def runOnPart(inputProvider: InputProvider): Iterator[DiffGraph] = {
     val inputPair = inputProvider()

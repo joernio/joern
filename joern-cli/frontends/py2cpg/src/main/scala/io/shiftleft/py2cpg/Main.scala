@@ -9,7 +9,7 @@ class ParsedArguments(arguments: Seq[String]) extends ScallopConf(arguments) {
     descr = "Output file name. Defaults to out.cpg"
   )
 
-  val input = trailArg[String](descr = "Input file or directory name")
+  val input = trailArg[String](descr = "Input directory name")
   verify()
 }
 

@@ -9,7 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import scala.collection.mutable
 
-case class Py2CpgOnFileSystemConfig(outputFile: String, inputFileOrDir: String)
+case class Py2CpgOnFileSystemConfig(outputFile: String, inputDir: String)
 
 object Py2CpgOnFileSystem {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -20,12 +20,13 @@ object Py2CpgOnFileSystem {
   def buildCpg(config: Py2CpgOnFileSystemConfig): Unit = {
     val cpg = initCpg(config.outputFile)
 
-    val inputFiles = collectInputFiles(config.inputFileOrDir)
+    val inputDirAsPath = Paths.get(config.inputDir)
+    val inputFiles = collectInputFiles(config.inputDir)
     val inputProviders = inputFiles.map { inputFile => () =>
       {
         val content = Files.readAllBytes(inputFile)
         val contentStr = new String(content, StandardCharsets.UTF_8)
-        Py2Cpg.InputPair(contentStr, inputFile.toString)
+        Py2Cpg.InputPair(contentStr, inputDirAsPath.relativize(inputFile).toString)
       }
     }
 
@@ -49,11 +50,11 @@ object Py2CpgOnFileSystem {
     new Cpg(graph)
   }
 
-  private def collectInputFiles(inputFileOrDir: String): Iterable[Path] = {
-    val inputPath = Paths.get(inputFileOrDir)
+  private def collectInputFiles(inputDir: String): Iterable[Path] = {
+    val inputPath = Paths.get(inputDir)
 
     if (!Files.exists(inputPath)) {
-      logger.error(s"Cannot find $inputFileOrDir")
+      logger.error(s"Cannot find $inputDir")
       return Iterable.empty
     }
 
