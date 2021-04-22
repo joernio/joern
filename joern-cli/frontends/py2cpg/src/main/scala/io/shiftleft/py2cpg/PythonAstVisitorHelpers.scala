@@ -232,19 +232,25 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  // NOTE if xMayHaveSideEffects == false, function x must return a distinct
+  // tree/node for each invocation!!!
+  // Otherwise the same tree/node may get placed in different places of the AST
+  // which is invalid and in this concrete case here triggered setting the
+  // argumentIndex twice once for x being receiver and once for x being the
+  // instance.
   // If x may have side effects we lower as follows: x.y(<args>) =>
   // {
   //   tmp = x
   //   CALL(recv = tmp.y, inst = tmp, args=<args>)
   // }
-  protected def createXDotYCall(x: nodes.NewNode,
+  protected def createXDotYCall(x: () => nodes.NewNode,
                                 y: String,
                                 xMayHaveSideEffects: Boolean,
                                 lineAndColumn: LineAndColumn,
                                 argumentNodes: nodes.NewNode*): nodes.NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName = getUnusedName()
-      val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x, lineAndColumn)
+      val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x(), lineAndColumn)
       val receiverNode =
         createFieldAccess(
           createIdentifierNode(tmpVarName, Load, lineAndColumn),
@@ -254,8 +260,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       val instanceCallNode = createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
       createBlock(tmpAssignCall::instanceCallNode::Nil, lineAndColumn)
     } else {
-      val receiverNode = createFieldAccess(x, y, lineAndColumn)
-      createInstanceCall(receiverNode, x, lineAndColumn, argumentNodes: _*)
+      val receiverNode = createFieldAccess(x(), y, lineAndColumn)
+      createInstanceCall(receiverNode, x(), lineAndColumn, argumentNodes: _*)
     }
   }
 

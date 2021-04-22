@@ -369,7 +369,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
                                 lineAndColumn: LineAndColumn): nodes.NewNode = {
     val iterVariableName = getUnusedName()
     val iterExprIterCallNode =
-      createXDotYCall(convert(iter), "__iter__", xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
+      createXDotYCall(() => convert(iter), "__iter__", xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
         lineAndColumn)
     val iterAssignNode = createAssignmentToIdentifier(iterVariableName, iterExprIterCallNode, lineAndColumn)
 
@@ -380,7 +380,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val iterNextCallNode =
-      createXDotYCall(createIdentifierNode(iterVariableName, Load, lineAndColumn), "__next__",
+      createXDotYCall(() => createIdentifierNode(iterVariableName, Load, lineAndColumn), "__next__",
         xMayHaveSideEffects = false,
         lineAndColumn)
 
@@ -711,7 +711,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
             lineAndColOf(dict))
         case None =>
           createXDotYCall(
-            createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
+            () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
             "update",
             xMayHaveSideEffects = false,
             lineAndColOf(dict),
@@ -746,7 +746,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createAssignmentToIdentifier(tmpVariableName, setConstructorCall, lineAndColOf(set))
 
     val appendCallNodes = set.elts.map { setElement =>
-      createXDotYCall(createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
+      createXDotYCall(() => createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
         "add",
         xMayHaveSideEffects = false,
         lineAndColOf(set),
@@ -788,7 +788,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     // Create tmp.append(x)
     val listVarAppendCallNode = createXDotYCall(
-      createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp)),
+      () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(listComp)),
       "append",
       xMayHaveSideEffects = false,
       lineAndColOf(listComp),
@@ -833,7 +833,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     // Create tmp.add(x)
     val setVarAddCallNode = createXDotYCall(
-      createIdentifierNode(tmpVariableName, Load, lineAndColOf(setComp)),
+      () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(setComp)),
       "add",
       xMayHaveSideEffects = false,
       lineAndColOf(setComp),
@@ -1032,7 +1032,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     call.func match {
       case attribute: ast.Attribute =>
-        createXDotYCall(convert(attribute.value), attribute.attr,
+        createXDotYCall(() => convert(attribute.value), attribute.attr,
           xMayHaveSideEffects = !attribute.value.isInstanceOf[ast.Name],
           lineAndColOf(call), argumentNodes: _*)
       case _ =>
@@ -1103,12 +1103,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createAssignmentToIdentifier(tmpVariableName, listConstructorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
-      val listInstanceIdentifierNode =
-        createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
-
       val elementNode = convert(listElement)
 
-      createXDotYCall(listInstanceIdentifierNode, "append", xMayHaveSideEffects = false, lineAndColOf(list), elementNode)
+      createXDotYCall(() => createIdentifierNode(tmpVariableName, Load, lineAndColOf(list)), "append", xMayHaveSideEffects = false, lineAndColOf(list), elementNode)
     }
 
     val listInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
