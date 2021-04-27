@@ -30,7 +30,7 @@ scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplic
 
 topLevelDirectory := Some(packageName.value)
 
-mappings in (Compile, packageDoc) := Seq()
+Compile/packageDoc/mappings := Seq()
 
 lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
 downloadFuzzyPreprocessor := {
@@ -53,7 +53,7 @@ downloadFuzzyPreprocessor := {
   }
 }
 
-mappings in Universal ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
+Universal/mappings ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
   NativePackagerHelper.contentOf(fuzzyppdir).map {
     case (binary, name) => binary -> s"/bin/$name"
   }
@@ -66,7 +66,7 @@ cpgVersionFile := {
   better.files.File(ret.getPath).writeText(Versions.cpgVersion)
   ret
 }
-mappings in Universal += cpgVersionFile.value -> "schema-extender/cpg-version"
+Universal/mappings += cpgVersionFile.value -> "schema-extender/cpg-version"
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {

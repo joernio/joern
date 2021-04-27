@@ -9,11 +9,12 @@ import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.joern.Scan.{allTag, defaultTag}
 
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.75"
+  val defaultDbVersion: String = "0.0.81"
 }
 
 case class JoernScanConfig(src: String = "",
@@ -23,8 +24,8 @@ case class JoernScanConfig(src: String = "",
                            updateQueryDb: Boolean = false,
                            queryDbVersion: String = JoernScanConfig.defaultDbVersion,
                            maxCallDepth: Int = 2,
-                           onlyNames: String = "",
-                           onlyTags: String = "",
+                           names: String = "",
+                           tags: String = "",
                            language: Option[String] = None)
 
 object JoernScan extends App with BridgeBase {
@@ -59,12 +60,12 @@ object JoernScan extends App with BridgeBase {
         .action((x, c) => c.copy(queryDbVersion = x))
         .text("Version of query database `updatedb`-operation installs")
 
-      opt[String]("only-names")
-        .action((x, c) => c.copy(onlyNames = x))
+      opt[String]("names")
+        .action((x, c) => c.copy(names = x))
         .text("Filter queries used for scanning by name, comma-separated string")
 
-      opt[String]("only-tags")
-        .action((x, c) => c.copy(onlyTags = x))
+      opt[String]("tags")
+        .action((x, c) => c.copy(tags = x))
         .text("Filter queries used for scanning by tags, comma-separated string")
 
       opt[Int]("depth")
@@ -91,8 +92,8 @@ object JoernScan extends App with BridgeBase {
         println("Please specify a source code directory to scan")
         return
       }
-      Scan.defaultOpts.onlyNames = config.onlyNames.split(",").filterNot(_.isEmpty)
-      Scan.defaultOpts.onlyTags = config.onlyTags.split(",").filterNot(_.isEmpty)
+      Scan.defaultOpts.names = config.names.split(",").filterNot(_.isEmpty)
+      Scan.defaultOpts.tags = config.tags.split(",").filterNot(_.isEmpty)
       Scan.defaultOpts.maxCallDepth = config.maxCallDepth
       val shellConfig = io.shiftleft.console
         .Config()
@@ -157,10 +158,13 @@ object JoernScan extends App with BridgeBase {
 object Scan {
   val overlayName = "scan"
   val description = "Joern Code Scanner"
-  var defaultOpts = new ScanOptions(maxCallDepth = 2, onlyNames = Array[String](), onlyTags = Array[String]())
+  var defaultOpts = new ScanOptions(maxCallDepth = 2, names = Array[String](), tags = Array[String]())
+
+  val defaultTag = "default"
+  val allTag = "all"
 }
 
-class ScanOptions(var maxCallDepth: Int, var onlyNames: Array[String], var onlyTags: Array[String])
+class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Array[String])
     extends LayerCreatorOptions {}
 
 class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends LayerCreator {
@@ -175,7 +179,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
       println("You have not installed any query bundles. Try:")
       println("joern-scan --updatedb")
     }
-    val queriesAfterFilter = filteredQueries(allQueries, options.onlyNames, options.onlyTags)
+    val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
     if (queriesAfterFilter.isEmpty) {
       println("No queries matching current filter selection")
     }
@@ -183,23 +187,23 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
     outputFindings(context.cpg)
   }
 
-  protected def filteredQueries(queries: List[Query],
-                                onlyNames: Array[String],
-                                onlyTags: Array[String]): List[Query] = {
+  protected def filteredQueries(queries: List[Query], names: Array[String], tags: Array[String]): List[Query] = {
     val filteredByName =
-      if (onlyNames.length == 0) {
+      if (names.length == 0) {
         queries
       } else {
         queries.filter { q =>
-          onlyNames.contains(q.name)
-        }.toList
+          names.contains(q.name)
+        }
       }
 
     val filteredByTag =
-      if (onlyTags.length == 0) {
+      if (tags.length == 0) {
+        filteredByName.filter(q => q.tags.contains(defaultTag))
+      } else if (tags.sameElements(Array(allTag))) {
         filteredByName
       } else {
-        val tagsSet = onlyTags.toSet
+        val tagsSet = tags.toSet
         filteredByName.filter { q =>
           tagsSet.exists(q.tags.contains(_))
         }
