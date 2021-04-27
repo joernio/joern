@@ -73,6 +73,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .name(name)
       .fullName(fullName)
       .filename(fileName)
+      .isExternal(false)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(methodNode)

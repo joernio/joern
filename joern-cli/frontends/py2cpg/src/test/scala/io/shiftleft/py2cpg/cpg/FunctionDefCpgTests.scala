@@ -19,6 +19,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       methodNode.name shouldBe "func"
       methodNode.fullName shouldBe "test.py:<module>.func"
       methodNode.filename shouldBe "test.py"
+      methodNode.isExternal shouldBe false
       methodNode.lineNumber shouldBe Some(1)
     }
 
