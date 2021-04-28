@@ -14,7 +14,7 @@ import io.shiftleft.joern.Scan.{allTag, defaultTag}
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.81"
+  val defaultDbVersion: String = "0.0.83"
 }
 
 case class JoernScanConfig(src: String = "",
