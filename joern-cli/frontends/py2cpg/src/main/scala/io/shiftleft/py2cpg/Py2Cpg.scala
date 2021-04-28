@@ -31,8 +31,6 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
 
     new CodeToCpg(outputCpg, inputProviders, keyPool).createAndApply()
 
-    // We dont need keys for the CFG pass. Thus such an empty key pool is enough.
-    val cfgKeyPool = new IntervalKeyPool(0, 0)
-    new CfgCreationPass(outputCpg, cfgKeyPool).createAndApply()
+    new CfgCreationPass(outputCpg).createAndApply()
   }
 }
