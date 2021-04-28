@@ -25,6 +25,33 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     result
   }
 
+  protected def createTransformedImport(from: String,
+                                      names: Iterable[ast.Alias],
+                                      lineAndCol: LineAndColumn): nodes.NewNode = {
+    val importAssignNodes =
+      names.map { alias =>
+        val importedAsIdentifierName = alias.asName.getOrElse(alias.name)
+        val importAssignLhsIdentifierNode =
+          createIdentifierNode(importedAsIdentifierName, Store, lineAndCol)
+
+        val importCallNode = createCall(createIdentifierNode("import", Load, lineAndCol),
+          lineAndCol,
+          nodeBuilder.stringLiteralNode(from, lineAndCol),
+          nodeBuilder.stringLiteralNode(alias.name, lineAndCol),
+        )
+
+        val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
+        assignNode
+      }
+
+    if (importAssignNodes.size > 1) {
+      createBlock(importAssignNodes, lineAndCol)
+    } else {
+      // Empty importAssignNodes cannot happen.
+      importAssignNodes.head
+    }
+  }
+
   // Used for assign statements, for loop target assignment and
   // for comprehension target assignment.
   // TODO handle Starred target
@@ -263,6 +290,28 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
       createInstanceCall(receiverNode, x(), lineAndColumn, argumentNodes: _*)
     }
+  }
+
+  // If x may have side effects we lower as follows: x.y(<args>) =>
+  // {
+  //   tmp = x
+  //   CALL(recv = tmp.y, inst = tmp, args=<args>)
+  // }
+  protected def createXDotYCallSideEffectSafe(x: nodes.NewNode,
+                                              y: String,
+                                              xMayHaveSideEffects: Boolean,
+                                              lineAndColumn: LineAndColumn,
+                                              argumentNodes: nodes.NewNode*): nodes.NewNode = {
+    val tmpVarName = getUnusedName()
+    val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x, lineAndColumn)
+    val receiverNode =
+      createFieldAccess(
+        createIdentifierNode(tmpVarName, Load, lineAndColumn),
+        y,
+        lineAndColumn)
+    val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
+    val instanceCallNode = createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
+    createBlock(tmpAssignCall::instanceCallNode::Nil, lineAndColumn)
   }
 
   protected def createNAryOperatorCall(

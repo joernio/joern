@@ -103,8 +103,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.Raise => unhandled(node)
       case node: ast.Try => convert(node)
       case node: ast.Assert => convert(node)
-      case node: ast.Import => unhandled(node)
-      case node: ast.ImportFrom => unhandled(node)
+      case node: ast.Import => convert(node)
+      case node: ast.ImportFrom => convert(node)
       case node: ast.Global => convert(node)
       case node: ast.Nonlocal => convert(node)
       case node: ast.Expr => convert(node)
@@ -497,9 +497,38 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     callNode
   }
 
-  def convert(importStmt: ast.Import): NewNode = ???
+  // Lowering of import x:
+  //   x = import("", "x")
+  // Lowering of import x as y:
+  //   y = import("", "x")
+  // Lowering of import x, y:
+  //   {
+  //     x = import("", "x")
+  //     y = import("", "y")
+  //   }
+  def convert(importStmt: ast.Import): NewNode = {
+    createTransformedImport("", importStmt.names, lineAndColOf(importStmt))
+  }
 
-  def convert(importFrom: ast.ImportFrom): NewNode = ???
+  // Lowering of from x import y:
+  //   y = import("x", "y")
+  // Lowering of from x import y as z:
+  //   z = import("x", "y")
+  // Lowering of from x import y, z:
+  //   {
+  //     y = import("x", "y")
+  //     z = import("x", "z")
+  //   }
+  def convert(importFrom: ast.ImportFrom): NewNode = {
+    var moduleName = ""
+
+    for (i <- 0 until importFrom.level) {
+      moduleName = moduleName.appended('.')
+    }
+    moduleName += importFrom.module.getOrElse("")
+
+    createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
+  }
 
   def convert(global: ast.Global): NewNode = {
     global.names.foreach(contextStack.addGlobalVariable)
