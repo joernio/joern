@@ -25,7 +25,7 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
     val auxKeyPool = new IntervalKeyPool(1, 100000)
     val keyPool = new IntervalKeyPool(100000, Long.MaxValue)
 
-    nodeBuilder.metaNode(Languages.PYTHON, version = "")
+    nodeBuilder.metaNode(Languages.FUZZY_TEST_LANG, version = "")
 
     DiffGraph.Applier.applyDiff(diffGraph.build, outputCpg, keyPool = Some(auxKeyPool))
 
