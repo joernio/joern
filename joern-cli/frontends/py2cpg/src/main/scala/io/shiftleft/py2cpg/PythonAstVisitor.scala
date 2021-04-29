@@ -62,7 +62,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         "<module>",
         methodFullName,
         (_: nodes.NewMethod) => (),
-        body = module.stmts,
+        bodyProvider = () => module.stmts.map(convert),
         decoratorList = Nil,
         returns = None,
         isAsync = false,
@@ -121,7 +121,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val methodRefNode = createMethodAndMethodRef(
       functionDef.name,
       createParameterProcessingFunction(functionDef.args),
-      functionDef.body,
+      () => functionDef.body.map(convert),
       functionDef.decorator_list,
       functionDef.returns,
       isAsync = false,
@@ -135,7 +135,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val methodRefNode = createMethodAndMethodRef(
       functionDef.name,
       createParameterProcessingFunction(functionDef.args),
-      functionDef.body,
+      () => functionDef.body.map(convert),
       functionDef.decorator_list,
       functionDef.returns,
       isAsync = true,
@@ -168,7 +168,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   private def createMethodAndMethodRef(
       methodName: String,
       parameterProcessing: nodes.NewMethod => Unit,
-      body: Iterable[ast.istmt],
+      bodyProvider: () => Iterable[nodes.NewNode],
       decoratorList: Iterable[ast.iexpr],
       returns: Option[ast.iexpr],
       isAsync: Boolean,
@@ -183,7 +183,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         methodName,
         methodFullName,
         parameterProcessing,
-        body,
+        bodyProvider,
         decoratorList,
         returns,
         isAsync = true,
@@ -204,7 +204,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       name: String,
       fullName: String,
       parameterProcessing: nodes.NewMethod => Unit,
-      body: Iterable[ast.istmt],
+      // It is important that the nodes returned by bodyProvider are created
+      // during the function invocation and not in advance. Because only
+      // than the context information is correct
+      bodyProvider: () => Iterable[nodes.NewNode],
       decoratorList: Iterable[ast.iexpr],
       returns: Option[ast.iexpr],
       isAsync: Boolean,
@@ -228,7 +231,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
 
     val bodyOrder = new AutoIncIndex(1)
-    body.map(convert).foreach { bodyStmt =>
+    bodyProvider().foreach { bodyStmt =>
       edgeBuilder.astEdge(bodyStmt, blockNode, bodyOrder.getAndInc)
     }
 
@@ -679,7 +682,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createMethodAndMethodRef(
       "<lambda>",
       createParameterProcessingFunction(lambda.args),
-      Iterable.single(new ast.Return(lambda.body, lambda.attributeProvider)),
+      () => Iterable.single(convert(new ast.Return(lambda.body, lambda.attributeProvider))),
       decoratorList = Nil,
       returns = None,
       isAsync = false,
