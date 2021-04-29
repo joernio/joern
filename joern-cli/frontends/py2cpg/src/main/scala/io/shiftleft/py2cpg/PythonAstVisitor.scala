@@ -1,6 +1,16 @@
 package io.shiftleft.py2cpg
 
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+
+object MethodParameters {
+  def empty(): MethodParameters = {
+    new MethodParameters(Nil, Nil)
+  }
+}
+case class MethodParameters(posOnly: Iterable[nodes.NewMethodParameterIn],
+                            normal: Iterable[nodes.NewMethodParameterIn])
+
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Load, MemoryOperationCalculator, Store}
@@ -61,7 +71,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createMethod(
         "<module>",
         methodFullName,
-        (_: nodes.NewMethod) => (),
+        parameterProvider = () => MethodParameters.empty(),
         bodyProvider = () => module.stmts.map(convert),
         decoratorList = Nil,
         returns = None,
@@ -144,35 +154,21 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createAssignment(methodIdentifierNode, methodRefNode, lineAndColOf(functionDef))
   }
 
-  private def createParameterProcessingFunction(
-      parameters: ast.Arguments
-  )(methodNode: nodes.NewMethod): Unit = {
-    val parameterOrder = if (contextStack.isClassContext) {
-      new AutoIncIndex(0)
-    } else {
-      new AutoIncIndex(1)
-    }
-    parameters.posonlyargs.map(convert).foreach { parameterNode =>
-      contextStack.addParameter(parameterNode.asInstanceOf[nodes.NewMethodParameterIn])
-      edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
-    }
-    parameters.args.map(convert).foreach { parameterNode =>
-      contextStack.addParameter(parameterNode.asInstanceOf[nodes.NewMethodParameterIn])
-      edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
-    }
+  private def createParameterProcessingFunction(parameters: ast.Arguments): () => MethodParameters = {
     // TODO implement non position arguments and vararg.
+    () => new MethodParameters(parameters.posonlyargs.map(convert), parameters.args.map(convert))
   }
 
   // TODO handle decoratorList
   // TODO handle returns
   private def createMethodAndMethodRef(
-      methodName: String,
-      parameterProcessing: nodes.NewMethod => Unit,
-      bodyProvider: () => Iterable[nodes.NewNode],
-      decoratorList: Iterable[ast.iexpr],
-      returns: Option[ast.iexpr],
-      isAsync: Boolean,
-      lineAndColumn: LineAndColumn
+                                        methodName: String,
+                                        parameterProvider: () => MethodParameters,
+                                        bodyProvider: () => Iterable[nodes.NewNode],
+                                        decoratorList: Iterable[ast.iexpr],
+                                        returns: Option[ast.iexpr],
+                                        isAsync: Boolean,
+                                        lineAndColumn: LineAndColumn
   ): nodes.NewMethodRef = {
     val methodFullName = calcMethodFullNameFromContext(methodName)
 
@@ -182,7 +178,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       createMethod(
         methodName,
         methodFullName,
-        parameterProcessing,
+        parameterProvider,
         bodyProvider,
         decoratorList,
         returns,
@@ -200,19 +196,19 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     methodRefNode
   }
 
+  // It is important that the nodes returned by all provider function are created
+  // during the function invocation and not in advance. Because only
+  // than the context information is correct.
   private def createMethod(
-      name: String,
-      fullName: String,
-      parameterProcessing: nodes.NewMethod => Unit,
-      // It is important that the nodes returned by bodyProvider are created
-      // during the function invocation and not in advance. Because only
-      // than the context information is correct
-      bodyProvider: () => Iterable[nodes.NewNode],
-      decoratorList: Iterable[ast.iexpr],
-      returns: Option[ast.iexpr],
-      isAsync: Boolean,
-      methodRefNode: Option[nodes.NewMethodRef],
-      lineAndColumn: LineAndColumn
+                            name: String,
+                            fullName: String,
+                            parameterProvider: () => MethodParameters,
+                            bodyProvider: () => Iterable[nodes.NewNode],
+                            decoratorList: Iterable[ast.iexpr],
+                            returns: Option[ast.iexpr],
+                            isAsync: Boolean,
+                            methodRefNode: Option[nodes.NewMethodRef],
+                            lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, fileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -225,7 +221,21 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val virtualModifierNode = nodeBuilder.modifierNode(ModifierTypes.VIRTUAL)
     edgeBuilder.astEdge(virtualModifierNode, methodNode, 0)
 
-    parameterProcessing(methodNode)
+    val parameterOrder = if (contextStack.isClassContext) {
+      new AutoIncIndex(0)
+    } else {
+      new AutoIncIndex(1)
+    }
+    val methodParameter = parameterProvider()
+
+    methodParameter.posOnly.foreach { parameterNode =>
+      contextStack.addParameter(parameterNode)
+      edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
+    }
+    methodParameter.normal.foreach { parameterNode =>
+      contextStack.addParameter(parameterNode)
+      edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
+    }
 
     val methodReturnNode = nodeBuilder.methodReturnNode(lineAndColumn)
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
@@ -1220,7 +1230,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     blockNode
   }
 
-  def convert(arg: ast.Arg): NewNode = {
+  def convert(arg: ast.Arg): nodes.NewMethodParameterIn = {
     nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
   }
 
