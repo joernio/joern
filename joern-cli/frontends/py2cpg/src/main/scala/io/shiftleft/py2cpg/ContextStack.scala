@@ -346,7 +346,10 @@ class ContextStack {
   }
 
   def isClassContext: Boolean = {
-    stack.head.isInstanceOf[ClassContext]
+    val stackTail = stack.tail
+    stackTail.nonEmpty &&
+      (stackTail.head.isInstanceOf[ClassContext] ||
+        stackTail.head.asInstanceOf[MethodContext].name.endsWith("<body>"))
   }
 
 }

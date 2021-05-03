@@ -314,6 +314,24 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     createBlock(tmpAssignCall::instanceCallNode::Nil, lineAndColumn)
   }
 
+  protected def createStaticCall(name: String,
+                                 methodFullName: String,
+                                 lineAndColumn: LineAndColumn,
+                                 argumentNodes: nodes.NewNode*
+                                ): nodes.NewNode = {
+    val code = name + "(" + argumentNodes.map(codeOf).mkString(",") + ")"
+    val callNode = nodeBuilder.callNode(
+      code,
+      methodFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 0, argumentNodes)
+
+    callNode
+  }
+
   protected def createNAryOperatorCall(
       opCodeAndFullName: () => (String, String),
       operands: Iterable[nodes.NewNode],
@@ -463,6 +481,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  protected def createTypeRef(typeName: String,
+                              typeFullName: String,
+                              lineAndColumn: LineAndColumn,
+                             ): nodes.NewTypeRef = {
+    nodeBuilder.typeRefNode("class " + typeName + "(...)", typeFullName, lineAndColumn)
+  }
+
   protected def createBinding(
       methodNode: nodes.NewMethod,
       typeDeclNode: nodes.NewTypeDecl
@@ -472,6 +497,22 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     edgeBuilder.refEdge(methodNode, bindingNode)
 
     bindingNode
+  }
+
+  protected def createReturn(returnExprOption: Option[nodes.NewNode],
+                             lineAndColumn: LineAndColumn,
+                            ): nodes.NewReturn = {
+    val code =
+      returnExprOption match {
+        case Some(returnExpr) =>
+          "return " + codeOf(returnExpr)
+        case None =>
+          "return"
+      }
+    val returnNode = nodeBuilder.returnNode(code, lineAndColumn)
+    returnExprOption.foreach { returnExpr => addAstChildrenAsArguments(returnNode, 1, returnExpr)}
+
+    returnNode
   }
 
   protected def addAstChildNodes(

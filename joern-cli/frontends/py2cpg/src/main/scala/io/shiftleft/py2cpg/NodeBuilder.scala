@@ -49,13 +49,27 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(typeDeclNode)
   }
 
-  def typeRefNode(code: String, lineAndColumn: LineAndColumn): nodes.NewTypeRef = {
+  def typeRefNode(code: String,
+                  typeFullName: String,
+                  lineAndColumn: LineAndColumn): nodes.NewTypeRef = {
     val typeRefNode = nodes
       .NewTypeRef()
       .code(code)
+      .typeFullName(typeFullName)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(typeRefNode)
+  }
+
+  def memberNode(name: String,
+                 dynamicTypeHintFullName: String,
+                ): nodes.NewMember = {
+    val memberNode = nodes.NewMember()
+      .code(name)
+      .name(name)
+      .typeFullName(Constants.ANY)
+      .dynamicTypeHintFullName(dynamicTypeHintFullName :: Nil)
+    addNodeToDiff(memberNode)
   }
 
   def bindingNode(): nodes.NewBinding = {
@@ -121,12 +135,14 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(methodParameterNode)
   }
 
-  def methodReturnNode(lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
+  def methodReturnNode(dynamicTypeHintFullName: Option[String],
+                       lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
     val methodReturnNode = nodes
       .NewMethodReturn()
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .typeFullName(Constants.ANY)
+      .dynamicTypeHintFullName(dynamicTypeHintFullName.toList)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
 
