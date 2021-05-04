@@ -126,8 +126,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.AsyncFor         => convert(node)
       case node: ast.While            => convert(node)
       case node: ast.If               => convert(node)
-      case node: ast.With             => unhandled(node)
-      case node: ast.AsyncWith        => unhandled(node)
+      case node: ast.With             => convert(node)
+      case node: ast.AsyncWith        => convert(node)
       case node: ast.Raise            => unhandled(node)
       case node: ast.Try              => convert(node)
       case node: ast.Assert           => convert(node)
@@ -870,9 +870,42 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     controlStructureNode
   }
 
-  def convert(withStmt: ast.With): NewNode = ???
+  def convert(withStmt: ast.With): NewNode = {
+    convertWith("with ...", withStmt.getClass.toString, lineAndColOf(withStmt), withStmt.items, withStmt.body)
+  }
 
-  def convert(withStmt: ast.AsyncWith): NewNode = ???
+  def convert(withStmt: ast.AsyncWith): NewNode = {
+    convertWith("with ...", withStmt.getClass.toString, lineAndColOf(withStmt), withStmt.items, withStmt.body)
+  }
+
+  // TODO Lower into a representation usefull for data flow tracking.
+  // The currently lowering is only here to have some sort of AST representation to
+  // avoid squashing all the content of a "with" statement into a single UNKNOWN nodes
+  // code property.
+  private def convertWith(code: String,
+                          parserTypeName: String,
+                          lineAndColumn: LineAndColumn,
+                          withItems: Iterable[ast.Withitem],
+                          body: Iterable[ast.istmt]): nodes.NewNode = {
+    val itemNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
+
+    withItems.foreach { withItem =>
+      itemNodes.append(convert(withItem.context_expr))
+      withItem.optional_vars.foreach { varNode =>
+        itemNodes.append(convert(varNode))
+      }
+    }
+
+    val itemsBlock = createBlock(itemNodes, lineAndColumn)
+
+    val bodyNodes = body.map(convert)
+    val bodyBlock = createBlock(bodyNodes, lineAndColumn)
+
+    val withNode = nodeBuilder.unknownNode(code, parserTypeName, lineAndColumn)
+    addAstChildNodes(withNode, 1, itemsBlock, bodyBlock)
+
+    withNode
+  }
 
   def convert(raise: ast.Raise): NewNode = ???
 
@@ -1653,8 +1686,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(keyword: ast.Keyword): NewNode = ???
 
   def convert(alias: ast.Alias): NewNode = ???
-
-  def convert(withItem: ast.Withitem): NewNode = ???
 
   def convert(typeIgnore: ast.TypeIgnore): NewNode = ???
 
