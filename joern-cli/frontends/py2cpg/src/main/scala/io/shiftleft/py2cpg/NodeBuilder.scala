@@ -37,9 +37,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(typeNode)
   }
 
-  def typeDeclNode(name: String,
-                   fullName: String,
-                   fileName: String): nodes.NewTypeDecl = {
+  def typeDeclNode(name: String, fullName: String, fileName: String): nodes.NewTypeDecl = {
     val typeDeclNode = nodes
       .NewTypeDecl()
       .name(name)
@@ -49,9 +47,11 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(typeDeclNode)
   }
 
-  def typeRefNode(code: String,
-                  typeFullName: String,
-                  lineAndColumn: LineAndColumn): nodes.NewTypeRef = {
+  def typeRefNode(
+      code: String,
+      typeFullName: String,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewTypeRef = {
     val typeRefNode = nodes
       .NewTypeRef()
       .code(code)
@@ -61,10 +61,9 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(typeRefNode)
   }
 
-  def memberNode(name: String,
-                 dynamicTypeHintFullName: String,
-                ): nodes.NewMember = {
-    val memberNode = nodes.NewMember()
+  def memberNode(name: String, dynamicTypeHintFullName: String): nodes.NewMember = {
+    val memberNode = nodes
+      .NewMember()
       .code(name)
       .name(name)
       .typeFullName(Constants.ANY)
@@ -78,10 +77,12 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(bindingNode)
   }
 
-  def methodNode(name: String,
-                 fullName: String,
-                 fileName: String,
-                 lineAndColumn: LineAndColumn): nodes.NewMethod = {
+  def methodNode(
+      name: String,
+      fullName: String,
+      fileName: String,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethod = {
     val methodNode = nodes
       .NewMethod()
       .name(name)
@@ -135,8 +136,10 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     addNodeToDiff(methodParameterNode)
   }
 
-  def methodReturnNode(dynamicTypeHintFullName: Option[String],
-                       lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
+  def methodReturnNode(
+      dynamicTypeHintFullName: Option[String],
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethodReturn = {
     val methodReturnNode = nodes
       .NewMethodReturn()
       .code("RET")

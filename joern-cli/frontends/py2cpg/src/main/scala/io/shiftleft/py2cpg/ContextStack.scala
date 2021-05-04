@@ -27,25 +27,22 @@ class ContextStack {
   }
 
   private class MethodContext(
-                               val name: String,
-                               val astParent: nodes.NewNode,
-                               val order: AutoIncIndex,
-                               val methodBlockNode: Option[nodes.NewBlock] = None,
-                               val methodRefNode: Option[nodes.NewMethodRef] = None,
-                               val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-                               val globalVariables: mutable.Set[String] = mutable.Set.empty,
-                               val nonLocalVariables: mutable.Set[String] = mutable.Set.empty
-                             ) extends Context {
-
-  }
+      val name: String,
+      val astParent: nodes.NewNode,
+      val order: AutoIncIndex,
+      val methodBlockNode: Option[nodes.NewBlock] = None,
+      val methodRefNode: Option[nodes.NewMethodRef] = None,
+      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+      val globalVariables: mutable.Set[String] = mutable.Set.empty,
+      val nonLocalVariables: mutable.Set[String] = mutable.Set.empty
+  ) extends Context {}
 
   private class ClassContext(
-                              val name: String,
-                              val astParent: nodes.NewNode,
-                              val order: AutoIncIndex,
-                              val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-                            ) extends Context {
-  }
+      val name: String,
+      val astParent: nodes.NewNode,
+      val order: AutoIncIndex,
+      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty
+  ) extends Context {}
 
   // Used to represent comprehension variable and exception
   // handler context.
@@ -58,12 +55,10 @@ class ContextStack {
   // except e as x:
   //   pass
   private class SpecialBlockContext(
-                                     val astParent: nodes.NewNode,
-                                     val order: AutoIncIndex,
-                                     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-                                   ) extends Context {
-
-  }
+      val astParent: nodes.NewNode,
+      val order: AutoIncIndex,
+      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty
+  ) extends Context {}
 
   private case class VariableReference(
       identifier: nodes.NewIdentifier,
@@ -184,8 +179,10 @@ class ContextStack {
       } else {
         val enclosingMethodContext = findEnclosingMethodContext(contextStack)
 
-        if (enclosingMethodContext.globalVariables.contains(name) ||
-          enclosingMethodContext.nonLocalVariables.contains(name)) {
+        if (
+          enclosingMethodContext.globalVariables.contains(name) ||
+          enclosingMethodContext.nonLocalVariables.contains(name)
+        ) {
           linkLocalOrCapturing(
             createLocal,
             createClosureBinding,
@@ -243,12 +240,17 @@ class ContextStack {
 
       context match {
         case methodContext: MethodContext =>
-          val closureBindingId = methodContext.astParent.asInstanceOf[NewMethod].fullName + ":" + name
+          val closureBindingId =
+            methodContext.astParent.asInstanceOf[NewMethod].fullName + ":" + name
 
           if (!contextHasVariable) {
             if (context != moduleMethodContext.get) {
               val localNode = createLocal(name, Some(closureBindingId))
-              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              createAstEdge(
+                localNode,
+                methodContext.methodBlockNode.get,
+                methodContext.order.getAndInc
+              )
               methodContext.variables.put(name, localNode)
             } else {
               // When we could not even find a matching variable in the module context we get
@@ -257,7 +259,11 @@ class ContextStack {
               // For example this happens when there are wildcard imports directly into the
               // modules namespace.
               val localNode = createLocal(name, None)
-              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              createAstEdge(
+                localNode,
+                methodContext.methodBlockNode.get,
+                methodContext.order.getAndInc
+              )
               methodContext.variables.put(name, localNode)
             }
           }
@@ -348,8 +354,8 @@ class ContextStack {
   def isClassContext: Boolean = {
     val stackTail = stack.tail
     stackTail.nonEmpty &&
-      (stackTail.head.isInstanceOf[ClassContext] ||
-        stackTail.head.asInstanceOf[MethodContext].name.endsWith("<body>"))
+    (stackTail.head.isInstanceOf[ClassContext] ||
+      stackTail.head.asInstanceOf[MethodContext].name.endsWith("<body>"))
   }
 
 }

@@ -25,19 +25,22 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     result
   }
 
-  protected def createTransformedImport(from: String,
-                                      names: Iterable[ast.Alias],
-                                      lineAndCol: LineAndColumn): nodes.NewNode = {
+  protected def createTransformedImport(
+      from: String,
+      names: Iterable[ast.Alias],
+      lineAndCol: LineAndColumn
+  ): nodes.NewNode = {
     val importAssignNodes =
       names.map { alias =>
         val importedAsIdentifierName = alias.asName.getOrElse(alias.name)
         val importAssignLhsIdentifierNode =
           createIdentifierNode(importedAsIdentifierName, Store, lineAndCol)
 
-        val importCallNode = createCall(createIdentifierNode("import", Load, lineAndCol),
+        val importCallNode = createCall(
+          createIdentifierNode("import", Load, lineAndCol),
           lineAndCol,
           nodeBuilder.stringLiteralNode(from, lineAndCol),
-          nodeBuilder.stringLiteralNode(alias.name, lineAndCol),
+          nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
         )
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
@@ -55,12 +58,16 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   // Used for assign statements, for loop target assignment and
   // for comprehension target assignment.
   // TODO handle Starred target
-  protected def createValueToTargetsDecomposition(targets: Iterable[ast.iexpr],
-                                                  valueNode: nodes.NewNode,
-                                                  lineAndColumn: LineAndColumn): Iterable[nodes.NewNode] = {
-    if (targets.size == 1 &&
+  protected def createValueToTargetsDecomposition(
+      targets: Iterable[ast.iexpr],
+      valueNode: nodes.NewNode,
+      lineAndColumn: LineAndColumn
+  ): Iterable[nodes.NewNode] = {
+    if (
+      targets.size == 1 &&
       !targets.head.isInstanceOf[ast.Tuple] &&
-      !targets.head.isInstanceOf[ast.List]) {
+      !targets.head.isInstanceOf[ast.List]
+    ) {
       // No lowering or wrapping in a block is required if we have a single target and
       // no decomposition.
       val targetNode = convert(targets.head)
@@ -138,37 +145,43 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     result
   }
 
-  protected def createComprehensionLowering(tmpVariableName: String,
-                                            containerInitAssignNode: nodes.NewNode,
-                                            innerMostLoopNode: nodes.NewNode,
-                                            comprehensions: Iterable[ast.Comprehension],
-                                            lineAndColumn: LineAndColumn): nodes.NewNode = {
+  protected def createComprehensionLowering(
+      tmpVariableName: String,
+      containerInitAssignNode: nodes.NewNode,
+      innerMostLoopNode: nodes.NewNode,
+      comprehensions: Iterable[ast.Comprehension],
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
     val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
 
     // Innermost generator is transformed first and becomes the body of the
     // generator one layer up. The body of the innermost generator is the
     // list comprehensions element expression wrapped in an tmp.append() call.
     val nestedLoopBlockNode =
-    comprehensions.foldRight(innerMostLoopNode) { case (comprehension, loopBodyNode) =>
-      extractComprehensionSpecialVariableNames(comprehension.target).foreach { name =>
-        // For the target names we need to create special scoped variables.
-        val localNode = nodeBuilder.localNode(name.id, None)
-        specialTargetLocals.append(localNode)
-        contextStack.addSpecialVariable(localNode)
+      comprehensions.foldRight(innerMostLoopNode) { case (comprehension, loopBodyNode) =>
+        extractComprehensionSpecialVariableNames(comprehension.target).foreach { name =>
+          // For the target names we need to create special scoped variables.
+          val localNode = nodeBuilder.localNode(name.id, None)
+          specialTargetLocals.append(localNode)
+          contextStack.addSpecialVariable(localNode)
+        }
+        createForLowering(
+          comprehension.target,
+          comprehension.iter,
+          comprehension.ifs,
+          Iterable.single(loopBodyNode),
+          Iterable.empty,
+          comprehension.is_async,
+          lineAndColumn
+        )
       }
-      createForLowering(comprehension.target,
-        comprehension.iter,
-        comprehension.ifs,
-        Iterable.single(loopBodyNode),
-        Iterable.empty,
-        comprehension.is_async,
-        lineAndColumn)
-    }
 
     val returnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
 
-    val blockNode = createBlock(containerInitAssignNode::nestedLoopBlockNode::returnIdentifierNode::Nil,
-      lineAndColumn)
+    val blockNode = createBlock(
+      containerInitAssignNode :: nestedLoopBlockNode :: returnIdentifierNode :: Nil,
+      lineAndColumn
+    )
 
     addAstChildNodes(blockNode, 1, specialTargetLocals)
 
@@ -179,13 +192,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   private def extractComprehensionSpecialVariableNames(target: ast.iexpr): Iterable[ast.Name] = {
     target match {
       case name: ast.Name =>
-        name::Nil
+        name :: Nil
       case starred: ast.Starred =>
         extractComprehensionSpecialVariableNames(starred.value)
       case tuple: ast.Tuple =>
-        tuple.elts.flatMap( extractComprehensionSpecialVariableNames)
+        tuple.elts.flatMap(extractComprehensionSpecialVariableNames)
       case list: ast.List =>
-        list.elts.flatMap( extractComprehensionSpecialVariableNames)
+        list.elts.flatMap(extractComprehensionSpecialVariableNames)
       case _ =>
         Nil
     }
@@ -270,22 +283,22 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   //   tmp = x
   //   CALL(recv = tmp.y, inst = tmp, args=<args>)
   // }
-  protected def createXDotYCall(x: () => nodes.NewNode,
-                                y: String,
-                                xMayHaveSideEffects: Boolean,
-                                lineAndColumn: LineAndColumn,
-                                argumentNodes: nodes.NewNode*): nodes.NewNode = {
+  protected def createXDotYCall(
+      x: () => nodes.NewNode,
+      y: String,
+      xMayHaveSideEffects: Boolean,
+      lineAndColumn: LineAndColumn,
+      argumentNodes: nodes.NewNode*
+  ): nodes.NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName = getUnusedName()
       val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x(), lineAndColumn)
       val receiverNode =
-        createFieldAccess(
-          createIdentifierNode(tmpVarName, Load, lineAndColumn),
-          y,
-          lineAndColumn)
+        createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
-      val instanceCallNode = createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
-      createBlock(tmpAssignCall::instanceCallNode::Nil, lineAndColumn)
+      val instanceCallNode =
+        createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
+      createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
       createInstanceCall(receiverNode, x(), lineAndColumn, argumentNodes: _*)
@@ -297,28 +310,29 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   //   tmp = x
   //   CALL(recv = tmp.y, inst = tmp, args=<args>)
   // }
-  protected def createXDotYCallSideEffectSafe(x: nodes.NewNode,
-                                              y: String,
-                                              xMayHaveSideEffects: Boolean,
-                                              lineAndColumn: LineAndColumn,
-                                              argumentNodes: nodes.NewNode*): nodes.NewNode = {
+  protected def createXDotYCallSideEffectSafe(
+      x: nodes.NewNode,
+      y: String,
+      xMayHaveSideEffects: Boolean,
+      lineAndColumn: LineAndColumn,
+      argumentNodes: nodes.NewNode*
+  ): nodes.NewNode = {
     val tmpVarName = getUnusedName()
     val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x, lineAndColumn)
     val receiverNode =
-      createFieldAccess(
-        createIdentifierNode(tmpVarName, Load, lineAndColumn),
-        y,
-        lineAndColumn)
+      createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
     val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
-    val instanceCallNode = createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
-    createBlock(tmpAssignCall::instanceCallNode::Nil, lineAndColumn)
+    val instanceCallNode =
+      createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
+    createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
   }
 
-  protected def createStaticCall(name: String,
-                                 methodFullName: String,
-                                 lineAndColumn: LineAndColumn,
-                                 argumentNodes: nodes.NewNode*
-                                ): nodes.NewNode = {
+  protected def createStaticCall(
+      name: String,
+      methodFullName: String,
+      lineAndColumn: LineAndColumn,
+      argumentNodes: nodes.NewNode*
+  ): nodes.NewNode = {
     val code = name + "(" + argumentNodes.map(codeOf).mkString(",") + ")"
     val callNode = nodeBuilder.callNode(
       code,
@@ -390,9 +404,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
-  protected def createAssignmentToIdentifier(identifierName: String,
-                                             rhsNode: nodes.NewNode,
-                                             lineAndColumn: LineAndColumn): nodes.NewNode = {
+  protected def createAssignmentToIdentifier(
+      identifierName: String,
+      rhsNode: nodes.NewNode,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
     val identifierNode = createIdentifierNode(identifierName, Store, lineAndColumn)
     createAssignment(identifierNode, rhsNode, lineAndColumn)
   }
@@ -420,9 +436,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   // Always use this method to create an identifier node instead of
   // nodeBuilder.identifierNode() directly to avoid missing to add
   // the variable reference.
-  protected def createIdentifierNode(name: String,
-                                     memOp: MemoryOperation,
-                                     lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
+  protected def createIdentifierNode(
+      name: String,
+      memOp: MemoryOperation,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewIdentifier = {
     val identifierNode = nodeBuilder.identifierNode(name, lineAndColumn)
     contextStack.addVariableReference(identifierNode, memOp)
     identifierNode
@@ -481,10 +499,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
-  protected def createTypeRef(typeName: String,
-                              typeFullName: String,
-                              lineAndColumn: LineAndColumn,
-                             ): nodes.NewTypeRef = {
+  protected def createTypeRef(
+      typeName: String,
+      typeFullName: String,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewTypeRef = {
     nodeBuilder.typeRefNode("class " + typeName + "(...)", typeFullName, lineAndColumn)
   }
 
@@ -499,9 +518,10 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     bindingNode
   }
 
-  protected def createReturn(returnExprOption: Option[nodes.NewNode],
-                             lineAndColumn: LineAndColumn,
-                            ): nodes.NewReturn = {
+  protected def createReturn(
+      returnExprOption: Option[nodes.NewNode],
+      lineAndColumn: LineAndColumn
+  ): nodes.NewReturn = {
     val code =
       returnExprOption match {
         case Some(returnExpr) =>
@@ -510,7 +530,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
           "return"
       }
     val returnNode = nodeBuilder.returnNode(code, lineAndColumn)
-    returnExprOption.foreach { returnExpr => addAstChildrenAsArguments(returnNode, 1, returnExpr)}
+    returnExprOption.foreach { returnExpr => addAstChildrenAsArguments(returnNode, 1, returnExpr) }
 
     returnNode
   }

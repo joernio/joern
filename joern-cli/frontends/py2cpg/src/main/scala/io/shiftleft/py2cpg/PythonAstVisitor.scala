@@ -8,13 +8,25 @@ object MethodParameters {
     new MethodParameters(0, Nil)
   }
 }
-case class MethodParameters(posStartIndex: Int,
-                            positionalParams: Iterable[nodes.NewMethodParameterIn])
+case class MethodParameters(
+    posStartIndex: Int,
+    positionalParams: Iterable[nodes.NewMethodParameterIn]
+)
 
-
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  ModifierTypes,
+  Operators,
+  nodes
+}
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Load, MemoryOperationCalculator, Store}
+import io.shiftleft.py2cpg.memop.{
+  AstNodeToMemoryOperationMap,
+  Load,
+  MemoryOperationCalculator,
+  Store
+}
 import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
@@ -102,41 +114,45 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(stmt: ast.istmt): NewNode = {
     stmt match {
-      case node: ast.FunctionDef => convert(node)
+      case node: ast.FunctionDef      => convert(node)
       case node: ast.AsyncFunctionDef => convert(node)
-      case node: ast.ClassDef => convert(node)
-      case node: ast.Return => convert(node)
-      case node: ast.Delete => convert(node)
-      case node: ast.Assign => convert(node)
-      case node: ast.AnnAssign => convert(node)
-      case node: ast.AugAssign => convert(node)
-      case node: ast.For => convert(node)
-      case node: ast.AsyncFor => convert(node)
-      case node: ast.While => convert(node)
-      case node: ast.If => convert(node)
-      case node: ast.With => unhandled(node)
-      case node: ast.AsyncWith => unhandled(node)
-      case node: ast.Raise => unhandled(node)
-      case node: ast.Try => convert(node)
-      case node: ast.Assert => convert(node)
-      case node: ast.Import => convert(node)
-      case node: ast.ImportFrom => convert(node)
-      case node: ast.Global => convert(node)
-      case node: ast.Nonlocal => convert(node)
-      case node: ast.Expr => convert(node)
-      case node: ast.Pass => convert(node)
-      case node: ast.Break => convert(node)
-      case node: ast.Continue => convert(node)
-      case node: ast.RaiseP2 => unhandled(node)
-      case node: ast.ErrorStatement => convert(node)
+      case node: ast.ClassDef         => convert(node)
+      case node: ast.Return           => convert(node)
+      case node: ast.Delete           => convert(node)
+      case node: ast.Assign           => convert(node)
+      case node: ast.AnnAssign        => convert(node)
+      case node: ast.AugAssign        => convert(node)
+      case node: ast.For              => convert(node)
+      case node: ast.AsyncFor         => convert(node)
+      case node: ast.While            => convert(node)
+      case node: ast.If               => convert(node)
+      case node: ast.With             => unhandled(node)
+      case node: ast.AsyncWith        => unhandled(node)
+      case node: ast.Raise            => unhandled(node)
+      case node: ast.Try              => convert(node)
+      case node: ast.Assert           => convert(node)
+      case node: ast.Import           => convert(node)
+      case node: ast.ImportFrom       => convert(node)
+      case node: ast.Global           => convert(node)
+      case node: ast.Nonlocal         => convert(node)
+      case node: ast.Expr             => convert(node)
+      case node: ast.Pass             => convert(node)
+      case node: ast.Break            => convert(node)
+      case node: ast.Continue         => convert(node)
+      case node: ast.RaiseP2          => unhandled(node)
+      case node: ast.ErrorStatement   => convert(node)
     }
   }
 
   def convert(functionDef: ast.FunctionDef): NewNode = {
-    val methodIdentifierNode = createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
+    val methodIdentifierNode =
+      createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       functionDef.name,
-      createParameterProcessingFunction(functionDef.args, isStaticMethod(functionDef.decorator_list)),
+      createParameterProcessingFunction(
+        functionDef.args,
+        isStaticMethod(functionDef.decorator_list)
+      ),
       () => functionDef.body.map(convert),
       functionDef.decorator_list,
       functionDef.returns,
@@ -148,10 +164,14 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(functionDef: ast.AsyncFunctionDef): NewNode = {
-    val methodIdentifierNode = createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
+    val methodIdentifierNode =
+      createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       functionDef.name,
-      createParameterProcessingFunction(functionDef.args, isStaticMethod(functionDef.decorator_list)),
+      createParameterProcessingFunction(
+        functionDef.args,
+        isStaticMethod(functionDef.decorator_list)
+      ),
       () => functionDef.body.map(convert),
       functionDef.decorator_list,
       functionDef.returns,
@@ -165,32 +185,39 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   private def isStaticMethod(decoratorList: Iterable[ast.iexpr]): Boolean = {
     decoratorList.exists {
       case name: ast.Name if name.id == "staticmethod" => true
-      case _ => false
+      case _                                           => false
     }
   }
 
-  private def createParameterProcessingFunction(parameters: ast.Arguments,
-                                                isStatic: Boolean): () => MethodParameters = {
+  private def createParameterProcessingFunction(
+      parameters: ast.Arguments,
+      isStatic: Boolean
+  ): () => MethodParameters = {
     val startIndex = if (contextStack.isClassContext && !isStatic) 0 else 1
 
     // TODO implement non position arguments and vararg.
-    () => new MethodParameters(startIndex, parameters.posonlyargs.map(convert) ++ parameters.args.map(convert))
+    () =>
+      new MethodParameters(
+        startIndex,
+        parameters.posonlyargs.map(convert) ++ parameters.args.map(convert)
+      )
   }
 
   // TODO handle decoratorList
   // TODO handle returns
   private def createMethodAndMethodRef(
-                                        methodName: String,
-                                        parameterProvider: () => MethodParameters,
-                                        bodyProvider: () => Iterable[nodes.NewNode],
-                                        decoratorList: Iterable[ast.iexpr],
-                                        returns: Option[ast.iexpr],
-                                        isAsync: Boolean,
-                                        lineAndColumn: LineAndColumn
+      methodName: String,
+      parameterProvider: () => MethodParameters,
+      bodyProvider: () => Iterable[nodes.NewNode],
+      decoratorList: Iterable[ast.iexpr],
+      returns: Option[ast.iexpr],
+      isAsync: Boolean,
+      lineAndColumn: LineAndColumn
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
     val methodFullName = calculateFullNameFromContext(methodName)
 
-    val methodRefNode = nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
+    val methodRefNode =
+      nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
 
     val methodNode =
       createMethod(
@@ -212,16 +239,17 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   // It is important that the nodes returned by all provider function are created
   // during the function invocation and not in advance. Because only
   // than the context information is correct.
-  private def createMethod(name: String,
-                           fullName: String,
-                           parameterProvider: () => MethodParameters,
-                           bodyProvider: () => Iterable[nodes.NewNode],
-                           decoratorList: Iterable[ast.iexpr],
-                           returns: Option[ast.iexpr],
-                           isAsync: Boolean,
-                           methodRefNode: Option[nodes.NewMethodRef],
-                           returnTypeHint: Option[String],
-                           lineAndColumn: LineAndColumn
+  private def createMethod(
+      name: String,
+      fullName: String,
+      parameterProvider: () => MethodParameters,
+      bodyProvider: () => Iterable[nodes.NewNode],
+      decoratorList: Iterable[ast.iexpr],
+      returns: Option[ast.iexpr],
+      isAsync: Boolean,
+      methodRefNode: Option[nodes.NewMethodRef],
+      returnTypeHint: Option[String],
+      lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, fileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -275,7 +303,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val metaTypeDeclFullName = calculateFullNameFromContext(metaTypeDeclName)
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
-    val metaTypeDeclNode = nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName)
+    val metaTypeDeclNode =
+      nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName)
     edgeBuilder.astEdge(metaTypeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
@@ -294,17 +323,23 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // Create call to <body> function and assignment of the meta class object to a identifier named
     // like the class.
     val callToClassBodyFunction = createCall(methodRefNode, lineAndColOf(classDef))
-    val metaTypeRefNode = createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
-    val classIdentifierAssignNode = createAssignmentToIdentifier(classDef.name, metaTypeRefNode, lineAndColOf(classDef))
+    val metaTypeRefNode =
+      createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
+    val classIdentifierAssignNode =
+      createAssignmentToIdentifier(classDef.name, metaTypeRefNode, lineAndColOf(classDef))
 
-    val classBlock = createBlock(callToClassBodyFunction::classIdentifierAssignNode::Nil, lineAndColOf(classDef))
+    val classBlock = createBlock(
+      callToClassBodyFunction :: classIdentifierAssignNode :: Nil,
+      lineAndColOf(classDef)
+    )
 
     // Create type for class instances
     val instanceTypeDeclName = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
 
     val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
-    val instanceTypeDecl = nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName)
+    val instanceTypeDecl =
+      nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName)
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create meta class call handling method and bind it to meta class type.
@@ -314,7 +349,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val initFunctionOption = functions.find(_.name == "__init__")
 
     val positionalInitParamCount =
-      initFunctionOption.map(initFunc => initFunc.args.posonlyargs.size + initFunc.args.args.size).getOrElse(0)
+      initFunctionOption
+        .map(initFunc => initFunc.args.posonlyargs.size + initFunc.args.args.size)
+        .getOrElse(0)
 
     val metaClassCallHandlerMethod = createMetaClassCallHandlerMethod(
       positionalInitParamCount,
@@ -345,9 +382,23 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // parameter.
     classDef.body.foreach {
       case func: ast.FunctionDef =>
-        createMemberBindingsAndAdapter(func, func.name, func.args, func.decorator_list, instanceTypeDecl, metaTypeDeclNode)
+        createMemberBindingsAndAdapter(
+          func,
+          func.name,
+          func.args,
+          func.decorator_list,
+          instanceTypeDecl,
+          metaTypeDeclNode
+        )
       case func: ast.AsyncFunctionDef =>
-        createMemberBindingsAndAdapter(func, func.name, func.args, func.decorator_list, instanceTypeDecl, metaTypeDeclNode)
+        createMemberBindingsAndAdapter(
+          func,
+          func.name,
+          func.args,
+          func.decorator_list,
+          instanceTypeDecl,
+          metaTypeDeclNode
+        )
     }
 
     contextStack.pop()
@@ -355,30 +406,35 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     classBlock
   }
 
-  private def createMemberBindingsAndAdapter(function: ast.istmt,
-                                             functionName: String,
-                                             functionArgs: ast.Arguments,
-                                             functionDecoratorList: Iterable[ast.iexpr],
-                                             instanceTypeDecl: nodes.NewNode,
-                                             metaTypeDecl: nodes.NewNode,
-                                            ): Unit = {
-    val memberForInstance = nodeBuilder.memberNode(functionName, functionDefToMethod.apply(function).fullName)
+  private def createMemberBindingsAndAdapter(
+      function: ast.istmt,
+      functionName: String,
+      functionArgs: ast.Arguments,
+      functionDecoratorList: Iterable[ast.iexpr],
+      instanceTypeDecl: nodes.NewNode,
+      metaTypeDecl: nodes.NewNode
+  ): Unit = {
+    val memberForInstance =
+      nodeBuilder.memberNode(functionName, functionDefToMethod.apply(function).fullName)
     edgeBuilder.astEdge(memberForInstance, instanceTypeDecl, contextStack.order.getAndInc)
 
     val methodForMetaClass =
       if (isStaticMethod(functionDecoratorList)) {
         functionDefToMethod.apply(function)
       } else {
-        createMetaClassAdapterMethod(functionName,
-          functionDefToMethod.apply(function).fullName, functionArgs, lineAndColOf(function))
+        createMetaClassAdapterMethod(
+          functionName,
+          functionDefToMethod.apply(function).fullName,
+          functionArgs,
+          lineAndColOf(function)
+        )
       }
 
     val memberForMeta = nodeBuilder.memberNode(functionName, methodForMetaClass.fullName)
     edgeBuilder.astEdge(memberForMeta, metaTypeDecl, contextStack.order.getAndInc)
   }
 
-  /**
-    * Creates an adapter method which adapts the meta class version of a method to the instance
+  /** Creates an adapter method which adapts the meta class version of a method to the instance
     * class version.
     * Consider class:
     * class MyClass():
@@ -392,11 +448,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     *   return STATIC_CALL(MyClass.func(self, p1))
     * @return
     */
-  private def createMetaClassAdapterMethod(adaptedMethodName: String,
-                                   adaptedMethodFullName: String,
-                                   functionArguments: ast.Arguments,
-                                   lineAndColumn: LineAndColumn,
-                                   ): nodes.NewMethod = {
+  private def createMetaClassAdapterMethod(
+      adaptedMethodName: String,
+      adaptedMethodFullName: String,
+      functionArguments: ast.Arguments,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethod = {
     val adapterMethodName = adaptedMethodName + "<metaClassAdapter>"
     val adapterMethodFullName = calculateFullNameFromContext(adapterMethodName)
 
@@ -404,9 +461,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       adapterMethodName,
       adapterMethodFullName,
       parameterProvider = () => {
-        MethodParameters(0,
+        MethodParameters(
+          0,
           nodeBuilder.methodParameterNode("cls", lineAndColumn) :: Nil ++
-          functionArguments.posonlyargs.map(convert) ++ functionArguments.args.map(convert)
+            functionArguments.posonlyargs.map(convert) ++ functionArguments.args.map(convert)
         )
       },
       bodyProvider = () => {
@@ -417,7 +475,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         functionArguments.args.map { arg =>
           arguments.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
         }
-        val staticCall = createStaticCall(adaptedMethodName, adaptedMethodFullName, lineAndColumn, arguments.toSeq: _*)
+        val staticCall = createStaticCall(
+          adaptedMethodName,
+          adaptedMethodFullName,
+          lineAndColumn,
+          arguments.toSeq: _*
+        )
         val returnNode = createReturn(Some(staticCall), lineAndColumn)
         returnNode :: Nil
       },
@@ -430,8 +493,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     )
   }
 
-  /**
-    * Creates the method which handles a call to the meta class object. This process
+  /** Creates the method which handles a call to the meta class object. This process
     * is also known as creating a new instance object, e.g. obj = MyClass(p1).
     * The purpose of the generated function is to adapt between the special cased
     * instance creation call and a normal call to __new__ (for now <fakeNew>).
@@ -439,12 +501,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     * def <metaClassCallHandler>(p1):
     *   return DYNAMIC_CALL(receiver=TYPE_REF(meta class).<fakeNew>, instance = TYPE_REF(meta class), p1)
     */
-  private def createMetaClassCallHandlerMethod(positionalInitParameterCount: Int,
-                                       metaTypeDeclName: String,
-                                       metaTypeDeclFullName: String,
-                                       instanceTypeDeclFullName: String,
-                                       lineAndColumn: LineAndColumn
-                                      ): nodes.NewMethod = {
+  private def createMetaClassCallHandlerMethod(
+      positionalInitParameterCount: Int,
+      metaTypeDeclName: String,
+      metaTypeDeclFullName: String,
+      instanceTypeDeclFullName: String,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethod = {
     val methodName = "<metaClassCallHandler>"
     val methodFullName = calculateFullNameFromContext(methodName)
 
@@ -466,7 +529,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         }
 
         val fakeNewCall = createInstanceCall(
-          createFieldAccess(createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColumn), "<fakeNew>", lineAndColumn),
+          createFieldAccess(
+            createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColumn),
+            "<fakeNew>",
+            lineAndColumn
+          ),
           createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColumn),
           lineAndColumn,
           argumentIdentifiers.toSeq: _*
@@ -485,8 +552,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     )
   }
 
-  /**
-    * Creates a <fakeNew> method which mimics the behaviour of a default __new__ method
+  /** Creates a <fakeNew> method which mimics the behaviour of a default __new__ method
     * (the one you would get if no implementation is present). The reason we use a fake
     * version of the __new__ method it that we wont be able to correctly track through
     * most custom __new__ implementations as they usually call "super.__init__()" and
@@ -496,8 +562,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     *   cls.__init__(__newIstance, p1)
     *   return __newInstance
     */
-  private def createFakeNewMethod(positionalInitParameterCount: Int,
-                                  lineAndColumn: LineAndColumn): nodes.NewMethod = {
+  private def createFakeNewMethod(
+      positionalInitParameterCount: Int,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewMethod = {
 
     val newMethodName = "<fakeNew>"
     val newMethodStubFullName = calculateFullNameFromContext(newMethodName)
@@ -511,12 +579,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         // which is not passed through but created in __new__.
         // Thus we only iterate [1, positionalInitParameterCount)
         for (i <- 1 until positionalInitParameterCount) {
-           positionalParameters.append(nodeBuilder.methodParameterNode("p" + i, lineAndColumn))
+          positionalParameters.append(nodeBuilder.methodParameterNode("p" + i, lineAndColumn))
         }
         MethodParameters(0, positionalParameters)
       },
       bodyProvider = () => {
-        val allocatorCall = createNAryOperatorCall(() => ("<operator>.alloc", "<operator>.alloc"), Nil, lineAndColumn)
+        val allocatorCall =
+          createNAryOperatorCall(() => ("<operator>.alloc", "<operator>.alloc"), Nil, lineAndColumn)
         val assignmentToNewInstance = createAssignment(
           createIdentifierNode("__newInstance", Store, lineAndColumn),
           allocatorCall,
@@ -537,7 +606,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           argumentIdentifiers.toSeq: _*
         )
 
-        val returnNode = createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), lineAndColumn)
+        val returnNode = createReturn(
+          Some(createIdentifierNode("__newInstance", Load, lineAndColumn)),
+          lineAndColumn
+        )
 
         assignmentToNewInstance :: initCall :: returnNode :: Nil
       },
@@ -638,13 +710,27 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   // TODO write test
   def convert(forStmt: ast.For): NewNode = {
-    createForLowering(forStmt.target, forStmt.iter, Iterable.empty,
-      forStmt.body.map(convert), forStmt.orelse.map(convert), isAsync = false, lineAndColOf(forStmt))
+    createForLowering(
+      forStmt.target,
+      forStmt.iter,
+      Iterable.empty,
+      forStmt.body.map(convert),
+      forStmt.orelse.map(convert),
+      isAsync = false,
+      lineAndColOf(forStmt)
+    )
   }
 
   def convert(forStmt: ast.AsyncFor): NewNode = {
-    createForLowering(forStmt.target, forStmt.iter, Iterable.empty,
-      forStmt.body.map(convert), forStmt.orelse.map(convert), isAsync = true, lineAndColOf(forStmt))
+    createForLowering(
+      forStmt.target,
+      forStmt.iter,
+      Iterable.empty,
+      forStmt.body.map(convert),
+      forStmt.orelse.map(convert),
+      isAsync = true,
+      lineAndColOf(forStmt)
+    )
   }
 
   // Lowering of for x in y: <statements>:
@@ -662,29 +748,43 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   //     <loweringOf>(x = iterator.__next__())
   //     <statements>
   // }
-  protected def createForLowering(target: ast.iexpr,
-                                iter: ast.iexpr,
-                                ifs: Iterable[ast.iexpr],
-                                bodyNodes: Iterable[nodes.NewNode],
-                                orelseNodes: Iterable[nodes.NewNode],
-                                isAsync: Boolean,
-                                lineAndColumn: LineAndColumn): nodes.NewNode = {
+  protected def createForLowering(
+      target: ast.iexpr,
+      iter: ast.iexpr,
+      ifs: Iterable[ast.iexpr],
+      bodyNodes: Iterable[nodes.NewNode],
+      orelseNodes: Iterable[nodes.NewNode],
+      isAsync: Boolean,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
     val iterVariableName = getUnusedName()
     val iterExprIterCallNode =
-      createXDotYCall(() => convert(iter), "__iter__", xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
-        lineAndColumn)
-    val iterAssignNode = createAssignmentToIdentifier(iterVariableName, iterExprIterCallNode, lineAndColumn)
+      createXDotYCall(
+        () => convert(iter),
+        "__iter__",
+        xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
+        lineAndColumn
+      )
+    val iterAssignNode =
+      createAssignmentToIdentifier(iterVariableName, iterExprIterCallNode, lineAndColumn)
 
     val conditionNode = nodeBuilder.unknownNode("iteratorNonEmptyOrException", "", lineAndColumn)
 
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("while ... : ...", ControlStructureTypes.WHILE, lineAndColumn)
+      nodeBuilder.controlStructureNode(
+        "while ... : ...",
+        ControlStructureTypes.WHILE,
+        lineAndColumn
+      )
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val iterNextCallNode =
-      createXDotYCall(() => createIdentifierNode(iterVariableName, Load, lineAndColumn), "__next__",
+      createXDotYCall(
+        () => createIdentifierNode(iterVariableName, Load, lineAndColumn),
+        "__next__",
         xMayHaveSideEffects = false,
-        lineAndColumn)
+        lineAndColumn
+      )
 
     val loweredAssignNodes =
       createValueToTargetsDecomposition(Iterable.single(target), iterNextCallNode, lineAndColumn)
@@ -693,16 +793,18 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     blockStmtNodes.appendAll(loweredAssignNodes)
 
     if (ifs.nonEmpty) {
-      val ifNotContinueNode = convert(new ast.If(
-        new ast.UnaryOp(
-          ast.Not,
-          new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider),
+      val ifNotContinueNode = convert(
+        new ast.If(
+          new ast.UnaryOp(
+            ast.Not,
+            new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider),
+            ifs.head.attributeProvider
+          ),
+          mutable.ArrayBuffer.empty[ast.istmt].append(new ast.Continue(ifs.head.attributeProvider)),
+          mutable.Seq.empty[ast.istmt],
           ifs.head.attributeProvider
-        ),
-        mutable.ArrayBuffer.empty[ast.istmt].append(new ast.Continue(ifs.head.attributeProvider)),
-        mutable.Seq.empty[ast.istmt],
-        ifs.head.attributeProvider
-      ))
+        )
+      )
 
       blockStmtNodes.append(ifNotContinueNode)
     }
@@ -716,7 +818,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
     }
 
-    createBlock(iterAssignNode::controlStructureNode::Nil, lineAndColumn)
+    createBlock(iterAssignNode :: controlStructureNode :: Nil, lineAndColumn)
   }
 
   def convert(astWhile: ast.While): nodes.NewNode = {
@@ -724,7 +826,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val bodyStmtNodes = astWhile.body.map(convert)
 
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("while ... : ...", ControlStructureTypes.WHILE, lineAndColOf(astWhile))
+      nodeBuilder.controlStructureNode(
+        "while ... : ...",
+        ControlStructureTypes.WHILE,
+        lineAndColOf(astWhile)
+      )
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astWhile))
@@ -745,7 +851,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val bodyStmtNodes = astIf.body.map(convert)
 
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("if ... : ...", ControlStructureTypes.IF, lineAndColOf(astIf))
+      nodeBuilder.controlStructureNode(
+        "if ... : ...",
+        ControlStructureTypes.IF,
+        lineAndColOf(astIf)
+      )
     edgeBuilder.conditionEdge(conditionNode, controlStructureNode)
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astIf))
@@ -775,7 +885,14 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val finalBlockNode = createBlock(tryStmt.finalbody.map(convert), lineAndColOf(tryStmt))
     val orElseBlockNode = createBlock(tryStmt.orelse.map(convert), lineAndColOf(tryStmt))
 
-    addAstChildNodes(controlStructureNode, 1, bodyBlockNode, handlersBlockNode, finalBlockNode, orElseBlockNode)
+    addAstChildNodes(
+      controlStructureNode,
+      1,
+      bodyBlockNode,
+      handlersBlockNode,
+      finalBlockNode,
+      orElseBlockNode
+    )
 
     controlStructureNode
   }
@@ -862,44 +979,50 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(astContinue: ast.Continue): nodes.NewNode = {
-    nodeBuilder.controlStructureNode("continue", ControlStructureTypes.CONTINUE, lineAndColOf(astContinue))
+    nodeBuilder.controlStructureNode(
+      "continue",
+      ControlStructureTypes.CONTINUE,
+      lineAndColOf(astContinue)
+    )
   }
 
   def convert(raise: ast.RaiseP2): NewNode = ???
 
   def convert(errorStatement: ast.ErrorStatement): NewNode = {
-    nodeBuilder.unknownNode(errorStatement.toString,
+    nodeBuilder.unknownNode(
+      errorStatement.toString,
       errorStatement.getClass.getName,
-      lineAndColOf(errorStatement))
+      lineAndColOf(errorStatement)
+    )
   }
 
   def convert(expr: ast.iexpr): NewNode = {
     expr match {
-      case node: ast.BoolOp => convert(node)
-      case node: ast.NamedExpr => convert(node)
-      case node: ast.BinOp => convert(node)
-      case node: ast.UnaryOp => convert(node)
-      case node: ast.Lambda => convert(node)
-      case node: ast.IfExp => convert(node)
-      case node: ast.Dict => convert(node)
-      case node: ast.Set => convert(node)
-      case node: ast.ListComp => convert(node)
-      case node: ast.SetComp => convert(node)
-      case node: ast.DictComp => convert(node)
-      case node: ast.GeneratorExp => unhandled(node)
-      case node: ast.Await => convert(node)
-      case node: ast.Yield => unhandled(node)
-      case node: ast.YieldFrom => unhandled(node)
-      case node: ast.Compare => convert(node)
-      case node: ast.Call => convert(node)
-      case node: ast.Constant => convert(node)
-      case node: ast.Attribute => convert(node)
-      case node: ast.Subscript => convert(node)
-      case node: ast.Starred => unhandled(node)
-      case node: ast.Name => convert(node)
-      case node: ast.List => convert(node)
-      case node: ast.Tuple => convert(node)
-      case node: ast.Slice => unhandled(node)
+      case node: ast.BoolOp        => convert(node)
+      case node: ast.NamedExpr     => convert(node)
+      case node: ast.BinOp         => convert(node)
+      case node: ast.UnaryOp       => convert(node)
+      case node: ast.Lambda        => convert(node)
+      case node: ast.IfExp         => convert(node)
+      case node: ast.Dict          => convert(node)
+      case node: ast.Set           => convert(node)
+      case node: ast.ListComp      => convert(node)
+      case node: ast.SetComp       => convert(node)
+      case node: ast.DictComp      => convert(node)
+      case node: ast.GeneratorExp  => unhandled(node)
+      case node: ast.Await         => convert(node)
+      case node: ast.Yield         => unhandled(node)
+      case node: ast.YieldFrom     => unhandled(node)
+      case node: ast.Compare       => convert(node)
+      case node: ast.Call          => convert(node)
+      case node: ast.Constant      => convert(node)
+      case node: ast.Attribute     => convert(node)
+      case node: ast.Subscript     => convert(node)
+      case node: ast.Starred       => unhandled(node)
+      case node: ast.Name          => convert(node)
+      case node: ast.List          => convert(node)
+      case node: ast.Tuple         => convert(node)
+      case node: ast.Slice         => unhandled(node)
       case node: ast.StringExpList => unhandled(node)
     }
   }
@@ -1023,9 +1146,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(dict: ast.Dict): NewNode = {
     val tmpVariableName = getUnusedName()
     val dictConstructorCallNode =
-      createCall(
-        createIdentifierNode("dict", Load, lineAndColOf(dict)),
-        lineAndColOf(dict))
+      createCall(createIdentifierNode("dict", Load, lineAndColOf(dict)), lineAndColOf(dict))
     val dictVariableAssigNode =
       createAssignmentToIdentifier(tmpVariableName, dictConstructorCallNode, lineAndColOf(dict))
 
@@ -1038,9 +1159,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
             lineAndColOf(dict)
           )
 
-          createAssignment(indexAccessNode,
-            convert(value),
-            lineAndColOf(dict))
+          createAssignment(indexAccessNode, convert(value), lineAndColOf(dict))
         case None =>
           createXDotYCall(
             () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
@@ -1052,7 +1171,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       }
     }
 
-    val dictInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict))
+    val dictInstanceReturnIdentifierNode =
+      createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict))
 
     val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
     blockElements.append(dictVariableAssigNode)
@@ -1073,16 +1193,19 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(set: ast.Set): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
 
-    val setConstructorCall = createCall(createIdentifierNode("set", Load, lineAndColOf(set)), lineAndColOf(set))
+    val setConstructorCall =
+      createCall(createIdentifierNode("set", Load, lineAndColOf(set)), lineAndColOf(set))
     val setInstanceAssignment =
       createAssignmentToIdentifier(tmpVariableName, setConstructorCall, lineAndColOf(set))
 
     val appendCallNodes = set.elts.map { setElement =>
-      createXDotYCall(() => createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
+      createXDotYCall(
+        () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
         "add",
         xMayHaveSideEffects = false,
         lineAndColOf(set),
-        convert(setElement))
+        convert(setElement)
+      )
     }
 
     val setInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(set))
@@ -1094,8 +1217,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createBlock(blockElements, lineAndColOf(set))
   }
 
-  /**
-    * Lowering of [x for y in l for x in y]:
+  /** Lowering of [x for y in l for x in y]:
     * {
     *   tmp = list()
     *   <loweringOf>(
@@ -1112,11 +1234,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val tmpVariableName = getUnusedName()
 
     // Create tmp = list()
-    val constructorCallNode = createCall(
-      createIdentifierNode("list", Load, lineAndColOf(listComp)),
-      lineAndColOf(listComp))
-    val variableAssignNode = createAssignmentToIdentifier(
-      tmpVariableName, constructorCallNode, lineAndColOf(listComp))
+    val constructorCallNode =
+      createCall(createIdentifierNode("list", Load, lineAndColOf(listComp)), lineAndColOf(listComp))
+    val variableAssignNode =
+      createAssignmentToIdentifier(tmpVariableName, constructorCallNode, lineAndColOf(listComp))
 
     // Create tmp.append(x)
     val listVarAppendCallNode = createXDotYCall(
@@ -1139,8 +1260,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     comprehensionBlockNode
   }
-  /**
-    * Lowering of {x for y in l for x in y}:
+
+  /** Lowering of {x for y in l for x in y}:
     * {
     *   tmp = set()
     *   <loweringOf>(
@@ -1157,11 +1278,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val tmpVariableName = getUnusedName()
 
     // Create tmp = set()
-    val constructorCallNode = createCall(
-      createIdentifierNode("set", Load, lineAndColOf(setComp)),
-      lineAndColOf(setComp))
-    val variableAssignNode = createAssignmentToIdentifier(
-      tmpVariableName, constructorCallNode, lineAndColOf(setComp))
+    val constructorCallNode =
+      createCall(createIdentifierNode("set", Load, lineAndColOf(setComp)), lineAndColOf(setComp))
+    val variableAssignNode =
+      createAssignmentToIdentifier(tmpVariableName, constructorCallNode, lineAndColOf(setComp))
 
     // Create tmp.add(x)
     val setVarAddCallNode = createXDotYCall(
@@ -1185,8 +1305,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     comprehensionBlockNode
   }
 
-  /**
-    * Lowering of {k:v for y in l for k, v in y}:
+  /** Lowering of {k:v for y in l for k, v in y}:
     * {
     *   tmp = dict()
     *   <loweringOf>(
@@ -1203,11 +1322,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val tmpVariableName = getUnusedName()
 
     // Create tmp = dict()
-    val constructorCallNode = createCall(
-      createIdentifierNode("dict", Load, lineAndColOf(dictComp)),
-      lineAndColOf(dictComp))
-    val variableAssignNode = createAssignmentToIdentifier(
-      tmpVariableName, constructorCallNode, lineAndColOf(dictComp))
+    val constructorCallNode =
+      createCall(createIdentifierNode("dict", Load, lineAndColOf(dictComp)), lineAndColOf(dictComp))
+    val variableAssignNode =
+      createAssignmentToIdentifier(tmpVariableName, constructorCallNode, lineAndColOf(dictComp))
 
     // Create tmp[k] = v
     val dictAssigNode = createAssignment(
@@ -1364,9 +1482,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     call.func match {
       case attribute: ast.Attribute =>
-        createXDotYCall(() => convert(attribute.value), attribute.attr,
+        createXDotYCall(
+          () => convert(attribute.value),
+          attribute.attr,
           xMayHaveSideEffects = !attribute.value.isInstanceOf[ast.Name],
-          lineAndColOf(call), argumentNodes: _*)
+          lineAndColOf(call),
+          argumentNodes: _*
+        )
       case _ =>
         val receiverNode = convert(call.func)
         createCall(receiverNode, lineAndColOf(call), argumentNodes: _*)
@@ -1430,14 +1552,21 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     assert(memOpMap.get(list).get == Load)
     val tmpVariableName = getUnusedName()
 
-    val listConstructorCall = createCall(createIdentifierNode("list", Load, lineAndColOf(list)), lineAndColOf(list))
+    val listConstructorCall =
+      createCall(createIdentifierNode("list", Load, lineAndColOf(list)), lineAndColOf(list))
     val listInstanceAssignment =
       createAssignmentToIdentifier(tmpVariableName, listConstructorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
       val elementNode = convert(listElement)
 
-      createXDotYCall(() => createIdentifierNode(tmpVariableName, Load, lineAndColOf(list)), "append", xMayHaveSideEffects = false, lineAndColOf(list), elementNode)
+      createXDotYCall(
+        () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(list)),
+        "append",
+        xMayHaveSideEffects = false,
+        lineAndColOf(list),
+        elementNode
+      )
     }
 
     val listInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
@@ -1465,9 +1594,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     assert(memOpMap.get(tuple).get == Load)
     val tmpVariableName = getUnusedName()
     val tupleConstructorCallNode =
-      createCall(
-        createIdentifierNode("tuple", Load, lineAndColOf(tuple)),
-        lineAndColOf(tuple))
+      createCall(createIdentifierNode("tuple", Load, lineAndColOf(tuple)), lineAndColOf(tuple))
     val tupleVariableAssignNode =
       createAssignmentToIdentifier(tmpVariableName, tupleConstructorCallNode, lineAndColOf(tuple))
 
@@ -1481,12 +1608,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
       index += 1
 
-      createAssignment(indexAccessNode,
-        convert(tupleElement),
-        lineAndColOf(tuple))
+      createAssignment(indexAccessNode, convert(tupleElement), lineAndColOf(tuple))
     }
 
-    val tupleInstanceReturnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
+    val tupleInstanceReturnIdentifierNode =
+      createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
 
     val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
     blockElements.append(tupleVariableAssignNode)
