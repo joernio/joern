@@ -1599,16 +1599,23 @@ iexpr namedExpression(): {
 
 iexpr expression(): {
   iexpr expression;
+} {
+  (
+    expression = conditionalExpression()
+  | expression = lambda()
+  )
+  {
+    return expression;
+  }
+}
+
+iexpr conditionalExpression(): {
+  iexpr expression;
   iexpr testExpression = null;
   iexpr elseExpression = null;
 } {
-  (
-    (
-      expression = disjunction()
-      (<IF> testExpression = disjunction() <ELSE> elseExpression = expression())?
-    )
-  | expression = lambda()
-  )
+  expression = disjunction()
+  (<IF> testExpression = disjunction() <ELSE> elseExpression = expression())?
   {
     if (testExpression != null) {
       return new IfExp(testExpression, expression, elseExpression, attributes(expression, token));
