@@ -871,22 +871,36 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(withStmt: ast.With): NewNode = {
-    convertWith("with ...", withStmt.getClass.toString, lineAndColOf(withStmt), withStmt.items, withStmt.body)
+    convertWith(
+      "with ...",
+      withStmt.getClass.toString,
+      lineAndColOf(withStmt),
+      withStmt.items,
+      withStmt.body
+    )
   }
 
   def convert(withStmt: ast.AsyncWith): NewNode = {
-    convertWith("with ...", withStmt.getClass.toString, lineAndColOf(withStmt), withStmt.items, withStmt.body)
+    convertWith(
+      "with ...",
+      withStmt.getClass.toString,
+      lineAndColOf(withStmt),
+      withStmt.items,
+      withStmt.body
+    )
   }
 
   // TODO Lower into a representation usefull for data flow tracking.
   // The currently lowering is only here to have some sort of AST representation to
   // avoid squashing all the content of a "with" statement into a single UNKNOWN nodes
   // code property.
-  private def convertWith(code: String,
-                          parserTypeName: String,
-                          lineAndColumn: LineAndColumn,
-                          withItems: Iterable[ast.Withitem],
-                          body: Iterable[ast.istmt]): nodes.NewNode = {
+  private def convertWith(
+      code: String,
+      parserTypeName: String,
+      lineAndColumn: LineAndColumn,
+      withItems: Iterable[ast.Withitem],
+      body: Iterable[ast.istmt]
+  ): nodes.NewNode = {
     val itemNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
 
     withItems.foreach { withItem =>
@@ -1031,34 +1045,34 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(expr: ast.iexpr): NewNode = {
     expr match {
-      case node: ast.BoolOp        => convert(node)
-      case node: ast.NamedExpr     => convert(node)
-      case node: ast.BinOp         => convert(node)
-      case node: ast.UnaryOp       => convert(node)
-      case node: ast.Lambda        => convert(node)
-      case node: ast.IfExp         => convert(node)
-      case node: ast.Dict          => convert(node)
-      case node: ast.Set           => convert(node)
-      case node: ast.ListComp      => convert(node)
-      case node: ast.SetComp       => convert(node)
-      case node: ast.DictComp      => convert(node)
-      case node: ast.GeneratorExp  => unhandled(node)
-      case node: ast.Await         => convert(node)
-      case node: ast.Yield         => unhandled(node)
-      case node: ast.YieldFrom     => unhandled(node)
-      case node: ast.Compare       => convert(node)
-      case node: ast.Call          => convert(node)
-      case node: ast.FormattedValue=> convert(node)
-      case node: ast.JoinedString  => convert(node)
-      case node: ast.Constant      => convert(node)
-      case node: ast.Attribute     => convert(node)
-      case node: ast.Subscript     => convert(node)
-      case node: ast.Starred       => unhandled(node)
-      case node: ast.Name          => convert(node)
-      case node: ast.List          => convert(node)
-      case node: ast.Tuple         => convert(node)
-      case node: ast.Slice         => unhandled(node)
-      case node: ast.StringExpList => unhandled(node)
+      case node: ast.BoolOp         => convert(node)
+      case node: ast.NamedExpr      => convert(node)
+      case node: ast.BinOp          => convert(node)
+      case node: ast.UnaryOp        => convert(node)
+      case node: ast.Lambda         => convert(node)
+      case node: ast.IfExp          => convert(node)
+      case node: ast.Dict           => convert(node)
+      case node: ast.Set            => convert(node)
+      case node: ast.ListComp       => convert(node)
+      case node: ast.SetComp        => convert(node)
+      case node: ast.DictComp       => convert(node)
+      case node: ast.GeneratorExp   => unhandled(node)
+      case node: ast.Await          => convert(node)
+      case node: ast.Yield          => unhandled(node)
+      case node: ast.YieldFrom      => unhandled(node)
+      case node: ast.Compare        => convert(node)
+      case node: ast.Call           => convert(node)
+      case node: ast.FormattedValue => convert(node)
+      case node: ast.JoinedString   => convert(node)
+      case node: ast.Constant       => convert(node)
+      case node: ast.Attribute      => convert(node)
+      case node: ast.Subscript      => convert(node)
+      case node: ast.Starred        => unhandled(node)
+      case node: ast.Name           => convert(node)
+      case node: ast.List           => convert(node)
+      case node: ast.Tuple          => convert(node)
+      case node: ast.Slice          => unhandled(node)
+      case node: ast.StringExpList  => unhandled(node)
     }
   }
 
@@ -1535,15 +1549,15 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     val equalSignStr = if (formattedValue.equalSign) "=" else ""
     val conversionStr = formattedValue.conversion match {
-      case -1 => ""
+      case -1  => ""
       case 115 => "!s"
       case 114 => "!r"
-      case 97 => "!a"
+      case 97  => "!a"
     }
 
     val formatSpecStr = formattedValue.format_spec match {
       case Some(formatSpec) => ":" + formatSpec
-      case None => ""
+      case None             => ""
     }
 
     val code = "{" + codeOf(valueNode) + equalSignStr + conversionStr + formatSpecStr + "}"
@@ -1563,7 +1577,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(joinedString: ast.JoinedString): nodes.NewNode = {
     val argumentNodes = joinedString.values.map(convert)
 
-    val code = joinedString.prefix + joinedString.quote + argumentNodes.map(codeOf).mkString("") + joinedString.quote
+    val code = joinedString.prefix + joinedString.quote + argumentNodes
+      .map(codeOf)
+      .mkString("") + joinedString.quote
 
     val callNode = nodeBuilder.callNode(
       code,
@@ -1582,7 +1598,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case stringConstant: ast.StringConstant =>
         nodeBuilder.stringLiteralNode(
           stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
-          lineAndColOf(constant))
+          lineAndColOf(constant)
+        )
       case stringConstant: ast.JoinedStringConstant =>
         nodeBuilder.stringLiteralNode(stringConstant.value, lineAndColOf(constant))
       case boolConstant: ast.BoolConstant =>
