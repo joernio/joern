@@ -3,7 +3,7 @@ import mill.scalalib.scalafmt.ScalafmtModule
 import scalalib._
 import $ivy.`net.java.dev.javacc:javacc:7.0.4`
 import mill.scalalib.publish.{PomSettings, VersionControl}
-import org.javacc.parser.Main
+import org.javacc.parser.{ Main => JavaCCMain }
 
 object pythonparser extends SbtModule with ScalafmtModule with PublishModule {
   def scalaVersion = "2.13.1"
@@ -19,12 +19,13 @@ object pythonparser extends SbtModule with ScalafmtModule with PublishModule {
   )
    */
 
+  // The grammar file is expected in the project root directory.
   def javaCCSourceFile = T.source {
     PathRef(os.pwd/"pythonGrammar.jj")
   }
 
   def javaCCGenerate = T {
-    Main.mainProgram(Array(s"-OUTPUT_DIRECTORY=${T.dest}/io/shiftleft/pythonparser", javaCCSourceFile().path.toString))
+    JavaCCMain.mainProgram(Array(s"-OUTPUT_DIRECTORY=${T.dest}/io/shiftleft/pythonparser", javaCCSourceFile().path.toString))
     os.walk(T.dest).filter(path => os.isFile(path) && path.ext == "java").map(PathRef(_))
   }
 

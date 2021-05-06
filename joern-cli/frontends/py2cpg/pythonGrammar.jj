@@ -94,6 +94,39 @@ TOKEN_MGR_DECLS:
   {
     indentStack.push(0);
   }
+
+  // matchedToken must have the form: <prefix><oneOrThreeQuotes>
+  // The matched tokens image this cut to not contain <oneOrThreeQuotes>
+  // and the input stream is backed up by the length(<oneOrThreeQuotes>)
+  String adjustTokenAndBackupInput(Token matchedToken, int prefixLen) {
+    int quoteLen = matchedToken.image.length() - prefixLen;
+    String result = matchedToken.image.substring(0, matchedToken.image.length() - quoteLen);
+    input_stream.backup(quoteLen);
+    return result;
+  }
+
+  // Cut token image by quote length since we do not want the close quote in the content.
+  String cutContentTokenImage(Token matchedToken, int quoteLen) {
+    String result = matchedToken.image.substring(0, matchedToken.image.length() - quoteLen);
+    return result;
+  }
+
+  // Cut token image by length since we do not want the close quote or "{" in the content.
+  // We also backup the input by length to generate an extra token for close quote or "{"
+  String cutContentTokenImageAndBackupInput(Token matchedToken, int len) {
+    String result = matchedToken.image.substring(0, matchedToken.image.length() - len);
+    input_stream.backup(len);
+    return result;
+  }
+
+  // If we are currently lexing the content of a format string this is set to
+  // the format lex state. Otherwise it is -1.
+  // Note that during format string lexing we switch back and forth between
+  // the lexer DEFAULT state and the format string lex state.
+  int formatStringLexState = -1;
+
+  // Number of opened curly brackets while parsing a format string in FORMAT_SPEC_LEX.
+  int formatSpecOpenCurly = 0;
 }
 
 TOKEN: {
@@ -132,7 +165,12 @@ TOKEN: {
 | <FALSE: "False">
 | <ARROW: "->">
 | <ELLIPSIS: "...">
-| <COLON: ":">
+| <COLON: ":"> {
+  if (formatStringLexState != -1 && openParentheses == 0) {
+    // We reached a ":" of a format spec of a replacement field of a format string.
+    SwitchTo(FORMAT_SPEC_LEX);
+  }
+}
 | <SEMICOLON: ";">
 | <COMMA: ",">
 | <ASSIGN: "=">
@@ -175,10 +213,18 @@ TOKEN: {
 | <SQUARE_OPEN: "["> { openParentheses += 1; }
 | <SQUARE_CLOSE: "]"> { openParentheses -= 1; }
 | <CURLY_OPEN: "{"> { openParentheses += 1; }
-| <CURLY_CLOSE: "}"> { openParentheses -= 1; }
+| <CURLY_CLOSE: "}"> { openParentheses -= 1;
+  if (formatStringLexState != -1 && openParentheses < 0) {
+    openParentheses = 0;
+    SwitchTo(formatStringLexState);
+  }
+}
 | <DOT: ".">
 | <STAR: "*">
 | <DOUBLE_STAR: "**">
+| <STR_CONVERSION: "!s">
+| <REPR_CONVERSION: "!r">
+| <ASCII_CONVERSION: "!a">
 }
 
 // Number tokens:
@@ -324,76 +370,222 @@ SPECIAL_TOKEN: {
   }
 }
 
-// String tokens:
-// TODO Format strings.
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// String lexer rules:
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 TOKEN: {
-  <RAW_STRING_PREFIX: ("r" | "R") ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(image.length() - 1); }
-| <BYTE_STRING_PREFIX: ("b" | "B") ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(image.length() - 1); }
-| <RAW_BYTE_STRING_PREFIX:
-    ("rb" | "rB" | "Rb" | "RB" | "br" | "bR" | "Br" | "BR")
-    ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(image.length() - 2); }
-| <UNICODE_STRING_PREFIX: ("u" | "U") ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(image.length() - 1); }
+  <STRING_PREFIX:
+  ("r" | "R" | "b" | "B" | "u" | "U")
+  ("\"" | "'" | "\"\"\"" | "'''")> {
+    matchedToken.image = adjustTokenAndBackupInput(matchedToken, 1);
+  }
+| <STRING_PREFIX2:
+  ("rb" | "rB" | "Rb" | "RB" | "br" | "bR" | "Br" | "BR" | "ur" | "uR" | "Ur" | "UR")
+  ("\"" | "'" | "\"\"\"" | "'''")> {
+    matchedToken.image = adjustTokenAndBackupInput(matchedToken, 2);
+    matchedToken.kind = STRING_PREFIX;
+  }
 | <FORMAT_STRING_PREFIX:
-    ("f" | "F")
-    ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(image.length() - 1); }
-| <RAW_FORMAT_STRING_PREFIX:
-    ("rf" | "rF" | "Rf" | "RF" | "fr" | "fR" | "Fr" | "FR")
-    ("\"" | "'" | "\"\"\"" | "'''")>
-    { input_stream.backup(image.length() - 1); }
+  ("f" | "F")
+  ("\"" | "'" | "\"\"\"" | "'''")> {
+    matchedToken.image = adjustTokenAndBackupInput(matchedToken, 1);
+  } : FORMAT_STRING_LEX
+| <FORMAT_STRING_PREFIX2:
+  ("rf" | "rF" | "Rf" | "RF" | "fr" | "fR" | "Fr" | "FR")
+  ("\"" | "'" | "\"\"\"" | "'''")> {
+    matchedToken.image = adjustTokenAndBackupInput(matchedToken, 2);
+    matchedToken.kind = FORMAT_STRING_PREFIX;
+  } : FORMAT_STRING_LEX
 }
 
-MORE: {
-  <SINGLE_DOUBLE_QUOTE: "\"">:  SINGLE_DOUBLE_QUOTE_STRING_LEX
-| <SINGLE_SINGLE_QUOTE: "'">:  SINGLE_SINGLE_QUOTE_STRING_LEX
-| <TRIPLE_DOUBLE_QUOTE: "\"\"\"">:  TRIPLE_DOUBLE_QUOTE_STRING_LEX
-| <TRIPLE_SINGLE_QUOTE: "'''">:  TRIPLE_SINGLE_QUOTE_STRING_LEX
+///////////////////////////////////////////////////////////////////////////////
+// Normal string lexer rules:
+///////////////////////////////////////////////////////////////////////////////
+
+// The lexer state NEVER is never reached. We use it only to define common lexer token kinds
+// to which the different string lexer map to provide a uniform interface to the parsing stage.
+<NEVER> TOKEN: {
+  <STRING_QUOTE_OPEN: "STRING_QUOTE_OPEN">
+| <STRING_CONTENT: "STRING_CONTENT">
 }
 
-<SINGLE_DOUBLE_QUOTE_STRING_LEX> TOKEN: {
-  <SINGLE_DOUBLE_QUOTE_STRING: "\"">: DEFAULT
+// NSDQ stands for: normal single double quote
+// NSSQ stands for: normal single single quote
+// NTDQ stands for: normal triple double quote
+// NTSQ stands for: normal single double quote
+TOKEN: {
+  <NSDQ_QUOTE_OPEN: "\"" > { matchedToken.kind = STRING_QUOTE_OPEN; }: NSDQ_LEX
+| <NSSQ_QUOTE_OPEN: "'"> { matchedToken.kind = STRING_QUOTE_OPEN; }: NSSQ_LEX
+| <NTDQ_QUOTE_OPEN: "\"\"\""> { matchedToken.kind = STRING_QUOTE_OPEN; }: NTDQ_LEX
+| <NTSQ_QUOTE_OPEN: "'''"> { matchedToken.kind = STRING_QUOTE_OPEN; }: NTSQ_LEX
 }
 
-<SINGLE_DOUBLE_QUOTE_STRING_LEX> MORE: {
-  <ESCAPED_SINGLE_DOUBLE_QUOTE: "\\" ~[]>
-| <SINGLE_DOUBLE_QUOTE_STRING_CONTENT: ~[]>
+<NSDQ_LEX> TOKEN: {
+  <NSDQ_CONTENT: "\""> {
+    matchedToken.image = cutContentTokenImage(matchedToken, 1);
+    matchedToken.kind = STRING_CONTENT;
+  }: DEFAULT
+}
+<NSDQ_LEX> MORE: {
+  <NSDQ_ESCAPED_ESCAPE: "\\\\">
+| <NSDQ_ESCAPED_QUOTE: "\\\"">
+| <NSDQ_ANY: ~[]>
 }
 
-<SINGLE_SINGLE_QUOTE_STRING_LEX> TOKEN: {
-  <SINGLE_SINGLE_QUOTE_STRING: "'">: DEFAULT
+<NSSQ_LEX> TOKEN: {
+  <NSSQ_CONTENT: "'"> {
+    matchedToken.image = cutContentTokenImage(matchedToken, 1);
+    matchedToken.kind = STRING_CONTENT;
+  }: DEFAULT
+}
+<NSSQ_LEX> MORE: {
+  <NSSQ_ESCAPED_ESCAPE: "\\\\">
+| <NSSQ_ESCAPED_QUOTE: "\\'">
+| <NSSQ_ANY: ~[]>
 }
 
-<SINGLE_SINGLE_QUOTE_STRING_LEX> MORE: {
-  <ESCAPED_SINGLE_SINGLE_QUOTE: "\\" ~[] >
-| <SINGLE_SINGLE_QUOTE_STRING_CONTENT: ~[]>
+<NTDQ_LEX> TOKEN: {
+  <NTDQ_CONTENT: "\"\"\""> {
+    matchedToken.image = cutContentTokenImage(matchedToken, 3);
+    matchedToken.kind = STRING_CONTENT;
+  }: DEFAULT
+}
+<NTDQ_LEX> MORE: {
+  <NTDQ_ESCAPED_ESCAPE: "\\\\">
+| <NTDQ_ESCAPED_QUOTE: "\\\"">
+| <NTDQ_ANY: ~[]>
 }
 
-<TRIPLE_DOUBLE_QUOTE_STRING_LEX> TOKEN: {
-  <TRIPLE_DOUBLE_QUOTE_STRING: "\"\"\"">: DEFAULT
+<NTSQ_LEX> TOKEN: {
+  <NTSQ_CONTENT: "'''"> {
+    matchedToken.image = cutContentTokenImage(matchedToken, 3);
+    matchedToken.kind = STRING_CONTENT;
+  }: DEFAULT
+}
+<NTSQ_LEX> MORE: {
+  <NTSQ_ESCAPED_ESCAPE: "\\\\">
+| <NTSQ_ESCAPED_QUOTE: "\\'">
+| <NTSQ_ANY: ~[]>
 }
 
-<TRIPLE_DOUBLE_QUOTE_STRING_LEX> MORE: {
-  <ESCAPED_TRIPLE_DOUBLE_QUOTE: "\\" ~[]>
-| <TRIPLE_DOUBLE_QUOTE_STRING_CONTENT: ~[]>
+
+///////////////////////////////////////////////////////////////////////////////
+// Format string lexer rules:
+///////////////////////////////////////////////////////////////////////////////
+// TODO currently we parse format specs as one single string and do not break it down in its elements.
+<FORMAT_SPEC_LEX> MORE: {
+  <FORMAT_SPEC_CURLY_OPEN: "{"> {
+    formatSpecOpenCurly += 1;
+  }
+| <FORMAT_SPEC_CURLY_CLOSE: "}"> {
+    formatSpecOpenCurly -= 1;
+    if (formatSpecOpenCurly < 0) {
+      formatSpecOpenCurly = 0;
+      SwitchTo(FORMAT_SPEC_LEX_EMIT);
+    }
+  }
+| <FORMAT_SPEC_ANY: ~[]>
+}
+<FORMAT_SPEC_LEX_EMIT> TOKEN: {
+  <FORMAT_SPEC: ""> {
+    // We get here with an already matched closing curly bracket for the entire replacement
+    // field. Thus we need to cut the token image by one to remove the closing curly bracket
+    // and also we backup the input stream by one in order to generate a separate token for
+    // it in DEFAULT state to indicate the replacement field end.
+    matchedToken.image = matchedToken.image.substring(0, matchedToken.image.length() - 1);
+    input_stream.backup(1);
+  }: DEFAULT
 }
 
-<TRIPLE_SINGLE_QUOTE_STRING_LEX> TOKEN: {
-  <TRIPLE_SINGLE_QUOTE_STRING: "'''">: DEFAULT
+// The lexer state NEVER is never reached. We use it only to define common lexer token kinds
+// to which the different string lexer map to provide a uniform interface to the parsing stage.
+<NEVER> TOKEN: {
+  <FORMAT_STRING_QUOTE_OPEN: "FORMAT_STRING_QUOTE_OPEN">
+| <FORMAT_STRING_CONTENT: "FORMAT_STRING_CONTENT">
+| <FORMAT_STRING_QUOTE_CLOSE: "FORMAT_STRING_QUOTE_CLOSE">
+| <FORMAT_STRING_CURLY_OPEN: "FORMAT_STRING_CURLY_OPEN">
 }
 
-<TRIPLE_SINGLE_QUOTE_STRING_LEX> MORE: {
-  <ESCAPED_TRIPLE_SINGLE_QUOTE: "\\" ~[]>
-| <TRIPLE_SINGLE_QUOTE_STRING_CONTENT: ~[]>
-}
-
+// FSDQ stands for: formatted single double quote
+// FSSQ stands for: formatted single single quote
+// FTDQ stands for: formatted triple double quote
+// FTSQ stands for: formatted triple single quote
 <FORMAT_STRING_LEX> TOKEN: {
-  <FSTRING: "">
+  <FSDQ_QUOTE_OPEN: "\""> { formatStringLexState = FSDQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FSDQ_LEX
+| <FSSQ_QUOTE_OPEN: "'"> { formatStringLexState = FSSQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FSSQ_LEX
+| <FTDQ_QUOTE_OPEN: "\"\"\""> { formatStringLexState = FTDQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FTDQ_LEX
+| <FTSQ_QUOTE_OPEN: "'''"> { formatStringLexState = FTSQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FTSQ_LEX
 }
 
+<FSDQ_LEX> TOKEN: {
+  <FSDQ_CONTENT: "{" | "\"" > {
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 1);
+    matchedToken.kind = FORMAT_STRING_CONTENT;
+  }: FSDQ_LEX_EMIT_END
+}
+<FSDQ_LEX> MORE: {
+  <FSDQ_ESCAPED_ESCAPE: "\\\\">
+| <FSDQ_ESCAPED_QUOTE: "\\\"">
+| <FSDQ_ESCAPED_CURLY: "{{">
+| <FSDQ_ANY: ~[]>
+}
+<FSDQ_LEX_EMIT_END> TOKEN: {
+  <FSDQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+| <FSDQ_END: "\""> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+}
+
+<FSSQ_LEX> TOKEN: {
+  <FSSQ_CONTENT: "{" | "'" > {
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 1);
+    matchedToken.kind = FORMAT_STRING_CONTENT;
+  }: FSSQ_LEX_EMIT_END
+}
+<FSSQ_LEX> MORE: {
+  <FSSQ_ESCAPED_ESCAPE: "\\\\">
+| <FSSQ_ESCAPED_QUOTE: "\\'">
+| <FSSQ_ESCAPED_CURLY: "{{">
+| <FSSQ_ANY: ~[]>
+}
+<FSSQ_LEX_EMIT_END> TOKEN: {
+  <FSSQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+| <FSSQ_END: "'"> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+}
+
+<FTDQ_LEX> TOKEN: {
+  <FTDQ_CONTENT: "{" | "\"\"\"" > {
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 3);
+    matchedToken.kind = FORMAT_STRING_CONTENT;
+  }: FTDQ_LEX_EMIT_END
+}
+<FTDQ_LEX> MORE: {
+  <FTDQ_ESCAPED_ESCAPE: "\\\\">
+| <FTDQ_ESCAPED_QUOTE: "\\\"">
+| <FTDQ_ESCAPED_CURLY: "{{">
+| <FTDQ_ANY: ~[]>
+}
+<FTDQ_LEX_EMIT_END> TOKEN: {
+  <FTDQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+| <FTDQ_END: "\"\"\""> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+}
+
+<FTSQ_LEX> TOKEN: {
+  <FTSQ_CONTENT: "{" | "'''" > {
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 3);
+    matchedToken.kind = FORMAT_STRING_CONTENT;
+  }: FTSQ_LEX_EMIT_END
+}
+<FTSQ_LEX> MORE: {
+  <FTSQ_ESCAPED_ESCAPE: "\\\\">
+| <FTSQ_ESCAPED_QUOTE: "\\'">
+| <FTSQ_ESCAPED_CURLY: "{{">
+| <FTSQ_ANY: ~[]>
+}
+<FTSQ_LEX_EMIT_END> TOKEN: {
+  <FTSQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+| <FTSQ_END: "'''"> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -1528,6 +1720,7 @@ iexpr expressionsAsTuple(): {
 
 // Returns a tuple for multiple expressions and single expression with trailing comma.
 // Otherwise returns the single expression.
+// Grammar: (expression | starredBitwiseOr) ("," expression | starredBitwiseOr)* [","]
 iexpr starExpressions(): {
   iexpr firstExpression;
   iexpr expression;
@@ -1547,6 +1740,48 @@ iexpr starExpressions(): {
     }
     (
       expression = expression()
+    | expression = starredBitwiseOr()
+    ) { expressions.add(expression); }
+  )*
+  (<COMMA>)?
+  {
+    if (expressions == null && token.kind != COMMA) {
+      // Single expression no trailing comma.
+      return firstExpression;
+    }
+    if (expressions == null) {
+      // Single expression, trailing comma.
+      expressions = new ArrayList<iexpr>();
+      expressions.add(firstExpression);
+    }
+    return new Tuple(expressions, attributes(firstExpression, token));
+  }
+}
+
+// This method is the same as starExpressions except that instead of expression it
+// expects conditionalExpression.
+// Returns a tuple for multiple expressions and single expression with trailing comma.
+// Otherwise returns the single expression.
+// Grammar: (conditionalExpression | starredBitwiseOr) ("," conditionalExpression | starredBitwiseOr)* [","]
+iexpr starConditionalExpressions(): {
+  iexpr firstExpression;
+  iexpr expression;
+  ArrayList<iexpr> expressions = null;
+} {
+  (
+    firstExpression = conditionalExpression()
+  | firstExpression = starredBitwiseOr()
+  )
+  (LOOKAHEAD(2)
+    <COMMA>
+    {
+      if (expressions == null) {
+        expressions = new ArrayList<iexpr>();
+        expressions.add(firstExpression);
+      }
+    }
+    (
+      expression = conditionalExpression()
     | expression = starredBitwiseOr()
     ) { expressions.add(expression); }
   )*
@@ -2064,27 +2299,78 @@ iexpr strings(): {
   }
 }
 
-Constant string(): {
-  boolean isRaw = false;
-  boolean isUnicode = false;
-  boolean isByte = false;
+iexpr string(): {
+  Token startToken = null;
+  Token formatStartToken;
+  String prefix = "";
+  String quote;
+  String content;
+  ArrayList<iexpr> values;
+  FormattedValue formattedValue;
 } {
   (
-    <RAW_STRING_PREFIX> { isRaw = true; }
-  | <UNICODE_STRING_PREFIX> { isUnicode = true; }
-  | <BYTE_STRING_PREFIX> { isByte = true; }
-  | <RAW_BYTE_STRING_PREFIX> { isRaw = true; isByte = true; }
-  | <FORMAT_STRING_PREFIX>
-  | <RAW_FORMAT_STRING_PREFIX>
-  )?
-  (
-    <SINGLE_DOUBLE_QUOTE_STRING>
-  | <SINGLE_SINGLE_QUOTE_STRING>
-  | <TRIPLE_DOUBLE_QUOTE_STRING>
-  | <TRIPLE_SINGLE_QUOTE_STRING>
+    (<STRING_PREFIX> { prefix = token.image; startToken = token; })?
+    <STRING_QUOTE_OPEN> { quote = token.image; if (startToken == null) startToken = token; }
+    <STRING_CONTENT> { content = token.image; }
+    // The lexer does not emit corresponding STRING_QUOTE_CLOSE since we do not need any
+    // information from it. The closing quote was lexed together with the string content
+    // and than cut off so that the string content token end position currently also
+    // contains the quotes.
   )
-  { return new Constant(new StringConstant(token.image, isRaw, isUnicode, isByte),
-   attributes(token, token)); }
+  {
+    return new Constant(new StringConstant(content, quote, prefix),
+    attributes(startToken, token));
+  }
+| (
+    (<FORMAT_STRING_PREFIX> )
+    { prefix = token.image; formatStartToken = token; values = new ArrayList<iexpr>(); }
+    <FORMAT_STRING_QUOTE_OPEN> { quote = token.image; }
+    <FORMAT_STRING_CONTENT> {
+      if (!token.image.equals("")) {
+        Constant constant = new Constant(new JoinedStringConstant(token.image), attributes(token, token));
+        values.add(constant);
+      }
+    }
+    (
+      formattedValue = replacementField()
+      { values.add(formattedValue); }
+      <FORMAT_STRING_CONTENT> {
+        if (!token.image.equals("")) {
+          Constant constant = new Constant(new JoinedStringConstant(token.image), attributes(token, token));
+          values.add(constant);
+        }
+      }
+    )*
+    <FORMAT_STRING_QUOTE_CLOSE>
+  )
+  {
+    return new JoinedString(values, quote, prefix, attributes(formatStartToken, token));
+  }
+}
+
+FormattedValue replacementField(): {
+  Token startToken;
+  iexpr expression;
+  boolean equalSign = false;
+  int conversion = -1;
+  String formatSpec = null;
+} {
+    <FORMAT_STRING_CURLY_OPEN> { startToken = token; }
+    (
+      expression = starConditionalExpressions()
+    | expression = yieldExpression()
+    )
+    (<ASSIGN> { equalSign = true; })?
+    (
+      <STR_CONVERSION> { conversion = 115; }
+    | <REPR_CONVERSION> { conversion = 114; }
+    | <ASCII_CONVERSION> { conversion = 97; }
+    )?
+    (<COLON> <FORMAT_SPEC> { formatSpec = token.image; })?
+    <CURLY_CLOSE>
+    {
+      return new FormattedValue(expression, conversion, formatSpec, equalSign, attributes(startToken, token));
+    }
 }
 
 // Returns a tuple for multiple targets and single target with trailing comma.

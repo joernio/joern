@@ -325,6 +325,32 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     }
   }
 
+  override def visit(formattedValue: FormattedValue): String = {
+    val equalSignStr = if (formattedValue.equalSign) "=" else ""
+    val conversionStr = formattedValue.conversion match {
+      case -1 => ""
+      case 115 => "!s"
+      case 114 => "!r"
+      case 97 => "!a"
+    }
+
+    val formatSpecStr = formattedValue.format_spec match {
+      case Some(formatSpec) => ":" + formatSpec
+      case None => ""
+    }
+
+    "{" + print(formattedValue.value) +
+      equalSignStr +
+      conversionStr +
+      formatSpecStr +
+      "}"
+  }
+
+  override def visit(joinedString: JoinedString): String = {
+    joinedString.prefix + joinedString.quote +
+      joinedString.values.map(print).mkString("") + joinedString.quote
+  }
+
   override def visit(constant: Constant): String = {
     print(constant.value)
   }
@@ -426,11 +452,11 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   override def visit(constant: iconstant): String = ???
 
   override def visit(stringConstant: StringConstant): String = {
-    val rawPrefix = if (stringConstant.isRaw) "r" else ""
-    val unicodePrefix = if (stringConstant.isUnicode) "u" else ""
-    val bytePrefix = if (stringConstant.isByte) "b" else ""
+    stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote
+  }
 
-    rawPrefix + unicodePrefix + bytePrefix + stringConstant.value
+  override def visit(joinedStringConstant: JoinedStringConstant): String = {
+    joinedStringConstant.value
   }
 
   override def visit(boolConstant: BoolConstant): String = {

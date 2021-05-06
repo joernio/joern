@@ -55,6 +55,8 @@ trait AstVisitor[T] {
   def visit(yieldFrom: YieldFrom): T
   def visit(compare: Compare): T
   def visit(call: Call): T
+  def visit(formattedValue: FormattedValue): T
+  def visit(joinedString: JoinedString): T
   def visit(constant: Constant): T
   def visit(attribute: Attribute): T
   def visit(subscript: Subscript): T
@@ -112,6 +114,7 @@ trait AstVisitor[T] {
 
   def visit(constant: iconstant): T
   def visit(stringConstant: StringConstant): T
+  def visit(joinedStringConstant: JoinedStringConstant): T
   def visit(boolConstant: BoolConstant): T
   def visit(intConstant: IntConstant): T
   def visit(intConstant: FloatConstant): T

@@ -739,6 +739,50 @@ case class Call(
   }
 }
 
+// In addition to the CPython version of this class we also stored
+// whether the value expression was followed by "=" in "equalSign".
+// In deviation to CPython format_spec is of type String and not
+// a JoinedString itself. This way we do not have to handle recursive
+// format string parsing yet.
+case class FormattedValue(value: iexpr,
+                          conversion: Int,
+                          format_spec: Option[String],
+                          equalSign: Boolean,
+                          attributeProvider: AttributeProvider) extends iexpr {
+  def this(
+            value: iexpr,
+            conversion: Int,
+            format_spec: String,
+            equalSign: Boolean,
+            attributeProvider: AttributeProvider
+          ) = {
+    this(value, conversion, Option(format_spec), equalSign, attributeProvider)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
+// In addition to the CPython version of this class we have the fields
+// "quote" which stores the kind of quote used and "prefix"
+// which stores the exact prefix used with the string.
+case class JoinedString(values: CollType[iexpr],
+                        quote: String,
+                        prefix: String,
+                        attributeProvider: AttributeProvider) extends iexpr {
+  def this(
+            values: util.List[iexpr],
+            quote: String,
+            prefix: String,
+            attributeProvider: AttributeProvider
+          ) = {
+    this(values.asScala, quote, prefix, attributeProvider)
+  }
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+
 case class Constant(value: iconstant, attributeProvider: AttributeProvider) extends iexpr {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
@@ -1167,8 +1211,14 @@ trait iattributes {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 sealed trait iconstant extends iast
 
-case class StringConstant(value: String, isRaw: Boolean, isUnicode: Boolean, isByte: Boolean)
+case class StringConstant(value: String, quote: String, prefix: String)
     extends iconstant {
+  override def accept[T](visitor: AstVisitor[T]): T = {
+    visitor.visit(this)
+  }
+}
+case class JoinedStringConstant(value: String)
+  extends iconstant {
   override def accept[T](visitor: AstVisitor[T]): T = {
     visitor.visit(this)
   }

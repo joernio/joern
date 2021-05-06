@@ -660,6 +660,34 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("'abc' 'def' \"ghi\"")
   }
 
+  "format string tests" in {
+    testT("f\"{x}\"")
+    testT("f\"{x,}\"", "f\"{(x,)}\"")
+    testT("f\"{*x}\"")
+    testT("f\"{yield x}\"")
+    testT("f\"{x}{y}\"")
+    testT("f\"pre{x}post\"")
+    testT("f\"pre{x}mid{y}post\"")
+    testT("f\"{{x}}\"")
+    testT("f\"\\{x}\"")
+    testT("f\"{x=}\"")
+    testT("f\"{x!s}\"")
+    testT("f\"{x!r}\"")
+    testT("f\"{x!a}\"")
+    testT("f\"{x=!s}\"")
+    testT("f\"{x:1}\"")
+    testT("f\"{x:{y}}\"")
+    testT("f\"{x:{y}{z}}\"")
+    testT("f\"{x=:1}\"")
+    testT("f\"{x=!s:1}\"")
+    testT("rf\"{x=!s:1}\"")
+
+    testT("f\"a\"")
+    testT("f'a'")
+    testT("f\"\"\"a\"\"\"")
+    testT("f'''a'''")
+  }
+
   // Check that an escaped string terminal character does not break
   // tokenization.
   "string literal terminal escape tests" in {
