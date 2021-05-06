@@ -1048,6 +1048,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.YieldFrom     => unhandled(node)
       case node: ast.Compare       => convert(node)
       case node: ast.Call          => convert(node)
+      case node: ast.FormattedValue=> convert(node)
+      case node: ast.JoinedString  => convert(node)
       case node: ast.Constant      => convert(node)
       case node: ast.Attribute     => convert(node)
       case node: ast.Subscript     => convert(node)
@@ -1528,9 +1530,60 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     }
   }
 
+  def convert(formattedValue: ast.FormattedValue): nodes.NewNode = {
+    val valueNode = convert(formattedValue.value)
+
+    val equalSignStr = if (formattedValue.equalSign) "=" else ""
+    val conversionStr = formattedValue.conversion match {
+      case -1 => ""
+      case 115 => "!s"
+      case 114 => "!r"
+      case 97 => "!a"
+    }
+
+    val formatSpecStr = formattedValue.format_spec match {
+      case Some(formatSpec) => ":" + formatSpec
+      case None => ""
+    }
+
+    val code = "{" + codeOf(valueNode) + equalSignStr + conversionStr + formatSpecStr + "}"
+
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.formattedValue",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(formattedValue)
+    )
+
+    addAstChildrenAsArguments(callNode, 1, valueNode)
+
+    callNode
+  }
+
+  def convert(joinedString: ast.JoinedString): nodes.NewNode = {
+    val argumentNodes = joinedString.values.map(convert)
+
+    val code = joinedString.prefix + joinedString.quote + argumentNodes.map(codeOf).mkString("") + joinedString.quote
+
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.formatString",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(joinedString)
+    )
+
+    addAstChildrenAsArguments(callNode, 1, argumentNodes)
+
+    callNode
+  }
+
   def convert(constant: ast.Constant): nodes.NewNode = {
     constant.value match {
       case stringConstant: ast.StringConstant =>
+        nodeBuilder.stringLiteralNode(
+          stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
+          lineAndColOf(constant))
+      case stringConstant: ast.JoinedStringConstant =>
         nodeBuilder.stringLiteralNode(stringConstant.value, lineAndColOf(constant))
       case boolConstant: ast.BoolConstant =>
         val boolStr = if (boolConstant.value) "True" else "False"

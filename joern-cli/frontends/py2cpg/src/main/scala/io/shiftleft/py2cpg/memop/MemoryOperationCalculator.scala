@@ -1,5 +1,6 @@
 package io.shiftleft.py2cpg.memop
 
+import io.shiftleft.pythonparser.ast.{FormattedValue, JoinedString, JoinedStringConstant}
 import io.shiftleft.pythonparser.{AstVisitor, ast}
 
 import scala.collection.mutable
@@ -289,6 +290,16 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(call.keywords)
   }
 
+  override def visit(formattedValue: FormattedValue): Unit = {
+    assert(stack.head == Load)
+    accept(formattedValue.value)
+  }
+
+  override def visit(joinedString: JoinedString): Unit = {
+    assert(stack.head == Load)
+    accept(joinedString.values)
+  }
+
   override def visit(constant: ast.Constant): Unit = {}
 
   override def visit(attribute: ast.Attribute): Unit = {
@@ -435,6 +446,8 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   override def visit(constant: ast.iconstant): Unit = ???
 
   override def visit(stringConstant: ast.StringConstant): Unit = {}
+
+  override def visit(joinedStringConstant: JoinedStringConstant): Unit = {}
 
   override def visit(boolConstant: ast.BoolConstant): Unit = {}
 
