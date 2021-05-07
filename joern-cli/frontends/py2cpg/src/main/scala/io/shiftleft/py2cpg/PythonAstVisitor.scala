@@ -1072,7 +1072,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       case node: ast.List           => convert(node)
       case node: ast.Tuple          => convert(node)
       case node: ast.Slice          => unhandled(node)
-      case node: ast.StringExpList  => unhandled(node)
+      case node: ast.StringExpList  => convert(node)
     }
   }
 
@@ -1726,7 +1726,21 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   def convert(slice: ast.Slice): NewNode = ???
 
-  def convert(stringExpList: ast.StringExpList): NewNode = ???
+  def convert(stringExpList: ast.StringExpList): NewNode = {
+    val stringNodes = stringExpList.elts.map(convert)
+    val code = stringNodes.map(codeOf).mkString(" ")
+
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.stringExpressionList",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(stringExpList)
+    )
+
+    addAstChildrenAsArguments(callNode, 1, stringNodes)
+
+    callNode
+  }
 
   // TODO Since there is now real concept of reflecting exception handlers
   // semantically in the CPG we just make sure that the variable scoping
