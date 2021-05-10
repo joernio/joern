@@ -2,7 +2,7 @@ Joern
 ===
 
 [![Build Status](https://github.com/ShiftLeftSecurity/joern/workflows/release/badge.svg)](https://github.com/ShiftLeftSecurity/joern)
-[![Gitter](https://badges.gitter.im/joern-code-analyzer/community.svg)](https://gitter.im/joern-code-analyzer/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://img.shields.io/badge/-Discord-lime?style=for-the-badge&logo=discord&logoColor=white&color=black)](https://discord.com/invite/vv4MH284Hc)
 
 Joern's Documentation is available here: https://docs.joern.io/home
 
