@@ -25,7 +25,7 @@ object CpgExtCodegen extends App {
     comment = "an example node"
   ).addProperties(exampleProperty)
 
-  cpgSchema.base.file.addProperties(exampleProperty)
+  cpgSchema.fs.file.addProperties(exampleProperty)
   // END extensions for this build
 
   new CodeGen(builder.build).run(outputDir)
