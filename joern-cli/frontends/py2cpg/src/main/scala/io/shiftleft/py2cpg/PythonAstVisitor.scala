@@ -90,7 +90,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         methodFullName,
         parameterProvider = () => MethodParameters.empty(),
         bodyProvider = () => module.stmts.map(convert),
-        decoratorList = Nil,
         returns = None,
         isAsync = false,
         methodRefNode = None,
@@ -154,13 +153,39 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         isStaticMethod(functionDef.decorator_list)
       ),
       () => functionDef.body.map(convert),
-      functionDef.decorator_list,
       functionDef.returns,
       isAsync = false,
       lineAndColOf(functionDef)
     )
     functionDefToMethod.put(functionDef, methodNode)
-    createAssignment(methodIdentifierNode, methodRefNode, lineAndColOf(functionDef))
+
+    val wrappedMethodRefNode =
+      wrapMethodRefWithDecorators(methodRefNode, functionDef.decorator_list)
+
+    createAssignment(methodIdentifierNode, wrappedMethodRefNode, lineAndColOf(functionDef))
+  }
+
+  /*
+   * For a decorated function like:
+   * @f1(arg)
+   * @f2
+   * def func(): pass
+   *
+   * The lowering is:
+   * func = f1(arg)(f2(func))
+   *
+   * This function takes a method ref, wrappes it in the decorator calls and returns the resulting expression.
+   * In the example case this is:
+   * f1(arg)(f2(func))
+   */
+  def wrapMethodRefWithDecorators(
+      methodRefNode: nodes.NewNode,
+      decoratorList: Iterable[ast.iexpr]
+  ): nodes.NewNode = {
+    decoratorList.foldRight(methodRefNode)(
+      (decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) =>
+        createCall(convert(decorator), lineAndColOf(decorator), wrappedMethodRef)
+    )
   }
 
   def convert(functionDef: ast.AsyncFunctionDef): NewNode = {
@@ -173,13 +198,16 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         isStaticMethod(functionDef.decorator_list)
       ),
       () => functionDef.body.map(convert),
-      functionDef.decorator_list,
       functionDef.returns,
       isAsync = true,
       lineAndColOf(functionDef)
     )
     functionDefToMethod.put(functionDef, methodNode)
-    createAssignment(methodIdentifierNode, methodRefNode, lineAndColOf(functionDef))
+
+    val wrappedMethodRefNode =
+      wrapMethodRefWithDecorators(methodRefNode, functionDef.decorator_list)
+
+    createAssignment(methodIdentifierNode, wrappedMethodRefNode, lineAndColOf(functionDef))
   }
 
   private def isStaticMethod(decoratorList: Iterable[ast.iexpr]): Boolean = {
@@ -203,13 +231,11 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       )
   }
 
-  // TODO handle decoratorList
   // TODO handle returns
   private def createMethodAndMethodRef(
       methodName: String,
       parameterProvider: () => MethodParameters,
       bodyProvider: () => Iterable[nodes.NewNode],
-      decoratorList: Iterable[ast.iexpr],
       returns: Option[ast.iexpr],
       isAsync: Boolean,
       lineAndColumn: LineAndColumn
@@ -225,7 +251,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         methodFullName,
         parameterProvider,
         bodyProvider,
-        decoratorList,
         returns,
         isAsync = true,
         Some(methodRefNode),
@@ -244,7 +269,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       fullName: String,
       parameterProvider: () => MethodParameters,
       bodyProvider: () => Iterable[nodes.NewNode],
-      decoratorList: Iterable[ast.iexpr],
       returns: Option[ast.iexpr],
       isAsync: Boolean,
       methodRefNode: Option[nodes.NewMethodRef],
@@ -314,7 +338,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       classBodyFunctionName,
       parameterProvider = () => MethodParameters.empty(),
       bodyProvider = () => classDef.body.map(convert),
-      Iterable.empty,
       None,
       isAsync = false,
       lineAndColOf(classDef)
@@ -484,7 +507,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         val returnNode = createReturn(Some(staticCall), lineAndColumn)
         returnNode :: Nil
       },
-      decoratorList = Nil,
       returns = None,
       isAsync = false,
       methodRefNode = None,
@@ -543,7 +565,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
         returnNode :: Nil
       },
-      decoratorList = Nil,
       returns = None,
       isAsync = false,
       methodRefNode = None,
@@ -613,7 +634,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
         assignmentToNewInstance :: initCall :: returnNode :: Nil
       },
-      decoratorList = Nil,
       returns = None,
       isAsync = false,
       methodRefNode = None,
@@ -1154,7 +1174,6 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       "<lambda>",
       createParameterProcessingFunction(lambda.args, isStatic = false),
       () => Iterable.single(convert(new ast.Return(lambda.body, lambda.attributeProvider))),
-      decoratorList = Nil,
       returns = None,
       isAsync = false,
       lineAndColOf(lambda)

@@ -105,4 +105,20 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "decorated function" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """@abc(arg)
+        |@staticmethod
+        |def func():
+        |  pass
+        |""".stripMargin
+    )
+
+    "test decorator wrapping of method reference" in {
+      cpg.methodRef("test.py:<module>.func").astParent.astParent.astParent.isCall.head.code shouldBe
+        "func = abc(arg)(staticmethod(def func(...)))"
+    }
+
+  }
+
 }
