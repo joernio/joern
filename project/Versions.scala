@@ -1,6 +1,7 @@
 /* reads version declarations from /build.sbt so that we can declare them in one place */
 object Versions {
   val cpgVersion = parseVersion("cpgVersion")
+  val ghidra2cpg = parseVersion("ghidra2cpgVersion")
 
   private def parseVersion(key: String): String = { 
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
