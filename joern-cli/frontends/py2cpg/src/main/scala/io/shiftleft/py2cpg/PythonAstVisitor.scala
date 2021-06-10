@@ -1203,7 +1203,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of {x:1, y:2, **z}:
     *   {
-    *     tmp = dict()
+    *     tmp = {}
     *     tmp[x] = 1
     *     tmp[y] = 2
     *     tmp.update(z)
@@ -1213,10 +1213,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   // TODO test
   def convert(dict: ast.Dict): NewNode = {
     val tmpVariableName = getUnusedName()
-    val dictConstructorCallNode =
-      createCall(createIdentifierNode("dict", Load, lineAndColOf(dict)), lineAndColOf(dict))
+    val dictOperatorCall =
+      createLiteralOperatorCall("{", "}", "<operator>.dictLiteral", lineAndColOf(dict))
     val dictVariableAssigNode =
-      createAssignmentToIdentifier(tmpVariableName, dictConstructorCallNode, lineAndColOf(dict))
+      createAssignmentToIdentifier(tmpVariableName, dictOperatorCall, lineAndColOf(dict))
 
     val dictElementAssignNodes = dict.keys.zip(dict.values).map { case (key, value) =>
       key match {
@@ -1251,7 +1251,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of {1, 2}:
     *   {
-    *     tmp = set()
+    *     tmp = {}  <-- Yes, this is not correct python syntax but until we represent as {1, 2} this is fine.
     *     tmp.add(1)
     *     tmp.add(2)
     *     tmp
@@ -1261,10 +1261,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(set: ast.Set): nodes.NewNode = {
     val tmpVariableName = getUnusedName()
 
-    val setConstructorCall =
-      createCall(createIdentifierNode("set", Load, lineAndColOf(set)), lineAndColOf(set))
+    val setOperatorCall =
+      createLiteralOperatorCall("{", "}", "<operator>.setLiteral", lineAndColOf(set))
     val setInstanceAssignment =
-      createAssignmentToIdentifier(tmpVariableName, setConstructorCall, lineAndColOf(set))
+      createAssignmentToIdentifier(tmpVariableName, setOperatorCall, lineAndColOf(set))
 
     val appendCallNodes = set.elts.map { setElement =>
       createXDotYCall(
@@ -1287,7 +1287,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of [x for y in l for x in y]:
     * {
-    *   tmp = list()
+    *   tmp = []
     *   <loweringOf>(
     *   for y in l:
     *     for x in y:
@@ -1302,10 +1302,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     val tmpVariableName = getUnusedName()
 
     // Create tmp = list()
-    val constructorCallNode =
-      createCall(createIdentifierNode("list", Load, lineAndColOf(listComp)), lineAndColOf(listComp))
+    val listOperatorCall =
+      createLiteralOperatorCall("[", "]", "<operator>.listLiteral", lineAndColOf(listComp))
     val variableAssignNode =
-      createAssignmentToIdentifier(tmpVariableName, constructorCallNode, lineAndColOf(listComp))
+      createAssignmentToIdentifier(tmpVariableName, listOperatorCall, lineAndColOf(listComp))
 
     // Create tmp.append(x)
     val listVarAppendCallNode = createXDotYCall(
@@ -1331,7 +1331,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of {x for y in l for x in y}:
     * {
-    *   tmp = set()
+    *   tmp = {}
     *   <loweringOf>(
     *   for y in l:
     *     for x in y:
@@ -1345,11 +1345,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     contextStack.pushSpecialContext()
     val tmpVariableName = getUnusedName()
 
-    // Create tmp = set()
-    val constructorCallNode =
-      createCall(createIdentifierNode("set", Load, lineAndColOf(setComp)), lineAndColOf(setComp))
+    val setOperatorCall =
+      createLiteralOperatorCall("{", "}", "<operator>.setLiteral", lineAndColOf(setComp))
     val variableAssignNode =
-      createAssignmentToIdentifier(tmpVariableName, constructorCallNode, lineAndColOf(setComp))
+      createAssignmentToIdentifier(tmpVariableName, setOperatorCall, lineAndColOf(setComp))
 
     // Create tmp.add(x)
     val setVarAddCallNode = createXDotYCall(
@@ -1375,7 +1374,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of {k:v for y in l for k, v in y}:
     * {
-    *   tmp = dict()
+    *   tmp = {}
     *   <loweringOf>(
     *   for y in l:
     *     for k, v in y:
@@ -1389,11 +1388,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     contextStack.pushSpecialContext()
     val tmpVariableName = getUnusedName()
 
-    // Create tmp = dict()
-    val constructorCallNode =
-      createCall(createIdentifierNode("dict", Load, lineAndColOf(dictComp)), lineAndColOf(dictComp))
+    val dictOperatorCall =
+      createLiteralOperatorCall("{", "}", "<operator>.dictLiteral", lineAndColOf(dictComp))
     val variableAssignNode =
-      createAssignmentToIdentifier(tmpVariableName, constructorCallNode, lineAndColOf(dictComp))
+      createAssignmentToIdentifier(tmpVariableName, dictOperatorCall, lineAndColOf(dictComp))
 
     // Create tmp[k] = v
     val dictAssigNode = createAssignment(
@@ -1660,7 +1658,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of [1, 2]:
     *   {
-    *     tmp = list()
+    *     tmp = []
     *     tmp.append(1)
     *     tmp.append(2)
     *     tmp
@@ -1674,10 +1672,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     assert(memOpMap.get(list).get == Load)
     val tmpVariableName = getUnusedName()
 
-    val listConstructorCall =
-      createCall(createIdentifierNode("list", Load, lineAndColOf(list)), lineAndColOf(list))
+    val listOperatorCall =
+      createLiteralOperatorCall("[", "]", "<operator>.listLiteral", lineAndColOf(list))
     val listInstanceAssignment =
-      createAssignmentToIdentifier(tmpVariableName, listConstructorCall, lineAndColOf(list))
+      createAssignmentToIdentifier(tmpVariableName, listOperatorCall, lineAndColOf(list))
 
     val appendCallNodes = list.elts.map { listElement =>
       val elementNode = convert(listElement)
@@ -1702,8 +1700,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
   /** Lowering of (1, 2):
     *   {
-    *     tmp = tuple()
-    *     tmp[0] = 1
+    *     tmp = ()
+    *     tmp[0] = 1  <-- Yes, this is not valid python but enables our tracking until we represent as (1, 2)
     *     tmp[1] = 2
     *     tmp
     *   }
@@ -1715,10 +1713,10 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     // reach here.
     assert(memOpMap.get(tuple).get == Load)
     val tmpVariableName = getUnusedName()
-    val tupleConstructorCallNode =
-      createCall(createIdentifierNode("tuple", Load, lineAndColOf(tuple)), lineAndColOf(tuple))
+    val tupleOperatorCall =
+      createLiteralOperatorCall("(", ")", "<operator>.tupleLiteral", lineAndColOf(tuple))
     val tupleVariableAssignNode =
-      createAssignmentToIdentifier(tmpVariableName, tupleConstructorCallNode, lineAndColOf(tuple))
+      createAssignmentToIdentifier(tmpVariableName, tupleOperatorCall, lineAndColOf(tuple))
 
     var index = 0
     val tupleElementAssignNodes = tuple.elts.map { tupleElement =>

@@ -386,6 +386,26 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  protected def createLiteralOperatorCall(
+      codeStart: String,
+      codeEnd: String,
+      opFullName: String,
+      lineAndColumn: LineAndColumn,
+      operands: nodes.NewNode*
+  ): nodes.NewCall = {
+    val code = operands.map(codeOf).mkString(codeStart, ", ", codeEnd)
+    val callNode = nodeBuilder.callNode(
+      code,
+      opFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 1, operands)
+
+    callNode
+  }
+
   protected def createAssignment(
       lhsNode: nodes.NewNode,
       rhsNode: nodes.NewNode,
