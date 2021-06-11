@@ -8,6 +8,7 @@ import scala.collection.mutable
 class MemoryOperationCalculator extends AstVisitor[Unit] {
   private val stack = mutable.Stack.empty[MemoryOperation]
   val astNodeToMemOp = new AstNodeToMemoryOperationMap()
+  val names = mutable.Set.empty[String]
 
   private def accept(astNode: ast.iast): Unit = {
     astNode.accept(this)
@@ -323,6 +324,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
 
   override def visit(name: ast.Name): Unit = {
     astNodeToMemOp.put(name, stack.head)
+    names.add(name.id)
   }
 
   override def visit(list: ast.List): Unit = {

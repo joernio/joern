@@ -136,7 +136,7 @@ class ContextStack {
     // create a variable in the module method context for each global variable
     // with a store operation on it.
     // This is necessary because there might be load/delete operations
-    // referencing the global variable which are syntactially before the store
+    // referencing the global variable which are syntactically before the store
     // operations.
     variableReferences.foreach { case VariableReference(identifier, memOp, contextStack) =>
       val name = identifier.name

@@ -2,6 +2,7 @@ package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.py2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 
 object MethodParameters {
   def empty(): MethodParameters = {
@@ -89,7 +90,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         "<module>",
         methodFullName,
         parameterProvider = () => MethodParameters.empty(),
-        bodyProvider = () => module.stmts.map(convert),
+        bodyProvider =
+          () => createBuiltinIdentifiers(memOpCalculator.names) ++ module.stmts.map(convert),
         returns = None,
         isAsync = false,
         methodRefNode = None,
@@ -100,6 +102,56 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     createIdentifierLinks()
 
     moduleMethodNode
+  }
+
+  // Create assignments of type references to all builtin identifiers if the identifier appears
+  // at least once in the module. We filter in order to not generate the complete list of
+  // assignment in each module.
+  // That logic still generates assignments in cases where we would not need to but figuring
+  // that out would mean we need to wait until all identifiers are linked which is than too
+  // late to create new identifiers and still use the same link mechanism. We would need
+  // to rearrange quite some code to accomplish that. So we leave that as an optional TODO.
+  // Note that namesUsedInModule is only calculated from ast.Name nodes! So e.g. new names
+  // aritifically created during lowering are not in that collection which is fine for now.
+  private def createBuiltinIdentifiers(
+      namesUsedInModule: collection.Set[String]
+  ): Iterable[nodes.NewNode] = {
+    val result = mutable.ArrayBuffer.empty[nodes.NewNode]
+    val lineAndColumn = LineAndColumn(1, 1)
+
+    PythonAstVisitor.builtinFunctions.foreach { builtinObjectName =>
+      if (namesUsedInModule.contains(builtinObjectName)) {
+        val assignmentNode = createAssignment(
+          createIdentifierNode(builtinObjectName, Store, lineAndColumn),
+          nodeBuilder.typeRefNode(
+            "__builtins__." + builtinObjectName,
+            builtinPrefix + builtinObjectName,
+            lineAndColumn
+          ),
+          lineAndColumn
+        )
+
+        result.append(assignmentNode)
+      }
+    }
+
+    PythonAstVisitor.builtinClasses.foreach { builtinObjectName =>
+      if (namesUsedInModule.contains(builtinObjectName)) {
+        val assignmentNode = createAssignment(
+          createIdentifierNode(builtinObjectName, Store, lineAndColumn),
+          nodeBuilder.typeRefNode(
+            "__builtins__." + builtinObjectName,
+            builtinPrefix + builtinObjectName + metaClassSuffix,
+            lineAndColumn
+          ),
+          lineAndColumn
+        )
+
+        result.append(assignmentNode)
+      }
+    }
+
+    result
   }
 
   private def unhandled(node: ast.iast with ast.iattributes): NewNode = {
@@ -323,7 +375,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   // 5. Create and link members in metaTypeDecl and instanceTypeDecl
   def convert(classDef: ast.ClassDef): NewNode = {
     // Create type for the meta class object
-    val metaTypeDeclName = classDef.name + "<meta>"
+    val metaTypeDeclName = classDef.name + metaClassSuffix
     val metaTypeDeclFullName = calculateFullNameFromContext(metaTypeDeclName)
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
@@ -1798,4 +1850,87 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       fileName + ":" + name
     }
   }
+}
+
+object PythonAstVisitor {
+  val builtinPrefix = "__builtin."
+  val metaClassSuffix = "<meta>"
+
+  // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
+  // for python version 3.9.5.
+  val builtinFunctions = Iterable(
+    "abs",
+    "all",
+    "any",
+    "ascii",
+    "bin",
+    "breakpoint",
+    "callable",
+    "chr",
+    "classmethod",
+    "compile",
+    "delattr",
+    "dir",
+    "divmod",
+    "enumerate",
+    "eval",
+    "exec",
+    "filter",
+    "format",
+    "getattr",
+    "globals",
+    "hasattr",
+    "hash",
+    "help",
+    "hex",
+    "id",
+    "input",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "locals",
+    "map",
+    "max",
+    "min",
+    "next",
+    "oct",
+    "open",
+    "ord",
+    "pow",
+    "print",
+    "repr",
+    "reversed",
+    "round",
+    "setattr",
+    "sorted",
+    "staticmethod",
+    "sum",
+    "super",
+    "vars",
+    "zip",
+    "__import__"
+  )
+  // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
+  // for python version 3.9.5.
+  val builtinClasses = Iterable(
+    "bool",
+    "bytearray",
+    "bytes",
+    "complex",
+    "dict",
+    "float",
+    "frozenset",
+    "int",
+    "list",
+    "memoryview",
+    "object",
+    "property",
+    "range",
+    "set",
+    "slice",
+    "str",
+    "tuple",
+    "type"
+  )
 }
