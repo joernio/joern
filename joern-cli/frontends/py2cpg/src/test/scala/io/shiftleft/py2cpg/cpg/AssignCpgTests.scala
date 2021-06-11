@@ -149,7 +149,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
       val assignNodes = block.astChildren.isCall.sortBy(_.order).tail
       assignNodes.map(_.code) should contain theSameElementsInOrderAs List(
         "x = tmp0",
-        "y = tmp0",
+        "y = tmp0"
       )
       assignNodes.map(_.lineNumber.get) should contain theSameElementsInOrderAs List(1, 1)
     }

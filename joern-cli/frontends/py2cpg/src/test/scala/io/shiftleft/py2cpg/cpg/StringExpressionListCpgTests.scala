@@ -1,6 +1,5 @@
 package io.shiftleft.py2cpg.cpg
 
-
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._

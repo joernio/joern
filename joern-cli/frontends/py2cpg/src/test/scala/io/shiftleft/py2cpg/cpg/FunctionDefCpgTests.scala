@@ -29,9 +29,19 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
     "test method parameter nodes" in {
       cpg.method("test.py:<module>.func").parameter.order(1).name.head shouldBe "a"
-      cpg.method("test.py:<module>.func").parameter.order(1).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(1)
+        .typeFullName
+        .head shouldBe Constants.ANY
       cpg.method("test.py:<module>.func").parameter.order(2).name.head shouldBe "b"
-      cpg.method("test.py:<module>.func").parameter.order(2).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(2)
+        .typeFullName
+        .head shouldBe Constants.ANY
     }
 
     "test method return node" in {
@@ -82,9 +92,19 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
     "test method parameter nodes" in {
       cpg.method("test.py:<module>.func").parameter.order(1).name.head shouldBe "a"
-      cpg.method("test.py:<module>.func").parameter.order(1).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(1)
+        .typeFullName
+        .head shouldBe Constants.ANY
       cpg.method("test.py:<module>.func").parameter.order(2).name.head shouldBe "b"
-      cpg.method("test.py:<module>.func").parameter.order(2).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(2)
+        .typeFullName
+        .head shouldBe Constants.ANY
     }
   }
 
@@ -97,11 +117,26 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
     "test method parameter nodes" in {
       cpg.method("test.py:<module>.func").parameter.order(1).name.head shouldBe "a"
-      cpg.method("test.py:<module>.func").parameter.order(1).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(1)
+        .typeFullName
+        .head shouldBe Constants.ANY
       cpg.method("test.py:<module>.func").parameter.order(2).name.head shouldBe "b"
-      cpg.method("test.py:<module>.func").parameter.order(2).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(2)
+        .typeFullName
+        .head shouldBe Constants.ANY
       cpg.method("test.py:<module>.func").parameter.order(3).name.head shouldBe "c"
-      cpg.method("test.py:<module>.func").parameter.order(3).typeFullName.head shouldBe Constants.ANY
+      cpg
+        .method("test.py:<module>.func")
+        .parameter
+        .order(3)
+        .typeFullName
+        .head shouldBe Constants.ANY
     }
   }
 
