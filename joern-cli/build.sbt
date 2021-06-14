@@ -15,7 +15,6 @@ libraryDependencies ++= Seq(
   "io.github.plume-oss"    % "plume" % "0.5.11" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
-  "com.lihaoyi" %% "ammonite" % "2.3.8-4-88785969" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "io.circe" %% "circe-generic" % "0.12.2",
