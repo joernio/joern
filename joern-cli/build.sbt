@@ -15,6 +15,7 @@ libraryDependencies ++= Seq(
   "io.github.plume-oss"    % "plume" % "0.5.11" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
+  "com.lihaoyi" %% "ammonite" % "2.3.8-4-88785969" cross CrossVersion.full,
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "io.circe" %% "circe-generic" % "0.12.2",
@@ -22,6 +23,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
   "org.scalatest" %% "scalatest" % "3.1.1" % Test,
 )
+
 
 enablePlugins(JavaAppPackaging)
 scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
