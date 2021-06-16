@@ -10,11 +10,12 @@ import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.joern.Scan.{allTag, defaultTag}
+import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.89"
+  val defaultDbVersion: String = "0.0.92"
 }
 
 case class JoernScanConfig(src: String = "",
@@ -168,6 +169,7 @@ class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Arr
     extends LayerCreatorOptions {}
 
 class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends LayerCreator {
+  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
   override val overlayName: String = Scan.overlayName
   override val description: String = Scan.description
