@@ -1,7 +1,6 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  CpgNode,
   NewBlock,
   NewCall,
   NewControlStructure,
@@ -57,7 +56,7 @@ class EdgeBuilder(diffGraph: DiffGraph.Builder) {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.BINDS)
   }
 
-  private def addOrder(node: CpgNode, order: Int): Unit = node match {
+  private def addOrder(node: nodes.NewNode, order: Int): Unit = node match {
     case n: NewTypeDecl          => n.order = order
     case n: NewBlock             => n.order = order
     case n: NewCall              => n.order = order
@@ -80,7 +79,7 @@ class EdgeBuilder(diffGraph: DiffGraph.Builder) {
     case n: NewJumpTarget        => n.order = order
   }
 
-  private def addArgumentIndex(node: CpgNode, argIndex: Int): Unit = node match {
+  private def addArgumentIndex(node: nodes.NewNode, argIndex: Int): Unit = node match {
     case n: NewBlock            => n.argumentIndex = argIndex
     case n: NewCall             => n.argumentIndex = argIndex
     case n: NewFieldIdentifier  => n.argumentIndex = argIndex
