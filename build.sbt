@@ -4,7 +4,7 @@ name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.5"
 ThisBuild /Test /fork := true
-val cpgVersion = "1.3.198"
+val cpgVersion = "1.3.201+1-3adfcbd0"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
