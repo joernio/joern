@@ -3,6 +3,7 @@ enablePlugins(GitVersioning)
 name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.5"
+// don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 ThisBuild /Test /fork := true
 val cpgVersion = "1.3.204+3-92170d8b"
 
