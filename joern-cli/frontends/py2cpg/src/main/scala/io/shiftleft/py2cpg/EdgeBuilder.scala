@@ -36,6 +36,14 @@ class EdgeBuilder(diffGraph: DiffGraph.Builder) {
     addArgumentIndex(dstNode, argIndex)
   }
 
+  def argumentEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode, argName: String): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.ARGUMENT)
+    // We need to fill something according to the CPG spec. But the spec also says that argument
+    // index is ignored if argument name is provided. So we just put -1.
+    addArgumentIndex(dstNode, -1)
+    addArgumentName(dstNode, argName)
+  }
+
   def receiverEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.RECEIVER)
   }
@@ -90,5 +98,21 @@ class EdgeBuilder(diffGraph: DiffGraph.Builder) {
     case n: NewControlStructure => n.argumentIndex = argIndex
     case n: NewLiteral          => n.argumentIndex = argIndex
     case n: NewReturn           => n.argumentIndex = argIndex
+  }
+
+  private def addArgumentName(node: nodes.NewNode, argName: String): Unit = {
+    val someArgName = Some(argName)
+    node match {
+      case n: NewBlock            => n.argumentName = someArgName
+      case n: NewCall             => n.argumentName = someArgName
+      case n: NewFieldIdentifier  => n.argumentName = someArgName
+      case n: NewIdentifier       => n.argumentName = someArgName
+      case n: NewMethodRef        => n.argumentName = someArgName
+      case n: NewTypeRef          => n.argumentName = someArgName
+      case n: NewUnknown          => n.argumentName = someArgName
+      case n: NewControlStructure => n.argumentName = someArgName
+      case n: NewLiteral          => n.argumentName = someArgName
+      case n: NewReturn           => n.argumentName = someArgName
+    }
   }
 }

@@ -236,7 +236,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   ): nodes.NewNode = {
     decoratorList.foldRight(methodRefNode)(
       (decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) =>
-        createCall(convert(decorator), lineAndColOf(decorator), wrappedMethodRef)
+        createCall(convert(decorator), lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil)
     )
   }
 
@@ -397,7 +397,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
 
     // Create call to <body> function and assignment of the meta class object to a identifier named
     // like the class.
-    val callToClassBodyFunction = createCall(methodRefNode, lineAndColOf(classDef))
+    val callToClassBodyFunction = createCall(methodRefNode, lineAndColOf(classDef), Nil, Nil)
     val metaTypeRefNode =
       createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
     val classIdentifierAssignNode =
@@ -523,6 +523,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     *   return STATIC_CALL(MyClass.func(self, p1))
     * @return
     */
+  // TODO handle named arguments and vararg
   private def createMetaClassAdapterMethod(
       adaptedMethodName: String,
       adaptedMethodFullName: String,
@@ -554,7 +555,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           adaptedMethodName,
           adaptedMethodFullName,
           lineAndColumn,
-          arguments.toSeq: _*
+          arguments,
+          Nil
         )
         val returnNode = createReturn(Some(staticCall), lineAndColumn)
         returnNode :: Nil
@@ -571,10 +573,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     * is also known as creating a new instance object, e.g. obj = MyClass(p1).
     * The purpose of the generated function is to adapt between the special cased
     * instance creation call and a normal call to __new__ (for now <fakeNew>).
+    * The adaption is required to in order to provide TYPE_REF(meta class) as instance
+    * argument to __new__/<fakeNew>.
     * So the <metaClassCallHandler> look like:
     * def <metaClassCallHandler>(p1):
     *   return DYNAMIC_CALL(receiver=TYPE_REF(meta class).<fakeNew>, instance = TYPE_REF(meta class), p1)
     */
+  // TODO handle named arguments and vararg
   private def createMetaClassCallHandlerMethod(
       positionalInitParameterCount: Int,
       metaTypeDeclName: String,
@@ -610,7 +615,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           ),
           createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColumn),
           lineAndColumn,
-          argumentIdentifiers.toSeq: _*
+          argumentIdentifiers,
+          Nil
         )
 
         val returnNode = createReturn(Some(fakeNewCall), lineAndColumn)
@@ -635,6 +641,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     *   cls.__init__(__newIstance, p1)
     *   return __newInstance
     */
+  // TODO handle named arguments and vararg
   private def createFakeNewMethod(
       positionalInitParameterCount: Int,
       lineAndColumn: LineAndColumn
@@ -676,7 +683,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           "__init__",
           xMayHaveSideEffects = false,
           lineAndColumn,
-          argumentIdentifiers.toSeq: _*
+          argumentIdentifiers,
+          Nil
         )
 
         val returnNode = createReturn(
@@ -835,7 +843,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         () => convert(iter),
         "__iter__",
         xMayHaveSideEffects = !iter.isInstanceOf[ast.Name],
-        lineAndColumn
+        lineAndColumn,
+        Nil,
+        Nil
       )
     val iterAssignNode =
       createAssignmentToIdentifier(iterVariableName, iterExprIterCallNode, lineAndColumn)
@@ -855,7 +865,9 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         () => createIdentifierNode(iterVariableName, Load, lineAndColumn),
         "__next__",
         xMayHaveSideEffects = false,
-        lineAndColumn
+        lineAndColumn,
+        Nil,
+        Nil
       )
 
     val loweredAssignNodes =
@@ -1286,7 +1298,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
             "update",
             xMayHaveSideEffects = false,
             lineAndColOf(dict),
-            convert(value)
+            convert(value) :: Nil,
+            Nil
           )
       }
     }
@@ -1324,7 +1337,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         "add",
         xMayHaveSideEffects = false,
         lineAndColOf(set),
-        convert(setElement)
+        convert(setElement) :: Nil,
+        Nil
       )
     }
 
@@ -1365,7 +1379,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       "append",
       xMayHaveSideEffects = false,
       lineAndColOf(listComp),
-      convert(listComp.elt)
+      convert(listComp.elt) :: Nil,
+      Nil
     )
 
     val comprehensionBlockNode = createComprehensionLowering(
@@ -1408,7 +1423,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       "add",
       xMayHaveSideEffects = false,
       lineAndColOf(setComp),
-      convert(setComp.elt)
+      convert(setComp.elt) :: Nil,
+      Nil
     )
 
     val comprehensionBlockNode = createComprehensionLowering(
@@ -1597,6 +1613,15 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
     */
   def convert(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(convert).toSeq
+    val keywordArgNodes = call.keywords.flatMap { keyword =>
+      if (keyword.arg.isDefined) {
+        Some((keyword.arg.get, convert(keyword.value)))
+      } else {
+        // keyword.arg == None. This is the case for func(**dict) style arguments.
+        // TODO implement handling for this case.
+        None
+      }
+    }
 
     call.func match {
       case attribute: ast.Attribute =>
@@ -1605,11 +1630,12 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           attribute.attr,
           xMayHaveSideEffects = !attribute.value.isInstanceOf[ast.Name],
           lineAndColOf(call),
-          argumentNodes: _*
+          argumentNodes,
+          keywordArgNodes
         )
       case _ =>
         val receiverNode = convert(call.func)
-        createCall(receiverNode, lineAndColOf(call), argumentNodes: _*)
+        createCall(receiverNode, lineAndColOf(call), argumentNodes, keywordArgNodes)
     }
   }
 
@@ -1737,7 +1763,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
         "append",
         xMayHaveSideEffects = false,
         lineAndColOf(list),
-        elementNode
+        elementNode :: Nil,
+        Nil
       )
     }
 

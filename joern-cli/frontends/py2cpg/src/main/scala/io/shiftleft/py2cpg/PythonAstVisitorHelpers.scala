@@ -39,8 +39,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         val importCallNode = createCall(
           createIdentifierNode("import", Load, lineAndCol),
           lineAndCol,
-          nodeBuilder.stringLiteralNode(from, lineAndCol),
-          nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
+          nodeBuilder.stringLiteralNode(from, lineAndCol) ::
+            nodeBuilder.stringLiteralNode(alias.name, lineAndCol) :: Nil,
+          Nil
         )
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
@@ -220,9 +221,17 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   protected def createCall(
       receiverNode: nodes.NewNode,
       lineAndColumn: LineAndColumn,
-      argumentNodes: nodes.NewNode*
+      argumentNodes: Iterable[nodes.NewNode],
+      keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewCall = {
-    val code = codeOf(receiverNode) + "(" + argumentNodes.map(codeOf).mkString(", ") + ")"
+    val code = codeOf(receiverNode) +
+      "(" +
+      argumentNodes.map(codeOf).mkString(", ") +
+      (if (argumentNodes.nonEmpty && keywordArguments.nonEmpty) ", " else "") +
+      keywordArguments
+        .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
+        .mkString(", ") +
+      ")"
     val callNode = nodeBuilder.callNode(
       code,
       "",
@@ -240,6 +249,12 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       index += 1
     }
 
+    keywordArguments.foreach { case (keyword: String, argumentNode) =>
+      edgeBuilder.astEdge(argumentNode, callNode, order = index)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword)
+      index += 1
+    }
+
     callNode
   }
 
@@ -247,9 +262,17 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       receiverNode: nodes.NewNode,
       instanceNode: nodes.NewNode,
       lineAndColumn: LineAndColumn,
-      argumentNodes: nodes.NewNode*
+      argumentNodes: Iterable[nodes.NewNode],
+      keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewCall = {
-    val code = codeOf(receiverNode) + "(" + argumentNodes.map(codeOf).mkString(", ") + ")"
+    val code = codeOf(receiverNode) +
+      "(" +
+      argumentNodes.map(codeOf).mkString(", ") +
+      (if (argumentNodes.nonEmpty && keywordArguments.nonEmpty) ", " else "") +
+      keywordArguments
+        .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
+        .mkString(", ") +
+      ")"
     val callNode = nodeBuilder.callNode(
       code,
       "",
@@ -266,6 +289,12 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     argumentNodes.foreach { argumentNode =>
       edgeBuilder.astEdge(argumentNode, callNode, argIndex + 1)
       edgeBuilder.argumentEdge(argumentNode, callNode, argIndex)
+      argIndex += 1
+    }
+
+    keywordArguments.foreach { case (keyword: String, argumentNode) =>
+      edgeBuilder.astEdge(argumentNode, callNode, order = argIndex + 1)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword)
       argIndex += 1
     }
 
@@ -288,7 +317,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       y: String,
       xMayHaveSideEffects: Boolean,
       lineAndColumn: LineAndColumn,
-      argumentNodes: nodes.NewNode*
+      argumentNodes: Iterable[nodes.NewNode],
+      keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName = getUnusedName()
@@ -297,43 +327,35 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
-        createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
+        createInstanceCall(
+          receiverNode,
+          instanceNode,
+          lineAndColumn,
+          argumentNodes,
+          keywordArguments
+        )
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
-      createInstanceCall(receiverNode, x(), lineAndColumn, argumentNodes: _*)
+      createInstanceCall(receiverNode, x(), lineAndColumn, argumentNodes, keywordArguments)
     }
-  }
-
-  // If x may have side effects we lower as follows: x.y(<args>) =>
-  // {
-  //   tmp = x
-  //   CALL(recv = tmp.y, inst = tmp, args=<args>)
-  // }
-  protected def createXDotYCallSideEffectSafe(
-      x: nodes.NewNode,
-      y: String,
-      xMayHaveSideEffects: Boolean,
-      lineAndColumn: LineAndColumn,
-      argumentNodes: nodes.NewNode*
-  ): nodes.NewNode = {
-    val tmpVarName = getUnusedName()
-    val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x, lineAndColumn)
-    val receiverNode =
-      createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
-    val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
-    val instanceCallNode =
-      createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes: _*)
-    createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
   }
 
   protected def createStaticCall(
       name: String,
       methodFullName: String,
       lineAndColumn: LineAndColumn,
-      argumentNodes: nodes.NewNode*
+      argumentNodes: Iterable[nodes.NewNode],
+      keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewNode = {
-    val code = name + "(" + argumentNodes.map(codeOf).mkString(",") + ")"
+    val code = name +
+      "(" +
+      argumentNodes.map(codeOf).mkString(", ") +
+      (if (argumentNodes.nonEmpty && keywordArguments.nonEmpty) ", " else "") +
+      keywordArguments
+        .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
+        .mkString(", ") +
+      ")"
     val callNode = nodeBuilder.callNode(
       code,
       methodFullName,
