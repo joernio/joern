@@ -1,6 +1,7 @@
 package io.shiftleft.joern
 
 import better.files.File
+import io.shiftleft.codepropertygraph.generated.traversal._
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 

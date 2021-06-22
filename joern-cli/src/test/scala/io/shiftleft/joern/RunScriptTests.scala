@@ -4,6 +4,7 @@ import better.files.File
 import better.files.Dsl._
 
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.traversal._
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
