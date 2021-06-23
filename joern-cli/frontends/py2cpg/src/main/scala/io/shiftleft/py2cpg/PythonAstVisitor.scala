@@ -955,23 +955,159 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   }
 
   def convert(withStmt: ast.With): NewNode = {
-    convertWith(
-      "with ...",
-      withStmt.getClass.toString,
-      lineAndColOf(withStmt),
-      withStmt.items,
-      withStmt.body
-    )
+    val loweredNodes =
+      withStmt.items.foldRight(withStmt.body.map(convert)) { case (withItem, bodyStmts) =>
+        mutable.ArrayBuffer.empty.append(convertWithItem(withItem, bodyStmts))
+      }
+
+    loweredNodes.head
   }
 
   def convert(withStmt: ast.AsyncWith): NewNode = {
-    convertWith(
-      "with ...",
-      withStmt.getClass.toString,
-      lineAndColOf(withStmt),
-      withStmt.items,
-      withStmt.body
+    val loweredNodes =
+      withStmt.items.foldRight(withStmt.body.map(convert)) { case (withItem, bodyStmts) =>
+        mutable.ArrayBuffer.empty.append(convertWithItem(withItem, bodyStmts))
+      }
+
+    loweredNodes.head
+  }
+
+  // Handles the lowering of a single "with item". E.g. for: with A() as a, B() as b
+  // "A() as a" is a single "with item".
+  // The lowering for:
+  //   with EXPRESSION as TARGET:
+  //     SUITE
+  // is:
+  //   manager = (EXPRESSION)
+  //   enter = manager.__enter__
+  //   exit = manager.__exit__
+  //   value = enter(manager)
+  //
+  //   try:
+  //     TARGET = value
+  //     SUITE
+  //   finally:
+  //     exit(manager)
+  //
+  // Note that this is not quite semantically correct because we ignore the exit method
+  // arguments and the exit call return value. This is fine for us because for our data
+  // flow tracking purposed we dont need that extra information and the AST is anyway
+  // "broken" because we are heavily lowering.
+  // For reference the following excerpt taken from the official Python 3.9.5
+  // documentation found at
+  // https://docs.python.org/3/reference/compound_stmts.html#the-with-statement
+  // shows the semantically correct lowering:
+  //   manager = (EXPRESSION)
+  //   enter = type(manager).__enter__
+  //   exit = type(manager).__exit__
+  //   value = enter(manager)
+  //   hit_except = False
+  //
+  //   try:
+  //     TARGET = value
+  //     SUITE
+  //   except:
+  //     hit_except = True
+  //     if not exit(manager, *sys.exc_info()):
+  //       raise
+  //   finally:
+  //     if not hit_except:
+  //       exit(manager, None, None, None)
+  private def convertWithItem(
+      withItem: ast.Withitem,
+      suite: collection.Seq[nodes.NewNode]
+  ): nodes.NewNode = {
+    val lineAndCol = lineAndColOf(withItem.context_expr)
+    val managerIdentifierName = getUnusedName("manager")
+
+    val assignmentToManager = createAssignmentToIdentifier(
+      managerIdentifierName,
+      convert(withItem.context_expr),
+      lineAndCol
     )
+
+    val enterIdentifierName = getUnusedName("enter")
+    val assignmentToEnter = createAssignmentToIdentifier(
+      enterIdentifierName,
+      createFieldAccess(
+        createIdentifierNode(managerIdentifierName, Load, lineAndCol),
+        "__enter__",
+        lineAndCol
+      ),
+      lineAndCol
+    )
+
+    val exitIdentifierName = getUnusedName("exit")
+    val assignmentToExit = createAssignmentToIdentifier(
+      exitIdentifierName,
+      createFieldAccess(
+        createIdentifierNode(managerIdentifierName, Load, lineAndCol),
+        "__exit__",
+        lineAndCol
+      ),
+      lineAndCol
+    )
+
+    val valueIdentifierName = getUnusedName("value")
+    val assignmentToValue = createAssignmentToIdentifier(
+      valueIdentifierName,
+      createInstanceCall(
+        createIdentifierNode(enterIdentifierName, Load, lineAndCol),
+        createIdentifierNode(managerIdentifierName, Load, lineAndCol),
+        lineAndCol,
+        Nil,
+        Nil
+      ),
+      lineAndCol
+    )
+
+    val tryBody =
+      withItem.optional_vars match {
+        case Some(optionalVar) =>
+          val assignmentToTarget = createAssignment(
+            convert(optionalVar),
+            createIdentifierNode(valueIdentifierName, Load, lineAndCol),
+            lineAndCol
+          )
+
+          assignmentToTarget +: suite
+        case None =>
+          suite
+      }
+
+    // TODO For the except handler we currently lower as:
+    //   hit_except = True
+    //   exit(manager)
+    // instead of:
+    //   hit_except = True
+    //   if not exit(manager, *sys.exc_info()):
+    //     raise
+
+    val finalBlockStmts =
+      createInstanceCall(
+        createIdentifierNode("__exit__", Load, lineAndCol),
+        createIdentifierNode(managerIdentifierName, Load, lineAndCol),
+        lineAndCol,
+        Nil,
+        Nil
+      ) :: Nil
+
+    val tryBlock = createTry(
+      tryBody,
+      Nil,
+      finalBlockStmts,
+      Nil,
+      lineAndCol
+    )
+
+    val blockStmts = mutable.ArrayBuffer.empty[nodes.NewNode]
+    blockStmts.append(assignmentToManager)
+    blockStmts.append(assignmentToEnter)
+    blockStmts.append(assignmentToExit)
+    blockStmts.append(assignmentToValue)
+    blockStmts.append(tryBlock)
+
+    createBlock(blockStmts, lineAndCol)
   }
 
   // TODO Lower into a representation usefull for data flow tracking.
@@ -1008,24 +1144,13 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   def convert(raise: ast.Raise): NewNode = ???
 
   def convert(tryStmt: ast.Try): NewNode = {
-    val controlStructureNode =
-      nodeBuilder.controlStructureNode("try: ...", ControlStructureTypes.TRY, lineAndColOf(tryStmt))
-
-    val bodyBlockNode = createBlock(tryStmt.body.map(convert), lineAndColOf(tryStmt))
-    val handlersBlockNode = createBlock(tryStmt.handlers.map(convert), lineAndColOf(tryStmt))
-    val finalBlockNode = createBlock(tryStmt.finalbody.map(convert), lineAndColOf(tryStmt))
-    val orElseBlockNode = createBlock(tryStmt.orelse.map(convert), lineAndColOf(tryStmt))
-
-    addAstChildNodes(
-      controlStructureNode,
-      1,
-      bodyBlockNode,
-      handlersBlockNode,
-      finalBlockNode,
-      orElseBlockNode
+    createTry(
+      tryStmt.body.map(convert),
+      tryStmt.handlers.map(convert),
+      tryStmt.finalbody.map(convert),
+      tryStmt.orelse.map(convert),
+      lineAndColOf(tryStmt)
     )
-
-    controlStructureNode
   }
 
   def convert(assert: ast.Assert): NewNode = {

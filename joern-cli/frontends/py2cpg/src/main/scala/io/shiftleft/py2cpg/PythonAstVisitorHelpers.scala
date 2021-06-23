@@ -1,6 +1,11 @@
 package io.shiftleft.py2cpg
 
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  Operators,
+  nodes
+}
 import io.shiftleft.py2cpg.memop.{Load, MemoryOperation, Store}
 import io.shiftleft.pythonparser.ast
 
@@ -18,11 +23,42 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
   private var tmpCounter = 0
 
-  protected def getUnusedName(): String = {
+  protected def getUnusedName(prefix: String = null): String = {
     //TODO check that result name does not collide with existing variables.
-    val result = "tmp" + tmpCounter
+    val result = if (prefix != null) {
+      prefix + "_tmp" + tmpCounter
+    } else {
+      "tmp" + tmpCounter
+    }
     tmpCounter += 1
     result
+  }
+
+  protected def createTry(
+      body: Iterable[nodes.NewNode],
+      handlers: Iterable[nodes.NewNode],
+      finalBlock: Iterable[nodes.NewNode],
+      orElseBlock: Iterable[nodes.NewNode],
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
+    val controlStructureNode =
+      nodeBuilder.controlStructureNode("try: ...", ControlStructureTypes.TRY, lineAndColumn)
+
+    val bodyBlockNode = createBlock(body, lineAndColumn)
+    val handlersBlockNode = createBlock(handlers, lineAndColumn)
+    val finalBlockNode = createBlock(finalBlock, lineAndColumn)
+    val orElseBlockNode = createBlock(orElseBlock, lineAndColumn)
+
+    addAstChildNodes(
+      controlStructureNode,
+      1,
+      bodyBlockNode,
+      handlersBlockNode,
+      finalBlockNode,
+      orElseBlockNode
+    )
+
+    controlStructureNode
   }
 
   protected def createTransformedImport(
