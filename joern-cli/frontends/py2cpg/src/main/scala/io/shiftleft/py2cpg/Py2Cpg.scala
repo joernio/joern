@@ -30,7 +30,5 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
     DiffGraph.Applier.applyDiff(diffGraph.build, outputCpg, keyPool = Some(auxKeyPool))
 
     new CodeToCpg(outputCpg, inputProviders, keyPool).createAndApply()
-
-    new CfgCreationPass(outputCpg).createAndApply()
   }
 }
