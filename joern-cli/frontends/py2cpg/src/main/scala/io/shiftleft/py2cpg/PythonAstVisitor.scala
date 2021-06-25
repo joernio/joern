@@ -2010,6 +2010,7 @@ object PythonAstVisitor {
 
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
+  // There is a corresponding list in policies which needs to be updated if this one is updated and vice versa.
   val builtinFunctions = Iterable(
     "abs",
     "all",
