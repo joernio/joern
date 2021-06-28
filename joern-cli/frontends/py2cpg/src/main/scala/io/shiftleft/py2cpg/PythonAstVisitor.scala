@@ -474,6 +474,8 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
           instanceTypeDecl,
           metaTypeDeclNode
         )
+      case _ =>
+      // All other body statements are currently ignored.
     }
 
     contextStack.pop()

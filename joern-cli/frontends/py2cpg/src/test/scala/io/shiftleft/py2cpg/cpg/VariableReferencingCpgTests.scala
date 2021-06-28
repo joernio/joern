@@ -231,4 +231,43 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some("test.py:<module>.g:x")
     }
   }
+
+  "reference from class method" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x = 0
+        |class MyClass():
+        |  x = 1
+        |  def f():
+        |    someFunc(x)
+        |""".stripMargin
+    )
+
+    "test capturing to global x exists" in {
+      val localNode = cpg.method.name("<module>").local.name("x").head
+      localNode._closureBindingViaRefIn.next.closureBindingId shouldBe Some(
+        "test.py:<module>.MyClass.MyClass<body>.f:x"
+      )
+
+      val localInMyClassNode = cpg.method.name("MyClass<body>").local.name("x").head
+      localInMyClassNode.referencingIdentifiers.lineNumber(5).hasNext shouldBe false
+    }
+  }
+
+  "reference from class body method" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """x = 0
+        |class MyClass():
+        |  x = 1
+        |  someFunc(x)
+        |""".stripMargin
+    )
+
+    "test reference to body local variable exists" in {
+      val localNode = cpg.method.name("<module>").local.name("x").head
+      localNode._closureBindingViaRefIn.hasNext shouldBe false
+
+      val localInMyClassNode = cpg.method.name("MyClass<body>").local.name("x").head
+      localInMyClassNode.referencingIdentifiers.lineNumber(4).code.head shouldBe "x"
+    }
+  }
 }
