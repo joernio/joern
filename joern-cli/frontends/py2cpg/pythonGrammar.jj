@@ -87,12 +87,35 @@ PARSER_END(PythonParser)
 TOKEN_MGR_DECLS:
 {
   // All kinds of parentheses are tracked here: ( { [
-  int openParentheses = 0;
+  Stack<Integer> parenthesesStack = new Stack<Integer>();
   int currentIndent = 0;
   int dedentsToEmit;
   Stack<Integer> indentStack = new Stack<Integer>();
   {
+    pushParenScope();
     indentStack.push(0);
+  }
+
+  void pushParenScope() {
+    parenthesesStack.push(0);
+  }
+
+  void popParenScope() {
+    parenthesesStack.pop();
+  }
+
+  void countOpenParen() {
+     Integer top = parenthesesStack.pop();
+     parenthesesStack.push(top + 1);
+  }
+
+  void countCloseParen() {
+     Integer top = parenthesesStack.pop();
+     parenthesesStack.push(top - 1);
+  }
+
+  int openParenCounter() {
+    return parenthesesStack.peek();
   }
 
   // matchedToken must have the form: <prefix><oneOrThreeQuotes>
@@ -166,7 +189,10 @@ TOKEN: {
 | <ARROW: "->">
 | <ELLIPSIS: "...">
 | <COLON: ":"> {
-  if (formatStringLexState != -1 && openParentheses == 0) {
+  // Only on top level of the replacement field lexing we can
+  // switch into the format spec lexing. At top level
+  // openParenCounter() is 1 because of the opening curly bracket.
+  if (formatStringLexState != -1 && openParenCounter() == 1) {
     // We reached a ":" of a format spec of a replacement field of a format string.
     SwitchTo(FORMAT_SPEC_LEX);
   }
@@ -208,14 +234,15 @@ TOKEN: {
 | <BIT_OR: "|">
 | <BIT_XOR: "^">
 | <BIT_AND: "&">
-| <PAREN_OPEN: "("> { openParentheses += 1; }
-| <PAREN_CLOSE: ")"> { openParentheses -= 1; }
-| <SQUARE_OPEN: "["> { openParentheses += 1; }
-| <SQUARE_CLOSE: "]"> { openParentheses -= 1; }
-| <CURLY_OPEN: "{"> { openParentheses += 1; }
-| <CURLY_CLOSE: "}"> { openParentheses -= 1;
-  if (formatStringLexState != -1 && openParentheses < 0) {
-    openParentheses = 0;
+| <PAREN_OPEN: "("> { countOpenParen(); }
+| <PAREN_CLOSE: ")"> { countCloseParen(); }
+| <SQUARE_OPEN: "["> { countOpenParen(); }
+| <SQUARE_CLOSE: "]"> { countCloseParen(); }
+| <CURLY_OPEN: "{"> { countOpenParen(); }
+| <CURLY_CLOSE: "}"> {
+  countCloseParen();
+  if (formatStringLexState != -1 && openParenCounter() == 0) {
+    popParenScope();
     SwitchTo(formatStringLexState);
   }
 }
@@ -275,7 +302,7 @@ SKIP: {
   // the second character as a separate newline is always
   // fine because bland lines are ignored.
 | <SKIPPED_NEWLINE: "\n" | "\r"> {
-    if (openParentheses == 0) {
+    if (openParenCounter() == 0) {
       SwitchTo(NEWLINE_EMIT);
     }
   }
@@ -532,7 +559,11 @@ TOKEN: {
 | <FSDQ_ANY: ~[]>
 }
 <FSDQ_LEX_EMIT_END> TOKEN: {
-  <FSDQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+  <FSDQ_CURLY_OPEN: "{"> {
+   matchedToken.kind = FORMAT_STRING_CURLY_OPEN;
+   pushParenScope();
+   countOpenParen();
+  }: DEFAULT
 | <FSDQ_END: "\""> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
@@ -549,7 +580,11 @@ TOKEN: {
 | <FSSQ_ANY: ~[]>
 }
 <FSSQ_LEX_EMIT_END> TOKEN: {
-  <FSSQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+  <FSSQ_CURLY_OPEN: "{"> {
+   matchedToken.kind = FORMAT_STRING_CURLY_OPEN;
+   pushParenScope();
+   countOpenParen();
+  }: DEFAULT
 | <FSSQ_END: "'"> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
@@ -566,7 +601,11 @@ TOKEN: {
 | <FTDQ_ANY: ~[]>
 }
 <FTDQ_LEX_EMIT_END> TOKEN: {
-  <FTDQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+  <FTDQ_CURLY_OPEN: "{"> {
+   matchedToken.kind = FORMAT_STRING_CURLY_OPEN;
+   pushParenScope();
+   countOpenParen();
+  }: DEFAULT
 | <FTDQ_END: "\"\"\""> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
@@ -583,7 +622,11 @@ TOKEN: {
 | <FTSQ_ANY: ~[]>
 }
 <FTSQ_LEX_EMIT_END> TOKEN: {
-  <FTSQ_CURLY_OPEN: "{"> { matchedToken.kind = FORMAT_STRING_CURLY_OPEN; }: DEFAULT
+  <FTSQ_CURLY_OPEN: "{"> {
+   matchedToken.kind = FORMAT_STRING_CURLY_OPEN;
+   pushParenScope();
+   countOpenParen();
+  }: DEFAULT
 | <FTSQ_END: "'''"> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 

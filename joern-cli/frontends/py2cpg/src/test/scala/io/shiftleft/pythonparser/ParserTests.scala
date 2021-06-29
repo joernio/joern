@@ -688,6 +688,12 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("f'''a'''")
   }
 
+  "format string tests with context" in {
+    testS(
+      """func(f"x: {y}")""".stripMargin
+    )
+  }
+
   // Check that an escaped string terminal character does not break
   // tokenization.
   "string literal terminal escape tests" in {
