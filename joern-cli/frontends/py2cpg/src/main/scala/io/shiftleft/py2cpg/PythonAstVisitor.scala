@@ -2121,6 +2121,10 @@ object PythonAstVisitor {
     "divmod",
     "enumerate",
     "eval",
+    // This one is special because it is not from the above mentioned list.
+    // This is because exec is a statement type in V2 but our parser provides
+    // it to us as a normal call so that we can model it as builtin.
+    "exec",
     "execfile",
     "filter",
     "format",
