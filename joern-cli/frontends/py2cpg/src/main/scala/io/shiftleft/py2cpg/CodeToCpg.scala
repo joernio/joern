@@ -17,7 +17,7 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], keyPool: Inter
     val inputPair = inputProvider()
     val parser = new PyParser()
     val astRoot = parser.parse(inputPair.content)
-    val astVisitor = new PythonAstVisitor(inputPair.file)
+    val astVisitor = new PythonAstVisitor(inputPair.file, PythonV2AndV3)
     astVisitor.convert(astRoot)
 
     Iterator.single(astVisitor.getDiffGraph)

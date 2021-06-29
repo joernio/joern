@@ -4,16 +4,6 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.py2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 
-object MethodParameters {
-  def empty(): MethodParameters = {
-    new MethodParameters(0, Nil)
-  }
-}
-case class MethodParameters(
-    posStartIndex: Int,
-    positionalParams: Iterable[nodes.NewMethodParameterIn]
-)
-
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -32,7 +22,22 @@ import io.shiftleft.pythonparser.ast
 
 import scala.collection.mutable
 
-class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
+object MethodParameters {
+  def empty(): MethodParameters = {
+    new MethodParameters(0, Nil)
+  }
+}
+case class MethodParameters(
+    posStartIndex: Int,
+    positionalParams: Iterable[nodes.NewMethodParameterIn]
+)
+
+sealed trait PythonVersion
+object PythonV2 extends PythonVersion
+object PythonV3 extends PythonVersion
+object PythonV2AndV3 extends PythonVersion
+
+class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonAstVisitorHelpers {
 
   private val diffGraph = new DiffGraph.Builder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -107,19 +112,31 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
   // Create assignments of type references to all builtin identifiers if the identifier appears
   // at least once in the module. We filter in order to not generate the complete list of
   // assignment in each module.
-  // That logic still generates assignments in cases where we would not need to but figuring
+  // That logic still generates assignments in cases where we would not need to, but figuring
   // that out would mean we need to wait until all identifiers are linked which is than too
   // late to create new identifiers and still use the same link mechanism. We would need
   // to rearrange quite some code to accomplish that. So we leave that as an optional TODO.
   // Note that namesUsedInModule is only calculated from ast.Name nodes! So e.g. new names
-  // aritifically created during lowering are not in that collection which is fine for now.
+  // artificially created during lowering are not in that collection which is fine for now.
   private def createBuiltinIdentifiers(
       namesUsedInModule: collection.Set[String]
   ): Iterable[nodes.NewNode] = {
     val result = mutable.ArrayBuffer.empty[nodes.NewNode]
     val lineAndColumn = LineAndColumn(1, 1)
 
-    PythonAstVisitor.builtinFunctions.foreach { builtinObjectName =>
+    val builtinFunctions = mutable.ArrayBuffer.empty[String]
+    val builtinClasses = mutable.ArrayBuffer.empty[String]
+
+    if (version == PythonV3 || version == PythonV2AndV3) {
+      builtinFunctions.appendAll(PythonAstVisitor.builtinFunctionsV3)
+      builtinClasses.appendAll(PythonAstVisitor.builtinClassesV3)
+    }
+    if (version == PythonV2 || version == PythonV2AndV3) {
+      builtinFunctions.appendAll(PythonAstVisitor.builtinFunctionsV2)
+      builtinClasses.appendAll(PythonAstVisitor.builtinClassesV2)
+    }
+
+    builtinFunctions.distinct.foreach { builtinObjectName =>
       if (namesUsedInModule.contains(builtinObjectName)) {
         val assignmentNode = createAssignment(
           createIdentifierNode(builtinObjectName, Store, lineAndColumn),
@@ -135,7 +152,7 @@ class PythonAstVisitor(fileName: String) extends PythonAstVisitorHelpers {
       }
     }
 
-    PythonAstVisitor.builtinClasses.foreach { builtinObjectName =>
+    builtinClasses.distinct.foreach { builtinObjectName =>
       if (namesUsedInModule.contains(builtinObjectName)) {
         val assignmentNode = createAssignment(
           createIdentifierNode(builtinObjectName, Store, lineAndColumn),
@@ -2013,7 +2030,7 @@ object PythonAstVisitor {
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
   // There is a corresponding list in policies which needs to be updated if this one is updated and vice versa.
-  val builtinFunctions = Iterable(
+  val builtinFunctionsV3 = Iterable(
     "abs",
     "all",
     "any",
@@ -2066,9 +2083,9 @@ object PythonAstVisitor {
     "zip",
     "__import__"
   )
-  // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
+  // This list contains all classes from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
-  val builtinClasses = Iterable(
+  val builtinClassesV3 = Iterable(
     "bool",
     "bytearray",
     "bytes",
@@ -2087,5 +2104,86 @@ object PythonAstVisitor {
     "str",
     "tuple",
     "type"
+  )
+  // This list contains all functions from https://docs.python.org/2.7/library/functions.html
+  val builtinFunctionsV2 = Iterable(
+    "abs",
+    "all",
+    "any",
+    "bin",
+    "callable",
+    "chr",
+    "classmethod",
+    "cmp",
+    "compile",
+    "delattr",
+    "dir",
+    "divmod",
+    "enumerate",
+    "eval",
+    "execfile",
+    "filter",
+    "format",
+    "getattr",
+    "globals",
+    "hasattr",
+    "hash",
+    "help",
+    "hex",
+    "id",
+    "input",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "locals",
+    "map",
+    "max",
+    "min",
+    "next",
+    "oct",
+    "open",
+    "ord",
+    "pow",
+    "print",
+    "range",
+    "raw_input",
+    "reduce",
+    "reload",
+    "repr",
+    "reversed",
+    "round",
+    "setattr",
+    "sorted",
+    "staticmethod",
+    "sum",
+    "super",
+    "unichr",
+    "vars",
+    "zip",
+    "__import__"
+  )
+  // This list contains all classes from https://docs.python.org/2.7/library/functions.html
+  val builtinClassesV2 = Iterable(
+    "bool",
+    "bytearray",
+    "complex",
+    "dict",
+    "file",
+    "float",
+    "frozenset",
+    "int",
+    "list",
+    "long",
+    "memoryview",
+    "object",
+    "property",
+    "set",
+    "slice",
+    "str",
+    "tuple",
+    "type",
+    "unicode",
+    "xrange"
   )
 }
