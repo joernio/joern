@@ -839,7 +839,15 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   //     <loweringOf>(x = iterator.__next__())
   //     <statements>
   // }
-  // If "ifs" are present the lower of for x in y if z if a: ..,:
+  // If one "if" is present the lowering of for x in y if z:
+  // {
+  //   iterator = y.__iter__()
+  //   while (UNKNOWN condition):
+  //     if (!z): continue
+  //     <loweringOf>(x = iterator.__next__())
+  //     <statements>
+  // }
+  // If multiple "ifs" are present the lowering of for x in y if z if a: ..,:
   // {
   //   iterator = y.__iter__()
   //   while (UNKNOWN condition):
@@ -896,11 +904,17 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     blockStmtNodes.appendAll(loweredAssignNodes)
 
     if (ifs.nonEmpty) {
+      val conditionNode =
+        if (ifs.size == 1) {
+          ifs.head
+        } else {
+          new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
+        }
       val ifNotContinueNode = convert(
         new ast.If(
           new ast.UnaryOp(
             ast.Not,
-            new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider),
+            conditionNode,
             ifs.head.attributeProvider
           ),
           mutable.ArrayBuffer.empty[ast.istmt].append(new ast.Continue(ifs.head.attributeProvider)),
