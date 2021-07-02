@@ -196,7 +196,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       case node: ast.If               => convert(node)
       case node: ast.With             => convert(node)
       case node: ast.AsyncWith        => convert(node)
-      case node: ast.Raise            => unhandled(node)
+      case node: ast.Raise            => convert(node)
       case node: ast.Try              => convert(node)
       case node: ast.Assert           => convert(node)
       case node: ast.Import           => convert(node)
@@ -1174,7 +1174,29 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     withNode
   }
 
-  def convert(raise: ast.Raise): NewNode = ???
+  def convert(raise: ast.Raise): NewNode = {
+    val excNodeOption = raise.exc.map(convert)
+    val causeNodeOption = raise.cause.map(convert)
+
+    val args = mutable.ArrayBuffer.empty[nodes.NewNode]
+    args.appendAll(excNodeOption)
+    args.appendAll(causeNodeOption)
+
+    val code = "raise" +
+      excNodeOption.map(excNode => " " + codeOf(excNode)).getOrElse("") +
+      causeNodeOption.map(causeNode => " from " + codeOf(causeNode)).getOrElse("")
+
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.raise",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(raise)
+    )
+
+    addAstChildrenAsArguments(callNode, 1, args)
+
+    callNode
+  }
 
   def convert(tryStmt: ast.Try): NewNode = {
     createTry(
