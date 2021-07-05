@@ -9,7 +9,11 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import scala.collection.mutable
 
-case class Py2CpgOnFileSystemConfig(outputFile: String, inputDir: String)
+case class Py2CpgOnFileSystemConfig(
+    outputFile: Path,
+    inputDir: Path,
+    ignoreVenvDir: Option[Path]
+)
 
 object Py2CpgOnFileSystem {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -18,15 +22,16 @@ object Py2CpgOnFileSystem {
     * @param config Configuration for cpg generation.
     */
   def buildCpg(config: Py2CpgOnFileSystemConfig): Unit = {
+    logConfiguration(config)
+
     val cpg = initCpg(config.outputFile)
 
-    val inputDirAsPath = Paths.get(config.inputDir)
-    val inputFiles = collectInputFiles(config.inputDir)
+    val inputFiles = collectInputFiles(config.inputDir, config.ignoreVenvDir.to(Iterable))
     val inputProviders = inputFiles.map { inputFile => () =>
       {
         val content = Files.readAllBytes(inputFile)
         val contentStr = new String(content, StandardCharsets.UTF_8)
-        Py2Cpg.InputPair(contentStr, inputDirAsPath.relativize(inputFile).toString)
+        Py2Cpg.InputPair(contentStr, config.inputDir.relativize(inputFile).toString)
       }
     }
 
@@ -35,13 +40,12 @@ object Py2CpgOnFileSystem {
     cpg.close
   }
 
-  private def initCpg(outputFileStr: String): Cpg = {
-    val outputFile = Paths.get(outputFileStr)
+  private def initCpg(outputFile: Path): Cpg = {
     if (Files.exists(outputFile)) {
       Files.delete(outputFile)
     }
 
-    val odbConfig = overflowdb.Config.withDefaults.withStorageLocation(outputFileStr)
+    val odbConfig = overflowdb.Config.withDefaults.withStorageLocation(outputFile.toString)
     val graph = Graph.open(
       odbConfig,
       io.shiftleft.codepropertygraph.generated.nodes.Factories.allAsJava,
@@ -50,10 +54,11 @@ object Py2CpgOnFileSystem {
     new Cpg(graph)
   }
 
-  private def collectInputFiles(inputDir: String): Iterable[Path] = {
-    val inputPath = Paths.get(inputDir)
-
-    if (!Files.exists(inputPath)) {
+  private def collectInputFiles(
+      inputDir: Path,
+      ignorePrefixes: Iterable[Path]
+  ): Iterable[Path] = {
+    if (!Files.exists(inputDir)) {
       logger.error(s"Cannot find $inputDir")
       return Iterable.empty
     }
@@ -61,11 +66,15 @@ object Py2CpgOnFileSystem {
     val inputFiles = mutable.ArrayBuffer.empty[Path]
 
     Files.walkFileTree(
-      inputPath,
+      inputDir,
       new SimpleFileVisitor[Path] {
         override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val fileStr = file.toString
-          if (fileStr.endsWith(".py")) {
+          val relativeFile = inputDir.relativize(file)
+          val relativeFileStr = relativeFile.toString
+          if (
+            relativeFileStr.endsWith(".py") &&
+            !ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
+          ) {
             inputFiles.append(file)
           }
           FileVisitResult.CONTINUE
@@ -74,5 +83,11 @@ object Py2CpgOnFileSystem {
     )
 
     inputFiles
+  }
+
+  private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
+    logger.info(s"Output file: ${config.outputFile}")
+    logger.info(s"Input directory: ${config.inputDir}")
+    config.ignoreVenvDir.foreach(dir => logger.info(s"Ignored virtual environment directory: $dir"))
   }
 }
