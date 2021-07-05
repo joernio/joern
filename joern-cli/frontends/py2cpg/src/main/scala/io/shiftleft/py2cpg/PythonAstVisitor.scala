@@ -286,6 +286,13 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     }
   }
 
+  private def isClassMethod(decoratorList: Iterable[ast.iexpr]): Boolean = {
+    decoratorList.exists {
+      case name: ast.Name if name.id == "classmethod" => true
+      case _                                          => false
+    }
+  }
+
   private def createParameterProcessingFunction(
       parameters: ast.Arguments,
       isStatic: Boolean
@@ -513,7 +520,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     edgeBuilder.astEdge(memberForInstance, instanceTypeDecl, contextStack.order.getAndInc)
 
     val methodForMetaClass =
-      if (isStaticMethod(functionDecoratorList)) {
+      if (isStaticMethod(functionDecoratorList) || isClassMethod(functionDecoratorList)) {
         functionDefToMethod.apply(function)
       } else {
         createMetaClassAdapterMethod(
