@@ -133,11 +133,10 @@ generateScaladocs := {
 import sbt.Path.directory
 Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
 
-
 lazy val ghidra2cpg = project.in(file("ghidra2cpg"))
   .enablePlugins(JavaAppPackaging)
   .settings(
     publish / skip := true,
-    libraryDependencies += "io.shiftleft" %% "ghidra2cpg" % Versions.ghidra2cpg,
+    libraryDependencies += "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
     Compile/mainClass := Some("Main"),
   )
