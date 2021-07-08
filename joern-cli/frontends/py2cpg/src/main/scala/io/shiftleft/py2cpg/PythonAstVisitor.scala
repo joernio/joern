@@ -1361,7 +1361,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       case node: ast.ListComp       => convert(node)
       case node: ast.SetComp        => convert(node)
       case node: ast.DictComp       => convert(node)
-      case node: ast.GeneratorExp   => unhandled(node)
+      case node: ast.GeneratorExp   => convert(node)
       case node: ast.Await          => convert(node)
       case node: ast.Yield          => unhandled(node)
       case node: ast.YieldFrom      => unhandled(node)
@@ -1706,7 +1706,59 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     comprehensionBlockNode
   }
 
-  def convert(generatorExp: ast.GeneratorExp): NewNode = ???
+  /** Lowering of (x for y in l for x in y):
+    * {
+    *   tmp = <operator>.genExp
+    *   <loweringOf>(
+    *   for y in l:
+    *     for x in y:
+    *       tmp.append(x)
+    *   )
+    *   tmp
+    * }
+    * This lowering is not quite correct as it ignores the lazy evaluation of the generator
+    * expression. Instead it just mimics the list comprehension lowering but for now this
+    * is good enough.
+    */
+  // TODO test
+  def convert(generatorExp: ast.GeneratorExp): NewNode = {
+    contextStack.pushSpecialContext()
+    val tmpVariableName = getUnusedName()
+
+    // Create tmp = list()
+    val genExpOperatorCall =
+      nodeBuilder.callNode(
+        "<operator>.genExp",
+        "<operator>.genExp",
+        DispatchTypes.STATIC_DISPATCH,
+        lineAndColOf(generatorExp)
+      )
+
+    val variableAssignNode =
+      createAssignmentToIdentifier(tmpVariableName, genExpOperatorCall, lineAndColOf(generatorExp))
+
+    // Create tmp.append(x)
+    val genExpAppendCallNode = createXDotYCall(
+      () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(generatorExp)),
+      "append",
+      xMayHaveSideEffects = false,
+      lineAndColOf(generatorExp),
+      convert(generatorExp.elt) :: Nil,
+      Nil
+    )
+
+    val comprehensionBlockNode = createComprehensionLowering(
+      tmpVariableName,
+      variableAssignNode,
+      genExpAppendCallNode,
+      generatorExp.generators,
+      lineAndColOf(generatorExp)
+    )
+
+    contextStack.pop()
+
+    comprehensionBlockNode
+  }
 
   def convert(await: ast.Await): NewNode = {
     // Since the CPG format does not provide means to model async/await,
