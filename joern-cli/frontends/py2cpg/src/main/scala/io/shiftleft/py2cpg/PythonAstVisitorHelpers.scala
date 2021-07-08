@@ -377,6 +377,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     }
   }
 
+  // NOTE: The argument indicies start from 0!
   protected def createStaticCall(
       name: String,
       methodFullName: String,
@@ -399,7 +400,18 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       lineAndColumn
     )
 
-    addAstChildrenAsArguments(callNode, 0, argumentNodes)
+    var argIndex = 0
+    argumentNodes.foreach { argumentNode =>
+      edgeBuilder.astEdge(argumentNode, callNode, argIndex)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argIndex)
+      argIndex += 1
+    }
+
+    keywordArguments.foreach { case (keyword: String, argumentNode) =>
+      edgeBuilder.astEdge(argumentNode, callNode, order = argIndex)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword)
+      argIndex += 1
+    }
 
     callNode
   }

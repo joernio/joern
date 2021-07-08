@@ -299,11 +299,10 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   ): () => MethodParameters = {
     val startIndex = if (contextStack.isClassContext && !isStatic) 0 else 1
 
-    // TODO implement non position arguments and vararg.
     () =>
       new MethodParameters(
         startIndex,
-        parameters.posonlyargs.map(convert) ++ parameters.args.map(convert)
+        convert(parameters)
       )
   }
 
@@ -447,17 +446,24 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     // __init__ method has to be in functions because "async def __init__" is invalid.
     val initFunctionOption = functions.find(_.name == "__init__")
 
-    val positionalInitParamCount =
-      initFunctionOption
-        .map(initFunc => initFunc.args.posonlyargs.size + initFunc.args.args.size)
-        .getOrElse(0)
+    val initParameters = initFunctionOption.map(_.args).getOrElse {
+      // Create arguments of a default __init__ function.
+      new ast.Arguments(
+        posonlyargs = mutable.Seq.empty[ast.Arg],
+        args = mutable.Seq(new ast.Arg("self", None, None, classDef.attributeProvider)),
+        vararg = None,
+        kwonlyargs = mutable.Seq.empty[ast.Arg],
+        kw_defaults = mutable.Seq.empty[Option[ast.iexpr]],
+        kw_arg = None,
+        defaults = mutable.Seq.empty[ast.iexpr]
+      )
+    }
 
     val metaClassCallHandlerMethod = createMetaClassCallHandlerMethod(
-      positionalInitParamCount,
+      initParameters,
       metaTypeDeclName,
       metaTypeDeclFullName,
-      instanceTypeDeclFullName,
-      lineAndColOf(classDef)
+      instanceTypeDeclFullName
     )
 
     createBinding(metaClassCallHandlerMethod, metaTypeDeclNode)
@@ -466,10 +472,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     // We do this to model the __init__ call in a visible way for the data flow tracker.
     // This is done because very often the __init__ call is hidden in a super().__new__ call
     // and we cant yet handle super().
-    val fakeNewMethod = createFakeNewMethod(
-      positionalInitParamCount,
-      lineAndColOf(classDef)
-    )
+    val fakeNewMethod = createFakeNewMethod(initParameters)
 
     val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
     edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
@@ -549,11 +552,11 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     *   return STATIC_CALL(MyClass.func(self, p1))
     * @return
     */
-  // TODO handle named arguments and vararg
+  // TODO handle kwArg
   private def createMetaClassAdapterMethod(
       adaptedMethodName: String,
       adaptedMethodFullName: String,
-      functionArguments: ast.Arguments,
+      parameters: ast.Arguments,
       lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
     val adapterMethodName = adaptedMethodName + "<metaClassAdapter>"
@@ -566,23 +569,17 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
         MethodParameters(
           0,
           nodeBuilder.methodParameterNode("cls", lineAndColumn) :: Nil ++
-            functionArguments.posonlyargs.map(convert) ++ functionArguments.args.map(convert)
+            convert(parameters)
         )
       },
       bodyProvider = () => {
-        val arguments = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
-        functionArguments.posonlyargs.foreach { arg =>
-          arguments.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
-        }
-        functionArguments.args.map { arg =>
-          arguments.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
-        }
+        val (arguments, keywordArguments) = createArguments(parameters, lineAndColumn)
         val staticCall = createStaticCall(
           adaptedMethodName,
           adaptedMethodFullName,
           lineAndColumn,
           arguments,
-          Nil
+          keywordArguments
         )
         val returnNode = createReturn(Some(staticCall), lineAndColumn)
         returnNode :: Nil
@@ -595,43 +592,73 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     )
   }
 
+  def createArguments(
+      arguments: ast.Arguments,
+      lineAndColumn: LineAndColumn
+  ): (Iterable[nodes.NewIdentifier], Iterable[(String, nodes.NewIdentifier)]) = {
+    val convertedArgs = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
+    val convertedKeywordArgs = mutable.ArrayBuffer.empty[(String, nodes.NewIdentifier)]
+
+    arguments.posonlyargs.foreach { arg =>
+      convertedArgs.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
+    }
+    arguments.args.foreach { arg =>
+      convertedArgs.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
+    }
+    arguments.vararg.foreach { arg =>
+      // TODO wrap identifier in unroll operator.
+      convertedArgs.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
+    }
+    arguments.kwonlyargs.foreach { arg =>
+      convertedKeywordArgs.append((arg.arg, createIdentifierNode(arg.arg, Load, lineAndColumn)))
+    }
+
+    (convertedArgs, convertedKeywordArgs)
+  }
+
   /** Creates the method which handles a call to the meta class object. This process
     * is also known as creating a new instance object, e.g. obj = MyClass(p1).
     * The purpose of the generated function is to adapt between the special cased
     * instance creation call and a normal call to __new__ (for now <fakeNew>).
     * The adaption is required to in order to provide TYPE_REF(meta class) as instance
     * argument to __new__/<fakeNew>.
-    * So the <metaClassCallHandler> look like:
+    * So the <metaClassCallHandler> looks like:
     * def <metaClassCallHandler>(p1):
     *   return DYNAMIC_CALL(receiver=TYPE_REF(meta class).<fakeNew>, instance = TYPE_REF(meta class), p1)
     */
-  // TODO handle named arguments and vararg
+  // TODO handle kwArg
   private def createMetaClassCallHandlerMethod(
-      positionalInitParameterCount: Int,
+      initParameters: ast.Arguments,
       metaTypeDeclName: String,
       metaTypeDeclFullName: String,
-      instanceTypeDeclFullName: String,
-      lineAndColumn: LineAndColumn
+      instanceTypeDeclFullName: String
   ): nodes.NewMethod = {
     val methodName = "<metaClassCallHandler>"
     val methodFullName = calculateFullNameFromContext(methodName)
+
+    // We need to drop the "self" parameter either from the position only or normal parameters
+    // because "self" is not passed through but rather created in __new__.
+    val (parametersWithoutSelf, lineAndColumn) =
+      if (initParameters.posonlyargs.nonEmpty) {
+        (
+          initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
+          lineAndColOf(initParameters.posonlyargs.head)
+        )
+      } else {
+        (
+          initParameters.copy(args = initParameters.args.tail),
+          lineAndColOf(initParameters.args.head)
+        )
+      }
 
     createMethod(
       methodName,
       methodFullName,
       parameterProvider = () => {
-        val positionalParameters = mutable.ArrayBuffer.empty[nodes.NewMethodParameterIn]
-        for (i <- 1 until positionalInitParameterCount) {
-          positionalParameters.append(nodeBuilder.methodParameterNode("p" + i, lineAndColumn))
-        }
-        MethodParameters(1, positionalParameters)
-
+        MethodParameters(1, convert(parametersWithoutSelf))
       },
       bodyProvider = () => {
-        val argumentIdentifiers = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
-        for (i <- 1 until positionalInitParameterCount) {
-          argumentIdentifiers.append(createIdentifierNode("p" + i, Load, lineAndColumn))
-        }
+        val (arguments, keywordArguments) = createArguments(parametersWithoutSelf, lineAndColumn)
 
         val fakeNewCall = createInstanceCall(
           createFieldAccess(
@@ -641,8 +668,8 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
           ),
           createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColumn),
           lineAndColumn,
-          argumentIdentifiers,
-          Nil
+          arguments,
+          keywordArguments
         )
 
         val returnNode = createReturn(Some(fakeNewCall), lineAndColumn)
@@ -667,27 +694,35 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     *   cls.__init__(__newIstance, p1)
     *   return __newInstance
     */
-  // TODO handle named arguments and vararg
-  private def createFakeNewMethod(
-      positionalInitParameterCount: Int,
-      lineAndColumn: LineAndColumn
-  ): nodes.NewMethod = {
-
+  // TODO handle kwArg
+  private def createFakeNewMethod(initParameters: ast.Arguments): nodes.NewMethod = {
     val newMethodName = "<fakeNew>"
     val newMethodStubFullName = calculateFullNameFromContext(newMethodName)
+
+    // We need to drop the "self" parameter either from the position only or normal parameters
+    // because "self" is not passed through but rather created in __new__.
+    val (parametersWithoutSelf, lineAndColumn) =
+      if (initParameters.posonlyargs.nonEmpty) {
+        (
+          initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
+          lineAndColOf(initParameters.posonlyargs.head)
+        )
+      } else {
+        (
+          initParameters.copy(args = initParameters.args.tail),
+          lineAndColOf(initParameters.args.head)
+        )
+      }
+
     createMethod(
       newMethodName,
       newMethodStubFullName,
       parameterProvider = () => {
-        val positionalParameters = mutable.ArrayBuffer.empty[nodes.NewMethodParameterIn]
-        positionalParameters.append(nodeBuilder.methodParameterNode("cls", lineAndColumn))
-        // Create one parameter node for each parameter of __init__ except for self
-        // which is not passed through but created in __new__.
-        // Thus we only iterate [1, positionalInitParameterCount)
-        for (i <- 1 until positionalInitParameterCount) {
-          positionalParameters.append(nodeBuilder.methodParameterNode("p" + i, lineAndColumn))
-        }
-        MethodParameters(0, positionalParameters)
+        MethodParameters(
+          0,
+          nodeBuilder.methodParameterNode("cls", lineAndColumn) :: Nil ++
+            convert(parametersWithoutSelf)
+        )
       },
       bodyProvider = () => {
         val allocatorCall =
@@ -698,19 +733,18 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
           lineAndColumn
         )
 
-        val argumentIdentifiers = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
-        argumentIdentifiers.append(createIdentifierNode("__newInstance", Load, lineAndColumn))
-        for (i <- 1 until positionalInitParameterCount) {
-          argumentIdentifiers.append(createIdentifierNode("p" + i, Load, lineAndColumn))
-        }
+        val (arguments, keywordArguments) = createArguments(parametersWithoutSelf, lineAndColumn)
+        val argumentWithInstance = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
+        argumentWithInstance.append(createIdentifierNode("__newInstance", Load, lineAndColumn))
+        argumentWithInstance.appendAll(arguments)
 
         val initCall = createXDotYCall(
           () => createIdentifierNode("cls", Load, lineAndColumn),
           "__init__",
           xMayHaveSideEffects = false,
           lineAndColumn,
-          argumentIdentifiers,
-          Nil
+          argumentWithInstance,
+          keywordArguments
         )
 
         val returnNode = createReturn(
@@ -2046,7 +2080,34 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     blockNode
   }
 
-  def convert(arg: ast.Arg): nodes.NewMethodParameterIn = {
+  def convert(parameters: ast.Arguments): Iterable[nodes.NewMethodParameterIn] = {
+    parameters.posonlyargs.map(convertPosOnlyArg) ++
+      parameters.args.map(convertNormalArg) ++
+      parameters.vararg.map(convertVarArg) ++
+      parameters.kwonlyargs.map(convertKeywordOnlyArg) ++
+      parameters.kw_arg.map(convertKwArg)
+  }
+
+  // TODO for now the different arg convert functions are all the same but
+  // will all be slightly different in the future when we can represent the
+  // different types in the cpg.
+  def convertPosOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+  }
+
+  def convertNormalArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+  }
+
+  def convertVarArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+  }
+
+  def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+  }
+
+  def convertKwArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
     nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
   }
 
