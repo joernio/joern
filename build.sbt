@@ -29,17 +29,23 @@ lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
-  import org.zeroturnaround.zip.ZipUtil
+  import org.zeroturnaround.zip.{FileSource, ZipEntrySource, ZipUtil}
   val joernCliZip = (joerncli/Universal/packageBin).value
   val ghidraStaged = (ghidra2cpg/Universal/stage).value
 
-  val cliZip = file("./joern-cli.zip")
-  // ZipUtil.pack(, file("other.zip"))
-  IO.copyFile(joernCliZip, cliZip,
+  val distributionZip = file("./joern-cli.zip")
+  IO.copyFile(joernCliZip, distributionZip,
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
 
-  println(s"created distribution - resulting files: $cliZip")
-  cliZip
+  // add ghidra2cpg
+  val ghidraEntries: Array[ZipEntrySource] = FileUtils.listFilesRecursively(ghidraStaged).map { file =>
+    val relativePath = ghidraStaged.relativize(file).get
+    new FileSource(s"ghidra2cpg/$relativePath", file)
+  }.toArray
+  ZipUtil.addEntries(distributionZip, ghidraEntries)
+
+  println(s"created distribution - resulting files: $distributionZip")
+  distributionZip
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
