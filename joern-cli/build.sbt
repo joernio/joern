@@ -3,7 +3,6 @@ enablePlugins(UniversalPlugin)
 
 organization := "io.shiftleft"
 name := "joern-cli"
-maintainer := "fabs@shiftleft.io"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
@@ -133,10 +132,4 @@ generateScaladocs := {
 import sbt.Path.directory
 Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
 
-lazy val ghidra2cpg = project.in(file("ghidra2cpg"))
-  .enablePlugins(JavaAppPackaging)
-  .settings(
-    publish / skip := true,
-    libraryDependencies += "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
-    Compile/mainClass := Some("io.joern.ghidra2cpg.Main"),
-  )
+maintainer := "fabs@shiftleft.io"
