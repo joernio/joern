@@ -1,7 +1,6 @@
 enablePlugins(JavaAppPackaging)
 enablePlugins(UniversalPlugin)
 
-organization := "io.shiftleft"
 name := "joern-cli"
 maintainer := "fabs@shiftleft.io"
 
