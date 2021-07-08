@@ -1,7 +1,6 @@
 enablePlugins(JavaAppPackaging)
 enablePlugins(UniversalPlugin)
 
-organization := "io.shiftleft"
 name := "joern-cli"
 
 libraryDependencies ++= Seq(
