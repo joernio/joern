@@ -29,7 +29,6 @@ lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
-  import org.zeroturnaround.zip.{FileSource, ZipEntrySource, ZipUtil}
   val joernCliZip = (joerncli/Universal/packageBin).value
   val ghidraStaged = (ghidra2cpg/Universal/stage).value
 
@@ -38,11 +37,14 @@ createDistribution := {
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
 
   // add ghidra2cpg
-  val ghidraEntries: Array[ZipEntrySource] = FileUtils.listFilesRecursively(ghidraStaged).map { file =>
-    val relativePath = ghidraStaged.relativize(file).get
-    new FileSource(s"ghidra2cpg/$relativePath", file)
-  }.toArray
-  ZipUtil.addEntries(distributionZip, ghidraEntries)
+  val tempDir = IO.createTemporaryDirectory
+  val ghidraStaged2 = tempDir / "ghidra2cpg"
+  IO.copyDirectory(ghidraStaged, ghidraStaged2,
+    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
+
+  val p = sys.process.Process(s"""zip -r ${distributionZip.getAbsolutePath} .""", tempDir).run
+  // the next line blocks the process as well
+  assert(p.exitValue == 0, s"error while invoking `zip`. exit code was ${p.exitValue}")
 
   println(s"created distribution - resulting files: $distributionZip")
   distributionZip
