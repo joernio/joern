@@ -25,12 +25,16 @@ homepage := Some(url("https://joern.io/"))
 licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 lazy val joerncli = Projects.joerncli
+lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
+  import org.zeroturnaround.zip.ZipUtil
   val joernCliZip = (joerncli/Universal/packageBin).value
+  val ghidraStaged = (ghidra2cpg/Universal/stage).value
 
   val cliZip = file("./joern-cli.zip")
+  // ZipUtil.pack(, file("other.zip"))
   IO.copyFile(joernCliZip, cliZip,
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
 
@@ -39,4 +43,3 @@ createDistribution := {
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-ThisBuild/maintainer := "fabs@shiftleft.io"
