@@ -12,7 +12,6 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
   "io.github.plume-oss"    % "plume" % "0.5.11" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
@@ -133,3 +132,11 @@ generateScaladocs := {
 
 import sbt.Path.directory
 Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
+
+lazy val ghidra2cpg = project.in(file("ghidra2cpg"))
+  .enablePlugins(JavaAppPackaging)
+  .settings(
+    publish / skip := true,
+    libraryDependencies += "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
+    Compile/mainClass := Some("io.joern.ghidra2cpg.Main"),
+  )

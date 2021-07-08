@@ -10,7 +10,6 @@ val ghidra2cpgVersion = "0.0.14"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
-  Resolver.mavenCentral,
   Resolver.jcenterRepo,
   "jitpack" at "https://jitpack.io",
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
