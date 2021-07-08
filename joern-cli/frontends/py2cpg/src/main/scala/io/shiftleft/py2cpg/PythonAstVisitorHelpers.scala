@@ -476,6 +476,22 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
+  protected def createStarredUnpackOperatorCall(
+      unpackOperand: nodes.NewNode,
+      lineAndColumn: LineAndColumn
+  ): nodes.NewNode = {
+    val code = "*" + codeOf(unpackOperand)
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.starredUnpack",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColumn
+    )
+
+    addAstChildrenAsArguments(callNode, 1, unpackOperand)
+    callNode
+  }
+
   protected def createAssignment(
       lhsNode: nodes.NewNode,
       rhsNode: nodes.NewNode,

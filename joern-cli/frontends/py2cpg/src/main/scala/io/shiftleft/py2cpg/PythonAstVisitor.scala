@@ -595,9 +595,9 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   def createArguments(
       arguments: ast.Arguments,
       lineAndColumn: LineAndColumn
-  ): (Iterable[nodes.NewIdentifier], Iterable[(String, nodes.NewIdentifier)]) = {
-    val convertedArgs = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
-    val convertedKeywordArgs = mutable.ArrayBuffer.empty[(String, nodes.NewIdentifier)]
+  ): (Iterable[nodes.NewNode], Iterable[(String, nodes.NewNode)]) = {
+    val convertedArgs = mutable.ArrayBuffer.empty[nodes.NewNode]
+    val convertedKeywordArgs = mutable.ArrayBuffer.empty[(String, nodes.NewNode)]
 
     arguments.posonlyargs.foreach { arg =>
       convertedArgs.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
@@ -606,8 +606,12 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       convertedArgs.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
     }
     arguments.vararg.foreach { arg =>
-      // TODO wrap identifier in unroll operator.
-      convertedArgs.append(createIdentifierNode(arg.arg, Load, lineAndColumn))
+      convertedArgs.append(
+        createStarredUnpackOperatorCall(
+          createIdentifierNode(arg.arg, Load, lineAndColumn),
+          lineAndColumn
+        )
+      )
     }
     arguments.kwonlyargs.foreach { arg =>
       convertedKeywordArgs.append((arg.arg, createIdentifierNode(arg.arg, Load, lineAndColumn)))
@@ -734,7 +738,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
         )
 
         val (arguments, keywordArguments) = createArguments(parametersWithoutSelf, lineAndColumn)
-        val argumentWithInstance = mutable.ArrayBuffer.empty[nodes.NewIdentifier]
+        val argumentWithInstance = mutable.ArrayBuffer.empty[nodes.NewNode]
         argumentWithInstance.append(createIdentifierNode("__newInstance", Load, lineAndColumn))
         argumentWithInstance.appendAll(arguments)
 
@@ -2006,17 +2010,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     memoryOperation match {
       case Load =>
         val unrollOperand = convert(starred.value)
-
-        val code = "*" + codeOf(unrollOperand)
-        val callNode = nodeBuilder.callNode(
-          code,
-          "<operator>.starredUnpack",
-          DispatchTypes.STATIC_DISPATCH,
-          lineAndColOf(starred)
-        )
-
-        addAstChildrenAsArguments(callNode, 1, unrollOperand)
-        callNode
+        createStarredUnpackOperatorCall(unrollOperand, lineAndColOf(starred))
       case Store =>
         unhandled(starred)
       case Del =>
