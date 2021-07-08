@@ -1188,37 +1188,6 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     createBlock(blockStmts, lineAndCol)
   }
 
-  // TODO Lower into a representation usefull for data flow tracking.
-  // The currently lowering is only here to have some sort of AST representation to
-  // avoid squashing all the content of a "with" statement into a single UNKNOWN nodes
-  // code property.
-  private def convertWith(
-      code: String,
-      parserTypeName: String,
-      lineAndColumn: LineAndColumn,
-      withItems: Iterable[ast.Withitem],
-      body: Iterable[ast.istmt]
-  ): nodes.NewNode = {
-    val itemNodes = mutable.ArrayBuffer.empty[nodes.NewNode]
-
-    withItems.foreach { withItem =>
-      itemNodes.append(convert(withItem.context_expr))
-      withItem.optional_vars.foreach { varNode =>
-        itemNodes.append(convert(varNode))
-      }
-    }
-
-    val itemsBlock = createBlock(itemNodes, lineAndColumn)
-
-    val bodyNodes = body.map(convert)
-    val bodyBlock = createBlock(bodyNodes, lineAndColumn)
-
-    val withNode = nodeBuilder.unknownNode(code, parserTypeName, lineAndColumn)
-    addAstChildNodes(withNode, 1, itemsBlock, bodyBlock)
-
-    withNode
-  }
-
   def convert(raise: ast.Raise): NewNode = {
     val excNodeOption = raise.exc.map(convert)
     val causeNodeOption = raise.cause.map(convert)
