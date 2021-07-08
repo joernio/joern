@@ -320,6 +320,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
 
   override def visit(starred: ast.Starred): Unit = {
     accept(starred.value)
+    astNodeToMemOp.put(starred, stack.head)
   }
 
   override def visit(name: ast.Name): Unit = {

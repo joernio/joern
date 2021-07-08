@@ -3,7 +3,6 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.py2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
-
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -14,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.{
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.py2cpg.memop.{
   AstNodeToMemoryOperationMap,
+  Del,
   Load,
   MemoryOperationCalculator,
   Store
@@ -1372,7 +1372,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       case node: ast.Constant       => convert(node)
       case node: ast.Attribute      => convert(node)
       case node: ast.Subscript      => convert(node)
-      case node: ast.Starred        => unhandled(node)
+      case node: ast.Starred        => convert(node)
       case node: ast.Name           => convert(node)
       case node: ast.List           => convert(node)
       case node: ast.Tuple          => convert(node)
@@ -1948,7 +1948,30 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     createIndexAccess(convert(subscript.value), convert(subscript.slice), lineAndColOf(subscript))
   }
 
-  def convert(starred: ast.Starred): NewNode = ???
+  def convert(starred: ast.Starred): NewNode = {
+    val memoryOperation = memOpMap.get(starred).get
+
+    memoryOperation match {
+      case Load =>
+        val unrollOperand = convert(starred.value)
+
+        val code = "*" + codeOf(unrollOperand)
+        val callNode = nodeBuilder.callNode(
+          code,
+          "<operator>.starredUnpack",
+          DispatchTypes.STATIC_DISPATCH,
+          lineAndColOf(starred)
+        )
+
+        addAstChildrenAsArguments(callNode, 1, unrollOperand)
+        callNode
+      case Store =>
+        unhandled(starred)
+      case Del =>
+        // This case is not possible since star operator is not allowed in delete statement.
+        unhandled(starred)
+    }
+  }
 
   def convert(name: ast.Name): nodes.NewNode = {
     val memoryOperation = memOpMap.get(name).get
