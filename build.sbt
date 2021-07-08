@@ -39,3 +39,4 @@ createDistribution := {
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+ThisBuild/maintainer := "fabs@shiftleft.io"

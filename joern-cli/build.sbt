@@ -3,7 +3,6 @@ enablePlugins(UniversalPlugin)
 
 organization := "io.shiftleft"
 name := "joern-cli"
-maintainer := "fabs@shiftleft.io"
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
