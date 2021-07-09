@@ -67,12 +67,11 @@ Universal/mappings += cpgVersionFile.value -> "schema-extender/cpg-version"
 
 lazy val generateScaladocs = taskKey[File]("generate scaladocs from combined project sources")
 generateScaladocs := {
-
   import better.files._
   import java.io.{File => JFile, PrintWriter}
-  import org.zeroturnaround.zip.ZipUtil
   import sbt.internal.inc.AnalyzingCompiler
   import sbt.internal.util.Attributed.data
+  import net.lingala.zip4j.ZipFile
   import sbt.internal.CommandStrings.ExportStream
 
   val updateReport = updateClassifiers.value
@@ -95,11 +94,10 @@ generateScaladocs := {
   /* extract sources-jar dependencies */
   List(
     "codepropertygraph",
-    "query-primitives",
-    "enhancements",
     "semanticcpg"
   ).foreach { projectName =>
-    ZipUtil.unpack(SbtHelper.findJar(projectName, updateReport, SbtHelper.JarClassifier.Sources), inputFiles.toJava)
+    val jar = SbtHelper.findJar(s"${projectName}_2.13", updateReport, SbtHelper.JarClassifier.Sources)
+    new ZipFile(jar).extractAll(inputFiles.pathAsString)
   }
 
   // slightly adapted from sbt's Default.scala `docTaskSettings`
