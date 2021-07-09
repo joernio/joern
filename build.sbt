@@ -1,3 +1,5 @@
+import net.lingala.zip4j.model.ZipParameters
+
 enablePlugins(GitVersioning)
 
 name := "joern"
@@ -37,14 +39,11 @@ createDistribution := {
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
 
   // add ghidra2cpg
-  val tempDir = IO.createTemporaryDirectory
-  val ghidraStaged2 = tempDir / "ghidra2cpg"
-  IO.copyDirectory(ghidraStaged, ghidraStaged2,
-    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
-
-  val p = sys.process.Process(s"""zip -r ${distributionZip.getAbsolutePath} .""", tempDir).run
-  // the next line blocks the process as well
-  assert(p.exitValue == 0, s"error while invoking `zip`. exit code was ${p.exitValue}")
+  import net.lingala.zip4j._
+  val params = new ZipParameters()
+  params.setRootFolderNameInZip("ghidra2cpg")
+  params.setIncludeRootFolder(false)
+  new ZipFile(distributionZip).addFolder(ghidraStaged, params)
 
   println(s"created distribution - resulting files: $distributionZip")
   distributionZip
