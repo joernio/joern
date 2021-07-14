@@ -568,7 +568,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", lineAndColumn) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn) :: Nil ++
             convert(parameters)
         )
       },
@@ -724,7 +724,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", lineAndColumn) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn) :: Nil ++
             convert(parametersWithoutSelf)
         )
       },
@@ -1854,8 +1854,6 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     *    For reference see:
     *    https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy
     *    search for "Instance methods"
-    *
-    * 2. No named parameter support. CPG does not supports this.
     */
   def convert(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(convert).toSeq
@@ -2130,23 +2128,23 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   // will all be slightly different in the future when we can represent the
   // different types in the cpg.
   def convertPosOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
   }
 
   def convertNormalArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
   }
 
   def convertVarArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg))
   }
 
   def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
   }
 
   def convertKwArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
   }
 
   def convert(keyword: ast.Keyword): NewNode = ???

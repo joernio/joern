@@ -123,6 +123,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
 
   def methodParameterNode(
       name: String,
+      isVariadic: Boolean,
       lineAndColumn: LineAndColumn
   ): nodes.NewMethodParameterIn = {
     val methodParameterNode = nodes
@@ -131,6 +132,7 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .code(name)
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .typeFullName(Constants.ANY)
+      .isVariadic(isVariadic)
       .lineNumber(Some(lineAndColumn.line))
       .columnNumber(Some(lineAndColumn.column))
     addNodeToDiff(methodParameterNode)
