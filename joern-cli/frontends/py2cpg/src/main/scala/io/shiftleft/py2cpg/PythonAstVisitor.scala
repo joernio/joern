@@ -1142,13 +1142,13 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     val tryBody =
       withItem.optional_vars match {
         case Some(optionalVar) =>
-          val assignmentToTarget = createAssignment(
-            convert(optionalVar),
+          val loweredTargetAssignNodes = createValueToTargetsDecomposition(
+            withItem.optional_vars,
             createIdentifierNode(valueIdentifierName, Load, lineAndCol),
             lineAndCol
           )
 
-          assignmentToTarget +: suite
+          loweredTargetAssignNodes ++ suite
         case None =>
           suite
       }
@@ -2044,10 +2044,10 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     */
   // TODO test
   def convert(tuple: ast.Tuple): NewNode = {
-    // Must be a tuple as part of a Load memory operation because a Tuple literal
-    // is not permitted as argument to a Del and Tuple as part of a Store does not
-    // reach here.
-    assert(memOpMap.get(tuple).get == Load)
+    // Must be a tuple as part of a Load or Del memory operation because Tuples in
+    // store contexts are not supposed to reach here. They need to be lowered by
+    // createValueToTargetsDecomposition.
+    assert(memOpMap.get(tuple).get == Load || memOpMap.get(tuple).get == Del)
     val tmpVariableName = getUnusedName()
     val tupleOperatorCall =
       createLiteralOperatorCall("(", ")", "<operator>.tupleLiteral", lineAndColOf(tuple))
