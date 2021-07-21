@@ -1428,8 +1428,16 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
   def convert(lambda: ast.Lambda): NewNode = {
     // TODO test lambda expression.
+    val lambdaCounter = contextStack.getAndIncLambdaCounter()
+    val lambdaNumberSuffix =
+      if (lambdaCounter == 0) {
+        ""
+      } else {
+        lambdaCounter.toString
+      }
+
     val (_, methodRefNode) = createMethodAndMethodRef(
-      "<lambda>",
+      "<lambda>" + lambdaNumberSuffix,
       createParameterProcessingFunction(lambda.args, isStatic = false),
       () => Iterable.single(convert(new ast.Return(lambda.body, lambda.attributeProvider))),
       returns = None,

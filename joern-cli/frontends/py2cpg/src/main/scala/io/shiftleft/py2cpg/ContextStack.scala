@@ -24,6 +24,7 @@ class ContextStack {
     val astParent: nodes.NewNode
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
+    var lambdaCounter: Int
   }
 
   private class MethodContext(
@@ -35,14 +36,16 @@ class ContextStack {
       val methodRefNode: Option[nodes.NewMethodRef] = None,
       val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
       val globalVariables: mutable.Set[String] = mutable.Set.empty,
-      val nonLocalVariables: mutable.Set[String] = mutable.Set.empty
+      val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
+      var lambdaCounter: Int = 0
   ) extends Context {}
 
   private class ClassContext(
       val name: String,
       val astParent: nodes.NewNode,
       val order: AutoIncIndex,
-      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty
+      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+      var lambdaCounter: Int = 0
   ) extends Context {}
 
   // Used to represent comprehension variable and exception
@@ -58,7 +61,8 @@ class ContextStack {
   private class SpecialBlockContext(
       val astParent: nodes.NewNode,
       val order: AutoIncIndex,
-      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty
+      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+      var lambdaCounter: Int = 0
   ) extends Context {}
 
   private case class VariableReference(
@@ -123,6 +127,12 @@ class ContextStack {
 
   def addVariableReference(identifier: nodes.NewIdentifier, memOp: MemoryOperation): Unit = {
     variableReferences.append(new VariableReference(identifier, memOp, stack))
+  }
+
+  def getAndIncLambdaCounter(): Int = {
+    val result = stack.head.lambdaCounter
+    stack.head.lambdaCounter += 1
+    result
   }
 
   private def findEnclosingMethodContext(contextStack: List[Context]): MethodContext = {
