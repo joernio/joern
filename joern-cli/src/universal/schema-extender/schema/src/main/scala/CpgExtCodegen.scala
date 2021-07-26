@@ -1,7 +1,7 @@
 import io.shiftleft.codepropertygraph.schema._
 import overflowdb.codegen.CodeGen
-import overflowdb.schema.{Cardinality, SchemaBuilder}
-import overflowdb.storage.ValueTypes
+import overflowdb.schema.SchemaBuilder
+import overflowdb.schema.Property.ValueType
 
 import java.io.File
 
@@ -16,8 +16,7 @@ object CpgExtCodegen extends App {
   // START extensions for this build - add your's here and remove the example properties
   val exampleProperty = builder.addProperty(
     name = "EXAMPLE_PROPERTY",
-    valueType = ValueTypes.STRING,
-    cardinality = Cardinality.ZeroOrOne,
+    valueType = ValueType.String,
     comment = "an example property")
 
   val exampleNode = builder.addNodeType(
