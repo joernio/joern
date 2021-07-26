@@ -4,7 +4,7 @@ import io.shiftleft.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-@main def main(): Set[Method] = {
+@main def main() = {
   cpg.method
     .internal
     .filter { method =>
@@ -14,5 +14,5 @@ import overflowdb.traversal._
         .target
         .reachableBy(method.parameter.filter(_.typeFullName.contains("const")))
         .nonEmpty
-  }.toSet
+  }.toSetImmutable
 }
