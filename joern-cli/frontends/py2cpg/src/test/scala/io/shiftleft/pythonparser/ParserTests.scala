@@ -141,6 +141,8 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("def func(**x):\n\tpass")
       testT("def func(**x, ):\n\tpass", "def func(**x):\n\tpass")
 
+      testT("def func(x: y):\n\tpass")
+      testT("def func(x: y = z):\n\tpass")
       testT("def func() -> x:\n\tpass")
 
       testT("@x\ndef func():\n\tpass")
