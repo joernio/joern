@@ -1516,41 +1516,21 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     createBlock(blockElements, lineAndColOf(dict))
   }
 
-  /** Lowering of {1, 2}:
-    *   {
-    *     tmp = {}  <-- Yes, this is not correct python syntax but until we represent as {1, 2} this is fine.
-    *     tmp.add(1)
-    *     tmp.add(2)
-    *     tmp
-    *   }
-    */
   // TODO test
   def convert(set: ast.Set): nodes.NewNode = {
-    val tmpVariableName = getUnusedName()
+    val setElementNodes = set.elts.map(convert)
+    val code = setElementNodes.map(codeOf).mkString("{", ", ", "}")
 
-    val setOperatorCall =
-      createLiteralOperatorCall("{", "}", "<operator>.setLiteral", lineAndColOf(set))
-    val setInstanceAssignment =
-      createAssignmentToIdentifier(tmpVariableName, setOperatorCall, lineAndColOf(set))
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.setLiteral",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(set)
+    )
 
-    val appendCallNodes = set.elts.map { setElement =>
-      createXDotYCall(
-        () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(set)),
-        "add",
-        xMayHaveSideEffects = false,
-        lineAndColOf(set),
-        convert(setElement) :: Nil,
-        Nil
-      )
-    }
+    addAstChildrenAsArguments(callNode, 1, setElementNodes)
 
-    val setInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(set))
-
-    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
-    blockElements.append(setInstanceAssignment)
-    blockElements.appendAll(appendCallNodes)
-    blockElements.append(setInstanceIdForReturn)
-    createBlock(blockElements, lineAndColOf(set))
+    callNode
   }
 
   /** Lowering of [x for y in l for x in y]:
@@ -1999,90 +1979,50 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
   }
 
-  /** Lowering of [1, 2]:
-    *   {
-    *     tmp = []
-    *     tmp.append(1)
-    *     tmp.append(2)
-    *     tmp
-    *   }
-    */
   // TODO test
   def convert(list: ast.List): nodes.NewNode = {
     // Must be a List as part of a Load memory operation because a List literal
     // is not permitted as argument to a Del and List as part of a Store does not
     // reach here.
     assert(memOpMap.get(list).get == Load)
-    val tmpVariableName = getUnusedName()
+    val listElementNodes = list.elts.map(convert)
+    val code = listElementNodes.map(codeOf).mkString("[", ", ", "]")
 
-    val listOperatorCall =
-      createLiteralOperatorCall("[", "]", "<operator>.listLiteral", lineAndColOf(list))
-    val listInstanceAssignment =
-      createAssignmentToIdentifier(tmpVariableName, listOperatorCall, lineAndColOf(list))
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.listLiteral",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(list)
+    )
 
-    val appendCallNodes = list.elts.map { listElement =>
-      val elementNode = convert(listElement)
+    addAstChildrenAsArguments(callNode, 1, listElementNodes)
 
-      createXDotYCall(
-        () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(list)),
-        "append",
-        xMayHaveSideEffects = false,
-        lineAndColOf(list),
-        elementNode :: Nil,
-        Nil
-      )
-    }
-
-    val listInstanceIdForReturn = createIdentifierNode(tmpVariableName, Load, lineAndColOf(list))
-
-    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
-    blockElements.append(listInstanceAssignment)
-    blockElements.appendAll(appendCallNodes)
-    blockElements.append(listInstanceIdForReturn)
-    createBlock(blockElements, lineAndColOf(list))
+    callNode
   }
 
-  /** Lowering of (1, 2):
-    *   {
-    *     tmp = ()
-    *     tmp[0] = 1  <-- Yes, this is not valid python but enables our tracking until we represent as (1, 2)
-    *     tmp[1] = 2
-    *     tmp
-    *   }
-    */
   // TODO test
   def convert(tuple: ast.Tuple): NewNode = {
     // Must be a tuple as part of a Load or Del memory operation because Tuples in
     // store contexts are not supposed to reach here. They need to be lowered by
     // createValueToTargetsDecomposition.
     assert(memOpMap.get(tuple).get == Load || memOpMap.get(tuple).get == Del)
-    val tmpVariableName = getUnusedName()
-    val tupleOperatorCall =
-      createLiteralOperatorCall("(", ")", "<operator>.tupleLiteral", lineAndColOf(tuple))
-    val tupleVariableAssignNode =
-      createAssignmentToIdentifier(tmpVariableName, tupleOperatorCall, lineAndColOf(tuple))
-
-    var index = 0
-    val tupleElementAssignNodes = tuple.elts.map { tupleElement =>
-      val indexAccessNode = createIndexAccess(
-        createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple)),
-        nodeBuilder.numberLiteralNode(index, lineAndColOf(tuple)),
-        lineAndColOf(tuple)
-      )
-
-      index += 1
-
-      createAssignment(indexAccessNode, convert(tupleElement), lineAndColOf(tuple))
+    val tupleElementNodes = tuple.elts.map(convert)
+    val code = if (tupleElementNodes.size != 1) {
+      tupleElementNodes.map(codeOf).mkString("(", ", ", ")")
+    } else {
+      "(" + codeOf(tupleElementNodes.head) + ",)"
     }
 
-    val tupleInstanceReturnIdentifierNode =
-      createIdentifierNode(tmpVariableName, Load, lineAndColOf(tuple))
+    val callNode = nodeBuilder.callNode(
+      code,
+      "<operator>.tupleLiteral",
+      DispatchTypes.STATIC_DISPATCH,
+      lineAndColOf(tuple)
+    )
 
-    val blockElements = mutable.ArrayBuffer.empty[nodes.NewNode]
-    blockElements.append(tupleVariableAssignNode)
-    blockElements.appendAll(tupleElementAssignNodes)
-    blockElements.append(tupleInstanceReturnIdentifierNode)
-    createBlock(blockElements, lineAndColOf(tuple))
+    addAstChildrenAsArguments(callNode, 1, tupleElementNodes)
+
+    callNode
   }
 
   def convert(slice: ast.Slice): NewNode = ???
