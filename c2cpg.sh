@@ -1,0 +1,1 @@
+./joern-cli/target/universal/stage/c2cpg.sh
