@@ -22,6 +22,7 @@ case class JoernScanConfig(src: String = "",
                            overwrite: Boolean = false,
                            store: Boolean = false,
                            dump: Boolean = false,
+                           listQueryNames: Boolean = false,
                            updateQueryDb: Boolean = false,
                            queryDbVersion: String = JoernScanConfig.defaultDbVersion,
                            maxCallDepth: Int = 2,
@@ -52,6 +53,10 @@ object JoernScan extends App with BridgeBase {
       opt[Unit]("dump")
         .action((_, c) => c.copy(dump = true))
         .text("Dump available queries to file")
+
+      opt[Unit]("list-query-names")
+        .action((_, c) => c.copy(listQueryNames = true))
+        .text("Print a list of available query names")
 
       opt[Unit]("updatedb")
         .action((_, c) => c.copy(updateQueryDb = true))
@@ -86,6 +91,8 @@ object JoernScan extends App with BridgeBase {
   private def runScanner(config: JoernScanConfig): Unit = {
     if (config.dump) {
       dumpQueries()
+    } else if (config.listQueryNames) {
+      listQueryNames()
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
@@ -119,6 +126,18 @@ object JoernScan extends App with BridgeBase {
         Serialization.write(queryDb.allQueries)
       )
     println(s"Queries written to: $outFileName")
+  }
+
+  private def listQueryNames(): Unit = {
+    implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
+
+    if (queryDb.allQueries.isEmpty) {
+      println("You have not installed any query bundles. Try:")
+      println("joern-scan --updatedb")
+    }
+
+    println(queryDb.allQueries.map(_.name).sorted.mkString("\n"))
   }
 
   private def updateQueryDatabase(version: String): Unit = {
