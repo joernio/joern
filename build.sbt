@@ -7,8 +7,8 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 ThisBuild /Test /fork := true
-val cpgVersion = "1.3.254"
-val ghidra2cpgVersion = "0.0.19"
+val cpgVersion = "1.3.263"
+val ghidra2cpgVersion = "0.0.21"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
