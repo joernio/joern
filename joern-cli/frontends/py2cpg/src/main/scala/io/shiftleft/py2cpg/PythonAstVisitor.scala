@@ -418,19 +418,6 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
       lineAndColOf(classDef)
     )
 
-    // Create call to <body> function and assignment of the meta class object to a identifier named
-    // like the class.
-    val callToClassBodyFunction = createCall(methodRefNode, lineAndColOf(classDef), Nil, Nil)
-    val metaTypeRefNode =
-      createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
-    val classIdentifierAssignNode =
-      createAssignmentToIdentifier(classDef.name, metaTypeRefNode, lineAndColOf(classDef))
-
-    val classBlock = createBlock(
-      callToClassBodyFunction :: classIdentifierAssignNode :: Nil,
-      lineAndColOf(classDef)
-    )
-
     // Create type for class instances
     val instanceTypeDeclName = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
@@ -506,6 +493,19 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     }
 
     contextStack.pop()
+
+    // Create call to <body> function and assignment of the meta class object to a identifier named
+    // like the class.
+    val callToClassBodyFunction = createCall(methodRefNode, lineAndColOf(classDef), Nil, Nil)
+    val metaTypeRefNode =
+      createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
+    val classIdentifierAssignNode =
+      createAssignmentToIdentifier(classDef.name, metaTypeRefNode, lineAndColOf(classDef))
+
+    val classBlock = createBlock(
+      callToClassBodyFunction :: classIdentifierAssignNode :: Nil,
+      lineAndColOf(classDef)
+    )
 
     classBlock
   }
