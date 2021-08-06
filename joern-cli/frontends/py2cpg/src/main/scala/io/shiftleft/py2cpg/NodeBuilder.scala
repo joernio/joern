@@ -72,7 +72,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
   }
 
   def bindingNode(): nodes.NewBinding = {
-    val bindingNode = nodes.NewBinding()
+    val bindingNode = nodes
+      .NewBinding()
       .name("")
       .signature("")
 
