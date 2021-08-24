@@ -162,6 +162,16 @@ fi
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
+cd "$JOERN_INSTALL_DIR"
+unzip -qo joern-cli.zip
+unzip -qo c2cpg.zip -d c2cpg
+unzip -qo fuzzyc2cpg.zip -d fuzzyc2cpg
+unzip -qo ghidra2cpg.zip -d ghidra2cpg
+unzip -qo js2cpg.zip -d js2cpg
+rm joern-cli.zip c2cpg.zip fuzzyc2cpg.zip ghidra2cpg.zip js2cpg.zip
+cd -
+
+
 if [ $INTERACTIVE = false ] && [ "$(whoami)" != "root" ]; then
   echo "==============================================================="
   echo "WARNING: you are NOT root and you are running non-interactively"

@@ -6,7 +6,7 @@ else
     SCRIPT_ABS_PATH=$(readlink -f "$0")
 fi
 SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
-SCRIPT="$SCRIPT_ABS_DIR"/bin/fuzzyc-2-cpg
+SCRIPT="$SCRIPT_ABS_DIR"/../fuzzyc2cpg/bin/fuzzyc2cpg
 
 if [ ! -f "$SCRIPT" ]; then
     echo "Unable to find $SCRIPT, have you created the distribution?"
