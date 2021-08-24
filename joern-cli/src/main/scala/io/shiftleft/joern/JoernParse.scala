@@ -1,6 +1,5 @@
 package io.shiftleft.joern
 
-import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 import io.shiftleft.joern.plume.PlumeCpgGenerator
 
 import scala.util.control.NonFatal
