@@ -2,6 +2,7 @@
 object Versions {
   val cpgVersion = parseVersion("cpgVersion")
   val ghidra2cpg = parseVersion("ghidra2cpgVersion")
+  val js2cpg = parseVersion("js2cpgVersion")
 
   private def parseVersion(key: String): String = { 
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r

@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
   "io.shiftleft" %% "c2cpg" % Versions.cpgVersion,
+  "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
   "io.github.plume-oss"    % "plume" % "0.5.12" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",

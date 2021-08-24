@@ -9,6 +9,7 @@ ThisBuild / scalaVersion := "2.13.5"
 ThisBuild /Test /fork := true
 val cpgVersion = "1.3.287"
 val ghidra2cpgVersion = "0.0.24"
+val js2cpgVersion = "0.2.2"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
