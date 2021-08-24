@@ -10,6 +10,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpgVersion,
   "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
+  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion, // only needed for joern-parse - TODO MP consider to remove?
   "io.github.plume-oss"    % "plume" % "0.5.12" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
