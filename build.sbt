@@ -1,5 +1,3 @@
-import net.lingala.zip4j.model.ZipParameters
-
 enablePlugins(GitVersioning)
 
 name := "joern"
@@ -32,22 +30,26 @@ lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
-  val joernCliZip = (joerncli/Universal/packageBin).value
-  val ghidraStaged = (ghidra2cpg/Universal/stage).value
-
-  val distributionZip = file("./joern-cli.zip")
-  IO.copyFile(joernCliZip, distributionZip,
-    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
-
-  // add ghidra2cpg
   import net.lingala.zip4j._
-  val params = new ZipParameters()
-  params.setRootFolderNameInZip("ghidra2cpg")
-  params.setIncludeRootFolder(false)
-  new ZipFile(distributionZip).addFolder(ghidraStaged, params)
 
-  println(s"created distribution - resulting files: $distributionZip")
-  distributionZip
+  val distributionFile = file("target/joern-cli.zip")
+  val distributionZip = new ZipFile(distributionFile)
+
+  distributionZip.addFile((joerncli/Universal/packageBin).value, withName("joern-cli.zip"))
+  distributionZip.addFile((ghidra2cpg/Universal/packageBin).value, withName("ghidra2cpg.zip"))
+  distributionZip.addFile(SimpleCache.downloadMaybe(s"https://github.com/ShiftLeftSecurity/js2cpg/releases/download/v$js2cpgVersion/js2cpg.zip"))
+  distributionZip.addFile(SimpleCache.downloadMaybe(s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v$cpgVersion/fuzzy2cpg.zip"))
+  distributionZip.addFile(SimpleCache.downloadMaybe(s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v$cpgVersion/c2cpg.zip"))
+
+  println(s"created distribution - resulting files: $distributionFile")
+  distributionFile
+}
+
+import net.lingala.zip4j.model.ZipParameters
+def withName(name: String): ZipParameters = {
+  val zipParams = new ZipParameters
+  zipParams.setFileNameInZip(name)
+  zipParams
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
