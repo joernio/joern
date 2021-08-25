@@ -36,7 +36,6 @@ createDistribution := {
   val distributionZip = new ZipFile(distributionFile)
 
   distributionZip.addFile((joerncli/Universal/packageBin).value, withName("joern-cli.zip"))
-  distributionZip.addFile((ghidra2cpg/Universal/packageBin).value, withName("ghidra2cpg.zip"))
   distributionZip.addFile(Frontends.downloadC2CpgZip, withName("c2cpg.zip"))
   distributionZip.addFile(Frontends.downloadFuzzyc2CpgZip, withName("fuzzyc2cpg.zip"))
   distributionZip.addFile(Frontends.downloadJs2CpgZip, withName("js2cpg.zip"))
