@@ -60,7 +60,9 @@ Universal/mappings ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
   val ret = target.value / "cpg-version"
-  better.files.File(ret.getPath).writeText(Versions.cpgVersion)
+  better.files.File(ret.getPath)
+    .createIfNotExists(createParents = true)
+    .writeText(Versions.cpgVersion)
   ret
 }
 Universal/mappings += cpgVersionFile.value -> "schema-extender/cpg-version"
