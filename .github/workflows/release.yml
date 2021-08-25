@@ -24,7 +24,7 @@ jobs:
           ./schema-extender/test.sh
           cd -
       - run: sbt ciReleaseTagNextVersion createDistribution
-      - run: sha512sum ./joern-cli.zip > ./joern-cli.zip.sha512
+      - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - name: Export ENV vars
         run:
           echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
@@ -53,7 +53,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./joern-cli.zip
+          asset_path: target/joern-cli.zip
           asset_name: joern-cli.zip
           asset_content_type: application/zip
       - name: Upload joern-cli.zip.sha512
@@ -62,6 +62,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./joern-cli.zip.sha512
+          asset_path: target/joern-cli.zip.sha512
           asset_name: joern-cli.zip.sha512
           asset_content_type: text/plain

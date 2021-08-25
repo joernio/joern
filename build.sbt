@@ -1,5 +1,3 @@
-import net.lingala.zip4j.model.ZipParameters
-
 enablePlugins(GitVersioning)
 
 name := "joern"
@@ -7,9 +5,9 @@ organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 ThisBuild /Test /fork := true
-val cpgVersion = "1.3.287"
-val ghidra2cpgVersion = "0.0.24"
-val js2cpgVersion = "0.2.2"
+val cpgVersion = "1.3.302"
+val ghidra2cpgVersion = "0.0.25"
+val js2cpgVersion = "0.2.3"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
@@ -31,23 +29,27 @@ lazy val joerncli = Projects.joerncli
 lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
+import net.lingala.zip4j._
+import net.lingala.zip4j.model.ZipParameters
 createDistribution := {
-  val joernCliZip = (joerncli/Universal/packageBin).value
-  val ghidraStaged = (ghidra2cpg/Universal/stage).value
+  val distributionFile = file("target/joern-cli.zip")
+  val distributionZip = new ZipFile(distributionFile)
 
-  val distributionZip = file("./joern-cli.zip")
-  IO.copyFile(joernCliZip, distributionZip,
-    CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true))
+  distributionZip.addFile((joerncli/Universal/packageBin).value, withName("joern-cli.zip"))
+  distributionZip.addFile(Frontends.downloadC2CpgZip, withName("c2cpg.zip"))
+  distributionZip.addFile(Frontends.downloadFuzzyc2CpgZip, withName("fuzzyc2cpg.zip"))
+  distributionZip.addFile(Frontends.downloadJs2CpgZip, withName("js2cpg.zip"))
 
-  // add ghidra2cpg
-  import net.lingala.zip4j._
-  val params = new ZipParameters()
-  params.setRootFolderNameInZip("ghidra2cpg")
-  params.setIncludeRootFolder(false)
-  new ZipFile(distributionZip).addFolder(ghidraStaged, params)
-
-  println(s"created distribution - resulting files: $distributionZip")
-  distributionZip
+  println(s"created distribution - resulting files: $distributionFile")
+  distributionFile
 }
+
+def withName(name: String): ZipParameters = {
+  val zipParams = new ZipParameters
+  zipParams.setFileNameInZip(name)
+  zipParams
+}
+
+
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

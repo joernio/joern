@@ -5,14 +5,12 @@ organization := "io.shiftleft"
 name := "joern-cli"
 
 libraryDependencies ++= Seq(
-  "io.shiftleft" %% "codepropertygraph" % Versions.cpgVersion,
-  "io.shiftleft" %% "semanticcpg" % Versions.cpgVersion,
-  "io.shiftleft" %% "console" % Versions.cpgVersion,
-  "io.shiftleft" %% "console" % Versions.cpgVersion % Test classifier "tests",
-  "io.shiftleft" %% "dataflowengineoss" % Versions.cpgVersion,
-  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpgVersion,
-  "io.shiftleft" %% "c2cpg" % Versions.cpgVersion,
-  "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
+  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft" %% "semanticcpg" % Versions.cpg,
+  "io.shiftleft" %% "console" % Versions.cpg,
+  "io.shiftleft" %% "console" % Versions.cpg % Test classifier "tests",
+  "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
+  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg, // only needed for joern-parse - TODO MP consider to remove?
   "io.github.plume-oss"    % "plume" % "0.5.12" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
@@ -36,7 +34,7 @@ downloadFuzzyPreprocessor := {
   val log = streams.value.log
   val ppFilename = "fuzzyppcli.zip"
   val ppUrl = new URL(
-    s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v${Versions.cpgVersion}/$ppFilename")
+    s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v${Versions.cpg}/$ppFilename")
   val ppOutputDir = file("fuzzyppcli")
 
   log.info(s"trying to download fuzzypp from $ppUrl")
@@ -62,7 +60,9 @@ Universal/mappings ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
   val ret = target.value / "cpg-version"
-  better.files.File(ret.getPath).writeText(Versions.cpgVersion)
+  better.files.File(ret.getPath)
+    .createIfNotExists(createParents = true)
+    .writeText(Versions.cpg)
   ret
 }
 Universal/mappings += cpgVersionFile.value -> "schema-extender/cpg-version"
@@ -129,7 +129,22 @@ generateScaladocs := {
   out
 }
 
-import sbt.Path.directory
-Universal/packageBin/mappings ++= directory(new File("joern-cli/src/main/resources/scripts"))
+Universal/packageBin/mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
+
+Universal/mappings ++= {
+  import net.lingala.zip4j.ZipFile
+  val frontendsDirRoot = s"target/cpg-${Versions.cpg}/"
+  val frontendsDir = s"$frontendsDirRoot/frontends"
+
+  new ZipFile(Frontends.downloadC2CpgZip).extractAll(s"$frontendsDir/c2cpg")
+  new ZipFile(Frontends.downloadFuzzyc2CpgZip).extractAll(s"$frontendsDir/fuzzyc2cpg")
+  new ZipFile(Frontends.downloadJs2CpgZip).extractAll(s"$frontendsDir/js2cpg")
+
+  NativePackagerHelper.contentOf(frontendsDirRoot)
+}
+
+Universal/mappings ++= NativePackagerHelper.contentOf((Projects.ghidra2cpg/stage).value).map {
+  case (file, str) => (file, s"frontends/ghidra2cpg/$str")
+}
 
 maintainer := "fabs@shiftleft.io"
