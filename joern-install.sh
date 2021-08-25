@@ -166,8 +166,10 @@ cd "$JOERN_INSTALL_DIR"
 unzip -qo joern-cli.zip
 unzip -qo c2cpg.zip -d c2cpg
 unzip -qo fuzzyc2cpg.zip -d fuzzyc2cpg
-unzip -qo ghidra2cpg.zip -d ghidra2cpg
 unzip -qo js2cpg.zip -d js2cpg
+unzip -qo ghidra2cpg.zip -d ghidra2cpg
+# remove ghidra root directory which includes version
+mv ghidra2cpg/ghidra2cpg-*/bin ghidra2cpg/ghidra2cpg-*/lib ghidra2cpg
 rm joern-cli.zip c2cpg.zip fuzzyc2cpg.zip ghidra2cpg.zip js2cpg.zip
 cd -
 
