@@ -7,7 +7,7 @@ else
 fi
 
 SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
-SCRIPT="$SCRIPT_ABS_DIR"/../frontends/c2cpg/bin/c2cpg
+SCRIPT="$SCRIPT_ABS_DIR"/frontends/c2cpg/bin/c2cpg
 
 if [ ! -f "$SCRIPT" ]; then
     echo "Unable to find $SCRIPT, have you created the distribution?"

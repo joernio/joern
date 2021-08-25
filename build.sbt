@@ -29,33 +29,28 @@ lazy val joerncli = Projects.joerncli
 lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
+import net.lingala.zip4j._
+import net.lingala.zip4j.model.ZipParameters
 createDistribution := {
-  import net.lingala.zip4j._
-
   val distributionFile = file("target/joern-cli.zip")
   val distributionZip = new ZipFile(distributionFile)
 
   distributionZip.addFile((joerncli/Universal/packageBin).value, withName("joern-cli.zip"))
   distributionZip.addFile((ghidra2cpg/Universal/packageBin).value, withName("ghidra2cpg.zip"))
-  distributionZip.addFile(
-    SimpleCache.downloadMaybe(s"https://github.com/ShiftLeftSecurity/js2cpg/releases/download/v$js2cpgVersion/js2cpg.zip"),
-    withName("js2cpg.zip"))
-  distributionZip.addFile(
-    SimpleCache.downloadMaybe(s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v$cpgVersion/fuzzy2cpg.zip"),
-    withName("fuzzyc2cpg.zip"))
-  distributionZip.addFile(
-    SimpleCache.downloadMaybe(s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v$cpgVersion/c2cpg.zip"),
-    withName("c2cpg.zip"))
+  distributionZip.addFile(Frontends.downloadC2CpgZip, withName("c2cpg.zip"))
+  distributionZip.addFile(Frontends.downloadFuzzyc2CpgZip, withName("fuzzyc2cpg.zip"))
+  distributionZip.addFile(Frontends.downloadJs2CpgZip, withName("js2cpg.zip"))
 
   println(s"created distribution - resulting files: $distributionFile")
   distributionFile
 }
 
-import net.lingala.zip4j.model.ZipParameters
 def withName(name: String): ZipParameters = {
   val zipParams = new ZipParameters
   zipParams.setFileNameInZip(name)
   zipParams
 }
+
+
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
