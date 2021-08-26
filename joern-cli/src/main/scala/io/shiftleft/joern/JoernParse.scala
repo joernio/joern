@@ -63,7 +63,7 @@ object JoernParse extends App {
     } else if (language == "java") {
       PlumeCpgGenerator.createCpgForJava(config)
     } else {
-      val generator = cpgGeneratorForLanguage(language, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
+      val generator = cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
         case Some(cmd) => Right(cmd)
 
