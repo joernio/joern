@@ -44,7 +44,7 @@ downloadFuzzyPreprocessor := {
     Some(ppOutputDir)
   } catch {
     case ex: Exception =>
-      log.warn(s"unable to download fuzzypp from $ppUrl - if you are using a local release you can ignore this. Otherwise please investigate, since the cpg release build may have a problem.")
+      log.warn(s"unable to download fuzzypp from $ppUrl - if you are using a local release you can ignore this, but note that you won't be able to use fuzzypp.")
       log.trace(ex)
       None
   }
@@ -135,16 +135,33 @@ Universal/mappings ++= {
   import net.lingala.zip4j.ZipFile
   val frontendsDirRoot = s"target/cpg-${Versions.cpg}/"
   val frontendsDir = s"$frontendsDirRoot/frontends"
+  val log = streams.value.log
 
-  new ZipFile(Frontends.downloadC2CpgZip).extractAll(s"$frontendsDir/c2cpg")
-  new ZipFile(Frontends.downloadFuzzyc2CpgZip).extractAll(s"$frontendsDir/fuzzyc2cpg")
-  new ZipFile(Frontends.downloadJs2CpgZip).extractAll(s"$frontendsDir/js2cpg")
+  Seq(
+    ("c2cpg", Frontends.c2cpgUrl),
+    ("fuzzyc2cpg", Frontends.fuzzyc2cpgUrl),
+    ("js2cpg", Frontends.js2cpgUrl),
+  ).foreach { case (name, url) =>
+    tryDownload(name, url, log)
+      .map(new ZipFile(_).extractAll(s"$frontendsDir/$name"))
+  }
 
   NativePackagerHelper.contentOf(frontendsDirRoot)
 }
 
 Universal/mappings ++= NativePackagerHelper.contentOf((Projects.ghidra2cpg/stage).value).map {
   case (file, str) => (file, s"frontends/ghidra2cpg/$str")
+}
+
+def tryDownload(name: String, url: String, log: sbt.internal.util.ManagedLogger): Option[File] = {
+  try {
+    Some(SimpleCache.downloadMaybe(url))
+  } catch {
+    case ex: Exception =>
+      log.warn(s"Unable to download $name from $url - if you are using local dependencies that's expected (due to a missing public release). You'll need to use $name from your local installation.")
+      log.trace(ex)
+      None
+  }
 }
 
 maintainer := "fabs@shiftleft.io"
