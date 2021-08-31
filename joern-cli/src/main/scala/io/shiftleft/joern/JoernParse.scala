@@ -47,9 +47,10 @@ object JoernParse extends App {
       guessLanguage(inputPath) match {
         case Some(guess) => Right(guess)
 
-        case None => Left(
-          s"Could not guess language from input path $inputPath. Please specify a language using the --language option."
-        )
+        case None =>
+          Left(
+            s"Could not guess language from input path $inputPath. Please specify a language using the --language option."
+          )
       }
     } else {
       Right(config.language)
@@ -62,7 +63,8 @@ object JoernParse extends App {
     } else if (language == "java") {
       PlumeCpgGenerator.createCpgForJava(config)
     } else {
-      val generator = cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
+      val generator =
+        cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
         case Some(cmd) => Right(cmd)
 

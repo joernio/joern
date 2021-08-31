@@ -30,7 +30,7 @@ object PlumeCpgGenerator {
       extractor.load(new java.io.File(inputPath))
       extractor.project()
     } match {
-      case Success(_)   => Right("Java CPG Generation Success")
+      case Success(_) => Right("Java CPG Generation Success")
       case Failure(exc) => {
         exc.printStackTrace()
         Left(exc.getMessage)
