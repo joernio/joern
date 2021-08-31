@@ -7,8 +7,6 @@ import io.shiftleft.joern.plume.PlumeCpgGenerator
 
 object JoernParse extends App {
 
-  class InvalidLanguageError extends Error
-
   // Special string used to separate joern-parse opts from frontend-specific opts
   val ARGS_DELIMITER = "--frontend-args"
   val DEFAULT_CPG_OUT_FILE = "cpg.bin"
@@ -19,7 +17,9 @@ object JoernParse extends App {
   run() match {
     case Right(msg) => println(msg)
 
-    case Left(errMsg) => println(s"ERROR: $errMsg")
+    case Left(errMsg) =>
+      println(s"PARSE FAILED: $errMsg")
+      System.exit(1)
   }
 
   def run(): Either[String, String] = {
@@ -32,7 +32,6 @@ object JoernParse extends App {
   }
 
   def splitArgs(): (List[String], List[String]) = {
-    println(s"Args to split: ${args.toList}")
     args.indexOf(ARGS_DELIMITER) match {
       case -1 => (args.toList, Nil)
 
@@ -132,7 +131,6 @@ object JoernParse extends App {
       case Some(config) => Right(config)
 
       case None =>
-        println(s"args: $parserArgs")
         Left("Could not parse command line options")
     }
 
