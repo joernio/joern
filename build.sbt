@@ -7,6 +7,7 @@ ThisBuild / scalaVersion := "2.13.5"
 ThisBuild /Test /fork := true
 val cpgVersion = "1.3.305"
 val c2cpgVersion = "1.3.305"
+val fuzzyc2cpgVersion = "1.3.305"
 val ghidra2cpgVersion = "0.0.25"
 val js2cpgVersion = "0.2.3"
 
