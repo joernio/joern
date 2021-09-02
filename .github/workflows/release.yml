@@ -11,6 +11,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
       - uses: actions/cache@v2
         with:
           path: |

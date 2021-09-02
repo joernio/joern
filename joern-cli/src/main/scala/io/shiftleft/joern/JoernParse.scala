@@ -111,7 +111,7 @@ object JoernParse extends App {
       opt[String]("namespaces")
         .optional()
         .text("namespaces to include: comma separated string")
-        .action((x, c) => c.copy(namespaces = x.split(",").map(_.strip).toList))
+        .action((x, c) => c.copy(namespaces = x.split(",").map(_.trim).toList))
 
       note("Enhancement stage")
 
