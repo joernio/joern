@@ -9,7 +9,7 @@ import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.joern.Scan.{allTag, defaultTag}
+import io.shiftleft.joern.Scan.{allTag, defaultTag, getQueriesFromQueryDb}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
 import scala.reflect.runtime.universe._
@@ -92,7 +92,7 @@ object JoernScan extends App with BridgeBase {
     if (config.dump) {
       dumpQueries()
     } else if (config.listQueryNames) {
-      listQueryNames()
+      println(queryNames().sorted.mkString("\n"))
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
@@ -100,6 +100,12 @@ object JoernScan extends App with BridgeBase {
         println("Please specify a source code directory to scan")
         return
       }
+
+      val qNames = queryNames()
+      if (qNames.isEmpty) {
+        return
+      }
+
       Scan.defaultOpts.names = config.names.split(",").filterNot(_.isEmpty)
       Scan.defaultOpts.tags = config.tags.split(",").filterNot(_.isEmpty)
       Scan.defaultOpts.maxCallDepth = config.maxCallDepth
@@ -128,16 +134,9 @@ object JoernScan extends App with BridgeBase {
     println(s"Queries written to: $outFileName")
   }
 
-  private def listQueryNames(): Unit = {
+  private def queryNames(): List[String] = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
-    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
-
-    if (queryDb.allQueries.isEmpty) {
-      println("You have not installed any query bundles. Try:")
-      println("joern-scan --updatedb")
-    }
-
-    println(queryDb.allQueries.map(_.name).sorted.mkString("\n"))
+    getQueriesFromQueryDb(new JoernDefaultArgumentProvider(0)).map(_.name)
   }
 
   private def updateQueryDatabase(version: String): Unit = {
@@ -182,6 +181,20 @@ object Scan {
 
   val defaultTag = "default"
   val allTag = "all"
+
+  /**
+    * Obtain list of queries from query database, warning the user if the list is empty.
+    * */
+  def getQueriesFromQueryDb(defaultArgumentProvider: DefaultArgumentProvider): List[Query] = {
+    val queryDb = new QueryDatabase(defaultArgumentProvider)
+    val allQueries: List[Query] = queryDb.allQueries
+    if (allQueries.isEmpty) {
+      println("You have not installed any query bundles. Try:")
+      println("joern-scan --updatedb")
+    }
+    allQueries
+  }
+
 }
 
 class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Array[String])
@@ -194,18 +207,19 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   override val description: String = Scan.description
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(options.maxCallDepth))
-    val allQueries: List[Query] = queryDb.allQueries
+    val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
     if (allQueries.isEmpty) {
-      println("You have not installed any query bundles. Try:")
-      println("joern-scan --updatedb")
+      return
     }
+
     val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
     if (queriesAfterFilter.isEmpty) {
       println("No queries matching current filter selection")
+      return
     }
     runPass(new ScanPass(context.cpg, queriesAfterFilter), context, storeUndoInfo)
     outputFindings(context.cpg)
+
   }
 
   protected def filteredQueries(queries: List[Query], names: Array[String], tags: Array[String]): List[Query] = {
