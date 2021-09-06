@@ -159,9 +159,7 @@ else
   fi
 fi
 
-
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
-rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
 if [ $INTERACTIVE = false ] && [ "$(whoami)" != "root" ]; then
   echo "==============================================================="
