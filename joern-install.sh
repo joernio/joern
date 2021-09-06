@@ -15,6 +15,7 @@ if [ "$(uname)" = 'Darwin' ]; then
   elif [ "${ZSH_VERSION:-x}" != 'x' ]; then
     setopt function_argzero
     this_script=$0
+
   elif eval '[[ -n ${.sh.file} ]]' 2>/dev/null; then
     eval 'this_script=${.sh.file}'
   else
