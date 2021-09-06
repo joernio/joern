@@ -162,16 +162,6 @@ fi
 unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 rm "$SCRIPT_ABS_DIR"/joern-cli.zip
 
-cd "$JOERN_INSTALL_DIR"
-unzip -qo joern-cli.zip
-FRONTENDS_DIR="$JOERN_INSTALL_DIR/joern-cli/frontends"
-mkdir -p "$FRONTENDS_DIR"
-unzip -qo fuzzyc2cpg.zip -d "$FRONTENDS_DIR/fuzzyc2cpg"
-unzip -qo js2cpg.zip -d "$FRONTENDS_DIR/js2cpg"
-rm joern-cli.zip c2cpg.zip fuzzyc2cpg.zip js2cpg.zip
-cd -
-
-
 if [ $INTERACTIVE = false ] && [ "$(whoami)" != "root" ]; then
   echo "==============================================================="
   echo "WARNING: you are NOT root and you are running non-interactively"
@@ -184,7 +174,10 @@ else
 	    echo "If you are not root, please enter your password now:"
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-parse "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/c2cpg.sh "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/fuzzyc2cpg.sh "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/ghidra2cpg "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/js2cpg.sh "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-export "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-flow "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-scan "$JOERN_LINK_DIR" || true
