@@ -28,22 +28,13 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 lazy val joerncli = project.in(file("joern-cli"))
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
-import net.lingala.zip4j._
-import net.lingala.zip4j.model.ZipParameters
 createDistribution := {
   val distributionFile = file("target/joern-cli.zip")
-  val distributionZip = new ZipFile(distributionFile)
-
-  distributionZip.addFile((joerncli/Universal/packageBin).value, withName("joern-cli.zip"))
+  val zip = (joerncli/Universal/packageBin).value
+  IO.copyFile(zip, distributionFile)
 
   println(s"created distribution - resulting files: $distributionFile")
   distributionFile
-}
-
-def withName(name: String): ZipParameters = {
-  val zipParams = new ZipParameters
-  zipParams.setFileNameInZip(name)
-  zipParams
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
