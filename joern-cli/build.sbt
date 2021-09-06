@@ -11,7 +11,6 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "console" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg, // only needed for joern-parse - TODO MP consider to remove?
-  "io.github.plume-oss"    % "plume" % "0.5.12" exclude("io.github.plume-oss", "cpgconv"),
 
   "com.lihaoyi" %% "requests" % "0.6.5",
   "com.github.scopt" %% "scopt" % "3.7.1",
@@ -29,15 +28,47 @@ topLevelDirectory := Some(packageName.value)
 
 Compile/packageDoc/mappings := Seq()
 
-lazy val c2cpg = project.in(file("frontends/c2cpg")).settings(
+lazy val c2cpg = project.in(file("frontends/c2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "c2cpg" % Versions.cpg,
   Compile/mainClass := Some("io.shiftleft.c2cpg.C2Cpg"),
-).enablePlugins(JavaAppPackaging)
+)
+Universal/mappings ++= NativePackagerHelper.contentOf((c2cpg/stage).value).map {
+  case (file, name) => file -> s"frontends/c2cpg/$name"
+}
 
-Universal/mappings ++=
-  NativePackagerHelper.contentOf((c2cpg/stage).value).map {
-    case (file1, name) => file1 -> s"frontends/c2cpg/$name"
-  }
+lazy val fuzzyc2cpg = project.in(file("frontends/fuzzyc2cpg")).enablePlugins(JavaAppPackaging).settings(
+  libraryDependencies += "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg,
+  Compile/mainClass := Some("io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg"),
+)
+Universal/mappings ++= NativePackagerHelper.contentOf((fuzzyc2cpg/stage).value).map {
+  case (file, name) => file -> s"frontends/fuzzyc2cpg/$name"
+}
+
+lazy val ghidra2cpg = project.in(file("frontends/ghidra2cpg")).enablePlugins(JavaAppPackaging).settings(
+  libraryDependencies += "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
+  Compile/mainClass := Some("io.joern.ghidra2cpg.Main"),
+)
+Universal/mappings ++= NativePackagerHelper.contentOf((ghidra2cpg/stage).value).map {
+  case (file, name) => (file, s"frontends/ghidra2cpg/$name")
+}
+
+lazy val js2cpg = project.in(file("frontends/js2cpg")).enablePlugins(JavaAppPackaging).settings(
+  libraryDependencies += "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
+  Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain"),
+)
+Universal/mappings ++= NativePackagerHelper.contentOf((js2cpg/stage).value).map {
+  case (file, name) => file -> s"frontends/js2cpg/$name"
+}
+
+lazy val plume = project.in(file("frontends/plume")).enablePlugins(JavaAppPackaging).settings(
+  libraryDependencies ++= Seq(
+    "io.github.plume-oss" % "plume" % "0.5.12",
+    "com.github.scopt" %% "scopt" % "4.0.1"),
+  Compile/mainClass := Some("io.joern.plume.Main"),
+)
+Universal/mappings ++= NativePackagerHelper.contentOf((plume/stage).value).map {
+  case (file, name) => file -> s"frontends/plume/$name"
+}
 
 lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
 downloadFuzzyPreprocessor := {
@@ -140,38 +171,5 @@ generateScaladocs := {
 }
 
 Universal/packageBin/mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
-
-Universal/mappings ++= {
-  import net.lingala.zip4j.ZipFile
-  val frontendsDirRoot = s"target/cpg-${Versions.cpg}/"
-  val frontendsDir = s"$frontendsDirRoot/frontends"
-  val log = streams.value.log
-
-  Seq(
-    // ("c2cpg", Frontends.c2cpgUrl),
-    ("fuzzyc2cpg", Frontends.fuzzyc2cpgUrl),
-    ("js2cpg", Frontends.js2cpgUrl),
-  ).foreach { case (name, url) =>
-    tryDownload(name, url, log)
-      .map(new ZipFile(_).extractAll(s"$frontendsDir/$name"))
-  }
-
-  NativePackagerHelper.contentOf(frontendsDirRoot)
-}
-
-Universal/mappings ++= NativePackagerHelper.contentOf((Projects.ghidra2cpg/stage).value).map {
-  case (file, str) => (file, s"frontends/ghidra2cpg/$str")
-}
-
-def tryDownload(name: String, url: String, log: sbt.internal.util.ManagedLogger): Option[File] = {
-  try {
-    Some(SimpleCache.downloadMaybe(url))
-  } catch {
-    case ex: Exception =>
-      log.warn(s"Unable to download $name from $url - if you are using local dependencies that's expected (due to a missing public release). You'll need to use $name from your local installation.")
-      log.trace(ex)
-      None
-  }
-}
 
 maintainer := "fabs@shiftleft.io"
