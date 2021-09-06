@@ -33,7 +33,7 @@ object Main extends App {
       extractor.load(new java.io.File(input))
       extractor.project()
     case _ =>
-      // arguments are bad, error message will have been displayed
+    // arguments are bad, error message will have been displayed
   }
 
   private def deleteIfExists(fileName: String) = {

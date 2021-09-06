@@ -62,7 +62,7 @@ object JoernParse extends App {
       Right("No generation required")
     } else if (language == "java") {
       s"./plume --out ${config.outputCpgFile} ${config.inputPath}".! match {
-        case 0 => Right(config.outputCpgFile)
+        case 0        => Right(config.outputCpgFile)
         case exitCode => Left(s"error while invoking plume2cpg.sh. exit code was $exitCode")
       }
     } else {
