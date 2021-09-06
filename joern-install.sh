@@ -166,7 +166,6 @@ cd "$JOERN_INSTALL_DIR"
 unzip -qo joern-cli.zip
 FRONTENDS_DIR="$JOERN_INSTALL_DIR/joern-cli/frontends"
 mkdir -p "$FRONTENDS_DIR"
-unzip -qo c2cpg.zip -d "$FRONTENDS_DIR/c2cpg"
 unzip -qo fuzzyc2cpg.zip -d "$FRONTENDS_DIR/fuzzyc2cpg"
 unzip -qo js2cpg.zip -d "$FRONTENDS_DIR/js2cpg"
 rm joern-cli.zip c2cpg.zip fuzzyc2cpg.zip js2cpg.zip

@@ -29,6 +29,16 @@ topLevelDirectory := Some(packageName.value)
 
 Compile/packageDoc/mappings := Seq()
 
+lazy val c2cpg = project.in(file("frontends/c2cpg")).settings(
+  libraryDependencies += "io.shiftleft" %% "c2cpg" % Versions.cpg,
+  Compile/mainClass := Some("io.shiftleft.c2cpg.C2Cpg"),
+).enablePlugins(JavaAppPackaging)
+
+Universal/mappings ++=
+  NativePackagerHelper.contentOf((c2cpg/stage).value).map {
+    case (file1, name) => file1 -> s"frontends/c2cpg/$name"
+  }
+
 lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
 downloadFuzzyPreprocessor := {
   val log = streams.value.log
@@ -138,7 +148,7 @@ Universal/mappings ++= {
   val log = streams.value.log
 
   Seq(
-    ("c2cpg", Frontends.c2cpgUrl),
+    // ("c2cpg", Frontends.c2cpgUrl),
     ("fuzzyc2cpg", Frontends.fuzzyc2cpgUrl),
     ("js2cpg", Frontends.js2cpgUrl),
   ).foreach { case (name, url) =>
