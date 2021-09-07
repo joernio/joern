@@ -8,7 +8,7 @@ ThisBuild /Test /fork := true
 val cpgVersion = "1.3.313"
 val c2cpgVersion = "1.3.313"
 val fuzzyc2cpgVersion = "1.3.313"
-val ghidra2cpgVersion = "0.0.25"
+val ghidra2cpgVersion = "0.0.27"
 val js2cpgVersion = "0.2.3"
 
 ThisBuild / resolvers ++= Seq(
