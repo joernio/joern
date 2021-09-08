@@ -1,1 +1,0 @@
-./joern-cli/target/universal/stage/fuzzyc2cpg.sh
