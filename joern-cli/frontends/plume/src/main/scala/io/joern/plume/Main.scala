@@ -31,7 +31,7 @@ object Main extends App {
       driver.storageLocation(output)
       val extractor = new Extractor(driver)
       extractor.load(new java.io.File(input))
-      extractor.project()
+      extractor.project(true)
     case _ =>
     // arguments are bad, error message will have been displayed
   }
