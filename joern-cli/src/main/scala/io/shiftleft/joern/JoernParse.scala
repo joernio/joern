@@ -3,7 +3,7 @@ package io.shiftleft.joern
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.console.{FrontendConfig, InstallConfig}
 import io.shiftleft.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
-import io.shiftleft.joern.plume.PlumeCpgGenerator
+import sys.process.stringToProcess
 
 object JoernParse extends App {
 
@@ -61,7 +61,10 @@ object JoernParse extends App {
     if (config.enhanceOnly) {
       Right("No generation required")
     } else if (language == "java") {
-      PlumeCpgGenerator.createCpgForJava(config)
+      s"./plume --out ${config.outputCpgFile} ${config.inputPath}".! match {
+        case 0        => Right(config.outputCpgFile)
+        case exitCode => Left(s"error while invoking plume2cpg.sh. exit code was $exitCode")
+      }
     } else {
       val generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
