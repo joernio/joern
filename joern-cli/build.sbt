@@ -60,6 +60,14 @@ Universal/mappings ++= NativePackagerHelper.contentOf((js2cpg/stage).value).map 
   case (file, name) => file -> s"frontends/js2cpg/$name"
 }
 
+lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg")).enablePlugins(JavaAppPackaging).settings(
+    libraryDependencies += "io.joern" %% "javasrc2cpg" % Versions.javasrc2cpg,
+    Compile/mainClass := Some("io.joern.javasrc2cpg.Main"),
+)
+Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value).map {
+  case (file, name) => (file, s"frontends/javasrc2cpg/$name")
+}
+
 lazy val plume = project.in(file("frontends/plume")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies ++= Seq(
     "io.github.plume-oss" % "plume" % "0.5.13",
