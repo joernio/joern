@@ -70,7 +70,7 @@ Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value)
 
 lazy val plume = project.in(file("frontends/plume")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies ++= Seq(
-    "io.github.plume-oss" % "plume" % "0.5.13",
+    "io.github.plume-oss" % "plume" % "0.5.14",
     "com.github.scopt" %% "scopt" % "4.0.1"),
   Compile/mainClass := Some("io.joern.plume.Main"),
 )
