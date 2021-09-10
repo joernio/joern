@@ -26,12 +26,13 @@ object Main extends App {
   OParser.parse(parser, args, Config()) match {
     case Some(Config(input, output)) =>
       println(s"invoking Plume on $input, writing results to $output")
-      val driver = DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]
-      deleteIfExists(output)
-      driver.storageLocation(output)
-      val extractor = new Extractor(driver)
-      extractor.load(new java.io.File(input))
-      extractor.project(true)
+      Using.resource(DriverFactory.invoke(GraphDatabase.OVERFLOWDB).asInstanceOf[OverflowDbDriver]) { driver =>
+        deleteIfExists(output)
+        driver.storageLocation(output)
+        val extractor = new Extractor(driver)
+        extractor.load(new java.io.File(input))
+        extractor.project(true)
+      }
     case _ =>
     // arguments are bad, error message will have been displayed
   }
