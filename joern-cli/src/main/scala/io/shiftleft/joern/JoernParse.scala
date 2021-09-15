@@ -65,7 +65,7 @@ object JoernParse extends App {
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
         case Some(cmd) => Right(cmd)
-        case None => Left(s"Could not generate CPG with language = $language and input = ${config.inputPath}")
+        case None      => Left(s"Could not generate CPG with language = $language and input = ${config.inputPath}")
       }
     }
   }
