@@ -69,7 +69,10 @@ Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value)
 }
 
 lazy val jimple2cpg = project.in(file("frontends/jimple2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies += "io.joern" %% "jimple2cpg" % Versions.jimple2cpg,
+  libraryDependencies ++= Seq(
+    "io.joern" %% "jimple2cpg" % Versions.jimple2cpg,
+    "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3",
+  ),
   Compile/mainClass := Some("io.joern.jimple2cpg.Main"),
 )
 Universal/mappings ++= NativePackagerHelper.contentOf((jimple2cpg/stage).value).map {
