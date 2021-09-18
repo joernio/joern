@@ -27,7 +27,7 @@ object JoernParse extends App {
       config <- parseConfig(parserArgs)
       language <- getLanguage(config)
       _ <- generateCpg(config, language)
-      _ <- enhanceCpg(config, language)
+      _ <- enhanceCpg(config)
     } yield "Operation success"
   }
 
@@ -60,25 +60,19 @@ object JoernParse extends App {
   def generateCpg(config: ParserConfig, language: String): Either[String, String] = {
     if (config.enhanceOnly) {
       Right("No generation required")
-    } else if (language == "java") {
-      s"./plume --out ${config.outputCpgFile} ${config.inputPath}".! match {
-        case 0        => Right(config.outputCpgFile)
-        case exitCode => Left(s"error while invoking plume2cpg.sh. exit code was $exitCode")
-      }
     } else {
       val generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
         case Some(cmd) => Right(cmd)
-
-        case None => Left(s"Could not generate CPG with language = $language and input = ${config.inputPath}")
+        case None      => Left(s"Could not generate CPG with language = $language and input = ${config.inputPath}")
       }
     }
   }
 
-  def enhanceCpg(config: ParserConfig, language: String): Either[String, String] = {
+  def enhanceCpg(config: ParserConfig): Either[String, String] = {
     try {
-      if (config.enhance && language != "java") {
+      if (config.enhance) {
         Cpg2Scpg.run(config.outputCpgFile, config.dataFlow).close()
       }
       Right("Enhance successful")
