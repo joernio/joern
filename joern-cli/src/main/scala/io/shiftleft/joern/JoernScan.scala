@@ -15,7 +15,7 @@ import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtens
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.97"
+  val defaultDbVersion: String = "0.0.106"
 }
 
 case class JoernScanConfig(src: String = "",
