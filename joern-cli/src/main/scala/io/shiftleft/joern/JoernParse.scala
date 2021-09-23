@@ -1,9 +1,7 @@
 package io.shiftleft.joern
 
-import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.console.{FrontendConfig, InstallConfig}
 import io.shiftleft.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
-import sys.process.stringToProcess
 
 object JoernParse extends App {
 
