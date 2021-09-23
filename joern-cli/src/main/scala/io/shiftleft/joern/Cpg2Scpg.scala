@@ -19,7 +19,7 @@ object Cpg2Scpg {
     new Scpg().run(context)
     if (dataFlow) {
       val options = new OssDataFlowOptions()
-      new OssDataFlow(options).create(context)
+      new OssDataFlow(options).run(context)
     }
     cpg
   }
