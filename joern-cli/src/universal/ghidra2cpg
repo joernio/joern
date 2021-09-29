@@ -13,4 +13,4 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
-$SCRIPT -J-Dlog4j.configurationFile=conf/log4j-ghidra.xml "$@"
+$SCRIPT -J-Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml "$@"
