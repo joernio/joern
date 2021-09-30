@@ -23,8 +23,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .methodFullName(name)
       .dispatchType(dispatchType)
       .typeFullName(Constants.ANY)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(callNode)
   }
 
@@ -56,8 +56,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewTypeRef()
       .code(code)
       .typeFullName(typeFullName)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(typeRefNode)
   }
 
@@ -92,8 +92,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .fullName(fullName)
       .filename(fileName)
       .isExternal(false)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(methodNode)
   }
 
@@ -107,8 +107,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .code(name)
       .methodFullName(fullName)
       .typeFullName(fullName)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(methodRefNode)
   }
 
@@ -136,8 +136,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .typeFullName(Constants.ANY)
       .isVariadic(isVariadic)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(methodParameterNode)
   }
 
@@ -151,8 +151,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .typeFullName(Constants.ANY)
       .dynamicTypeHintFullName(dynamicTypeHintFullName.toList)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
 
     addNodeToDiff(methodReturnNode)
   }
@@ -161,8 +161,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
     val returnNode = nodes
       .NewReturn()
       .code(code)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
 
     addNodeToDiff(returnNode)
   }
@@ -173,8 +173,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .code(name)
       .name(name)
       .typeFullName(Constants.ANY)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(identifierNode)
   }
 
@@ -183,8 +183,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewFieldIdentifier()
       .code(name)
       .canonicalName(name)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(fieldIdentifierNode)
   }
 
@@ -197,8 +197,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewLiteral()
       .code(number)
       .typeFullName(Constants.ANY)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(literalNode)
   }
 
@@ -207,8 +207,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewLiteral()
       .code(string)
       .typeFullName(Constants.ANY)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(literalNode)
   }
 
@@ -217,8 +217,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewBlock()
       .code(code)
       .typeFullName(Constants.ANY)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(blockNode)
   }
 
@@ -231,8 +231,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .NewControlStructure()
       .code(code)
       .controlStructureType(controlStructureName)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(controlStructureNode)
   }
 
@@ -287,8 +287,8 @@ class NodeBuilder(diffGraph: DiffGraph.Builder) {
       .code(code)
       .parserTypeName(parserTypeName)
       .typeFullName(Constants.ANY)
-      .lineNumber(Some(lineAndColumn.line))
-      .columnNumber(Some(lineAndColumn.column))
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
     addNodeToDiff(unknownNode)
   }
 }
