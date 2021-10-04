@@ -53,7 +53,7 @@ object JoernParse extends App {
 
   def checkInputPath(config: ParserConfig): Either[String, Unit] = {
     if (config.inputPath == "" || !File(config.inputPath).exists) {
-      Left("Invalid input path provided")
+      Left("Input path does not exist at `" + config.inputPath  + "`, exiting.")
     } else {
       Right(())
     }
