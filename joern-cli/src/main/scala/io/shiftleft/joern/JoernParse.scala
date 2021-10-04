@@ -29,12 +29,13 @@ object JoernParse extends App {
       case Right(config) =>
         if (config.listLanguages) {
           Right(buildLanguageList())
-        } else for {
-          _ <- checkInputPath(config)
-          language <- getLanguage(config)
-          _ <- generateCpg(config, language)
-          _ <- enhanceCpg(config)
-        } yield "Operation success"
+        } else
+          for {
+            _ <- checkInputPath(config)
+            language <- getLanguage(config)
+            _ <- generateCpg(config, language)
+            _ <- enhanceCpg(config)
+          } yield "Operation success"
 
       case Left(err) => Left(err)
     }
