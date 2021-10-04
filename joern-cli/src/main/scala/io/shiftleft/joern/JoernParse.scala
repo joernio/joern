@@ -1,7 +1,11 @@
 package io.shiftleft.joern
 
+import better.files.File
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.console.{FrontendConfig, InstallConfig}
 import io.shiftleft.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
+
+import scala.jdk.CollectionConverters._
 
 object JoernParse extends App {
 
@@ -21,12 +25,20 @@ object JoernParse extends App {
   }
 
   def run(): Either[String, String] = {
-    for {
-      config <- parseConfig(parserArgs)
-      language <- getLanguage(config)
-      _ <- generateCpg(config, language)
-      _ <- enhanceCpg(config)
-    } yield "Operation success"
+    parseConfig(parserArgs) match {
+      case Right(config) =>
+        if (config.listLanguages) {
+          Right(buildLanguageList())
+        } else
+          for {
+            _ <- checkInputPath(config)
+            language <- getLanguage(config)
+            _ <- generateCpg(config, language)
+            _ <- enhanceCpg(config)
+          } yield "Operation success"
+
+      case Left(err) => Left(err)
+    }
   }
 
   def splitArgs(): (List[String], List[String]) = {
@@ -37,6 +49,21 @@ object JoernParse extends App {
         val (parseOpts, frontendOpts) = args.toList.splitAt(splitIdx)
         (parseOpts, frontendOpts.tail) // Take the tail to ignore the delimiter
     }
+  }
+
+  def checkInputPath(config: ParserConfig): Either[String, Unit] = {
+    if (config.inputPath == "" || !File(config.inputPath).exists) {
+      Left("Input path does not exist at `" + config.inputPath + "`, exiting.")
+    } else {
+      Right(())
+    }
+  }
+
+  def buildLanguageList(): String = {
+    val s = new StringBuilder()
+    s ++= "Available languages (case insensitive):\n"
+    s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
+    s.toString()
   }
 
   def getLanguage(config: ParserConfig): Either[String, String] = {
@@ -85,12 +112,13 @@ object JoernParse extends App {
                           enhance: Boolean = true,
                           dataFlow: Boolean = true,
                           enhanceOnly: Boolean = false,
-                          language: String = "c")
+                          language: String = "",
+                          listLanguages: Boolean = false)
 
   def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] =
     new scopt.OptionParser[ParserConfig]("joern-parse") {
       arg[String]("input")
-        .required()
+        .optional()
         .text("source file or directory containing source files")
         .action((x, c) => c.copy(inputPath = x))
 
@@ -99,12 +127,14 @@ object JoernParse extends App {
         .action((x, c) => c.copy(outputCpgFile = x))
 
       opt[String]("language")
-        .optional()
         .text("source language")
         .action((x, c) => c.copy(language = x))
 
+      opt[Unit]("list-languages")
+        .text("list available language options")
+        .action((_, c) => c.copy(listLanguages = true))
+
       opt[String]("namespaces")
-        .optional()
         .text("namespaces to include: comma separated string")
         .action((x, c) => c.copy(namespaces = x.split(",").map(_.trim).toList))
 
