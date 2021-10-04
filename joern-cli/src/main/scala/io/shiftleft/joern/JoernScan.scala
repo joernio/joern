@@ -8,10 +8,12 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Layer
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 import better.files._
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.joern.Scan.{allTag, defaultTag, getQueriesFromQueryDb}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
@@ -28,7 +30,8 @@ case class JoernScanConfig(src: String = "",
                            maxCallDepth: Int = 2,
                            names: String = "",
                            tags: String = "",
-                           language: Option[String] = None)
+                           language: Option[String] = None,
+                           listLanguages: Boolean = false)
 
 object JoernScan extends App with BridgeBase {
 
@@ -81,6 +84,10 @@ object JoernScan extends App with BridgeBase {
       opt[String]("language")
         .action((x, c) => c.copy(language = Some(x)))
         .text("Source language")
+
+      opt[Unit]("list-languages")
+        .action((_, c) => c.copy(listLanguages = true))
+        .text("List available language options")
     }
   }.parse(args, JoernScanConfig())
 
@@ -93,6 +100,8 @@ object JoernScan extends App with BridgeBase {
       dumpQueries()
     } else if (config.listQueryNames) {
       println(queryNames().sorted.mkString("\n"))
+    } else if (config.listLanguages) {
+      println(Languages.ALL.asScala.mkString("\n"))
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
