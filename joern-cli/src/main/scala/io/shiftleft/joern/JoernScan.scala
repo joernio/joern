@@ -101,7 +101,10 @@ object JoernScan extends App with BridgeBase {
     } else if (config.listQueryNames) {
       println(queryNames().sorted.mkString("\n"))
     } else if (config.listLanguages) {
-      println(Languages.ALL.asScala.mkString("\n"))
+      val s = new StringBuilder()
+      s ++= "Available languages (case insensitive):\n"
+      s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
+      println(s.toString())
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
