@@ -6,7 +6,7 @@ ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 ThisBuild /Test /fork := true
 val cpgVersion = "1.3.363"
-val ghidra2cpgVersion = "0.0.38"
+val ghidra2cpgVersion = "0.0.39"
 val js2cpgVersion = "0.2.18"
 val javasrc2cpgVersion = "0.0.11"
 val jimple2cpgVersion = "0.0.5"
