@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.107"
+  val defaultDbVersion: String = "0.0.108"
 }
 
 case class JoernScanConfig(src: String = "",
