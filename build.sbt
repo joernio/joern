@@ -1,5 +1,3 @@
-enablePlugins(GitVersioning)
-
 name := "joern"
 organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.5"
