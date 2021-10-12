@@ -10,7 +10,8 @@ import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.joern.Scan.{allTag, defaultTag, getQueriesFromQueryDb}
+import io.shiftleft.joern.JoernScan.getQueriesFromQueryDb
+import io.shiftleft.joern.Scan.{allTag, defaultTag}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
 import scala.jdk.CollectionConverters._
@@ -115,7 +116,8 @@ object JoernScan extends App with BridgeBase {
 
       val qNames = queryNames()
       if (qNames.isEmpty) {
-        return
+        downloadAndInstallQueryDatabase(config.queryDbVersion)
+        System.exit(2)
       }
 
       Scan.defaultOpts.names = config.names.split(",").filterNot(_.isEmpty)
@@ -151,26 +153,51 @@ object JoernScan extends App with BridgeBase {
     getQueriesFromQueryDb(new JoernDefaultArgumentProvider(0)).map(_.name)
   }
 
+  /**
+    * Obtain list of queries from query database, warning the user if the list is empty.
+    * */
+  def getQueriesFromQueryDb(defaultArgumentProvider: DefaultArgumentProvider): List[Query] = {
+    new QueryDatabase(defaultArgumentProvider).allQueries
+  }
+
   private def updateQueryDatabase(version: String): Unit = {
+    removeQueryDatabase()
+    downloadAndInstallQueryDatabase(version)
+  }
+
+  def downloadAndInstallQueryDatabase(version: String = ""): Unit = {
+    val actualVersion = Option(version).filter(_ != "").getOrElse(JoernScanConfig.defaultDbVersion)
+    File.usingTemporaryDirectory("joern-scan") { dir =>
+      val queryDbZipPath = downloadDefaultQueryDatabase(actualVersion, dir)
+      addQueryDatabase(queryDbZipPath)
+    }
+  }
+
+  private def downloadDefaultQueryDatabase(version: String, outDir: File): String = {
     val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
     val r = requests.get(url)
-    File.usingTemporaryDirectory("joern-scan") { dir =>
-      val queryDbZip = (dir / "querydb.zip")
-      val absPath = queryDbZip.path.toAbsolutePath.toString
-      queryDbZip.writeBytes(r.bytes.iterator)
-      println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
-      println("Removing current version of query database")
-      val rmPluginConfig = io.shiftleft.console
-        .Config()
-        .copy(rmPlugin = Some("querydb"))
-      runAmmonite(rmPluginConfig, JoernProduct)
-      println("Adding updated version of query database")
-      val addPluginConfig = io.shiftleft.console
-        .Config()
-        .copy(addPlugin = Some(absPath))
-      runAmmonite(addPluginConfig, JoernProduct)
-    }
+    val queryDbZip = (outDir / "querydb.zip")
+    val absPath = queryDbZip.path.toAbsolutePath.toString
+    queryDbZip.writeBytes(r.bytes.iterator)
+    println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
+    absPath
+  }
+
+  private def removeQueryDatabase(): Unit = {
+    println("Removing current version of query database")
+    val rmPluginConfig = io.shiftleft.console
+      .Config()
+      .copy(rmPlugin = Some("querydb"))
+    runAmmonite(rmPluginConfig, JoernProduct)
+  }
+
+  private def addQueryDatabase(absPath: String): Unit = {
+    println("Adding updated version of query database")
+    val addPluginConfig = io.shiftleft.console
+      .Config()
+      .copy(addPlugin = Some(absPath))
+    runAmmonite(addPluginConfig, JoernProduct)
   }
 
   private def urlForVersion(version: String): String = {
@@ -193,20 +220,6 @@ object Scan {
 
   val defaultTag = "default"
   val allTag = "all"
-
-  /**
-    * Obtain list of queries from query database, warning the user if the list is empty.
-    * */
-  def getQueriesFromQueryDb(defaultArgumentProvider: DefaultArgumentProvider): List[Query] = {
-    val queryDb = new QueryDatabase(defaultArgumentProvider)
-    val allQueries: List[Query] = queryDb.allQueries
-    if (allQueries.isEmpty) {
-      println("You have not installed any query bundles. Try:")
-      println("joern-scan --updatedb")
-    }
-    allQueries
-  }
-
 }
 
 class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Array[String])
@@ -220,10 +233,6 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
-    if (allQueries.isEmpty) {
-      return
-    }
-
     val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
     if (queriesAfterFilter.isEmpty) {
       println("No queries matching current filter selection")
