@@ -117,6 +117,7 @@ object JoernScan extends App with BridgeBase {
       val qNames = queryNames()
       if (qNames.isEmpty) {
         downloadAndInstallQueryDatabase(config.queryDbVersion)
+        System.exit(2)
       }
 
       Scan.defaultOpts.names = config.names.split(",").filterNot(_.isEmpty)
