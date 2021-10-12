@@ -10,7 +10,7 @@ import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.joern.JoernScan.getQueriesFromQueryDb
+import io.shiftleft.joern.JoernScan.{args, getQueriesFromQueryDb}
 import io.shiftleft.joern.Scan.{allTag, defaultTag}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
@@ -36,61 +36,64 @@ case class JoernScanConfig(src: String = "",
 
 object JoernScan extends App with BridgeBase {
 
+  val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
+    head("Creates a code property graph and scans it with queries from installed bundles")
+    help("help")
+      .text("Prints this usage text")
+
+    arg[String]("src")
+      .text("source code directory to scan")
+      .optional()
+      .action((x, c) => c.copy(src = x))
+
+    opt[Unit]("overwrite")
+      .action((_, c) => c.copy(overwrite = true))
+      .text("Overwrite CPG if it already exists")
+
+    opt[Unit]("store")
+      .action((_, c) => c.copy(store = true))
+      .text("Store graph changes made by scanner")
+
+    opt[Unit]("dump")
+      .action((_, c) => c.copy(dump = true))
+      .text("Dump available queries to file")
+
+    opt[Unit]("list-query-names")
+      .action((_, c) => c.copy(listQueryNames = true))
+      .text("Print a list of available query names")
+
+    opt[Unit]("updatedb")
+      .action((_, c) => c.copy(updateQueryDb = true))
+      .text("Update query database")
+
+    opt[String]("dbversion")
+      .action((x, c) => c.copy(queryDbVersion = x))
+      .text("Version of query database `updatedb`-operation installs")
+
+    opt[String]("names")
+      .action((x, c) => c.copy(names = x))
+      .text("Filter queries used for scanning by name, comma-separated string")
+
+    opt[String]("tags")
+      .action((x, c) => c.copy(tags = x))
+      .text("Filter queries used for scanning by tags, comma-separated string")
+
+    opt[Int]("depth")
+      .action((x, c) => c.copy(maxCallDepth = x))
+      .text("Set call depth for interprocedural analysis")
+
+    opt[String]("language")
+      .action((x, c) => c.copy(language = Some(x)))
+      .text("Source language")
+
+    opt[Unit]("list-languages")
+      .action((_, c) => c.copy(listLanguages = true))
+      .text("List available language options")
+  }
+
   def parseScanConfig(args: Array[String]): Option[JoernScanConfig] = {
-    new scopt.OptionParser[JoernScanConfig]("joern-scan") {
-      head("Scan code")
-      help("help")
-
-      arg[String]("src")
-        .text("source code directory to scan")
-        .optional()
-        .action((x, c) => c.copy(src = x))
-
-      opt[Unit]("overwrite")
-        .action((_, c) => c.copy(overwrite = true))
-        .text("Overwrite CPG if it already exists")
-
-      opt[Unit]("store")
-        .action((_, c) => c.copy(store = true))
-        .text("Store graph changes made by scanner")
-
-      opt[Unit]("dump")
-        .action((_, c) => c.copy(dump = true))
-        .text("Dump available queries to file")
-
-      opt[Unit]("list-query-names")
-        .action((_, c) => c.copy(listQueryNames = true))
-        .text("Print a list of available query names")
-
-      opt[Unit]("updatedb")
-        .action((_, c) => c.copy(updateQueryDb = true))
-        .text("Update query database")
-
-      opt[String]("dbversion")
-        .action((x, c) => c.copy(queryDbVersion = x))
-        .text("Version of query database `updatedb`-operation installs")
-
-      opt[String]("names")
-        .action((x, c) => c.copy(names = x))
-        .text("Filter queries used for scanning by name, comma-separated string")
-
-      opt[String]("tags")
-        .action((x, c) => c.copy(tags = x))
-        .text("Filter queries used for scanning by tags, comma-separated string")
-
-      opt[Int]("depth")
-        .action((x, c) => c.copy(maxCallDepth = x))
-        .text("Set call depth for interprocedural analysis")
-
-      opt[String]("language")
-        .action((x, c) => c.copy(language = Some(x)))
-        .text("Source language")
-
-      opt[Unit]("list-languages")
-        .action((_, c) => c.copy(listLanguages = true))
-        .text("List available language options")
-    }
-  }.parse(args, JoernScanConfig())
+    optionParser.parse(args, JoernScanConfig())
+  }
 
   parseScanConfig(args).foreach { config =>
     runScanner(config)
@@ -110,7 +113,7 @@ object JoernScan extends App with BridgeBase {
       updateQueryDatabase(config.queryDbVersion)
     } else {
       if (config.src == "") {
-        println("Please specify a source code directory to scan")
+        println(optionParser.usage)
         return
       }
 
