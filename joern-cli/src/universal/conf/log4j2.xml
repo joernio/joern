@@ -9,6 +9,7 @@
         <Logger name="org.apache.tomcat" level="error"/>
         <Logger name="org.apache.jasper" level="error"/>
         <Logger name="org.reflections" level="off" />
+        <Logger name="org.reflections8" level="off" />
         <Logger name="ghidra.app.plugin.core.analysis" level="off" />
         <Logger name="io.shiftleft.overflowdb" level="warn" />
         <Root level="WARN">
