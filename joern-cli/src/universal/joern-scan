@@ -13,7 +13,8 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
-$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml -J-XX:+UseStringDeduplication "$@"
+echo "Writing logs to: /tmp/joern-scan-log.txt"
+$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml -J-XX:+UseStringDeduplication "$@" 2> /tmp/joern-scan-log.txt
 if [ $? -eq 2 ]; then
-  $SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml -J-XX:+UseStringDeduplication "$@"
+  $SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml -J-XX:+UseStringDeduplication "$@" 2> /tmp/joern-scan-log.txt
 fi
