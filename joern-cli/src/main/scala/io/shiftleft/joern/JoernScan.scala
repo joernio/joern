@@ -152,25 +152,38 @@ object JoernScan extends App with BridgeBase {
   }
 
   private def updateQueryDatabase(version: String): Unit = {
+    File.usingTemporaryDirectory("joern-scan") { dir =>
+      val queryDbZipPath = downloadDefaultQueryDatabase(version, dir)
+      removeQueryDatabase()
+      addQueryDatabase(queryDbZipPath)
+    }
+  }
+
+  private def downloadDefaultQueryDatabase(version: String, outDir: File): String = {
     val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
     val r = requests.get(url)
-    File.usingTemporaryDirectory("joern-scan") { dir =>
-      val queryDbZip = (dir / "querydb.zip")
-      val absPath = queryDbZip.path.toAbsolutePath.toString
-      queryDbZip.writeBytes(r.bytes.iterator)
-      println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
-      println("Removing current version of query database")
-      val rmPluginConfig = io.shiftleft.console
-        .Config()
-        .copy(rmPlugin = Some("querydb"))
-      runAmmonite(rmPluginConfig, JoernProduct)
-      println("Adding updated version of query database")
-      val addPluginConfig = io.shiftleft.console
-        .Config()
-        .copy(addPlugin = Some(absPath))
-      runAmmonite(addPluginConfig, JoernProduct)
-    }
+    val queryDbZip = (outDir / "querydb.zip")
+    val absPath = queryDbZip.path.toAbsolutePath.toString
+    queryDbZip.writeBytes(r.bytes.iterator)
+    println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
+    absPath
+  }
+
+  private def removeQueryDatabase(): Unit = {
+    println("Removing current version of query database")
+    val rmPluginConfig = io.shiftleft.console
+      .Config()
+      .copy(rmPlugin = Some("querydb"))
+    runAmmonite(rmPluginConfig, JoernProduct)
+  }
+
+  private def addQueryDatabase(absPath: String): Unit = {
+    println("Adding updated version of query database")
+    val addPluginConfig = io.shiftleft.console
+      .Config()
+      .copy(addPlugin = Some(absPath))
+    runAmmonite(addPluginConfig, JoernProduct)
   }
 
   private def urlForVersion(version: String): String = {
