@@ -20,7 +20,7 @@ object JoernParse extends App {
     case Right(msg) => println(msg)
 
     case Left(errMsg) =>
-      println(s"PARSE FAILED: $errMsg")
+      println(s"Failure: $errMsg")
       System.exit(1)
   }
 
@@ -35,7 +35,11 @@ object JoernParse extends App {
             language <- getLanguage(config)
             _ <- generateCpg(config, language)
             _ <- enhanceCpg(config)
-          } yield "Operation success"
+          } yield {
+            val absolutePath = File(config.outputCpgFile).path.toAbsolutePath
+            s"Successfully wrote graph to: $absolutePath\n" +
+              s"To load the graph, type `joern $absolutePath`"
+          }
 
       case Left(err) => Left(err)
     }
@@ -86,6 +90,8 @@ object JoernParse extends App {
     if (config.enhanceOnly) {
       Right("No generation required")
     } else {
+      println(s"Parsing code at: ${config.inputPath} - language: `$language`")
+      println("[+] Running language frontend")
       val generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
@@ -97,10 +103,11 @@ object JoernParse extends App {
 
   def enhanceCpg(config: ParserConfig): Either[String, String] = {
     try {
+      println("[+] Creating code property graph")
       if (config.enhance) {
         Cpg2Scpg.run(config.outputCpgFile, config.dataFlow).close()
       }
-      Right("Enhance successful")
+      Right("Code property graph generation successful")
     } catch {
       case err: Throwable => Left(err.getMessage)
     }
