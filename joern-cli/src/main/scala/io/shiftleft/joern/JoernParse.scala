@@ -4,6 +4,7 @@ import better.files.File
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.console.{FrontendConfig, InstallConfig}
 import io.shiftleft.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
+import io.shiftleft.joern.CpgBasedTool.newCpgCreatedString
 
 import scala.jdk.CollectionConverters._
 
@@ -35,11 +36,7 @@ object JoernParse extends App {
             language <- getLanguage(config)
             _ <- generateCpg(config, language)
             _ <- enhanceCpg(config)
-          } yield {
-            val absolutePath = File(config.outputCpgFile).path.toAbsolutePath
-            s"Successfully wrote graph to: $absolutePath\n" +
-              s"To load the graph, type `joern $absolutePath`"
-          }
+          } yield newCpgCreatedString(config.outputCpgFile)
 
       case Left(err) => Left(err)
     }
