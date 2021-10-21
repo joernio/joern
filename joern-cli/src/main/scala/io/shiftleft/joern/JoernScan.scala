@@ -10,7 +10,7 @@ import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.joern.JoernScan.{args, getQueriesFromQueryDb}
+import io.shiftleft.joern.JoernScan.getQueriesFromQueryDb
 import io.shiftleft.joern.Scan.{allTag, defaultTag}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
@@ -91,53 +91,23 @@ object JoernScan extends App with BridgeBase {
       .text("List available language options")
   }
 
-  def parseScanConfig(args: Array[String]): Option[JoernScanConfig] = {
-    optionParser.parse(args, JoernScanConfig())
-  }
+  optionParser.parse(args, JoernScanConfig()).foreach(run)
 
-  parseScanConfig(args).foreach { config =>
-    runScanner(config)
-  }
-
-  private def runScanner(config: JoernScanConfig): Unit = {
+  private def run(config: JoernScanConfig): Unit = {
     if (config.dump) {
-      dumpQueries()
+      dumpQueriesAsJson()
     } else if (config.listQueryNames) {
-      println(queryNames().sorted.mkString("\n"))
+      listQueryNames()
     } else if (config.listLanguages) {
-      val s = new StringBuilder()
-      s ++= "Available languages (case insensitive):\n"
-      s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
-      println(s.toString())
+      listLanguages()
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
-      if (config.src == "") {
-        println(optionParser.usage)
-        return
-      }
-
-      val qNames = queryNames()
-      if (qNames.isEmpty) {
-        downloadAndInstallQueryDatabase(config.queryDbVersion)
-        System.exit(2)
-      }
-
-      Scan.defaultOpts.names = config.names.split(",").filterNot(_.isEmpty)
-      Scan.defaultOpts.tags = config.tags.split(",").filterNot(_.isEmpty)
-      Scan.defaultOpts.maxCallDepth = config.maxCallDepth
-      val shellConfig = io.shiftleft.console
-        .Config()
-        .copy(pluginToRun = Some("scan"),
-              src = Some(config.src),
-              overwrite = config.overwrite,
-              store = config.store,
-              language = config.language)
-      runAmmonite(shellConfig, JoernProduct)
+      runScanPlugin(config)
     }
   }
 
-  private def dumpQueries(): Unit = {
+  private def dumpQueriesAsJson(): Unit = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
     implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
     val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
@@ -149,6 +119,44 @@ object JoernScan extends App with BridgeBase {
         Serialization.write(queryDb.allQueries)
       )
     println(s"Queries written to: $outFileName")
+  }
+
+  private def listQueryNames(): Unit = {
+    println(queryNames().sorted.mkString("\n"))
+  }
+
+  private def listLanguages(): Unit = {
+    val s = new StringBuilder()
+    s ++= "Available languages (case insensitive):\n"
+    s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
+    println(s.toString())
+  }
+
+  private def runScanPlugin(config: JoernScanConfig): Unit = {
+
+    if (config.src == "") {
+      println(optionParser.usage)
+      return
+    }
+
+    if (queryNames().isEmpty) {
+      downloadAndInstallQueryDatabase(config.queryDbVersion)
+      System.exit(2)
+    }
+
+    Scan.defaultOpts.names = config.names.split(",").filterNot(_.isEmpty)
+    Scan.defaultOpts.tags = config.tags.split(",").filterNot(_.isEmpty)
+    Scan.defaultOpts.maxCallDepth = config.maxCallDepth
+
+    val shellConfig = io.shiftleft.console
+      .Config()
+      .copy(pluginToRun = Some("scan"),
+            src = Some(config.src),
+            overwrite = config.overwrite,
+            store = config.store,
+            language = config.language)
+    runAmmonite(shellConfig, JoernProduct)
+    println(s"Run `joern --for-input-path ${config.src}` to explore interactively")
   }
 
   private def queryNames(): List[String] = {
