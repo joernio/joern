@@ -181,4 +181,4 @@ generateScaladocs := {
 
 Universal/packageBin/mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
 
-ThisBuild/maintainer := "fabs@shiftleft.io"
+maintainer := "fabs@shiftleft.io"
