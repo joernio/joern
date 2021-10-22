@@ -7,7 +7,6 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "upickle" % "1.2.2",
   "com.github.pathikrit" %% "better-files" % "3.8.0",
   "com.github.scopt" %% "scopt" % "3.7.1",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
   "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
   "io.shiftleft" %% "console" % Versions.cpg,
