@@ -1,13 +1,15 @@
 name := "joern"
-organization := "io.shiftleft"
+ThisBuild / organization := "io.shiftleft"
 ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
-ThisBuild /Test /fork := true
+
 val cpgVersion = "1.3.379"
 val ghidra2cpgVersion = "0.0.47"
 val js2cpgVersion = "0.2.18"
 val javasrc2cpgVersion = "0.0.12"
 val jimple2cpgVersion = "0.0.6"
+
+ThisBuild /Test /fork := true
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
@@ -25,6 +27,7 @@ homepage := Some(url("https://joern.io/"))
 licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 lazy val joerncli = project.in(file("joern-cli"))
+lazy val querydb = project.in(file("querydb"))
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
