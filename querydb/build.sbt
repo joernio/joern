@@ -23,12 +23,15 @@ libraryDependencies ++= Seq(
 Compile/doc/sources := Seq.empty
 Compile/packageDoc/publishArtifact := false
 
+topLevelDirectory := Some(name.value)
+
 lazy val createDistribution = taskKey[File]("Create binary distribution of extension")
 createDistribution := {
   import better.files._
   val pkgBin = (Universal/packageBin).value
   val tmpDstArchive = "/tmp/querydb.zip"
   val dstArchive = (target.value / "querydb.zip").toScala
+  if (dstArchive.exists) dstArchive.delete()
   IO.copy(
     List((pkgBin, file(tmpDstArchive))),
     CopyOptions(overwrite = true, preserveLastModified = true, preserveExecutable = true)
@@ -61,7 +64,6 @@ createDistribution := {
     File(tmpDstArchive).delete()
   }
 
-  println(s"created distribution - resulting files: $dstArchive")
   dstArchive.toJava
 }
 

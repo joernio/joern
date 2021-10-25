@@ -33,7 +33,10 @@ lazy val createDistribution = taskKey[File]("Create a complete Joern distributio
 createDistribution := {
   val distributionFile = file("target/joern-cli.zip")
   val zip = (joerncli/Universal/packageBin).value
+
   IO.copyFile(zip, distributionFile)
+  val querydbDistribution = (querydb/createDistribution).value
+  new net.lingala.zip4j.ZipFile(distributionFile).addFile(querydbDistribution)
 
   println(s"created distribution - resulting files: $distributionFile")
   distributionFile
