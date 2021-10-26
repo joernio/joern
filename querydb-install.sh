@@ -33,51 +33,23 @@ check_installed() {
   fi
 }
 
-readonly JOERN_VERSION="v1.1.234"
 
-readonly JOERN_INSTALL="$SCRIPT_ABS_DIR/joern-inst"
-
-echo "Examining Joern installation..."
-
-if [ ! -d "${JOERN_INSTALL}" ]; then
-    echo "Cannot find Joern installation at ${JOERN_INSTALL}"
-    echo "Installing..."
-    check_installed "curl"
-
-    # Fetch installer
-
-    echo "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-install.sh"
-    curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-install.sh" -o "$SCRIPT_ABS_DIR/joern-install.sh"
-
-    # Install into `joern-inst`
-    chmod +x $SCRIPT_ABS_DIR/joern-install.sh
-    $SCRIPT_ABS_DIR/joern-install.sh --install-dir="$SCRIPT_ABS_DIR/joern-inst" --version=$JOERN_VERSION --without-plugins
-    rm $SCRIPT_ABS_DIR/joern-install.sh
-
-    # Create symlinks
-
-    pushd $SCRIPT_ABS_DIR
-    ln -s joern-inst/joern-cli/joern . || true
-    ln -s joern-inst/joern-cli/joern-parse . || true
-    ln -s joern-inst/joern-cli/fuzzyc2cpg.sh . || true
-    ln -s joern-inst/joern-cli/joern-scan . || true
-    popd
-
+# https://stackoverflow.com/a/28085062
+: ${DEFAULT_JOERN_INSTALL_DIR:=$PWD/joern-cli/target/universal/stage}
+echo "where is the joern distribution installed?
+note: you can e.g. create one locally using 'sbt stage'
+[$DEFAULT_JOERN_INSTALL_DIR]:"
+read JOERN_INSTALL_DIR
+if [ -z "$JOERN_INSTALL_DIR" ]; then
+  JOERN_INSTALL_DIR=$DEFAULT_JOERN_INSTALL_DIR
 fi
 
-# Build the plugin
-
-echo "Compiling (sbt createDistribution)..."
-pushd $SCRIPT_ABS_DIR
-rm -f lib
-sbt clean createDistribution
-popd
-
-# Install the plugin
+echo "building the plugin"
+sbt querydb/createDistribution
+readonly QUERYDB_ZIP=$PWD/querydb/target/querydb.zip
 
 echo "Installing plugin"
-
-pushd $SCRIPT_ABS_DIR/joern-inst/joern-cli/
+pushd $JOERN_INSTALL_DIR
   ./joern --remove-plugin querydb
-  ./joern --add-plugin ../../querydb.zip
+  ./joern --add-plugin $QUERYDB_ZIP
 popd

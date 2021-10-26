@@ -1,5 +1,5 @@
 name := "joern"
-ThisBuild / organization := "io.shiftleft"
+ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 
@@ -36,7 +36,6 @@ createDistribution := {
 
   IO.copyFile(zip, distributionFile)
   val querydbDistribution = (querydb/createDistribution).value
-  new net.lingala.zip4j.ZipFile(distributionFile).addFile(querydbDistribution)
 
   println(s"created distribution - resulting files: $distributionFile")
   distributionFile

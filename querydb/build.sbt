@@ -63,6 +63,7 @@ createDistribution := {
     dir.zipTo(dstArchive)
     File(tmpDstArchive).delete()
   }
+  println(s"created distribution - resulting files: $dstArchive")
 
   dstArchive.toJava
 }
