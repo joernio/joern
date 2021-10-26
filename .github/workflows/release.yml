@@ -67,3 +67,12 @@ jobs:
           asset_path: target/joern-cli.zip.sha512
           asset_name: joern-cli.zip.sha512
           asset_content_type: text/plain
+      - name: Upload querydb.zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: querydb/target/querydb.zip
+          asset_name: querydb.zip
+          asset_content_type: application/zip
