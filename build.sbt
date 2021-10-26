@@ -7,7 +7,7 @@ val cpgVersion = "1.3.388"
 val ghidra2cpgVersion = "0.0.47"
 val js2cpgVersion = "0.2.21"
 val javasrc2cpgVersion = "0.0.14"
-val jimple2cpgVersion = "0.0.7"
+val jimple2cpgVersion = "0.0.8"
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
