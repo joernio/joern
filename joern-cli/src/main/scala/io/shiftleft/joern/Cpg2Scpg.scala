@@ -1,7 +1,7 @@
 package io.shiftleft.joern
 
 import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Scpg}
+import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.codepropertygraph.Cpg
 
 object Cpg2Scpg {
@@ -16,7 +16,10 @@ object Cpg2Scpg {
   def run(storeFilename: String, dataFlow: Boolean): Cpg = {
     val cpg = CpgBasedTool.loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)
-    new Scpg().run(context)
+    new Base().run(context)
+    new TypeRelations().run(context)
+    new ControlFlow().run(context)
+    new CallGraph().run(context)
     if (dataFlow) {
       val options = new OssDataFlowOptions()
       new OssDataFlow(options).run(context)
