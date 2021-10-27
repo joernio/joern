@@ -49,8 +49,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCode(codeDir.toString)
         val cpg = console.cpg
         myScript.write(s"""
-                            | if (!run.toString.contains("scpg") || run.toString.contains("semanticcpg"))
-                            |     throw new RuntimeException
+                            | if (!run.toString.contains("base"))
+                            |     throw new RuntimeException("base layer not applied...?")
                             |""".stripMargin)
         console.CpgScriptRunner(cpg).runScript(myScript.toString)
       }
@@ -66,7 +66,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         val cpg = console.cpg
         myScript.write(s"""
                             | if (help.cpg.toString.isEmpty)
-                            |     throw new RuntimeException
+                            |     throw new RuntimeException("no help text available...?")
                             |""".stripMargin)
         console.CpgScriptRunner(cpg).runScript(myScript.toString)
       }
