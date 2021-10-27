@@ -8,7 +8,7 @@ import overflowdb.traversal.help.Table
 
 import scala.util.Try
 
-class ImportCode[T <: Project](console: io.shiftleft.console.Console[T]) {
+class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   import io.joern.console.Console._
 
   private val config = console.config

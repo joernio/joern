@@ -197,7 +197,7 @@ trait BridgeBase {
     val bundleName = config.pluginToRun.get
     val src = better.files.File(config.src.get).path.toAbsolutePath.toString
     val language = config.language.getOrElse(
-      io.shiftleft.console.cpgcreation
+      io.joern.console.cpgcreation
         .guessLanguage(src)
         .map(_.toLowerCase)
         .getOrElse("c"))

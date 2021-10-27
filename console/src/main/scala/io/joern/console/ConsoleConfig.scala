@@ -1,7 +1,6 @@
 package io.joern.console
 
 import better.files._
-
 import scala.collection.mutable
 
 /**
@@ -23,7 +22,7 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
     if (environment.contains("SHIFTLEFT_OCULAR_INSTALL_DIR")) {
       environment("SHIFTLEFT_OCULAR_INSTALL_DIR").toFile
     } else {
-      val uriToLibDir = classOf[io.shiftleft.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
+      val uriToLibDir = classOf[io.joern.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
       val pathToLibDir = File(uriToLibDir).parent
       findRootDirectory(pathToLibDir).getOrElse {
         val cwd = File.currentWorkingDirectory
