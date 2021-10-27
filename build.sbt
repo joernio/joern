@@ -28,6 +28,7 @@ licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0
 
 lazy val joerncli = project.in(file("joern-cli"))
 lazy val querydb = project.in(file("querydb"))
+lazy val console = project.in(file("console"))
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
