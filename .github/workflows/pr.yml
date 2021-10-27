@@ -11,10 +11,10 @@ jobs:
         java-version: 1.11
     - name: Run tests
       run: |
-        sbt test scalafmtCheck stage
+        sbt scalafmtCheck test
+        ./testDistro.sh
         mkdir /tmp/foo
         echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
-        ./joern-scan --updatedb
         ./joern --src /tmp/foo --run scan
         ./joern-scan /tmp/foo
         ./joern-scan --dump
