@@ -48,3 +48,13 @@ If the installation script fails for any reason, try
 ```
 ./joern-install --interactive
 ```
+
+## QueryDB (queries plugin)
+Quick way to develop and test QueryDB:
+```
+sbt stage
+./querydb-install.sh
+./joern-scan --list-query-names
+```
+The last command prints all available queries - add your own in querydb, run the above commands again to see that your query got deployed.
+More details in the [separate querydb readme](querydb/README.md)
