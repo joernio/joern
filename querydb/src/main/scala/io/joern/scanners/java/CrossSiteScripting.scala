@@ -16,10 +16,8 @@ object CrossSiteScripting extends QueryBundle {
     Query.make(
       name = "xss-servlet",
       author = Crew.malte,
-      title =
-        "Reflected Cross-Site Scripting: Servlet Returns HTTP Input in Response",
-      description =
-        """
+      title = "Reflected Cross-Site Scripting: Servlet Returns HTTP Input in Response",
+      description = """
         |A servlet returns a URL parameter as part of the response.
         |
         |Unless the parameter is escaped or validated in-between, this is a reflected XSS vulnerability.

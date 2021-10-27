@@ -15,8 +15,7 @@ object CredentialDrop extends QueryBundle {
       name = "setuid-without-setgid",
       author = Crew.malte,
       title = "Process user ID is changed without changing groups first",
-      description =
-        """
+      description = """
         |The set*uid system calls do not affect the groups a process belongs to. However, often
         |there exists a group that is equivalent to a user (e.g. wheel or shadow groups are often
         |equivalent to the root user).
@@ -61,10 +60,8 @@ object CredentialDrop extends QueryBundle {
     Query.make(
       name = "setgid-without-setgroups",
       author = Crew.malte,
-      title =
-        "Process group membership is changed without setting ancillary groups first",
-      description =
-        """
+      title = "Process group membership is changed without setting ancillary groups first",
+      description = """
         |The set*gid system calls do not affect the ancillary groups a process belongs to.
         |Changes to the group membership should therefore always be preceded by a call to setgroups.
         |Otherwise the process may still be a secondary member of the group it tries to disavow.

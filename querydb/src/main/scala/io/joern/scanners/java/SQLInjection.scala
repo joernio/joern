@@ -17,10 +17,8 @@ object SQLInjection extends QueryBundle {
     Query.make(
       name = "sql-injection",
       author = Crew.niko,
-      title =
-        "SQL injection: A parameter is used in an insecure database API call.",
-      description =
-        """
+      title = "SQL injection: A parameter is used in an insecure database API call.",
+      description = """
         |An attacker controlled parameter is used in an insecure database API call.
         |
         |If the parameter is not validated and sanitized, this is a SQL injection.
@@ -29,8 +27,7 @@ object SQLInjection extends QueryBundle {
       withStrRep({ cpg =>
         def source =
           cpg.method
-            .where(_.methodReturn.evalType(
-              "org.springframework.web.servlet.ModelAndView"))
+            .where(_.methodReturn.evalType("org.springframework.web.servlet.ModelAndView"))
             .parameter
 
         def sink = cpg.method.name("query").parameter.order(1)

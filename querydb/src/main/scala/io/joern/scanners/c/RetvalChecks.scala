@@ -14,8 +14,7 @@ object RetvalChecks extends QueryBundle {
       name = "unchecked-read-recv-malloc",
       author = Crew.fabs,
       title = "Unchecked read/recv/malloc",
-      description =
-        """
+      description = """
       |The return value of a read/recv/malloc call is not checked directly and
       |the variable it has been assigned to (if any) does not
       |occur in any check within the caller.

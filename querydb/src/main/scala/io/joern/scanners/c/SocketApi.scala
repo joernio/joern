@@ -17,8 +17,7 @@ object SocketApi extends QueryBundle {
       name = "socket-send",
       author = Crew.fabs,
       title = "Unchecked call to send",
-      description =
-        """
+      description = """
           | When calling `send`, the return value must be checked to determine
           | if the send operation was successful and how many bytes were
           | transmitted.
@@ -34,8 +33,7 @@ object SocketApi extends QueryBundle {
       }),
       tags = List(QueryTags.default, QueryTags.posix),
       codeExamples = CodeExamples(
-        List(
-          """
+        List("""
           |
           |void return_not_checked(int sockfd, void *buf, size_t len, int flags) {
           |    send(sockfd, buf, len, flags);

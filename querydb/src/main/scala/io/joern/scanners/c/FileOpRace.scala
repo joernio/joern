@@ -18,8 +18,7 @@ object FileOpRace extends QueryBundle {
       name = "file-operation-race",
       author = Crew.malte,
       title = "Two file operations on the same path can act on different files",
-      description =
-        """
+      description = """
         |Two subsequent file operations are performed on the same path. Depending on the permissions
         |on this path, an attacker can exploit a race condition and replace the file or directory
         |the path refers to between these calls.

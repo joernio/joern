@@ -14,8 +14,7 @@ object SignedLeftShift extends QueryBundle {
       name = "signed-left-shift",
       author = Crew.malte,
       title = "Signed Shift May Cause Undefined Behavior",
-      description =
-        """
+      description = """
         |Signed integer overflow is undefined behavior. Shifts of signed values to the
         |left are very prone to overflow.
         |""".stripMargin,

@@ -44,8 +44,7 @@ object QueryLangExtensions {
 
   }
 
-  implicit class ArrayAccessExtension(
-      arrayAccessTrav: Traversal[opnodes.ArrayAccess]) {
+  implicit class ArrayAccessExtension(arrayAccessTrav: Traversal[opnodes.ArrayAccess]) {
 
     def usesConstantOffset: Traversal[opnodes.ArrayAccess] = {
       arrayAccessTrav

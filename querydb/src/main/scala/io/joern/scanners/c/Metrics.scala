@@ -13,8 +13,7 @@ object Metrics extends QueryBundle {
       name = "too-many-params",
       author = Crew.fabs,
       title = s"Number of parameters larger than $n",
-      description =
-        s"This query identifies functions with more than $n formal parameters",
+      description = s"This query identifies functions with more than $n formal parameters",
       score = 1.0,
       withStrRep({ cpg =>
         cpg.method.internal.filter(_.parameter.size > n)
@@ -44,8 +43,7 @@ object Metrics extends QueryBundle {
       name = "too-high-complexity",
       author = Crew.fabs,
       title = s"Cyclomatic complexity higher than $n",
-      description =
-        s"This query identifies functions with a cyclomatic complexity higher than $n",
+      description = s"This query identifies functions with a cyclomatic complexity higher than $n",
       score = 1.0,
       withStrRep({ cpg =>
         cpg.method.internal.filter(_.controlStructure.size > n)
@@ -85,8 +83,7 @@ object Metrics extends QueryBundle {
       name = "too-long",
       author = Crew.fabs,
       title = s"More than $n lines",
-      description =
-        s"This query identifies functions that are more than $n lines long",
+      description = s"This query identifies functions that are more than $n lines long",
       score = 1.0,
       withStrRep({ cpg =>
         cpg.method.internal.filter(_.numberOfLines > n)
@@ -201,8 +198,7 @@ object Metrics extends QueryBundle {
       name = "too-nested",
       author = Crew.fabs,
       title = s"Nesting level higher than $n",
-      description =
-        s"This query identifies functions with a nesting level higher than $n",
+      description = s"This query identifies functions with a nesting level higher than $n",
       score = 1.0,
       withStrRep({ cpg =>
         cpg.method.internal.filter(_.depth(_.isControlStructure) > n)

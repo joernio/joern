@@ -15,8 +15,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-gets",
       author = Crew.suchakra,
       title = "Dangerous function gets() used",
-      description =
-        """
+      description = """
         | Avoid `gets` function as it can lead to reads beyond buffer
         | boundary and cause
         | buffer overflows. Some secure alternatives are `fgets` and `gets_s`.
@@ -58,8 +57,7 @@ object DangerousFunctions extends QueryBundle {
       name = "format-controlled-printf",
       author = Crew.suchakra,
       title = "Non-constant format string passed to printf/sprintf/vsprintf",
-      description =
-        """
+      description = """
         | Avoid user controlled format strings like "argv" in printf, sprintf and vsprintf 
         | functions as they can cause memory corruption. Some secure
         | alternatives are `snprintf` and `vsnprintf`.
@@ -120,8 +118,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-scanf",
       author = Crew.suchakra,
       title = "Insecure function scanf() used",
-      description =
-        """
+      description = """
         | Avoid `scanf` function as it can lead to reads beyond buffer
         | boundary and cause buffer overflows. A secure alternative is `fgets`.
         |""".stripMargin,
@@ -157,8 +154,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-strcat",
       author = Crew.suchakra,
       title = "Dangerous functions `strcat` or `strncat` used",
-      description =
-        """
+      description = """
         | Avoid `strcat` or `strncat` functions. These can be used insecurely
         | causing non null-termianted strings leading to memory corruption.
         | A secure alternative is `strcat_s`.
@@ -203,8 +199,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-strcpy",
       author = Crew.suchakra,
       title = "Dangerous functions `strcpy` or `strncpy` used",
-      description =
-        """
+      description = """
         | Avoid `strcpy` or `strncpy` function. `strcpy` does not check buffer
         | lengths.
         | A possible mitigation could be `strncpy` which could prevent
@@ -251,8 +246,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-strtok",
       author = Crew.suchakra,
       title = "Dangerous function strtok() used",
-      description =
-        """
+      description = """
         | Avoid `strtok` function as it modifies the original string in place
         | and appends a null character after each token. This makes the
         | original string unsafe. Suggested alternative is `strtok_r` with
@@ -264,8 +258,7 @@ object DangerousFunctions extends QueryBundle {
       }),
       tags = List(QueryTags.badfn, QueryTags.default),
       codeExamples = CodeExamples(
-        List(
-          """
+        List("""
           |
           |int insecure_strtok() {
           |  char *token;
@@ -293,8 +286,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-getwd",
       author = Crew.claudiu,
       title = "Dangerous function getwd() used",
-      description =
-        """
+      description = """
         | Avoid the `getwd` function, it does not check buffer lengths.
         | Use `getcwd` instead, as it checks the buffer size.
         |""".stripMargin,

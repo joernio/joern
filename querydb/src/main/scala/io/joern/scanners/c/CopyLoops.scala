@@ -13,8 +13,7 @@ object CopyLoops extends QueryBundle {
       name = "copy-loop",
       author = Crew.fabs,
       title = "Copy loop detected",
-      description =
-        """
+      description = """
         |For (buf, indices) pairs, determine those inside control structures (for, while, if ...)
         |where any of the calls made outside of the body (block) are Inc operations. Determine
         |the first argument of that Inc operation and check if they are used as indices for

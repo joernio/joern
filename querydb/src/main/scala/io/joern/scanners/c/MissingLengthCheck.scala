@@ -1,12 +1,6 @@
 package io.joern.scanners.c
 
-import io.shiftleft.console.{
-  CodeExamples,
-  Query,
-  QueryBundle,
-  TraversalWithStrRep,
-  q
-}
+import io.shiftleft.console.{CodeExamples, Query, QueryBundle, TraversalWithStrRep, q}
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.joern.scanners._
 import io.shiftleft.codepropertygraph.generated.nodes
@@ -25,8 +19,7 @@ object MissingLengthCheck extends QueryBundle {
     Query.make(
       name = "constant-array-access-no-check",
       author = Crew.fabs,
-      title =
-        "Array access at fixed offset but sufficient length check not determined",
+      title = "Array access at fixed offset but sufficient length check not determined",
       description = """
           |
           |""".stripMargin,
@@ -35,8 +28,7 @@ object MissingLengthCheck extends QueryBundle {
         cpg.method.arrayAccess
           .filter { access =>
             val arrName = access.simpleName
-            arrName.isDefined && !arrName.forall(x =>
-              access.method.local.nameExact(x).nonEmpty)
+            arrName.isDefined && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
           }
           .usesConstantOffset
           .flatMap { arrayAccess =>
@@ -60,8 +52,7 @@ object MissingLengthCheck extends QueryBundle {
     * Names of potential length fields for the array named `arrayName` in the
     * method `method`. Determined heuristically via name matching.
     * */
-  private def potentialLengthFields(arrayAccess: opnodes.ArrayAccess,
-                                    method: nodes.Method): List[String] = {
+  private def potentialLengthFields(arrayAccess: opnodes.ArrayAccess, method: nodes.Method): List[String] = {
     val arrayName = arrayAccess.simpleName.get
     List(arrayName).flatMap { name =>
       val normalizedName = name.replaceAll("s$", "")

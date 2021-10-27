@@ -15,8 +15,7 @@ object DangerousFunctions extends QueryBundle {
       name = "call-to-strcpy-ghidra",
       author = Crew.suchakra,
       title = "Dangerous functions `strcpy` or `strncpy` used",
-      description =
-        """
+      description = """
         | Avoid `strcpy` or `strncpy` function. `strcpy` does not check buffer
         | lengths.
         | A possible mitigation could be `strncpy` which could prevent

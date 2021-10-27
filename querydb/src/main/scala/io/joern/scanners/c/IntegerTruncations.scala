@@ -20,8 +20,7 @@ object IntegerTruncations extends QueryBundle {
       name = "strlen-truncation",
       author = Crew.fabs,
       title = "Truncation in assignment involving `strlen` call",
-      description =
-        """
+      description = """
         |The return value of `strlen` is stored in a variable that is known
         |to be of type `int` as opposed to `size_t`. `int` is only 32 bit
         |wide on many 64 bit platforms, and thus, this may result in a

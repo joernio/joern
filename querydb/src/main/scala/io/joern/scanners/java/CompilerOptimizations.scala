@@ -18,10 +18,8 @@ object CompilerOptimizations extends QueryBundle {
     Query.make(
       name = "simple-constant-detection",
       author = Crew.dave,
-      title =
-        "Simple Constant Detection: Finds identifiers with primitives only assigned once",
-      description =
-        """
+      title = "Simple Constant Detection: Finds identifiers with primitives only assigned once",
+      description = """
           |Detect variables holding simple constants. A term is a simple constant
           |if it assigns a primitive constant, or if all its operands are simple constants.
           |

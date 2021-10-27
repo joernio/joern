@@ -27,14 +27,10 @@ object Main extends App {
     println(s"Queries written to: $outFileName")
   }
 
-  class JoernDefaultArgumentProvider(maxCallDepth: Int)(
-      implicit context: EngineContext)
+  class JoernDefaultArgumentProvider(maxCallDepth: Int)(implicit context: EngineContext)
       extends DefaultArgumentProvider {
 
-    override def defaultArgument(method: MethodSymbol,
-                                 im: InstanceMirror,
-                                 x: Symbol,
-                                 i: Int): Option[Any] = {
+    override def defaultArgument(method: MethodSymbol, im: InstanceMirror, x: Symbol, i: Int): Option[Any] = {
       if (x.typeSignature.toString.endsWith("EngineContext")) {
         Some(context.copy(config = EngineConfig(maxCallDepth = maxCallDepth)))
       } else {

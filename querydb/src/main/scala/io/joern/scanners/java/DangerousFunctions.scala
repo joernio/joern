@@ -14,10 +14,8 @@ object DangerousFunctions extends QueryBundle {
     Query.make(
       name = "call-to-exec",
       author = Crew.niko,
-      title =
-        "Dangerous function 'java.lang.Runtime.exec:java.lang.Process(java.lang.String)' used",
-      description =
-        """
+      title = "Dangerous function 'java.lang.Runtime.exec:java.lang.Process(java.lang.String)' used",
+      description = """
         | A call to the function `java.lang.Runtime.exec:java.lang.Process(java.lang.String)` 
         | could result in a potential remote code execution.
         |""".stripMargin,

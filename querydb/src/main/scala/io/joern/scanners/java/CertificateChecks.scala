@@ -16,8 +16,7 @@ object CertificateChecks extends QueryBundle {
     Query.make(
       name = "ineffective-certificate-check",
       author = Crew.malte,
-      title =
-        "Ineffective Certificate Validation: The validation result is always positive",
+      title = "Ineffective Certificate Validation: The validation result is always positive",
       description =
         """
         |A certificate validation function is implemented as a function that only consists of a prologue where local
