@@ -148,7 +148,7 @@ object JoernScan extends App with BridgeBase {
     Scan.defaultOpts.tags = config.tags.split(",").filterNot(_.isEmpty)
     Scan.defaultOpts.maxCallDepth = config.maxCallDepth
 
-    val shellConfig = io.shiftleft.console
+    val shellConfig = io.joern.console
       .Config()
       .copy(pluginToRun = Some("scan"),
             src = Some(config.src),
@@ -197,7 +197,7 @@ object JoernScan extends App with BridgeBase {
 
   private def removeQueryDatabase(): Unit = {
     println("Removing current version of query database")
-    val rmPluginConfig = io.shiftleft.console
+    val rmPluginConfig = io.joern.console
       .Config()
       .copy(rmPlugin = Some("querydb"))
     runAmmonite(rmPluginConfig, JoernProduct)
@@ -205,7 +205,7 @@ object JoernScan extends App with BridgeBase {
 
   private def addQueryDatabase(absPath: String): Unit = {
     println("Adding updated version of query database")
-    val addPluginConfig = io.shiftleft.console
+    val addPluginConfig = io.joern.console
       .Config()
       .copy(addPlugin = Some(absPath))
     runAmmonite(addPluginConfig, JoernProduct)

@@ -228,7 +228,7 @@ trait BridgeBase {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
       else """val originalPPrinter = repl.pprinter()
-             |repl.pprinter.update(io.shiftleft.console.pprinter.create(originalPPrinter))
+             |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
              |""".stripMargin
 
     val replConfig = List(

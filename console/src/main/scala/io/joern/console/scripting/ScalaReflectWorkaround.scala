@@ -33,7 +33,7 @@ object ScalaReflectWorkaround {
   def workaroundScalaReflectBugByTriggeringReflection() = {
     try {
       currentMirror
-        .reflectModule(currentMirror.staticModule("io.shiftleft.console.scripting.ScalaReflectWorkaround$"))
+        .reflectModule(currentMirror.staticModule("io.joern.console.scripting.ScalaReflectWorkaround$"))
         .instance
     } catch {
       case _: Throwable => // that's what we want to trigger - it happens the first time, then works - all good

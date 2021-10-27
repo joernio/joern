@@ -52,7 +52,7 @@ object Run {
     ).getSubTypesOf(classOf[LayerCreator])
       .asScala
       .filterNot(t => t.isAnonymousClass || t.isLocalClass || t.isMemberClass || t.isSynthetic)
-      .filterNot(t => t.getName.startsWith("io.shiftleft.console.Run"))
+      .filterNot(t => t.getName.startsWith("io.joern.console.Run"))
       .toList
       .map(t => (t.getSimpleName.toLowerCase, t.getName))
       .filter(t => !exclude.contains(t._2))
@@ -99,7 +99,7 @@ object Run {
          | class OverlaysDynamic {
          |
          | def apply(query : io.shiftleft.semanticcpg.language.HasStoreMethod) {
-         |   io.shiftleft.console.Run.runCustomQuery(console, query)
+         |   io.joern.console.Run.runCustomQuery(console, query)
          | }
          |
          | $membersCode
