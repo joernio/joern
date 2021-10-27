@@ -3,8 +3,8 @@ package io.joern.console
 import ammonite.ops.{Path, pwd}
 import ammonite.util.{Colors, Res}
 import better.files._
-import io.shiftleft.console.cpgqlserver.CPGQLServer
-import io.shiftleft.console.embammonite.EmbeddedAmmonite
+import io.joern.console.cpgqlserver.CPGQLServer
+import io.joern.console.embammonite.EmbeddedAmmonite
 
 case class Config(
     scriptFile: Option[Path] = None,

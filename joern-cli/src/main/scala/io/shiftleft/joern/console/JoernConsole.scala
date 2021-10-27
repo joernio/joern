@@ -7,8 +7,8 @@ import better.files.Dsl._
 
 import scala.jdk.CollectionConverters._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
-import io.shiftleft.console.workspacehandling.{ProjectFile, WorkspaceLoader}
+import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
 

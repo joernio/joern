@@ -4,7 +4,7 @@ import better.files.Dsl._
 import better.files.File
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.console.ConsoleConfig
+import io.joern.console.ConsoleConfig
 import overflowdb.Config
 
 import java.nio.file.Path

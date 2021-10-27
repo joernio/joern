@@ -1,7 +1,7 @@
 package io.joern.util
 
 import io.joern.suites.QDBArgumentProvider
-import io.shiftleft.console.{Query, QueryBundle, QueryDatabase}
+import io.joern.console.{Query, QueryBundle, QueryDatabase}
 
 object QueryUtil {
   object EmptyBundle extends QueryBundle

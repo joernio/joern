@@ -3,8 +3,8 @@ package io.joern.suites
 import io.joern.util.QueryUtil
 import io.joern.util.QueryUtil.allQueries
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.console.scan._
-import io.shiftleft.console.{Query, QueryBundle, QueryDatabase}
+import io.joern.console.scan._
+import io.joern.console.{Query, QueryBundle, QueryDatabase}
 import io.shiftleft.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 

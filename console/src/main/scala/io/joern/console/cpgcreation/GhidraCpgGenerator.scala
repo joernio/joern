@@ -1,6 +1,6 @@
 package io.joern.console.cpgcreation
 
-import io.shiftleft.console.FrontendConfig
+import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
 

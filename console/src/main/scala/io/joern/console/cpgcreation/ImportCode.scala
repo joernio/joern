@@ -3,13 +3,13 @@ package io.joern.console.cpgcreation
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.console.workspacehandling.Project
+import io.joern.console.workspacehandling.Project
 import overflowdb.traversal.help.Table
 
 import scala.util.Try
 
 class ImportCode[T <: Project](console: io.shiftleft.console.Console[T]) {
-  import io.shiftleft.console.Console._
+  import io.joern.console.Console._
 
   private val config = console.config
   private val workspace = console.workspace

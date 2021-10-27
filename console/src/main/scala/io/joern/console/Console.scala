@@ -4,9 +4,9 @@ import better.files.Dsl._
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
-import io.shiftleft.console.cpgcreation.ImportCode
-import io.shiftleft.console.scripting.{AmmoniteExecutor, ScriptManager}
-import io.shiftleft.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
+import io.joern.console.cpgcreation.ImportCode
+import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
+import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
 import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer

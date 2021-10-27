@@ -2,9 +2,9 @@ package io.joern.console.testing
 
 import better.files.Dsl.mkdir
 import better.files.File
-import io.shiftleft.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
-import io.shiftleft.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
-import io.shiftleft.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, InstallConfig}
+import io.joern.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
+import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
+import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, InstallConfig}
 import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
 
 import java.nio.file.Path

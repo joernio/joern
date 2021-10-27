@@ -1,7 +1,7 @@
 package io.shiftleft.joern
 
-import io.shiftleft.console.scan.{ScanPass, outputFindings}
-import io.shiftleft.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
+import io.joern.console.scan.{ScanPass, outputFindings}
+import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
 import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.joern.console.AmmoniteBridge
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}

@@ -2,7 +2,7 @@ package io.joern.console.cpgqlserver
 
 import cask.util.Logger.Console._
 import castor.Context.Simple.global
-import io.shiftleft.console.embammonite.EmbeddedAmmonite
+import io.joern.console.embammonite.EmbeddedAmmonite
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import requests.RequestFailedException

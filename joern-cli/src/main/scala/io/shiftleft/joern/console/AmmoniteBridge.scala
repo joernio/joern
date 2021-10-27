@@ -1,6 +1,6 @@
 package io.shiftleft.joern.console
 
-import io.shiftleft.console.{BridgeBase, JoernProduct}
+import io.joern.console.{BridgeBase, JoernProduct}
 
 object AmmoniteBridge extends App with BridgeBase {
 

@@ -2,10 +2,10 @@ package io.shiftleft.joern
 
 import better.files.Dsl.mkdir
 import better.files.File
-import io.shiftleft.console.cpgcreation.ImportCode
-import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
-import io.shiftleft.console.testing.TestCpgGeneratorFactory
-import io.shiftleft.console.workspacehandling.Project
+import io.joern.console.cpgcreation.ImportCode
+import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import io.joern.console.testing.TestCpgGeneratorFactory
+import io.joern.console.workspacehandling.Project
 import io.shiftleft.joern.console.JoernConsole
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers

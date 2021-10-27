@@ -1,7 +1,7 @@
 package io.joern.console.cpgqlserver
 
 import cask.model.{Request, Response}
-import io.shiftleft.console.embammonite.{EmbeddedAmmonite, QueryResult}
+import io.joern.console.embammonite.{EmbeddedAmmonite, QueryResult}
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}

@@ -1,6 +1,6 @@
 package io.joern.suites
 
-import io.shiftleft.console.QueryDatabase
+import io.joern.console.QueryDatabase
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext

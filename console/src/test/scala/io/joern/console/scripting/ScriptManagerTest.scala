@@ -3,7 +3,7 @@ package io.joern.console.scripting
 import cats.effect.IO
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.TestProtoCpg
-import io.shiftleft.console.scripting.ScriptManager.{ScriptCollections, ScriptDescription, ScriptDescriptions}
+import io.joern.console.scripting.ScriptManager.{ScriptCollections, ScriptDescription, ScriptDescriptions}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, Inside}

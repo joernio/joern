@@ -2,7 +2,7 @@ package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.console.scan._
+import io.joern.console.scan._
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._

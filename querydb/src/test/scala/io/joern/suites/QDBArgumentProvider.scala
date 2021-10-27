@@ -1,6 +1,6 @@
 package io.joern.suites
 
-import io.shiftleft.console.DefaultArgumentProvider
+import io.joern.console.DefaultArgumentProvider
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
 

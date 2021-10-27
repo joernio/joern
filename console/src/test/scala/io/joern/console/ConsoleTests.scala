@@ -3,7 +3,7 @@ package io.joern.console
 import better.files.Dsl._
 import better.files._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.console.testing._
+import io.joern.console.testing._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Scpg}
 import org.scalatest.matchers.should.Matchers

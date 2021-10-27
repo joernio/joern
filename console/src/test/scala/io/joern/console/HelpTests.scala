@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.console.workspacehandling.Project
+import io.joern.console.workspacehandling.Project
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
