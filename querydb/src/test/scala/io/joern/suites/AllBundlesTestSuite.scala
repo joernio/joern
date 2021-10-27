@@ -9,7 +9,6 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 import org.scalatest.matchers.should.Matchers._
 
-
 class AllBundlesTestSuite extends AnyWordSpec {
   val argumentProvider = new QDBArgumentProvider(3)
 
@@ -19,7 +18,9 @@ class AllBundlesTestSuite extends AnyWordSpec {
       val nonUniqueNames =
         qdb.allQueries
           .groupBy(_.name)
-          .filter{ q => q._2.size > 1 }
+          .filter { q =>
+            q._2.size > 1
+          }
           .map(_._1)
       nonUniqueNames shouldBe List()
     }

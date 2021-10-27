@@ -13,7 +13,7 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
   val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
-    semanticsFilename =  argumentProvider.testSemanticsFilename
+    semanticsFilename = argumentProvider.testSemanticsFilename
     super.beforeAll()
   }
 
@@ -22,16 +22,15 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
   def concatedQueryCodeExamples: String =
-    allQueries.map { q =>
-      q.codeExamples
-        .positive
-        .mkString("\n")
-        .concat("\n")
-        .concat(
-          q.codeExamples
-            .negative
+    allQueries
+      .map { q =>
+        q.codeExamples.positive
+          .mkString("\n")
+          .concat("\n")
+          .concat(q.codeExamples.negative
             .mkString("\n"))
-    }.mkString("\n")
+      }
+      .mkString("\n")
 
   /**
     * Used for tests that match names of vulnerable functions

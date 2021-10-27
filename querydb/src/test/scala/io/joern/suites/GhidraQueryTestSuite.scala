@@ -1,6 +1,5 @@
 package io.joern.suites
 
-
 import io.joern.ghidra2cpg.fixtures.{DataFlowBinToCpgSuite, GhidraBinToCpgSuite}
 import io.joern.util.QueryUtil
 import io.joern.console.scan._
