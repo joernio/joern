@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "semanticcpg-tests" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
   "io.shiftleft" %% "c2cpg" % Versions.cpg % Test,
-  "org.scalatest" %% "scalatest" % "3.1.1" % Test,
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
   "io.joern" %% "ghidra2cpg-tests" % Versions.ghidra2cpg % Test classifier "tests"
 )
 

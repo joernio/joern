@@ -2,9 +2,32 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-dependsOn(Projects.codepropertygraph % "compile ->compile; test -> test",
-          Projects.semanticcpg,
-          Projects.macros)
+val ScoptVersion = "3.7.1"
+val BetterFilesVersion = "3.8.0"
+val CaskVersion = "0.7.8"
+val CatsVersion = "2.3.1"
+val CirceVersion = "0.12.2"
+val AmmoniteVersion = "2.4.0"
+val ZeroturnaroundVersion = "1.13"
+
+libraryDependencies ++= Seq(
+  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft" %% "semanticcpg" % Versions.cpg,
+  "io.shiftleft" %% "macros" % Versions.cpg,
+  "com.github.scopt" %% "scopt" % ScoptVersion,
+  "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
+  "org.typelevel" %% "cats-core" % CatsVersion,
+  "org.typelevel" %% "cats-effect" % CatsVersion,
+  "io.circe" %% "circe-generic" % CirceVersion,
+  "io.circe" %% "circe-parser" % CirceVersion,
+  "org.zeroturnaround" % "zt-zip" % ZeroturnaroundVersion,
+  "com.lihaoyi" %% "ammonite" % AmmoniteVersion cross CrossVersion.full,
+  "com.lihaoyi" %% "cask" % CaskVersion,
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
+  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
+)
+
+Test / packageBin / publishArtifact := true
 
 scalacOptions ++= Seq(
   "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
@@ -44,28 +67,3 @@ scalacOptions ++= Seq(
 
 // would love to reenable, but somehow StorageBackend.scala triggers a strange `[warn] method with a single empty parameter list overrides method without any parameter list` that doesn't make sense to me...
 scalacOptions -= "-Xfatal-warnings"
-
-val ScoptVersion = "3.7.1"
-val BetterFilesVersion = "3.8.0"
-val CaskVersion = "0.7.8"
-val CatsVersion = "2.3.1"
-val CirceVersion = "0.12.2"
-val AmmoniteVersion = "2.4.0"
-val ZeroturnaroundVersion = "1.13"
-
-dependsOn(Projects.fuzzyc2cpg % Test)
-
-libraryDependencies ++= Seq(
-  "com.github.scopt"     %% "scopt"         % ScoptVersion,
-  "com.github.pathikrit" %% "better-files"  % BetterFilesVersion,
-  "org.typelevel"        %% "cats-core"     % CatsVersion,
-  "org.typelevel"        %% "cats-effect"   % CatsVersion,
-  "io.circe"             %% "circe-generic" % CirceVersion,
-  "io.circe"             %% "circe-parser"  % CirceVersion,
-  "org.zeroturnaround"   %  "zt-zip"        % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "ammonite"      % AmmoniteVersion cross CrossVersion.full,
-  "com.lihaoyi" 	       %% "cask" 	        % CaskVersion,
-  "org.scalatest"        %% "scalatest"     % Versions.scalatest % Test
-)
-
-Test / packageBin / publishArtifact := true

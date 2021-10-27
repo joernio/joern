@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic" % "0.12.2",
   "org.reflections" % "reflections" % "0.9.12",
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
-  "org.scalatest" %% "scalatest" % "3.1.1" % Test,
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 
 enablePlugins(JavaAppPackaging)
