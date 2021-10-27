@@ -1,4 +1,4 @@
-package io.shiftleft
+package io.joern
 
 import better.files._
 
