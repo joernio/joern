@@ -3,6 +3,7 @@ package io.joern.scanners.c
 import io.joern.scanners._
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.joern.console._
+import io.shiftleft.console._
 import io.shiftleft.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 

@@ -1,8 +1,9 @@
 package io.joern.scanners.c
 
-import io.joern.console.{CodeExamples, Query, QueryBundle, TraversalWithStrRep, q}
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.joern.scanners._
+import io.joern.console._
+import io.shiftleft.console._
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.semanticcpg.language._

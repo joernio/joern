@@ -5,7 +5,8 @@ import io.joern.ghidra2cpg.fixtures.{DataFlowBinToCpgSuite, GhidraBinToCpgSuite}
 import io.joern.util.QueryUtil
 import io.joern.console.scan._
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.joern.console.{Query, QueryBundle}
+import io.joern.console.QueryBundle
+import io.shiftleft.console.Query
 import io.shiftleft.utils.ProjectRoot
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.iterableToTraversal

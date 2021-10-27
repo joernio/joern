@@ -3,6 +3,7 @@ package io.joern.console
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.console.Query
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.traversal._

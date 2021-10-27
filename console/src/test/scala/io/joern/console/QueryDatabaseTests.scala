@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should
 import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.console.Query
 
 object TestBundle extends QueryBundle {
   @q def foo(n: Int = 4): Query = Query(
