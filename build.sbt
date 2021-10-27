@@ -3,7 +3,7 @@ ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 
-val cpgVersion = "1.3.388"
+val cpgVersion = "1.3.397"
 val ghidra2cpgVersion = "0.0.47"
 val js2cpgVersion = "0.2.21"
 val javasrc2cpgVersion = "0.0.14"
