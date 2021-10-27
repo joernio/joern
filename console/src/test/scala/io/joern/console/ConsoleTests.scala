@@ -2,10 +2,9 @@ package io.joern.console
 
 import better.files.Dsl._
 import better.files._
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.console.testing._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Scpg}
+import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -29,8 +28,14 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString)
       console.workspace.numberOfProjects shouldBe 1
       Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
-      console.project.appliedOverlays shouldBe List("semanticcpg")
-      console.project.availableOverlays shouldBe List("semanticcpg")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
+      console.project.availableOverlays.toSet shouldBe Set(Base.overlayName,
+                                                           ControlFlow.overlayName,
+                                                           TypeRelations.overlayName,
+                                                           CallGraph.overlayName)
     }
 
     "allow importing code and setting project name" in ConsoleFixture() { (console, codeDir) =>
@@ -43,7 +48,10 @@ class ConsoleTests extends AnyWordSpec with Matchers {
           p.cpg should not be empty
         case None => fail()
       }
-      console.project.appliedOverlays shouldBe List("semanticcpg")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
     }
 
     "allow importing multiple code bases" in ConsoleFixture() { (console, codeDir) =>
@@ -51,8 +59,14 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString, "bar")
       console.workspace.numberOfProjects shouldBe 2
       console.project.name shouldBe "bar"
-      console.project.appliedOverlays shouldBe List("semanticcpg")
-      console.workspace.project("foo").get.appliedOverlays shouldBe List("semanticcpg")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
+      console.workspace.project("foo").get.appliedOverlays shouldBe List(Base.overlayName,
+                                                                         ControlFlow.overlayName,
+                                                                         TypeRelations.overlayName,
+                                                                         CallGraph.overlayName)
     }
 
     "set project to active" in ConsoleFixture() { (console, codeDir) =>
@@ -101,7 +115,10 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
         Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
-        console.project.appliedOverlays shouldBe List("semanticcpg")
+        console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                      ControlFlow.overlayName,
+                                                      TypeRelations.overlayName,
+                                                      CallGraph.overlayName)
       } finally {
         Some(tmpCpg).find(_.exists).foreach(_.delete())
       }
@@ -150,7 +167,10 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
         Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
-        console.project.appliedOverlays shouldBe List("semanticcpg")
+        console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                      ControlFlow.overlayName,
+                                                      TypeRelations.overlayName,
+                                                      CallGraph.overlayName)
       } finally {
         Some(tmpCpg).find(_.exists).foreach(_.delete())
       }
@@ -216,18 +236,27 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "prohibit adding semanticcpg again" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
-      console.project.appliedOverlays shouldBe List("semanticcpg")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
       val numOverlayFilesBefore = console.project.path.resolve("overlays").toFile.list().size
-      numOverlayFilesBefore shouldBe 1
-      console._runAnalyzer(new Scpg)
-      console.project.appliedOverlays shouldBe List("semanticcpg")
+      numOverlayFilesBefore shouldBe 4
+      console._runAnalyzer(new Base, new ControlFlow, new TypeRelations, new CallGraph)
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
       console.project.path.resolve("overlays").toFile.list().size shouldBe numOverlayFilesBefore
     }
 
     "store directory of zip files for each overlay in project" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       val overlayParentDir = console.project.path.resolve("overlays")
-      overlayParentDir.toFile.list.toSet shouldBe Set("semanticcpg")
+      overlayParentDir.toFile.list.toSet shouldBe Set(Base.overlayName,
+                                                      ControlFlow.overlayName,
+                                                      TypeRelations.overlayName,
+                                                      CallGraph.overlayName)
 
       val overlayDirs = overlayParentDir.toFile.listFiles()
       overlayDirs.foreach { dir =>
@@ -252,16 +281,25 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     override val description: String = "foodescr"
 
     override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {}
-    override def probe(cpg: Cpg): Boolean = false
   }
 
   "undo" should {
     "remove layer from meta information" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       console._runAnalyzer(new MockLayerCreator)
-      console.project.appliedOverlays shouldBe List("semanticcpg", "fooname")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName,
+                                                    "fooname")
       console.undo
-      console.project.appliedOverlays shouldBe List("semanticcpg")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
+      console.undo
+      console.undo
+      console.undo
       console.undo
       console.project.appliedOverlays shouldBe List()
     }
@@ -270,7 +308,13 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString)
       val overlayDir = console.project.path.resolve("overlays")
       val overlayFilesBefore = overlayDir.toFile.list.toSet
-      overlayFilesBefore shouldBe Set("semanticcpg")
+      overlayFilesBefore shouldBe Set(Base.overlayName,
+                                      ControlFlow.overlayName,
+                                      TypeRelations.overlayName,
+                                      CallGraph.overlayName)
+      console.undo
+      console.undo
+      console.undo
       console.undo
       val overlayFilesAfter = overlayDir.toFile.list.toSet
       overlayFilesAfter shouldBe Set()
@@ -279,11 +323,17 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "actually remove some nodes" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       console.cpg.parameter.asOutput.l.size should be > 0
-      console.project.appliedOverlays shouldBe List("semanticcpg")
+      console.project.appliedOverlays shouldBe List(Base.overlayName,
+                                                    ControlFlow.overlayName,
+                                                    TypeRelations.overlayName,
+                                                    CallGraph.overlayName)
+      console.undo
+      console.undo
+      console.undo
       console.undo
       console.project.appliedOverlays shouldBe List()
       console.cpg.parameter.asOutput.l.size shouldBe 0
-      console._runAnalyzer(new Scpg)
+      console._runAnalyzer(new Base)
       console.cpg.parameter.asOutput.l.size should be > 0
     }
   }
@@ -324,7 +374,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.cpg.tag.name("mytag").method.name.toSet should contain("main")
       console.cpg.metaData.map(_.overlays).head.last shouldBe "custom"
       console.undo
-      console.cpg.metaData.map(_.overlays).head.last shouldBe "semanticcpg"
+      console.cpg.metaData.map(_.overlays).head.last shouldBe "callgraph"
     }
   }
 

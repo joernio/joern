@@ -1,6 +1,5 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{CpgPass, DiffGraph}
 import io.shiftleft.semanticcpg.language.HasStoreMethod
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -28,7 +27,6 @@ object Run {
           }
           runPass(pass, context, storeUndoInfo)
         }
-        override def probe(cpg: Cpg): Boolean = false
       }
     )
   }

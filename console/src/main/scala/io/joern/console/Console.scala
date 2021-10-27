@@ -10,7 +10,7 @@ import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceMa
 import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Scpg}
+import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
 import overflowdb.traversal.help.Doc
 
 import scala.sys.process.Process
@@ -416,9 +416,9 @@ class Console[T <: Project](executor: AmmoniteExecutor,
 
   def applyDefaultOverlays(cpg: Cpg): Cpg = {
     val appliedOverlays = io.shiftleft.semanticcpg.Overlays.appliedOverlays(cpg)
-    if (appliedOverlays.isEmpty && !(new Scpg().probe(cpg))) {
+    if (appliedOverlays.isEmpty) {
       report("Adding default overlays to base CPG")
-      val overlayCreators = List(new Scpg)
+      val overlayCreators = List(new Base, new ControlFlow, new TypeRelations, new CallGraph)
       _runAnalyzer(overlayCreators: _*)
     }
     cpg
