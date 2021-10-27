@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "0.0.108"
+  val defaultDbVersion: String = "latest"
 }
 
 case class JoernScanConfig(src: String = "",
@@ -213,9 +213,9 @@ object JoernScan extends App with BridgeBase {
 
   private def urlForVersion(version: String): String = {
     if (version == "latest") {
-      "https://github.com/joernio/query-database/releases/latest/download/querydb.zip"
+      "https://github.com/joernio/joern/releases/latest/download/querydb.zip"
     } else {
-      s"https://github.com/joernio/query-database/releases/download/v$version/querydb.zip"
+      s"https://github.com/joernio/joern/releases/download/v$version/querydb.zip"
     }
   }
 
