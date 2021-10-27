@@ -265,7 +265,9 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
       }
 
     val filteredByTag =
-      if (tags.length == 0) {
+      if (tags.length == 0 && names.length != 0) {
+        filteredByName
+      } else if (tags.length == 0) {
         filteredByName.filter(q => q.tags.contains(defaultTag))
       } else if (tags.sameElements(Array(allTag))) {
         filteredByName
