@@ -28,6 +28,11 @@ topLevelDirectory := Some(packageName.value)
 
 Compile/packageDoc/mappings := Seq()
 
+lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
+Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value).map {
+  case (file, name) => file -> s"frontends/javasrc2cpg/$name"
+}
+
 lazy val c2cpg = project.in(file("frontends/c2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "c2cpg" % Versions.cpg,
   Compile/mainClass := Some("io.shiftleft.c2cpg.C2Cpg"),
@@ -58,14 +63,6 @@ lazy val js2cpg = project.in(file("frontends/js2cpg")).enablePlugins(JavaAppPack
 )
 Universal/mappings ++= NativePackagerHelper.contentOf((js2cpg/stage).value).map {
   case (file, name) => file -> s"frontends/js2cpg/$name"
-}
-
-lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg")).enablePlugins(JavaAppPackaging).settings(
-    libraryDependencies += "io.joern" %% "javasrc2cpg" % Versions.javasrc2cpg,
-    Compile/mainClass := Some("io.joern.javasrc2cpg.Main"),
-)
-Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value).map {
-  case (file, name) => (file, s"frontends/javasrc2cpg/$name")
 }
 
 lazy val jimple2cpg = project.in(file("frontends/jimple2cpg")).enablePlugins(JavaAppPackaging).settings(

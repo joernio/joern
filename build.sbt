@@ -6,8 +6,12 @@ ThisBuild / scalaVersion := "2.13.5"
 val cpgVersion = "1.3.397"
 val ghidra2cpgVersion = "0.0.51"
 val js2cpgVersion = "0.2.21"
+<<<<<<< HEAD
 val javasrc2cpgVersion = "0.0.14"
 val jimple2cpgVersion = "0.0.8"
+=======
+val jimple2cpgVersion = "0.0.7"
+>>>>>>> a97c441... Integrate javasrc2cpg directly into joern
 
 ThisBuild /Test /fork := true
 
