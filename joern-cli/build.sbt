@@ -1,5 +1,4 @@
 name := "joern-cli"
-organization := "io.shiftleft"
 
 dependsOn(
   Projects.console,
