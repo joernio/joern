@@ -30,6 +30,7 @@ jobs:
       - name: Export ENV vars
         run:
           echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+      - run: sbt "querydb/runMain io.joern.dumpq.Main"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -76,3 +77,12 @@ jobs:
           asset_path: querydb/target/querydb.zip
           asset_name: querydb.zip
           asset_content_type: application/zip
+      - name: Upload querydb.json
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./querydb.json
+          asset_name: querydb.json
+          asset_content_type: application/json
