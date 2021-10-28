@@ -1,3 +1,3 @@
-package io.shiftleft.joern.console
+package io.joern.console
 
 object Joern extends JoernConsole {}
