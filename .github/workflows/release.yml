@@ -25,7 +25,7 @@ jobs:
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
           cd -
-      - run: sbt ciReleaseTagNextVersion createDistribution
+      - run: sbt ciReleaseTagNextVersion ciReleaseSonatype createDistribution
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - name: Export ENV vars
         run:
