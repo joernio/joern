@@ -83,6 +83,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./querydb.json
+          asset_path: /tmp/querydb.json
           asset_name: querydb.json
           asset_content_type: application/json
