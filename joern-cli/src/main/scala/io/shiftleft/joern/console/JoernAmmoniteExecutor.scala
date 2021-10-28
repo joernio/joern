@@ -1,6 +1,6 @@
 package io.shiftleft.joern.console
 
-import io.shiftleft.console.scripting.AmmoniteExecutor
+import io.joern.console.scripting.AmmoniteExecutor
 
 object JoernAmmoniteExecutor extends AmmoniteExecutor {
 

@@ -3,8 +3,9 @@ package io.joern.suites
 import io.joern.util.QueryUtil
 import io.joern.util.QueryUtil.allQueries
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.console.scan._
-import io.shiftleft.console.{Query, QueryBundle, QueryDatabase}
+import io.joern.console.scan._
+import io.joern.console.{QueryBundle, QueryDatabase}
+import io.shiftleft.console.Query
 import io.shiftleft.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
@@ -12,7 +13,7 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
   val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
-    semanticsFilename =  argumentProvider.testSemanticsFilename
+    semanticsFilename = argumentProvider.testSemanticsFilename
     super.beforeAll()
   }
 
@@ -21,16 +22,15 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
   def concatedQueryCodeExamples: String =
-    allQueries.map { q =>
-      q.codeExamples
-        .positive
-        .mkString("\n")
-        .concat("\n")
-        .concat(
-          q.codeExamples
-            .negative
+    allQueries
+      .map { q =>
+        q.codeExamples.positive
+          .mkString("\n")
+          .concat("\n")
+          .concat(q.codeExamples.negative
             .mkString("\n"))
-    }.mkString("\n")
+      }
+      .mkString("\n")
 
   /**
     * Used for tests that match names of vulnerable functions

@@ -1,11 +1,13 @@
 package io.joern.scanners.c
 
 import io.joern.scanners.{Crew, QueryTags}
-import io.shiftleft.console.{Query, QueryBundle, q}
+import io.joern.console._
+import io.shiftleft.console._
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
+import io.joern.console._
 import io.shiftleft.console._
 import QueryLangExtensions._
 

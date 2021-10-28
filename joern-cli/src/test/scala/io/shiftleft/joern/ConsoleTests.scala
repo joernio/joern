@@ -2,10 +2,10 @@ package io.shiftleft.joern
 
 import better.files.Dsl.mkdir
 import better.files.File
-import io.shiftleft.console.cpgcreation.ImportCode
-import io.shiftleft.console.{Console, ConsoleConfig, InstallConfig}
-import io.shiftleft.console.testing.TestCpgGeneratorFactory
-import io.shiftleft.console.workspacehandling.Project
+import io.joern.console.cpgcreation.ImportCode
+import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import io.joern.console.testing.TestCpgGeneratorFactory
+import io.joern.console.workspacehandling.Project
 import io.shiftleft.joern.console.JoernConsole
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -49,8 +49,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCode(codeDir.toString)
         val cpg = console.cpg
         myScript.write(s"""
-                            | if (!run.toString.contains("scpg") || run.toString.contains("semanticcpg"))
-                            |     throw new RuntimeException
+                            | if (!run.toString.contains("base"))
+                            |     throw new RuntimeException("base layer not applied...?")
                             |""".stripMargin)
         console.CpgScriptRunner(cpg).runScript(myScript.toString)
       }
@@ -66,7 +66,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         val cpg = console.cpg
         myScript.write(s"""
                             | if (help.cpg.toString.isEmpty)
-                            |     throw new RuntimeException
+                            |     throw new RuntimeException("no help text available...?")
                             |""".stripMargin)
         console.CpgScriptRunner(cpg).runScript(myScript.toString)
       }

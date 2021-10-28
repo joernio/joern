@@ -1,12 +1,12 @@
 package io.joern.suites
 
-import io.shiftleft.console.DefaultArgumentProvider
+import io.joern.console.DefaultArgumentProvider
 import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
 import scala.reflect.runtime.universe._
 
-class QDBArgumentProvider(maxCallDepth: Int)  extends DefaultArgumentProvider {
+class QDBArgumentProvider(maxCallDepth: Int) extends DefaultArgumentProvider {
   def testSemanticsFilename = "src/test/resources/default.semantics"
 
   override def defaultArgument(method: MethodSymbol, im: InstanceMirror, x: Symbol, i: Int): Option[Any] = {

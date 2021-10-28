@@ -1,13 +1,13 @@
 package io.shiftleft.joern.console
 
-import io.shiftleft.console.{Help, Run}
+import io.joern.console.{Help, Run}
 
 object Predefined {
 
   /* ammonite tab completion is partly broken for scala > 2.12.8
    * applying workaround for package wildcard imports from https://github.com/lihaoyi/Ammonite/issues/1009 */
   val shared: String = """
-        |import io.shiftleft.console.{`package` => _, _}
+        |import io.joern.console.{`package` => _, _}
         |import io.shiftleft.joern.console._
         |import io.shiftleft.joern.console.JoernConsole._
         |import io.shiftleft.codepropertygraph.Cpg

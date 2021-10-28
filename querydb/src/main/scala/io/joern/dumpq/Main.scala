@@ -1,6 +1,6 @@
 package io.joern.dumpq
 
-import io.shiftleft.console.{DefaultArgumentProvider, QueryDatabase}
+import io.joern.console.{DefaultArgumentProvider, QueryDatabase}
 import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
 import org.json4s.{Formats, NoTypeHints}

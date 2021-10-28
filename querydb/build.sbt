@@ -2,6 +2,8 @@ name := "querydb"
 
 enablePlugins(JavaAppPackaging)
 
+dependsOn(Projects.console)
+
 libraryDependencies ++= Seq(
   "com.lihaoyi" %% "sourcecode" % "0.1.9",
   "com.lihaoyi" %% "upickle" % "1.2.2",
@@ -9,14 +11,13 @@ libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "3.7.1",
   "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "io.shiftleft" %% "console" % Versions.cpg,
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
   "io.shiftleft" %% "fuzzyc2cpg-tests" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "c2cpg-tests" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "semanticcpg-tests" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
   "io.shiftleft" %% "c2cpg" % Versions.cpg % Test,
-  "org.scalatest" %% "scalatest" % "3.1.1" % Test,
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
   "io.joern" %% "ghidra2cpg-tests" % Versions.ghidra2cpg % Test classifier "tests"
 )
 

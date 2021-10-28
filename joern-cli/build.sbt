@@ -1,14 +1,13 @@
-enablePlugins(JavaAppPackaging)
-enablePlugins(UniversalPlugin)
-
-organization := "io.shiftleft"
 name := "joern-cli"
+
+dependsOn(
+  Projects.console,
+  Projects.console % "test->test",
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "io.shiftleft" %% "console" % Versions.cpg,
-  "io.shiftleft" %% "console" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg, // only needed for joern-parse - TODO MP consider to remove?
 
@@ -18,9 +17,10 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic" % "0.12.2",
   "org.reflections" % "reflections" % "0.9.12",
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
-  "org.scalatest" %% "scalatest" % "3.1.1" % Test,
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 
+enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
 scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 

@@ -3,7 +3,7 @@ package io.joern.scanners.ghidra
 import io.joern.suites.GhidraQueryTestSuite
 import org.scalatest.Ignore
 
-class UserInputIntoDangerousFunctionsTests  extends GhidraQueryTestSuite {
+class UserInputIntoDangerousFunctionsTests extends GhidraQueryTestSuite {
   override def queryBundle = UserInputIntoDangerousFunctions
 
   "getenvToStrcpy query" when {

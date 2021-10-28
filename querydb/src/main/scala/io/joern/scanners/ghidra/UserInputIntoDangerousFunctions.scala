@@ -1,6 +1,7 @@
 package io.joern.scanners.ghidra
 
 import io.joern.scanners._
+import io.joern.console._
 import io.shiftleft.console._
 import io.shiftleft.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._

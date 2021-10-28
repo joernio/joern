@@ -2,13 +2,13 @@ package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.console.scan._
+import io.joern.console.scan._
 import io.shiftleft.semanticcpg.language._
 
 class UseAfterFreeTests extends CQueryTestSuite {
   override def queryBundle = UseAfterFree
 
-   override val code =
+  override val code =
     """
     |void good(a_struct_type *a_struct) {
     |
@@ -29,7 +29,6 @@ class UseAfterFreeTests extends CQueryTestSuite {
     |}
     |
     |""".stripMargin
-
 
   "should flag `bad` function only" in {
     val query = queryBundle.freeFieldNoReassign()
