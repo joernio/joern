@@ -1,9 +1,6 @@
 name := "javasrc2cpg"
-organization := "io.joern"
 
 scalaVersion := "2.13.6"
-
-val scalatestVersion = "3.1.1"
 
 trapExit := false
 
@@ -17,7 +14,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"  %% "dataflowengineoss"        % Versions.cpg,
   "io.shiftleft"  %% "semanticcpg-tests"        % Versions.cpg       % Test classifier "tests",
   "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.22.1",
-  "org.scalatest" %% "scalatest"                % scalatestVersion % Test
+  "org.scalatest" %% "scalatest"                % Versions.scalatest % Test
 )
 
 developers := List(
