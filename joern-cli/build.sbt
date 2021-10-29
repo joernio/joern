@@ -50,6 +50,7 @@ Universal/mappings ++= NativePackagerHelper.contentOf((fuzzyc2cpg/stage).value).
 }
 
 lazy val ghidra2cpg = project.in(file("frontends/ghidra2cpg")).enablePlugins(JavaAppPackaging).settings(
+  name := "ghidra2cpg-frontend",
   libraryDependencies += "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
   Compile/mainClass := Some("io.joern.ghidra2cpg.Main"),
 )
