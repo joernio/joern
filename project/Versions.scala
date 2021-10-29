@@ -3,7 +3,6 @@ object Versions {
   val cpg = parseVersion("cpgVersion")
   val ghidra2cpg = parseVersion("ghidra2cpgVersion")
   val js2cpg = parseVersion("js2cpgVersion")
-  val javasrc2cpg = parseVersion("javasrc2cpgVersion")
   val jimple2cpg = parseVersion("jimple2cpgVersion")
   val scalatest = "3.1.1"
 
