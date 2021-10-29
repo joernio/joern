@@ -35,7 +35,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
         |"<operator>.assignment" 2->1
         |"<operator>.incBy" 1->1 2->1 3->1 4->1
         |""".stripMargin
-    val semantics: Semantics            = Semantics.fromList(new Parser().parse(customSemantics))
+    val semantics: Semantics = Semantics.fromList(new Parser().parse(customSemantics))
     implicit val context: EngineContext = EngineContext(semantics)
 
     def source = cpg.call.code("li t1,0x2a").argument(1)
@@ -43,6 +43,13 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     val flows = sink.reachableByFlows(source).l
 
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List("li t1,0x2a", "add t2,t0,t1", "addu t3,t2,t0", "addu t4,t3,t0", "addi t5,t4,0x1", "addiu t6,t5,0x1", "or t9,t6,zero"))
+      Set(
+        List("li t1,0x2a",
+             "add t2,t0,t1",
+             "addu t3,t2,t0",
+             "addu t4,t3,t0",
+             "addi t5,t4,0x1",
+             "addiu t6,t5,0x1",
+             "or t9,t6,zero"))
   }
 }

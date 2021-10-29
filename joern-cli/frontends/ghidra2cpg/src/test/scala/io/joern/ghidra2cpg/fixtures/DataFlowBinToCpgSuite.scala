@@ -19,7 +19,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
   var semanticsFilename =
     ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics            = _
+  var semantics: Semantics = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
@@ -31,7 +31,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
   implicit val viewer: ImageViewer = (pathStr: String) =>
     Try {
       Process(Seq("xdg-open", pathStr)).!!
-    }
+  }
 
   override def passes(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)

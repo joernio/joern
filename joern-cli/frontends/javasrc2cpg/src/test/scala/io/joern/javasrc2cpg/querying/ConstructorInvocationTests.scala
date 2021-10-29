@@ -31,7 +31,6 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
       |}
       |""".stripMargin
 
-
   "it should create correct method nodes for constructors" in {
     cpg.method.name("Foo").l match {
       case List(cons: Method) =>

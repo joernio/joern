@@ -68,7 +68,7 @@ class OperatorTests extends JavaDataflowFixture {
     |""".stripMargin
 
   it should "track dataflow through direct assignment" in {
-    val (source, sink) = getConstSourceSink("test1" )
+    val (source, sink) = getConstSourceSink("test1")
     sink.reachableBy(source).size shouldBe 1
   }
 

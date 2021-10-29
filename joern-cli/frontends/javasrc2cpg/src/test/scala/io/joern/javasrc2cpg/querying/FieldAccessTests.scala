@@ -46,7 +46,6 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
       |}
       |""".stripMargin
 
-
   "should handle static member accesses" in {
     val List(access: Call) = cpg.method(".*foo.*").call(".*fieldAccess").l
     val List(fieldIdentifier: FieldIdentifier, identifier: Identifier) = access.argument.l

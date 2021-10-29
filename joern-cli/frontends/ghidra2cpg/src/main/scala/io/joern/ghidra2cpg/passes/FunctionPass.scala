@@ -3,13 +3,7 @@ package io.joern.ghidra2cpg.passes
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{
-  CodeUnitFormat,
-  CodeUnitFormatOptions,
-  Function,
-  Instruction,
-  Program
-}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._
@@ -118,18 +112,19 @@ class FunctionPass(
           }
         }
 
-        checkedParameters.foreach { case (checkedParameter, index, dataType) =>
-          val node = nodes
-            .NewIdentifier()
-            .code(checkedParameter)
-            .name(checkedParameter) //parameter.getName)
-            .order(index)
-            .argumentIndex(index)
-            .typeFullName(Types.registerType(dataType))
-            .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-          diffGraph.addNode(node)
-          diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
-          diffGraph.addEdge(callNode, node, EdgeTypes.AST)
+        checkedParameters.foreach {
+          case (checkedParameter, index, dataType) =>
+            val node = nodes
+              .NewIdentifier()
+              .code(checkedParameter)
+              .name(checkedParameter) //parameter.getName)
+              .order(index)
+              .argumentIndex(index)
+              .typeFullName(Types.registerType(dataType))
+              .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+            diffGraph.addNode(node)
+            diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
+            diffGraph.addEdge(callNode, node, EdgeTypes.AST)
         }
       }
     } else {
@@ -210,16 +205,17 @@ class FunctionPass(
         .getThunkedFunction(true)
         .getParameters
         .zipWithIndex
-        .foreach { case (parameter, index) =>
-          val node = nodes
-            .NewMethodParameterIn()
-            .code(parameter.getName)
-            .name(parameter.getName)
-            .order(index + 1)
-            .typeFullName(Types.registerType(parameter.getDataType.getName))
-            .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
-          diffGraph.addNode(node)
-          diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
+        .foreach {
+          case (parameter, index) =>
+            val node = nodes
+              .NewMethodParameterIn()
+              .code(parameter.getName)
+              .name(parameter.getName)
+              .order(index + 1)
+              .typeFullName(Types.registerType(parameter.getDataType.getName))
+              .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
+            diffGraph.addNode(node)
+            diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
     } else {
       decompInterface
@@ -276,7 +272,7 @@ class FunctionPass(
   }
 
   def addCallNode(instruction: Instruction): NewCall = {
-    val node         = nodes.NewCall()
+    val node = nodes.NewCall()
     var code: String = ""
     val mnemonicName =
       processor.getInstructions

@@ -56,12 +56,13 @@ class LiteralTests extends JavaSrcCodeToCpgFixture {
       identifier.name -> (identifier, value)
     }.toMap
 
-    expectedOutput.foreach { case (identifier, value, typ) =>
-      withClue(s"$identifier should have value $value") {
-        val (actualIdentifier: Identifier, actualValue: Literal) = valueMap(identifier)
-        actualValue.code shouldBe value
-        actualIdentifier.typeFullName shouldBe typ
-      }
+    expectedOutput.foreach {
+      case (identifier, value, typ) =>
+        withClue(s"$identifier should have value $value") {
+          val (actualIdentifier: Identifier, actualValue: Literal) = valueMap(identifier)
+          actualValue.code shouldBe value
+          actualIdentifier.typeFullName shouldBe typ
+        }
     }
   }
 }

@@ -10,8 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class LambdaTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with a simple lambda which captures a method parameter" - {
-    lazy val cpg = JavaSrc2CpgTestContext.buildCpg(
-    """
+    lazy val cpg = JavaSrc2CpgTestContext.buildCpg("""
       |import java.util.Comparator;
       |
       |public class Foo {
@@ -61,8 +60,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a simple lambda which captures a local" - {
-    lazy val cpg = JavaSrc2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = JavaSrc2CpgTestContext.buildCpg("""
         |import java.util.Comparator;
         |
         |public class Foo {

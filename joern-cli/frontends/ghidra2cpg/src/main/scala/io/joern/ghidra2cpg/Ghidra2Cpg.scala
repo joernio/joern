@@ -64,7 +64,7 @@ class Ghidra2Cpg(
         s"$inputFile is not a valid directory or file."
       )
 
-    val locator          = new ProjectLocator(tempWorkingDir.getAbsolutePath, CommandLineConfig.projectName)
+    val locator = new ProjectLocator(tempWorkingDir.getAbsolutePath, CommandLineConfig.projectName)
     var program: Program = null
     try {
       projectManager = Some(new HeadlessGhidraProjectManager)
@@ -97,7 +97,7 @@ class Ghidra2Cpg(
   }
   private def analyzeProgram(fileAbsolutePath: String, program: Program): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
-    val transactionId: Int                       = program.startTransaction("Analysis")
+    val transactionId: Int = program.startTransaction("Analysis")
     try {
       autoAnalysisManager.initializeOptions()
       autoAnalysisManager.reAnalyzeAll(null)
@@ -120,7 +120,7 @@ class Ghidra2Cpg(
   def handleProgram(currentProgram: Program, fileAbsolutePath: String): Unit = {
 
     val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(currentProgram)
-    val decompilerInterface            = new DecompInterface()
+    val decompilerInterface = new DecompInterface()
     decompilerInterface.toggleCCode(false)
     decompilerInterface.toggleSyntaxTree(false)
     decompilerInterface.toggleJumpLoads(false)
@@ -137,13 +137,13 @@ class Ghidra2Cpg(
       println("Decompiler error: %s\n", decompilerInterface.getLastMessage)
     }
     // Functions
-    val listing          = currentProgram.getListing
+    val listing = currentProgram.getListing
     val functionIterator = listing.getFunctions(true)
-    val functions        = functionIterator.iterator.asScala.toList
+    val functions = functionIterator.iterator.asScala.toList
 
     // We touch every function twice, regular ASM and PCode
     // Also we have + 2 for MetaDataPass and Namespacepass
-    val numOfKeypools   = functions.size * 3 + 2
+    val numOfKeypools = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
 
     // Actual CPG construction
@@ -168,8 +168,7 @@ class Ghidra2Cpg(
         cpg,
         keyPoolIterator.next,
         decompilerInterface
-      )
-        .createAndApply()
+      ).createAndApply()
     }
 
     new TypesPass(cpg).createAndApply()
