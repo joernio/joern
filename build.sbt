@@ -4,7 +4,6 @@ ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 
 val cpgVersion = "1.3.404"
-val ghidra2cpgVersion = "0.0.52"
 val js2cpgVersion = "0.2.24"
 val jimple2cpgVersion = "0.0.8"
 
@@ -23,6 +22,7 @@ ThisBuild/scalacOptions ++= Seq(
 lazy val joerncli = Projects.joerncli
 lazy val querydb = Projects.querydb
 lazy val console = Projects.console
+lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
