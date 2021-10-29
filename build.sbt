@@ -41,6 +41,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // publishing info for sonatype / maven central
 ThisBuild / publishTo := sonatypePublishToBundle.value
+sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / scmInfo := Some(
   ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
 ThisBuild / homepage := Some(url("https://joern.io/"))
@@ -54,3 +55,5 @@ ThisBuild / developers := List(
     url("https://github.com/fabsx00")
   )
 )
+
+publish / skip := true // don't publish the root project
