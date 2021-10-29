@@ -39,7 +39,7 @@ class GhidraFrontend extends LanguageFrontend {
 }
 
 class GhidraBinToCpgSuite extends BinToCpgFixture(new GhidraFrontend) {
-  override val binDirectory = ProjectRoot.relativise("ghidra2cpg-tests/src/test/testbinaries/")
+  override val binDirectory = ProjectRoot.relativise("joern-cli/frontends/ghidra2cpg/src/test/testbinaries/")
 
   def flowToResultPairs(path: Path): List[String] = {
     val pairs = path.elements.map {
