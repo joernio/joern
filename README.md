@@ -58,3 +58,6 @@ sbt stage
 ```
 The last command prints all available queries - add your own in querydb, run the above commands again to see that your query got deployed.
 More details in the [separate querydb readme](querydb/README.md)
+
+## Javasrc2cpg (a source-based frontend for Java)
+See details in [the javasrc2cpg readme](joern-cli/frontends/javasrc2cpg/README.md)
