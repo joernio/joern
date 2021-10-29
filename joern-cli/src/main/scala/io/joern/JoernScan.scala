@@ -1,18 +1,18 @@
-package io.shiftleft.joern
+package io.joern
 
 import io.joern.console.scan.{ScanPass, outputFindings}
 import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, QueryDatabase}
 import io.shiftleft.console.Query
 import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.joern.console.AmmoniteBridge
+import io.joern.console.AmmoniteBridge
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 import better.files._
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.joern.JoernScan.getQueriesFromQueryDb
-import io.shiftleft.joern.Scan.{allTag, defaultTag}
+import io.joern.JoernScan.getQueriesFromQueryDb
+import io.joern.Scan.{allTag, defaultTag}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
 import scala.jdk.CollectionConverters._

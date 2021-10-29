@@ -1,4 +1,4 @@
-package io.shiftleft.joern
+package io.joern
 
 import better.files.Dsl.mkdir
 import better.files.File
@@ -6,7 +6,7 @@ import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}
 import io.joern.console.testing.TestCpgGeneratorFactory
 import io.joern.console.workspacehandling.Project
-import io.shiftleft.joern.console.JoernConsole
+import io.joern.console.JoernConsole
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 

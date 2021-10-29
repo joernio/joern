@@ -1,4 +1,4 @@
-package io.shiftleft.joern.console
+package io.joern.console
 
 import java.nio.file.{FileSystems, Files, Path, Paths}
 

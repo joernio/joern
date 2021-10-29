@@ -1,4 +1,4 @@
-package io.shiftleft.joern.console
+package io.joern.console
 
 import io.joern.console.{Help, Run}
 
@@ -8,8 +8,8 @@ object Predefined {
    * applying workaround for package wildcard imports from https://github.com/lihaoyi/Ammonite/issues/1009 */
   val shared: String = """
         |import io.joern.console.{`package` => _, _}
-        |import io.shiftleft.joern.console._
-        |import io.shiftleft.joern.console.JoernConsole._
+        |import io.joern.console._
+        |import io.joern.console.JoernConsole._
         |import io.shiftleft.codepropertygraph.Cpg
         |import io.shiftleft.codepropertygraph.cpgloading._
         |import io.shiftleft.codepropertygraph.generated._
@@ -27,20 +27,20 @@ object Predefined {
   val forInteractiveShell: String =
     shared +
       """
-        |import io.shiftleft.joern.console.Joern._
+        |import io.joern.console.Joern._
       """.stripMargin +
       dynamicPredef()
 
   val forScripts: String =
     shared +
       """
-        |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
+        |import io.joern.console.Joern.{cpg =>_, _}
       """.stripMargin +
       dynamicPredef()
 
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +
-      Help.codeForHelpCommand[io.shiftleft.joern.console.JoernConsole]
+      Help.codeForHelpCommand[io.joern.console.JoernConsole]
   }
 
 }
