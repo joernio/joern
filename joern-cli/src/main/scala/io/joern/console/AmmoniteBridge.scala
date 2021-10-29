@@ -1,4 +1,4 @@
-package io.shiftleft.joern.console
+package io.joern.console
 
 import io.joern.console.{BridgeBase, JoernProduct}
 

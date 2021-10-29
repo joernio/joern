@@ -1,4 +1,4 @@
-package io.shiftleft.joern
+package io.joern
 
 import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers._
