@@ -30,6 +30,9 @@ jobs:
           ./schema-extender/test.sh
           cd -
       - run: sbt ciReleaseTagNextVersion ciReleaseSonatype createDistribution
+        env:
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - name: Export ENV vars
         run:
