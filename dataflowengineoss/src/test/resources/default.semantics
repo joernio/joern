@@ -1,0 +1,38 @@
+# "<operator>.sizeOf" reduces the FPs
+# 1->-1 first parameter mapped to return value (-1)
+"<operator>.addition" 1->-1 2->-1
+"<operator>.addressOf" 1->-1
+"<operator>.assignment" 2->1
+"<operator>.assignmentAnd" 2->1 1->1
+"<operator>.assignmentArithmeticShiftRight" 2->1 1->1
+"<operator>.assignmentDivision" 2->1 1->1
+"<operator>.assignmentExponentiation" 2->1 1->1
+"<operator>.assignmentLogicalShiftRight" 2->1 1->1
+"<operator>.assignmentMinus" 2->1 1->1
+"<operator>.assignmentModulo" 2->1 1->1
+"<operator>.assignmentMultiplication" 2->1 1->1
+"<operator>.assignmentOr" 2->1 1->1
+"<operator>.assignmentPlus" 2->1 1->1
+"<operator>.assignmentShiftLeft" 2->1 1->1
+"<operator>.assignmentXor" 2->1 1->1
+"<operator>.computedMemberAccess" 1->-1
+"<operator>.conditional" 2->-1 3->-1
+"<operator>.fieldAccess" 1->-1
+"<operator>.getElementPtr" 1->-1
+"<operator>.incBy" 1->1 2->1 3->1 4->1
+"<operator>.indexAccess" 1->-1
+"<operator>.indirectComputedMemberAccess" 1->-1
+"<operator>.indirectFieldAccess" 1->-1
+"<operator>.indirectIndexAccess" 1->-1
+"<operator>.indirectMemberAccess" 1->-1
+"<operator>.indirection" 1->-1
+"<operator>.memberAccess" 1->-1
+"<operator>.pointerShift" 1->-1
+"<operator>.postDecrement" 1->1
+"<operator>.postIncrement" 1->1
+"<operator>.preDecrement" 1->1
+"<operator>.preIncrement" 1->1
+"<operator>.sizeOf"
+"free" 1->1
+"scanf" 2->2
+"strcmp" 1->-1 2->-1
