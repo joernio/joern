@@ -1,4 +1,4 @@
-package io.joern
+package io.shiftleft.joern
 
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg

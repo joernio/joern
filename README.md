@@ -23,7 +23,7 @@ Specification: https://cpg.joern.io
 ## Quick Installation
 
 ```
-wget https://github.com/joernio/joern/releases/latest/download/joern-install.sh
+wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-install.sh
 chmod +x ./joern-install.sh
 sudo ./joern-install.sh
 joern

@@ -1,10 +1,10 @@
-package io.joern
+package io.shiftleft.joern
 
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
-import io.joern.CpgBasedTool.newCpgCreatedString
+import io.shiftleft.joern.CpgBasedTool.newCpgCreatedString
 
 import scala.jdk.CollectionConverters._
 

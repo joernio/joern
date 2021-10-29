@@ -21,6 +21,11 @@ ThisBuild/scalacOptions ++= Seq(
   "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
 )
 
+scmInfo := Some(
+  ScmInfo(url("https://github.com/ShiftLeftSecurity/joern"), "scm:git@github.com:ShiftLeftSecurity/joern.git"))
+homepage := Some(url("https://joern.io/"))
+licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
 lazy val joerncli = Projects.joerncli
 lazy val querydb = Projects.querydb
 lazy val console = Projects.console
@@ -38,19 +43,3 @@ createDistribution := {
 }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-
-// publishing info for sonatype / maven central
-ThisBuild / publishTo := sonatypePublishToBundle.value
-ThisBuild / scmInfo := Some(
-  ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
-ThisBuild / homepage := Some(url("https://joern.io/"))
-ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-ThisBuild / developers := List(
-  /* sonatype requires this to be non-empty */
-  Developer(
-    "fabsx00",
-    "Fabian Yamaguchi",
-    "fabs@shiftleft.io",
-    url("https://github.com/fabsx00")
-  )
-)
