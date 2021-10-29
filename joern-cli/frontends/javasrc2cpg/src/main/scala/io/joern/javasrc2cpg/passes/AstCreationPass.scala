@@ -29,12 +29,12 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
   override def partIterator: Iterator[String] = filenames.iterator
 
   override def runOnPart(filename: String): Iterator[DiffGraph] = {
-    val solver         = typeSolver()
+    val solver = typeSolver()
     val symbolResolver = new JavaSymbolSolver(solver);
 
     val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
-    val parser       = new JavaParser(parserConfig)
-    val parseResult  = parser.parse(new java.io.File(filename))
+    val parser = new JavaParser(parserConfig)
+    val parseResult = parser.parse(new java.io.File(filename))
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED =>
@@ -47,7 +47,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
   }
 
   private def typeSolver() = {
-    val combinedTypeSolver   = new CombinedTypeSolver()
+    val combinedTypeSolver = new CombinedTypeSolver()
     val reflectionTypeSolver = new ReflectionTypeSolver()
     val javaParserTypeSolver = new JavaParserTypeSolver(codeDir)
     combinedTypeSolver.add(reflectionTypeSolver)

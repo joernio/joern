@@ -29,16 +29,16 @@ class JavaSrc2Cpg {
       outputPath: Option[String] = None
   ): Cpg = {
 
-    val cpg             = newEmptyCpg(outputPath)
+    val cpg = newEmptyCpg(outputPath)
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-    val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+    val typesKeyPool = new IntervalKeyPool(100, 1000100)
+    val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
 
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
     val sourceFileExtensions = Set(".java")
-    val sourceFileNames      = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
-    val astCreator           = new AstCreationPass(sourceCodePath, sourceFileNames, cpg, methodKeyPool)
+    val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
+    val astCreator = new AstCreationPass(sourceCodePath, sourceFileNames, cpg, methodKeyPool)
     astCreator.createAndApply()
 
     new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
