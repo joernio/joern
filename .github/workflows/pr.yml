@@ -10,13 +10,14 @@ jobs:
       with:
         java-version: 1.11
     - name: Run tests
+      run: sbt scalafmtCheck test
+      run: ./testDistro.sh
       run: |
-        sbt scalafmtCheck test
-        ./testDistro.sh
         mkdir /tmp/foo
         echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
         ./joern --src /tmp/foo --run scan
         ./joern-scan /tmp/foo
         ./joern-scan --dump
+      run: |
         cd joern-cli/target/universal/stage
         ./schema-extender/test.sh
