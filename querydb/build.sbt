@@ -21,9 +21,6 @@ libraryDependencies ++= Seq(
   "io.joern" %% "ghidra2cpg-tests" % Versions.ghidra2cpg % Test classifier "tests"
 )
 
-Compile/doc/sources := Seq.empty
-Compile/packageDoc/publishArtifact := false
-
 topLevelDirectory := Some(name.value)
 
 lazy val createDistribution = taskKey[File]("Create binary distribution of extension")
