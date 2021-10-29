@@ -1,4 +1,4 @@
-package io.joern.console
+package io.shiftleft.joern.console
 
 import io.joern.console.scripting.AmmoniteExecutor
 

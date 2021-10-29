@@ -18,7 +18,7 @@ object Predefined {
 
   val forScripts: String = shared +
     """
-      |import io.joern.console.Joern.{cpg =>_, _}
+      |import io.shiftleft.joern.console.Joern.{cpg =>_, _}
   """.stripMargin
 
 }
