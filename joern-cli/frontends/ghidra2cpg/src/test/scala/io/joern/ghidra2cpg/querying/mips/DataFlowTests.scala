@@ -30,12 +30,16 @@ class DataFlowTests extends GhidraBinToCpgSuite {
   implicit val resolver: ICallResolver = NoResolve
   val customSemantics =
     s""""<operator>.assignment" 2->1
-       |"<operator>.and" 3->1 2->1
-       |"<operator>.or" 3->1 2->1
-       |"<operator>.nor" 3->1 2->1
+       |"<operator>.assignmentArithmeticShiftRight" 3->1 2->1
+       |"<operator>.assignmentAnd" 3->1 2->1
+       |"<operator>.assignmentLogicalShiftRight" 3->1 2->1
+       |"<operator>.assignmentOr" 3->1 2->1
+       |"<operator>.assignmentNor" 3->1 2->1
+       |"<operator>.assignmentXor" 3->1 2->1
        |"<operator>.decBy" 3->1 2->1
        |"<operator>.incBy" 1->1 2->1 3->1 4->1
        |"<operator>.multiplication" 1->-1 2->-1
+       |"<operator>.rotateRight" 2->1
        |""".stripMargin
   val semantics: Semantics            = Semantics.fromList(new Parser().parse(customSemantics))
   implicit val context: EngineContext = EngineContext(semantics)
@@ -90,7 +94,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
         .argument(1)
     val flowsThroughShiftXInstructions = sink.reachableByFlows(source).l
     flowsThroughShiftXInstructions.map(flowToResultPairs).toSet shouldBe
-      Set(List("or t1,t9,zero", "sll t2,t1,0x1", "sllv t3,t2,t0", "sra t4,t3,0x1", "srav t5,t4,t0", "srl t6,t5,0x0", "srlv t7,t6,zero", "or t9,t6,zero"))
+      Set(List("or t1,t9,zero", "sll t2,t1,0x1", "sllv t3,t2,t0", "sra t4,t3,0x1", "srav t5,t4,t0", "srl t6,t5,0x0", "or t9,t6,zero"))
   }
 
   "should find flows through `sub*` instructions" in {
