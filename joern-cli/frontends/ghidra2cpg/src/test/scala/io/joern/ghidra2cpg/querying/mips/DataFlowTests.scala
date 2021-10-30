@@ -38,7 +38,6 @@ class DataFlowTests extends GhidraBinToCpgSuite {
        |"<operator>.assignmentXor" 3->1 2->1
        |"<operator>.decBy" 3->1 2->1
        |"<operator>.incBy" 1->1 2->1 3->1 4->1
-       |"<operator>.multiplication" 1->-1 2->-1
        |"<operator>.rotateRight" 2->1
        |""".stripMargin
   val semantics: Semantics            = Semantics.fromList(new Parser().parse(customSemantics))
