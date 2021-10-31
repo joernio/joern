@@ -5,7 +5,7 @@
 #---------------------------------------- 
 # compile and run on non mipsel platforms:
 #
-# $ mipsel-linux-gnu-as t1_to_t9.mipsel.s -o t1_to_t9.o && mipsel-linux-gnu-gcc-9 t1_to_t9.o -o t1_to_t9 -static -nostdlib && qemu-mipsel ./t1_to_t9
+# $ mipsel-linux-gnu-as -O0 t1_to_t9.mipsel.s -o t1_to_t9.o && mipsel-linux-gnu-gcc-9 -O0 t1_to_t9.o -o t1_to_t9 -static -nostdlib && qemu-mipsel ./t1_to_t9
 # $ echo $?
 # 42
 #---------------------------------------- 
@@ -91,10 +91,18 @@ __start:
 	sub $t2, $t1, $t0
 	subu $t3, $t2, $t0
 
-	xor $t4, $t3, $zero
-	xori $t5, $t4, 0b00000100
+	or $t9, $t3, $zero
+	nop
 
-	or $t9, $t5, $zero
+
+# nopnopnopnopnopnopnopnopnopnopnopnopnopnopnopnopnopnop
+	li $t0, 0x1
+	or $t1, $t9, $zero
+
+	xor $t2, $t1, $zero
+	xori $t3, $t2, 0b00000100
+
+	or $t9, $t3, $zero
 	nop
 
 	li $v0, 0xfa1 # 4001
