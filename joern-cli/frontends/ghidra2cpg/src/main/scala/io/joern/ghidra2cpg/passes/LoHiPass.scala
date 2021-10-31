@@ -15,7 +15,7 @@ class LoHiPass(cpg: Cpg) extends CpgPass(cpg) {
 
     val readFromLoHiRegsRegex = "_?(mflo|mfhi).*"
     if (cpg.call.code(readFromLoHiRegsRegex).isEmpty) {
-      logger.info("No writes to lo/hi regs found, returning early.")
+      logger.info("No reads from lo/hi regs found, returning early.")
       return Iterator(diffGraph.build())
     }
 
