@@ -7,14 +7,10 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 import scala.util.Try
 
-import io.shiftleft.semanticcpg.language._
-import ghidra.program.util.DefinedDataIterator
-import ghidra.app.util.XReferenceUtil
 class LiteralPass(
     cpg: Cpg,
     currentProgram: Program,
@@ -48,7 +44,6 @@ class LiteralPass(
         .asScala
         .map(_.getValue.toString)
 
-    // Regular literal nodes
     literals.sorted.distinct.foreach { literal =>
       val node = nodes
         .NewLiteral()
@@ -57,28 +52,6 @@ class LiteralPass(
         .argumentIndex(-1)
         .typeFullName(literal.toString)
       diffGraph.addNode(node)
-    }
-
-    // First version of adding literals to call arguments
-    DefinedDataIterator.definedStrings(currentProgram).iterator.asScala.foreach { literal =>
-      XReferenceUtil.getXRefList(literal).foreach { xref =>
-        val literalNode = nodes
-          .NewLiteral()
-          .code(literal.getValue.toString)
-          .order(-1)
-          .argumentIndex(-1)
-          .typeFullName(literal.getValue.toString)
-        cpg.call
-          .filter(
-            _.lineNumber.get.toInt.toHexString == xref
-              .toString(false, false)
-              .replaceAll("^0+(?!$)", "")
-          )
-          .foreach { callNode =>
-            diffGraph.addEdge(callNode, literalNode, EdgeTypes.ARGUMENT)
-            diffGraph.addEdge(callNode, literalNode, EdgeTypes.AST)
-          }
-      }
     }
     Iterator(diffGraph.build())
   }

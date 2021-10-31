@@ -28,7 +28,7 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
   }
 
   implicit val resolver: ICallResolver = NoResolve
-  val customSemantics =
+  val customSemantics: String =
     s""""<operator>.assignment" 2->1
        |"<operator>.assignmentArithmeticShiftRight" 3->1 2->1
        |"<operator>.assignmentAnd" 3->1 2->1
@@ -47,7 +47,8 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
   "should find flows through `div*` instructions" in {
     def source = cpg.call.code("_div t1,t0")
     def sink = cpg.call.code("mflo t2")
-    val flowsThroughDivXInstructions = sink.reachableByFlows(source).l
+    def flowsThroughDivXInstructions = sink.reachableByFlows(source).l
+    println(flowsThroughDivXInstructions.size)
     flowsThroughDivXInstructions.map(flowToResultPairs).toSet shouldBe
       Set(List("_div t1,t0", "mflo t2"))
   }

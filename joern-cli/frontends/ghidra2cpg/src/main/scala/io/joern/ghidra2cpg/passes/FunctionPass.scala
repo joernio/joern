@@ -17,7 +17,7 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-class FunctionPass(
+abstract class FunctionPass(
     processor: Processor,
     currentProgram: Program,
     filename: String,
@@ -32,7 +32,7 @@ class FunctionPass(
     ) {
 
   implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
-  private var methodNode: Option[NewMethod] = None
+
   // we need it just once with default settings
   private val blockNode = nodes.NewBlock().code("").order(0)
   // needed by ghidra for decompiling reasons
@@ -50,6 +50,7 @@ class FunctionPass(
       true
     )
   )
+  private var methodNode: Option[NewMethod] = None
 
   override def partIterator: Iterator[String] = List("").iterator
 
@@ -58,6 +59,98 @@ class FunctionPass(
       val integerValue: Integer = intValue
       integerValue
     })
+  }
+
+
+  def handleParameters(): Unit = {
+    if (function.isThunk) {
+      function
+        .getThunkedFunction(true)
+        .getParameters
+        .zipWithIndex
+        .foreach {
+          case (parameter, index) =>
+            val node = nodes
+              .NewMethodParameterIn()
+              .code(parameter.getName)
+              .name(parameter.getName)
+              .order(index + 1)
+              .typeFullName(Types.registerType(parameter.getDataType.getName))
+              .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
+            diffGraph.addNode(node)
+            diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
+        }
+    } else {
+      decompInterface
+        .decompileFunction(function, 60, new ConsoleTaskMonitor())
+        .getHighFunction
+        .getLocalSymbolMap
+        .getSymbols
+        .asScala
+        .toSeq
+        .filter(_.isParameter)
+        .foreach { parameter =>
+          var checkedParameter = ""
+          if (parameter.getStorage.getRegister == null) {
+            checkedParameter = parameter.getName
+          } else {
+            checkedParameter = parameter.getStorage.getRegister.getName
+          }
+          val node = nodes
+            .NewMethodParameterIn()
+            .code(checkedParameter)
+            .name(checkedParameter)
+            .order(parameter.getCategoryIndex + 1)
+            .typeFullName(Types.registerType(parameter.getDataType.getName))
+            .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
+          diffGraph.addNode(node)
+          diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
+        }
+    }
+  }
+
+  def handleLocals(): Unit = {
+    function.getLocalVariables.foreach { local =>
+      val localNode = nodes
+        .NewLocal()
+        .name(local.getName)
+        .code(local.toString)
+        .typeFullName(Types.registerType(local.getDataType.toString))
+      val identifier = nodes
+        .NewIdentifier()
+        .code(local.getName)
+        .name(local.getSymbol.getName)
+        .typeFullName(local.getDataType.toString)
+
+      diffGraph.addNode(localNode)
+      diffGraph.addNode(identifier)
+      diffGraph.addEdge(blockNode, localNode, EdgeTypes.AST)
+      diffGraph.addEdge(blockNode, identifier, EdgeTypes.AST)
+      diffGraph.addEdge(identifier, localNode, EdgeTypes.REF)
+    }
+  }
+
+  def handleBody(): Unit = {
+    val instructions =
+      currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
+    if (instructions.nonEmpty) {
+      var prevInstructionNode = addCallNode(instructions.head)
+      handleArguments(instructions.head, prevInstructionNode)
+      diffGraph.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
+      diffGraph.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
+      instructions.drop(1).foreach { instruction =>
+        val instructionNode = addCallNode(instruction)
+        diffGraph.addNode(instructionNode)
+        handleArguments(instruction, instructionNode)
+        diffGraph.addEdge(blockNode, instructionNode, EdgeTypes.AST)
+        // Not connecting previous instruction if it is an unconditional jump
+        // TODO: this needs to be adjusted to other architectures
+        if (!prevInstructionNode.code.startsWith("JMP")) {
+          diffGraph.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+        }
+        prevInstructionNode = instructionNode
+      }
+    }
   }
 
   // Iterating over operands and add edges to call
@@ -199,78 +292,6 @@ class FunctionPass(
     }
   }
 
-  def handleParameters(): Unit = {
-    if (function.isThunk) {
-      function
-        .getThunkedFunction(true)
-        .getParameters
-        .zipWithIndex
-        .foreach {
-          case (parameter, index) =>
-            val node = nodes
-              .NewMethodParameterIn()
-              .code(parameter.getName)
-              .name(parameter.getName)
-              .order(index + 1)
-              .typeFullName(Types.registerType(parameter.getDataType.getName))
-              .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
-            diffGraph.addNode(node)
-            diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
-        }
-    } else {
-      decompInterface
-        .decompileFunction(function, 60, new ConsoleTaskMonitor())
-        .getHighFunction
-        .getLocalSymbolMap
-        .getSymbols
-        .asScala
-        .toSeq
-        .filter(_.isParameter)
-        .foreach { parameter =>
-          var checkedParameter = ""
-          if (parameter.getStorage.getRegister == null) {
-            checkedParameter = parameter.getName
-          } else {
-            checkedParameter = parameter.getStorage.getRegister.getName
-          }
-          val node = nodes
-            .NewMethodParameterIn()
-            .code(checkedParameter)
-            .name(checkedParameter)
-            .order(parameter.getCategoryIndex + 1)
-            .typeFullName(Types.registerType(parameter.getDataType.getName))
-            .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
-          diffGraph.addNode(node)
-          diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
-        }
-    }
-  }
-
-  def handleLocals(): Unit = {
-    function.getLocalVariables.foreach { local =>
-      val localNode = nodes
-        .NewLocal()
-        .name(local.getName)
-        .code(local.toString)
-        .typeFullName(Types.registerType(local.getDataType.toString))
-      val identifier = nodes
-        .NewIdentifier()
-        .code(local.getName)
-        .name(local.getSymbol.getName)
-        .typeFullName(local.getDataType.toString)
-
-      diffGraph.addNode(localNode)
-      diffGraph.addNode(identifier)
-      diffGraph.addEdge(blockNode, localNode, EdgeTypes.AST)
-      diffGraph.addEdge(blockNode, identifier, EdgeTypes.AST)
-      diffGraph.addEdge(identifier, localNode, EdgeTypes.REF)
-    }
-  }
-
-  def sanitizeMethodName(methodName: String): String = {
-    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
-  }
-
   def addCallNode(instruction: Instruction): NewCall = {
     val node = nodes.NewCall()
     var code: String = ""
@@ -304,36 +325,8 @@ class FunctionPass(
     //.build
   }
 
-  def handleBody(): Unit = {
-    val addressSet = function.getBody
-    val instructions =
-      currentProgram.getListing.getInstructions(addressSet, true).iterator().asScala.toList
-    if (instructions.nonEmpty) {
-      var prevInstructionNode = addCallNode(instructions.head)
-      handleArguments(instructions.head, prevInstructionNode)
-      diffGraph.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
-      diffGraph.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
-      instructions.drop(1).foreach { instruction =>
-        val instructionNode = addCallNode(instruction)
-        diffGraph.addNode(instructionNode)
-        handleArguments(instruction, instructionNode)
-        diffGraph.addEdge(blockNode, instructionNode, EdgeTypes.AST)
-        // Not connecting previous instruction if it is an unconditional jump
-        // TODO: this needs to be adjusted to other architectures
-        if (!prevInstructionNode.code.startsWith("JMP")) {
-          diffGraph.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
-        }
-        prevInstructionNode = instructionNode
-      }
-    }
-  }
-
-  def checkIfExternal(functionName: String): Boolean = {
-    currentProgram.getFunctionManager.getExternalFunctions
-      .iterator()
-      .asScala
-      .map(_.getName)
-      .contains(functionName)
+  def sanitizeMethodName(methodName: String): String = {
+    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
   }
 
   def createMethodNode(): Unit = {
@@ -364,11 +357,11 @@ class FunctionPass(
     diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
   }
 
-  override def runOnPart(part: String): Iterator[DiffGraph] = {
-    createMethodNode()
-    handleParameters()
-    handleLocals()
-    handleBody()
-    Iterator(diffGraph.build())
+  def checkIfExternal(functionName: String): Boolean = {
+    currentProgram.getFunctionManager.getExternalFunctions
+      .iterator()
+      .asScala
+      .map(_.getName)
+      .contains(functionName)
   }
 }
