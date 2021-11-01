@@ -43,11 +43,21 @@ class DataFlowViaMemoryStoreTests extends GhidraBinToCpgSuite {
   val semantics: Semantics            = Semantics.fromList(new Parser().parse(customSemantics))
   implicit val context: EngineContext = EngineContext(semantics)
 
-  "should find a flow from `getenv` to `strcmp`" in {
+  "should find a flow from `getenv` to `strcmp` in getenv_to_strcmp" in {
+    buildCpgForBin("getenv_to_strcmp.mips")
     def source = cpg.call.code("getenv")
     def sink = cpg.call.code("strcmp").argument
     val flows = sink.reachableByFlows(source).l
     flows.map(flowToResultPairs).toSet shouldBe
       Set(List("getenv", "lw a0,0x18(s8)", "strcmp"))
+  }
+
+  "should find a flow from `getenv` to `system` in `backdoor.mips`" in {
+    buildCpgForBin("backdoor.mips")
+    def source = cpg.call.code("getenv")
+    def sink = cpg.call.code("system").argument
+    val flows = sink.reachableByFlows(source).l
+    flows.map(flowToResultPairs).toSet shouldBe
+    Set(List("getenv", "lw a0,0x20(s8)", "system"))
   }
 }
