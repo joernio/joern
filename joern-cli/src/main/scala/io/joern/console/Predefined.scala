@@ -8,7 +8,6 @@ object Predefined {
    * applying workaround for package wildcard imports from https://github.com/lihaoyi/Ammonite/issues/1009 */
   val shared: String = """
         |import io.joern.console.{`package` => _, _}
-        |import io.joern.console._
         |import io.joern.console.JoernConsole._
         |import io.shiftleft.codepropertygraph.Cpg
         |import io.shiftleft.codepropertygraph.cpgloading._
