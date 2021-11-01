@@ -158,7 +158,7 @@ abstract class FunctionPass(
       callNode: NewCall
   ): Unit = {
     val mnemonicString = instruction.getMnemonicString
-    if (mnemonicString.equals("CALL") || mnemonicString.equals("jalr")) {
+    if (mnemonicString.equals("CALL") || mnemonicString.equals("jalr") || mnemonicString.equals("jal")) {
       // TODO: move this somewhere else
       val mipsPrefix = "^t9=>".r
       val calledFunction =
