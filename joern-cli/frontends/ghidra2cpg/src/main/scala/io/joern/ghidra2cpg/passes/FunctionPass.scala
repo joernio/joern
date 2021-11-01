@@ -36,7 +36,7 @@ abstract class FunctionPass(
   // we need it just once with default settings
   private val blockNode = nodes.NewBlock().code("").order(0)
   // needed by ghidra for decompiling reasons
-  private val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
+  protected val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
       CodeUnitFormatOptions.ShowNamespace.NEVER,
@@ -158,11 +158,9 @@ abstract class FunctionPass(
       callNode: NewCall
   ): Unit = {
     val mnemonicString = instruction.getMnemonicString
-    if (mnemonicString.equals("CALL") || mnemonicString.equals("jalr")) {
-      // TODO: move this somewhere else
-      val mipsPrefix = "^t9=>".r
+    if (mnemonicString.equals("CALL")) {
       val calledFunction =
-        mipsPrefix.replaceFirstIn(codeUnitFormat.getOperandRepresentationString(instruction, 0), "")
+        codeUnitFormat.getOperandRepresentationString(instruction, 0)
       val callee = functions.find(function => function.getName().equals(calledFunction))
       if (callee.nonEmpty) {
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
