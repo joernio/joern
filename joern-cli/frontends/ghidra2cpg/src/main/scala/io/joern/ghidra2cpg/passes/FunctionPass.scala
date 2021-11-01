@@ -321,7 +321,6 @@ abstract class FunctionPass(
       .methodFullName(mnemonicName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
       .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-    //.build
   }
 
   def sanitizeMethodName(methodName: String): String = {

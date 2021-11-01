@@ -9,7 +9,6 @@ import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
-import scala.util.Try
 
 class LiteralPass(
     cpg: Cpg,
@@ -22,10 +21,6 @@ class LiteralPass(
     ) {
 
   override def partIterator: Iterator[String] = List("").iterator
-
-  private def parseAddress(address: String): Option[Int] = {
-    Try(Integer.parseInt(address, 16)).toOption
-  }
 
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
@@ -50,7 +45,7 @@ class LiteralPass(
         .code(literal)
         .order(-1)
         .argumentIndex(-1)
-        .typeFullName(literal.toString)
+        .typeFullName(literal)
       diffGraph.addNode(node)
     }
     Iterator(diffGraph.build())

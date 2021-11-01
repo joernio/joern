@@ -14,6 +14,9 @@ import ghidra.program.util.GhidraProgramUtilities
 import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
+import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
+import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
+import io.joern.ghidra2cpg.passes.x86.X86FunctionPass
 import io.joern.ghidra2cpg.processors._
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.x2cpg.X2Cpg
@@ -165,7 +168,7 @@ class Ghidra2Cpg(
             keyPoolIterator.next(),
             decompilerInterface
           ).createAndApply()
-          new LoHiPass(cpg)
+          new LoHiPass(cpg).createAndApply()
         }
       case "AARCH64" =>
         functions.foreach { function =>

@@ -1,7 +1,8 @@
-package io.joern.ghidra2cpg.passes
+package io.joern.ghidra2cpg.passes.arm
 
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
+import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.Processor
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
