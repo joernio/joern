@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.processors
 import scala.collection.immutable._
 
-class Mips extends Processor {
+class MipsProcessor extends Processor {
   override def getInstructions: HashMap[String, String] =
     HashMap(
       "_add.D" -> "<operator>.incBy",
