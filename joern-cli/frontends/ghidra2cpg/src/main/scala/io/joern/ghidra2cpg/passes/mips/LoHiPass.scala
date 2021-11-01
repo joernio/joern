@@ -1,9 +1,9 @@
-package io.joern.ghidra2cpg.passes
+package io.joern.ghidra2cpg.passes.mips
 
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.{CpgPass, DiffGraph}
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import org.slf4j.{Logger, LoggerFactory}
 
 class LoHiPass(cpg: Cpg) extends CpgPass(cpg) {
@@ -14,14 +14,11 @@ class LoHiPass(cpg: Cpg) extends CpgPass(cpg) {
     implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
 
     val readFromLoHiRegsRegex = "_?(mflo|mfhi).*"
-    if (cpg.call.code(readFromLoHiRegsRegex).isEmpty) {
-      logger.info("No reads from lo/hi regs found, returning early.")
-      return Iterator(diffGraph.build())
-    }
 
     val writeToLoHiRegsRegex = "_?(div|divu|mul|mult).*"
     def from = cpg.call.code(writeToLoHiRegsRegex).l
     def to = cpg.call.code(readFromLoHiRegsRegex).l
+
     // TODO: improve the pair creation to take into consideration register value overwrites.
     // e.g. in pseudo-assembly: div X Y; nop; nop; mflo Z; nop; nop; div P Q; mflo R
     // it should not add REACHING_DEF edges from X to R and Y to R, but it currently does
