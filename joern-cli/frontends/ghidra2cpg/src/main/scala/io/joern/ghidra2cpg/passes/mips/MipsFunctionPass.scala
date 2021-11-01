@@ -32,9 +32,9 @@ class MipsFunctionPass(processor: Processor,
 
   // Iterating over operands and add edges to call
   override def handleArguments(
-                       instruction: Instruction,
-                       callNode: NewCall
-                     ): Unit = {
+      instruction: Instruction,
+      callNode: NewCall
+  ): Unit = {
     val mnemonicString = instruction.getMnemonicString
     if (mipsCallInstructions.contains(mnemonicString)) {
       val mipsPrefix = "^t9=>".r
