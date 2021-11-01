@@ -23,4 +23,4 @@ class ArmFunctionPass(processor: Processor,
     handleBody()
     Iterator(diffGraph.build())
   }
-    }
+}

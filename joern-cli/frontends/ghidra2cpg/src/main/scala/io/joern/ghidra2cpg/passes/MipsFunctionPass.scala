@@ -25,7 +25,7 @@ class MipsFunctionPass(processor: Processor,
     val readFromLoHiRegsRegex = "_?(mflo|mfhi).*"
     val writeToLoHiRegsRegex = "_?(div|divu|mul|mult).*"
     def from = cpg.call.code(writeToLoHiRegsRegex).l
-println("from: " + cpg.call.size)
+    println("from: " + cpg.call.size)
     def to = cpg.call.code(readFromLoHiRegsRegex).l
     println("to: " + to.size)
     // TODO: improve the pair creation to take into consideration register value overwrites.

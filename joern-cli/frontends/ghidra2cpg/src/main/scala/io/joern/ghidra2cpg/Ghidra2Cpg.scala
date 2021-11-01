@@ -152,10 +152,6 @@ class Ghidra2Cpg(
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
 
-    new TypesPass(cpg).createAndApply()
-    new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-    new LiteralPass(cpg, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
-
     currentProgram.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         functions.foreach { function =>
@@ -199,6 +195,9 @@ class Ghidra2Cpg(
         }
     }
 
+    new TypesPass(cpg).createAndApply()
+    new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
+    new LiteralPass(cpg, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
     cpg.close()
   }
 

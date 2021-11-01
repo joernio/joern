@@ -61,7 +61,6 @@ abstract class FunctionPass(
     })
   }
 
-
   def handleParameters(): Unit = {
     if (function.isThunk) {
       function

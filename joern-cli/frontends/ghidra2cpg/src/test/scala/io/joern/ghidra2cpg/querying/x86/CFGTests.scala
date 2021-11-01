@@ -30,6 +30,7 @@ class CFGTests extends GhidraBinToCpgSuite {
 
   "should have correct CFG edges out of a conditional jump" in {
     val jmp = cpg.method.name("main").call.code("JLE.*").l.head
+    println(jmp.cfgNext.code.l)
     jmp.cfgNext.l match {
       case List(nextIfSkipped: Call, nextIfTaken: Call) =>
         nextIfSkipped.code shouldBe "ADD RAX,0x2"
