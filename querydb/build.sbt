@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
   "io.shiftleft" %% "fuzzyc2cpg-tests" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "c2cpg-tests" % Versions.cpg % Test classifier "tests",
-  "io.shiftleft" %% "semanticcpg-tests" % Versions.cpg % Test classifier "tests",
+  "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
   "io.shiftleft" %% "c2cpg" % Versions.cpg % Test,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
