@@ -14,7 +14,8 @@ case class TestProjectFixture(projectName: String) {
 
   val cpg: Cpg = Cpg.emptyCpg
 
-  private val dirName: String = ProjectRoot.relativise(s"joern-cli/frontends/c2cpg/src/test/resources/testcode/$projectName")
+  private val dirName: String =
+    ProjectRoot.relativise(s"joern-cli/frontends/c2cpg/src/test/resources/testcode/$projectName")
 
   new MetaDataPass(cpg, Languages.C).createAndApply()
   new AstCreationPass(cpg, None, Config(inputPaths = Set(dirName))).createAndApply()
