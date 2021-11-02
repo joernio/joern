@@ -17,7 +17,6 @@ import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.X86FunctionPass
-import io.joern.ghidra2cpg.processors._
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.x2cpg.X2Cpg
 import org.apache.commons.io.FileUtils
@@ -159,10 +158,8 @@ class Ghidra2Cpg(
       case "MIPS" =>
         functions.foreach { function =>
           new MipsFunctionPass(
-            new MipsProcessor,
             currentProgram,
             fileAbsolutePath,
-            functions,
             function,
             cpg,
             keyPoolIterator.next(),
@@ -173,10 +170,8 @@ class Ghidra2Cpg(
       case "AARCH64" =>
         functions.foreach { function =>
           new ArmFunctionPass(
-            new ArmProcessor,
             currentProgram,
             fileAbsolutePath,
-            functions,
             function,
             cpg,
             keyPoolIterator.next(),
@@ -186,10 +181,8 @@ class Ghidra2Cpg(
       case _ =>
         functions.foreach { function =>
           new X86FunctionPass(
-            new X86Processor,
             currentProgram,
             fileAbsolutePath,
-            functions,
             function,
             cpg,
             keyPoolIterator.next(),

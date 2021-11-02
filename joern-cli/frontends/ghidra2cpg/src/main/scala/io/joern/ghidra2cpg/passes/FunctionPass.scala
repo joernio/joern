@@ -3,13 +3,21 @@ package io.joern.ghidra2cpg.passes
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
+import ghidra.program.model.listing.{
+  CodeUnitFormat,
+  CodeUnitFormatOptions,
+  Function,
+  FunctionIterator,
+  Instruction,
+  Listing,
+  Program
+}
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -20,8 +28,7 @@ import scala.language.implicitConversions
 abstract class FunctionPass(
     processor: Processor,
     currentProgram: Program,
-    filename: String,
-    functions: List[Function],
+    fileName: String,
     function: Function,
     cpg: Cpg,
     keyPool: IntervalKeyPool,
@@ -32,6 +39,11 @@ abstract class FunctionPass(
     ) {
 
   implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+
+  // Functions
+  val listing: Listing = currentProgram.getListing
+  val functionIterator: FunctionIterator = listing.getFunctions(true)
+  val functions: List[Function] = functionIterator.iterator.asScala.toList
 
   // we need it just once with default settings
   private val blockNode = nodes.NewBlock().code("").order(0)
@@ -152,6 +164,11 @@ abstract class FunctionPass(
     }
   }
 
+  def addArgumentEdge(fromNode: NewNode, toNode: NewNode): Unit = {
+    diffGraph.addNode(toNode)
+    diffGraph.addEdge(fromNode, toNode, EdgeTypes.ARGUMENT)
+    diffGraph.addEdge(fromNode, toNode, EdgeTypes.AST)
+  }
   // Iterating over operands and add edges to call
   def handleArguments(
       instruction: Instruction,
@@ -161,29 +178,24 @@ abstract class FunctionPass(
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
         codeUnitFormat.getOperandRepresentationString(instruction, 0)
-      val callee = functions.find(function => function.getName().equals(calledFunction))
-      if (callee.nonEmpty) {
+      functions.find(function => function.getName().equals(calledFunction)).foreach { callee =>
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters: Array[(String, Int, String)] = Array.empty
 
-        if (callee.head.isThunk) {
+        if (callee.isThunk) {
           // thunk functions contain parameters already
-          val parameters = callee.head.getParameters
-
-          checkedParameters = parameters.map { parameter =>
-            val checkedParameter =
-              if (parameter.getRegister == null) parameter.getName
-              else parameter.getRegister.getName
-
+          checkedParameters = callee.getParameters.map { parameter =>
             // checked parameter name, parameter index, parameter data type
-            (checkedParameter, parameter.getOrdinal + 1, parameter.getDataType.getName)
+            (Option(parameter.getName).getOrElse(parameter.getRegister.getName),
+             parameter.getOrdinal + 1,
+             parameter.getDataType.getName)
           }
         } else {
           // non thunk functions do not contain function parameters by default
           // need to decompile function to get parameter information
           // decompilation for a function is cached so subsequent calls to decompile should be free
           val parameters = decompInterface
-            .decompileFunction(callee.head, 60, new ConsoleTaskMonitor())
+            .decompileFunction(callee, 60, new ConsoleTaskMonitor())
             .getHighFunction
             .getLocalSymbolMap
             .getSymbols
@@ -191,14 +203,11 @@ abstract class FunctionPass(
             .toSeq
             .filter(_.isParameter)
             .toArray
-
           checkedParameters = parameters.map { parameter =>
-            val checkedParameter =
-              if (parameter.getStorage.getRegister == null) parameter.getName
-              else parameter.getStorage.getRegister.getName
-
             // checked parameter name, parameter index, parameter data type
-            (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
+            (Option(parameter.getName).getOrElse(parameter.getStorage.getRegister.getName),
+             parameter.getCategoryIndex + 1,
+             parameter.getDataType.getName)
           }
         }
 
@@ -212,9 +221,7 @@ abstract class FunctionPass(
               .argumentIndex(index)
               .typeFullName(Types.registerType(dataType))
               .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-            diffGraph.addNode(node)
-            diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
-            diffGraph.addEdge(callNode, node, EdgeTypes.AST)
+            addArgumentEdge(callNode, node)
         }
       }
     } else {
@@ -232,9 +239,7 @@ abstract class FunctionPass(
             .argumentIndex(index + 1)
             .typeFullName(Types.registerType(argument))
             .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-          diffGraph.addNode(node)
-          diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
-          diffGraph.addEdge(callNode, node, EdgeTypes.AST)
+          addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
             val className = opObject.getClass.getSimpleName
@@ -249,9 +254,7 @@ abstract class FunctionPass(
                   .argumentIndex(index + 1)
                   .typeFullName(Types.registerType(register.getName))
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                diffGraph.addNode(node)
-                diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
-                diffGraph.addEdge(callNode, node, EdgeTypes.AST)
+                addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =
                   opObject.asInstanceOf[Scalar].toString(16, false, false, "", "")
@@ -262,9 +265,7 @@ abstract class FunctionPass(
                   .argumentIndex(index + 1)
                   .typeFullName(scalar)
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                diffGraph.addNode(node)
-                diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
-                diffGraph.addEdge(callNode, node, EdgeTypes.AST)
+                addArgumentEdge(callNode, node)
               case "GenericAddress" =>
                 // TODO: try to resolve the address
                 val genericAddress =
@@ -276,9 +277,7 @@ abstract class FunctionPass(
                   .argumentIndex(index + 1)
                   .typeFullName(genericAddress)
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                diffGraph.addNode(node)
-                diffGraph.addEdge(callNode, node, EdgeTypes.ARGUMENT)
-                diffGraph.addEdge(callNode, node, EdgeTypes.AST)
+                addArgumentEdge(callNode, node)
               case _ =>
                 println(
                   s"""Unsupported argument: $opObject $className"""
@@ -287,42 +286,6 @@ abstract class FunctionPass(
           }
       }
     }
-  }
-
-  def addCallNode(instruction: Instruction): NewCall = {
-    val node = nodes.NewCall()
-    var code: String = ""
-    val mnemonicName =
-      processor.getInstructions
-        .getOrElse(instruction.getMnemonicString, "UNKNOWN") match {
-        case "LEAVE" | "RET" =>
-          code = "RET"
-          "RET"
-        case "CALL" =>
-          val operandRepresentationString = sanitizeMethodName(
-            codeUnitFormat.getOperandRepresentationString(instruction, 0)
-          )
-          code = operandRepresentationString
-          operandRepresentationString
-        case "UNKNOWN" =>
-          code = instruction.toString
-          "UNKNOWN"
-        case operator =>
-          code = instruction.toString
-          operator
-      }
-
-    node
-      .name(mnemonicName)
-      .code(code)
-      .order(0)
-      .methodFullName(mnemonicName)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
-      .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-  }
-
-  def sanitizeMethodName(methodName: String): String = {
-    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
   }
 
   def createMethodNode(): Unit = {
@@ -338,9 +301,9 @@ abstract class FunctionPass(
         .columnNumber(Some(-1))
         .lineNumberEnd(Some(function.getReturn.getMinAddress.getOffsetAsBigInteger.intValue()))
         .order(0)
-        .filename(filename)
+        .filename(fileName)
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName(s"$filename:<global>")
+        .astParentFullName(s"$fileName:<global>")
     )
 
     diffGraph.addNode(methodNode.get)
@@ -351,6 +314,38 @@ abstract class FunctionPass(
     val methodReturn = nodes.NewMethodReturn().order(1)
     diffGraph.addNode(methodReturn)
     diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
+  }
+
+  def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
+    nodes
+      .NewCall()
+      .name(mnemonic)
+      .code(code)
+      .order(0)
+      .methodFullName(mnemonic)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
+      .lineNumber(lineNumber)
+  }
+
+  def addCallNode(instruction: Instruction): NewCall = {
+    processor.getInstructions
+      .getOrElse(instruction.getMnemonicString, "UNKNOWN") match {
+      case "LEAVE" | "RET" =>
+        createCallNode("RET", "RET", instruction.getMinAddress.getOffsetAsBigInteger.intValue())
+      case "CALL" =>
+        val code = sanitizeMethodName(
+          codeUnitFormat.getOperandRepresentationString(instruction, 0)
+        )
+        createCallNode(code, code, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
+      case "UNKNOWN" =>
+        createCallNode(instruction.toString, "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue())
+      case operator =>
+        createCallNode(instruction.toString, operator, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
+    }
+  }
+
+  def sanitizeMethodName(methodName: String): String = {
+    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
   }
 
   def checkIfExternal(functionName: String): Boolean = {
