@@ -324,7 +324,7 @@ abstract class FunctionPass(
       .order(0)
       .methodFullName(mnemonic)
       .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
-      .lineNumber(Some(lineNumber))
+      .lineNumber(lineNumber)
   }
 
   def addCallNode(instruction: Instruction): NewCall = {
