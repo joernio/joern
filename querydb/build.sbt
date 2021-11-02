@@ -4,7 +4,8 @@ enablePlugins(JavaAppPackaging)
 
 dependsOn(Projects.console,
           Projects.ghidra2cpg,
-          Projects.ghidra2cpg % "test->test")
+          Projects.ghidra2cpg % "test->test",
+          Projects.c2cpg % "test->test")
 
 libraryDependencies ++= Seq(
   "com.lihaoyi" %% "sourcecode" % "0.1.9",
@@ -14,10 +15,8 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
   "io.shiftleft" %% "fuzzyc2cpg-tests" % Versions.cpg % Test classifier "tests",
-  "io.shiftleft" %% "c2cpg-tests" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
-  "io.shiftleft" %% "c2cpg" % Versions.cpg % Test,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 

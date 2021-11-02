@@ -22,6 +22,7 @@ ThisBuild/scalacOptions ++= Seq(
 lazy val joerncli = Projects.joerncli
 lazy val querydb = Projects.querydb
 lazy val console = Projects.console
+lazy val c2cpg = Projects.c2cpg
 lazy val ghidra2cpg = Projects.ghidra2cpg
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
