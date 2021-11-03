@@ -28,7 +28,7 @@ import scala.language.implicitConversions
 abstract class FunctionPass(
     processor: Processor,
     currentProgram: Program,
-    filename: String,
+    fileName: String,
     function: Function,
     cpg: Cpg,
     keyPool: IntervalKeyPool,
@@ -337,9 +337,9 @@ abstract class FunctionPass(
         .columnNumber(Some(-1))
         .lineNumberEnd(Some(function.getReturn.getMinAddress.getOffsetAsBigInteger.intValue()))
         .order(0)
-        .filename(filename)
+        .filename(fileName)
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName(s"$filename:<global>")
+        .astParentFullName(s"$fileName:<global>")
     )
 
     diffGraph.addNode(methodNode.get)
