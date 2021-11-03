@@ -71,14 +71,11 @@ class MipsFunctionPass(currentProgram: Program,
 
         checkedParameters.foreach {
           case (checkedParameter, index, dataType) =>
-            val node = nodes
-              .NewIdentifier()
-              .code(checkedParameter)
-              .name(checkedParameter) //parameter.getName)
-              .order(index)
-              .argumentIndex(index)
-              .typeFullName(Types.registerType(dataType))
-              .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+            val node = createIdentifier(checkedParameter,
+                                        checkedParameter,
+                                        index,
+                                        Types.registerType(dataType),
+                                        Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
             addArgumentEdge(callNode, node)
         }
       }
@@ -89,14 +86,11 @@ class MipsFunctionPass(currentProgram: Program,
           val argument = String.valueOf(
             instruction.getDefaultOperandRepresentation(index)
           )
-          val node = nodes
-            .NewIdentifier()
-            .code(argument)
-            .name(argument)
-            .order(index + 1)
-            .argumentIndex(index + 1)
-            .typeFullName(Types.registerType(argument))
-            .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+          val node = createIdentifier(argument,
+                                      argument,
+                                      index,
+                                      Types.registerType(argument),
+                                      Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
           addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -104,14 +98,11 @@ class MipsFunctionPass(currentProgram: Program,
             opObject.getClass.getSimpleName match {
               case "Register" =>
                 val register = opObject.asInstanceOf[Register]
-                val node = nodes
-                  .NewIdentifier()
-                  .code(register.getName)
-                  .name(register.getName)
-                  .order(index + 1)
-                  .argumentIndex(index + 1)
-                  .typeFullName(Types.registerType(register.getName))
-                  .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                val node = createIdentifier(register.getName,
+                                            register.getName,
+                                            index + 1,
+                                            Types.registerType(register.getName),
+                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
                 addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =
