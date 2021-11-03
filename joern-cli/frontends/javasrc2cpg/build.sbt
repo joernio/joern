@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph"        % Versions.cpg,
   "io.shiftleft"  %% "semanticcpg"              % Versions.cpg,
   "io.shiftleft"  %% "dataflowengineoss"        % Versions.cpg,
-  "io.shiftleft"  %% "semanticcpg-tests"        % Versions.cpg       % Test classifier "tests",
+  "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
   "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.22.1",
   "org.scalatest" %% "scalatest"                % Versions.scalatest % Test
 )

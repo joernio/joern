@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"     %% "dataflowengineoss"        % Versions.cpg,
   "io.shiftleft"     %% "semanticcpg"              % Versions.cpg,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
-  "io.shiftleft" %% "semanticcpg-tests" % Versions.cpg % Test classifier "tests",
+  "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
 )
 
 fork := true

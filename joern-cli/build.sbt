@@ -33,11 +33,7 @@ Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value)
   case (file, name) => file -> s"frontends/javasrc2cpg/$name"
 }
 
-lazy val c2cpg = project.in(file("frontends/c2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies += "io.shiftleft" %% "c2cpg" % Versions.cpg,
-  Compile/mainClass := Some("io.shiftleft.c2cpg.C2Cpg"),
-)
-Universal/mappings ++= NativePackagerHelper.contentOf((c2cpg/stage).value).map {
+Universal/mappings ++= NativePackagerHelper.contentOf((Projects.c2cpg/stage).value).map {
   case (file, name) => file -> s"frontends/c2cpg/$name"
 }
 
