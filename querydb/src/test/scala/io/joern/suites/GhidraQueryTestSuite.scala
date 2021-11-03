@@ -6,6 +6,7 @@ import io.joern.console.scan._
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.QueryBundle
 import io.shiftleft.console.Query
+import io.shiftleft.dataflowengineoss.language.toExtendedCfgNode
 import io.shiftleft.utils.ProjectRoot
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.iterableToTraversal
@@ -34,6 +35,12 @@ class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
 
   def methodNamesForMatchedPoints(query: Query): Set[String] = {
     nodes.MethodParameterIn
+    //def source =
+    //  cpg.call.methodFullName("getenv").cfgNext.isCall.argument(2).head
+    //def sink = cpg.method.fullName("strcpy").parameter.index(2).head
+    //println("SOURCE "+ source.code)
+    //println("SINK "+ sink.code)
+    //println(sink.reachableBy(source).l)
     query(cpg)
       .flatMap(_.evidence)
       .collect {

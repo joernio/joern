@@ -8,6 +8,7 @@ import io.shiftleft.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 import io.shiftleft.semanticcpg.layers._
+import io.shiftleft.utils.ProjectRoot
 
 class DataFlowTests extends GhidraBinToCpgSuite {
 
@@ -28,20 +29,10 @@ class DataFlowTests extends GhidraBinToCpgSuite {
   }
 
   implicit val resolver: ICallResolver = NoResolve
-  val customSemantics =
-    s""""<operator>.assignment" 2->1
-       |"<operator>.assignmentArithmeticShiftRight" 3->1 2->1
-       |"<operator>.assignmentAnd" 3->1 2->1
-       |"<operator>.assignmentLogicalShiftRight" 3->1 2->1
-       |"<operator>.assignmentOr" 3->1 2->1
-       |"<operator>.assignmentNor" 3->1 2->1
-       |"<operator>.assignmentXor" 3->1 2->1
-       |"<operator>.decBy" 3->1 2->1
-       |"<operator>.incBy" 1->1 2->1 3->1 4->1
-       |"<operator>.rotateRight" 2->1
-       |""".stripMargin
-  val semantics: Semantics = Semantics.fromList(new Parser().parse(customSemantics))
-  implicit val context: EngineContext = EngineContext(semantics)
+
+  val semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+  implicit var context: EngineContext = EngineContext(semantics)
 
   "should find flows through `add*` instructions" in {
     def source = cpg.call.code("li t1,0x2a").argument(1)
