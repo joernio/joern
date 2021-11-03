@@ -1,14 +1,13 @@
 package io.joern.suites
 
-import io.joern.ghidra2cpg.fixtures.{DataFlowBinToCpgSuite, GhidraBinToCpgSuite}
-import io.joern.util.QueryUtil
-import io.joern.console.scan._
-import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.QueryBundle
+import io.joern.console.scan._
+import io.joern.ghidra2cpg.fixtures.DataFlowBinToCpgSuite
+import io.joern.util.QueryUtil
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.console.Query
-import io.shiftleft.dataflowengineoss.language.toExtendedCfgNode
-import io.shiftleft.utils.ProjectRoot
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.iterableToTraversal
 
 class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {

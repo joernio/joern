@@ -3,15 +3,7 @@ package io.joern.ghidra2cpg.passes
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{
-  CodeUnitFormat,
-  CodeUnitFormatOptions,
-  Function,
-  FunctionIterator,
-  Instruction,
-  Listing,
-  Program
-}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, FunctionIterator, Instruction, Listing, Program}
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._

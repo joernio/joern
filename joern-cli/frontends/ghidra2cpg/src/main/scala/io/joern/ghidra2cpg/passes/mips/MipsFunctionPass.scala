@@ -3,15 +3,15 @@ package io.joern.ghidra2cpg.passes.mips
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{Function, FunctionIterator, Instruction, Listing, Program}
+import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
