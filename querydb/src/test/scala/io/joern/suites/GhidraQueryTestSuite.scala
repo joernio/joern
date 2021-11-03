@@ -35,12 +35,6 @@ class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
 
   def methodNamesForMatchedPoints(query: Query): Set[String] = {
     nodes.MethodParameterIn
-    //def source =
-    //  cpg.call.methodFullName("getenv").cfgNext.isCall.argument(2).head
-    //def sink = cpg.method.fullName("strcpy").parameter.index(2).head
-    //println("SOURCE "+ source.code)
-    //println("SINK "+ sink.code)
-    //println(sink.reachableBy(source).l)
     query(cpg)
       .flatMap(_.evidence)
       .collect {

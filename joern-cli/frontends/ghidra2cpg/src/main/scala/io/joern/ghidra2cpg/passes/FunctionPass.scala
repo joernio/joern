@@ -149,7 +149,6 @@ abstract class FunctionPass(
       diffGraph.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
       diffGraph.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
-        println("INSTRUCTION " + instruction)
         val instructionNode = addCallNode(instruction)
         diffGraph.addNode(instructionNode)
         handleArguments(instruction, instructionNode)
