@@ -67,9 +67,9 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "guess `C` for a directory that does not contain any special file" in {
+    "not find anything for an empty directory" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.C)
+        guessLanguage(tmpDir.pathAsString) shouldBe None
       }
     }
 
