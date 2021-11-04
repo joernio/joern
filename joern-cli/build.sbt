@@ -57,15 +57,9 @@ Universal/mappings ++= NativePackagerHelper.contentOf((js2cpg/stage).value).map 
   case (file, name) => file -> s"frontends/js2cpg/$name"
 }
 
-lazy val jimple2cpg = project.in(file("frontends/jimple2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies ++= Seq(
-    "io.joern" %% "jimple2cpg" % Versions.jimple2cpg,
-    "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3",
-  ),
-  Compile/mainClass := Some("io.joern.jimple2cpg.Main"),
-)
+lazy val jimple2cpg = project.in(file("frontends/jimple2cpg"))
 Universal/mappings ++= NativePackagerHelper.contentOf((jimple2cpg/stage).value).map {
-  case (file, name) => (file, s"frontends/jimple2cpg/$name")
+  case (file, name) => file -> s"frontends/jimple2cpg/$name"
 }
 
 lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")

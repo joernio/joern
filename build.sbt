@@ -5,7 +5,6 @@ ThisBuild / scalaVersion := "2.13.5"
 
 val cpgVersion = "1.3.408"
 val js2cpgVersion = "0.2.24"
-val jimple2cpgVersion = "0.0.9"
 
 ThisBuild /Test /fork := true
 

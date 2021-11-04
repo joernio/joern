@@ -2,7 +2,6 @@
 object Versions {
   val cpg = parseVersion("cpgVersion")
   val js2cpg = parseVersion("js2cpgVersion")
-  val jimple2cpg = parseVersion("jimple2cpgVersion")
   val scalatest = "3.1.1"
 
   private def parseVersion(key: String): String = { 
