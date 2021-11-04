@@ -1,9 +1,10 @@
 package io.joern.console
 
 import io.shiftleft.codepropertygraph.generated.Languages
-
 import better.files.File
+
 import java.nio.file.Path
+import scala.collection.mutable
 
 package object cpgcreation {
 
@@ -49,31 +50,38 @@ package object cpgcreation {
       Some(Languages.LLVM)
     } else {
       val file = File(path)
-      if (file.isDirectory) {
-        val fileNames = file.listRecursively.map(_.name).toSeq
-        if (fileNames.exists(f =>
-              f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f))) {
-          Some(Languages.GOLANG)
-        } else if (fileNames.exists(f => f.endsWith(".java"))) {
-          Some(Languages.JAVASRC)
-        } else if (fileNames.exists(f => f.endsWith(".class"))) {
-          Some(Languages.JAVA)
-        } else if (fileNames.exists(f => f.endsWith(".php"))) {
-          Some(Languages.PHP)
-        } else if (fileNames.exists(f => f.endsWith(".js") || Set("package.json").contains(f))) {
-          Some(Languages.JAVASCRIPT)
-        } else if (fileNames.exists(f => f.endsWith(".py"))) {
-          Some(Languages.FUZZY_TEST_LANG)
-        } else if (fileNames.exists(isLlvmSrcFile)) {
-          Some(Languages.LLVM)
-        } else if (fileNames.exists(f => f.endsWith(".c"))) {
-          Some(Languages.C)
-        } else {
-          None
-        }
-      } else {
-        None
-      }
+      if (file.isDirectory) determineMajorityLanguageInDir(file)
+      else None
+    }
+  }
+
+  private def determineMajorityLanguageInDir(directory: File): Option[String] = {
+    assert(directory.isDirectory, s"$directory must be a directory, but wasn't")
+    val groupCount = mutable.Map.empty[String, Int]
+
+    for {
+      file <- directory.listRecursively
+      if file.isRegularFile
+      guess <- guessLanguageForRegularFile(file)
+    } {
+      val oldValue = groupCount.getOrElse(guess, 0)
+      groupCount.update(guess, oldValue + 1)
+    }
+
+    groupCount.toSeq.sortBy(_._2).lastOption.map(_._1)
+  }
+
+  private def guessLanguageForRegularFile(file: File): Option[String] = {
+    assert(file.isRegularFile, s"$file must be a regular file, but wasn't")
+     file.name.toLowerCase match {
+      case f if f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f) => Some(Languages.GOLANG)
+      case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
+      case f if f.endsWith(".java") => Some(Languages.JAVASRC)
+      case f if f.endsWith(".class") => Some(Languages.JAVA)
+      case f if f.endsWith(".php") => Some(Languages.PHP)
+      case f if f.endsWith(".py") => Some(Languages.FUZZY_TEST_LANG)
+      case f if isLlvmSrcFile(f) => Some(Languages.LLVM)
+      case f if f.endsWith(".c") => Some(Languages.C)
     }
   }
 

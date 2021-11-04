@@ -67,6 +67,19 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       }
     }
 
+    "guess the language with the largest number of files" in {
+      File.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "source.c")
+        touch(subdir / "source.java")
+        touch(subdir / "source.py")
+        touch(subdir / "source.js")
+        touch(subdir / "package.json") // also counts towards javascript
+        touch(subdir / "source.py")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASCRIPT)
+      }
+    }
+
     "not find anything for an empty directory" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
         guessLanguage(tmpDir.pathAsString) shouldBe None
