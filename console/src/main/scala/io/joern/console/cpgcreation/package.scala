@@ -38,7 +38,7 @@ package object cpgcreation {
   def guessLanguage(path: String): Option[String] = {
     val file = File(path)
     if (file.isDirectory) {
-      determineMajorityLanguageInDir(file)
+      guessMajorityLanguageInDir(file)
     } else {
       guessLanguageForRegularFile(file)
     }
@@ -48,7 +48,7 @@ package object cpgcreation {
     * a group count of all individual files.
     * Rationale: many projects contain files from different languages, but most often one language is
     * standing out in numbers. */
-  private def determineMajorityLanguageInDir(directory: File): Option[String] = {
+  private def guessMajorityLanguageInDir(directory: File): Option[String] = {
     assert(directory.isDirectory, s"$directory must be a directory, but wasn't")
     val groupCount = mutable.Map.empty[String, Int].withDefaultValue(0)
 
@@ -78,6 +78,7 @@ package object cpgcreation {
       case f if f.endsWith(".py")                        => Some(Languages.FUZZY_TEST_LANG)
       case f if f.endsWith(".bc") || f.endsWith(".ll")   => Some(Languages.LLVM)
       case f if f.endsWith(".c") || f.endsWith(".h")     => Some(Languages.C)
+      case _ => None
     }
   }
 
