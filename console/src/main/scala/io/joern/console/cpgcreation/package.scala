@@ -36,22 +36,11 @@ package object cpgcreation {
     * Heuristically determines language by inspecting file/dir at path.
     * */
   def guessLanguage(path: String): Option[String] = {
-    val lowerCasePath = path.toLowerCase
-    if (lowerCasePath.endsWith(".jar") ||
-      lowerCasePath.endsWith(".war") ||
-      lowerCasePath.endsWith(".ear") ||
-      lowerCasePath.endsWith(".apk")) {
-      Some(Languages.JAVA)
-    } else if (lowerCasePath.endsWith("csproj")) {
-      Some(Languages.CSHARP)
-    } else if (lowerCasePath.endsWith(".go")) {
-      Some(Languages.GOLANG)
-    } else if (isLlvmSrcFile(lowerCasePath)) {
-      Some(Languages.LLVM)
+    val file = File(path)
+    if (file.isDirectory) {
+      determineMajorityLanguageInDir(file)
     } else {
-      val file = File(path)
-      if (file.isDirectory) determineMajorityLanguageInDir(file)
-      else None
+      guessLanguageForRegularFile(file)
     }
   }
 
@@ -72,21 +61,18 @@ package object cpgcreation {
   }
 
   private def guessLanguageForRegularFile(file: File): Option[String] = {
-    assert(file.isRegularFile, s"$file must be a regular file, but wasn't")
      file.name.toLowerCase match {
-      case f if f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f) => Some(Languages.GOLANG)
-      case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
-      case f if f.endsWith(".java") => Some(Languages.JAVASRC)
-      case f if f.endsWith(".class") => Some(Languages.JAVA)
-      case f if f.endsWith(".php") => Some(Languages.PHP)
-      case f if f.endsWith(".py") => Some(Languages.FUZZY_TEST_LANG)
-      case f if isLlvmSrcFile(f) => Some(Languages.LLVM)
-      case f if f.endsWith(".c") => Some(Languages.C)
+       case f if f.endsWith(".jar") || f.endsWith(".war") || f.endsWith(".ear") || f.endsWith(".apk") => Some(Languages.JAVA)
+       case f if f.endsWith(".csproj") || f.endsWith(".cs") => Some(Languages.CSHARP)
+       case f if f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f) => Some(Languages.GOLANG)
+       case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
+       case f if f.endsWith(".java") => Some(Languages.JAVASRC)
+       case f if f.endsWith(".class") => Some(Languages.JAVA)
+       case f if f.endsWith(".php") => Some(Languages.PHP)
+       case f if f.endsWith(".py") => Some(Languages.FUZZY_TEST_LANG)
+       case f if f.endsWith(".bc") || f.endsWith(".ll") => Some(Languages.LLVM)
+       case f if f.endsWith(".c") || f.endsWith(".h") => Some(Languages.C)
     }
-  }
-
-  private def isLlvmSrcFile(fileName: String): Boolean = {
-    fileName.endsWith(".bc") || fileName.endsWith(".ll")
   }
 
 }
