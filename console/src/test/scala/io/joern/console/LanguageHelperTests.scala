@@ -29,35 +29,39 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
 
     "guess `Go` for a directory containing `Gopkg.lock`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "Gopkg.lock")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.GOLANG)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "Gopkg.lock")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.GOLANG)
       }
     }
 
-    "guess `Go` for a directory containing `Gopkg.toml` its root" in {
+    "guess `Go` for a directory containing `Gopkg.toml`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "Gopkg.toml")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.GOLANG)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "Gopkg.toml")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.GOLANG)
       }
     }
 
-    "guess `Javascript` for a directory containing `package.json` in its root" in {
+    "guess `Javascript` for a directory containing `package.json`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "package.json")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.JAVASCRIPT)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "package.json")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASCRIPT)
       }
     }
 
-    "guess `C` for a directory containing .ll (LLVM) file in its root" in {
+    "guess `C` for a directory containing .ll (LLVM) file" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "foobar.ll")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.LLVM)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "foobar.ll")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.LLVM)
       }
     }
 
     "guess `C` for a directory that does not contain any special file" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.C)
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.C)
       }
     }
 

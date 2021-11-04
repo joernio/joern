@@ -2,7 +2,7 @@ package io.joern.console
 
 import io.shiftleft.codepropertygraph.generated.Languages
 
-import java.io.File
+import better.files.File
 import java.nio.file.Path
 
 package object cpgcreation {
@@ -32,44 +32,40 @@ package object cpgcreation {
   }
 
   /**
-    * Heuristically determines language by inspecting
-    * file/dir at path.
+    * Heuristically determines language by inspecting file/dir at path.
     * */
   def guessLanguage(path: String): Option[String] = {
     val lowerCasePath = path.toLowerCase
     if (lowerCasePath.endsWith(".jar") ||
-        lowerCasePath.endsWith(".war") ||
-        lowerCasePath.endsWith(".ear") ||
-        lowerCasePath.endsWith(".apk")) {
+      lowerCasePath.endsWith(".war") ||
+      lowerCasePath.endsWith(".ear") ||
+      lowerCasePath.endsWith(".apk")) {
       Some(Languages.JAVA)
     } else if (lowerCasePath.endsWith("csproj")) {
       Some(Languages.CSHARP)
     } else if (lowerCasePath.endsWith(".go")) {
       Some(Languages.GOLANG)
+    } else if (isLlvmSrcFile(lowerCasePath)) {
+      Some(Languages.LLVM)
     } else {
-      val file = new File(path)
+      val file = File(path)
       if (file.isDirectory) {
-        val files = file.list()
-        if (files.exists(f =>
-              f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum")
-                .contains(f))) {
+        val fileNames = file.listRecursively.map(_.name).toSeq
+        if (fileNames.exists(f =>
+              f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f))) {
           Some(Languages.GOLANG)
-        } else if (files.exists(f => f.endsWith(".java") || f.endsWith(".class"))) {
+        } else if (fileNames.exists(f => f.endsWith(".java") || f.endsWith(".class"))) {
           Some(Languages.JAVA)
-        } else if (files.exists(f => f.endsWith(".php"))) {
+        } else if (fileNames.exists(f => f.endsWith(".php"))) {
           Some(Languages.PHP)
-        } else if (files.exists(f => f.endsWith(".js") || Set("package.json").contains(f))) {
+        } else if (fileNames.exists(f => f.endsWith(".js") || Set("package.json").contains(f))) {
           Some(Languages.JAVASCRIPT)
-        } else if (files.exists(f => f.endsWith(".py"))) {
+        } else if (fileNames.exists(f => f.endsWith(".py"))) {
           Some(Languages.FUZZY_TEST_LANG)
-        } else if (files.exists(f => isLlvmSrcFile(new File(f).toPath))) {
+        } else if (fileNames.exists(isLlvmSrcFile)) {
           Some(Languages.LLVM)
-        } else {
+        } else if (fileNames.exists(f => f.endsWith(".c"))) {
           Some(Languages.C)
-        }
-      } else if (file.isFile) {
-        if (isLlvmSrcFile(file.toPath)) {
-          Some(Languages.LLVM)
         } else {
           None
         }
@@ -79,9 +75,8 @@ package object cpgcreation {
     }
   }
 
-  private def isLlvmSrcFile(path: Path): Boolean = {
-    val filename = path.getFileName.toString
-    filename.endsWith(".bc") || filename.endsWith(".ll")
+  private def isLlvmSrcFile(fileName: String): Boolean = {
+    fileName.endsWith(".bc") || fileName.endsWith(".ll")
   }
 
 }
