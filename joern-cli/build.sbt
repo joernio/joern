@@ -62,34 +62,6 @@ Universal/mappings ++= NativePackagerHelper.contentOf((jimple2cpg/stage).value).
   case (file, name) => file -> s"frontends/jimple2cpg/$name"
 }
 
-lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
-downloadFuzzyPreprocessor := {
-  val log = streams.value.log
-  val ppFilename = "fuzzyppcli.zip"
-  val ppUrl = new URL(
-    s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v${Versions.cpg}/$ppFilename")
-  val ppOutputDir = file("fuzzyppcli")
-
-  log.info(s"trying to download fuzzypp from $ppUrl")
-  try {
-    IO.unzipURL(ppUrl, ppOutputDir)
-    ppOutputDir.listFiles().map(_.setExecutable(true))
-    Some(ppOutputDir)
-  } catch {
-    case ex: Exception =>
-      log.warn(s"unable to download fuzzypp from $ppUrl - if you are using a local release you can ignore this, but note that you won't be able to use fuzzypp.")
-      log.trace(ex)
-      None
-  }
-}
-
-Universal/mappings ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
-  NativePackagerHelper.contentOf(fuzzyppdir).map {
-    case (binary, name) => binary -> s"/bin/$name"
-  }
-}.getOrElse(Nil)
-
-
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
   val ret = target.value / "cpg-version"
