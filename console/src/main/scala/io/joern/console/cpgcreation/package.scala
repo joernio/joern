@@ -54,7 +54,9 @@ package object cpgcreation {
         if (fileNames.exists(f =>
               f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f))) {
           Some(Languages.GOLANG)
-        } else if (fileNames.exists(f => f.endsWith(".java") || f.endsWith(".class"))) {
+        } else if (fileNames.exists(f => f.endsWith(".java"))) {
+          Some(Languages.JAVASRC)
+        } else if (fileNames.exists(f => f.endsWith(".class"))) {
           Some(Languages.JAVA)
         } else if (fileNames.exists(f => f.endsWith(".php"))) {
           Some(Languages.PHP)

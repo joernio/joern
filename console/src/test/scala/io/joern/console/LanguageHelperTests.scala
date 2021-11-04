@@ -27,6 +27,14 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       guessLanguage("foo.go") shouldBe Some(Languages.GOLANG)
     }
 
+    "guess `JavaSrc` for a directory containing `.java`" in {
+      File.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "ServiceIdentifierComposerVisitorBasedStrategy.java")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASRC)
+      }
+    }
+
     "guess `Go` for a directory containing `Gopkg.lock`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
         val subdir = mkdir(tmpDir / "subdir")
