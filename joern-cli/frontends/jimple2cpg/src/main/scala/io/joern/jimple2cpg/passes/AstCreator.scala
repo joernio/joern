@@ -1,12 +1,7 @@
 package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  Operators
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.x2cpg.Ast
 import org.slf4j.LoggerFactory
@@ -22,9 +17,9 @@ class AstCreator(filename: String, global: Global) {
 
   import AstCreator._
 
-  private val logger               = LoggerFactory.getLogger(classOf[AstCreationPass])
-  private val unitToAsts           = mutable.HashMap[soot.Unit, Seq[Ast]]()
-  private val controlTargets       = mutable.HashMap[Seq[Ast], soot.Unit]()
+  private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
+  private val unitToAsts = mutable.HashMap[soot.Unit, Seq[Ast]]()
+  private val controlTargets = mutable.HashMap[Seq[Ast], soot.Unit]()
   val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
 
   /** Add `typeName` to a global map and return it. The
@@ -77,7 +72,7 @@ class AstCreator(filename: String, global: Global) {
     */
   private def astForPackageDeclaration(packageDecl: String): Ast = {
     val absolutePath = new java.io.File(filename).toPath.toAbsolutePath.normalize().toString
-    val name         = packageDecl.split("\\.").lastOption.getOrElse("")
+    val name = packageDecl.split("\\.").lastOption.getOrElse("")
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(packageDecl)
@@ -114,8 +109,9 @@ class AstCreator(filename: String, global: Global) {
     val memberAsts = typ.getSootClass.getFields.asScala
       .filter(_.isDeclared)
       .zipWithIndex
-      .map { case (v, i) =>
-        astForField(v, i + methodAsts.size + 1)
+      .map {
+        case (v, i) =>
+          astForField(v, i + methodAsts.size + 1)
       }
       .toList
 
@@ -126,7 +122,7 @@ class AstCreator(filename: String, global: Global) {
 
   private def astForField(v: SootField, order: Int): Ast = {
     val typeFullName = registerType(v.getType.toQuotedString)
-    val name         = v.getName
+    val name = v.getName
     Ast(
       NewMember()
         .name(name)
@@ -142,7 +138,7 @@ class AstCreator(filename: String, global: Global) {
       childNum: Int
   ): Ast = {
     val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
-    val lastOrder  = 2 + methodDeclaration.getParameterCount
+    val lastOrder = 2 + methodDeclaration.getParameterCount
     try {
       val methodBody = methodDeclaration.retrieveActiveBody()
       val parameterAsts = withOrder(methodBody.getParameterLocals) { (p, order) =>
@@ -159,12 +155,13 @@ class AstCreator(filename: String, global: Global) {
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
-      controlTargets.foreach({ case (asts, units) =>
-        asts.headOption match {
-          case Some(value) =>
-            diffGraph.addEdge(value.root.get, unitToAsts(units).last.root.get, EdgeTypes.CFG)
-          case None =>
-        }
+      controlTargets.foreach({
+        case (asts, units) =>
+          asts.headOption match {
+            case Some(value) =>
+              diffGraph.addEdge(value.root.get, unitToAsts(units).last.root.get, EdgeTypes.CFG)
+            case None =>
+          }
       })
       // Clear these maps
       controlTargets.clear()
@@ -289,7 +286,7 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def astForLocal(local: soot.Local, order: Int, parentUnit: soot.Unit): Ast = {
-    val name         = local.getName
+    val name = local.getName
     val typeFullName = registerType(local.getType.toQuotedString)
     Ast(
       NewIdentifier()
@@ -343,8 +340,9 @@ class AstCreator(filename: String, global: Global) {
     val argAsts = withOrder(invokeExpr match {
       case x: DynamicInvokeExpr => x.getArgs.asScala ++ x.getBootstrapArgs.asScala
       case x                    => x.getArgs.asScala
-    }) { case (arg, order) =>
-      astsForValue(arg, order, parentUnit)
+    }) {
+      case (arg, order) =>
+        astsForValue(arg, order, parentUnit)
     }.flatten
 
     Ast(callNode)
@@ -430,10 +428,10 @@ class AstCreator(filename: String, global: Global) {
   /** Creates the AST for assignment statements keeping in mind Jimple is a 3-address code language.
     */
   private def astsForDefinition(assignStmt: DefinitionStmt, order: Int): Seq[Ast] = {
-    val leftOp       = assignStmt.getLeftOp.asInstanceOf[soot.Local]
-    val initializer  = assignStmt.getRightOp
-    val name         = leftOp.getName
-    val code         = leftOp.getType.toQuotedString + " " + leftOp.getName
+    val leftOp = assignStmt.getLeftOp.asInstanceOf[soot.Local]
+    val initializer = assignStmt.getRightOp
+    val name = leftOp.getName
+    val code = leftOp.getType.toQuotedString + " " + leftOp.getName
     val typeFullName = registerType(leftOp.getType.toQuotedString)
 
     val identifier = astForLocal(leftOp, 1, assignStmt)
@@ -445,7 +443,7 @@ class AstCreator(filename: String, global: Global) {
       .argumentIndex(order)
       .typeFullName(registerType(assignStmt.getLeftOp.getType.toQuotedString))
 
-    val initAsts       = astsForValue(initializer, 2, assignStmt)
+    val initAsts = astsForValue(initializer, 2, assignStmt)
     val initializerAst = Seq(callAst(assignment, Seq(identifier) ++ initAsts))
     Seq(
       Ast(
@@ -478,7 +476,7 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def astForSwitchWithDefaultAndCondition(switchStmt: SwitchStmt, order: Int): Ast = {
-    val jimple    = switchStmt.toString()
+    val jimple = switchStmt.toString()
     val totalTgts = switchStmt.getTargets.size()
     val switch = NewControlStructure()
       .controlStructureType(ControlStructureTypes.SWITCH)
@@ -513,16 +511,17 @@ class AstCreator(filename: String, global: Global) {
       i <- 0 until totalTgts
       if lookupSwitchStmt.getTarget(i) != lookupSwitchStmt.getDefaultTarget
     } yield (lookupSwitchStmt.getLookupValue(i), lookupSwitchStmt.getTarget(i))
-    val tgtAsts = tgts.map { case (lookup, target) =>
-      Ast(
-        NewJumpTarget()
-          .name(s"case $lookup")
-          .code(s"case $lookup:")
-          .argumentIndex(lookup)
-          .order(lookup)
-          .lineNumber(line(target))
-          .columnNumber(column(target))
-      )
+    val tgtAsts = tgts.map {
+      case (lookup, target) =>
+        Ast(
+          NewJumpTarget()
+            .name(s"case $lookup")
+            .code(s"case $lookup:")
+            .argumentIndex(lookup)
+            .order(lookup)
+            .lineNumber(line(target))
+            .columnNumber(column(target))
+        )
     }
 
     Seq(
@@ -536,16 +535,17 @@ class AstCreator(filename: String, global: Global) {
     val tgtAsts = tableSwitchStmt.getTargets.asScala
       .filter(x => tableSwitchStmt.getDefaultTarget != x)
       .zipWithIndex
-      .map({ case (tgt, i) =>
-        Ast(
-          NewJumpTarget()
-            .name(s"case $i")
-            .code(s"case $i:")
-            .argumentIndex(i)
-            .order(i)
-            .lineNumber(line(tgt))
-            .columnNumber(column(tgt))
-        )
+      .map({
+        case (tgt, i) =>
+          Ast(
+            NewJumpTarget()
+              .name(s"case $i")
+              .code(s"case $i:")
+              .argumentIndex(i)
+              .order(i)
+              .lineNumber(line(tgt))
+              .columnNumber(column(tgt))
+          )
       })
       .toSeq
 
@@ -737,7 +737,7 @@ class AstCreator(filename: String, global: Global) {
       typeDecl: RefType,
       methodDeclaration: SootMethod
   ): String = {
-    val typeName   = typeDecl.toQuotedString
+    val typeName = typeDecl.toQuotedString
     val returnType = methodDeclaration.getReturnType.toQuotedString
     val methodName = methodDeclaration.getName
     s"$typeName.$methodName:$returnType${paramListSignature(methodDeclaration)}"
@@ -768,14 +768,16 @@ object AstCreator {
   }
 
   def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.asScala.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
+    nodeList.asScala.zipWithIndex.map {
+      case (x, i) =>
+        f(x, i + 1)
     }.toSeq
   }
 
   def withOrder[T <: Any, X](nodeList: Iterable[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
+    nodeList.zipWithIndex.map {
+      case (x, i) =>
+        f(x, i + 1)
     }.toSeq
   }
 }

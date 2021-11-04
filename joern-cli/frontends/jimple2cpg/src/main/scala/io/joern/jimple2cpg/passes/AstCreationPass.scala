@@ -31,7 +31,7 @@ class AstCreationPass(codePath: String, filenames: List[String], cpg: Cpg, keyPo
   override def partIterator: Iterator[String] = filenames.iterator
 
   override def runOnPart(filename: String): Iterator[DiffGraph] = {
-    val qualifiedClassName           = getQualifiedClassPath(filename)
+    val qualifiedClassName = getQualifiedClassPath(filename)
     var sootClass: Option[SootClass] = None
     try {
       try {

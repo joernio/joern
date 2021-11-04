@@ -39,14 +39,14 @@ class Jimple2Cpg {
   ): Cpg = {
     try {
       configureSoot(sourceCodePath)
-      val cpg             = newEmptyCpg(outputPath)
+      val cpg = newEmptyCpg(outputPath)
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
-      val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-      val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+      val typesKeyPool = new IntervalKeyPool(100, 1000100)
+      val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
 
       new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
-      val sourceFileExtensions  = Set(".class", ".jimple")
+      val sourceFileExtensions = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
       // Unpack any archives on the path onto the source code path as project root
       val archives = SourceFiles.determine(Set(sourceCodePath), archiveFileExtensions)
