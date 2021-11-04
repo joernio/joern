@@ -37,6 +37,9 @@ trait AstCreatorHelper {
   private def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =
     Option(parserResult.flattenLocationsToFile(node.getNodeLocations)).map(_.asFileLocation())
 
+  private def nullSafeFileLocationLast(node: IASTNode): Option[IASTFileLocation] =
+    Option(parserResult.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
+
   protected def fileName(node: IASTNode): String = {
     nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
   }
@@ -46,7 +49,7 @@ trait AstCreatorHelper {
   }
 
   protected def lineEnd(node: IASTNode): Option[Integer] = {
-    nullSafeFileLocation(node).map(_.getEndingLineNumber)
+    nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
   protected def column(node: IASTNode): Option[Integer] = {
