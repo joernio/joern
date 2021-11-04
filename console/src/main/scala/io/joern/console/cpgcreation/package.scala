@@ -65,17 +65,19 @@ package object cpgcreation {
   }
 
   private def guessLanguageForRegularFile(file: File): Option[String] = {
-     file.name.toLowerCase match {
-       case f if f.endsWith(".jar") || f.endsWith(".war") || f.endsWith(".ear") || f.endsWith(".apk") => Some(Languages.JAVA)
-       case f if f.endsWith(".csproj") || f.endsWith(".cs") => Some(Languages.CSHARP)
-       case f if f.endsWith(".go") || Set("gopkg.lock", "gopkg.toml", "go.mod", "go.sum").contains(f) => Some(Languages.GOLANG)
-       case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
-       case f if f.endsWith(".java") => Some(Languages.JAVASRC)
-       case f if f.endsWith(".class") => Some(Languages.JAVA)
-       case f if f.endsWith(".php") => Some(Languages.PHP)
-       case f if f.endsWith(".py") => Some(Languages.FUZZY_TEST_LANG)
-       case f if f.endsWith(".bc") || f.endsWith(".ll") => Some(Languages.LLVM)
-       case f if f.endsWith(".c") || f.endsWith(".h") => Some(Languages.C)
+    file.name.toLowerCase match {
+      case f if f.endsWith(".jar") || f.endsWith(".war") || f.endsWith(".ear") || f.endsWith(".apk") =>
+        Some(Languages.JAVA)
+      case f if f.endsWith(".csproj") || f.endsWith(".cs") => Some(Languages.CSHARP)
+      case f if f.endsWith(".go") || Set("gopkg.lock", "gopkg.toml", "go.mod", "go.sum").contains(f) =>
+        Some(Languages.GOLANG)
+      case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
+      case f if f.endsWith(".java")                      => Some(Languages.JAVASRC)
+      case f if f.endsWith(".class")                     => Some(Languages.JAVA)
+      case f if f.endsWith(".php")                       => Some(Languages.PHP)
+      case f if f.endsWith(".py")                        => Some(Languages.FUZZY_TEST_LANG)
+      case f if f.endsWith(".bc") || f.endsWith(".ll")   => Some(Languages.LLVM)
+      case f if f.endsWith(".c") || f.endsWith(".h")     => Some(Languages.C)
     }
   }
 
