@@ -160,9 +160,10 @@ trait AstForStatementsCreator {
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement, order: Int): Ast = {
     val cpgTry = newControlStructureNode(tryStmt, ControlStructureTypes.TRY, "try", order)
     val body = nullSafeAst(tryStmt.getTryBody, 1)
-    val catches = withOrder(tryStmt.getCatchHandlers) { (c, o) =>
-      astsForStatement(c.getCatchBody, o + 1)
-    }.flatten
+    // All catches must have order 2 for correct control flow generation.
+    val catches = tryStmt.getCatchHandlers.flatMap { stmt =>
+      astsForStatement(stmt.getCatchBody, 2)
+    }.toIndexedSeq
     Ast(cpgTry).withChildren(body).withChildren(catches)
   }
 
