@@ -3,13 +3,12 @@ package io.joern.console
 import better.files.Dsl._
 import better.files._
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.console.cpgcreation.LlvmCpgGenerator
+import io.joern.console.cpgcreation.{guessLanguage, LlvmCpgGenerator}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class LanguageHelperTests extends AnyWordSpec with Matchers {
 
-  import io.joern.console.cpgcreation.guessLanguage
 
   "LanguageHelper.guessLanguage" should {
 

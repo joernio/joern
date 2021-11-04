@@ -44,17 +44,21 @@ package object cpgcreation {
     }
   }
 
+  /** Guess the main language for an entire directory (e.g. a whole project), based on
+    * a group count of all individual files.
+    * Rationale: many projects contain files from different languages, but most often one language is
+    * standing out in numbers. */
   private def determineMajorityLanguageInDir(directory: File): Option[String] = {
     assert(directory.isDirectory, s"$directory must be a directory, but wasn't")
-    val groupCount = mutable.Map.empty[String, Int]
+    val groupCount = mutable.Map.empty[String, Int].withDefaultValue(0)
 
     for {
       file <- directory.listRecursively
       if file.isRegularFile
-      guess <- guessLanguageForRegularFile(file)
+      guessedLanguage <- guessLanguageForRegularFile(file)
     } {
-      val oldValue = groupCount.getOrElse(guess, 0)
-      groupCount.update(guess, oldValue + 1)
+      val oldValue = groupCount(guessedLanguage)
+      groupCount.update(guessedLanguage, oldValue + 1)
     }
 
     groupCount.toSeq.sortBy(_._2).lastOption.map(_._1)
@@ -64,7 +68,7 @@ package object cpgcreation {
      file.name.toLowerCase match {
        case f if f.endsWith(".jar") || f.endsWith(".war") || f.endsWith(".ear") || f.endsWith(".apk") => Some(Languages.JAVA)
        case f if f.endsWith(".csproj") || f.endsWith(".cs") => Some(Languages.CSHARP)
-       case f if f.endsWith(".go") || Set("Gopkg.lock", "Gopkg.toml", "go.mod", "go.sum").contains(f) => Some(Languages.GOLANG)
+       case f if f.endsWith(".go") || Set("gopkg.lock", "gopkg.toml", "go.mod", "go.sum").contains(f) => Some(Languages.GOLANG)
        case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
        case f if f.endsWith(".java") => Some(Languages.JAVASRC)
        case f if f.endsWith(".class") => Some(Languages.JAVA)
