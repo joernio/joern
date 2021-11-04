@@ -52,6 +52,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def llvm: Frontend = new Frontend(Languages.LLVM, "LLVM Bitcode Frontend")
   def java: Frontend = new Frontend(Languages.JAVA, "Java/Dalvik Bytecode Frontend")
   def javasrc: Frontend = new Frontend(Languages.JAVASRC, "Java Source Frontend")
+  def jimple: Frontend = new Frontend(Languages.JAVA, "Java Bytecode Frontend using soot's Jimple IR")
   def golang: Frontend = new Frontend(Languages.GOLANG, "Golang Source Frontend")
   def javascript: Frontend = new Frontend(Languages.JAVASCRIPT, "Javascript Source Frontend")
   def csharp: Frontend = new Frontend(Languages.CSHARP, "C# Source Frontend (Roslyn)")
@@ -99,7 +100,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     csharp,
     golang,
     java,
+    javasrc,
     javascript,
+    jimple,
     llvm,
     python,
     ghidra,
