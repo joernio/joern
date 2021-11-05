@@ -83,10 +83,6 @@ class AstCreator(filename: String, global: Global) {
     */
   private def astForTypeDecl(typ: RefType, namespaceBlockFullName: String): Ast = {
     val fullName = typ.toQuotedString
-    val filename =
-      if (fullName.contains('.'))
-        s"${File.separator}${this.filename}"
-      else fullName
     val shortName =
       if (fullName.contains('.')) fullName.substring(fullName.lastIndexOf('.') + 1)
       else fullName

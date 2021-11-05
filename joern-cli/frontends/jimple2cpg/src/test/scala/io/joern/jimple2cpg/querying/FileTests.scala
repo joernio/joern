@@ -15,10 +15,10 @@ class FileTests extends JimpleCodeToCpgFixture {
       | class Foo { int bar() { return 1; } }
       |""".stripMargin
 
-  "should contain three file nodes in total with correct order" in {
-    cpg.file.order.l shouldBe List(0, 0, 0)
+  "should contain two file nodes in total with correct order" in {
+    cpg.file.order.l shouldBe List(0, 0)
     cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
-    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 2
+    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
   }
 
   "should contain exactly two non-placeholder file with absolute path in `name`" in {
