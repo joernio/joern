@@ -24,8 +24,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           file.write("//foo")
           file.path.toAbsolutePath.toString
         }
-        new AstCreationPass(cpg, None, Config(inputPaths = Set(dir.path.toString))).createAndApply()
-
+        new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, Config(inputPaths = Set(dir.path.toString)))
+          .createAndApply()
         val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:<global>").toSet
         cpg.namespaceBlock.fullName.toSet shouldBe expectedNamespaceFullNames
       }

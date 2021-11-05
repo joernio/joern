@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import better.files.File
-import io.joern.c2cpg.parser.ParserConfig
+import io.joern.c2cpg.C2Cpg.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -29,9 +29,8 @@ class PreprocessorPassTests extends AnyWordSpec with Matchers {
         val filename = "test.c"
         val file = dir / filename
         file.write(code)
-        val filePath = file.path.toAbsolutePath.toString
 
-        val stmts = new PreprocessorPass(List(filePath), ParserConfig.empty).run().toList
+        val stmts = new PreprocessorPass(Config(inputPaths = Set(dir.path.toString))).run().toList
         stmts shouldBe List("SYMBOL", "FOO=true")
       }
     }
@@ -56,10 +55,8 @@ class PreprocessorPassTests extends AnyWordSpec with Matchers {
         val filename = "test.c"
         val file = dir / filename
         file.write(code)
-        val filePath = file.path.toAbsolutePath.toString
-
-        val parseConfig = ParserConfig(Set.empty, Map("SYMBOL" -> "true"), logProblems = false, logPreprocessor = false)
-        val stmts = new PreprocessorPass(List(filePath), parseConfig).run().toList
+        val config = Config(inputPaths = Set(dir.path.toString), defines = Set("SYMBOL"))
+        val stmts = new PreprocessorPass(config).run().toList
         stmts shouldBe List("SYMBOL=true", "FOO=true")
       }
     }

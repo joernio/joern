@@ -1,36 +1,19 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.C2Cpg.Config
-import io.joern.c2cpg.parser.{FileDefaults, HeaderFileFinder, ParserConfig}
-import io.joern.c2cpg.passes.{AstCreationPass, HeaderAstCreationPass, HeaderContentLinkerPass, PreprocessorPass}
-import io.joern.c2cpg.utils.IncludeAutoDiscovery
+import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentLinkerPass, PreprocessorPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{IntervalKeyPool, KeyPoolCreator}
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
+import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
-import java.nio.file.{Path, Paths}
 import scala.util.control.NonFatal
 
 class C2Cpg {
-
-  private def createParserConfig(config: Config, systemIncludePaths: Set[Path]): ParserConfig = {
-    ParserConfig(
-      config.includePaths.map(Paths.get(_).toAbsolutePath) ++ systemIncludePaths,
-      config.defines.map {
-        case define if define.contains("=") =>
-          val s = define.split("=")
-          s.head -> s(1)
-        case define => define -> "true"
-      }.toMap,
-      config.logProblems,
-      config.logPreprocessor
-    )
-  }
 
   def runAndOutput(config: Config): Cpg = {
     val keyPool = KeyPoolCreator.obtain(3, minValue = 101)
@@ -40,30 +23,23 @@ class C2Cpg {
     val headerKeyPool = keyPool(2)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
-    val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
-    val parserConfig = createParserConfig(config, systemIncludePaths)
 
     new MetaDataPass(cpg, Languages.NEWC, Some(metaDataKeyPool)).createAndApply()
-    val headerFileFinder = new HeaderFileFinder(config.inputPaths.toList)
-    val astCreationPass =
-      new AstCreationPass(cpg, Some(astKeyPool), config, parserConfig, headerFileFinder)
+
+    val astCreationPass = new AstCreationPass(cpg, AstCreationPass.SourceFiles, Some(astKeyPool), config)
     astCreationPass.createAndApply()
-    val headerAstCreationPass =
-      new HeaderAstCreationPass(cpg, Some(headerKeyPool), config, parserConfig, headerFileFinder)
+    val headerAstCreationPass = new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config)
     headerAstCreationPass.createAndApply()
-    new HeaderContentLinkerPass(cpg, config.inputPaths.head, systemIncludePaths).createAndApply()
+
+    new HeaderContentLinkerPass(cpg, config).createAndApply()
+
     val types = astCreationPass.usedTypes() ++ headerAstCreationPass.usedTypes()
     new TypeNodePass(types.distinct, cpg, Some(typesKeyPool)).createAndApply()
     cpg
   }
 
   def printIfDefsOnly(config: Config): Unit = {
-    val sourceFileNames = SourceFiles.determine(config.inputPaths, config.sourceFileExtensions)
-    val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
-    val headerFileFinder = new HeaderFileFinder(config.inputPaths.toList)
-    val stmts = new PreprocessorPass(sourceFileNames, createParserConfig(config, systemIncludePaths), headerFileFinder)
-      .run()
-      .mkString(",")
+    val stmts = new PreprocessorPass(config).run().mkString(",")
     println(stmts)
   }
 
@@ -75,7 +51,6 @@ object C2Cpg {
 
   final case class Config(inputPaths: Set[String] = Set.empty,
                           outputPath: String = X2CpgConfig.defaultOutputPath,
-                          sourceFileExtensions: Set[String] = FileDefaults.SOURCE_FILE_EXTENSIONS,
                           includePaths: Set[String] = Set.empty,
                           defines: Set[String] = Set.empty,
                           includeComments: Boolean = false,
