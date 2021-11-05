@@ -23,7 +23,7 @@ Specification: https://cpg.joern.io
 ## Quick Installation
 
 ```
-wget https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-install.sh
+wget https://github.com/joernio/joern/releases/latest/download/joern-install.sh
 chmod +x ./joern-install.sh
 sudo ./joern-install.sh
 joern
@@ -48,3 +48,16 @@ If the installation script fails for any reason, try
 ```
 ./joern-install --interactive
 ```
+
+## QueryDB (queries plugin)
+Quick way to develop and test QueryDB:
+```
+sbt stage
+./querydb-install.sh
+./joern-scan --list-query-names
+```
+The last command prints all available queries - add your own in querydb, run the above commands again to see that your query got deployed.
+More details in the [separate querydb readme](querydb/README.md)
+
+## Javasrc2cpg (a source-based frontend for Java)
+See details in [the javasrc2cpg readme](joern-cli/frontends/javasrc2cpg/README.md)

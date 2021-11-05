@@ -1,14 +1,13 @@
-enablePlugins(JavaAppPackaging)
-enablePlugins(UniversalPlugin)
-
-organization := "io.shiftleft"
 name := "joern-cli"
+
+dependsOn(
+  Projects.console,
+  Projects.console % "test->test",
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "io.shiftleft" %% "console" % Versions.cpg,
-  "io.shiftleft" %% "console" % Versions.cpg % Test classifier "tests",
   "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
   "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg, // only needed for joern-parse - TODO MP consider to remove?
 
@@ -18,9 +17,10 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic" % "0.12.2",
   "org.reflections" % "reflections" % "0.9.12",
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
-  "org.scalatest" %% "scalatest" % "3.1.1" % Test,
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 
+enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
 scriptClasspath := Seq("*") //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 
@@ -28,84 +28,29 @@ topLevelDirectory := Some(packageName.value)
 
 Compile/packageDoc/mappings := Seq()
 
-lazy val c2cpg = project.in(file("frontends/c2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies += "io.shiftleft" %% "c2cpg" % Versions.cpg,
-  Compile/mainClass := Some("io.shiftleft.c2cpg.C2Cpg"),
-)
-Universal/mappings ++= NativePackagerHelper.contentOf((c2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/c2cpg/$name"
+def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, String)] = {
+  NativePackagerHelper.contentOf(stagedProject).map {
+    case (file, name) => file -> s"frontends/$frontendName/$name"
+  }
 }
 
+lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
+lazy val jimple2cpg = project.in(file("frontends/jimple2cpg"))
 lazy val fuzzyc2cpg = project.in(file("frontends/fuzzyc2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg,
-  Compile/mainClass := Some("io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg"),
+  Compile/mainClass := Some("io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg")
 )
-Universal/mappings ++= NativePackagerHelper.contentOf((fuzzyc2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/fuzzyc2cpg/$name"
-}
-
-lazy val ghidra2cpg = project.in(file("frontends/ghidra2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies += "io.joern" %% "ghidra2cpg" % Versions.ghidra2cpg,
-  Compile/mainClass := Some("io.joern.ghidra2cpg.Main"),
-)
-Universal/mappings ++= NativePackagerHelper.contentOf((ghidra2cpg/stage).value).map {
-  case (file, name) => (file, s"frontends/ghidra2cpg/$name")
-}
-
 lazy val js2cpg = project.in(file("frontends/js2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
-  Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain"),
+  Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain")
 )
-Universal/mappings ++= NativePackagerHelper.contentOf((js2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/js2cpg/$name"
-}
 
-lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg")).enablePlugins(JavaAppPackaging).settings(
-    libraryDependencies += "io.joern" %% "javasrc2cpg" % Versions.javasrc2cpg,
-    Compile/mainClass := Some("io.joern.javasrc2cpg.Main"),
-)
-Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value).map {
-  case (file, name) => (file, s"frontends/javasrc2cpg/$name")
-}
-
-lazy val jimple2cpg = project.in(file("frontends/jimple2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies ++= Seq(
-    "io.joern" %% "jimple2cpg" % Versions.jimple2cpg,
-    "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3",
-  ),
-  Compile/mainClass := Some("io.joern.jimple2cpg.Main"),
-)
-Universal/mappings ++= NativePackagerHelper.contentOf((jimple2cpg/stage).value).map {
-  case (file, name) => (file, s"frontends/jimple2cpg/$name")
-}
-
-lazy val downloadFuzzyPreprocessor = taskKey[Option[File]]("Download the FuzzyC2CPG preprocessor")
-downloadFuzzyPreprocessor := {
-  val log = streams.value.log
-  val ppFilename = "fuzzyppcli.zip"
-  val ppUrl = new URL(
-    s"https://github.com/ShiftLeftSecurity/codepropertygraph/releases/download/v${Versions.cpg}/$ppFilename")
-  val ppOutputDir = file("fuzzyppcli")
-
-  log.info(s"trying to download fuzzypp from $ppUrl")
-  try {
-    IO.unzipURL(ppUrl, ppOutputDir)
-    ppOutputDir.listFiles().map(_.setExecutable(true))
-    Some(ppOutputDir)
-  } catch {
-    case ex: Exception =>
-      log.warn(s"unable to download fuzzypp from $ppUrl - if you are using a local release you can ignore this, but note that you won't be able to use fuzzypp.")
-      log.trace(ex)
-      None
-  }
-}
-
-Universal/mappings ++= downloadFuzzyPreprocessor.value.map { fuzzyppdir =>
-  NativePackagerHelper.contentOf(fuzzyppdir).map {
-    case (binary, name) => binary -> s"/bin/$name"
-  }
-}.getOrElse(Nil)
-
+Universal/mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg/stage).value)
+Universal/mappings ++= frontendMappings("c2cpg", (Projects.c2cpg/stage).value)
+Universal/mappings ++= frontendMappings("fuzzyc2cpg", (fuzzyc2cpg/stage).value)
+Universal/mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg/stage).value)
+Universal/mappings ++= frontendMappings("js2cpg", (js2cpg/stage).value)
+Universal/mappings ++= frontendMappings("jimple2cpg", (jimple2cpg/stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
