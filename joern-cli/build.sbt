@@ -28,39 +28,29 @@ topLevelDirectory := Some(packageName.value)
 
 Compile/packageDoc/mappings := Seq()
 
+def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, String)] = {
+  NativePackagerHelper.contentOf(stagedProject).map {
+    case (file, name) => file -> s"frontends/$frontendName/$name"
+  }
+}
+
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
-Universal/mappings ++= NativePackagerHelper.contentOf((javasrc2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/javasrc2cpg/$name"
-}
-
-Universal/mappings ++= NativePackagerHelper.contentOf((Projects.c2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/c2cpg/$name"
-}
-
+lazy val jimple2cpg = project.in(file("frontends/jimple2cpg"))
 lazy val fuzzyc2cpg = project.in(file("frontends/fuzzyc2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg,
-  Compile/mainClass := Some("io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg"),
+  Compile/mainClass := Some("io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg")
 )
-Universal/mappings ++= NativePackagerHelper.contentOf((fuzzyc2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/fuzzyc2cpg/$name"
-}
-
-Universal/mappings ++= NativePackagerHelper.contentOf((Projects.ghidra2cpg/stage).value).map {
-  case (file, name) => (file, s"frontends/ghidra2cpg/$name")
-}
-
 lazy val js2cpg = project.in(file("frontends/js2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
-  Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain"),
+  Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain")
 )
-Universal/mappings ++= NativePackagerHelper.contentOf((js2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/js2cpg/$name"
-}
 
-lazy val jimple2cpg = project.in(file("frontends/jimple2cpg"))
-Universal/mappings ++= NativePackagerHelper.contentOf((jimple2cpg/stage).value).map {
-  case (file, name) => file -> s"frontends/jimple2cpg/$name"
-}
+Universal/mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg/stage).value)
+Universal/mappings ++= frontendMappings("c2cpg", (Projects.c2cpg/stage).value)
+Universal/mappings ++= frontendMappings("fuzzyc2cpg", (fuzzyc2cpg/stage).value)
+Universal/mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg/stage).value)
+Universal/mappings ++= frontendMappings("js2cpg", (js2cpg/stage).value)
+Universal/mappings ++= frontendMappings("jimple2cpg", (jimple2cpg/stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
