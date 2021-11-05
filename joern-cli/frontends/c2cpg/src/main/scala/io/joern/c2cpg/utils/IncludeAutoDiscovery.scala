@@ -13,6 +13,9 @@ object IncludeAutoDiscovery {
   private val CPP_INCLUDE_COMMAND = "gcc -xc++ -E -v /dev/null -o /dev/null"
   private val C_INCLUDE_COMMAND = "gcc -xc -E -v /dev/null -o /dev/null"
 
+  // Only discover them once
+  private var systemIncludePaths: Set[Path] = Set.empty
+
   private def extractPaths(output: Seq[String]): Set[Path] = {
     val startIndex = output.indexWhere(_.contains("#include")) + 2
     val endIndex = output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
@@ -33,15 +36,19 @@ object IncludeAutoDiscovery {
     }
   }
 
-  def discoverIncludePaths(config: Config): Set[Path] =
-    if (config.includePathsAutoDiscovery) {
+  def discoverIncludePaths(config: Config): Set[Path] = {
+    if (config.includePathsAutoDiscovery && systemIncludePaths.nonEmpty) {
+      systemIncludePaths
+    } else if (config.includePathsAutoDiscovery && systemIncludePaths.isEmpty) {
       val includePaths = discoverPaths(C_INCLUDE_COMMAND) ++ discoverPaths(CPP_INCLUDE_COMMAND)
       logger.info(
         "Using the following system include paths:" + includePaths
           .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator()))
+      systemIncludePaths = includePaths
       includePaths
     } else {
       Set.empty
     }
+  }
 
 }

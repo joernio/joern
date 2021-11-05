@@ -1,7 +1,10 @@
 package io.joern.c2cpg.passes
 
+import better.files.File
+import io.joern.c2cpg.C2Cpg.Config
 import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   HasFilename,
@@ -21,9 +24,9 @@ import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.x2cpg.Ast
 import overflowdb.traversal.Traversal
 
-import java.nio.file.Path
+class HeaderContentLinkerPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
-class HeaderContentLinkerPass(cpg: Cpg, projectPath: String, systemIncludePaths: Set[Path]) extends CpgPass(cpg) {
+  private val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
 
   private def setExternal(node: HasFilename, diffGraph: DiffGraph.Builder): Unit = {
     if (node.isInstanceOf[HasIsExternal] && systemIncludePaths.exists(p => node.filename.startsWith(p.toString))) {
@@ -36,7 +39,7 @@ class HeaderContentLinkerPass(cpg: Cpg, projectPath: String, systemIncludePaths:
       Iterator.empty
     } else {
       val dstGraph = DiffGraph.newBuilder
-      val absolutePath = new java.io.File(projectPath).toPath.toAbsolutePath.normalize().toString
+      val absolutePath = File(config.inputPaths.head).path.toAbsolutePath.normalize().toString
       val filename = s"$absolutePath:<includes>"
       val globalName = NamespaceTraversal.globalNamespaceName
 

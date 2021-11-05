@@ -26,18 +26,16 @@ object CdtParser {
 
 }
 
-class CdtParser(private val parseConfig: ParserConfig, private val headerFileFinder: HeaderFileFinder)
+class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
     extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
   import CdtParser._
 
   private val definedSymbols: util.Map[String, String] = parseConfig.definedSymbols.asJava
-
   private val includePaths: Set[String] = parseConfig.includePaths.map(_.toString)
   private val scannerInfo: ScannerInfo = new ScannerInfo(definedSymbols, includePaths.toArray)
   private val log: DefaultLogService = new DefaultLogService
-
   // enables parsing of code behind disabled preprocessor defines:
   private val opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
 

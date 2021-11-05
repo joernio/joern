@@ -101,7 +101,7 @@ class AstCreator(val filename: String,
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val absolutePath = new java.io.File(iASTTranslationUnit.getFilePath).toPath.toAbsolutePath.normalize().toString
+    val absolutePath = better.files.File(iASTTranslationUnit.getFilePath).path.toAbsolutePath.normalize().toString
     val name = NamespaceTraversal.globalNamespaceName
     val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
     val namespaceBlock = NewNamespaceBlock()
