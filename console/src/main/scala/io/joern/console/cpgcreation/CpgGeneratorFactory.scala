@@ -29,11 +29,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     Option(language)
       .filter(languageIsKnown)
       .flatMap { lang =>
-        cpgGeneratorForLanguage(
-          lang,
-          config.frontend,
-          config.install.rootPath.path,
-          args = Nil)
+        cpgGeneratorForLanguage(lang, config.frontend, config.install.rootPath.path, args = Nil)
       }
   }
 
