@@ -21,12 +21,10 @@ class FileTests extends JimpleCodeToCpgFixture {
     cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
   }
 
-  "should contain exactly two non-placeholder file with absolute path in `name`" in {
-    val List(u, v) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    u.name should startWith(JFile.separator)
-    u.hash.isDefined shouldBe false
-    v.name should startWith(JFile.separator)
-    v.hash.isDefined shouldBe false
+  "should contain exactly one non-placeholder file with absolute path in `name`" in {
+    val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
+    x.name should startWith(JFile.separator)
+    x.hash.isDefined shouldBe false
   }
 
   "should allow traversing from file to its namespace blocks" in {
