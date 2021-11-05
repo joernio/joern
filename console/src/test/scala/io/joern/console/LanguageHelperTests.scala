@@ -3,13 +3,12 @@ package io.joern.console
 import better.files.Dsl._
 import better.files._
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.console.cpgcreation.LlvmCpgGenerator
+import io.joern.console.cpgcreation.{guessLanguage, LlvmCpgGenerator}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class LanguageHelperTests extends AnyWordSpec with Matchers {
 
-  import io.joern.console.cpgcreation.guessLanguage
 
   "LanguageHelper.guessLanguage" should {
 
@@ -27,37 +26,62 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       guessLanguage("foo.go") shouldBe Some(Languages.GOLANG)
     }
 
+    "guess `JavaSrc` for a directory containing `.java`" in {
+      File.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "ServiceIdentifierComposerVisitorBasedStrategy.java")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASRC)
+      }
+    }
+
     "guess `Go` for a directory containing `Gopkg.lock`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "Gopkg.lock")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.GOLANG)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "Gopkg.lock")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.GOLANG)
       }
     }
 
-    "guess `Go` for a directory containing `Gopkg.toml` its root" in {
+    "guess `Go` for a directory containing `Gopkg.toml`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "Gopkg.toml")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.GOLANG)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "Gopkg.toml")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.GOLANG)
       }
     }
 
-    "guess `Javascript` for a directory containing `package.json` in its root" in {
+    "guess `Javascript` for a directory containing `package.json`" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "package.json")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.JAVASCRIPT)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "package.json")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASCRIPT)
       }
     }
 
-    "guess `C` for a directory containing .ll (LLVM) file in its root" in {
+    "guess `C` for a directory containing .ll (LLVM) file" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        touch(tmpDir / "foobar.ll")
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.LLVM)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "foobar.ll")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.LLVM)
       }
     }
 
-    "guess `C` for a directory that does not contain any special file" in {
+    "guess the language with the largest number of files" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        guessLanguage(tmpDir.toString) shouldBe Some(Languages.C)
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "source.c")
+        touch(subdir / "source.java")
+        touch(subdir / "source.py")
+        touch(subdir / "source.js")
+        touch(subdir / "package.json") // also counts towards javascript
+        touch(subdir / "source.py")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASCRIPT)
+      }
+    }
+
+    "not find anything for an empty directory" in {
+      File.usingTemporaryDirectory("oculartests") { tmpDir =>
+        guessLanguage(tmpDir.pathAsString) shouldBe None
       }
     }
 
