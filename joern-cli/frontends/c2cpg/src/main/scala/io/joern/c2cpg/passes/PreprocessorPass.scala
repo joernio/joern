@@ -15,6 +15,9 @@ import scala.collection.parallel.immutable.ParIterable
 
 class PreprocessorPass(config: Config) {
 
+  private val parserConfig: ParserConfig = ParserConfig.fromConfig(config)
+  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
+
   def run(): ParIterable[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).par.flatMap(runOnPart)
 
@@ -27,7 +30,7 @@ class PreprocessorPass(config: Config) {
   }
 
   private def runOnPart(filename: String): Iterable[String] =
-    new CdtParser(ParserConfig.fromConfig(config), new HeaderFileFinder(config.inputPaths))
+    new CdtParser(parserConfig, headerFileFinder)
       .preprocessorStatements(Paths.get(filename))
       .flatMap(preprocessorStatement2String)
       .toSet

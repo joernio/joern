@@ -22,6 +22,8 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKe
     extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
   private val global: Global = new Global()
+  private val parserConfig: ParserConfig = ParserConfig.fromConfig(config)
+  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
@@ -41,7 +43,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKe
   }
 
   override def runOnPart(diffGraph: DiffGraph.Builder, filename: String): Unit =
-    new CdtParser(ParserConfig.fromConfig(config), new HeaderFileFinder(config.inputPaths))
+    new CdtParser(parserConfig, headerFileFinder)
       .parse(Paths.get(filename))
       .foreach { parserResult =>
         val localDiff = DiffGraph.newBuilder
