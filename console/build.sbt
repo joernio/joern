@@ -10,6 +10,8 @@ val CirceVersion = "0.12.2"
 val AmmoniteVersion = "2.4.0"
 val ZeroturnaroundVersion = "1.13"
 
+dependsOn(Projects.fuzzyc2cpg % Test)
+
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
@@ -24,7 +26,6 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "ammonite" % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi" %% "cask" % CaskVersion,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
-  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
 )
 
 Test / packageBin / publishArtifact := true

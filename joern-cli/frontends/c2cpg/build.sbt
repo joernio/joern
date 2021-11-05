@@ -1,8 +1,9 @@
 name := "c2cpg"
 
+dependsOn(Projects.dataflowengineoss % Test)
+
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "semanticcpg"                % Versions.cpg,
-  "io.shiftleft"              %% "dataflowengineoss"          % Versions.cpg % Test,
   "org.scala-lang.modules"    %% "scala-parallel-collections" % "1.0.3",
   "com.diffplug.spotless"     % "spotless-eclipse-cdt"        % "10.3.0",
   "org.slf4j"                 % "slf4j-api"                   % "1.7.30",
