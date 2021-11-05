@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes
 
+import better.files.File
 import io.joern.c2cpg.C2Cpg.Config
 import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.FileDefaults
@@ -23,8 +24,6 @@ import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.x2cpg.Ast
 import overflowdb.traversal.Traversal
 
-import scala.tools.nsc.io.File
-
 class HeaderContentLinkerPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
   private val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
@@ -40,7 +39,7 @@ class HeaderContentLinkerPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
       Iterator.empty
     } else {
       val dstGraph = DiffGraph.newBuilder
-      val absolutePath = File(config.inputPaths.head).toAbsolute.normalize.toString
+      val absolutePath = File(config.inputPaths.head).path.toAbsolutePath.normalize().toString
       val filename = s"$absolutePath:<includes>"
       val globalName = NamespaceTraversal.globalNamespaceName
 
