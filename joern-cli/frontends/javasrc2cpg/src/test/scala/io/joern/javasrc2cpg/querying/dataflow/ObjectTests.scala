@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
-import io.shiftleft.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language._
 
 class ObjectTests extends JavaDataflowFixture {
 

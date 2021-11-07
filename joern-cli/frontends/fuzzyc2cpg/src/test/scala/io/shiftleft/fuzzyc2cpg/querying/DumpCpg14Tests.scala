@@ -1,7 +1,7 @@
 package io.shiftleft.fuzzyc2cpg.querying
 
 import better.files.File
-import io.shiftleft.dataflowengineoss.layers.dataflows.{Cpg14DumpOptions, DumpCpg14}
+import io.joern.dataflowengineoss.layers.dataflows.{Cpg14DumpOptions, DumpCpg14}
 import io.shiftleft.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 

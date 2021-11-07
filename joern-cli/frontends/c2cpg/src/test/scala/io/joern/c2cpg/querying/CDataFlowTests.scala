@@ -2,7 +2,7 @@ package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 

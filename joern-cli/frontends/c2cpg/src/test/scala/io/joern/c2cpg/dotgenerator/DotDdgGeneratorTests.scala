@@ -1,8 +1,8 @@
 package io.joern.c2cpg.dotgenerator
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.dataflowengineoss.language._
-import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._
 
 class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {

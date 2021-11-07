@@ -9,8 +9,8 @@ import scala.jdk.CollectionConverters._
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
 object JoernWorkspaceLoader {
   val semanticsFilename = "semantics"

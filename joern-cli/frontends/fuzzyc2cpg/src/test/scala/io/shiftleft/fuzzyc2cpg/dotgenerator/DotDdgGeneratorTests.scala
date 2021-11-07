@@ -1,6 +1,6 @@
 package io.shiftleft.fuzzyc2cpg.dotgenerator
 
-import io.shiftleft.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language._
 import io.shiftleft.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 

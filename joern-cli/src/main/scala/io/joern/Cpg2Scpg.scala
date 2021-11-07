@@ -1,6 +1,6 @@
 package io.joern
 
-import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.codepropertygraph.Cpg
 
