@@ -9,7 +9,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class LanguageHelperTests extends AnyWordSpec with Matchers {
 
-
   "LanguageHelper.guessLanguage" should {
 
     "guess `Java` for .jars/wars/ears" in {

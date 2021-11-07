@@ -44,8 +44,8 @@ class AstVisitor(driver: AntlrCModuleParserDriver, astParentNode: NewNamespaceBl
 
   def processItem[T <: io.joern.fuzzyc2cpg.ast.AstNode](
       node: T,
-      builderStack: java.util.Stack[
-        io.joern.fuzzyc2cpg.ast.AstNodeBuilder[_ <: io.joern.fuzzyc2cpg.ast.AstNode]]): Unit = {
+      builderStack: java.util.Stack[io.joern.fuzzyc2cpg.ast.AstNodeBuilder[_ <: io.joern.fuzzyc2cpg.ast.AstNode]])
+    : Unit = {
     node.accept(this)
   }
 
