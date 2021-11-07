@@ -61,7 +61,7 @@ Test / fork := true
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
 
 enablePlugins(Antlr4Plugin)
-Antlr4 / antlr4PackageName := Some("io.shiftleft.fuzzyc2cpg")
+Antlr4 / antlr4PackageName := Some("io.joern.fuzzyc2cpg")
 Antlr4 / antlr4Version := Versions.antlr
 Antlr4 / javaSource := (Compile / sourceManaged).value
 
