@@ -5,7 +5,7 @@ import better.files.File
 import io.joern.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, InstallConfig}
-import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
+import io.joern.fuzzyc2cpg.FuzzyC2Cpg
 
 import java.nio.file.Path
 
