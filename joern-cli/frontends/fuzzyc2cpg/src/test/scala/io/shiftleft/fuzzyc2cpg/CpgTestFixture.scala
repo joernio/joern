@@ -15,7 +15,7 @@ import overflowdb.traversal.TraversalSource
 case class CpgTestFixture(projectName: String) {
 
   val cpg: Cpg = Cpg.emptyCpg
-  val dirName = ProjectRoot.relativise(s"fuzzyc2cpg/src/test/resources/testcode/$projectName")
+  val dirName = ProjectRoot.relativise(s"joern-cli/frontends/fuzzyc2cpg/src/test/resources/testcode/$projectName")
   val keyPoolFile1 = new IntervalKeyPool(1001, 2000)
   val filenames = SourceFiles.determine(Set(dirName), Set(".c"))
 
