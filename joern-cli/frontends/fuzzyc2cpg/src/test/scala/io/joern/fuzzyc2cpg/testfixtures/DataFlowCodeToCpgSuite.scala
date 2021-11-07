@@ -17,7 +17,7 @@ import scala.util.Try
 
 class DataFlowCodeToCpgSuite extends FuzzyCCodeToCpgSuite {
 
-  val semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  var semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
   var semantics: Semantics = _
   implicit var context: EngineContext = _
 
