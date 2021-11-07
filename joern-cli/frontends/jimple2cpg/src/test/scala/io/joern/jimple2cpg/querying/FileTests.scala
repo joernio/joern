@@ -15,18 +15,16 @@ class FileTests extends JimpleCodeToCpgFixture {
       | class Foo { int bar() { return 1; } }
       |""".stripMargin
 
-  "should contain three file nodes in total with correct order" in {
-    cpg.file.order.l shouldBe List(0, 0, 0)
+  "should contain two file nodes in total with correct order" in {
+    cpg.file.order.l shouldBe List(0, 0)
     cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
-    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 2
+    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
   }
 
-  "should contain exactly two non-placeholder file with absolute path in `name`" in {
-    val List(u, v) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    u.name should startWith(JFile.separator)
-    u.hash.isDefined shouldBe false
-    v.name should startWith(JFile.separator)
-    v.hash.isDefined shouldBe false
+  "should contain exactly one non-placeholder file with absolute path in `name`" in {
+    val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
+    x.name should startWith(JFile.separator)
+    x.hash.isDefined shouldBe false
   }
 
   "should allow traversing from file to its namespace blocks" in {
