@@ -1,8 +1,8 @@
 package io.joern.suites
 
 import io.joern.console.DefaultArgumentProvider
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
 import scala.reflect.runtime.universe._
 

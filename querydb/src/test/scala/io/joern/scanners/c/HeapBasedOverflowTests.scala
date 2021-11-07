@@ -4,7 +4,7 @@ import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.QueryBundle
 import io.joern.console.scan._
-import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 
 class HeapBasedOverflowTests extends CQueryTestSuite {
 
