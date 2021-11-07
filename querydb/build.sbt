@@ -7,12 +7,8 @@ dependsOn(
   Projects.ghidra2cpg,
   Projects.ghidra2cpg % "test->test",
   Projects.c2cpg % "test->test",
-  // Projects.
-
+  Projects.fuzzyc2cpg % "test->test"
 )
-  // "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
-  // "io.shiftleft" %% "fuzzyc2cpg-tests" % Versions.cpg % Test classifier "tests",
-  // "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg % Test,
 
 libraryDependencies ++= Seq(
   "com.lihaoyi" %% "sourcecode" % "0.1.9",
