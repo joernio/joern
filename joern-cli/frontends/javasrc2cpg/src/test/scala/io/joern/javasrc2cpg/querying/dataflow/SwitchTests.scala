@@ -48,6 +48,6 @@ class SwitchTests extends JavaDataflowFixture {
 
   it should "find a path if the sink is in a switch" in {
     val (source, sink) = getConstSourceSink("test2")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 }

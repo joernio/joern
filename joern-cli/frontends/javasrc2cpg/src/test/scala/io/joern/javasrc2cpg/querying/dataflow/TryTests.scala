@@ -125,17 +125,17 @@ class TryTests extends JavaDataflowFixture {
 
   it should "find a path if the sink is in a `TRY`" in {
     val (source, sink) = getConstSourceSink("test1")
-    sink.reachableBy(source).size shouldBe 3
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path if the sink is in a `CATCH`" in {
     val (source, sink) = getConstSourceSink("test2")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path if the sink is in a `FINALLY`" in {
     val (source, sink) = getConstSourceSink("test3")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   // TODO: This is a very optimistic test. We expect the path to be missing for now.
