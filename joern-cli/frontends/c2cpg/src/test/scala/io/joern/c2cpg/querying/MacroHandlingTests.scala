@@ -3,7 +3,7 @@ package io.joern.c2cpg.querying
 import io.joern.c2cpg.testfixtures.{CCodeToCpgSuite, DataFlowCodeToCpgSuite}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 
 class MacroHandlingTests1 extends CCodeToCpgSuite {

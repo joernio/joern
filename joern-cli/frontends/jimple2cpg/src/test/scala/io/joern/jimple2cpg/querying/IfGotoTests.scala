@@ -38,7 +38,13 @@ class IfGotoTests extends JimpleCodeToCpgFixture {
   }
 
   "should contain 4 branching nodes at conditional calls" in {
-    cpg.all.collect { case x: Call => x }.filter { x => x.cfgOut.size > 1 }.code.toSet shouldBe Set(
+    cpg.all
+      .collect { case x: Call => x }
+      .filter { x =>
+        x.cfgOut.size > 1
+      }
+      .code
+      .toSet shouldBe Set(
       "i < 11",
       "$stack6 >= x",
       "x <= y",

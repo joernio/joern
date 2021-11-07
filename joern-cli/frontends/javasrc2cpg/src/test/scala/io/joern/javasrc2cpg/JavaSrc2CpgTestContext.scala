@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
 
 import java.io.{File, PrintWriter}

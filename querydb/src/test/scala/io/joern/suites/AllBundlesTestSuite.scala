@@ -3,8 +3,8 @@ package io.joern.suites
 import io.joern.console.QueryDatabase
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 import org.scalatest.matchers.should.Matchers._

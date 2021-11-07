@@ -7,10 +7,10 @@ import io.shiftleft.semanticcpg.testfixtures.{BinToCpgFixture, LanguageFrontend}
 import io.shiftleft.utils.ProjectRoot
 import org.apache.commons.io.FileUtils
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.dataflowengineoss.language._
-import io.shiftleft.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 
 import java.nio.file.Files

@@ -2,9 +2,9 @@ package io.joern
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.dataflowengineoss.language._
-import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.console.JoernWorkspaceLoader
 import overflowdb.traversal.Traversal
 

@@ -14,7 +14,7 @@ object Predefined {
         |import io.shiftleft.codepropertygraph.generated._
         |import io.shiftleft.codepropertygraph.generated.nodes._
         |import io.shiftleft.codepropertygraph.generated.edges._
-        |import io.shiftleft.dataflowengineoss.language.{`package` => _, _}
+        |import io.joern.dataflowengineoss.language.{`package` => _, _}
         |import io.shiftleft.semanticcpg.language.{`package` => _, _}
         |import overflowdb.{`package` => _, _}
         |import overflowdb.traversal.{`package` => _, help => _, _}

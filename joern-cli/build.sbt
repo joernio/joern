@@ -3,14 +3,13 @@ name := "joern-cli"
 dependsOn(
   Projects.console,
   Projects.console % "test->test",
+  Projects.fuzzyc2cpg, // only needed for joern-parse - TODO MP consider to remove?
+  Projects.dataflowengineoss
 )
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "io.shiftleft" %% "dataflowengineoss" % Versions.cpg,
-  "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg, // only needed for joern-parse - TODO MP consider to remove?
-
   "com.lihaoyi" %% "requests" % "0.6.5",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
@@ -36,10 +35,7 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
 
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
 lazy val jimple2cpg = project.in(file("frontends/jimple2cpg"))
-lazy val fuzzyc2cpg = project.in(file("frontends/fuzzyc2cpg")).enablePlugins(JavaAppPackaging).settings(
-  libraryDependencies += "io.shiftleft" %% "fuzzyc2cpg" % Versions.cpg,
-  Compile/mainClass := Some("io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg")
-)
+lazy val fuzzyc2cpg = project.in(file("frontends/fuzzyc2cpg"))
 lazy val js2cpg = project.in(file("frontends/js2cpg")).enablePlugins(JavaAppPackaging).settings(
   libraryDependencies += "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
   Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain")

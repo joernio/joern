@@ -6,9 +6,7 @@ project/project
 project/target
 target
 .idea/
-fuzzyppcli/
 tests/smoke-test-repos
-fuzzyc2cpg
 joern-cli.zip
 joern-server.zip
 cpg.bin.zip

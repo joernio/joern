@@ -2,7 +2,7 @@ package io.joern.c2cpg.querying
 
 import better.files.File
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.dataflowengineoss.layers.dataflows.{DdgDumpOptions, DumpDdg}
+import io.joern.dataflowengineoss.layers.dataflows.{DdgDumpOptions, DumpDdg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DumpDdgTests extends DataFlowCodeToCpgSuite {

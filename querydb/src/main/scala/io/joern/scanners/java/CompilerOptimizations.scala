@@ -7,7 +7,7 @@ import io.joern.console._
 import io.shiftleft.console._
 import io.shiftleft.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language.operatorextension.opnodes.Assignment
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import overflowdb.traversal.Traversal
 
 object CompilerOptimizations extends QueryBundle {

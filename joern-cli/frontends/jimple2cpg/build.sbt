@@ -6,10 +6,11 @@ val sootVersion      = "4.2.1"
 val slf4jVersion     = "1.7.32"
 val scalatestVersion = "3.2.9"
 
+dependsOn(Projects.dataflowengineoss)
+
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft"  %% "semanticcpg"       % Versions.cpg,
-  "io.shiftleft"  %% "dataflowengineoss" % Versions.cpg,
   "org.soot-oss"   % "soot"              % sootVersion,
   "org.slf4j"      % "slf4j-api"         % slf4jVersion,
   "org.slf4j"      % "slf4j-simple"      % slf4jVersion,

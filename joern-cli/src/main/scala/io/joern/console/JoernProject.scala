@@ -4,8 +4,8 @@ import java.nio.file.Path
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.console.workspacehandling.{Project, ProjectFile}
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 
 class JoernProject(projectFile: ProjectFile,
                    path: Path,

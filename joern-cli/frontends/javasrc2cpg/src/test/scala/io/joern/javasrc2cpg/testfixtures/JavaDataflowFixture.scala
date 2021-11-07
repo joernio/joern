@@ -3,8 +3,8 @@ package io.joern.javasrc2cpg.testfixtures
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Expression, FieldIdentifier, Identifier, Literal}
-import io.shiftleft.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.flatspec.AnyFlatSpec

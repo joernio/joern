@@ -2,7 +2,7 @@ package io.joern
 
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.fuzzyc2cpg.FuzzyC2Cpg
+import io.joern.fuzzyc2cpg.FuzzyC2Cpg
 
 trait AbstractJoernCliTest {
 

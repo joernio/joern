@@ -3,11 +3,11 @@ package io.joern.scanners.c
 import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.scan._
-import io.shiftleft.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.iterableToTraversal
-import io.shiftleft.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
 class UseAfterFreeReturnTests extends CQueryTestSuite {
   override def queryBundle = UseAfterFree
