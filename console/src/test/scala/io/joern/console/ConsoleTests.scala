@@ -20,7 +20,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     "allow importing code with specific module" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode.c(codeDir.toString)
+      console.importCode.oldc(codeDir.toString)
       console.workspace.numberOfProjects shouldBe 1
     }
 

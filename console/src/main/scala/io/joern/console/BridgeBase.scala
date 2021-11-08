@@ -199,8 +199,19 @@ trait BridgeBase {
     val language = config.language.getOrElse(
       io.joern.console.cpgcreation
         .guessLanguage(src)
-        .map(_.toLowerCase)
-        .getOrElse("c"))
+        .map { x =>
+          val lang = x.toLowerCase
+          // TODO we should eventually rename the languages in the
+          // spec to `OLDC` and `C` at which point the match below
+          // is no longer required.
+          lang match {
+            case "newc" => "c"
+            case "c"    => "oldc"
+            case _      => lang
+          }
+        }
+        .getOrElse("c")
+    )
     val storeCode = if (config.store) { "save" } else { "" }
     val runDataflow = if (productName == "ocular") { "run.dataflow" } else { "run.ossdataflow" }
     val code = s"""
