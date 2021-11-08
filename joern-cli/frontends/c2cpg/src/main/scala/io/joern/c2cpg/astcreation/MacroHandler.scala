@@ -10,11 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode
 }
 import io.shiftleft.x2cpg.Ast
-import org.eclipse.cdt.core.dom.ast.{
-  IASTMacroExpansionLocation,
-  IASTNode,
-  IASTPreprocessorMacroDefinition
-}
+import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
 import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 
 import scala.annotation.nowarn
