@@ -56,7 +56,10 @@ scalacOptions ++= Seq(
   // "-Ywarn-value-discard"               // Warn when non-Unit expression results are unused.
 )
 
-compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
+compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g",
+  "--release", "8",
+)
+
 Test / fork := true
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
 
