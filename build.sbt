@@ -3,7 +3,7 @@ ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.5"
 // don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
 
-val cpgVersion = "1.3.416"
+val cpgVersion = "1.3.420+0-e892aad2+20211108-1341"
 val js2cpgVersion = "0.2.24"
 
 ThisBuild /Test /fork := true

@@ -41,6 +41,7 @@ class MacroHandlingTests1 extends CCodeToCpgSuite {
     m.fullName.endsWith("A_MACRO:2") shouldBe true
     m.filename.endsWith(".c") shouldBe true
     m.lineNumber shouldBe Some(2)
+    m.lineNumberEnd shouldBe Some(2)
     val List(param1, param2) = m.parameter.l.sortBy(_.order)
     param1.name shouldBe "p1"
     param2.name shouldBe "p2"
