@@ -77,7 +77,7 @@ package object cpgcreation {
       case f if f.endsWith(".php")                       => Some(Languages.PHP)
       case f if f.endsWith(".py")                        => Some(Languages.FUZZY_TEST_LANG)
       case f if f.endsWith(".bc") || f.endsWith(".ll")   => Some(Languages.LLVM)
-      case f if f.endsWith(".c") || f.endsWith(".h")     => Some(Languages.C)
+      case f if f.endsWith(".c") || f.endsWith(".h")     => Some(Languages.NEWC)
       case _                                             => None
     }
   }

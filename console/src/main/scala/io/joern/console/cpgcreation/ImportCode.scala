@@ -47,8 +47,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  def c: CFrontend = new CFrontend()
-  def newc: CFrontend = new CFrontend(Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
+  def oldc: CFrontend = new CFrontend()
+  def c: CFrontend = new CFrontend(Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
   def llvm: Frontend = new Frontend(Languages.LLVM, "LLVM Bitcode Frontend")
   def java: Frontend = new Frontend(Languages.JAVA, "Java/Dalvik Bytecode Frontend")
   def javasrc: Frontend = new Frontend(Languages.JAVASRC, "Java Source Frontend")
@@ -96,7 +96,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   }
 
   private def allFrontends: List[Frontend] = List(
-    c,
+    oldc,
     csharp,
     golang,
     java,
