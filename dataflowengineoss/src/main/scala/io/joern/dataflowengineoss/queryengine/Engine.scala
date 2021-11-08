@@ -45,10 +45,11 @@ class Engine(context: EngineContext) {
       logger.warn("Attempting to determine flows to empty list of sinks.")
     }
     val sourcesSet = sources.toSet
-    val table = new ResultTable
-    val tasks = sinks.map(sink => ReachableByTask(sink, sourcesSet, table))
+    val tasks = sinks.map(sink => ReachableByTask(sink, sourcesSet, new ResultTable))
     val results = solveTasks(tasks, sourcesSet)
-    (results, table)
+    // TODO: assemble result table from tables of all tasks
+    // and return it.
+    (results, new ResultTable)
   }
 
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
