@@ -6,18 +6,6 @@ ThisBuild / scalaVersion := "2.13.5"
 val cpgVersion = "1.3.416"
 val js2cpgVersion = "0.2.24"
 
-ThisBuild /Test /fork := true
-
-ThisBuild / resolvers ++= Seq(
-  Resolver.mavenLocal,
-  Resolver.jcenterRepo,
-  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
-)
-
-ThisBuild/scalacOptions ++= Seq(
-  "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
-)
-
 lazy val joerncli = Projects.joerncli
 lazy val querydb = Projects.querydb
 lazy val console = Projects.console
@@ -25,6 +13,14 @@ lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val fuzzyc2cpg = Projects.fuzzyc2cpg
 lazy val c2cpg = Projects.c2cpg
 lazy val ghidra2cpg = Projects.ghidra2cpg
+
+ThisBuild / compile / javacOptions ++= Seq(
+  "-g", //debug symbols
+  "-Xlint")
+
+ThisBuild/scalacOptions ++= Seq(
+  "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
+)
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
@@ -37,6 +33,14 @@ createDistribution := {
   println(s"created distribution - resulting files: $distributionFile")
   distributionFile
 }
+
+ThisBuild / resolvers ++= Seq(
+  Resolver.mavenLocal,
+  Resolver.jcenterRepo,
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+)
+
+ThisBuild /Test /fork := true
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
