@@ -23,11 +23,7 @@ trait MacroHandler {
   /**
     * For the given node, determine if it is expanded from a macro, and if so,
     * create a Call node to represent the macro invocation and attach `ast`
-    * as its child. Also create a METHOD node to represent the macro if it has
-    * not been created as part of processing the current translation unit.
-    * Removal of duplicates that result from usage of the same macro in multiple
-    * compilation units is deferred to a pass that runs once all ASTs have been
-    * created.
+    * as its child.
     * */
   def asChildOfMacroCall(node: IASTNode, ast: Ast, order: Int): Ast = {
     val macroCallAst = extractMatchingMacro(node).map {
@@ -113,7 +109,8 @@ trait MacroHandler {
     * Create an AST that represents a macro expansion as a call.
     * The AST is rooted in a CALL node and contains sub trees
     * for arguments. These are also connected to the AST via
-    * ARGUMENT edges.
+    * ARGUMENT edges. We include line number information in the
+    * CALL node that is picked up by the MethodStubCreator.
     * */
   private def createMacroCallAst(ast: Ast,
                                  node: IASTNode,
@@ -123,21 +120,10 @@ trait MacroHandler {
     val name = macroDef.getName.toString
     val code = node.getRawSignature.replaceAll(";$", "")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
-    val fileLocation = macroDef.getFileLocation
-
-    val fullName = {
-      if (fileLocation != null) {
-        val lineNo = fileLocation.getStartingLineNumber
-        val fileName = fileLocation.getFileName
-        fileName + ":" + lineNo + ":" + name + ":" + argAsts.size
-      } else {
-        "<empty>:-1:" + name + ":" + argAsts.size
-      }
-    }
 
     val callNode = NewCall()
       .name(name)
-      .methodFullName(fullName)
+      .methodFullName(fullName(macroDef, argAsts))
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -159,6 +145,25 @@ trait MacroHandler {
       }
       .sortBy(_._1)
       .toBuffer
+  }
+
+  /**
+    * Create a full name field that encodes line information that can be picked
+    * up by the MethodStubCreator in order to create a METHOD node with the
+    * correct location information.
+    * */
+  private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
+    val name = macroDef.getName.toString
+    val fileLocation = macroDef.getFileLocation
+
+    if (fileLocation != null) {
+      val lineNo = fileLocation.getStartingLineNumber
+      val lineNoEnd = lineEnd(macroDef).getOrElse("-1")
+      val fileName = fileLocation.getFileName
+      fileName + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
+    } else {
+      "<empty>:-1:-1:" + name + ":" + argAsts.size
+    }
   }
 
   /** The CDT utility method is unfortunately in a class that is marked as deprecated, however,

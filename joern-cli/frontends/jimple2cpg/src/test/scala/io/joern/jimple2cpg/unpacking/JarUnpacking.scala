@@ -7,6 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.semanticcpg.language._
 
 import scala.reflect.io.File
 import scala.util.{Failure, Success, Try}
@@ -37,10 +38,10 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "should reflect the correct package order" in {
-    val List(foo) = cpg.typeDecl("Foo").l
+    val List(foo) = cpg.typeDecl.fullName("Foo").l
     foo.name shouldBe "Foo"
 
-    val List(bar) = cpg.typeDecl("pac.Bar").l
+    val List(bar) = cpg.typeDecl.fullName("pac.Bar").l
     bar.name shouldBe "Bar"
 
     cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()",
