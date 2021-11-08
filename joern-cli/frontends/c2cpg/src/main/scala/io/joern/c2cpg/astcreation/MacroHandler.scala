@@ -166,7 +166,7 @@ trait MacroHandler {
       val fileName = fileLocation.getFileName
       fileName + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
     } else {
-      "<empty>:-1:" + name + ":" + argAsts.size
+      "<empty>:-1:-1:" + name + ":" + argAsts.size
     }
   }
 
