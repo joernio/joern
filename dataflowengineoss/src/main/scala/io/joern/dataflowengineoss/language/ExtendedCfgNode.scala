@@ -67,7 +67,9 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       sourceTravs
         .flatMap(_.toList)
         .collect { case n: CfgNode => n }
+        .dedup
         .toList
+        .sortBy(_.id)
     val sinks = traversal.dedup.toList.sortBy(_.id)
     val engine = new Engine(context)
     val result = engine.backwards(sinks, sources)

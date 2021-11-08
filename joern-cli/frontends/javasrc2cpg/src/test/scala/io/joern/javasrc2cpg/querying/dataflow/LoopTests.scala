@@ -123,7 +123,7 @@ class LoopTests extends JavaDataflowFixture {
 
   it should "find a path if `MALICIOUS` is added in `FOR` update" in {
     val (source, sink) = getConstSourceSink("test3")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "not find a path if `MALICIOUS` is always reassigned before sink in loop" in {
@@ -133,14 +133,12 @@ class LoopTests extends JavaDataflowFixture {
 
   it should "find a path if `MALICIOUS` is assigned in `FOR` init" in {
     val (source, sink) = getConstSourceSink("test5")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path if sink is in a `DO` loop" in {
     val (source, sink) = getConstSourceSink("test6")
-    // There is a path from "MALICIOUS" to the java.io.PrintStream arg as well.
-    // TODO: Should the java.io.PrintStream arg exist, and should there be a path?
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path if sink is in `FOREACH` loop" in {
