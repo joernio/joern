@@ -18,7 +18,7 @@ trait AstForExpressionsCreator {
       case IASTBinaryExpression.op_divide           => Operators.division
       case IASTBinaryExpression.op_modulo           => Operators.modulo
       case IASTBinaryExpression.op_plus             => Operators.addition
-      case IASTBinaryExpression.op_minus            => Operators.minus
+      case IASTBinaryExpression.op_minus            => Operators.subtraction
       case IASTBinaryExpression.op_shiftLeft        => Operators.shiftLeft
       case IASTBinaryExpression.op_shiftRight       => Operators.arithmeticShiftRight
       case IASTBinaryExpression.op_lessThan         => Operators.lessThan

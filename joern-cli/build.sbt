@@ -3,7 +3,7 @@ name := "joern-cli"
 dependsOn(
   Projects.console,
   Projects.console % "test->test",
-  Projects.fuzzyc2cpg, // only needed for joern-parse - TODO MP consider to remove?
+  Projects.c2cpg,
   Projects.dataflowengineoss
 )
 

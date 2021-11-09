@@ -1,7 +1,5 @@
 package io.joern.console
 
-import io.joern.console.{Help, Run}
-
 object Predefined {
 
   /* ammonite tab completion is partly broken for scala > 2.12.8
