@@ -94,35 +94,36 @@ trait AstForTypesCreator {
   }
 
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, order: Int): Ast = {
-    val declTypeName = typeForDeclSpecifier(declaration.getDeclSpecifier)
+    val declTypeName = registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
     val name = declarator.getName.toString
     declaration match {
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
-        Ast(newTypeDecl(name, registerType(name), filename, alias = Some(registerType(declTypeName)), order = order))
+        Ast(newTypeDecl(name, registerType(name), filename, alias = Some(declTypeName), order = order))
       case d if parentIsClassDef(d) =>
         Ast(
           NewMember()
             .code(nodeSignature(declarator))
             .name(name)
-            .typeFullName(registerType(declTypeName))
+            .typeFullName(declTypeName)
             .order(order))
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        val tpe = typeFor(declarator)
+        val tpe = registerType(typeFor(declarator))
         val l = NewLocal()
           .code(name)
           .name(name)
-          .typeFullName(registerType(tpe))
+          .typeFullName(tpe)
           .order(order)
-        scope.addToScope(name, (l, fixQualifiedName(tpe)))
+        scope.addToScope(name, (l, tpe))
         Ast(l)
       case _ =>
+        val tpe = registerType(typeFor(declarator))
         val l = NewLocal()
           .code(name)
           .name(name)
-          .typeFullName(registerType(declTypeName))
+          .typeFullName(tpe)
           .order(order)
-        scope.addToScope(name, (l, fixQualifiedName(declTypeName)))
+        scope.addToScope(name, (l, tpe))
         Ast(l)
     }
 

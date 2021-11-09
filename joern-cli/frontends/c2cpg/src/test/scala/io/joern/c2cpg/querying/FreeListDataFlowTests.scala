@@ -7,27 +7,27 @@ import io.shiftleft.semanticcpg.language._
 class FreeListDataFlowTests extends DataFlowCodeToCpgSuite {
 
   override val code: String = """
-    |#include <stdlib.h>
     | struct node {
-    | int value;
-    | struct node *next;
+    |  int value;
+    |  struct node *next;
     | };
     |
     | void free_list(struct node *head) {
-    | struct node *q;
-    | for (struct node *p = head; p != NULL; p = q) {
+    |  struct node *q;
+    |  for (struct node *p = head; p != NULL; p = q) {
     |    q = p->next;
     |    free(p);
-    |    }
+    |  }
     | }
+    | 
     | int flow(int p0) {
-    |    int a = p0;
-    |    int b=a;
-    |    int c=0x31;
-    |    int z = b + c;
-    |    z++;
-    |    int x = z;
-    |    return x;
+    |  int a = p0;
+    |  int b=a;
+    |  int c=0x31;
+    |  int z = b + c;
+    |  z++;
+    |  int x = z;
+    |  return x;
     | }""".stripMargin
 
   "should identify all calls to `free`" in {

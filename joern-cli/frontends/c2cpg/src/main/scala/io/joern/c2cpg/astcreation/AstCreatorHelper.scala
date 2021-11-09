@@ -12,6 +12,8 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPASTQualifiedName, CPPFunction}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import scala.annotation.nowarn
+
 trait AstCreatorHelper {
 
   this: AstCreator =>
@@ -110,13 +112,23 @@ trait AstCreatorHelper {
     case t if t.contains("#")                      => Defines.anyTypeName
     case t if t.startsWith("{") && t.endsWith("}") => Defines.anyTypeName
     case t if t.startsWith("[") && t.endsWith("]") => "[]"
-    case t if t.contains("*")                      => "*"
     case t if t.contains(Defines.qualifiedNameSeparator) =>
       fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
-    case someType => someType.replace(" ", "")
+    case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
+    case t if t.contains("*")                    => t.replace(" ", "")
+    case someType                                => someType
   }
 
-  protected def typeFor(node: IASTNode): String = cleanType(ASTTypeUtil.getNodeType(node))
+  @nowarn
+  protected def typeFor(node: IASTNode): String = node match {
+    case _: IASTIdExpression =>
+      cleanType(ASTTypeUtil.getNodeType(node))
+    case _: IASTName =>
+      cleanType(ASTTypeUtil.getNodeType(node))
+    case _ =>
+      import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
+      cleanType(getNodeSignature(node))
+  }
 
   private def notHandledText(node: IASTNode): String =
     s"""Node '${node.getClass.getSimpleName}' not handled yet!

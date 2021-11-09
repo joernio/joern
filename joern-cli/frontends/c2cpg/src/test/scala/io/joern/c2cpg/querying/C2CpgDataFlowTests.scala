@@ -322,7 +322,8 @@ class C2CpgDataFlowTests10 extends DataFlowCodeToCpgSuite {
       |#include <stdio.h>
       |#include <stdlib.h>
       |#include <sys/types.h>
-      |#include <unistd.h>int
+      |#include <unistd.h>
+      |
       |void main()
       |{
       |    int a = getpid();
@@ -346,12 +347,12 @@ class C2CpgDataFlowTests10 extends DataFlowCodeToCpgSuite {
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe
         Set(
-          List(("getpid()", Some(8)),
-               ("a = getpid()", Some(8)),
-               ("a == 666", Some(9)),
-               ("a * 666", Some(11)),
-               ("a = a * 666", Some(11)),
-               ("return a;", Some(17))))
+          List(("getpid()", Some(9)),
+               ("a = getpid()", Some(9)),
+               ("a == 666", Some(10)),
+               ("a * 666", Some(12)),
+               ("a = a * 666", Some(12)),
+               ("return a;", Some(18))))
     }
   }
 

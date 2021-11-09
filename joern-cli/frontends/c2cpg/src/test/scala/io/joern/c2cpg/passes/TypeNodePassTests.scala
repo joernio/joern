@@ -22,13 +22,13 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with CpgTypeNodeFixtur
        |}""".stripMargin) { cpg =>
       cpg.local.l match {
         case List(test) =>
-          test.typeFullName shouldBe "char[1024]"
-          test.evalType.l shouldBe List("char[1024]")
+          test.typeFullName shouldBe "char[]"
+          test.evalType.l shouldBe List("char[]")
           test.typ.l match {
             case List(t: Type) =>
-              t.name shouldBe "char[1024]"
-              t.fullName shouldBe "char[1024]"
-              t.typeDeclFullName shouldBe "char[1024]"
+              t.name shouldBe "char[]"
+              t.fullName shouldBe "char[]"
+              t.typeDeclFullName shouldBe "char[]"
             case _ => fail()
           }
         case _ => fail()
