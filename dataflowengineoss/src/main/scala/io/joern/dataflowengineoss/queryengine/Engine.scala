@@ -37,7 +37,7 @@ class Engine(context: EngineContext) {
     * Returns the list of results along with the ResultTable, a cache of known
     * paths created during the analysis.
     * */
-  def backwards(sinks: List[CfgNode], sources: List[CfgNode]): (List[ReachableByResult], ResultTable) = {
+  def backwards(sinks: List[CfgNode], sources: List[CfgNode]): List[ReachableByResult] = {
     if (sources.isEmpty) {
       logger.warn("Attempting to determine flows from empty list of sources.")
     }
@@ -46,10 +46,7 @@ class Engine(context: EngineContext) {
     }
     val sourcesSet = sources.toSet
     val tasks = sinks.map(sink => ReachableByTask(sink, sourcesSet, new ResultTable))
-    val results = solveTasks(tasks, sourcesSet)
-    // TODO: assemble result table from tables of all tasks
-    // and return it.
-    (results, new ResultTable)
+    solveTasks(tasks, sourcesSet)
   }
 
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
@@ -327,9 +324,9 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
 
     val resultsForCurNode = {
       val endStates = if (sources.contains(curNode.asInstanceOf[NodeType])) {
-        List(ReachableByResult(path))
+        List(ReachableByResult(path, table))
       } else if ((task.callDepth != context.config.maxCallDepth) && curNode.isInstanceOf[MethodParameterIn]) {
-        List(ReachableByResult(path, partial = true))
+        List(ReachableByResult(path, table, partial = true))
       } else {
         List()
       }
@@ -340,7 +337,7 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
                 .to(Traversal)
                 .internal
                 .nonEmpty && semanticsForCall(call).isEmpty) {
-            List(ReachableByResult(PathElement(path.head.node, resolved = false) +: path.tail, partial = true))
+            List(ReachableByResult(PathElement(path.head.node, resolved = false) +: path.tail, table, partial = true))
           } else {
             List()
           }

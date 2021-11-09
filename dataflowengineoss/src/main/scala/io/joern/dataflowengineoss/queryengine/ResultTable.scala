@@ -48,10 +48,14 @@ class ResultTable {
   * node in the graph.
   *
   * @param path this is the main result - a known path
+  * @param table the result table - kept to allow for detailed inspection of intermediate paths
   * @param partial indicate whether this result stands on its own or requires further analysis,
   *                e.g., by expanding output arguments backwards into method output parameters.
   * */
-case class ReachableByResult(path: Vector[PathElement], callDepth: Int = 0, partial: Boolean = false) {
+case class ReachableByResult(path: Vector[PathElement],
+                             table: ResultTable,
+                             callDepth: Int = 0,
+                             partial: Boolean = false) {
   def source: CfgNode = path.head.node
 
   def unresolvedArgs: Vector[CfgNode] =
