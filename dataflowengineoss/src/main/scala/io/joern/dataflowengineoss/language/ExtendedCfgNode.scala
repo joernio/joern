@@ -28,12 +28,12 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(
       implicit context: EngineContext): Traversal[NodeType] = {
-    val reachedSources = reachableByInternal(sourceTravs)._1.map(_.source)
+    val reachedSources = reachableByInternal(sourceTravs).map(_.source)
     Traversal.from(reachedSources).cast[NodeType]
   }
 
   def reachableByFlows[A <: CfgNode](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
-    val paths = reachableByInternal(sourceTravs)._1
+    val paths = reachableByInternal(sourceTravs)
       .map { result =>
         // We can get back results that start in nodes that are invisible
         // according to the semantic, e.g., arguments that are only used
@@ -52,9 +52,9 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     paths.to(Traversal)
   }
 
-  def reachableByTable[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(
-      implicit context: EngineContext): ResultTable = {
-    reachableByInternal(sourceTravs)._2
+  def reachableByDetailed[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(
+      implicit context: EngineContext): List[ReachableByResult] = {
+    reachableByInternal(sourceTravs)
   }
 
   private def removeConsecutiveDuplicates[T](l: Vector[T]): List[T] = {
@@ -62,7 +62,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   }
 
   private def reachableByInternal[NodeType <: CfgNode](sourceTravs: Seq[Traversal[NodeType]])(
-      implicit context: EngineContext): (List[ReachableByResult], ResultTable) = {
+      implicit context: EngineContext): List[ReachableByResult] = {
     val sources: List[CfgNode] =
       sourceTravs
         .flatMap(_.toList)
