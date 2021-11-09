@@ -47,18 +47,22 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  def oldc: CFrontend = new CFrontend()
-  def c: CFrontend = new CFrontend(Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
-  def llvm: Frontend = new Frontend(Languages.LLVM, "LLVM Bitcode Frontend")
-  def java: Frontend = new Frontend(Languages.JAVA, "Java/Dalvik Bytecode Frontend")
-  def javasrc: Frontend = new Frontend(Languages.JAVASRC, "Java Source Frontend")
+  def oldc: SourceBasedFrontend = new SourceBasedFrontend(Languages.C)
+  def c: SourceBasedFrontend = new SourceBasedFrontend(Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
+  def cpp: SourceBasedFrontend = new SourceBasedFrontend(Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", "cpp")
+  def java: SourceBasedFrontend = new SourceBasedFrontend(Languages.JAVASRC, "Java Source Frontend", "java")
+
   def jimple: Frontend = new Frontend(Languages.JAVA, "Java Bytecode Frontend using soot's Jimple IR")
+  def ghidra: Frontend = new Frontend(Languages.GHIDRA, "ghidra reverse engineering frontend")
+
+  def python: Frontend = new Frontend(Languages.PYTHON, "Python Source Frontend")
   def golang: Frontend = new Frontend(Languages.GOLANG, "Golang Source Frontend")
   def javascript: Frontend = new Frontend(Languages.JAVASCRIPT, "Javascript Source Frontend")
   def csharp: Frontend = new Frontend(Languages.CSHARP, "C# Source Frontend (Roslyn)")
-  def python: Frontend = new Frontend(Languages.PYTHON, "Python Source Frontend")
+
+  def llvm: Frontend = new Frontend(Languages.LLVM, "LLVM Bitcode Frontend")
+  def jvm: Frontend = new Frontend(Languages.JAVA, "Java/Dalvik Bytecode Frontend")
   def php: Frontend = new Frontend(Languages.PHP, "PHP bytecode frontend")
-  def ghidra: Frontend = new Frontend(Languages.GHIDRA, "ghidra reverse engineering frontend")
 
   class Frontend(val language: String, val description: String = "") {
     def isAvailable: Boolean = {
@@ -76,10 +80,10 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  class CFrontend(language: String = Languages.C, description: String = "Fuzzy Parser for C/C++")
+  class SourceBasedFrontend(language: String = Languages.C, description: String = "Fuzzy Parser for C/C++", extension : String = "c")
       extends Frontend(language, description) {
     def fromString(str: String): Option[Cpg] = {
-      withCodeInTmpFile(str, "tmp.c") { dir =>
+      withCodeInTmpFile(str, "tmp." + extension) { dir =>
         apply(dir.path.toString)
       }
     }
@@ -99,8 +103,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     oldc,
     csharp,
     golang,
+    jvm,
     java,
-    javasrc,
     javascript,
     jimple,
     llvm,
