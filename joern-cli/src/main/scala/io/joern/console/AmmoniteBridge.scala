@@ -1,7 +1,5 @@
 package io.joern.console
 
-import io.joern.console.{BridgeBase, JoernProduct}
-
 object AmmoniteBridge extends App with BridgeBase {
 
   runAmmonite(parseConfig(args), JoernProduct)
