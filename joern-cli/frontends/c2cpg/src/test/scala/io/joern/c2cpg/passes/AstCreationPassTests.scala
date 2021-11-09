@@ -2,7 +2,7 @@ package io.joern.c2cpg.passes
 
 import better.files.File
 import io.joern.c2cpg.C2Cpg.Config
-import io.joern.c2cpg.fixtures.{CpgAstOnlyFixture, TestAstOnlyFixture}
+import io.joern.c2cpg.fixtures.{CpgAstOnlyFixture, CpgTypeNodeFixture, TestAstOnlyFixture}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
@@ -517,6 +517,32 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       }
     }
 
+    "be correct for static decl assignment" in CpgTypeNodeFixture("""
+        |void method() {
+        |  static int local = 1;
+        |}
+        |""".stripMargin) { cpg =>
+      cpg.method.name("method").block.astChildren.l match {
+        case List(local: Local, call: Call) =>
+          local.name shouldBe "local"
+          local.typeFullName shouldBe "static int"
+          call.name shouldBe Operators.assignment
+          call.astChildren.l match {
+            case List(identifier: Identifier, literal: Literal) =>
+              identifier.name shouldBe "local"
+              identifier.typeFullName shouldBe "static int"
+              identifier.order shouldBe 1
+              identifier.argumentIndex shouldBe 1
+              literal.code shouldBe "1"
+              literal.typeFullName shouldBe "int"
+              literal.order shouldBe 2
+              literal.argumentIndex shouldBe 2
+            case _ => fail()
+          }
+        case _ => fail()
+      }
+    }
+
     "be correct for decl assignment with typedecl" in TestAstOnlyFixture(
       """
        |void method() {
@@ -532,7 +558,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           call2.astChildren.l match {
             case List(identifier: Identifier, call: Call) =>
               identifier.name shouldBe "is_std_array_v"
-              identifier.typeFullName shouldBe "bool"
+              identifier.typeFullName shouldBe "constexpr bool"
               identifier.order shouldBe 1
               identifier.argumentIndex shouldBe 1
               call.code shouldBe "decltype(local)::value"
@@ -1317,21 +1343,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         .size shouldBe 1
     }
 
-    "be correct for linkage specs" in TestAstOnlyFixture(
-      """
-        |extern "C" {
-        | #include <vlc/libvlc.h>
-        | #include <vlc/libvlc_renderer_discoverer.h>
-        | #include <vlc/libvlc_picture.h>
-        | #include <vlc/libvlc_media.h>
-        | int x = 0;
-        |}
-        |""".stripMargin,
-      "file.cpp"
-    ) { cpg =>
-      cpg.call.code("x = 0").l.size shouldBe 1
-    }
-
     "be correct for method returns" in TestAstOnlyFixture(
       """
         |int d(int x) {
@@ -1585,7 +1596,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin) { cpg =>
       cpg.assignment.head.astChildren.l match {
         case List(ident: Identifier, call: Call) =>
-          ident.typeFullName shouldBe "int[3]"
+          ident.typeFullName shouldBe "int[]"
           ident.order shouldBe 1
           call.code shouldBe "{ [1] = 5, [2] = 10 }"
           call.order shouldBe 2
@@ -1619,7 +1630,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin) { cpg =>
       cpg.assignment.head.astChildren.l match {
         case List(ident: Identifier, call: Call) =>
-          ident.typeFullName shouldBe "struct foo"
+          ident.typeFullName shouldBe "foo"
           ident.order shouldBe 1
           call.code shouldBe "{ .a = 1, .b = 2 }"
           call.order shouldBe 2

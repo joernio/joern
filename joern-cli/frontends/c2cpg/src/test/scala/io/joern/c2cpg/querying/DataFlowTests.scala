@@ -7,19 +7,19 @@ import io.shiftleft.semanticcpg.language._
 class DataFlowTests extends DataFlowCodeToCpgSuite {
 
   override val code: String =
-    """| #include <stdlib.h>
-       | struct node {
-       | int value;
-       | struct node *next;
+    """| struct node {
+       |  int value;
+       |  struct node *next;
        | };
        |
        | void free_list(struct node *head) {
-       | struct node *q;
-       | for (struct node *p = head; p != NULL; p = q) {
+       |  struct node *q;
+       |  for (struct node *p = head; p != NULL; p = q) {
        |    q = p->next;
        |    free(p);
-       |    }
+       |  }
        | }
+       | 
        | int flow(int p0) {
        |    int a = p0;
        |    int b=a;
@@ -28,8 +28,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
        |    z++;
        |    int x = z;
        |    return x;
-       |    }
-             """.stripMargin
+       | }""".stripMargin
 
   "should identify all calls to `free`" in {
     cpg.call.name("free").code.toSet shouldBe Set("free(p)")
