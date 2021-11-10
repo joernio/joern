@@ -88,7 +88,7 @@ class MipsFunctionPass(currentProgram: Program,
           )
           val node = createIdentifier(argument,
                                       argument,
-                                      index,
+                                      index + 1,
                                       Types.registerType(argument),
                                       Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
           addArgumentEdge(callNode, node)
