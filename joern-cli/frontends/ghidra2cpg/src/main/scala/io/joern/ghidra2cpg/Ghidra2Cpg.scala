@@ -15,7 +15,7 @@ import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
-import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
+import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass, RefStoreToLoad}
 import io.joern.ghidra2cpg.passes.x86.X86FunctionPass
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.x2cpg.X2Cpg
@@ -152,7 +152,8 @@ class Ghidra2Cpg(
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
 
-    currentProgram.getLanguage.getLanguageDescription.getProcessor.toString match {
+    val proc = currentProgram.getLanguage.getLanguageDescription.getProcessor.toString
+    proc match {
       case "MIPS" =>
         functions.foreach { function =>
           new MipsFunctionPass(
@@ -189,6 +190,9 @@ class Ghidra2Cpg(
         }
     }
 
+    if (proc == "MIPS") {
+      new RefStoreToLoad(cpg).createAndApply()
+    }
     new TypesPass(cpg).createAndApply()
     new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
     new LiteralPass(cpg, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
