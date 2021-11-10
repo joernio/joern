@@ -89,7 +89,8 @@ class Jimple2Cpg {
       // Load classes into Soot
       sourceFileNames
         .map(getQualifiedClassPath(sourceCodePath, _))
-        .foreach(Scene.v().addBasicClass(_))
+        .map { x => Scene.v().addBasicClass(x); x }
+        .foreach(Scene.v().loadClassAndSupport(_).setApplicationClass())
       Scene.v().loadNecessaryClasses()
       // Project Soot classes
       val astCreator = new AstCreationPass(sourceCodePath, sourceFileNames, cpg, methodKeyPool)

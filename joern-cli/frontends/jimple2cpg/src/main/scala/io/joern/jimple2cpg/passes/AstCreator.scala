@@ -89,8 +89,11 @@ class AstCreator(filename: String, global: Global) {
 
     val relatedClass = typ.getSootClass
     val inheritsFromTypeFullName =
-      if (relatedClass.hasSuperclass) List(typ.getSootClass.getSuperclass.toString)
-      else List()
+      if (relatedClass.hasSuperclass) {
+        if (!typ.getSootClass.getSuperclass.isApplicationClass)
+          registerType(typ.getSootClass.getSuperclass.getType.toQuotedString)
+        List(typ.getSootClass.getSuperclass.toString)
+      } else List()
 
     val typeDecl = NewTypeDecl()
       .name(shortName)

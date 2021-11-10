@@ -24,7 +24,6 @@ class AstCreationPass(codePath: String, filenames: List[String], cpg: Cpg, keyPo
     val qualifiedClassName = Jimple2Cpg.getQualifiedClassPath(codePath, filename)
     try {
       val sootClass = Scene.v().loadClassAndSupport(qualifiedClassName)
-      sootClass.setApplicationClass()
       new AstCreator(filename, global).createAst(sootClass)
     } catch {
       case e: Exception =>
