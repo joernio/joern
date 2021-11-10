@@ -122,11 +122,9 @@ class Ghidra2Cpg(
   def handleProgram(currentProgram: Program, fileAbsolutePath: String): Unit = {
 
     val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(currentProgram)
+    val options = new DecompileOptions()
     val decompilerInterface = new DecompInterface()
-    decompilerInterface.toggleCCode(false)
-    decompilerInterface.toggleSyntaxTree(false)
-    decompilerInterface.toggleJumpLoads(false)
-    decompilerInterface.toggleParamMeasures(true)
+    decompilerInterface.setOptions(options)
     decompilerInterface.setSimplificationStyle("decompile")
 
     val opts = new DecompileOptions()
