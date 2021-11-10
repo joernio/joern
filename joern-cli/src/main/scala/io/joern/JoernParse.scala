@@ -5,10 +5,46 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
 import io.joern.CpgBasedTool.newCpgCreatedString
-
 import scala.jdk.CollectionConverters._
 
 object JoernParse extends App {
+
+  val optionParser = new scopt.OptionParser[ParserConfig]("joern-parse") {
+    arg[String]("input")
+      .optional()
+      .text("source file or directory containing source files")
+      .action((x, c) => c.copy(inputPath = x))
+
+    opt[String]("out")
+      .text("output filename")
+      .action((x, c) => c.copy(outputCpgFile = x))
+
+    opt[String]("language")
+      .text("source language")
+      .action((x, c) => c.copy(language = x))
+
+    opt[Unit]("list-languages")
+      .text("list available language options")
+      .action((_, c) => c.copy(listLanguages = true))
+
+    opt[String]("namespaces")
+      .text("namespaces to include: comma separated string")
+      .action((x, c) => c.copy(namespaces = x.split(",").map(_.trim).toList))
+
+    note("Overlay application stage")
+
+    opt[Unit]("nooverlays")
+      .text("do not apply default overlays")
+      .action((x, c) => c.copy(enhance = false))
+    opt[Unit]("overlaysonly")
+      .text("Only apply default overlays")
+      .action((x, c) => c.copy(enhanceOnly = true))
+
+    note("Misc")
+    help("help").text("display this help message")
+
+    note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
+  }
 
   // Special string used to separate joern-parse opts from frontend-specific opts
   val ARGS_DELIMITER = "--frontend-args"
@@ -25,24 +61,7 @@ object JoernParse extends App {
       System.exit(1)
   }
 
-  def run(): Either[String, String] = {
-    parseConfig(parserArgs) match {
-      case Right(config) =>
-        if (config.listLanguages) {
-          Right(buildLanguageList())
-        } else
-          for {
-            _ <- checkInputPath(config)
-            language <- getLanguage(config)
-            _ <- generateCpg(config, language)
-            _ <- enhanceCpg(config)
-          } yield newCpgCreatedString(config.outputCpgFile)
-
-      case Left(err) => Left(err)
-    }
-  }
-
-  def splitArgs(): (List[String], List[String]) = {
+  private def splitArgs(): (List[String], List[String]) = {
     args.indexOf(ARGS_DELIMITER) match {
       case -1 => (args.toList, Nil)
 
@@ -52,22 +71,43 @@ object JoernParse extends App {
     }
   }
 
-  def checkInputPath(config: ParserConfig): Either[String, Unit] = {
-    if (config.inputPath == "" || !File(config.inputPath).exists) {
+  private def run(): Either[String, String] = {
+    parseConfig(parserArgs) match {
+      case Right(config) =>
+        if (config.listLanguages) {
+          Right(buildLanguageList())
+        } else
+          for {
+            _ <- checkInputPath(config)
+            language <- getLanguage(config)
+            _ <- generateCpg(config, language)
+            _ <- applyDefaultOverlays(config)
+          } yield newCpgCreatedString(config.outputCpgFile)
+
+      case Left(err) => Left(err)
+    }
+  }
+
+  private def checkInputPath(config: ParserConfig): Either[String, Unit] = {
+
+    if (config.inputPath == "") {
+      println(optionParser.usage)
+      Left("Input path required")
+    } else if (!File(config.inputPath).exists) {
       Left("Input path does not exist at `" + config.inputPath + "`, exiting.")
     } else {
       Right(())
     }
   }
 
-  def buildLanguageList(): String = {
+  private def buildLanguageList(): String = {
     val s = new StringBuilder()
     s ++= "Available languages (case insensitive):\n"
     s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
     s.toString()
   }
 
-  def getLanguage(config: ParserConfig): Either[String, String] = {
+  private def getLanguage(config: ParserConfig): Either[String, String] = {
     if (config.language.isEmpty) {
       val inputPath = config.inputPath
       guessLanguage(inputPath) match {
@@ -83,7 +123,7 @@ object JoernParse extends App {
     }
   }
 
-  def generateCpg(config: ParserConfig, language: String): Either[String, String] = {
+  private def generateCpg(config: ParserConfig, language: String): Either[String, String] = {
     if (config.enhanceOnly) {
       Right("No generation required")
     } else {
@@ -98,11 +138,11 @@ object JoernParse extends App {
     }
   }
 
-  def enhanceCpg(config: ParserConfig): Either[String, String] = {
+  private def applyDefaultOverlays(config: ParserConfig): Either[String, String] = {
     try {
-      println("[+] Creating code property graph")
+      println("[+] Applying default overlays")
       if (config.enhance) {
-        Cpg2Scpg.run(config.outputCpgFile, config.dataFlow).close()
+        DefaultOverlays.create(config.outputCpgFile).close()
       }
       Right("Code property graph generation successful")
     } catch {
@@ -114,55 +154,18 @@ object JoernParse extends App {
                           outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
                           namespaces: List[String] = List.empty,
                           enhance: Boolean = true,
-                          dataFlow: Boolean = true,
                           enhanceOnly: Boolean = false,
                           language: String = "",
                           listLanguages: Boolean = false)
 
-  def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] =
-    new scopt.OptionParser[ParserConfig]("joern-parse") {
-      arg[String]("input")
-        .optional()
-        .text("source file or directory containing source files")
-        .action((x, c) => c.copy(inputPath = x))
+  private def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] = {
 
-      opt[String]("out")
-        .text("output filename")
-        .action((x, c) => c.copy(outputCpgFile = x))
-
-      opt[String]("language")
-        .text("source language")
-        .action((x, c) => c.copy(language = x))
-
-      opt[Unit]("list-languages")
-        .text("list available language options")
-        .action((_, c) => c.copy(listLanguages = true))
-
-      opt[String]("namespaces")
-        .text("namespaces to include: comma separated string")
-        .action((x, c) => c.copy(namespaces = x.split(",").map(_.trim).toList))
-
-      note("Enhancement stage")
-
-      opt[Unit]("noenhance")
-        .text("do not run enhancement stage")
-        .action((x, c) => c.copy(enhance = false))
-      opt[Unit]("enhanceonly")
-        .text("Only run the enhancement stage")
-        .action((x, c) => c.copy(enhanceOnly = true))
-      opt[Unit]("nodataflow")
-        .text("do not perform data flow analysis in enhancement stage")
-        .action((x, c) => c.copy(dataFlow = false))
-
-      note("Misc")
-      help("help").text("display this help message")
-
-      note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
-    }.parse(parserArgs, ParserConfig()) match {
+    optionParser.parse(parserArgs, ParserConfig()) match {
       case Some(config) => Right(config)
 
       case None =>
         Left("Could not parse command line options")
     }
+  }
 
 }

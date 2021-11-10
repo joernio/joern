@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.codepropertygraph.Cpg
 
-object Cpg2Scpg {
+object DefaultOverlays {
 
   val DEFAULT_CPG_IN_FILE = "cpg.bin"
 
@@ -13,17 +13,15 @@ object Cpg2Scpg {
     * turning the CPG into an SCPG.
     * @param storeFilename the filename of the cpg
     * */
-  def run(storeFilename: String, dataFlow: Boolean): Cpg = {
+  def create(storeFilename: String): Cpg = {
     val cpg = CpgBasedTool.loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)
     new Base().run(context)
     new TypeRelations().run(context)
     new ControlFlow().run(context)
     new CallGraph().run(context)
-    if (dataFlow) {
-      val options = new OssDataFlowOptions()
-      new OssDataFlow(options).run(context)
-    }
+    val options = new OssDataFlowOptions()
+    new OssDataFlow(options).run(context)
     cpg
   }
 
