@@ -1,11 +1,9 @@
 package io.joern.ghidra2cpg.passes.mips
 
 import ghidra.app.decompiler.DecompInterface
-import ghidra.pcodeCPort.opcodes.OpCode
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{CodeUnit, Function, Instruction, Program}
-import ghidra.program.model.pcode.{PcodeOp, PcodeOpAST}
+import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.scalar.Scalar
 import ghidra.program.util.DefinedDataIterator
 import ghidra.util.task.ConsoleTaskMonitor
@@ -14,7 +12,7 @@ import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewCall}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
@@ -62,7 +60,6 @@ class MipsFunctionPass(currentProgram: Program,
         if (instructionPcodes.nonEmpty) {
           instructionPcodes.zipWithIndex foreach {
             case (input, index) =>
-              //input.getHigh.getDataType match {
               if (input.isRegister) {
                 val name = currentProgram.getRegister(input.getAddress).getName
                 val node = createIdentifier(name,
