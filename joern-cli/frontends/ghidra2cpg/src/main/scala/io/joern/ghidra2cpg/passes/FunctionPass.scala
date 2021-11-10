@@ -12,6 +12,7 @@ import ghidra.program.model.listing.{
   Listing,
   Program
 }
+import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._
@@ -49,7 +50,8 @@ abstract class FunctionPass(
   val listing: Listing = currentProgram.getListing
   val functionIterator: FunctionIterator = listing.getFunctions(true)
   val functions: List[Function] = functionIterator.iterator.asScala.toList
-
+  val highFunction: HighFunction =
+    decompInterface.decompileFunction(function, 60, new ConsoleTaskMonitor).getHighFunction
   protected var methodNode: Option[NewMethod] = None
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
@@ -155,13 +157,7 @@ abstract class FunctionPass(
             diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
     } else {
-      decompInterface
-        .decompileFunction(function, 60, new ConsoleTaskMonitor())
-        .getHighFunction
-        .getLocalSymbolMap
-        .getSymbols
-        .asScala
-        .toSeq
+      highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq
         .filter(_.isParameter)
         .foreach { parameter =>
           val checkedParameter = Option(parameter.getStorage.getRegister.getName).getOrElse(parameter.getName)
@@ -241,6 +237,7 @@ abstract class FunctionPass(
           // non thunk functions do not contain function parameters by default
           // need to decompile function to get parameter information
           // decompilation for a function is cached so subsequent calls to decompile should be free
+          // TODO: replace this later on
           val parameters = decompInterface
             .decompileFunction(callee.head, 60, new ConsoleTaskMonitor())
             .getHighFunction
