@@ -221,6 +221,7 @@ trait AstCreatorHelper {
       case u: IASTUnaryExpression => nodeSignature(u.getOperand)
       case e: ICPPASTElaboratedTypeSpecifier =>
         fullName(e.getParent) + "." + nodeSignature(e.getName)
+      case e: IASTElaboratedTypeSpecifier   => nodeSignature(e.getName)
       case other if other.getParent != null => fullName(other.getParent)
       case other if other != null           => notHandledYet(other, -1); ""
       case null                             => ""
