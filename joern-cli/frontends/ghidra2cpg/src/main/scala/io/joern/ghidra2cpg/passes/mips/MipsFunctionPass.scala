@@ -1,17 +1,20 @@
 package io.joern.ghidra2cpg.passes.mips
 
 import ghidra.app.decompiler.DecompInterface
+import ghidra.pcodeCPort.opcodes.OpCode
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{Function, Instruction, Program}
+import ghidra.program.model.listing.{CodeUnit, Function, Instruction, Program}
+import ghidra.program.model.pcode.{PcodeOp, PcodeOpAST}
 import ghidra.program.model.scalar.Scalar
+import ghidra.program.util.DefinedDataIterator
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewCall}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
@@ -24,7 +27,16 @@ class MipsFunctionPass(currentProgram: Program,
                        keyPool: IntervalKeyPool,
                        decompInterface: DecompInterface)
     extends FunctionPass(new MipsProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
-
+  protected def findStringAtOffset(offset: Long) = {
+    DefinedDataIterator
+      .definedStrings(currentProgram)
+      .iterator()
+      .asScala
+      .filter(x => x.getAddress().getOffset == offset)
+      .toList
+      .map(x => x.getValue.toString)
+      .headOption
+  }
   val mipsCallInstructions = List("jalr", "jal")
   // Iterating over operands and add edges to call
   override def handleArguments(
@@ -40,6 +52,55 @@ class MipsFunctionPass(currentProgram: Program,
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters: Array[(String, Int, String)] = Array.empty
 
+        val instructionPcodes = highFunction
+          .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
+          .asScala
+          .toList
+          .head
+          .getInputs
+          .drop(1)
+        if (instructionPcodes.nonEmpty) {
+          instructionPcodes.zipWithIndex foreach {
+            case (input, index) =>
+              //input.getHigh.getDataType match {
+              if (input.isRegister) {
+                val name = currentProgram.getRegister(input.getAddress).getName
+                val node = createIdentifier(name,
+                                            name,
+                                            index + 1,
+                                            Types.registerType(name),
+                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                addArgumentEdge(callNode, node)
+              } else if (input.isConstant) {
+                val node = nodes
+                  .NewLiteral()
+                  .code(input.getWordOffset.toHexString)
+                  .order(-1)
+                  .argumentIndex(-1)
+                  .typeFullName(input.getWordOffset.toHexString)
+                addArgumentEdge(callNode, node)
+              } else if (input.isUnique) {
+                val value = findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset + 8)
+                  .getOrElse(findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset)
+                    .getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset))
+                val node = nodes
+                  .NewLiteral()
+                  .code(value.toString)
+                  .order(index + 1)
+                  .argumentIndex(index + 1)
+                  .typeFullName(input.getWordOffset.toHexString)
+                addArgumentEdge(callNode, node)
+              } else {
+                val node = nodes
+                  .NewLiteral()
+                  .code(input.toString)
+                  .order(index + 1)
+                  .argumentIndex(index + 1)
+                  .typeFullName(input.toString)
+                addArgumentEdge(callNode, node)
+              }
+          }
+        }
         if (callee.isThunk) {
           // thunk functions contain parameters already
           checkedParameters = callee.getParameters.map { parameter =>
