@@ -19,12 +19,12 @@ class X86FunctionPass(currentProgram: Program,
 
   override def handleBody(): Unit = {
     if (instructions.nonEmpty) {
-      var prevInstructionNode = addCallNode(instructions.head)
+      var prevInstructionNode = addCallOrReturnNode(instructions.head)
       handleArguments(instructions.head, prevInstructionNode)
       diffGraph.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
       diffGraph.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
-        val instructionNode = addCallNode(instruction)
+        val instructionNode = addCallOrReturnNode(instruction)
         diffGraph.addNode(instructionNode)
         handleArguments(instruction, instructionNode)
         diffGraph.addEdge(blockNode, instructionNode, EdgeTypes.AST)

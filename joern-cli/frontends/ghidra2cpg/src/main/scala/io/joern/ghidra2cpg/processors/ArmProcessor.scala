@@ -26,7 +26,7 @@ class ArmProcessor extends Processor {
       "mov" -> "<operator>.assignment",
       "movk" -> "<operator>.assignment",
       "nop" -> "<operator>.NOP",
-      "ret" -> "RETURN",
+      "ret" -> "RET",
       "stp" -> "<operator>.assignment",
       "str" -> "<operator>.addition",
       "strb" -> "<operator>.assignment",

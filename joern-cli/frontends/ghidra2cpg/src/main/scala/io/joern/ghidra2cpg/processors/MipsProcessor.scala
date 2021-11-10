@@ -150,7 +150,7 @@ class MipsProcessor extends Processor {
       "jmp" -> "<operator>.goto",
       "jnc" -> "<operator>.goto",
       "jnz" -> "<operator>.goto",
-      "jr" -> "RETURN",
+      "jr" -> "RET",
       "jz" -> "<operator>.goto",
       "lb" -> "<operator>.assignment",
       "lbu" -> "<operator>.assignment",
