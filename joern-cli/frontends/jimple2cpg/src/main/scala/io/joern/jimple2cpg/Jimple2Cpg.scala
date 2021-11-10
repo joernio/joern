@@ -13,7 +13,7 @@ import soot.{G, PhaseOptions, Scene}
 import java.io.{File => JFile}
 import java.nio.file.Files
 import java.util.zip.ZipFile
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import scala.language.postfixOps
 import scala.tools.nsc
 import scala.util.{Failure, Success, Using}
@@ -100,7 +100,7 @@ class Jimple2Cpg {
       // Clear classes from Soot
       closeSoot()
 
-      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
+      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg, Some(typesKeyPool))
         .createAndApply()
 
       cpg
