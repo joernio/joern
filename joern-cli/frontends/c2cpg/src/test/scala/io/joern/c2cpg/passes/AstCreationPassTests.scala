@@ -140,18 +140,13 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val lambda1FullName = "anonymous_lambda_0"
       val lambda2FullName = "anonymous_lambda_1"
 
-      cpg.assignment.order(1).l match {
-        case List(assignment1) =>
+      cpg.assignment.l match {
+        case List(assignment1, assignment2) =>
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambda1FullName
             case _ => fail()
           }
-        case _ => fail()
-      }
-
-      cpg.assignment.order(2).l match {
-        case List(assignment2) =>
           assignment2.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambda2FullName
@@ -207,7 +202,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val lambdaFullName = "Foo.anonymous_lambda_0"
       val signature = "int Foo.anonymous_lambda_0 (int,int)"
 
-      cpg.assignment.order(1).l match {
+      cpg.assignment.l match {
         case List(assignment1) =>
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
@@ -257,7 +252,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val lambdaFullName = "A.B.Foo.anonymous_lambda_0"
       val signature = "int A.B.Foo.anonymous_lambda_0 (int,int)"
 
-      cpg.assignment.order(1).l match {
+      cpg.assignment.l match {
         case List(assignment1) =>
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
@@ -309,8 +304,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val signature1 = "int anonymous_lambda_0 (int)"
       val lambda2Name = "anonymous_lambda_1"
 
-      cpg.assignment.order(1).l match {
-        case List(assignment1) =>
+      cpg.assignment.l match {
+        case List(assignment1, _, _) =>
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambda1Name
@@ -1126,6 +1121,38 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin
     ) { cpg =>
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
+    }
+
+    "be correct for global struct" in TestAstOnlyFixture(
+      """
+        |struct filesystem {
+        |	void (*open)(int a);
+        |};
+        |
+        |void my_open(int a) {
+        |	int b;
+        |	b = a;
+        |	return;
+        |}
+        |
+        |static const struct filesystem my_fs = {
+        |	.open = &my_open,
+        |};
+        |
+        |int main(int argc, char *argv[]) {
+        |	static int i;
+        |	static const struct filesystem my_other_fs = {
+        |		 .open = &my_open,
+        |	};
+        |	struct filesystem real_fs;
+        |	real_fs.open = &my_open;
+        |	i = 0;
+        |}
+      """.stripMargin
+    ) { cpg =>
+      cpg.method("main").local.name("my_other_fs").referencingIdentifiers.name.l shouldBe List("my_other_fs")
+      cpg.local.name("my_fs").referencingIdentifiers.name.l shouldBe List("my_fs")
+      cpg.typeDecl.fullName.l.distinct shouldBe List("my_open", "main", "filesystem")
     }
 
     "be correct for typedef enum" in TestAstOnlyFixture(
