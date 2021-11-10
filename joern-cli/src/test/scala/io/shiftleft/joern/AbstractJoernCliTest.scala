@@ -21,7 +21,7 @@ trait AbstractJoernCliTest {
     val config = C2Cpg.Config(inputPaths = inputFilenames, outputPath = c2cpgOutFilename)
     c2cpg.runAndOutput(config).close()
     // Link CPG fragments and enhance to create semantic CPG
-    val cpg = Cpg2Scpg.run(c2cpgOutFilename, dataFlow = true)
+    val cpg = DefaultOverlays.create(c2cpgOutFilename)
     (cpg, c2cpgOutFilename)
   }
 
