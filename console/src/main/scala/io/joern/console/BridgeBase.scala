@@ -310,7 +310,11 @@ trait BridgeBase {
       else scriptFile
     val importCpgCode = config.cpgToLoad.map { cpgFile =>
       "importCpg(\"" + cpgFile + "\")"
-    }.toList
+    }.toList ++ config.forInputPath.map { name =>
+      s"""
+         |openForInputPath(\"$name\")
+         |""".stripMargin
+    }
     ammonite
       .Main(
         predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode ++ shutdownHooks),
