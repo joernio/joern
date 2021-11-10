@@ -3,28 +3,14 @@ package io.joern.ghidra2cpg.passes
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{
-  CodeUnitFormat,
-  CodeUnitFormatOptions,
-  Function,
-  FunctionIterator,
-  Instruction,
-  Listing,
-  Program
-}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, FunctionIterator, Instruction, Listing, Program}
+import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewCall,
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier, NewMethod, NewMethodParameterIn, NewNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -49,7 +35,7 @@ abstract class FunctionPass(
   val listing: Listing = currentProgram.getListing
   val functionIterator: FunctionIterator = listing.getFunctions(true)
   val functions: List[Function] = functionIterator.iterator.asScala.toList
-
+  val highFunction: HighFunction = decompInterface.decompileFunction(function, 60, new ConsoleTaskMonitor).getHighFunction
   protected var methodNode: Option[NewMethod] = None
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
@@ -155,9 +141,7 @@ abstract class FunctionPass(
             diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
     } else {
-      decompInterface
-        .decompileFunction(function, 60, new ConsoleTaskMonitor())
-        .getHighFunction
+      highFunction
         .getLocalSymbolMap
         .getSymbols
         .asScala
@@ -241,6 +225,7 @@ abstract class FunctionPass(
           // non thunk functions do not contain function parameters by default
           // need to decompile function to get parameter information
           // decompilation for a function is cached so subsequent calls to decompile should be free
+          // TODO: replace this later on
           val parameters = decompInterface
             .decompileFunction(callee.head, 60, new ConsoleTaskMonitor())
             .getHighFunction
