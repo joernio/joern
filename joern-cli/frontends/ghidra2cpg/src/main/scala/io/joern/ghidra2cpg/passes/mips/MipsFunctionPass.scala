@@ -72,8 +72,8 @@ class MipsFunctionPass(currentProgram: Program,
                 val node = nodes
                   .NewLiteral()
                   .code(input.getWordOffset.toHexString)
-                  .order(-1)
-                  .argumentIndex(-1)
+                  .order(index + 1)
+                  .argumentIndex(index + 1)
                   .typeFullName(input.getWordOffset.toHexString)
                 addArgumentEdge(callNode, node)
               } else if (input.isUnique) {
