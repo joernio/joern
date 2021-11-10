@@ -13,12 +13,33 @@ import soot.{G, PhaseOptions, Scene}
 import java.io.{File => JFile}
 import java.nio.file.Files
 import java.util.zip.ZipFile
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import scala.language.postfixOps
+import scala.tools.nsc
 import scala.util.{Failure, Success, Using}
 
 object Jimple2Cpg {
   val language = "JAVA"
+
+  /** Formats the file name the way Soot refers to classes within a class path. e.g.
+    * /unrelated/paths/class/path/Foo.class => class.path.Foo
+    *
+    * @param codePath the parent directory
+    * @param filename the file name to transform.
+    * @return the correctly formatted class path.
+    */
+  def getQualifiedClassPath(codePath: String, filename: String): String = {
+    val codeDir: String = if (new JFile(codePath).isDirectory) {
+      codePath
+    } else {
+      new JFile(codePath).getParentFile.getAbsolutePath
+    }
+
+    filename
+      .replace(codeDir + nsc.io.File.separator, "")
+      .replace(".class", "")
+      .replace(nsc.io.File.separator, ".")
+  }
 }
 
 class Jimple2Cpg {
@@ -65,9 +86,21 @@ class Jimple2Cpg {
         sourceFileExtensions
       )).distinct
 
+      // Load classes into Soot
+      sourceFileNames
+        .map(getQualifiedClassPath(sourceCodePath, _))
+        .map { x =>
+          Scene.v().addBasicClass(x); x
+        }
+        .foreach(Scene.v().loadClassAndSupport(_).setApplicationClass())
+      Scene.v().loadNecessaryClasses()
+      // Project Soot classes
       val astCreator = new AstCreationPass(sourceCodePath, sourceFileNames, cpg, methodKeyPool)
       astCreator.createAndApply()
-      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
+      // Clear classes from Soot
+      closeSoot()
+
+      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg, Some(typesKeyPool))
         .createAndApply()
 
       cpg
@@ -78,8 +111,8 @@ class Jimple2Cpg {
 
   private def configureSoot(sourceCodePath: String): Unit = {
     // set application mode
-    Options.v().set_app(false)
-    Options.v().set_whole_program(false)
+    Options.v().set_app(true)
+    Options.v().set_whole_program(true)
     // make sure classpath is configured correctly
     Options.v().set_soot_classpath(sourceCodePath)
     Options.v().set_prepend_classpath(true)
@@ -91,13 +124,9 @@ class Jimple2Cpg {
     Options.v().set_allow_phantom_refs(true)
     // keep variable names
     PhaseOptions.v().setPhaseOption("jb", "use-original-names:true")
-    Scene.v().loadBasicClasses()
-    Scene.v().loadDynamicClasses()
   }
 
-  private def closeSoot(): Unit = {
-    G.reset()
-  }
+  private def closeSoot(): Unit = G.reset()
 
   /** Unzips a ZIP file into a sequence of files. All files unpacked are deleted at the end of CPG construction.
     *
