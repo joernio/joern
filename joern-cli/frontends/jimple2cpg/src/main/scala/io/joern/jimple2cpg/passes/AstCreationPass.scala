@@ -6,10 +6,10 @@ import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 import org.slf4j.LoggerFactory
 import soot.Scene
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentSkipListSet
 
 case class Global(
-    usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean](),
+    usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String](),
 )
 
 class AstCreationPass(codePath: String, filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)

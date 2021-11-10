@@ -89,7 +89,9 @@ class Jimple2Cpg {
       // Load classes into Soot
       sourceFileNames
         .map(getQualifiedClassPath(sourceCodePath, _))
-        .map { x => Scene.v().addBasicClass(x); x }
+        .map { x =>
+          Scene.v().addBasicClass(x); x
+        }
         .foreach(Scene.v().loadClassAndSupport(_).setApplicationClass())
       Scene.v().loadNecessaryClasses()
       // Project Soot classes
