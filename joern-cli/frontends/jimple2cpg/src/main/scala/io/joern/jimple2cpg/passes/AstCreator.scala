@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.x2cpg.Ast
 import org.slf4j.LoggerFactory
@@ -9,9 +9,9 @@ import soot.jimple._
 import soot.tagkit.Host
 import soot.{Local => _, _}
 
-import java.io.File
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.Try
 
 class AstCreator(filename: String, global: Global) {
 
@@ -87,14 +87,19 @@ class AstCreator(filename: String, global: Global) {
       if (fullName.contains('.')) fullName.substring(fullName.lastIndexOf('.') + 1)
       else fullName
 
+    val relatedClass = typ.getSootClass
+    val inheritsFromTypeFullName =
+      if (relatedClass.hasSuperclass) List(typ.getSootClass.getSuperclass.toString)
+      else List()
+
     val typeDecl = NewTypeDecl()
       .name(shortName)
       .fullName(registerType(fullName))
       .order(1) // Jimple always has 1 class per file
       .filename(filename)
       .code(shortName)
-      .inheritsFromTypeFullName(List(typ.getSootClass.getSuperclass.toString))
-      .astParentType("NAMESPACE_BLOCK")
+      .inheritsFromTypeFullName(inheritsFromTypeFullName)
+      .astParentType(NodeTypes.NAMESPACE_BLOCK)
       .astParentFullName(namespaceBlockFullName)
     val methodAsts = withOrder(
       typ.getSootClass.getMethods.asScala.toList.sortWith((x, y) => x.getName > y.getName)
@@ -146,7 +151,7 @@ class AstCreator(filename: String, global: Global) {
         .withChild(astForMethodReturn(methodDeclaration))
     } catch {
       case e: RuntimeException =>
-        logger.warn("Unable to parse method body.", e)
+        logger.warn(s"Unable to parse method body. ${e.getMessage}")
         Ast(methodNode)
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
@@ -275,10 +280,33 @@ class AstCreator(filename: String, global: Global) {
       case x: ThisRef            => Seq(createThisNode(x))
       case x: ParameterRef       => Seq(createParameterNode(x, order))
       case x: IdentityRef        => Seq(astForIdentityRef(x, order, parentUnit))
+      case x: ArrayRef           => Seq(astForArrayRef(x, order, parentUnit))
       case x =>
         logger.warn(s"Unhandled soot.Value type ${x.getClass}")
         Seq()
     }
+  }
+
+  private def astForArrayRef(
+      arrRef: ArrayRef,
+      order: Int,
+      parentUnit: soot.Unit,
+  ): Ast = {
+    val indexAccess = NewCall()
+      .name(Operators.indexAccess)
+      .methodFullName(Operators.indexAccess)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(arrRef.toString())
+      .order(order)
+      .argumentIndex(order)
+      .lineNumber(line(parentUnit))
+      .columnNumber(column(parentUnit))
+      .typeFullName(registerType(arrRef.getType.toQuotedString))
+
+    val astChildren = astsForValue(arrRef.getBase, 0, parentUnit) ++ astsForValue(arrRef.getIndex, 1, parentUnit)
+    Ast(indexAccess)
+      .withChildren(astChildren)
+      .withArgEdges(indexAccess, astChildren.flatMap(_.root))
   }
 
   private def astForLocal(local: soot.Local, order: Int, parentUnit: soot.Unit): Ast = {
@@ -424,13 +452,21 @@ class AstCreator(filename: String, global: Global) {
   /** Creates the AST for assignment statements keeping in mind Jimple is a 3-address code language.
     */
   private def astsForDefinition(assignStmt: DefinitionStmt, order: Int): Seq[Ast] = {
-    val leftOp = assignStmt.getLeftOp.asInstanceOf[soot.Local]
     val initializer = assignStmt.getRightOp
-    val name = leftOp.getName
-    val code = leftOp.getType.toQuotedString + " " + leftOp.getName
+    val leftOp = assignStmt.getLeftOp
+    val name = assignStmt.getLeftOp match {
+      case x: soot.Local => x.getName
+      case x: FieldRef   => x.getFieldRef.name
+      case x: ArrayRef   => x.toString()
+      case x             => logger.warn(s"Unhandled LHS type in definition ${x.getClass}"); x.toString()
+    }
     val typeFullName = registerType(leftOp.getType.toQuotedString)
-
-    val identifier = astForLocal(leftOp, 1, assignStmt)
+    val code = s"$typeFullName $name"
+    val identifier = leftOp match {
+      case x: soot.Local => Seq(astForLocal(x, 1, assignStmt))
+      case x: FieldRef   => Seq(astForFieldRef(x, 1, assignStmt))
+      case x             => astsForValue(x, 1, assignStmt)
+    }
     val assignment = NewCall()
       .name(Operators.assignment)
       .code(s"$name = ${initializer.toString()}")
@@ -440,7 +476,7 @@ class AstCreator(filename: String, global: Global) {
       .typeFullName(registerType(assignStmt.getLeftOp.getType.toQuotedString))
 
     val initAsts = astsForValue(initializer, 2, assignStmt)
-    val initializerAst = Seq(callAst(assignment, Seq(identifier) ++ initAsts))
+    val initializerAst = Seq(callAst(assignment, identifier ++ initAsts))
     Seq(
       Ast(
         NewLocal().name(name).code(code).typeFullName(typeFullName).order(order)
@@ -741,8 +777,9 @@ class AstCreator(filename: String, global: Global) {
 
   private def paramListSignature(methodDeclaration: SootMethod, withParams: Boolean = false) = {
     val paramTypes = methodDeclaration.getParameterTypes.asScala.map(_.toQuotedString)
+
     val paramNames =
-      if (!methodDeclaration.isPhantom)
+      if (!methodDeclaration.isPhantom && Try(methodDeclaration.retrieveActiveBody()).isSuccess)
         methodDeclaration.retrieveActiveBody().getParameterLocals.asScala.map(_.getName)
       else
         paramTypes.zipWithIndex.map(x => { s"${x._1} param${x._2 + 1}" })
