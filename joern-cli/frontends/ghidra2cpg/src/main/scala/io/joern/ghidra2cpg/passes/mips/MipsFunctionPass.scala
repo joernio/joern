@@ -66,7 +66,7 @@ class MipsFunctionPass(currentProgram: Program,
                                             name,
                                             index,
                                             Types.registerType(name),
-                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
                 addArgumentEdge(callNode, node)
               } else if (input.isConstant) {
                 val node = nodes
@@ -133,7 +133,7 @@ class MipsFunctionPass(currentProgram: Program,
                                         checkedParameter,
                                         index,
                                         Types.registerType(dataType),
-                                        Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             addArgumentEdge(callNode, node)
         }
       }
@@ -148,7 +148,7 @@ class MipsFunctionPass(currentProgram: Program,
                                       argument,
                                       index + 1,
                                       Types.registerType(argument),
-                                      Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -160,7 +160,7 @@ class MipsFunctionPass(currentProgram: Program,
                                             register.getName,
                                             index + 1,
                                             Types.registerType(register.getName),
-                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
                 addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =

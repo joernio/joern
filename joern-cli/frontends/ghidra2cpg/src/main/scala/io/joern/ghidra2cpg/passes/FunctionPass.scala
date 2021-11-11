@@ -104,7 +104,7 @@ abstract class FunctionPass(
       .typeFullName(Types.registerType(typ))
       .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
   }
-  def createIdentifier(code: String, name: String, index: Int, typ: String, lineNumber: Option[Int]): NewIdentifier = {
+  def createIdentifier(code: String, name: String, index: Int, typ: String, lineNumber: Int): NewIdentifier = {
     nodes
       .NewIdentifier()
       .code(code)
@@ -180,7 +180,7 @@ abstract class FunctionPass(
         .code(local.toString)
         .typeFullName(Types.registerType(local.getDataType.toString))
       val identifier =
-        createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, Some(-1))
+        createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, -1)
 
       diffGraph.addNode(localNode)
       diffGraph.addNode(identifier)
@@ -263,7 +263,7 @@ abstract class FunctionPass(
                                         checkedParameter,
                                         index,
                                         Types.registerType(dataType),
-                                        Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             addArgumentEdge(callNode, node)
         }
       }
@@ -278,7 +278,7 @@ abstract class FunctionPass(
                                       argument,
                                       index + 1,
                                       Types.registerType(argument),
-                                      Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -290,7 +290,7 @@ abstract class FunctionPass(
                                             register.getName,
                                             index + 1,
                                             Types.registerType(register.getName),
-                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
                 addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =
