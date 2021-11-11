@@ -150,6 +150,19 @@ trait AstForTypesCreator {
       val ast = Ast(callNode).withChildren(args)
       val validArgs = args.collect { case a if a.root.isDefined => a.root.get }
       ast.withArgEdges(callNode, validArgs)
+    case i: IASTInitializerList =>
+      val operatorName = Operators.assignment
+      val callNode = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
+      val left = astForNode(declarator.getName, 1)
+      val right = astForNode(i, 2)
+      val ast = Ast(callNode)
+        .withChild(left)
+        .withArgEdge(callNode, left.root.get)
+        .withChild(right)
+      right.root match {
+        case Some(value) => ast.withArgEdge(callNode, value)
+        case None        => ast
+      }
     case _ => astForNode(init, order)
   }
 
