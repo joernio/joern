@@ -130,7 +130,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |{
         |    return a + b;
         |};
-        |auto x = [] (string a, string b) -> string
+        |auto y = [] (string a, string b) -> string
         |{
         |    return a + b;
         |};
@@ -140,18 +140,18 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val lambda1FullName = "anonymous_lambda_0"
       val lambda2FullName = "anonymous_lambda_1"
 
-      cpg.assignment.order(1).l match {
-        case List(assignment1) =>
+      cpg.local.name("x").order.l shouldBe List(1)
+      cpg.local.name("y").order.l shouldBe List(3)
+
+      cpg.assignment.l match {
+        case List(assignment1, assignment2) =>
+          assignment1.order shouldBe 2
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambda1FullName
             case _ => fail()
           }
-        case _ => fail()
-      }
-
-      cpg.assignment.order(2).l match {
-        case List(assignment2) =>
+          assignment2.order shouldBe 4
           assignment2.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambda2FullName
@@ -207,8 +207,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val lambdaFullName = "Foo.anonymous_lambda_0"
       val signature = "int Foo.anonymous_lambda_0 (int,int)"
 
-      cpg.assignment.order(1).l match {
+      cpg.member.name("x").order.l shouldBe List(1)
+
+      cpg.assignment.l match {
         case List(assignment1) =>
+          assignment1.order shouldBe 2
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambdaFullName
@@ -257,8 +260,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val lambdaFullName = "A.B.Foo.anonymous_lambda_0"
       val signature = "int A.B.Foo.anonymous_lambda_0 (int,int)"
 
-      cpg.assignment.order(1).l match {
+      cpg.member.name("x").order.l shouldBe List(1)
+
+      cpg.assignment.l match {
         case List(assignment1) =>
+          assignment1.order shouldBe 2
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambdaFullName
@@ -309,8 +315,15 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val signature1 = "int anonymous_lambda_0 (int)"
       val lambda2Name = "anonymous_lambda_1"
 
-      cpg.assignment.order(1).l match {
-        case List(assignment1) =>
+      cpg.local.name("x").order.l shouldBe List(1)
+      cpg.local.name("foo1").order.l shouldBe List(3)
+      cpg.local.name("foo2").order.l shouldBe List(5)
+
+      cpg.assignment.l match {
+        case List(assignment1, assignment2, assignment3) =>
+          assignment1.order shouldBe 2
+          assignment2.order shouldBe 4
+          assignment3.order shouldBe 6
           assignment1.astMinusRoot.isMethodRef.l match {
             case List(ref) =>
               ref.methodFullName shouldBe lambda1Name
@@ -500,7 +513,9 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         case List(local: Local, call: Call) =>
           local.name shouldBe "local"
           local.typeFullName shouldBe "int"
+          local.order shouldBe 1
           call.name shouldBe Operators.assignment
+          call.order shouldBe 2
           call.astChildren.l match {
             case List(identifier: Identifier, literal: Literal) =>
               identifier.name shouldBe "local"
@@ -584,6 +599,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           |void method(int x) {
           |  int local = x;
           |}""".stripMargin) { cpg =>
+        cpg.local.name("local").order.l shouldBe List(1)
         cpg.method("method").block.astChildren.assignments.source.l match {
           case List(identifier: Identifier) =>
             identifier.code shouldBe "x"
@@ -608,13 +624,17 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           case List(local1, local2) =>
             local1.name shouldBe "local"
             local1.typeFullName shouldBe "int"
+            local1.order shouldBe 1
             local2.name shouldBe "local2"
             local2.typeFullName shouldBe "int"
+            local2.order shouldBe 2
           case _ => fail()
         }
 
         cpg.assignment.l.sortBy(_.order) match {
           case List(a1, a2) =>
+            a1.order shouldBe 3
+            a2.order shouldBe 4
             List(a1.target.code, a1.source.code) shouldBe List("local", "x")
             List(a2.target.code, a2.source.code) shouldBe List("local2", "y")
           case _ => fail()
@@ -630,7 +650,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  x = y + z;
         |}
       """.stripMargin) { cpg =>
-      cpg.local.l.sortBy(_.order).map(_.name) shouldBe List("x", "y", "z")
+      val localX = cpg.local.order(1)
+      localX.name.l shouldBe List("x")
+      val localY = cpg.local.order(2)
+      localY.name.l shouldBe List("y")
+      val localZ = cpg.local.order(3)
+      localZ.name.l shouldBe List("z")
 
       cpg.method.name("method").assignments.l match {
         case List(assignment) =>
@@ -659,9 +684,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       cpg.method.name("method").block.astChildren.l match {
         case List(local: Local, innerBlock: Block) =>
           local.name shouldBe "x"
+          local.order shouldBe 1
           innerBlock.astChildren.l match {
             case List(localInBlock: Local) =>
               localInBlock.name shouldBe "y"
+              localInBlock.order shouldBe 1
             case _ => fail()
           }
         case _ => fail()
@@ -1128,6 +1155,42 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
     }
 
+    "be correct for global struct" in TestAstOnlyFixture(
+      """
+        |struct filesystem {
+        |	void (*open)(int a);
+        |};
+        |
+        |void my_open(int a) {
+        |	int b;
+        |	b = a;
+        |	return;
+        |}
+        |
+        |static const struct filesystem my_fs = {
+        |	.open = &my_open,
+        |};
+        |
+        |int main(int argc, char *argv[]) {
+        |	static int i;
+        |	static const struct filesystem my_other_fs = {
+        |		 .open = &my_open,
+        |	};
+        |	struct filesystem real_fs;
+        |	real_fs.open = &my_open;
+        |	i = 0;
+        |}
+      """.stripMargin
+    ) { cpg =>
+      val List(localMyOtherFs) = cpg.method("main").local.name("my_other_fs").l
+      localMyOtherFs.order shouldBe 2
+      localMyOtherFs.referencingIdentifiers.name.l shouldBe List("my_other_fs")
+      val List(localMyFs) = cpg.local.name("my_fs").l
+      localMyFs.order shouldBe 4
+      localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
+      cpg.typeDecl.fullName.l.distinct shouldBe List("my_open", "main", "filesystem")
+    }
+
     "be correct for typedef enum" in TestAstOnlyFixture(
       """
         |typedef enum foo {
@@ -1500,6 +1563,70 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
             case _ => fail()
           }
           children shouldBe args
+        case _ => fail()
+      }
+    }
+
+    "be correct for array init without actual assignment" in TestAstOnlyFixture("""
+        |int foo{1};
+        |int bar[]{0, 1, 2};
+        |""".stripMargin,
+                                                                                "test.cpp") { cpg =>
+      val List(localFoo, localBar) = cpg.local.l
+      localFoo.name shouldBe "foo"
+      localFoo.order shouldBe 1
+      localBar.name shouldBe "bar"
+      localBar.order shouldBe 3
+
+      val List(assigment1, assigment2) = cpg.assignment.l
+      assigment1.order shouldBe 2
+      assigment1.code shouldBe "foo{1}"
+      assigment1.name shouldBe Operators.assignment
+      assigment1.methodFullName shouldBe Operators.assignment
+      assigment2.order shouldBe 4
+      assigment2.code shouldBe "bar[]{0, 1, 2}"
+      assigment2.name shouldBe Operators.assignment
+      assigment2.methodFullName shouldBe Operators.assignment
+
+      cpg.assignment.astChildren.l match {
+        case List(identFoo: Identifier, identBar: Identifier, callFoo: Call, barCall: Call) =>
+          identFoo.typeFullName shouldBe "int"
+          identFoo.order shouldBe 1
+          callFoo.code shouldBe "{1}"
+          callFoo.order shouldBe 2
+          // TODO: "<operator>.arrayInitializer" is not part of Operators
+          callFoo.name shouldBe "<operator>.arrayInitializer"
+          callFoo.methodFullName shouldBe "<operator>.arrayInitializer"
+          val childrenFoo = callFoo.astChildren.l
+          val argsFoo = callFoo.argument.l
+          childrenFoo match {
+            case List(a: Literal) =>
+              a.order shouldBe 1
+              a.code shouldBe "1"
+            case _ => fail()
+          }
+          childrenFoo shouldBe argsFoo
+
+          identBar.typeFullName shouldBe "int[]"
+          identBar.order shouldBe 1
+          barCall.code shouldBe "{0, 1, 2}"
+          barCall.order shouldBe 2
+          // TODO: "<operator>.arrayInitializer" is not part of Operators
+          barCall.name shouldBe "<operator>.arrayInitializer"
+          barCall.methodFullName shouldBe "<operator>.arrayInitializer"
+          val childrenBar = barCall.astChildren.l
+          val argsBar = barCall.argument.l
+          childrenBar match {
+            case List(a: Literal, b: Literal, c: Literal) =>
+              a.order shouldBe 1
+              a.code shouldBe "0"
+              b.order shouldBe 2
+              b.code shouldBe "1"
+              c.order shouldBe 3
+              c.code shouldBe "2"
+            case _ => fail()
+          }
+          childrenBar shouldBe argsBar
         case _ => fail()
       }
     }

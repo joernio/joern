@@ -24,10 +24,9 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
   }
 
   "should find that main calls add and others" in {
-    // out is a static field but it represents an object whose println call is dynamic
     cpg.method.name("main").callee.name.filterNot(_.startsWith("<operator>")).toSet shouldBe Set(
       "add",
-      "println",
+      "println"
     )
   }
 

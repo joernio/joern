@@ -5,13 +5,15 @@ import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.scalar.Scalar
+import ghidra.program.util.DefinedDataIterator
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
+import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
@@ -24,12 +26,21 @@ class MipsFunctionPass(currentProgram: Program,
                        keyPool: IntervalKeyPool,
                        decompInterface: DecompInterface)
     extends FunctionPass(new MipsProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
-
+  protected def findStringAtOffset(offset: Long) = {
+    DefinedDataIterator
+      .definedStrings(currentProgram)
+      .iterator()
+      .asScala
+      .filter(x => x.getAddress().getOffset == offset)
+      .toList
+      .map(x => x.getValue.toString)
+      .headOption
+  }
   val mipsCallInstructions = List("jalr", "jal")
   // Iterating over operands and add edges to call
   override def handleArguments(
       instruction: Instruction,
-      callNode: NewCall
+      callNode: CfgNodeNew
   ): Unit = {
     val mnemonicString = instruction.getMnemonicString
     if (mipsCallInstructions.contains(mnemonicString)) {
@@ -40,6 +51,54 @@ class MipsFunctionPass(currentProgram: Program,
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters: Array[(String, Int, String)] = Array.empty
 
+        val instructionPcodes = highFunction
+          .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
+          .asScala
+          .toList
+          .head
+          .getInputs
+          .drop(1)
+        if (instructionPcodes.nonEmpty) {
+          instructionPcodes.zipWithIndex foreach {
+            case (input, index) =>
+              if (input.isRegister) {
+                val name = currentProgram.getRegister(input.getAddress).getName
+                val node = createIdentifier(name,
+                                            name,
+                                            index,
+                                            Types.registerType(name),
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+                addArgumentEdge(callNode, node)
+              } else if (input.isConstant) {
+                val node = nodes
+                  .NewLiteral()
+                  .code(input.getWordOffset.toHexString)
+                  .order(index)
+                  .argumentIndex(index)
+                  .typeFullName(input.getWordOffset.toHexString)
+                addArgumentEdge(callNode, node)
+              } else if (input.isUnique) {
+                val value = findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset + 8)
+                  .getOrElse(findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset)
+                    .getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset))
+                val node = nodes
+                  .NewLiteral()
+                  .code(value.toString)
+                  .order(index)
+                  .argumentIndex(index)
+                  .typeFullName(input.getWordOffset.toHexString)
+                addArgumentEdge(callNode, node)
+              } else {
+                val node = nodes
+                  .NewLiteral()
+                  .code(input.toString)
+                  .order(index)
+                  .argumentIndex(index)
+                  .typeFullName(input.toString)
+                addArgumentEdge(callNode, node)
+              }
+          }
+        }
         if (callee.isThunk) {
           // thunk functions contain parameters already
           checkedParameters = callee.getParameters.map { parameter =>
@@ -75,7 +134,7 @@ class MipsFunctionPass(currentProgram: Program,
                                         checkedParameter,
                                         index,
                                         Types.registerType(dataType),
-                                        Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             addArgumentEdge(callNode, node)
         }
       }
@@ -90,7 +149,7 @@ class MipsFunctionPass(currentProgram: Program,
                                       argument,
                                       index + 1,
                                       Types.registerType(argument),
-                                      Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -102,7 +161,7 @@ class MipsFunctionPass(currentProgram: Program,
                                             register.getName,
                                             index + 1,
                                             Types.registerType(register.getName),
-                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
                 addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =
@@ -137,7 +196,14 @@ class MipsFunctionPass(currentProgram: Program,
     }
   }
   override def runOnPart(part: String): Iterator[DiffGraph] = {
-    createMethodNode()
+    methodNode = Some(
+      createMethodNode(decompInterface, function, filename, checkIfExternal(currentProgram, function.getName)))
+    diffGraph.addNode(methodNode.get)
+    diffGraph.addNode(blockNode)
+    diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
+    val methodReturn = createReturnNode()
+    diffGraph.addNode(methodReturn)
+    diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
     handleParameters()
     handleLocals()
     handleBody()
