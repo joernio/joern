@@ -18,7 +18,8 @@ class ArmFunctionPass(currentProgram: Program,
     extends FunctionPass(new ArmProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
 
   override def runOnPart(part: String): Iterator[DiffGraph] = {
-    methodNode = Some(createMethodNode(function, filename, checkIfExternal(currentProgram, function.getName)))
+    methodNode = Some(
+      createMethodNode(decompInterface, function, filename, checkIfExternal(currentProgram, function.getName)))
     diffGraph.addNode(methodNode.get)
     diffGraph.addNode(blockNode)
     diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
