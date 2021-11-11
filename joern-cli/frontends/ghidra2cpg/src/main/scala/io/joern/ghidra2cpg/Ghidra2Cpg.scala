@@ -152,8 +152,7 @@ class Ghidra2Cpg(
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
 
-    val proc = currentProgram.getLanguage.getLanguageDescription.getProcessor.toString
-    proc match {
+    currentProgram.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         functions.foreach { function =>
           new MipsFunctionPass(
@@ -165,6 +164,7 @@ class Ghidra2Cpg(
             decompilerInterface
           ).createAndApply()
           new LoHiPass(cpg).createAndApply()
+          new RefStoreToLoad(cpg).createAndApply()
         }
       case "AARCH64" =>
         functions.foreach { function =>
@@ -190,9 +190,6 @@ class Ghidra2Cpg(
         }
     }
 
-    if (proc == "MIPS") {
-      new RefStoreToLoad(cpg).createAndApply()
-    }
     new TypesPass(cpg).createAndApply()
     new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
     new LiteralPass(cpg, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
