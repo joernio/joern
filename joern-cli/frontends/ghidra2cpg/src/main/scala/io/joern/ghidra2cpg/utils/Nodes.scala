@@ -1,6 +1,8 @@
 package io.joern.ghidra2cpg.utils
 
+import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
+import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
@@ -67,10 +69,11 @@ object Nodes {
     nodes.NewMethodReturn().order(1)
 
   }
-  def createMethodNode(function: Function, fileName: String, isExternal: Boolean): NewMethod = {
+  def createMethodNode(decompInterface: DecompInterface,function: Function, fileName: String, isExternal: Boolean): NewMethod = {
+    val code = decompInterface.decompileFunction(function,60,new ConsoleTaskMonitor).getDecompiledFunction.getC
     nodes
       .NewMethod()
-      .code(function.getName)
+      .code(code)
       .name(function.getName)
       .fullName(function.getSignature(true).toString)
       .isExternal(isExternal)
