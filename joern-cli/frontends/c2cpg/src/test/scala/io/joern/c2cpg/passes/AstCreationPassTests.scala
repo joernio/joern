@@ -1531,6 +1531,70 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       }
     }
 
+    "be correct for array init without actual assignment" in TestAstOnlyFixture("""
+        |int foo{1};
+        |int bar[]{0, 1, 2};
+        |""".stripMargin,
+                                                                                "test.cpp") { cpg =>
+      val List(localFoo, localBar) = cpg.local.l
+      localFoo.name shouldBe "foo"
+      localFoo.order shouldBe 1
+      localBar.name shouldBe "bar"
+      localBar.order shouldBe 3
+
+      val List(assigment1, assigment2) = cpg.assignment.l
+      assigment1.order shouldBe 2
+      assigment1.code shouldBe "foo{1}"
+      assigment1.name shouldBe Operators.assignment
+      assigment1.methodFullName shouldBe Operators.assignment
+      assigment2.order shouldBe 4
+      assigment2.code shouldBe "bar[]{0, 1, 2}"
+      assigment2.name shouldBe Operators.assignment
+      assigment2.methodFullName shouldBe Operators.assignment
+
+      cpg.assignment.astChildren.l match {
+        case List(identFoo: Identifier, identBar: Identifier, callFoo: Call, barCall: Call) =>
+          identFoo.typeFullName shouldBe "int"
+          identFoo.order shouldBe 1
+          callFoo.code shouldBe "{1}"
+          callFoo.order shouldBe 2
+          // TODO: "<operator>.arrayInitializer" is not part of Operators
+          callFoo.name shouldBe "<operator>.arrayInitializer"
+          callFoo.methodFullName shouldBe "<operator>.arrayInitializer"
+          val childrenFoo = callFoo.astChildren.l
+          val argsFoo = callFoo.argument.l
+          childrenFoo match {
+            case List(a: Literal) =>
+              a.order shouldBe 1
+              a.code shouldBe "1"
+            case _ => fail()
+          }
+          childrenFoo shouldBe argsFoo
+
+          identBar.typeFullName shouldBe "int[]"
+          identBar.order shouldBe 1
+          barCall.code shouldBe "{0, 1, 2}"
+          barCall.order shouldBe 2
+          // TODO: "<operator>.arrayInitializer" is not part of Operators
+          barCall.name shouldBe "<operator>.arrayInitializer"
+          barCall.methodFullName shouldBe "<operator>.arrayInitializer"
+          val childrenBar = barCall.astChildren.l
+          val argsBar = barCall.argument.l
+          childrenBar match {
+            case List(a: Literal, b: Literal, c: Literal) =>
+              a.order shouldBe 1
+              a.code shouldBe "0"
+              b.order shouldBe 2
+              b.code shouldBe "1"
+              c.order shouldBe 3
+              c.code shouldBe "2"
+            case _ => fail()
+          }
+          childrenBar shouldBe argsBar
+        case _ => fail()
+      }
+    }
+
     "be correct for 'new' object" in TestAstOnlyFixture(
       """
         |Foo* alloc(int n) {
