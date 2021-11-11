@@ -11,7 +11,7 @@ import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewCall}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
@@ -29,7 +29,7 @@ class MipsFunctionPass(currentProgram: Program,
   // Iterating over operands and add edges to call
   override def handleArguments(
       instruction: Instruction,
-      callNode: NewCall
+      callNode: CfgNodeNew
   ): Unit = {
     val mnemonicString = instruction.getMnemonicString
     if (mipsCallInstructions.contains(mnemonicString)) {

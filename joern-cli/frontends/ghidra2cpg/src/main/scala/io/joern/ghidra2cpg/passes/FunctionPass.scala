@@ -19,12 +19,14 @@ import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  CfgNodeNew,
   NewBlock,
   NewCall,
   NewIdentifier,
   NewMethod,
   NewMethodParameterIn,
-  NewNode
+  NewNode,
+  NewReturn
 }
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
@@ -92,6 +94,15 @@ abstract class FunctionPass(
       .order(0)
       .methodFullName(mnemonic)
       .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
+      .lineNumber(lineNumber)
+  }
+
+  def createReturnNode(code: String, lineNumber: Integer): NewReturn = {
+    nodes
+      .NewReturn()
+      .code(code)
+      .order(0)
+      .argumentIndex(0)
       .lineNumber(lineNumber)
   }
 
@@ -192,12 +203,12 @@ abstract class FunctionPass(
 
   def handleBody(): Unit = {
     if (instructions.nonEmpty) {
-      var prevInstructionNode = addCallNode(instructions.head)
+      var prevInstructionNode = addCallOrReturnNode(instructions.head)
       handleArguments(instructions.head, prevInstructionNode)
       diffGraph.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
       diffGraph.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
-        val instructionNode = addCallNode(instruction)
+        val instructionNode = addCallOrReturnNode(instruction)
         diffGraph.addNode(instructionNode)
         handleArguments(instruction, instructionNode)
         diffGraph.addEdge(blockNode, instructionNode, EdgeTypes.AST)
@@ -210,7 +221,7 @@ abstract class FunctionPass(
   // Iterating over operands and add edges to call
   def handleArguments(
       instruction: Instruction,
-      callNode: NewCall
+      callNode: CfgNodeNew
   ): Unit = {
     val mnemonicString = instruction.getMnemonicString
     if (mnemonicString.equals("CALL")) {
@@ -331,12 +342,12 @@ abstract class FunctionPass(
     diffGraph.addEdge(fromNode, toNode, EdgeTypes.AST)
   }
 
-  def addCallNode(instruction: Instruction): NewCall = {
+  def addCallOrReturnNode(instruction: Instruction): CfgNodeNew = {
     processor.getInstructions
       .getOrElse(instruction.getMnemonicString, "UNKNOWN") match {
-      case "LEAVE" | "RET" =>
-        createCallNode("RET", "RET", instruction.getMinAddress.getOffsetAsBigInteger.intValue())
-      case "CALL" =>
+      case "RET" =>
+        createReturnNode(instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
+      case "CALL" | "LEAVE" =>
         val code = sanitizeMethodName(
           codeUnitFormat.getOperandRepresentationString(instruction, 0)
         )
