@@ -64,7 +64,7 @@ class MipsFunctionPass(currentProgram: Program,
                 val name = currentProgram.getRegister(input.getAddress).getName
                 val node = createIdentifier(name,
                                             name,
-                                            index + 1,
+                                            index,
                                             Types.registerType(name),
                                             Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
                 addArgumentEdge(callNode, node)
@@ -72,8 +72,8 @@ class MipsFunctionPass(currentProgram: Program,
                 val node = nodes
                   .NewLiteral()
                   .code(input.getWordOffset.toHexString)
-                  .order(index + 1)
-                  .argumentIndex(index + 1)
+                  .order(index)
+                  .argumentIndex(index)
                   .typeFullName(input.getWordOffset.toHexString)
                 addArgumentEdge(callNode, node)
               } else if (input.isUnique) {
@@ -83,16 +83,16 @@ class MipsFunctionPass(currentProgram: Program,
                 val node = nodes
                   .NewLiteral()
                   .code(value.toString)
-                  .order(index + 1)
-                  .argumentIndex(index + 1)
+                  .order(index)
+                  .argumentIndex(index)
                   .typeFullName(input.getWordOffset.toHexString)
                 addArgumentEdge(callNode, node)
               } else {
                 val node = nodes
                   .NewLiteral()
                   .code(input.toString)
-                  .order(index + 1)
-                  .argumentIndex(index + 1)
+                  .order(index)
+                  .argumentIndex(index)
                   .typeFullName(input.toString)
                 addArgumentEdge(callNode, node)
               }
