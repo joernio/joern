@@ -17,20 +17,11 @@ import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
+import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  CfgNodeNew,
-  NewBlock,
-  NewCall,
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewNode,
-  NewReturn
-}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod, NewNode}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
@@ -86,74 +77,6 @@ abstract class FunctionPass(
     })
   }
 
-  def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
-    nodes
-      .NewCall()
-      .name(mnemonic)
-      .code(code)
-      .order(0)
-      .methodFullName(mnemonic)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
-      .lineNumber(lineNumber)
-  }
-
-  def createReturnNode(code: String, lineNumber: Integer): NewReturn = {
-    nodes
-      .NewReturn()
-      .code(code)
-      .order(0)
-      .argumentIndex(0)
-      .lineNumber(lineNumber)
-  }
-
-  def createParameterNode(code: String, name: String, order: Int, typ: String): NewMethodParameterIn = {
-    nodes
-      .NewMethodParameterIn()
-      .code(code)
-      .name(code)
-      .order(order)
-      .typeFullName(Types.registerType(typ))
-      .lineNumber(Some(function.getEntryPoint.getOffsetAsBigInteger.intValue()))
-  }
-  def createIdentifier(code: String, name: String, index: Int, typ: String, lineNumber: Option[Int]): NewIdentifier = {
-    nodes
-      .NewIdentifier()
-      .code(code)
-      .name(name) //parameter.getName)
-      .order(index)
-      .argumentIndex(index)
-      .typeFullName(Types.registerType(typ))
-      .lineNumber(lineNumber)
-  }
-
-  def createMethodNode(): Unit = {
-    methodNode = Some(
-      nodes
-        .NewMethod()
-        .code(function.getName)
-        .name(function.getName)
-        .fullName(function.getSignature(true).toString)
-        .isExternal(checkIfExternal(function.getName))
-        .signature(function.getSignature(true).toString)
-        .lineNumber(function.getEntryPoint.getOffsetAsBigInteger.intValue())
-        .columnNumber(-1)
-        .lineNumberEnd(function.getReturn.getMinAddress.getOffsetAsBigInteger.intValue())
-        .order(0)
-        .filename(fileName)
-        .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName(s"$fileName:<global>")
-    )
-
-    diffGraph.addNode(methodNode.get)
-    diffGraph.addNode(blockNode)
-    diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
-
-    // We need at least one of "NewMethodReturn"
-    val methodReturn = nodes.NewMethodReturn().order(1)
-    diffGraph.addNode(methodReturn)
-    diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
-  }
-
   def handleParameters(): Unit = {
     if (function.isThunk) {
       function
@@ -162,8 +85,11 @@ abstract class FunctionPass(
         .zipWithIndex
         .foreach {
           case (parameter, index) =>
-            val node =
-              createParameterNode(parameter.getName, parameter.getName, index + 1, parameter.getDataType.getName)
+            val node = createParameterNode(parameter.getName,
+                                           parameter.getName,
+                                           index + 1,
+                                           parameter.getDataType.getName,
+                                           function.getEntryPoint.getOffsetAsBigInteger.intValue())
             diffGraph.addNode(node)
             diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
@@ -176,7 +102,8 @@ abstract class FunctionPass(
             createParameterNode(checkedParameter,
                                 checkedParameter,
                                 parameter.getCategoryIndex + 1,
-                                parameter.getDataType.getName)
+                                parameter.getDataType.getName,
+                                function.getEntryPoint.getOffsetAsBigInteger.intValue())
           diffGraph.addNode(node)
           diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
@@ -191,7 +118,7 @@ abstract class FunctionPass(
         .code(local.toString)
         .typeFullName(Types.registerType(local.getDataType.toString))
       val identifier =
-        createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, Some(-1))
+        createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, -1)
 
       diffGraph.addNode(localNode)
       diffGraph.addNode(identifier)
@@ -274,7 +201,7 @@ abstract class FunctionPass(
                                         checkedParameter,
                                         index,
                                         Types.registerType(dataType),
-                                        Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             addArgumentEdge(callNode, node)
         }
       }
@@ -289,7 +216,7 @@ abstract class FunctionPass(
                                       argument,
                                       index + 1,
                                       Types.registerType(argument),
-                                      Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -301,7 +228,7 @@ abstract class FunctionPass(
                                             register.getName,
                                             index + 1,
                                             Types.registerType(register.getName),
-                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
                 addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =
@@ -342,7 +269,7 @@ abstract class FunctionPass(
     diffGraph.addEdge(fromNode, toNode, EdgeTypes.AST)
   }
 
-  def addCallOrReturnNode(instruction: Instruction): CfgNodeNew = {
+  def addCallOrReturnNode(instruction: Instruction): CfgNodeNew =
     processor.getInstructions
       .getOrElse(instruction.getMnemonicString, "UNKNOWN") match {
       case "RET" =>
@@ -357,17 +284,9 @@ abstract class FunctionPass(
       case operator =>
         createCallNode(instruction.toString, operator, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
     }
-  }
 
   def sanitizeMethodName(methodName: String): String = {
     methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
   }
 
-  def checkIfExternal(functionName: String): Boolean = {
-    currentProgram.getFunctionManager.getExternalFunctions
-      .iterator()
-      .asScala
-      .map(_.getName)
-      .contains(functionName)
-  }
 }
