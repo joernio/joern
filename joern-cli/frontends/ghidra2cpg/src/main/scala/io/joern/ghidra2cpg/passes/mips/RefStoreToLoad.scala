@@ -21,11 +21,8 @@ class RefStoreToLoad(cpg: Cpg) extends CpgPass(cpg) {
         if (!c.code.startsWith("sw")) {
           None
         } else {
-          def cfgPeekForward =
-            c.repeat(_.cfgNext)(_.emit(_.isCall).times(maxCfgPeekDistance))
-
           def loadFromMatchingMemoryAddress =
-            cfgPeekForward.isCall
+            c.cfgNext(maxCfgPeekDistance).isCall
               .filter(_.code.startsWith("lw"))
               .where(_.argument(2).codeExact(c.argument(2).code))
           Some((c, loadFromMatchingMemoryAddress.l))
