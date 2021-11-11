@@ -69,8 +69,11 @@ object Nodes {
     nodes.NewMethodReturn().order(1)
 
   }
-  def createMethodNode(decompInterface: DecompInterface,function: Function, fileName: String, isExternal: Boolean): NewMethod = {
-    val code = decompInterface.decompileFunction(function,60,new ConsoleTaskMonitor).getDecompiledFunction.getC
+  def createMethodNode(decompInterface: DecompInterface,
+                       function: Function,
+                       fileName: String,
+                       isExternal: Boolean): NewMethod = {
+    val code = decompInterface.decompileFunction(function, 60, new ConsoleTaskMonitor).getDecompiledFunction.getC
     nodes
       .NewMethod()
       .code(code)
