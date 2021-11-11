@@ -219,12 +219,14 @@ trait AstCreatorHelper {
       case d: IASTIdExpression    => nodeSignature(d.getName)
       case _: IASTTranslationUnit => ""
       case u: IASTUnaryExpression => nodeSignature(u.getOperand)
-      case e: ICPPASTElaboratedTypeSpecifier =>
+      case e: IASTElaboratedTypeSpecifier =>
         fullName(e.getParent) + "." + nodeSignature(e.getName)
-      case e: IASTElaboratedTypeSpecifier   => nodeSignature(e.getName)
-      case other if other.getParent != null => fullName(other.getParent)
-      case other if other != null           => notHandledYet(other, -1); ""
-      case null                             => ""
+      case other if other.getParent != null =>
+        fullName(other.getParent)
+      case other if other != null =>
+        notHandledYet(other, -1); ""
+      case null =>
+        ""
     }
     val cleaned = fixQualifiedName(qualifiedName)
     if (cleaned.startsWith(".")) {
