@@ -18,12 +18,13 @@ class RefStoreToLoad(cpg: Cpg) extends CpgPass(cpg) {
     val maxCfgPeekDistance = 8
     def consecutiveStoreLoadPairs =
       cpg.call.flatMap { c =>
-        if (!c.code.startsWith("sw")) {
+        if (!(c.methodFullName == "<operator>.storeWord")) {
           None
         } else {
           def loadFromMatchingMemoryAddress =
-            c.cfgNext(maxCfgPeekDistance).isCall
-              .filter(_.code.startsWith("lw"))
+            c.cfgNext(maxCfgPeekDistance)
+              .isCall
+              .methodFullNameExact("<operator>.loadWord")
               .where(_.argument(2).codeExact(c.argument(2).code))
           Some((c, loadFromMatchingMemoryAddress.l))
         }
