@@ -5,6 +5,7 @@ import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.scalar.Scalar
+import ghidra.program.util.DefinedDataIterator
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.passes.FunctionPass
@@ -25,7 +26,16 @@ class MipsFunctionPass(currentProgram: Program,
                        keyPool: IntervalKeyPool,
                        decompInterface: DecompInterface)
     extends FunctionPass(new MipsProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
-
+  protected def findStringAtOffset(offset: Long) = {
+    DefinedDataIterator
+      .definedStrings(currentProgram)
+      .iterator()
+      .asScala
+      .filter(x => x.getAddress().getOffset == offset)
+      .toList
+      .map(x => x.getValue.toString)
+      .headOption
+  }
   val mipsCallInstructions = List("jalr", "jal")
   // Iterating over operands and add edges to call
   override def handleArguments(
@@ -41,6 +51,54 @@ class MipsFunctionPass(currentProgram: Program,
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters: Array[(String, Int, String)] = Array.empty
 
+        val instructionPcodes = highFunction
+          .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
+          .asScala
+          .toList
+          .head
+          .getInputs
+          .drop(1)
+        if (instructionPcodes.nonEmpty) {
+          instructionPcodes.zipWithIndex foreach {
+            case (input, index) =>
+              if (input.isRegister) {
+                val name = currentProgram.getRegister(input.getAddress).getName
+                val node = createIdentifier(name,
+                                            name,
+                                            index,
+                                            Types.registerType(name),
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+                addArgumentEdge(callNode, node)
+              } else if (input.isConstant) {
+                val node = nodes
+                  .NewLiteral()
+                  .code(input.getWordOffset.toHexString)
+                  .order(index)
+                  .argumentIndex(index)
+                  .typeFullName(input.getWordOffset.toHexString)
+                addArgumentEdge(callNode, node)
+              } else if (input.isUnique) {
+                val value = findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset + 8)
+                  .getOrElse(findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset)
+                    .getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset))
+                val node = nodes
+                  .NewLiteral()
+                  .code(value.toString)
+                  .order(index)
+                  .argumentIndex(index)
+                  .typeFullName(input.getWordOffset.toHexString)
+                addArgumentEdge(callNode, node)
+              } else {
+                val node = nodes
+                  .NewLiteral()
+                  .code(input.toString)
+                  .order(index)
+                  .argumentIndex(index)
+                  .typeFullName(input.toString)
+                addArgumentEdge(callNode, node)
+              }
+          }
+        }
         if (callee.isThunk) {
           // thunk functions contain parameters already
           checkedParameters = callee.getParameters.map { parameter =>
