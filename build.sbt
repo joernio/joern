@@ -1,10 +1,9 @@
 name := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "2.13.5"
-// don't upgrade to 2.13.6 until https://github.com/com-lihaoyi/Ammonite/issues/1182 is resolved
+ThisBuild / scalaVersion := "2.13.7"
 
-val cpgVersion = "1.3.428"
-val js2cpgVersion = "0.2.24"
+val cpgVersion = "1.3.429"
+val js2cpgVersion = "0.2.25"
 
 lazy val joerncli = Projects.joerncli
 lazy val querydb = Projects.querydb
