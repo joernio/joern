@@ -9,9 +9,10 @@ import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
+import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewCall}
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
@@ -75,7 +76,7 @@ class MipsFunctionPass(currentProgram: Program,
                                         checkedParameter,
                                         index,
                                         Types.registerType(dataType),
-                                        Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             addArgumentEdge(callNode, node)
         }
       }
@@ -90,7 +91,7 @@ class MipsFunctionPass(currentProgram: Program,
                                       argument,
                                       index + 1,
                                       Types.registerType(argument),
-                                      Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -102,7 +103,7 @@ class MipsFunctionPass(currentProgram: Program,
                                             register.getName,
                                             index + 1,
                                             Types.registerType(register.getName),
-                                            Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
+                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
                 addArgumentEdge(callNode, node)
               case "Scalar" =>
                 val scalar =
@@ -137,7 +138,13 @@ class MipsFunctionPass(currentProgram: Program,
     }
   }
   override def runOnPart(part: String): Iterator[DiffGraph] = {
-    createMethodNode()
+    methodNode = Some(createMethodNode(function, filename, checkIfExternal(currentProgram, function.getName)))
+    diffGraph.addNode(methodNode.get)
+    diffGraph.addNode(blockNode)
+    diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
+    val methodReturn = createReturnNode()
+    diffGraph.addNode(methodReturn)
+    diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
     handleParameters()
     handleLocals()
     handleBody()
