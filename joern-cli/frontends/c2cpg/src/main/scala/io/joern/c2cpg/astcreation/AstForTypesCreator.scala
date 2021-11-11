@@ -150,10 +150,23 @@ trait AstForTypesCreator {
       val ast = Ast(callNode).withChildren(args)
       val validArgs = args.collect { case a if a.root.isDefined => a.root.get }
       ast.withArgEdges(callNode, validArgs)
+    case i: IASTInitializerList =>
+      val operatorName = Operators.assignment
+      val callNode = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
+      val left = astForNode(declarator.getName, 1)
+      val right = astForNode(i, 2)
+      val ast = Ast(callNode)
+        .withChild(left)
+        .withArgEdge(callNode, left.root.get)
+        .withChild(right)
+      right.root match {
+        case Some(value) => ast.withArgEdge(callNode, value)
+        case None        => ast
+      }
     case _ => astForNode(init, order)
   }
 
-  protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Unit = {
+  protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
     val mappedName = lastNameOfQualifiedName(usingDecl.getName.toString)
     // we only do the mapping if the declaration is not global because this is already handled by the parser itself
     if (!isQualifiedName(usingDecl.getName.toString)) {
@@ -164,6 +177,7 @@ trait AstForTypesCreator {
           usingDeclarationMappings.put(mappedName, fixQualifiedName(usingDecl.getName.toString))
       }
     }
+    Seq.empty
   }
 
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration, order: Int): Ast = {
@@ -208,59 +222,58 @@ trait AstForTypesCreator {
     blockAst
   }
 
-  protected def astsForDeclaration(decl: IASTDeclaration, order: Int): Seq[Ast] = decl match {
-    case u: CPPASTAliasDeclaration => Seq(astForAliasDeclaration(u, order))
-    case functDef: IASTFunctionDefinition =>
-      Seq(astForFunctionDefinition(functDef, order))
-    case declaration: IASTSimpleDeclaration
-        if declaration.getDeclSpecifier != null && declaration.getDeclSpecifier
-          .isInstanceOf[IASTCompositeTypeSpecifier] =>
-      astsForCompositeType(declaration.getDeclSpecifier.asInstanceOf[IASTCompositeTypeSpecifier],
-                           declaration.getDeclarators.toList,
-                           order)
-    case declaration: IASTSimpleDeclaration
-        if declaration.getDeclSpecifier != null && declaration.getDeclSpecifier
-          .isInstanceOf[IASTEnumerationSpecifier] =>
-      astsForEnum(declaration.getDeclSpecifier.asInstanceOf[IASTEnumerationSpecifier],
-                  declaration.getDeclarators.toList,
-                  order)
-    case declaration: IASTSimpleDeclaration
-        if declaration.getDeclSpecifier != null && declaration.getDeclSpecifier
-          .isInstanceOf[IASTElaboratedTypeSpecifier] =>
-      astsForElaboratedType(declaration.getDeclSpecifier.asInstanceOf[IASTElaboratedTypeSpecifier],
-                            declaration.getDeclarators.toList,
-                            order)
+  protected def astsForDeclaration(decl: IASTDeclaration, order: Int): Seq[Ast] = {
+    val declAsts = decl match {
+      case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb, order))
+      case declaration: IASTSimpleDeclaration =>
+        declaration.getDeclSpecifier match {
+          case spec: IASTCompositeTypeSpecifier =>
+            astsForCompositeType(spec, declaration.getDeclarators.toList, order)
+          case spec: IASTEnumerationSpecifier =>
+            astsForEnum(spec, declaration.getDeclarators.toList, order)
+          case spec: IASTElaboratedTypeSpecifier =>
+            astsForElaboratedType(spec, declaration.getDeclarators.toList, order)
+          case spec: IASTNamedTypeSpecifier if declaration.getDeclarators.isEmpty =>
+            val filename = fileName(spec)
+            val name = nodeSignature(spec.getName)
+            Seq(Ast(newTypeDecl(name, registerType(name), filename, alias = Some(name), order = order)))
+          case _ if declaration.getDeclarators.nonEmpty =>
+            declaration.getDeclarators.toIndexedSeq.map {
+              case d: IASTFunctionDeclarator =>
+                astForFunctionDeclarator(d, order)
+              case d: IASTSimpleDeclaration if d.getInitializer != null =>
+                Ast() // we do the AST for this down below with initAsts
+              case d =>
+                astForDeclarator(declaration, d, order)
+            }
+          case _ if nodeSignature(declaration) == ";" => Seq.empty
+        }
+      case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias, order))
+      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef, order))
+      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias, order))
+      case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition, order))
+      case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a, order))
+      case asm: IASTASMDeclaration                         => Seq(astForASMDeclaration(asm, order))
+      case t: ICPPASTTemplateDeclaration                   => astsForDeclaration(t.getDeclaration, order)
+      case l: ICPPASTLinkageSpecification                  => astsForLinkageSpecification(l)
+      case u: ICPPASTUsingDeclaration                      => handleUsingDeclaration(u)
+      case _: ICPPASTVisibilityLabel                       => Seq.empty
+      case _: ICPPASTUsingDirective                        => Seq.empty
+      case _: ICPPASTExplicitTemplateInstantiation         => Seq.empty
+      case _                                               => Seq(astForNode(decl, order))
+    }
 
-    case declaration: IASTSimpleDeclaration
-        if declaration.getDeclSpecifier != null && declaration.getDeclSpecifier
-          .isInstanceOf[IASTNamedTypeSpecifier] && declaration.getDeclarators.isEmpty =>
-      val spec = declaration.getDeclSpecifier.asInstanceOf[IASTNamedTypeSpecifier]
-      val filename = fileName(spec)
-      val name = nodeSignature(spec.getName)
-      Seq(Ast(newTypeDecl(name, registerType(name), filename, alias = Some(name), order = order)))
-    case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
-      declaration.getDeclarators.toIndexedSeq.map {
-        case d: IASTFunctionDeclarator     => astForFunctionDeclarator(d, order)
-        case d if d.getInitializer != null => astForInitializer(d, d.getInitializer, order)
-        case d                             => astForDeclarator(declaration, d, order)
-      }
-    case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias, order))
-    case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition, order))
-    case _: ICPPASTVisibilityLabel                       => Seq.empty
-    case usingDecl: ICPPASTUsingDeclaration =>
-      handleUsingDeclaration(usingDecl)
-      Seq.empty
-    case _: ICPPASTUsingDirective =>
-      Seq.empty
-    case _: ICPPASTExplicitTemplateInstantiation             => Seq.empty
-    case s: IASTSimpleDeclaration if nodeSignature(s) == ";" => Seq.empty
-    case l: ICPPASTLinkageSpecification                      => astsForLinkageSpecification(l)
-    case t: ICPPASTTemplateDeclaration                       => astsForDeclaration(t.getDeclaration, order)
-    case a: ICPPASTStaticAssertDeclaration                   => Seq(astForStaticAssert(a, order))
-    case asm: IASTASMDeclaration                             => Seq(astForASMDeclaration(asm, order))
-    case structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration =>
-      Seq(astForStructuredBindingDeclaration(structuredBindingDeclaration, order))
-    case _ => Seq(astForNode(decl, order))
+    val lastOrder = declAsts.length
+    val initAsts = decl match {
+      case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
+        withOrder(declaration.getDeclarators) {
+          case (d: IASTDeclarator, o) if d.getInitializer != null =>
+            astForInitializer(d, d.getInitializer, order + lastOrder + o - 1)
+          case _ => Ast()
+        }
+      case _ => Nil
+    }
+    declAsts ++ initAsts
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =

@@ -25,6 +25,7 @@ object Predefined {
     shared +
       """
         |import io.joern.console.Joern._
+        |def script(x: String) : Any = console.runScript(x, Map(), cpg)
       """.stripMargin +
       dynamicPredef()
 

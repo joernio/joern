@@ -48,18 +48,14 @@ trait AstForStatementsCreator {
             astForInitializer(d, d.getInitializer, locals.size + order + o - 1)
           }
         locals ++ calls
-      case s: ICPPASTStaticAssertDeclaration =>
-        Seq(astForStaticAssert(s, order))
-      case usingDeclaration: ICPPASTUsingDeclaration =>
-        handleUsingDeclaration(usingDeclaration)
-        Seq.empty
-      case alias: ICPPASTAliasDeclaration => Seq(astForAliasDeclaration(alias, order))
-      case func: IASTFunctionDefinition   => Seq(astForFunctionDefinition(func, order))
-      case alias: CPPASTNamespaceAlias    => Seq(astForNamespaceAlias(alias, order))
-      case _: ICPPASTUsingDirective       => Seq.empty
-      case asm: IASTASMDeclaration        => Seq(astForASMDeclaration(asm, order))
-      case decl =>
-        Seq(astForNode(decl, order))
+      case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, order))
+      case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
+      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias, order))
+      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, order))
+      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, order))
+      case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, order))
+      case _: ICPPASTUsingDirective                  => Seq.empty
+      case decl                                      => Seq(astForNode(decl, order))
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement, order: Int): Ast = {
