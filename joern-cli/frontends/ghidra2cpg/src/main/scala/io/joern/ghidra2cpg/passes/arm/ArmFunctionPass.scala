@@ -15,7 +15,7 @@ class ArmFunctionPass(currentProgram: Program,
                       cpg: Cpg,
                       keyPool: IntervalKeyPool,
                       decompInterface: DecompInterface)
-    extends FunctionPass(new ArmProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
+    extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, keyPool, decompInterface) {
 
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     methodNode = Some(

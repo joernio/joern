@@ -16,7 +16,7 @@ class X86FunctionPass(currentProgram: Program,
                       cpg: Cpg,
                       keyPool: IntervalKeyPool,
                       decompInterface: DecompInterface)
-    extends FunctionPass(new X86Processor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
+    extends FunctionPass(new X86Processor, currentProgram, function, cpg, keyPool, decompInterface) {
 
   override def handleBody(): Unit = {
     if (instructions.nonEmpty) {

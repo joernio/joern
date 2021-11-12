@@ -12,6 +12,7 @@ import scala.language.implicitConversions
 
 class LiteralPass(
     cpg: Cpg,
+    address2Literal: Map[Long, String],
     currentProgram: Program,
     flatProgramAPI: FlatProgramAPI,
     keyPool: IntervalKeyPool
@@ -32,12 +33,7 @@ class LiteralPass(
           .getBytes(literal.getAddress, literal.getLength)
           .map(_.toChar)
           .mkString("")
-      } ++
-      DefinedDataIterator
-        .definedStrings(currentProgram)
-        .iterator
-        .asScala
-        .map(_.getValue.toString)
+      } ++ address2Literal.values
 
     literals.sorted.distinct.foreach { literal =>
       val node = nodes

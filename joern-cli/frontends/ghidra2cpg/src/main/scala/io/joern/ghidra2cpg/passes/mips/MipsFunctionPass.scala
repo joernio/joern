@@ -1,6 +1,8 @@
 package io.joern.ghidra2cpg.passes.mips
 
 import ghidra.app.decompiler.DecompInterface
+import ghidra.app.plugin.core.calltree.CallNode
+import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
@@ -20,21 +22,136 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class MipsFunctionPass(currentProgram: Program,
+                       address2Literal: Map[Long, String],
                        filename: String,
                        function: Function,
                        cpg: Cpg,
                        keyPool: IntervalKeyPool,
                        decompInterface: DecompInterface)
-    extends FunctionPass(new MipsProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
+    extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompInterface) {
 
-  val address2Literals: Map[Long, String] = DefinedDataIterator
-    .definedStrings(currentProgram)
-    .iterator()
-    .asScala
-    .toList
-    .map(x => x.getAddress().getOffset -> x.getValue.toString)
-    .toMap
+  def resolveLiterals(instruction: Instruction, callNode: CfgNodeNew): Unit = {
 
+    highFunction
+      .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
+      .asScala
+      .toList
+      .head
+      .getInputs
+      .drop(1)
+      .zipWithIndex foreach {
+      case (input, index) =>
+        if (input.isRegister) {
+          val name = currentProgram.getRegister(input.getAddress).getName
+          val node = createIdentifier(name,
+                                      name,
+                                      index,
+                                      Types.registerType(name),
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          addArgumentEdge(callNode, node)
+        } else if (input.isConstant) {
+          // todo replace -1
+          val node =
+            createLiteral(input.getWordOffset.toHexString, index, index, input.getWordOffset.toHexString, -1)
+          addArgumentEdge(callNode, node)
+        } else if (input.isUnique) {
+          val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
+                                                input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
+          val node = createLiteral(value, index, index, input.getWordOffset.toHexString, -1)
+          addArgumentEdge(callNode, node)
+        } else {
+          val node = createLiteral(input.toString(), index, index, input.toString(), -1)
+          addArgumentEdge(callNode, node)
+        }
+    }
+  }
+  def addCallArguments(instruction: Instruction, callee: Function, callNode: CfgNodeNew): Unit = {
+
+    // Array of tuples containing (checked parameter name, parameter index, parameter data type)
+    var checkedParameters: Array[(String, Int, String)] = Array.empty
+    if (callee.isThunk) {
+      // thunk functions contain parameters already
+      checkedParameters = callee.getParameters.map { parameter =>
+        // checked parameter name, parameter index, parameter data type
+        (Option(parameter.getName).getOrElse(parameter.getRegister.getName),
+         parameter.getOrdinal + 1,
+         parameter.getDataType.getName)
+      }
+    } else {
+      // non thunk functions do not contain function parameters by default
+      // need to decompile function to get parameter information
+      // decompilation for a function is cached so subsequent calls to decompile should be free
+      val parameters = decompInterface
+        .decompileFunction(callee, 60, new ConsoleTaskMonitor())
+        .getHighFunction
+        .getLocalSymbolMap
+        .getSymbols
+        .asScala
+        .toSeq
+        .filter(_.isParameter)
+        .toArray
+      checkedParameters = parameters.map { parameter =>
+        // checked parameter name, parameter index, parameter data type
+        (Option(parameter.getName).getOrElse(parameter.getStorage.getRegister.getName),
+         parameter.getCategoryIndex + 1,
+         parameter.getDataType.getName)
+      }
+    }
+
+    checkedParameters.foreach {
+      case (checkedParameter, index, dataType) =>
+        val node = createIdentifier(checkedParameter,
+                                    checkedParameter,
+                                    index,
+                                    Types.registerType(dataType),
+                                    instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        addArgumentEdge(callNode, node)
+    }
+
+  }
+
+  def handleInstruction(instruction: Instruction, callNode: CfgNodeNew): Unit = {
+    for (index <- 0 until instruction.getNumOperands) {
+      val opObjects = instruction.getOpObjects(index)
+      if (opObjects.length > 1) {} else
+        for (opObject <- opObjects) { //
+          opObject.getClass.getSimpleName match {
+            case "Register" =>
+              val register = opObject.asInstanceOf[Register]
+              val node = createIdentifier(register.getName,
+                                          register.getName,
+                                          index + 1,
+                                          Types.registerType(register.getName),
+                                          instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+              addArgumentEdge(callNode, node)
+            case "Scalar" =>
+              val scalar =
+                opObject.asInstanceOf[Scalar].toString(16, false, false, "", "")
+              val node = createLiteral(scalar,
+                                       index + 1,
+                                       index + 1,
+                                       scalar,
+                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+              addArgumentEdge(callNode, node)
+            case "GenericAddress" =>
+              // TODO: try to resolve the address
+              val genericAddress =
+                opObject.asInstanceOf[GenericAddress].toString()
+              val node = createLiteral(genericAddress,
+                                       index + 1,
+                                       index + 1,
+                                       genericAddress,
+                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+              addArgumentEdge(callNode, node)
+            case _ =>
+              println(
+                s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
+              )
+          }
+        }
+    }
+
+  }
   val mipsCallInstructions = List("jalr", "jal")
   // Iterating over operands and add edges to call
   override def handleArguments(
@@ -47,150 +164,11 @@ class MipsFunctionPass(currentProgram: Program,
       val calledFunction =
         mipsPrefix.replaceFirstIn(codeUnitFormat.getOperandRepresentationString(instruction, 0), "")
       functions.find(function => function.getName().equals(calledFunction)).foreach { callee =>
-        // Array of tuples containing (checked parameter name, parameter index, parameter data type)
-        var checkedParameters: Array[(String, Int, String)] = Array.empty
-
-        val instructionPcodes = highFunction
-          .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
-          .asScala
-          .toList
-          .head
-          .getInputs
-          .drop(1)
-        if (instructionPcodes.nonEmpty) {
-          instructionPcodes.zipWithIndex foreach {
-            case (input, index) =>
-              if (input.isRegister) {
-                val name = currentProgram.getRegister(input.getAddress).getName
-                val node = createIdentifier(name,
-                                            name,
-                                            index,
-                                            Types.registerType(name),
-                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-                addArgumentEdge(callNode, node)
-              } else if (input.isConstant) {
-                val node = nodes
-                  .NewLiteral()
-                  .code(input.getWordOffset.toHexString)
-                  .order(index)
-                  .argumentIndex(index)
-                  .typeFullName(input.getWordOffset.toHexString)
-                addArgumentEdge(callNode, node)
-              } else if (input.isUnique) {
-                val value = address2Literals.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
-                                                       input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
-                val node = nodes
-                  .NewLiteral()
-                  .code(value)
-                  .order(index)
-                  .argumentIndex(index)
-                  .typeFullName(input.getWordOffset.toHexString)
-                addArgumentEdge(callNode, node)
-              } else {
-                val node = nodes
-                  .NewLiteral()
-                  .code(input.toString)
-                  .order(index)
-                  .argumentIndex(index)
-                  .typeFullName(input.toString)
-                addArgumentEdge(callNode, node)
-              }
-          }
-        }
-        if (callee.isThunk) {
-          // thunk functions contain parameters already
-          checkedParameters = callee.getParameters.map { parameter =>
-            // checked parameter name, parameter index, parameter data type
-            (Option(parameter.getName).getOrElse(parameter.getRegister.getName),
-             parameter.getOrdinal + 1,
-             parameter.getDataType.getName)
-          }
-        } else {
-          // non thunk functions do not contain function parameters by default
-          // need to decompile function to get parameter information
-          // decompilation for a function is cached so subsequent calls to decompile should be free
-          val parameters = decompInterface
-            .decompileFunction(callee, 60, new ConsoleTaskMonitor())
-            .getHighFunction
-            .getLocalSymbolMap
-            .getSymbols
-            .asScala
-            .toSeq
-            .filter(_.isParameter)
-            .toArray
-          checkedParameters = parameters.map { parameter =>
-            // checked parameter name, parameter index, parameter data type
-            (Option(parameter.getName).getOrElse(parameter.getStorage.getRegister.getName),
-             parameter.getCategoryIndex + 1,
-             parameter.getDataType.getName)
-          }
-        }
-
-        checkedParameters.foreach {
-          case (checkedParameter, index, dataType) =>
-            val node = createIdentifier(checkedParameter,
-                                        checkedParameter,
-                                        index,
-                                        Types.registerType(dataType),
-                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(callNode, node)
-        }
+        resolveLiterals(instruction, callNode)
+        addCallArguments(instruction, callee, callNode)
       }
     } else {
-      for (index <- 0 until instruction.getNumOperands) {
-        val opObjects = instruction.getOpObjects(index)
-        if (opObjects.length > 1) {
-          val argument = String.valueOf(
-            instruction.getDefaultOperandRepresentation(index)
-          )
-          val node = createIdentifier(argument,
-                                      argument,
-                                      index + 1,
-                                      Types.registerType(argument),
-                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          addArgumentEdge(callNode, node)
-        } else
-          for (opObject <- opObjects) { //
-            val className = opObject.getClass.getSimpleName
-            opObject.getClass.getSimpleName match {
-              case "Register" =>
-                val register = opObject.asInstanceOf[Register]
-                val node = createIdentifier(register.getName,
-                                            register.getName,
-                                            index + 1,
-                                            Types.registerType(register.getName),
-                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-                addArgumentEdge(callNode, node)
-              case "Scalar" =>
-                val scalar =
-                  opObject.asInstanceOf[Scalar].toString(16, false, false, "", "")
-                val node = nodes
-                  .NewLiteral()
-                  .code(scalar)
-                  .order(index + 1)
-                  .argumentIndex(index + 1)
-                  .typeFullName(scalar)
-                  .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                addArgumentEdge(callNode, node)
-              case "GenericAddress" =>
-                // TODO: try to resolve the address
-                val genericAddress =
-                  opObject.asInstanceOf[GenericAddress].toString()
-                val node = nodes
-                  .NewLiteral()
-                  .code(genericAddress)
-                  .order(index + 1)
-                  .argumentIndex(index + 1)
-                  .typeFullName(genericAddress)
-                  .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                addArgumentEdge(callNode, node)
-              case _ =>
-                println(
-                  s"""Unsupported argument: $opObject $className"""
-                )
-            }
-          }
-      }
+      handleInstruction(instruction, callNode)
     }
   }
   override def runOnPart(part: String): Iterator[DiffGraph] = {

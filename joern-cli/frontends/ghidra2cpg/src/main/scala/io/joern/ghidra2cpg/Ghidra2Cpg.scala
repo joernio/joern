@@ -10,7 +10,7 @@ import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
-import ghidra.program.util.GhidraProgramUtilities
+import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
@@ -124,6 +124,14 @@ class Ghidra2Cpg() {
     val functionIterator = listing.getFunctions(true)
     val functions = functionIterator.iterator.asScala.toList
 
+    val address2Literals: Map[Long, String] = DefinedDataIterator
+      .definedStrings(currentProgram)
+      .iterator()
+      .asScala
+      .toList
+      .map(x => x.getAddress().getOffset -> x.getValue.toString)
+      .toMap
+
     // We touch every function twice, regular ASM and PCode
     // Also we have + 2 for MetaDataPass and Namespacepass
     val numOfKeypools = functions.size * 3 + 2
@@ -140,6 +148,7 @@ class Ghidra2Cpg() {
         functions.foreach { function =>
           new MipsFunctionPass(
             currentProgram,
+            address2Literals,
             fileAbsolutePath,
             function,
             cpg,
@@ -174,7 +183,7 @@ class Ghidra2Cpg() {
 
     new TypesPass(cpg).createAndApply()
     new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-    new LiteralPass(cpg, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
+    new LiteralPass(cpg, address2Literals, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
     cpg.close()
   }
 
