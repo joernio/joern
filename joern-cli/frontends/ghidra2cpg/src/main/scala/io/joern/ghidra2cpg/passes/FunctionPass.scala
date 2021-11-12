@@ -29,7 +29,6 @@ import scala.language.implicitConversions
 abstract class FunctionPass(
     processor: Processor,
     currentProgram: Program,
-    fileName: String,
     function: Function,
     cpg: Cpg,
     keyPool: IntervalKeyPool,
