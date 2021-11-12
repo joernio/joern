@@ -28,7 +28,7 @@ object Main extends App {
     case Some(config) =>
       if (config.inputPaths.size == 1) {
         val inputFile = new File(config.inputPaths.head)
-        new Ghidra2Cpg().createCpg(inputFile, Some(config.outputPath))
+        new Ghidra2Cpg().createCpg(inputFile, Some(config.outputPath)).close()
       } else {
         println("This frontend requires exactly one input path")
         System.exit(1)

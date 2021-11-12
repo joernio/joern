@@ -27,10 +27,6 @@ class GhidraFrontend extends LanguageFrontend {
 
     val cpgBin = dir.getAbsolutePath
     new Ghidra2Cpg().createCpg(inputFile, Some(cpgBin))
-
-    val odbConfig = overflowdb.Config.withDefaults().withStorageLocation(cpgBin)
-    val config = CpgLoaderConfig.withDefaults.withOverflowConfig(odbConfig)
-    CpgLoader.loadFromOverflowDb(config)
   }
 
 }
