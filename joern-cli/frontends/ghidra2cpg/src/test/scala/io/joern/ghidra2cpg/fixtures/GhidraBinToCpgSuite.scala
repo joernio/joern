@@ -26,10 +26,7 @@ class GhidraFrontend extends LanguageFrontend {
     Runtime.getRuntime.addShutdownHook(new Thread(() => FileUtils.deleteQuietly(tempDir)))
 
     val cpgBin = dir.getAbsolutePath
-    new Ghidra2Cpg(
-      inputFile,
-      Some(cpgBin)
-    ).createCpg()
+    new Ghidra2Cpg().createCpg(inputFile, Some(cpgBin))
 
     val odbConfig = overflowdb.Config.withDefaults().withStorageLocation(cpgBin)
     val config = CpgLoaderConfig.withDefaults.withOverflowConfig(odbConfig)

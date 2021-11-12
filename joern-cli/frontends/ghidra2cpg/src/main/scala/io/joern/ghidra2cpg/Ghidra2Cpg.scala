@@ -19,85 +19,68 @@ import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.X86FunctionPass
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.x2cpg.X2Cpg
-import org.apache.commons.io.FileUtils
 import utilities.util.FileUtilities
 
 import java.io.File
-import java.nio.file.Files
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-object Types {
 
-  // Types will be added to the CPG as soon as everything
-  // else is done
-  val types: mutable.SortedSet[String] = scala.collection.mutable.SortedSet[String]()
-  def registerType(typeName: String): String = {
-    types += typeName
-    typeName
-  }
-}
-class Ghidra2Cpg(
-    inputFile: File,
-    outputFile: Option[String]
-) {
+class Ghidra2Cpg() {
 
-  val tempWorkingDir: File = Files.createTempDirectory("ghidra2cpg_tmp").toFile
-  // tempWorkingDir.deleteOnExit() is not reliable,
-  // adding a shutdown hook seems to work https://stackoverflow.com/posts/35212952/revisions
-  Runtime.getRuntime.addShutdownHook(new Thread(() => FileUtils.deleteQuietly(tempWorkingDir)))
-
-  def createCpg(): Unit = {
-    // We need this for the URL handler
-    Handler.registerHandler()
-
-    var projectManager: Option[HeadlessGhidraProjectManager] =
-      None: Option[HeadlessGhidraProjectManager]
-
-    var project: Option[Project] = None
-    // Initialize application (if necessary and only once)
-    if (!Application.isInitialized) {
-      val configuration = new HeadlessGhidraApplicationConfiguration
-      configuration.setInitializeLogging(false)
-      Application.initializeApplication(new GhidraJarApplicationLayout, configuration)
-    }
+  def createCpg(inputFile: File, outputFile: Option[String]): Unit = {
 
     if (!inputFile.isDirectory && !inputFile.isFile)
       throw new InvalidInputException(
         s"$inputFile is not a valid directory or file."
       )
 
-    val locator = new ProjectLocator(tempWorkingDir.getAbsolutePath, CommandLineConfig.projectName)
-    var program: Program = null
-    try {
-      projectManager = Some(new HeadlessGhidraProjectManager)
-      project = Some(projectManager.get.createProject(locator, null, false))
-      program = AutoImporter.importByUsingBestGuess(
-        inputFile,
-        null,
-        this,
-        new MessageLog,
-        TaskMonitor.DUMMY
-      )
+    better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
+      initGhidra()
+      val locator = new ProjectLocator(tempWorkingDir.path.toAbsolutePath.toString, CommandLineConfig.projectName)
+      var program: Program = null
+      var project: Project = null
 
-      analyzeProgram(inputFile.getAbsolutePath, program)
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-    } finally {
-      if (program != null) {
-        AutoAnalysisManager.getAnalysisManager(program).dispose()
-        program.release(this)
-        program = null
+      try {
+        val projectManager = new HeadlessGhidraProjectManager
+        project = projectManager.createProject(locator, null, false)
+        program = AutoImporter.importByUsingBestGuess(
+          inputFile,
+          null,
+          this,
+          new MessageLog,
+          TaskMonitor.DUMMY
+        )
+
+        analyzeProgram(inputFile.getAbsolutePath, program, outputFile)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+      } finally {
+        if (program != null) {
+          AutoAnalysisManager.getAnalysisManager(program).dispose()
+          program.release(this)
+        }
+        project.close()
+        FileUtilities.deleteDir(locator.getProjectDir)
+        locator.getMarkerFile.delete
       }
-      project.get.close()
-      // Used to have this in a config but we delete the directory anyway
-      // if (!config.runScriptsNoImport && config.deleteProject)
-      FileUtilities.deleteDir(locator.getProjectDir)
-      locator.getMarkerFile.delete
+    }
 
+  }
+
+  private def initGhidra(): Unit = {
+    // We need this for the URL handler
+    Handler.registerHandler()
+
+    // Initialize application (if necessary and only once)
+    if (!Application.isInitialized) {
+      val configuration = new HeadlessGhidraApplicationConfiguration
+      configuration.setInitializeLogging(false)
+      Application.initializeApplication(new GhidraJarApplicationLayout, configuration)
     }
   }
-  private def analyzeProgram(fileAbsolutePath: String, program: Program): Unit = {
+
+  private def analyzeProgram(fileAbsolutePath: String, program: Program, outputFile: Option[String]): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
     val transactionId: Int = program.startTransaction("Analysis")
     try {
@@ -112,14 +95,14 @@ class Ghidra2Cpg(
       program.endTransaction(transactionId, true)
     }
     try {
-      handleProgram(program, fileAbsolutePath)
+      handleProgram(program, fileAbsolutePath, outputFile)
     } catch {
       case e: Throwable =>
         e.printStackTrace()
     }
   }
 
-  def handleProgram(currentProgram: Program, fileAbsolutePath: String): Unit = {
+  def handleProgram(currentProgram: Program, fileAbsolutePath: String, outputFile: Option[String]): Unit = {
 
     val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(currentProgram)
     val options = new DecompileOptions()
@@ -201,4 +184,15 @@ class Ghidra2Cpg(
   ) extends DefaultProject(projectManager, connection) {}
 
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
+}
+
+object Types {
+
+  // Types will be added to the CPG as soon as everything
+  // else is done
+  val types: mutable.SortedSet[String] = scala.collection.mutable.SortedSet[String]()
+  def registerType(typeName: String): String = {
+    types += typeName
+    typeName
+  }
 }
