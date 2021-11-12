@@ -26,16 +26,15 @@ class MipsFunctionPass(currentProgram: Program,
                        keyPool: IntervalKeyPool,
                        decompInterface: DecompInterface)
     extends FunctionPass(new MipsProcessor, currentProgram, filename, function, cpg, keyPool, decompInterface) {
-  protected def findStringAtOffset(offset: Long) = {
-    DefinedDataIterator
-      .definedStrings(currentProgram)
-      .iterator()
-      .asScala
-      .filter(x => x.getAddress().getOffset == offset)
-      .toList
-      .map(x => x.getValue.toString)
-      .headOption
-  }
+
+  val address2Literals: Map[Long, String] = DefinedDataIterator
+    .definedStrings(currentProgram)
+    .iterator()
+    .asScala
+    .toList
+    .map(x => x.getAddress().getOffset -> x.getValue.toString)
+    .toMap
+
   val mipsCallInstructions = List("jalr", "jal")
   // Iterating over operands and add edges to call
   override def handleArguments(
@@ -78,12 +77,11 @@ class MipsFunctionPass(currentProgram: Program,
                   .typeFullName(input.getWordOffset.toHexString)
                 addArgumentEdge(callNode, node)
               } else if (input.isUnique) {
-                val value = findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset + 8)
-                  .getOrElse(findStringAtOffset(input.getDef.getInputs.toList.head.getAddress.getOffset)
-                    .getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset))
+                val value = address2Literals.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
+                                                       input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
                 val node = nodes
                   .NewLiteral()
-                  .code(value.toString)
+                  .code(value)
                   .order(index)
                   .argumentIndex(index)
                   .typeFullName(input.getWordOffset.toHexString)
