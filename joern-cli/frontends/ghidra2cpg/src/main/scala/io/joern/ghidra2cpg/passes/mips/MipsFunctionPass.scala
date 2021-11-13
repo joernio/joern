@@ -38,6 +38,8 @@ class MipsFunctionPass(currentProgram: Program,
       .toList
       .head
       .getInputs
+      // First input is the instruction
+      // we have already handled it
       .drop(1)
       .zipWithIndex foreach {
       case (input, index) =>
@@ -50,17 +52,28 @@ class MipsFunctionPass(currentProgram: Program,
                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else if (input.isConstant) {
-          // todo replace -1
           val node =
-            createLiteral(input.getWordOffset.toHexString, index, index, input.getWordOffset.toHexString, -1)
+            createLiteral(input.getWordOffset.toHexString,
+                          index,
+                          index,
+                          input.getWordOffset.toHexString,
+                          instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else if (input.isUnique) {
           val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
                                                 input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
-          val node = createLiteral(value, index, index, input.getWordOffset.toHexString, -1)
+          val node = createLiteral(value,
+                                   index,
+                                   index,
+                                   input.getWordOffset.toHexString,
+                                   instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         } else {
-          val node = createLiteral(input.toString(), index, index, input.toString(), -1)
+          val node = createLiteral(input.toString(),
+                                   index,
+                                   index,
+                                   input.toString(),
+                                   instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           addArgumentEdge(callNode, node)
         }
     }
@@ -134,13 +147,13 @@ class MipsFunctionPass(currentProgram: Program,
                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
               addArgumentEdge(callNode, node)
             case "GenericAddress" =>
-              // TODO: try to resolve the address
               val genericAddress =
-                opObject.asInstanceOf[GenericAddress].toString()
-              val node = createLiteral(genericAddress,
+                opObject.asInstanceOf[GenericAddress]
+
+              val node = createLiteral(genericAddress.toString,
                                        index + 1,
                                        index + 1,
-                                       genericAddress,
+                                       genericAddress.toString,
                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
               addArgumentEdge(callNode, node)
             case _ =>
