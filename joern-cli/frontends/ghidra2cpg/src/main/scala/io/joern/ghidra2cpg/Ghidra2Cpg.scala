@@ -17,6 +17,7 @@ import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.X86FunctionPass
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.x2cpg.X2Cpg
 import utilities.util.FileUtilities
@@ -27,12 +28,20 @@ import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
 
-  def createCpg(inputFile: File, outputFile: Option[String]): Unit = {
+  /**
+    * Create a CPG representing the given input file. The CPG
+    * is stored at the given output file. The caller must close
+    * the CPG.
+    * */
+  def createCpg(inputFile: File, outputFile: Option[String]): Cpg = {
 
-    if (!inputFile.isDirectory && !inputFile.isFile)
+    if (!inputFile.isDirectory && !inputFile.isFile) {
       throw new InvalidInputException(
         s"$inputFile is not a valid directory or file."
       )
+    }
+
+    val cpg = X2Cpg.newEmptyCpg(outputFile)
 
     better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
       initGhidra()
@@ -50,8 +59,7 @@ class Ghidra2Cpg() {
           new MessageLog,
           TaskMonitor.DUMMY
         )
-
-        analyzeProgram(inputFile.getAbsolutePath, program, outputFile)
+        addProgramToCpg(program, inputFile.getAbsolutePath, cpg)
       } catch {
         case e: Throwable =>
           e.printStackTrace()
@@ -65,7 +73,7 @@ class Ghidra2Cpg() {
         locator.getMarkerFile.delete
       }
     }
-
+    cpg
   }
 
   private def initGhidra(): Unit = {
@@ -80,7 +88,7 @@ class Ghidra2Cpg() {
     }
   }
 
-  private def analyzeProgram(fileAbsolutePath: String, program: Program, outputFile: Option[String]): Unit = {
+  private def addProgramToCpg(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
     val transactionId: Int = program.startTransaction("Analysis")
     try {
@@ -95,14 +103,14 @@ class Ghidra2Cpg() {
       program.endTransaction(transactionId, true)
     }
     try {
-      handleProgram(program, fileAbsolutePath, outputFile)
+      handleProgram(program, fileAbsolutePath, cpg)
     } catch {
       case e: Throwable =>
         e.printStackTrace()
     }
   }
 
-  def handleProgram(currentProgram: Program, fileAbsolutePath: String, outputFile: Option[String]): Unit = {
+  def handleProgram(currentProgram: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
 
     val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(currentProgram)
     val options = new DecompileOptions()
@@ -136,9 +144,6 @@ class Ghidra2Cpg() {
     // Also we have + 2 for MetaDataPass and Namespacepass
     val numOfKeypools = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
-
-    // Actual CPG construction
-    val cpg = X2Cpg.newEmptyCpg(outputFile)
 
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
@@ -184,7 +189,6 @@ class Ghidra2Cpg() {
     new TypesPass(cpg).createAndApply()
     new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
     new LiteralPass(cpg, address2Literals, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
-    cpg.close()
   }
 
   private class HeadlessProjectConnection(
