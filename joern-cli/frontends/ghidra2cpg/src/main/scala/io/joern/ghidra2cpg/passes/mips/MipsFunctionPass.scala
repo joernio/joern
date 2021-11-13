@@ -161,12 +161,17 @@ class MipsFunctionPass(currentProgram: Program,
       instruction: Instruction,
       callNode: CfgNodeNew
   ): Unit = {
-    instruction.getPcode.toList.lastOption.getOrElse() match {
+    if (instruction.getPcode.toList.isEmpty) {
+      // nop && _nop
+      return
+    }
+    instruction.getPcode.toList.last.getOpcode match {
       case CALL | CALLIND =>
         // Call arguments are treated different
         val mipsPrefix = "^t9=>".r
         val calledFunction =
           mipsPrefix.replaceFirstIn(codeUnitFormat.getOperandRepresentationString(instruction, 0), "")
+
         functions.find(function => function.getName().equals(calledFunction)).foreach { callee =>
           // try to resolve literal arguments to call
           // eg. printf("foo")
@@ -180,17 +185,21 @@ class MipsFunctionPass(currentProgram: Program,
     }
   }
   override def runOnPart(part: String): Iterator[DiffGraph] = {
-    methodNode = Some(
-      createMethodNode(decompInterface, function, filename, checkIfExternal(currentProgram, function.getName)))
-    diffGraph.addNode(methodNode.get)
-    diffGraph.addNode(blockNode)
-    diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
-    val methodReturn = createReturnNode()
-    diffGraph.addNode(methodReturn)
-    diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
-    handleParameters()
-    handleLocals()
-    handleBody()
+    try {
+      methodNode = Some(
+        createMethodNode(decompInterface, function, filename, checkIfExternal(currentProgram, function.getName)))
+      diffGraph.addNode(methodNode.get)
+      diffGraph.addNode(blockNode)
+      diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
+      val methodReturn = createReturnNode()
+      diffGraph.addNode(methodReturn)
+      diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
+      handleParameters()
+      handleLocals()
+      handleBody()
+    } catch {
+      case e: Exception => println(e.getMessage)
+    }
     Iterator(diffGraph.build())
   }
 }
