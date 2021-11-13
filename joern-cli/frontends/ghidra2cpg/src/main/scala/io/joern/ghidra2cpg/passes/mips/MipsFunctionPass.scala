@@ -161,12 +161,17 @@ class MipsFunctionPass(currentProgram: Program,
       instruction: Instruction,
       callNode: CfgNodeNew
   ): Unit = {
-    instruction.getPcode.toList.lastOption.getOrElse() match {
+    if (instruction.getPcode.toList.isEmpty) {
+      // nop && _nop
+      return
+    }
+    instruction.getPcode.toList.last.getOpcode match {
       case CALL | CALLIND =>
         // Call arguments are treated different
         val mipsPrefix = "^t9=>".r
         val calledFunction =
           mipsPrefix.replaceFirstIn(codeUnitFormat.getOperandRepresentationString(instruction, 0), "")
+
         functions.find(function => function.getName().equals(calledFunction)).foreach { callee =>
           // try to resolve literal arguments to call
           // eg. printf("foo")
