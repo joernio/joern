@@ -96,7 +96,10 @@ abstract class FunctionPass(
       highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq
         .filter(_.isParameter)
         .foreach { parameter =>
-          val checkedParameter = Option(parameter.getStorage.getRegister.getName).getOrElse(parameter.getName)
+          val checkedParameter = Option(parameter.getStorage)
+            .flatMap(x => Option(x.getRegister))
+            .flatMap(x => Option(x.getName))
+            .getOrElse(parameter.getName)
           val node =
             createParameterNode(checkedParameter,
                                 checkedParameter,

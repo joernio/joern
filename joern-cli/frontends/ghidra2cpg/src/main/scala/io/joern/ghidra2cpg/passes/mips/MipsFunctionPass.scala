@@ -198,7 +198,9 @@ class MipsFunctionPass(currentProgram: Program,
       handleLocals()
       handleBody()
     } catch {
-      case e: Exception => println(e.getMessage)
+      case e: Exception =>
+        e.printStackTrace()
+        println(e.getMessage)
     }
     Iterator(diffGraph.build())
   }
