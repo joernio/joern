@@ -124,7 +124,6 @@ class MipsFunctionPass(currentProgram: Program,
   def addArguments(instruction: Instruction, instructionNode: CfgNodeNew): Unit = {
     for (index <- 0 until instruction.getNumOperands) {
       val opObjects = instruction.getOpObjects(index)
-      if (opObjects.length > 1) {} else
         for (opObject <- opObjects) {
           opObject match {
             case register: Register =>
