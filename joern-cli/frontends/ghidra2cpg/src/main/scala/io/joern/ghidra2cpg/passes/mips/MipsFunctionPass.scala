@@ -1,21 +1,18 @@
 package io.joern.ghidra2cpg.passes.mips
 
 import ghidra.app.decompiler.DecompInterface
-import ghidra.app.plugin.core.calltree.CallNode
-import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.scalar.Scalar
-import ghidra.program.util.DefinedDataIterator
 import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.jdk.CollectionConverters._
@@ -30,6 +27,7 @@ class MipsFunctionPass(currentProgram: Program,
                        decompInterface: DecompInterface)
     extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompInterface) {
 
+  val mipsCallInstructions = List("jalr", "jal")
   def resolveLiterals(instruction: Instruction, callNode: CfgNodeNew): Unit = {
 
     highFunction
@@ -126,46 +124,38 @@ class MipsFunctionPass(currentProgram: Program,
   def handleInstruction(instruction: Instruction, callNode: CfgNodeNew): Unit = {
     for (index <- 0 until instruction.getNumOperands) {
       val opObjects = instruction.getOpObjects(index)
-      if (opObjects.length > 1) {} else
-        for (opObject <- opObjects) { //
-          opObject.getClass.getSimpleName match {
-            case "Register" =>
-              val register = opObject.asInstanceOf[Register]
-              val node = createIdentifier(register.getName,
-                                          register.getName,
-                                          index + 1,
-                                          Types.registerType(register.getName),
-                                          instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-              addArgumentEdge(callNode, node)
-            case "Scalar" =>
-              val scalar =
-                opObject.asInstanceOf[Scalar].toString(16, false, false, "", "")
-              val node = createLiteral(scalar,
-                                       index + 1,
-                                       index + 1,
-                                       scalar,
-                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-              addArgumentEdge(callNode, node)
-            case "GenericAddress" =>
-              val genericAddress =
-                opObject.asInstanceOf[GenericAddress]
-
-              val node = createLiteral(genericAddress.toString,
-                                       index + 1,
-                                       index + 1,
-                                       genericAddress.toString,
-                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-              addArgumentEdge(callNode, node)
-            case _ =>
-              println(
-                s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
-              )
-          }
+      for (opObject <- opObjects) {
+        opObject match {
+          case register: Register =>
+            val node = createIdentifier(register.getName,
+                                        register.getName,
+                                        index + 1,
+                                        Types.registerType(register.getName),
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          case scalar: Scalar =>
+            val node = createLiteral(scalar.toString(16, false, false, "", ""),
+                                     index + 1,
+                                     index + 1,
+                                     scalar.toString(16, false, false, "", ""),
+                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          case genericAddress: GenericAddress =>
+            // TODO: try to resolve the address
+            val node = createLiteral(genericAddress.toString(),
+                                     index + 1,
+                                     index + 1,
+                                     genericAddress.toString(),
+                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          case _ =>
+            println(
+              s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
+            )
         }
+      }
     }
-
   }
-  val mipsCallInstructions = List("jalr", "jal")
   // Iterating over operands and add edges to call
   override def handleArguments(
       instruction: Instruction,
