@@ -121,9 +121,7 @@ trait AstCreatorHelper {
 
   @nowarn
   protected def typeFor(node: IASTNode): String = node match {
-    case _: IASTIdExpression =>
-      cleanType(ASTTypeUtil.getNodeType(node))
-    case _: IASTName =>
+    case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
       cleanType(ASTTypeUtil.getNodeType(node))
     case _ =>
       import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature

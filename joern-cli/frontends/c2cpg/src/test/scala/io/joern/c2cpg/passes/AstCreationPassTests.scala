@@ -1536,6 +1536,22 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       cpg.call.name("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
     }
 
+    // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
+    "be correct for array size" in TestAstOnlyFixture("""
+        |int main() {
+        |  char buf[256];
+        |  printf("%s", buf);
+        |}
+        |""".stripMargin) { cpg =>
+      cpg.local.l match {
+        case List(buf: Local) =>
+          buf.typeFullName shouldBe "char[256]"
+          buf.name shouldBe "buf"
+          buf.code shouldBe "buf"
+        case _ => fail()
+      }
+    }
+
     "be correct for array init" in TestAstOnlyFixture("""
         |int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
@@ -1607,7 +1623,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           }
           childrenFoo shouldBe argsFoo
 
-          identBar.typeFullName shouldBe "int[]"
+          identBar.typeFullName shouldBe "int[3]"
           identBar.order shouldBe 1
           barCall.code shouldBe "{0, 1, 2}"
           barCall.order shouldBe 2
@@ -1723,7 +1739,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin) { cpg =>
       cpg.assignment.head.astChildren.l match {
         case List(ident: Identifier, call: Call) =>
-          ident.typeFullName shouldBe "int[]"
+          ident.typeFullName shouldBe "int[3]"
           ident.order shouldBe 1
           call.code shouldBe "{ [1] = 5, [2] = 10 }"
           call.order shouldBe 2
@@ -1934,8 +1950,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |int c = 0;
        |}
       """.stripMargin) { cpg =>
-      val x = cpg.identifier.l
-      x.foreach(println)
       cpg.identifier.l match {
         case List(a, b, c) =>
           a.lineNumber shouldBe Some(3)
