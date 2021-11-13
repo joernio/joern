@@ -124,35 +124,35 @@ class MipsFunctionPass(currentProgram: Program,
   def addArguments(instruction: Instruction, instructionNode: CfgNodeNew): Unit = {
     for (index <- 0 until instruction.getNumOperands) {
       val opObjects = instruction.getOpObjects(index)
-        for (opObject <- opObjects) {
-          opObject match {
-            case register: Register =>
-              val node = createIdentifier(register.getName,
-                                          register.getName,
-                                          index + 1,
-                                          Types.registerType(register.getName),
-                                          instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-              addArgumentEdge(instructionNode, node)
-            case scalar: Scalar =>
-              val node = createLiteral(scalar.toString(16, false, false, "", ""),
-                                       index + 1,
-                                       index + 1,
-                                       scalar.toString(16, false, false, "", ""),
-                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-              addArgumentEdge(instructionNode, node)
-            case genericAddress: GenericAddress =>
-              val node = createLiteral(genericAddress.toString,
-                                       index + 1,
-                                       index + 1,
-                                       genericAddress.toString,
-                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-              addArgumentEdge(instructionNode, node)
-            case _ =>
-              logger.warn(
-                s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
-              )
-          }
+      for (opObject <- opObjects) {
+        opObject match {
+          case register: Register =>
+            val node = createIdentifier(register.getName,
+                                        register.getName,
+                                        index + 1,
+                                        Types.registerType(register.getName),
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(instructionNode, node)
+          case scalar: Scalar =>
+            val node = createLiteral(scalar.toString(16, false, false, "", ""),
+                                     index + 1,
+                                     index + 1,
+                                     scalar.toString(16, false, false, "", ""),
+                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(instructionNode, node)
+          case genericAddress: GenericAddress =>
+            val node = createLiteral(genericAddress.toString,
+                                     index + 1,
+                                     index + 1,
+                                     genericAddress.toString,
+                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(instructionNode, node)
+          case _ =>
+            logger.warn(
+              s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
+            )
         }
+      }
     }
   }
 
