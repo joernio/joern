@@ -1,6 +1,5 @@
 package io.joern.ghidra2cpg.passes.x86
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
 import io.joern.ghidra2cpg.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass

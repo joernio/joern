@@ -5,10 +5,10 @@ import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.pcode.PcodeOp.{CALL, CALLIND}
 import ghidra.program.model.scalar.Scalar
-import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Nodes._
+import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew

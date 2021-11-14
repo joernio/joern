@@ -1,13 +1,10 @@
 package io.joern.ghidra2cpg.utils
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
-import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
-import io.shiftleft.passes.DiffGraph
-import io.shiftleft.proto.cpg.Cpg.{DiffGraph, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
@@ -31,7 +28,7 @@ object Nodes {
     nodes
       .NewMethodParameterIn()
       .code(code)
-      .name(code)
+      .name(name)
       .order(order)
       .typeFullName(Types.registerType(typ))
       .lineNumber(lineNumber)
@@ -71,6 +68,7 @@ object Nodes {
   }
   def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
     val code = decompiler.toDecompiledFunction(function).get.getC
+    val asmCode =function.getProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList.map(_.toString).mkString("\n")
     val lineNumberEnd = Option(function.getReturn)
       .flatMap(x => Option(x.getMinAddress))
       .flatMap(x => Option(x.getOffsetAsBigInteger))
