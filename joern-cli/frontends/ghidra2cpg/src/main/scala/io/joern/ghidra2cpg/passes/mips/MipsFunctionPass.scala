@@ -32,8 +32,6 @@ class MipsFunctionPass(currentProgram: Program,
 
   def resolveCallArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
     try {
-      if (instruction.getPcode.toList.isEmpty)
-        println(instruction.getPcode)
       highFunction
         .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
         .asScala
