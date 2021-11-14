@@ -1,7 +1,6 @@
 package io.joern.ghidra2cpg
 
 import ghidra.GhidraJarApplicationLayout
-import ghidra.app.decompiler.{DecompInterface, DecompileOptions}
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager
 import ghidra.app.util.importer.{AutoImporter, MessageLog}
 import ghidra.framework.model.{Project, ProjectLocator}
@@ -110,30 +109,18 @@ class Ghidra2Cpg() {
     }
   }
 
-  def handleProgram(currentProgram: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
+  def handleProgram(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
 
-    val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(currentProgram)
-    val options = new DecompileOptions()
-    val decompilerInterface = new DecompInterface()
-    decompilerInterface.setOptions(options)
-    decompilerInterface.setSimplificationStyle("decompile")
+    val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(program)
+    val decompiler = Decompiler(program).get
 
-    val opts = new DecompileOptions()
-
-    opts.grabFromProgram(currentProgram)
-    decompilerInterface.setOptions(opts)
-
-    println(s"""[ + ] Starting CPG generation""")
-    if (!decompilerInterface.openProgram(currentProgram)) {
-      println("Decompiler error: %s\n", decompilerInterface.getLastMessage)
-    }
     // Functions
-    val listing = currentProgram.getListing
+    val listing = program.getListing
     val functionIterator = listing.getFunctions(true)
     val functions = functionIterator.iterator.asScala.toList
 
     val address2Literals: Map[Long, String] = DefinedDataIterator
-      .definedStrings(currentProgram)
+      .definedStrings(program)
       .iterator()
       .asScala
       .toList
@@ -148,47 +135,47 @@ class Ghidra2Cpg() {
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
 
-    currentProgram.getLanguage.getLanguageDescription.getProcessor.toString match {
+    program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         functions.foreach { function =>
           new MipsFunctionPass(
-            currentProgram,
+            program,
             address2Literals,
             fileAbsolutePath,
             function,
             cpg,
             keyPoolIterator.next(),
-            decompilerInterface
+            decompiler
           ).createAndApply()
           new LoHiPass(cpg).createAndApply()
         }
       case "AARCH64" =>
         functions.foreach { function =>
           new ArmFunctionPass(
-            currentProgram,
+            program,
             fileAbsolutePath,
             function,
             cpg,
             keyPoolIterator.next(),
-            decompilerInterface
+            decompiler
           ).createAndApply()
         }
       case _ =>
         functions.foreach { function =>
           new X86FunctionPass(
-            currentProgram,
+            program,
             fileAbsolutePath,
             function,
             cpg,
             keyPoolIterator.next(),
-            decompilerInterface
+            decompiler
           ).createAndApply()
         }
     }
 
     new TypesPass(cpg).createAndApply()
     new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-    new LiteralPass(cpg, address2Literals, currentProgram, flatProgramAPI, keyPoolIterator.next()).createAndApply()
+    new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
   }
 
   private class HeadlessProjectConnection(

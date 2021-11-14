@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.passes.arm
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
+import io.joern.ghidra2cpg.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.ArmProcessor
 import io.joern.ghidra2cpg.utils.Nodes.{checkIfExternal, createMethodNode, createReturnNode}
@@ -14,12 +14,12 @@ class ArmFunctionPass(currentProgram: Program,
                       function: Function,
                       cpg: Cpg,
                       keyPool: IntervalKeyPool,
-                      decompInterface: DecompInterface)
-    extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, keyPool, decompInterface) {
+                      decompiler: Decompiler)
+    extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, keyPool, decompiler) {
 
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     methodNode = Some(
-      createMethodNode(decompInterface, function, filename, checkIfExternal(currentProgram, function.getName)))
+      createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName)))
     diffGraph.addNode(methodNode.get)
     diffGraph.addNode(blockNode)
     diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
