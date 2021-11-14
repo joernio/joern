@@ -1,12 +1,10 @@
 package io.joern.ghidra2cpg.passes.mips
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.pcode.PcodeOp.{CALL, CALLIND}
 import ghidra.program.model.scalar.Scalar
-import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
@@ -47,34 +45,34 @@ class MipsFunctionPass(currentProgram: Program,
             val name = input.getHigh.getName
             val node = createIdentifier(name,
                                         name,
-                                        index,
+                                        index + 1,
                                         Types.registerType(name),
                                         instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(callNode, node)
+            connectCallToArgument(callNode, node)
           } else if (input.isConstant) {
             val node =
               createLiteral("0x" + input.getWordOffset.toHexString,
-                            index,
-                            index,
+                            index + 1,
+                            index + 1,
                             "0x" + input.getWordOffset.toHexString,
                             instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(callNode, node)
+            connectCallToArgument(callNode, node)
           } else if (input.isUnique) {
             val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
                                                   input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
             val node = createLiteral(value,
-                                     index,
-                                     index,
+                                     index + 1,
+                                     index + 1,
                                      input.getWordOffset.toHexString,
                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(callNode, node)
+            connectCallToArgument(callNode, node)
           } else {
             val node = createLiteral(input.toString(),
-                                     index,
-                                     index,
+                                     index + 1,
+                                     index + 1,
                                      input.toString(),
                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(callNode, node)
+            connectCallToArgument(callNode, node)
           }
       }
     } catch {
@@ -94,21 +92,21 @@ class MipsFunctionPass(currentProgram: Program,
                                         index + 1,
                                         Types.registerType(register.getName),
                                         instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(instructionNode, node)
+            connectCallToArgument(instructionNode, node)
           case scalar: Scalar =>
             val node = createLiteral(scalar.toString(16, false, false, "", ""),
                                      index + 1,
                                      index + 1,
                                      scalar.toString(16, false, false, "", ""),
                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(instructionNode, node)
+            connectCallToArgument(instructionNode, node)
           case genericAddress: GenericAddress =>
             val node = createLiteral(genericAddress.toString,
                                      index + 1,
                                      index + 1,
                                      genericAddress.toString,
                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(instructionNode, node)
+            connectCallToArgument(instructionNode, node)
           case _ =>
             logger.warn(
               s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""

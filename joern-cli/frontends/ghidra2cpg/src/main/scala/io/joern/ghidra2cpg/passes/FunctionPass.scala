@@ -1,6 +1,5 @@
 package io.joern.ghidra2cpg.passes
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{
@@ -14,7 +13,6 @@ import ghidra.program.model.listing.{
 }
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
-import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
 import io.joern.ghidra2cpg.utils.Nodes._
@@ -203,7 +201,7 @@ abstract class FunctionPass(
                                         index,
                                         Types.registerType(dataType),
                                         instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            addArgumentEdge(callNode, node)
+            connectCallToArgument(callNode, node)
         }
       }
     } else {
@@ -218,7 +216,7 @@ abstract class FunctionPass(
                                       index + 1,
                                       Types.registerType(argument),
                                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          addArgumentEdge(callNode, node)
+          connectCallToArgument(callNode, node)
         } else
           for (opObject <- opObjects) { //
             val className = opObject.getClass.getSimpleName
@@ -230,7 +228,7 @@ abstract class FunctionPass(
                                             index + 1,
                                             Types.registerType(register.getName),
                                             instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-                addArgumentEdge(callNode, node)
+                connectCallToArgument(callNode, node)
               case "Scalar" =>
                 val scalar =
                   opObject.asInstanceOf[Scalar].toString(16, false, false, "", "")
@@ -241,7 +239,7 @@ abstract class FunctionPass(
                   .argumentIndex(index + 1)
                   .typeFullName(scalar)
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                addArgumentEdge(callNode, node)
+                connectCallToArgument(callNode, node)
               case "GenericAddress" =>
                 // TODO: try to resolve the address
                 val genericAddress =
@@ -253,7 +251,7 @@ abstract class FunctionPass(
                   .argumentIndex(index + 1)
                   .typeFullName(genericAddress)
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
-                addArgumentEdge(callNode, node)
+                connectCallToArgument(callNode, node)
               case _ =>
                 println(
                   s"""Unsupported argument: $opObject $className"""
@@ -264,10 +262,10 @@ abstract class FunctionPass(
     }
   }
 
-  def addArgumentEdge(fromNode: NewNode, toNode: NewNode): Unit = {
-    diffGraph.addNode(toNode)
-    diffGraph.addEdge(fromNode, toNode, EdgeTypes.ARGUMENT)
-    diffGraph.addEdge(fromNode, toNode, EdgeTypes.AST)
+  def connectCallToArgument(call: CfgNodeNew, argument: CfgNodeNew): Unit = {
+    diffGraph.addNode(argument)
+    diffGraph.addEdge(call, argument, EdgeTypes.ARGUMENT)
+    diffGraph.addEdge(call, argument, EdgeTypes.AST)
   }
 
   def addCallOrReturnNode(instruction: Instruction): CfgNodeNew =
