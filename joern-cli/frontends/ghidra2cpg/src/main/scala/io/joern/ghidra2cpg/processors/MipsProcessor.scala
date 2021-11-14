@@ -92,7 +92,7 @@ class MipsProcessor extends Processor {
       "and" -> "<operator>.and",
       "andi" -> "<operator>.and",
       "b" -> "<operator>.goto",
-      "bal" -> "<operator>.goto",
+      "bal" -> "CALL",
       "bc1f" -> "<operator>.goto",
       "bc1fl" -> "<operator>.goto",
       "bc1t" -> "<operator>.goto",
