@@ -53,10 +53,10 @@ class MipsFunctionPass(currentProgram: Program,
             addArgumentEdge(callNode, node)
           } else if (input.isConstant) {
             val node =
-              createLiteral(input.getWordOffset.toHexString,
+              createLiteral("0x"+input.getWordOffset.toHexString,
                             index,
                             index,
-                            input.getWordOffset.toHexString,
+                            "0x"+input.getWordOffset.toHexString,
                             instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             addArgumentEdge(callNode, node)
           } else if (input.isUnique) {
