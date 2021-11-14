@@ -1481,6 +1481,16 @@ class AstCreator(filename: String, global: Global) {
     }
   }
 
+  private def createCallSignature(decl: ResolvedMethodDeclaration): String = {
+    val returnType = Try(decl.getReturnType.describe()).toOption.getOrElse("<empty>")
+
+    val paramTypes =
+      for (i <- 0 until decl.getNumberOfParams)
+        yield Try(decl.getParam(i).getType.describe()).toOption.getOrElse("<empty>")
+
+    s"$returnType(${paramTypes.mkString(",")})"
+  }
+
   private def createCallNode(
       call: MethodCallExpr,
       resolvedDecl: Try[ResolvedMethodDeclaration],
@@ -1493,9 +1503,7 @@ class AstCreator(filename: String, global: Global) {
       .argumentIndex(order)
     resolvedDecl match {
       case Success(resolved) =>
-        val signature =
-          s"${resolved.getReturnType.describe()}(${(for (i <- 0 until resolved.getNumberOfParams)
-            yield resolved.getParam(i).getType.describe()).mkString(",")})"
+        val signature = createCallSignature(resolved)
         callNode.methodFullName(s"${resolved.getQualifiedName}:$signature")
         callNode.signature(signature)
         callNode.dispatchType(DispatchTypes.STATIC_DISPATCH)

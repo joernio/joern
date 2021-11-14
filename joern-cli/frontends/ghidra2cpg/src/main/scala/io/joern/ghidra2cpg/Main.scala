@@ -1,6 +1,5 @@
 package io.joern.ghidra2cpg
 
-import io.joern.ghidra2cpg.Ghidra2Cpg
 import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
 import scopt.OParser
 
@@ -29,11 +28,7 @@ object Main extends App {
     case Some(config) =>
       if (config.inputPaths.size == 1) {
         val inputFile = new File(config.inputPaths.head)
-        val cpg = new Ghidra2Cpg(
-          inputFile,
-          Some(config.outputPath)
-        ).createCpg()
-        //cpg.close()
+        new Ghidra2Cpg().createCpg(inputFile, Some(config.outputPath)).close()
       } else {
         println("This frontend requires exactly one input path")
         System.exit(1)

@@ -74,6 +74,11 @@ object Nodes {
                        fileName: String,
                        isExternal: Boolean): NewMethod = {
     val code = decompInterface.decompileFunction(function, 60, new ConsoleTaskMonitor).getDecompiledFunction.getC
+    val lineNumberEnd = Option(function.getReturn)
+      .flatMap(x => Option(x.getMinAddress))
+      .flatMap(x => Option(x.getOffsetAsBigInteger))
+      .flatMap(x => Option(x.intValue()))
+      .getOrElse(-1)
     nodes
       .NewMethod()
       .code(code)
@@ -83,7 +88,7 @@ object Nodes {
       .signature(function.getSignature(true).toString)
       .lineNumber(function.getEntryPoint.getOffsetAsBigInteger.intValue())
       .columnNumber(-1)
-      .lineNumberEnd(function.getReturn.getMinAddress.getOffsetAsBigInteger.intValue())
+      .lineNumberEnd(lineNumberEnd)
       .order(0)
       .filename(fileName)
       .astParentType(NodeTypes.NAMESPACE_BLOCK)
