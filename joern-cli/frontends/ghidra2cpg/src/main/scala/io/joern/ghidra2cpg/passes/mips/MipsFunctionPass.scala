@@ -42,7 +42,10 @@ class MipsFunctionPass(currentProgram: Program,
         .zipWithIndex foreach {
         case (input, index) =>
           if (input.isRegister) {
-            val name = input.getHigh.getName
+            var name = input.getHigh.getName
+            if (input.getDef != null && input.getHigh.getName == "UNNAMED" && input.getDef.getInputs.toList.last.getHigh.getSymbol != null) {
+              name = input.getDef.getInputs.toList.last.getHigh.getSymbol.getName
+            }
             val node = createIdentifier(name,
                                         name,
                                         index + 1,
