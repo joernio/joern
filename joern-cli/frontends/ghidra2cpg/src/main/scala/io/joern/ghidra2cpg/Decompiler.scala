@@ -1,6 +1,6 @@
 package io.joern.ghidra2cpg
 
-import ghidra.app.decompiler.{DecompInterface, DecompileOptions, DecompileResults}
+import ghidra.app.decompiler.{DecompInterface, DecompileOptions, DecompileResults, DecompiledFunction}
 import ghidra.program.model.listing.{Function, Program}
 import ghidra.program.model.pcode.HighFunction
 
@@ -37,10 +37,22 @@ class Decompiler(val decompInterface: DecompInterface) {
   val cache: mutable.Map[String, DecompileResults] = mutable.Map()
 
   /**
+    * Retrieve HighFunction for given function, using the cache.
+    * */
+  def toHighFunction(function: Function): Option[HighFunction] =
+    decompile(function).map(_.getHighFunction)
+
+  /**
+    * Retrieve DecompiledFunction for given function, using the cache.
+    * */
+  def toDecompiledFunction(function: Function): Option[DecompiledFunction] =
+    decompile(function).map(_.getDecompiledFunction)
+
+  /**
     * Decompile the given function, retrieving it from a cache if possible.
     * Returns Some(highFunction) on success and None on error.
     * */
-  def decompile(function: Function): Option[DecompileResults] = {
+  private def decompile(function: Function): Option[DecompileResults] = {
     val addr = function.getEntryPoint.toString(true)
     cache.get(addr) match {
       case Some(x) =>

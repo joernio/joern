@@ -93,9 +93,8 @@ class MipsFunctionPass(currentProgram: Program,
       // need to decompile function to get parameter information
       // decompilation for a function is cached so subsequent calls to decompile should be free
       val parameters = decompiler
-        .decompile(callee)
+        .toHighFunction(callee)
         .get
-        .getHighFunction
         .getLocalSymbolMap
         .getSymbols
         .asScala

@@ -42,7 +42,7 @@ abstract class FunctionPass(
   val listing: Listing = currentProgram.getListing
   val functionIterator: FunctionIterator = listing.getFunctions(true)
   val functions: List[Function] = functionIterator.iterator.asScala.toList
-  val highFunction: HighFunction = decompiler.decompile(function).map(_.getHighFunction).orNull
+  val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
   protected var methodNode: Option[NewMethod] = None
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
@@ -178,9 +178,8 @@ abstract class FunctionPass(
           // decompilation for a function is cached so subsequent calls to decompile should be free
           // TODO: replace this later on
           val parameters = decompiler
-            .decompile(callee.head)
+            .toHighFunction(callee.head)
             .get
-            .getHighFunction
             .getLocalSymbolMap
             .getSymbols
             .asScala
