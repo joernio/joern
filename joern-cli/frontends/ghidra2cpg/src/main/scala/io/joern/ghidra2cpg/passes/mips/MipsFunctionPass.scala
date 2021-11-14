@@ -29,96 +29,58 @@ class MipsFunctionPass(currentProgram: Program,
                        decompiler: Decompiler)
     extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompiler) {
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
-  def resolveLiterals(instruction: Instruction, callNode: CfgNodeNew): Unit = {
 
-    highFunction
-      .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
-      .asScala
-      .toList
-      .head
-      .getInputs
-      // First input is the instruction
-      // we have already handled it
-      .drop(1)
-      .zipWithIndex foreach {
-      case (input, index) =>
-        if (input.isRegister) {
-          val name = currentProgram.getRegister(input.getAddress).getName
-          val node = createIdentifier(name,
-                                      name,
-                                      index,
-                                      Types.registerType(name),
-                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          addArgumentEdge(callNode, node)
-        } else if (input.isConstant) {
-          val node =
-            createLiteral(input.getWordOffset.toHexString,
-                          index,
-                          index,
-                          input.getWordOffset.toHexString,
-                          instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          addArgumentEdge(callNode, node)
-        } else if (input.isUnique) {
-          val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
-                                                input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
-          val node = createLiteral(value,
-                                   index,
-                                   index,
-                                   input.getWordOffset.toHexString,
-                                   instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          addArgumentEdge(callNode, node)
-        } else {
-          val node = createLiteral(input.toString(),
-                                   index,
-                                   index,
-                                   input.toString(),
-                                   instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          addArgumentEdge(callNode, node)
-        }
-    }
-  }
-  def addCallArguments(instruction: Instruction, callee: Function, callNode: CfgNodeNew): Unit = {
-    // Array of tuples containing (checked parameter name, parameter index, parameter data type)
-    var checkedParameters: Array[(String, Int, String)] = Array.empty
-    if (callee.isThunk) {
-      // thunk functions contain parameters already
-      checkedParameters = callee.getParameters.map { parameter =>
-        // checked parameter name, parameter index, parameter data type
-        (Option(parameter.getName).getOrElse(parameter.getRegister.getName),
-         parameter.getOrdinal + 1,
-         parameter.getDataType.getName)
-      }
-    } else {
-      // non thunk functions do not contain function parameters by default
-      // need to decompile function to get parameter information
-      // decompilation for a function is cached so subsequent calls to decompile should be free
-      val parameters = decompiler
-        .toHighFunction(callee)
-        .get
-        .getLocalSymbolMap
-        .getSymbols
+  def resolveCallArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
+    try {
+      highFunction
+        .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
         .asScala
-        .toSeq
-        .filter(_.isParameter)
-        .toArray
-      checkedParameters = parameters.map { parameter =>
-        // checked parameter name, parameter index, parameter data type
-        (Option(parameter.getName).getOrElse(parameter.getStorage.getRegister.getName),
-         parameter.getCategoryIndex + 1,
-         parameter.getDataType.getName)
+        .toList
+        .head
+        .getInputs
+        // First input is the instruction
+        // we have already handled it
+        .drop(1)
+        .zipWithIndex foreach {
+        case (input, index) =>
+          if (input.isRegister) {
+            val name = input.getHigh.getName
+            val node = createIdentifier(name,
+                                        name,
+                                        index,
+                                        Types.registerType(name),
+                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          } else if (input.isConstant) {
+            val node =
+              createLiteral(input.getWordOffset.toHexString,
+                            index,
+                            index,
+                            input.getWordOffset.toHexString,
+                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          } else if (input.isUnique) {
+            val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
+                                                  input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
+            val node = createLiteral(value,
+                                     index,
+                                     index,
+                                     input.getWordOffset.toHexString,
+                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          } else {
+            val node = createLiteral(input.toString(),
+                                     index,
+                                     index,
+                                     input.toString(),
+                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            addArgumentEdge(callNode, node)
+          }
       }
+    } catch {
+      // jal 0x00000000
+      case _: NoSuchElementException => logger.warn(s"Cannot resolve at ${instruction.getMinAddress}")
     }
-
-    checkedParameters.foreach {
-      case (checkedParameter, index, dataType) =>
-        val node = createIdentifier(checkedParameter,
-                                    checkedParameter,
-                                    index,
-                                    Types.registerType(dataType),
-                                    instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-        addArgumentEdge(callNode, node)
-    }
-
   }
 
   def addArguments(instruction: Instruction, instructionNode: CfgNodeNew): Unit = {
@@ -165,25 +127,16 @@ class MipsFunctionPass(currentProgram: Program,
       // nop && _nop
       return
     }
+
     instruction.getPcode.toList.last.getOpcode match {
       case CALL | CALLIND =>
-        // Call arguments are treated different
-        val mipsPrefix = "^t9=>".r
-        val calledFunction =
-          mipsPrefix.replaceFirstIn(codeUnitFormat.getOperandRepresentationString(instruction, 0), "")
-
-        functions.find(function => function.getName().equals(calledFunction)).foreach { callee =>
-          // try to resolve literal arguments to call
-          // eg. printf("foo")
-          resolveLiterals(instruction, callNode)
-          // resolve other arguments, like registers
-          addCallArguments(instruction, callee, callNode)
-        }
+        resolveCallArguments(instruction, callNode)
       case _ =>
         // regular instructions, eg. add/sub
         addArguments(instruction, callNode)
     }
   }
+
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     try {
       methodNode = Some(
