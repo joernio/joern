@@ -32,7 +32,7 @@ abstract class FunctionPass(
     function: Function,
     cpg: Cpg,
     keyPool: IntervalKeyPool,
-    decompInterface: DecompInterface
+    decompiler: Decompiler,
 ) extends ParallelCpgPass[String](
       cpg,
       keyPools = Some(keyPool.split(1))
@@ -42,8 +42,7 @@ abstract class FunctionPass(
   val listing: Listing = currentProgram.getListing
   val functionIterator: FunctionIterator = listing.getFunctions(true)
   val functions: List[Function] = functionIterator.iterator.asScala.toList
-  val highFunction: HighFunction =
-    decompInterface.decompileFunction(function, 60, new ConsoleTaskMonitor).getHighFunction
+  val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
   protected var methodNode: Option[NewMethod] = None
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
@@ -178,9 +177,9 @@ abstract class FunctionPass(
           // need to decompile function to get parameter information
           // decompilation for a function is cached so subsequent calls to decompile should be free
           // TODO: replace this later on
-          val parameters = decompInterface
-            .decompileFunction(callee.head, 60, new ConsoleTaskMonitor())
-            .getHighFunction
+          val parameters = decompiler
+            .toHighFunction(callee.head)
+            .get
             .getLocalSymbolMap
             .getSymbols
             .asScala

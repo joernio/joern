@@ -3,7 +3,7 @@ package io.joern.ghidra2cpg.utils
 import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
 import ghidra.util.task.ConsoleTaskMonitor
-import io.joern.ghidra2cpg.Types
+import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.passes.DiffGraph
@@ -69,11 +69,8 @@ object Nodes {
     nodes.NewMethodReturn().order(1)
 
   }
-  def createMethodNode(decompInterface: DecompInterface,
-                       function: Function,
-                       fileName: String,
-                       isExternal: Boolean): NewMethod = {
-    val code = decompInterface.decompileFunction(function, 60, new ConsoleTaskMonitor).getDecompiledFunction.getC
+  def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
+    val code = decompiler.toDecompiledFunction(function).get.getC
     val lineNumberEnd = Option(function.getReturn)
       .flatMap(x => Option(x.getMinAddress))
       .flatMap(x => Option(x.getOffsetAsBigInteger))

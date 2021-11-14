@@ -7,7 +7,7 @@ import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.pcode.PcodeOp.{CALL, CALLIND}
 import ghidra.program.model.scalar.Scalar
 import ghidra.util.task.ConsoleTaskMonitor
-import io.joern.ghidra2cpg.Types
+import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Nodes._
@@ -26,8 +26,8 @@ class MipsFunctionPass(currentProgram: Program,
                        function: Function,
                        cpg: Cpg,
                        keyPool: IntervalKeyPool,
-                       decompInterface: DecompInterface)
-    extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompInterface) {
+                       decompiler: Decompiler)
+    extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompiler) {
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
   def resolveLiterals(instruction: Instruction, callNode: CfgNodeNew): Unit = {
 
@@ -92,9 +92,9 @@ class MipsFunctionPass(currentProgram: Program,
       // non thunk functions do not contain function parameters by default
       // need to decompile function to get parameter information
       // decompilation for a function is cached so subsequent calls to decompile should be free
-      val parameters = decompInterface
-        .decompileFunction(callee, 60, new ConsoleTaskMonitor())
-        .getHighFunction
+      val parameters = decompiler
+        .toHighFunction(callee)
+        .get
         .getLocalSymbolMap
         .getSymbols
         .asScala
@@ -187,7 +187,7 @@ class MipsFunctionPass(currentProgram: Program,
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     try {
       methodNode = Some(
-        createMethodNode(decompInterface, function, filename, checkIfExternal(currentProgram, function.getName)))
+        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName)))
       diffGraph.addNode(methodNode.get)
       diffGraph.addNode(blockNode)
       diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
