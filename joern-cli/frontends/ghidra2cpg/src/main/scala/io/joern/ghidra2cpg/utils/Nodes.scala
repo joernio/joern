@@ -68,7 +68,13 @@ object Nodes {
   }
   def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
     val code = decompiler.toDecompiledFunction(function).get.getC
-    val asmCode =function.getProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList.map(_.toString).mkString("\n")
+    val asmCode = function.getProgram.getListing
+      .getInstructions(function.getBody, true)
+      .iterator()
+      .asScala
+      .toList
+      .map(_.toString)
+      .mkString("\n")
     val lineNumberEnd = Option(function.getReturn)
       .flatMap(x => Option(x.getMinAddress))
       .flatMap(x => Option(x.getOffsetAsBigInteger))
