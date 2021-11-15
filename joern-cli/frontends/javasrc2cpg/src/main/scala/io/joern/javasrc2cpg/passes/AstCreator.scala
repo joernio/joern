@@ -4,6 +4,7 @@ import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclar
 import com.github.javaparser.ast.body.{
   CallableDeclaration,
   ConstructorDeclaration,
+  EnumConstantDeclaration,
   MethodDeclaration,
   Parameter,
   TypeDeclaration,
@@ -314,12 +315,16 @@ class AstCreator(filename: String, global: Global) {
       order: Int,
       namespaceBlockFullName: String
   ): AstWithCtx = {
-    val baseTypeFullNames = typ
-      .asClassOrInterfaceDeclaration()
-      .getExtendedTypes
-      .asScala
-      .map(x => registerType(x.resolve().getQualifiedName))
-      .toList
+    val baseTypeFullNames = if (typ.isClassOrInterfaceDeclaration) {
+      typ
+        .asClassOrInterfaceDeclaration()
+        .getExtendedTypes
+        .asScala
+        .map(x => registerType(Try(x.resolve().getQualifiedName).getOrElse("<empty>")))
+        .toList
+    } else {
+      List.empty[String]
+    }
 
     val typeDecl = NewTypeDecl()
       .name(typ.getNameAsString)
@@ -363,6 +368,7 @@ class AstCreator(filename: String, global: Global) {
         )
       }
 
+    val initMemberOrder = methodAsts.size + constructorAsts.size + 1
     val memberAsts = typ.getMembers.asScala
       .filter(_.isFieldDeclaration)
       .flatMap { m =>
@@ -372,20 +378,61 @@ class AstCreator(filename: String, global: Global) {
       .zipWithIndex
       .map {
         case (v, i) =>
-          astForVariableDeclarator(v, i + methodAsts.size + 1)
+          astForVariableDeclarator(v, i + initMemberOrder)
       }
       .toList
+
+    val enumEntryAsts = if (typ.isEnumDeclaration) {
+      val initOrder = memberAsts.size + constructorAsts.size + methodAsts.size
+      withOrder(typ.asEnumDeclaration().getEntries) {
+        case (entry, order) =>
+          astForEnumEntry(entry, initOrder + order)
+      }
+    } else {
+      List.empty
+    }
 
     val typeDeclAst = Ast(typeDecl)
       .withChildren(memberAsts.map(_.ast))
       .withChildren(constructorAsts.map(_.ast))
       .withChildren(methodAsts.map(_.ast))
+      .withChildren(enumEntryAsts)
 
     val bindingsContext = Context(bindingsInfo = bindingsInfo)
     val typeDeclContext =
       bindingsContext.mergeWith((constructorAsts ++ methodAsts ++ memberAsts).map(_.ctx))
 
     AstWithCtx(typeDeclAst, typeDeclContext)
+  }
+
+  private def astForEnumEntry(entry: EnumConstantDeclaration, order: Int): Ast = {
+    val typ = Try(entry.resolve.getType.describe).getOrElse("<empty>")
+    val entryNode = NewMember()
+      .lineNumber(line(entry))
+      .columnNumber(column(entry))
+      .code(entry.toString)
+      .order(order)
+      .name(entry.getName.toString)
+      .typeFullName(typ)
+
+    val args = withOrder(entry.getArguments) {
+      case (x, o) =>
+        val children = astsForExpression(x, ScopeContext(), o)
+        val callNode =
+          NewCall()
+            .name(s"$typ.<init>")
+            .methodFullName(s"$typ.<init>")
+            .dispatchType(DispatchTypes.STATIC_DISPATCH)
+            .code(entry.toString)
+            .lineNumber(line(entry))
+            .columnNumber(column(entry))
+            .argumentIndex(o)
+            .order(o)
+        callAst(callNode, children)
+    }.flatten
+
+    Ast(entryNode)
+      .withChildren(args.map(_.ast))
   }
 
   private def astForVariableDeclarator(v: VariableDeclarator, order: Int): AstWithCtx = {
