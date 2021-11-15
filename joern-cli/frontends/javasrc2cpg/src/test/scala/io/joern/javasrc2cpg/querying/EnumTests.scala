@@ -70,8 +70,6 @@ class EnumTests extends JavaSrcCodeToCpgFixture {
     call.astChildren.head shouldBe a[Literal]
     call.astChildren.head.code shouldBe "\"Red\""
 
-
-
     b.code shouldBe "BLUE(\"Blue\")"
     b.astChildren.astChildren.size shouldBe 1
     b.astChildren.astChildren.head.code shouldBe "\"Blue\""
