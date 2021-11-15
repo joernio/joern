@@ -979,3 +979,24 @@ class CDataFlowTests32 extends DataFlowCodeToCpgSuite {
     sink.reachableBy(source).size shouldBe 4
   }
 }
+
+class CDatFlowTests33 extends DataFlowCodeToCpgSuite {
+  override val code =
+    """
+      |int bar(int z) {
+      |  int x = 10;
+      |  int y = x + source()
+      |  return y;
+      |}
+      |
+      |int foo() {
+      |int y = bar(x);
+      |sink(y);
+      |}
+      |""".stripMargin
+
+  "Tes 33: should provide correct flow for source in sibling callee" in {
+    cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 1
+  }
+
+}

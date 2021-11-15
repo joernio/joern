@@ -133,7 +133,6 @@ class Engine(context: EngineContext) {
             .map(p => ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, arg.inCall.headOption))
         }
     }
-
     forCalls ++ forArgs
   }
 
@@ -337,7 +336,8 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
     val resultsForCurNode = {
       val endStates = if (sources.contains(curNode.asInstanceOf[NodeType])) {
         List(ReachableByResult(path, table, callSite))
-      } else if ((task.callDepth != context.config.maxCallDepth) && curNode.isInstanceOf[MethodParameterIn]) {
+      } else if ((task.callDepth != context.config.maxCallDepth) && curNode
+                   .isInstanceOf[MethodParameterIn] && callSite.isEmpty) {
         List(ReachableByResult(path, table, callSite, partial = true))
       } else {
         List()
