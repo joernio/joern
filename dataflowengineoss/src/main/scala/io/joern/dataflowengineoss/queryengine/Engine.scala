@@ -92,9 +92,7 @@ class Engine(context: EngineContext) {
           .collect {
             case p: MethodParameterIn =>
               val args = if (result.callSite.isDefined) {
-                paramToArgs(p).filter { arg =>
-                  arg.inCall.headOption.map(_.id()).contains(result.callSite.get.id())
-                }
+                List()
               } else {
                 paramToArgs(p)
               }
@@ -110,11 +108,11 @@ class Engine(context: EngineContext) {
                                         sources: Set[CfgNode]): Vector[ReachableByTask] = {
 
     val outArgsAndCalls = resultsOfTask
-      .map(x => (x.unresolvedArgs.collect { case e: Expression => e }, x.path, x.callDepth))
+      .map(x => (x, x.unresolvedArgs.collect { case e: Expression => e }, x.path, x.callDepth))
       .distinct
 
     val forCalls = outArgsAndCalls.flatMap {
-      case (args, path, callDepth) =>
+      case (_, args, path, callDepth) =>
         val outCalls = args.collect { case n: Call => n }
         val methodReturns = outCalls
           .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
@@ -127,9 +125,14 @@ class Engine(context: EngineContext) {
     }
 
     val forArgs = outArgsAndCalls.flatMap {
-      case (args, path, callDepth) =>
+      case (result, args, path, callDepth) =>
         args.flatMap { arg =>
-          argToOutputParams(arg)
+          val outParams = if (result.callSite.isDefined) {
+            List[MethodParameterOut]()
+          } else {
+            argToOutputParams(arg).l
+          }
+          outParams
             .map(p => ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, arg.inCall.headOption))
         }
     }
@@ -348,7 +351,7 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
           if ((task.callDepth != context.config.maxCallDepth) && methodsForCall(call)
                 .to(Traversal)
                 .internal
-                .nonEmpty && semanticsForCall(call).isEmpty) {
+                .nonEmpty && semanticsForCall(call).isEmpty && callSite.isEmpty) {
             List(
               ReachableByResult(PathElement(path.head.node, resolved = false) +: path.tail,
                                 table,
