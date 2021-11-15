@@ -273,6 +273,7 @@ class AstCreator(filename: String, global: Global) {
         )
       }
 
+    val initMemberOrder = methodAsts.size + constructorAsts.size + 1
     val memberAsts = typ.getMembers.asScala
       .filter(_.isFieldDeclaration)
       .flatMap { m =>
@@ -282,7 +283,7 @@ class AstCreator(filename: String, global: Global) {
       .zipWithIndex
       .map {
         case (v, i) =>
-          astForVariableDeclarator(v, i + methodAsts.size + 1)
+          astForVariableDeclarator(v, i + initMemberOrder)
       }
       .toList
 
@@ -309,16 +310,28 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def astForEnumEntry(entry: EnumConstantDeclaration, order: Int): Ast = {
+    val typ = Try(entry.resolve.getType.describe).getOrElse("<empty>")
     val entryNode = NewMember()
       .lineNumber(line(entry))
       .columnNumber(column(entry))
       .code(entry.toString)
       .order(order)
       .name(entry.getName.toString)
-      .typeFullName(Try(entry.resolve().getType.describe()).getOrElse("<empty>"))
+      .typeFullName(typ)
 
     val args = withOrder(entry.getArguments) { case (x, o) =>
-      astsForExpression(x, ScopeContext(), o)
+      val children = astsForExpression(x, ScopeContext(), o)
+      val callNode =
+        NewCall()
+          .name(s"$typ.<init>")
+          .methodFullName(s"$typ.<init>")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .code(entry.toString)
+          .lineNumber(line(entry))
+          .columnNumber(column(entry))
+          .argumentIndex(o)
+          .order(o)
+      callAst(callNode, children)
     }.flatten
 
     Ast(entryNode)

@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language._
 
 class EnumTests extends JavaSrcCodeToCpgFixture {
@@ -60,11 +61,19 @@ class EnumTests extends JavaSrcCodeToCpgFixture {
     l.code shouldBe "java.lang.String label"
 
     r.code shouldBe "RED(\"Red\")"
-    r.astChildren.size shouldBe 1
-    r.astChildren.head.code shouldBe "\"Red\""
+    r.astChildren.isCall.size shouldBe 1
+    val call = r.astChildren.isCall.head
+    call.name shouldBe "Color.<init>"
+    call.methodFullName shouldBe "Color.<init>"
+    call.order shouldBe 1
+    call.astChildren.size shouldBe 1
+    call.astChildren.head shouldBe a[Literal]
+    call.astChildren.head.code shouldBe "\"Red\""
+
+
 
     b.code shouldBe "BLUE(\"Blue\")"
-    b.astChildren.size shouldBe 1
-    b.astChildren.head.code shouldBe "\"Blue\""
+    b.astChildren.astChildren.size shouldBe 1
+    b.astChildren.astChildren.head.code shouldBe "\"Blue\""
   }
 }
