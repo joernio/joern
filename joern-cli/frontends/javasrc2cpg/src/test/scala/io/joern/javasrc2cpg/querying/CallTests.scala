@@ -1,7 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 
@@ -18,6 +19,10 @@ class CallTests extends JavaSrcCodeToCpgFixture {
       |
       |   int main(int argc, char argv) {
       |     return add(argc, 3);
+      |   }
+      |
+      |   int bar(int argc) {
+      |     foo(argc);
       |   }
       | }
       |""".stripMargin
@@ -72,4 +77,11 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     x.name shouldBe "x"
   }
 
+  "should handle unresolved calls with appropriate defaults" in {
+    val List(call: Call) = cpg.call("foo").l
+    call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+    call.methodFullName shouldBe "<empty>"
+    call.signature shouldBe ""
+    call.code shouldBe "foo(argc)"
+  }
 }
