@@ -106,7 +106,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNamespaceBlock,
   NewNode,
   NewReturn,
-  NewTypeDecl
+  NewTypeDecl,
+  NewTypeRef
 }
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
@@ -1423,6 +1424,32 @@ class AstCreator(filename: String, global: Global) {
     callAst(callNode, Seq(fieldIdAstsWithCtx) ++ identifierAsts)
   }
 
+  def astForInstanceOfExpr(expr: InstanceOfExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+    val callNode = NewCall()
+      .name("<operator>.instanceOf")
+      .methodFullName("<operator>.instanceOf")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(expr.toString)
+      .argumentIndex(order)
+      .order(order)
+      .lineNumber(line(expr))
+      .columnNumber(column(expr))
+
+    val exprAst = astsForExpression(expr.getExpression, scopeContext, order = 1)
+    val typ = expr.getType
+    val typeNode =
+      NewTypeRef()
+        .code(typ.toString)
+        .order(exprAst.size + 1)
+        .argumentIndex(exprAst.size + 1)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr.getType))
+        .typeFullName(Try(typ.resolve().describe()).toOption.getOrElse("<empty>"))
+    val typeAst = AstWithCtx(Ast(typeNode), Context())
+
+    callAst(callNode, exprAst ++ Seq(typeAst))
+  }
+
   def astForNameExpr(x: NameExpr, order: Int): AstWithCtx = {
     val name = x.getName.toString
     val typeFullName =
@@ -1511,7 +1538,7 @@ class AstCreator(filename: String, global: Global) {
       case x: ConditionalExpr         => Seq(astForConditionalExpr(x, scopeContext, order))
       case x: EnclosedExpr            => astForEnclosedExpression(x, scopeContext, order)
       case x: FieldAccessExpr         => Seq(astForFieldAccessExpr(x, scopeContext, order))
-      case _: InstanceOfExpr          => Seq()
+      case x: InstanceOfExpr          => Seq(astForInstanceOfExpr(x, scopeContext, order))
       case x: LambdaExpr              => Seq(astForLambdaExpr(x, scopeContext, order))
       case x: LiteralExpr             => Seq(astForLiteralExpr(x, order))
       case x: MethodCallExpr          => Seq(astForMethodCall(x, scopeContext, order))
