@@ -26,7 +26,6 @@ class InstanceOfTests extends JavaSrcCodeToCpgFixture {
     call.argumentIndex shouldBe 1
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
-
     val List(o: Identifier, t: TypeRef) = call.argument.l
     o.code shouldBe "o"
     o.order shouldBe 1

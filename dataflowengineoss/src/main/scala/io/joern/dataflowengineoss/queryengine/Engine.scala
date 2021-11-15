@@ -17,7 +17,8 @@ private case class ReachableByTask(sink: CfgNode,
                                    sources: Set[CfgNode],
                                    table: ResultTable,
                                    initialPath: Vector[PathElement] = Vector(),
-                                   callDepth: Int = 0)
+                                   callDepth: Int = 0,
+                                   callSite: Option[Call] = None)
 
 class Engine(context: EngineContext) {
 
@@ -83,14 +84,21 @@ class Engine(context: EngineContext) {
 
   private def tasksForParams(resultsOfTask: Vector[ReachableByResult],
                              sources: Set[CfgNode]): Vector[ReachableByTask] = {
-    val pathsFromParams = resultsOfTask.map(x => (x.path, x.callDepth))
+    val pathsFromParams = resultsOfTask.map(x => (x, x.path, x.callDepth))
     pathsFromParams.flatMap {
-      case (path, callDepth) =>
+      case (result, path, callDepth) =>
         val param = path.head.node
         Some(param)
           .collect {
             case p: MethodParameterIn =>
-              paramToArgs(p).map { arg =>
+              val args = if (result.callSite.isDefined) {
+                paramToArgs(p).filter { arg =>
+                  arg.inCall.headOption.map(_.id()).contains(result.callSite.get.id())
+                }
+              } else {
+                paramToArgs(p)
+              }
+              args.map { arg =>
                 ReachableByTask(arg, sources, new ResultTable, path, callDepth + 1)
               }
           }
@@ -109,11 +117,12 @@ class Engine(context: EngineContext) {
       case (args, path, callDepth) =>
         val outCalls = args.collect { case n: Call => n }
         val methodReturns = outCalls
-          .flatMap(NoResolve.getCalledMethods)
+          .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
           .to(Traversal)
-          .methodReturn
-        methodReturns.map { ret =>
-          ReachableByTask(ret, sources, new ResultTable, path, callDepth + 1)
+
+        methodReturns.map {
+          case (call, ret) =>
+            ReachableByTask(ret, sources, new ResultTable, path, callDepth + 1, Some(call))
         }
     }
 
@@ -121,7 +130,7 @@ class Engine(context: EngineContext) {
       case (args, path, callDepth) =>
         args.flatMap { arg =>
           argToOutputParams(arg)
-            .map(p => ReachableByTask(p, sources, new ResultTable, path, callDepth + 1))
+            .map(p => ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, arg.inCall.headOption))
         }
     }
 
@@ -288,7 +297,7 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
       Vector()
     } else {
       implicit val sem: Semantics = context.semantics
-      results(PathElement(task.sink) +: task.initialPath, task.sources, task.table)
+      results(PathElement(task.sink) +: task.initialPath, task.sources, task.table, task.callSite)
       task.table.get(task.sink).get.map { r =>
         r.copy(callDepth = task.callDepth)
       }
@@ -307,8 +316,11 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
     * @param path This is a path from a node to the sink. The first node
     *             of the path is expanded by this method
     * */
-  private def results[NodeType <: CfgNode](path: Vector[PathElement], sources: Set[NodeType], table: ResultTable)(
-      implicit semantics: Semantics): Vector[ReachableByResult] = {
+  private def results[NodeType <: CfgNode](
+      path: Vector[PathElement],
+      sources: Set[NodeType],
+      table: ResultTable,
+      callSite: Option[Call])(implicit semantics: Semantics): Vector[ReachableByResult] = {
     val curNode = path.head.node
 
     val resultsForParents: Vector[ReachableByResult] = {
@@ -317,16 +329,16 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
         if (cachedResult.isDefined) {
           cachedResult.get
         } else {
-          results(parent +: path, sources, table)
+          results(parent +: path, sources, table, callSite)
         }
       }.toVector
     }
 
     val resultsForCurNode = {
       val endStates = if (sources.contains(curNode.asInstanceOf[NodeType])) {
-        List(ReachableByResult(path, table))
+        List(ReachableByResult(path, table, callSite))
       } else if ((task.callDepth != context.config.maxCallDepth) && curNode.isInstanceOf[MethodParameterIn]) {
-        List(ReachableByResult(path, table, partial = true))
+        List(ReachableByResult(path, table, callSite, partial = true))
       } else {
         List()
       }
@@ -337,7 +349,11 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
                 .to(Traversal)
                 .internal
                 .nonEmpty && semanticsForCall(call).isEmpty) {
-            List(ReachableByResult(PathElement(path.head.node, resolved = false) +: path.tail, table, partial = true))
+            List(
+              ReachableByResult(PathElement(path.head.node, resolved = false) +: path.tail,
+                                table,
+                                callSite,
+                                partial = true))
           } else {
             List()
           }
