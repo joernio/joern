@@ -66,15 +66,15 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
 
   class Frontend(val name: String, val language: String, val description: String = "") {
     def isAvailable: Boolean = {
-      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).get.isAvailable
+      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).filter(_.isAvailable).isDefined
     }
 
     def apply(inputPath: String,
               projectName: String = "",
               namespaces: List[String] = List(),
               args: List[String] = List()): Option[Cpg] = {
-      val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
-      new ImportCode(console)(frontend.get, inputPath, projectName, namespaces)
+      val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args).getOrElse(throw new AssertionError(s"no cpg generator for language=$language available!"))
+      new ImportCode(console)(frontend, inputPath, projectName, namespaces)
     }
   }
 
