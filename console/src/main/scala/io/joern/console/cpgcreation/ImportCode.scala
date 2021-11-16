@@ -74,7 +74,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
       io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
 
     def isAvailable: Boolean = {
-      cpgGeneratorForLanguage(language, config.frontendConfig, config.install.rootPath.path, args = Nil)
+      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil)
         .filter(_.isAvailable)
         .isDefined
     }
@@ -83,7 +83,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
               projectName: String = "",
               namespaces: List[String] = List(),
               args: List[String] = List()): Option[Cpg] = {
-      val frontend = cpgGeneratorForLanguage(language, config.frontendConfig, config.install.rootPath.path, args)
+      val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
         .getOrElse(throw new AssertionError(s"no cpg generator for language=$language available!"))
       new ImportCode(console)(frontend, inputPath, projectName, namespaces)
     }

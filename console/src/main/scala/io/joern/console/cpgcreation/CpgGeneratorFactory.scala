@@ -18,7 +18,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
   def forCodeAt(inputPath: String): Option[CpgGenerator] =
     for {
       language <- guessLanguage(inputPath)
-      cpgGenerator <- cpgGeneratorForLanguage(language, config.frontendConfig, config.install.rootPath.path, args = Nil)
+      cpgGenerator <- cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil)
     } yield {
       report(s"Using generator for language: $language: ${cpgGenerator.getClass.getSimpleName}")
       cpgGenerator
@@ -31,7 +31,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     Option(language)
       .filter(languageIsKnown)
       .flatMap { lang =>
-        cpgGeneratorForLanguage(lang, config.frontendConfig, config.install.rootPath.path, args = Nil)
+        cpgGeneratorForLanguage(lang, config.frontend, config.install.rootPath.path, args = Nil)
       }
   }
 

@@ -51,7 +51,7 @@ object InstallConfig {
 }
 
 class ConsoleConfig(val install: InstallConfig = InstallConfig(),
-                    val frontendConfig: FrontendConfig = FrontendConfig(),
+                    val frontend: FrontendConfig = FrontendConfig(),
                     val tools: ToolsConfig = ToolsConfig()) {}
 
 object ToolsConfig {
