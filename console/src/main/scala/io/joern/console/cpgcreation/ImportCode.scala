@@ -1,11 +1,13 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
+import io.joern.console.FrontendConfig
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.workspacehandling.Project
 import overflowdb.traversal.help.Table
 
+import java.nio.file.Path
 import scala.util.Try
 
 class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
@@ -65,8 +67,16 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def php: Frontend = new Frontend("php", Languages.PHP, "PHP bytecode frontend")
 
   class Frontend(val name: String, val language: String, val description: String = "") {
+    def cpgGeneratorForLanguage(language: String,
+                                config: FrontendConfig,
+                                rootPath: Path,
+                                args: List[String]): Option[CpgGenerator] =
+      io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
+
     def isAvailable: Boolean = {
-      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).get.isAvailable
+      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil)
+        .filter(_.isAvailable)
+        .isDefined
     }
 
     def apply(inputPath: String,
@@ -74,7 +84,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
               namespaces: List[String] = List(),
               args: List[String] = List()): Option[Cpg] = {
       val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
-      new ImportCode(console)(frontend.get, inputPath, projectName, namespaces)
+        .getOrElse(throw new AssertionError(s"no cpg generator for language=$language available!"))
+      new ImportCode(console)(frontend, inputPath, projectName, namespaces)
     }
   }
 

@@ -4,7 +4,7 @@ import better.files.Dsl.mkdir
 import better.files.File
 import io.joern.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
-import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, InstallConfig}
+import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, FrontendConfig, InstallConfig}
 import io.joern.fuzzyc2cpg.FuzzyC2Cpg
 
 import java.nio.file.Path
@@ -38,12 +38,17 @@ class TestConsole(workspaceDir: String)
     install = new InstallConfig(Map("SHIFTLEFT_OCULAR_INSTALL_DIR" -> workspaceDir))
   )
 
-  class MyImportCode[T <: Project](console: Console[T]) extends ImportCode(console) {
+  override def importCode: ImportCode[Project] = new ImportCode(this) {
     override val generatorFactory = new TestCpgGeneratorFactory(config)
+
+    override def c: SourceBasedFrontend = new SourceBasedFrontend("testCFrontend") {
+      override def cpgGeneratorForLanguage(language: String,
+                                           config: FrontendConfig,
+                                           rootPath: Path,
+                                           args: List[String]): Option[CpgGenerator] =
+        generatorFactory.forLanguage(language)
+    }
   }
-
-  override def importCode = new MyImportCode(this)
-
 }
 
 class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory(config) {
