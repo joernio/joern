@@ -30,22 +30,17 @@ class MipsFunctionPass(currentProgram: Program,
 
   def resolveCallArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
     val target = instruction.getPcode.toList.head.getSeqnum.getTarget
-    //jal 0x00000000 and some jalr t9
-    if (highFunction
-          .getPcodeOps(target)
-          .asScala
-          .toList
-          .isEmpty) {
-      return
-    }
-    highFunction
+    val opCodes = highFunction
       .getPcodeOps(target)
       .asScala
       .toList
-      .head
-      .getInputs
-      // First input is the instruction
-      // we have already handled it
+    //jal 0x00000000 and some jalr t9
+    if (opCodes.isEmpty) {
+      return
+    }
+    opCodes.head.getInputs
+    // First input is the instruction
+    // we have already handled it
       .drop(1)
       .zipWithIndex foreach {
       case (input, index) =>
@@ -60,6 +55,17 @@ class MipsFunctionPass(currentProgram: Program,
               name = symbol.get.getName
             }
           }
+          if (callNode.code == "memcpy" && instruction.getAddress().toString() == "0041d9ec") {
+            println(instruction.getAddress().toString())
+            val b = highFunction
+              .getPcodeOps(target)
+              .asScala
+              .toList
+              .head
+              .getInputs
+            println(highFunction.getPcodeOps(instruction.getPcode.head.getSeqnum.getTarget).asScala.toList)
+          }
+
           val node = createIdentifier(name,
                                       name,
                                       index + 1,
