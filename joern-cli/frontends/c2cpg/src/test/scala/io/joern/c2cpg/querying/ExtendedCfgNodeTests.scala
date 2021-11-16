@@ -26,33 +26,26 @@ class ExtendedCfgNodeTests extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "allow traversing from argument of sink back to param via `ddgIn`" in {
-    cpg.method("sink").parameter.argument.ddgIn.l match {
-      case List(param: nodes.MethodParameterIn) =>
-        param.name shouldBe "y"
-      case _ => fail()
+    inside(cpg.method("sink").parameter.argument.ddgIn.l) {
+      case List(param: nodes.MethodParameterIn) => param.name shouldBe "y"
     }
   }
 
   "allow traversing from argument node to param via `ddgIn`" in {
-    cpg.method("sink").parameter.argument.l match {
-      case List(t: nodes.CfgNode) =>
+    inside(cpg.method("sink").parameter.argument.l) {
+      case List(t) =>
         t.code shouldBe "y"
-        t.ddgIn.l match {
-          case List(param: nodes.MethodParameterIn) =>
-            param.name shouldBe "y"
-          case _ =>
-            fail()
+        inside(t.ddgIn.l) {
+          case List(param: nodes.MethodParameterIn) => param.name shouldBe "y"
         }
-      case _ => fail()
     }
   }
 
   "allow traversing from argument back to param while inspecting edge" in {
-    cpg.method("sink").parameter.argument.ddgInPathElem.l match {
+    inside(cpg.method("sink").parameter.argument.ddgInPathElem.l) {
       case List(pathElem) =>
         pathElem.outEdgeLabel shouldBe "y"
         pathElem.node.isInstanceOf[nodes.MethodParameterIn] shouldBe true
-      case _ => fail()
     }
   }
 
