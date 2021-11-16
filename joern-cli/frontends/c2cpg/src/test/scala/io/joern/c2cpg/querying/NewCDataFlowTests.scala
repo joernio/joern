@@ -41,14 +41,9 @@ class NewCDataFlowTests2 extends DataFlowCodeToCpgSuite {
     val source = cpg.call("source")
     val sink = cpg.call("sink")
     val flows = sink.reachableByFlows(source).l
-    flows.size shouldBe 2
+    flows.size shouldBe 1
     flows.map(flowToResultPairs).toSet shouldBe Set(
       List(("source()", Some(6)), ("sink(source())", Some(6))),
-      List(("source()", Some(6)),
-           ("sink(int arg)", Some(2)),
-           ("return arg;", Some(2)),
-           ("int", Some(2)),
-           ("sink(source())", Some(6)))
     )
   }
 }
