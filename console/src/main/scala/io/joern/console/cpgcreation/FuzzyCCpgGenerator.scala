@@ -9,6 +9,7 @@ import java.nio.file.Path
   * into code property graphs via fuzzy parsing.
   * */
 case class FuzzyCCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
+  lazy val command = rootPath.resolve("fuzzyc2cpg.sh")
 
   /**
     * Generate a CPG for the given input path.
@@ -18,10 +19,10 @@ case class FuzzyCCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
   override def generate(inputPath: String,
                         outputPath: String = "cpg.bin",
                         namespaces: List[String] = List()): Option[String] = {
-    val command = rootPath.resolve("fuzzyc2cpg.sh").toString
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
-    runShellCommand(command, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
-  override def isAvailable: Boolean = true
+  override def isAvailable: Boolean =
+    command.toFile.exists
 }
