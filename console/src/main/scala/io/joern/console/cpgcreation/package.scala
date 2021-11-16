@@ -19,7 +19,7 @@ package object cpgcreation {
     lazy val fuzzycCpgGenerator = FuzzyCCpgGenerator(config.withArgs(args), rootPath)
     language match {
       case Languages.CSHARP          => Some(CSharpCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.C               => Seq(fuzzycCpgGenerator, cCpgGenerator).filter(_.isAvailable).headOption
+      case Languages.C               => Seq(fuzzycCpgGenerator, cCpgGenerator).find(_.isAvailable)
       case Languages.LLVM            => Some(LlvmCpgGenerator(config.withArgs(args), rootPath))
       case Languages.GOLANG          => Some(GoCpgGenerator(config.withArgs(args), rootPath))
       case Languages.JAVA            => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
@@ -29,7 +29,7 @@ package object cpgcreation {
       case Languages.PYTHON          => Some(PythonCpgGenerator(config.withArgs(args), rootPath))
       case Languages.PHP             => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
       case Languages.GHIDRA          => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.NEWC            => Seq(cCpgGenerator, fuzzycCpgGenerator).filter(_.isAvailable).headOption
+      case Languages.NEWC            => Seq(cCpgGenerator, fuzzycCpgGenerator).find(_.isAvailable)
       case _                         => None
     }
   }
