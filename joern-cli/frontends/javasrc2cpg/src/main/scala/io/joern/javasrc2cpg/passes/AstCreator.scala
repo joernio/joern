@@ -1159,8 +1159,8 @@ class AstCreator(filename: String, global: Global) {
     AstWithCtx(initAst, ctx)
   }
 
-  def astForBinaryExpr(stmt: BinaryExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
-    val operatorName = stmt.getOperator match {
+  def astForBinaryExpr(expr: BinaryExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+    val operatorName = expr.getOperator match {
       case BinaryExpr.Operator.OR                   => Operators.logicalOr
       case BinaryExpr.Operator.AND                  => Operators.logicalAnd
       case BinaryExpr.Operator.BINARY_OR            => Operators.or
@@ -1187,17 +1187,45 @@ class AstCreator(filename: String, global: Global) {
       .name(operatorName)
       .methodFullName(operatorName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(stmt.toString)
+      .code(expr.toString)
       .argumentIndex(order)
       .order(order)
+      .lineNumber(line(expr))
+      .columnNumber(column(expr))
 
-    val argsWithCtx = astsForExpression(stmt.getLeft, scopeContext, 1) ++ astsForExpression(
-      stmt.getRight,
+    val argsWithCtx = astsForExpression(expr.getLeft, scopeContext, 1) ++ astsForExpression(
+      expr.getRight,
       scopeContext,
       2
     )
 
     callAst(callNode, argsWithCtx)
+  }
+
+  def astForCastExpr(expr: CastExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+    val callNode = NewCall()
+      .name("<operator>.cast")
+      .methodFullName("<operator>.cast")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(expr.toString)
+      .argumentIndex(order)
+      .order(order)
+      .lineNumber(line(expr))
+      .columnNumber(column(expr))
+
+    val typ = expr.getType
+    val typeNode = NewTypeRef()
+      .code(typ.toString)
+      .order(1)
+      .argumentIndex(1)
+      .typeFullName(Try(typ.resolve().describe()).toOption.getOrElse(typ.toString))
+      .lineNumber(line(expr))
+      .columnNumber(column(expr))
+    val typeAst = AstWithCtx(Ast(typeNode), Context())
+
+    val exprAst = astsForExpression(expr.getExpression, scopeContext, 2)
+
+    callAst(callNode, Seq(typeAst) ++ exprAst)
   }
 
   def astForAssignExpr(expr: AssignExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
@@ -1533,7 +1561,7 @@ class AstCreator(filename: String, global: Global) {
       case x: ArrayInitializerExpr    => Seq(astForArrayInitializerExpr(x, scopeContext, order))
       case x: AssignExpr              => Seq(astForAssignExpr(x, scopeContext, order))
       case x: BinaryExpr              => Seq(astForBinaryExpr(x, scopeContext, order))
-      case _: CastExpr                => Seq()
+      case x: CastExpr                => Seq(astForCastExpr(x, scopeContext, order))
       case x: ClassExpr               => Seq(astForClassExpr(x, order))
       case x: ConditionalExpr         => Seq(astForConditionalExpr(x, scopeContext, order))
       case x: EnclosedExpr            => astForEnclosedExpression(x, scopeContext, order)
@@ -1640,8 +1668,25 @@ class AstCreator(filename: String, global: Global) {
 
     val lambdaScopeCtx =
       scopeContext.withNewParams(parameterAstsWithCtx.flatMap(_.ctx.methodParameters))
-    val bodyAstWithCtx =
-      astsForStatement(expr.getBody, lambdaScopeCtx, parameterAstsWithCtx.size + 2).head
+    val bodyOrder = parameterAstsWithCtx.size + 2
+    val bodyAstWithCtx = if (expr.getBody.isBlockStmt) {
+      astsForStatement(expr.getBody, lambdaScopeCtx, bodyOrder).headOption
+        .getOrElse(emptyBlock(bodyOrder))
+    } else {
+      val blockNode =
+        NewBlock()
+          .lineNumber(line(expr.getBody))
+          .columnNumber(column(expr.getBody))
+          .order(bodyOrder)
+          .argumentIndex(bodyOrder)
+
+      val asts = astsForStatement(expr.getBody, lambdaScopeCtx, 1)
+
+      AstWithCtx(
+        Ast(blockNode).withChildren(asts.map(_.ast)),
+        Context.mergedCtx(asts.map(_.ctx))
+      )
+    }
 
     val (identifiersMatchingParams, identifiersNotMatchingParams) = {
       bodyAstWithCtx.ctx.identifiers.partition(identifier => namesToMethodParams.contains(identifier.name))
@@ -1913,6 +1958,11 @@ class AstCreator(filename: String, global: Global) {
   private def paramListSignature(methodDeclaration: CallableDeclaration[_]) = {
     val paramTypes = methodDeclaration.getParameters.asScala.map(tryResolveType)
     "(" + paramTypes.mkString(",") + ")"
+  }
+
+  private def emptyBlock(order: Int): AstWithCtx = {
+    val node = NewBlock().order(order).argumentIndex(order)
+    AstWithCtx(Ast(node), Context())
   }
 }
 
