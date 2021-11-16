@@ -107,4 +107,24 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       cpg.all.count(_.isInstanceOf[ClosureBinding]) shouldBe 1
     }
   }
+
+  "CPG for `identity-like` supplier" - {
+    lazy val cpg = JavaSrc2CpgTestContext.buildCpg(
+      """
+        |public class Foo {
+        |  public foo() {
+        |    String s = "Hello, world";
+        |    Supplier<String> sup = () -> s;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should parse a supplier with only a single identifier as the method body" in {
+      cpg.method.name("<lambda>").size shouldBe 1
+      val lambda = cpg.method.name("<lambda>").head
+
+      lambda.ast.isIdentifier.size shouldBe 1
+      lambda.ast.isIdentifier.head.code shouldBe "s"
+    }
+  }
 }
