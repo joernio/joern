@@ -29,64 +29,74 @@ class MipsFunctionPass(currentProgram: Program,
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
 
   def resolveCallArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
-    try {
-      highFunction
-        .getPcodeOps(instruction.getPcode.toList.last.getSeqnum.getTarget)
-        .asScala
-        .toList
-        .head
-        .getInputs
-        // First input is the instruction
-        // we have already handled it
-        .drop(1)
-        .zipWithIndex foreach {
-        case (input, index) =>
-          if (input.isRegister) {
-            var name = input.getHigh.getName
-            val high = input.getHigh
-            if (high != null && input.getDef != null && high.getName == "UNNAMED" && input.getDef != null && input.getDef.getInputs != null) {
-              val symbol = input.getDef.getInputs.toList.lastOption
-                .flatMap(x => Option(x.getHigh))
-                .flatMap(x => Option(x.getSymbol))
-              if (symbol.isDefined) {
-                name = symbol.get.getName
-              }
+    val target = instruction.getPcode.toList.head.getSeqnum.getTarget
+    val opCodes = highFunction
+      .getPcodeOps(target)
+      .asScala
+      .toList
+    //jal 0x00000000 and some jalr t9
+    if (opCodes.isEmpty) {
+      return
+    }
+    opCodes.head.getInputs
+    // First input is the instruction
+    // we have already handled it
+      .drop(1)
+      .zipWithIndex foreach {
+      case (input, index) =>
+        if (input.isRegister) {
+          var name = input.getHigh.getName
+          val high = input.getHigh
+          if (high != null && input.getDef != null && high.getName == "UNNAMED" && input.getDef != null && input.getDef.getInputs != null) {
+            val symbol = input.getDef.getInputs.toList.lastOption
+              .flatMap(x => Option(x.getHigh))
+              .flatMap(x => Option(x.getSymbol))
+            if (symbol.isDefined) {
+              name = symbol.get.getName
             }
-            val node = createIdentifier(name,
-                                        name,
-                                        index + 1,
-                                        Types.registerType(name),
-                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            connectCallToArgument(callNode, node)
-          } else if (input.isConstant) {
-            val node =
-              createLiteral("0x" + input.getWordOffset.toHexString,
-                            index + 1,
-                            index + 1,
-                            "0x" + input.getWordOffset.toHexString,
-                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            connectCallToArgument(callNode, node)
-          } else if (input.isUnique) {
-            val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
-                                                  input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
-            val node = createLiteral(value,
-                                     index + 1,
-                                     index + 1,
-                                     input.getWordOffset.toHexString,
-                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            connectCallToArgument(callNode, node)
-          } else {
-            val node = createLiteral(input.toString(),
-                                     index + 1,
-                                     index + 1,
-                                     input.toString(),
-                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            connectCallToArgument(callNode, node)
           }
-      }
-    } catch {
-      // jal 0x00000000
-      case _: NoSuchElementException => logger.warn(s"Cannot resolve at ${instruction.getMinAddress}")
+          if (callNode.code == "memcpy" && instruction.getAddress().toString() == "0041d9ec") {
+            println(instruction.getAddress().toString())
+            val b = highFunction
+              .getPcodeOps(target)
+              .asScala
+              .toList
+              .head
+              .getInputs
+            println(highFunction.getPcodeOps(instruction.getPcode.head.getSeqnum.getTarget).asScala.toList)
+          }
+
+          val node = createIdentifier(name,
+                                      name,
+                                      index + 1,
+                                      Types.registerType(name),
+                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          connectCallToArgument(callNode, node)
+        } else if (input.isConstant) {
+          val node =
+            createLiteral("0x" + input.getWordOffset.toHexString,
+                          index + 1,
+                          index + 1,
+                          "0x" + input.getWordOffset.toHexString,
+                          instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          connectCallToArgument(callNode, node)
+        } else if (input.isUnique) {
+          val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
+                                                input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
+          val node = createLiteral(value,
+                                   index + 1,
+                                   index + 1,
+                                   input.getWordOffset.toHexString,
+                                   instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          connectCallToArgument(callNode, node)
+        } else {
+          val node = createLiteral(input.toString(),
+                                   index + 1,
+                                   index + 1,
+                                   input.toString(),
+                                   instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          connectCallToArgument(callNode, node)
+        }
     }
   }
 
@@ -117,7 +127,7 @@ class MipsFunctionPass(currentProgram: Program,
                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
             connectCallToArgument(instructionNode, node)
           case _ =>
-            logger.warn(
+            println(
               s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
             )
         }
