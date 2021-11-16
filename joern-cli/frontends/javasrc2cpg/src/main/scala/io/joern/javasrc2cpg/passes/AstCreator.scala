@@ -1581,7 +1581,10 @@ class AstCreator(filename: String, global: Global) {
         callNode.methodFullName(s"${resolved.getQualifiedName}:$signature")
         callNode.signature(signature)
         callNode.dispatchType(DispatchTypes.STATIC_DISPATCH)
-      case Failure(_) => // TODO: Logging
+      case Failure(_) =>
+        // TODO: Logging
+        // Assume dynamic dispatch if the method declaration could not be resolved.
+        callNode.dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
 
     }
     if (call.getName.getBegin.isPresent) {
