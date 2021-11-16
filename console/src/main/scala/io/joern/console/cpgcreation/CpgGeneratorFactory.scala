@@ -15,12 +15,14 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
   /**
     * For a given input path, try to guess a suitable generator and return it
     * */
-  def forCodeAt(inputPath: String): Option[CpgGenerator] = {
-    guessLanguage(inputPath).flatMap { language =>
-      report(s"Using generator for language: $language and frontend=${config.frontend}")
-      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil)
+  def forCodeAt(inputPath: String): Option[CpgGenerator] =
+    for {
+      language <- guessLanguage(inputPath)
+      cpgGenerator <- cpgGeneratorForLanguage(language, config.frontendConfig, config.install.rootPath.path, args = Nil)
+    } yield {
+      report(s"Using generator for language: $language: ${cpgGenerator.getClass.getSimpleName}")
+      cpgGenerator
     }
-  }
 
   /**
     * For a language, return the generator
@@ -29,7 +31,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     Option(language)
       .filter(languageIsKnown)
       .flatMap { lang =>
-        cpgGeneratorForLanguage(lang, config.frontend, config.install.rootPath.path, args = Nil)
+        cpgGeneratorForLanguage(lang, config.frontendConfig, config.install.rootPath.path, args = Nil)
       }
   }
 
