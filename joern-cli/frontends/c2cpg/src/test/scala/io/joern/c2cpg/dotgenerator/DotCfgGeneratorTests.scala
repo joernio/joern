@@ -20,31 +20,32 @@ class DotCfgGeneratorTests extends CCodeToCpgSuite {
   "A CfgDotGenerator" should {
 
     "create a dot graph" in {
-      cpg.method.name("main").dotCfg.l match {
-        case x :: _ =>
-          x.startsWith("digraph \"main\" {") shouldBe true
-          x.contains("(<operator>.assignment,i = 0)") shouldBe true
-          x.endsWith("}\n") shouldBe true
-        case _ => fail()
+      inside(cpg.method.name("main").dotCfg.l) {
+        case List(x) =>
+          x should (
+            startWith("digraph \"main\" {") and
+              include("(<operator>.assignment,i = 0)") and
+              endWith("}\n")
+          )
       }
     }
 
     "not contain IDENTIFIER nodes" in {
-      cpg.method.name("main").dotCfg.l match {
-        case x :: _ =>
-          x.contains("IDENTIFIER") shouldBe false
-        case _ => fail()
+      inside(cpg.method.name("main").dotCfg.l) {
+        case List(x) => x should not include "IDENTIFIER"
       }
     }
 
     "contain seven nodes" in {
-      val dotStr = cpg.method.name("main").dotCfg.head
-      dotStr.split("\n").count(x => x.contains("label")) shouldBe 7
+      inside(cpg.method.name("main").dotCfg.l) {
+        case List(dotStr) => dotStr.split("\n").count(x => x.contains("label")) shouldBe 7
+      }
     }
 
     "contain seven edges" in {
-      val dotStr = cpg.method.name("main").dotCfg.head
-      dotStr.split("\n").count(x => x.contains("->")) shouldBe 7
+      inside(cpg.method.name("main").dotCfg.l) {
+        case List(dotStr) => dotStr.split("\n").count(x => x.contains("->")) shouldBe 7
+      }
     }
 
   }

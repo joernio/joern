@@ -7,11 +7,17 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language._
+import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal.NodeOps
 
-class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixture with TestAstOnlyFixture {
+class AstCreationPassTests
+    extends AnyWordSpec
+    with Matchers
+    with Inside
+    with CpgAstOnlyFixture
+    with TestAstOnlyFixture {
 
   "AstCreationPass" should {
 
@@ -26,8 +32,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         }
         new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, Config(inputPaths = Set(dir.path.toString)))
           .createAndApply()
-        val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:<global>").toSet
-        cpg.namespaceBlock.fullName.toSet shouldBe expectedNamespaceFullNames
+        val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:<global>")
+        cpg.namespaceBlock.fullName.l shouldBe expectedNamespaceFullNames
       }
     }
 
@@ -39,15 +45,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |char *foo() {};
        |char *hello();
        |""".stripMargin) { cpg =>
-      cpg.method("foo").l match {
-        case List(foo) =>
-          foo.signature shouldBe "char* foo ()"
-        case _ => fail()
+      inside(cpg.method("foo").l) {
+        case List(foo) => foo.signature shouldBe "char* foo ()"
       }
-      cpg.method("hello").l match {
-        case List(hello) =>
-          hello.signature shouldBe "char* hello ()"
-        case _ => fail()
+      inside(cpg.method("hello").l) {
+        case List(hello) => hello.signature shouldBe "char* hello ()"
+
       }
     }
 
@@ -55,10 +58,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |void foo(int x, int*... args) {};
        |""".stripMargin,
                                                        "test.cpp") { cpg =>
-      cpg.method("foo").l match {
+      inside(cpg.method("foo").l) {
         case List(m) =>
           m.signature shouldBe "void foo (int,int*)"
-          m.parameter.l match {
+          inside(m.parameter.l) {
             case List(x, args) =>
               x.name shouldBe "x"
               x.code shouldBe "int x"
@@ -70,9 +73,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               args.typeFullName shouldBe "int*"
               args.isVariadic shouldBe true
               args.order shouldBe 2
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -80,9 +81,9 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |void foo(int x, int args...) {};
        |""".stripMargin,
                                                    "test.cpp") { cpg =>
-      cpg.method("foo").l match {
+      inside(cpg.method("foo").l) {
         case List(m) =>
-          m.parameter.l match {
+          inside(m.parameter.l) {
             case List(x, args) =>
               x.name shouldBe "x"
               x.code shouldBe "int x"
@@ -94,9 +95,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               args.typeFullName shouldBe "int"
               args.isVariadic shouldBe true
               args.order shouldBe 2
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -106,9 +105,9 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         | int *y;
         | {};
         |""".stripMargin) { cpg =>
-      cpg.method("handler").l match {
+      inside(cpg.method("handler").l) {
         case List(m) =>
-          m.parameter.l match {
+          inside(m.parameter.l) {
             case List(x, y) =>
               x.name shouldBe "x"
               x.code shouldBe "int *x;"
@@ -118,9 +117,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               y.code shouldBe "int *y;"
               y.typeFullName shouldBe "int*"
               y.order shouldBe 2
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -143,51 +140,42 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       cpg.local.name("x").order.l shouldBe List(1)
       cpg.local.name("y").order.l shouldBe List(3)
 
-      cpg.assignment.l match {
+      inside(cpg.assignment.l) {
         case List(assignment1, assignment2) =>
           assignment1.order shouldBe 2
-          assignment1.astMinusRoot.isMethodRef.l match {
-            case List(ref) =>
-              ref.methodFullName shouldBe lambda1FullName
-            case _ => fail()
+          inside(assignment1.astMinusRoot.isMethodRef.l) {
+            case List(ref) => ref.methodFullName shouldBe lambda1FullName
           }
           assignment2.order shouldBe 4
-          assignment2.astMinusRoot.isMethodRef.l match {
-            case List(ref) =>
-              ref.methodFullName shouldBe lambda2FullName
-            case _ => fail()
+          inside(assignment2.astMinusRoot.isMethodRef.l) {
+            case List(ref) => ref.methodFullName shouldBe lambda2FullName
           }
-        case _ => fail()
       }
 
-      cpg.method.fullNameExact(lambda1FullName).l match {
+      inside(cpg.method.fullNameExact(lambda1FullName).l) {
         case List(l1) =>
           l1.name shouldBe lambda1FullName
           l1.code shouldBe "int anonymous_lambda_0 (int a,int b)"
           l1.signature shouldBe "int anonymous_lambda_0 (int,int)"
-        case _ => fail()
       }
 
-      cpg.method.fullNameExact(lambda2FullName).l match {
+      inside(cpg.method.fullNameExact(lambda2FullName).l) {
         case List(l2) =>
           l2.name shouldBe lambda2FullName
           l2.code shouldBe "string anonymous_lambda_1 (string a,string b)"
           l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
-        case _ => fail()
       }
 
-      cpg.typeDecl(lambda1FullName).head.bindsOut.l match {
+      inside(cpg.typeDecl(lambda1FullName).head.bindsOut.l) {
         case List(binding: Binding) =>
           binding.name shouldBe lambda1FullName
           binding.signature shouldBe "int anonymous_lambda_0 (int,int)"
-          binding.refOut.l match {
+          inside(binding.refOut.l) {
             case List(method: Method) =>
               method.name shouldBe lambda1FullName
               method.fullName shouldBe lambda1FullName
               method.signature shouldBe "int anonymous_lambda_0 (int,int)"
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -209,37 +197,32 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
 
       cpg.member.name("x").order.l shouldBe List(1)
 
-      cpg.assignment.l match {
+      inside(cpg.assignment.l) {
         case List(assignment1) =>
           assignment1.order shouldBe 2
-          assignment1.astMinusRoot.isMethodRef.l match {
+          inside(assignment1.astMinusRoot.isMethodRef.l) {
             case List(ref) =>
               ref.methodFullName shouldBe lambdaFullName
-            case _ => fail()
           }
-        case _ => fail()
       }
 
-      cpg.method.fullNameExact(lambdaFullName).l match {
+      inside(cpg.method.fullNameExact(lambdaFullName).l) {
         case List(l1) =>
           l1.name shouldBe lambdaName
           l1.code shouldBe "int anonymous_lambda_0 (int a,int b)"
           l1.signature shouldBe signature
-        case _ => fail()
       }
 
-      cpg.typeDecl("Foo").head.bindsOut.l match {
+      inside(cpg.typeDecl("Foo").head.bindsOut.l) {
         case List(binding: Binding) =>
           binding.name shouldBe lambdaName
           binding.signature shouldBe signature
-          binding.refOut.l match {
+          inside(binding.refOut.l) {
             case List(method: Method) =>
               method.name shouldBe lambdaName
               method.fullName shouldBe lambdaFullName
               method.signature shouldBe signature
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -262,37 +245,32 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
 
       cpg.member.name("x").order.l shouldBe List(1)
 
-      cpg.assignment.l match {
+      inside(cpg.assignment.l) {
         case List(assignment1) =>
           assignment1.order shouldBe 2
-          assignment1.astMinusRoot.isMethodRef.l match {
+          inside(assignment1.astMinusRoot.isMethodRef.l) {
             case List(ref) =>
               ref.methodFullName shouldBe lambdaFullName
-            case _ => fail()
           }
-        case _ => fail()
       }
 
-      cpg.method.fullNameExact(lambdaFullName).l match {
+      inside(cpg.method.fullNameExact(lambdaFullName).l) {
         case List(l1) =>
           l1.name shouldBe lambdaName
           l1.code shouldBe "int anonymous_lambda_0 (int a,int b)"
           l1.signature shouldBe signature
-        case _ => fail()
       }
 
-      cpg.typeDecl.fullNameExact("A.B.Foo").head.bindsOut.l match {
+      inside(cpg.typeDecl.fullNameExact("A.B.Foo").head.bindsOut.l) {
         case List(binding: Binding) =>
           binding.name shouldBe lambdaName
           binding.signature shouldBe signature
-          binding.refOut.l match {
+          inside(binding.refOut.l) {
             case List(method: Method) =>
               method.name shouldBe lambdaName
               method.fullName shouldBe lambdaFullName
               method.signature shouldBe signature
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -319,97 +297,81 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       cpg.local.name("foo1").order.l shouldBe List(3)
       cpg.local.name("foo2").order.l shouldBe List(5)
 
-      cpg.assignment.l match {
+      inside(cpg.assignment.l) {
         case List(assignment1, assignment2, assignment3) =>
           assignment1.order shouldBe 2
           assignment2.order shouldBe 4
           assignment3.order shouldBe 6
-          assignment1.astMinusRoot.isMethodRef.l match {
+          inside(assignment1.astMinusRoot.isMethodRef.l) {
             case List(ref) =>
               ref.methodFullName shouldBe lambda1Name
-            case _ => fail()
           }
-        case _ => fail()
       }
 
-      cpg.method.fullNameExact(lambda1Name).l match {
+      inside(cpg.method.fullNameExact(lambda1Name).l) {
         case List(l1) =>
           l1.name shouldBe lambda1Name
           l1.code shouldBe "int anonymous_lambda_0 (int n)"
           l1.signature shouldBe signature1
-        case _ => fail()
       }
 
-      cpg.typeDecl(lambda1Name).head.bindsOut.l match {
+      inside(cpg.typeDecl(lambda1Name).head.bindsOut.l) {
         case List(binding: Binding) =>
           binding.name shouldBe lambda1Name
           binding.signature shouldBe signature1
-          binding.refOut.l match {
+          inside(binding.refOut.l) {
             case List(method: Method) =>
               method.name shouldBe lambda1Name
               method.fullName shouldBe lambda1Name
               method.signature shouldBe signature1
-            case _ => fail()
           }
-        case _ => fail()
       }
 
-      cpg.call("x").l match {
+      inside(cpg.call("x").l) {
         case List(lambda1call) =>
           lambda1call.name shouldBe "x"
           lambda1call.methodFullName shouldBe "x"
           lambda1call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          lambda1call.astChildren.l match {
+          inside(lambda1call.astChildren.l) {
             case List(lit: Literal) =>
               lit.code shouldBe "10"
-            case _ => fail()
           }
-          lambda1call.argument.l match {
+          inside(lambda1call.argument.l) {
             case List(lit: Literal) =>
               lit.code shouldBe "10"
-            case _ => fail()
           }
-          lambda1call.receiver.l match {
-            case List() =>
-            case _      => fail()
-          }
-        case _ => fail()
+          lambda1call.receiver.l shouldBe empty
       }
 
-      cpg.call(lambda2Name).l match {
+      inside(cpg.call(lambda2Name).l) {
         case List(lambda2call) =>
           lambda2call.name shouldBe lambda2Name
           lambda2call.methodFullName shouldBe lambda2Name
           // TODO: lambda2call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-          lambda2call.astChildren.l match {
+          inside(lambda2call.astChildren.l) {
             case List(ref: MethodRef, lit: Literal) =>
               ref.methodFullName shouldBe lambda2Name
               ref.code shouldBe "int anonymous_lambda_1 (int n)"
               lit.code shouldBe "10"
-            case _ => fail()
           }
-          lambda2call.argument.l match {
+          inside(lambda2call.argument.l) {
             case List(lit: Literal) =>
               lit.code shouldBe "10"
-            case _ => fail()
           }
-          lambda2call.receiver.l match {
+          inside(lambda2call.receiver.l) {
             case List(ref: MethodRef) =>
               ref.methodFullName shouldBe lambda2Name
               ref.code shouldBe "int anonymous_lambda_1 (int n)"
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
     "be correct for empty method" in TestAstOnlyFixture("void method(int x) { }") { cpg =>
-      cpg.method.name("method").astChildren.l match {
+      inside(cpg.method.name("method").astChildren.l) {
         case List(param: MethodParameterIn, _: Block, ret: MethodReturn) =>
           ret.typeFullName shouldBe "void"
           param.typeFullName shouldBe "int"
           param.name shouldBe "x"
-        case _ => fail()
       }
     }
 
@@ -420,11 +382,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  free(x);
         |}
         |""".stripMargin) { cpg =>
-      cpg.method.name("method").parameter.l match {
+      inside(cpg.method.name("method").parameter.l) {
         case List(param: MethodParameterIn) =>
           param.typeFullName shouldBe "a_struct_type*"
           param.name shouldBe "a_struct"
-        case _ => fail()
       }
     }
 
@@ -435,11 +396,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |  free(x);
        |}
        |""".stripMargin) { cpg =>
-      cpg.method.name("method").parameter.l match {
+      inside(cpg.method.name("method").parameter.l) {
         case List(param: MethodParameterIn) =>
           param.typeFullName shouldBe "struct date*"
           param.name shouldBe "date"
-        case _ => fail()
       }
     }
 
@@ -450,11 +410,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |  free(x);
        |}
        |""".stripMargin) { cpg =>
-      cpg.method.name("method").parameter.l match {
+      inside(cpg.method.name("method").parameter.l) {
         case List(param: MethodParameterIn) =>
           param.typeFullName shouldBe "int[]"
           param.name shouldBe "x"
-        case _ => fail()
       }
     }
 
@@ -465,11 +424,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |  free(x);
        |}
        |""".stripMargin) { cpg =>
-      cpg.method.name("method").parameter.l match {
+      inside(cpg.method.name("method").parameter.l) {
         case List(param: MethodParameterIn) =>
           param.typeFullName shouldBe "int[]"
           param.name shouldBe ""
-        case _ => fail()
       }
     }
 
@@ -480,11 +438,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |  free(x);
        |}
        |""".stripMargin) { cpg =>
-      cpg.method.name("method").parameter.l match {
+      inside(cpg.method.name("method").parameter.l) {
         case List(param: MethodParameterIn) =>
           param.typeFullName shouldBe "a_struct_type[]"
           param.name shouldBe "a_struct"
-        case _ => fail()
       }
     }
 
@@ -496,11 +453,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       |  free(x);
       |}
       |""".stripMargin) { cpg =>
-      cpg.method.name("method").parameter.l match {
+      inside(cpg.method.name("method").parameter.l) {
         case List(param: MethodParameterIn) =>
           param.typeFullName shouldBe "a_struct_type[]*"
           param.name shouldBe "a_struct"
-        case _ => fail()
       }
     }
 
@@ -509,14 +465,14 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  int local = 1;
         |}
         |""".stripMargin) { cpg =>
-      cpg.method.name("method").block.astChildren.l match {
+      inside(cpg.method.name("method").block.astChildren.l) {
         case List(local: Local, call: Call) =>
           local.name shouldBe "local"
           local.typeFullName shouldBe "int"
           local.order shouldBe 1
           call.name shouldBe Operators.assignment
           call.order shouldBe 2
-          call.astChildren.l match {
+          inside(call.astChildren.l) {
             case List(identifier: Identifier, literal: Literal) =>
               identifier.name shouldBe "local"
               identifier.typeFullName shouldBe "int"
@@ -526,9 +482,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               literal.typeFullName shouldBe "int"
               literal.order shouldBe 2
               literal.argumentIndex shouldBe 2
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -537,12 +491,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  static int local = 1;
         |}
         |""".stripMargin) { cpg =>
-      cpg.method.name("method").block.astChildren.l match {
+      inside(cpg.method.name("method").block.astChildren.l) {
         case List(local: Local, call: Call) =>
           local.name shouldBe "local"
           local.typeFullName shouldBe "static int"
           call.name shouldBe Operators.assignment
-          call.astChildren.l match {
+          inside(call.astChildren.l) {
             case List(identifier: Identifier, literal: Literal) =>
               identifier.name shouldBe "local"
               identifier.typeFullName shouldBe "static int"
@@ -552,9 +506,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               literal.typeFullName shouldBe "int"
               literal.order shouldBe 2
               literal.argumentIndex shouldBe 2
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -567,10 +519,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      cpg.method.name("method").block.astChildren.l match {
+      inside(cpg.method.name("method").block.astChildren.l) {
         case List(_, call1: Call, _, call2: Call) =>
           call1.name shouldBe Operators.assignment
-          call2.astChildren.l match {
+          inside(call2.astChildren.l) {
             case List(identifier: Identifier, call: Call) =>
               identifier.name shouldBe "is_std_array_v"
               identifier.typeFullName shouldBe "constexpr bool"
@@ -580,17 +532,14 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               call.order shouldBe 2
               call.methodFullName shouldBe Operators.fieldAccess
               call.argument(2).code shouldBe "value"
-              call.argument(1).l match {
+              inside(call.argument(1).l) {
                 case List(fa: Call) =>
                   fa.code shouldBe "decltype(local)"
                   fa.methodFullName shouldBe "operators.<typeOf>"
                   fa.argument(1).code shouldBe "local"
-                case _ => fail()
               }
 
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -600,13 +549,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           |  int local = x;
           |}""".stripMargin) { cpg =>
         cpg.local.name("local").order.l shouldBe List(1)
-        cpg.method("method").block.astChildren.assignments.source.l match {
+        inside(cpg.method("method").block.astChildren.assignments.source.l) {
           case List(identifier: Identifier) =>
             identifier.code shouldBe "x"
             identifier.typeFullName shouldBe "int"
             identifier.order shouldBe 2
             identifier.argumentIndex shouldBe 2
-          case _ => fail()
         }
       }
 
@@ -620,7 +568,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         // are created by a backend pass in semanticcpg
         // construction.
 
-        cpg.local.l.sortBy(_.order) match {
+        inside(cpg.local.l.sortBy(_.order)) {
           case List(local1, local2) =>
             local1.name shouldBe "local"
             local1.typeFullName shouldBe "int"
@@ -628,16 +576,14 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
             local2.name shouldBe "local2"
             local2.typeFullName shouldBe "int"
             local2.order shouldBe 2
-          case _ => fail()
         }
 
-        cpg.assignment.l.sortBy(_.order) match {
+        inside(cpg.assignment.l.sortBy(_.order)) {
           case List(a1, a2) =>
             a1.order shouldBe 3
             a2.order shouldBe 4
             List(a1.target.code, a1.source.code) shouldBe List("local", "x")
             List(a2.target.code, a2.source.code) shouldBe List("local2", "y")
-          case _ => fail()
         }
       }
 
@@ -657,19 +603,17 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       val localZ = cpg.local.order(3)
       localZ.name.l shouldBe List("z")
 
-      cpg.method.name("method").assignments.l match {
+      inside(cpg.method.name("method").assignments.l) {
         case List(assignment) =>
           assignment.target.code shouldBe "x"
           assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
-          assignment.source.astChildren.l match {
+          inside(assignment.source.astChildren.l) {
             case List(id1: Identifier, id2: Identifier) =>
               id1.order shouldBe 1
               id1.code shouldBe "y"
               id2.order shouldBe 2
               id2.code shouldBe "z"
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -681,17 +625,15 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  }
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").block.astChildren.l match {
+      inside(cpg.method.name("method").block.astChildren.l) {
         case List(local: Local, innerBlock: Block) =>
           local.name shouldBe "x"
           local.order shouldBe 1
-          innerBlock.astChildren.l match {
+          inside(innerBlock.astChildren.l) {
             case List(localInBlock: Local) =>
               localInBlock.name shouldBe "y"
               localInBlock.order shouldBe 1
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -702,17 +644,15 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  }
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").block.astChildren.isControlStructure.l match {
+      inside(cpg.method.name("method").block.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code shouldBe "while (x < 1)"
           controlStruct.controlStructureType shouldBe ControlStructureTypes.WHILE
-          controlStruct.condition.l match {
+          inside(controlStruct.condition.l) {
             case List(cndNode) =>
               cndNode.code shouldBe "x < 1"
-            case _ => fail()
           }
           controlStruct.whenTrue.assignments.code.l shouldBe List("x += 1")
-        case _ => fail()
       }
     }
 
@@ -724,18 +664,16 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  }
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").controlStructure.l match {
+      inside(cpg.method.name("method").controlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code shouldBe "if (x > 0)"
           controlStruct.controlStructureType shouldBe ControlStructureTypes.IF
-          controlStruct.condition.l match {
+          inside(controlStruct.condition.l) {
             case List(cndNode) =>
               cndNode.code shouldBe "x > 0"
-            case _ => fail()
 
           }
           controlStruct.whenTrue.assignments.code.l shouldBe List("y = 0")
-        case _ => fail()
       }
     }
 
@@ -749,17 +687,16 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  }
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").controlStructure.l match {
+      inside(cpg.method.name("method").controlStructure.l) {
         case List(ifStmt, elseStmt) =>
           ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
           ifStmt.code shouldBe "if (x > 0)"
           elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
           elseStmt.code shouldBe "else"
 
-          ifStmt.condition.l match {
+          inside(ifStmt.condition.l) {
             case List(cndNode) =>
               cndNode.code shouldBe "x > 0"
-            case _ => fail()
           }
 
           ifStmt.whenTrue.assignments
@@ -768,7 +705,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           ifStmt.whenFalse.assignments
             .map(x => (x.target.code, x.source.code))
             .headOption shouldBe Some(("y", "1"))
-        case _ => fail()
       }
     }
 
@@ -778,10 +714,9 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
          |   int x = (true ? vlc_dccp_CreateFD : vlc_datagram_CreateFD)(fd);
          | }
       """.stripMargin) { cpg =>
-      cpg.method.name("method").ast.isCall.name(Operators.conditional).l match {
+      inside(cpg.method.name("method").ast.isCall.name(Operators.conditional).l) {
         case List(call) =>
           call.code shouldBe "true ? vlc_dccp_CreateFD : vlc_datagram_CreateFD"
-        case _ => fail()
       }
     }
 
@@ -794,10 +729,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       // `cpg.method.call` will not work at this stage
       // either because there are no CONTAINS edges
 
-      cpg.method.name("method").ast.isCall.name(Operators.conditional).l match {
+      inside(cpg.method.name("method").ast.isCall.name(Operators.conditional).l) {
         case List(call) =>
           call.code shouldBe "(foo == 1) ? bar : 0"
-          call.argument.l match {
+          inside(call.argument.l) {
             case List(condition, trueBranch, falseBranch) =>
               condition.argumentIndex shouldBe 1
               condition.code shouldBe "foo == 1"
@@ -805,9 +740,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               trueBranch.code shouldBe "bar"
               falseBranch.argumentIndex shouldBe 3
               falseBranch.code shouldBe "0"
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -818,25 +751,21 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |  }
        |}""".stripMargin,
                                                            "file.cpp") { cpg =>
-      cpg.method.name("method").controlStructure.l match {
+      inside(cpg.method.name("method").controlStructure.l) {
         case List(forStmt) =>
           forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-          forStmt.astChildren.order(1).l match {
+          inside(forStmt.astChildren.order(1).l) {
             case List(ident) =>
               ident.code shouldBe "list"
-            case _ => fail()
           }
-          forStmt.astChildren.order(2).l match {
+          inside(forStmt.astChildren.order(2).l) {
             case List(ident) =>
               ident.code shouldBe "x"
-            case _ => fail()
           }
-          forStmt.astChildren.order(3).l match {
+          inside(forStmt.astChildren.order(3).l) {
             case List(block) =>
               block.astChildren.isCall.code.l shouldBe List("z = x")
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -849,27 +778,23 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      cpg.method.name("method").controlStructure.l match {
+      inside(cpg.method.name("method").controlStructure.l) {
         case List(forStmt) =>
           forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-          forStmt.astChildren.order(1).l match {
+          inside(forStmt.astChildren.order(1).l) {
             case List(ident) =>
               ident.code shouldBe "foo"
-            case _ => fail()
           }
-          forStmt.astChildren.order(2).astChildren.l match {
+          inside(forStmt.astChildren.order(2).astChildren.l) {
             case List(a, b) =>
               a.code shouldBe "a"
               b.code shouldBe "b"
-            case _ => fail()
           }
-          forStmt.astChildren.order(3).l match {
+          inside(forStmt.astChildren.order(3).l) {
             case List(block) =>
               block.code shouldBe "<empty>"
               block.astChildren.l shouldBe empty
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -881,29 +806,26 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  }
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").controlStructure.l match {
+      inside(cpg.method.name("method").controlStructure.l) {
         case List(forStmt) =>
           forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
           childContainsAssignments(forStmt, 1, List("x = 0", "y = 0"))
 
-          forStmt.astChildren.order(2).l match {
+          inside(forStmt.astChildren.order(2).l) {
             case List(condition: Expression) =>
               condition.code shouldBe "x < 1"
-            case _ => fail()
           }
 
           forStmt.condition.l shouldBe forStmt.astChildren.order(2).l
           childContainsAssignments(forStmt, 3, List("x += 1"))
           childContainsAssignments(forStmt, 4, List("z = 0"))
-        case _ => fail()
       }
     }
 
     def childContainsAssignments(node: AstNode, i: Int, list: List[String]) = {
-      node.astChildren.order(i).l match {
+      inside(node.astChildren.order(i).l) {
         case List(child) =>
           child.assignments.code.l shouldBe list
-        case _ => fail()
       }
     }
 
@@ -943,14 +865,13 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  foo(x);
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").ast.isCall.l match {
+      inside(cpg.method.name("method").ast.isCall.l) {
         case List(call: Call) =>
           call.code shouldBe "foo(x)"
           call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           val rec = call.receiver.l
           rec.length shouldBe 0
           call.argument(1).code shouldBe "x"
-        case _ => fail()
       }
     }
 
@@ -959,7 +880,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  x.a;
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").ast.isCall.name(Operators.fieldAccess).l match {
+      inside(cpg.method.name("method").ast.isCall.name(Operators.fieldAccess).l) {
         case List(call) =>
           val arg1 = call.argument(1)
           val arg2 = call.argument(2)
@@ -970,7 +891,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           arg2.argumentIndex shouldBe 2
           arg2.asInstanceOf[FieldIdentifier].code shouldBe "a"
           arg2.asInstanceOf[FieldIdentifier].canonicalName shouldBe "a"
-        case _ => fail()
       }
     }
 
@@ -979,7 +899,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  x->a;
         |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").ast.isCall.name(Operators.indirectFieldAccess).l match {
+      inside(cpg.method.name("method").ast.isCall.name(Operators.indirectFieldAccess).l) {
         case List(call) =>
           val arg1 = call.argument(1)
           val arg2 = call.argument(2)
@@ -990,7 +910,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           arg2.argumentIndex shouldBe 2
           arg2.asInstanceOf[FieldIdentifier].code shouldBe "a"
           arg2.asInstanceOf[FieldIdentifier].canonicalName shouldBe "a"
-        case _ => fail()
       }
     }
 
@@ -999,7 +918,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           |  return (x->a)(1, 2);
           |}
       """.stripMargin) { cpg =>
-      cpg.method.name("method").ast.isCall.name(Operators.indirectFieldAccess).l match {
+      inside(cpg.method.name("method").ast.isCall.name(Operators.indirectFieldAccess).l) {
         case List(call) =>
           val arg1 = call.argument(1)
           val arg2 = call.argument(2)
@@ -1010,7 +929,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           arg2.argumentIndex shouldBe 2
           arg2.asInstanceOf[FieldIdentifier].code shouldBe "a"
           arg2.asInstanceOf[FieldIdentifier].canonicalName shouldBe "a"
-        case _ => fail()
       }
     }
 
@@ -1129,20 +1047,17 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |   };
         | };
       """.stripMargin) { cpg =>
-      cpg.typeDecl.name("foo").l match {
+      inside(cpg.typeDecl.name("foo").l) {
         case List(fooStruct: TypeDecl) =>
           fooStruct.member.name("x").size shouldBe 1
-          fooStruct.astChildren.isTypeDecl.l match {
+          inside(fooStruct.astChildren.isTypeDecl.l) {
             case List(barStruct: TypeDecl) =>
               barStruct.member.name("y").size shouldBe 1
-              barStruct.astChildren.isTypeDecl.l match {
+              inside(barStruct.astChildren.isTypeDecl.l) {
                 case List(foo2Struct: TypeDecl) =>
                   foo2Struct.member.name("z").size shouldBe 1
-                case _ => fail()
               }
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -1209,11 +1124,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin,
       "test.cpp"
     ) { cpg =>
-      cpg.typeDecl("Foo").astChildren.isTypeDecl.l match {
+      inside(cpg.typeDecl("Foo").astChildren.isTypeDecl.l) {
         case List(bar) =>
           bar.name shouldBe "Bar"
           bar.aliasTypeFullName shouldBe Some("Bar")
-        case _ => fail()
       }
     }
 
@@ -1250,12 +1164,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         .name("Foo")
         .l
         .size shouldBe 1
-      cpg.call.code("f.method()").l match {
+      inside(cpg.call.code("f.method()").l) {
         case List(call: Call) =>
           call.methodFullName shouldBe Operators.fieldAccess
           call.argument(1).code shouldBe "f"
           call.argument(2).code shouldBe "method"
-        case _ => fail()
       }
     }
 
@@ -1265,11 +1178,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin,
       "file.cpp"
     ) { cpg =>
-      cpg.call.name(Operators.cast).l match {
+      inside(cpg.call.name(Operators.cast).l) {
         case List(call: Call) =>
           call.argument(1).code shouldBe "{ 1 }"
           call.argument(2).code shouldBe "int"
-        case _ => fail()
       }
     }
 
@@ -1282,12 +1194,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin,
       "file.cpp"
     ) { cpg =>
-      cpg.call.codeExact("static_assert ( a == 0 , \"not 0!\");").l match {
+      inside(cpg.call.codeExact("static_assert ( a == 0 , \"not 0!\");").l) {
         case List(call: Call) =>
           call.name shouldBe "static_assert"
           call.argument(1).code shouldBe "a == 0"
           call.argument(2).code shouldBe "\"not 0!\""
-        case _ => fail()
       }
     }
 
@@ -1301,11 +1212,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin,
       "file.cpp"
     ) { cpg =>
-      cpg.controlStructure.l match {
+      inside(cpg.controlStructure.l) {
         case List(t) =>
           t.ast.isCall.order(1).code.l shouldBe List("bar()")
           t.ast.isReturn.code.l shouldBe List("return 0;")
-        case _ => fail()
       }
     }
 
@@ -1323,11 +1233,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         .fullNameExact("Foo")
         .l
         .size shouldBe 1
-      cpg.call.codeExact("f1(0)").l match {
+      inside(cpg.call.codeExact("f1(0)").l) {
         case List(call: Call) =>
           call.name shouldBe "f1"
           call.argument(1).code shouldBe "0"
-        case _ => fail()
       }
     }
 
@@ -1381,11 +1290,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         .fullNameExact("Foo")
         .l
         .size shouldBe 1
-      cpg.call.codeExact("Foo{0}").l match {
+      inside(cpg.call.codeExact("Foo{0}").l) {
         case List(call: Call) =>
           call.name shouldBe "Foo"
           call.argument(1).code shouldBe "{0}"
-        case _ => fail()
       }
     }
 
@@ -1456,13 +1364,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |    }
         |""".stripMargin
     ) { cpg =>
-      cpg.call.name(Operators.cast).astChildren.l match {
+      inside(cpg.call.name(Operators.cast).astChildren.l) {
         case List(call: Call, tpe: Unknown) =>
           call.code shouldBe "end - str"
           call.argumentIndex shouldBe 1
           tpe.code shouldBe "int"
           tpe.argumentIndex shouldBe 2
-        case _ => fail()
       }
     }
 
@@ -1543,19 +1450,18 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  printf("%s", buf);
         |}
         |""".stripMargin) { cpg =>
-      cpg.local.l match {
+      inside(cpg.local.l) {
         case List(buf: Local) =>
           buf.typeFullName shouldBe "char[256]"
           buf.name shouldBe "buf"
           buf.code shouldBe "buf"
-        case _ => fail()
       }
     }
 
     "be correct for array init" in TestAstOnlyFixture("""
         |int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
-      cpg.assignment.astChildren.l match {
+      inside(cpg.assignment.astChildren.l) {
         case List(ident: Identifier, call: Call) =>
           ident.typeFullName shouldBe "int[]"
           ident.order shouldBe 1
@@ -1566,7 +1472,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           call.methodFullName shouldBe "<operator>.arrayInitializer"
           val children = call.astChildren.l
           val args = call.argument.l
-          children match {
+          inside(children) {
             case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
               a.order shouldBe 1
               a.code shouldBe "0"
@@ -1576,10 +1482,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               c.code shouldBe "2"
               d.order shouldBe 4
               d.code shouldBe "3"
-            case _ => fail()
           }
           children shouldBe args
-        case _ => fail()
       }
     }
 
@@ -1604,7 +1508,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       assigment2.name shouldBe Operators.assignment
       assigment2.methodFullName shouldBe Operators.assignment
 
-      cpg.assignment.astChildren.l match {
+      inside(cpg.assignment.astChildren.l) {
         case List(identFoo: Identifier, identBar: Identifier, callFoo: Call, barCall: Call) =>
           identFoo.typeFullName shouldBe "int"
           identFoo.order shouldBe 1
@@ -1615,11 +1519,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           callFoo.methodFullName shouldBe "<operator>.arrayInitializer"
           val childrenFoo = callFoo.astChildren.l
           val argsFoo = callFoo.argument.l
-          childrenFoo match {
+          inside(childrenFoo) {
             case List(a: Literal) =>
               a.order shouldBe 1
               a.code shouldBe "1"
-            case _ => fail()
           }
           childrenFoo shouldBe argsFoo
 
@@ -1632,7 +1535,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           barCall.methodFullName shouldBe "<operator>.arrayInitializer"
           val childrenBar = barCall.astChildren.l
           val argsBar = barCall.argument.l
-          childrenBar match {
+          inside(childrenBar) {
             case List(a: Literal, b: Literal, c: Literal) =>
               a.order shouldBe 1
               a.code shouldBe "0"
@@ -1640,10 +1543,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               b.code shouldBe "1"
               c.order shouldBe 3
               c.code shouldBe "2"
-            case _ => fail()
           }
           childrenBar shouldBe argsBar
-        case _ => fail()
       }
     }
 
@@ -1737,7 +1638,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |  int a[3] = { [1] = 5, [2] = 10 };
        |};
       """.stripMargin) { cpg =>
-      cpg.assignment.head.astChildren.l match {
+      inside(cpg.assignment.head.astChildren.l) {
         case List(ident: Identifier, call: Call) =>
           ident.typeFullName shouldBe "int[3]"
           ident.order shouldBe 1
@@ -1748,7 +1649,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           call.methodFullName shouldBe "<operator>.arrayInitializer"
           val children = call.astMinusRoot.isCall.l
           val args = call.argument.astChildren.l
-          children match {
+          inside(children) {
             case List(call1, call2) =>
               call1.code shouldBe "[1] = 5"
               call1.name shouldBe Operators.assignment
@@ -1758,10 +1659,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               call2.name shouldBe Operators.assignment
               call2.astMinusRoot.code.l shouldBe List("2", "10")
               call2.argument.code.l shouldBe List("2", "10")
-            case _ => fail()
           }
           children shouldBe args
-        case _ => fail()
       }
     }
 
@@ -1771,7 +1670,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         |  struct foo b = { .a = 1, .b = 2 };
         |};
       """.stripMargin) { cpg =>
-      cpg.assignment.head.astChildren.l match {
+      inside(cpg.assignment.head.astChildren.l) {
         case List(ident: Identifier, call: Call) =>
           ident.typeFullName shouldBe "foo"
           ident.order shouldBe 1
@@ -1782,7 +1681,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           call.methodFullName shouldBe "<operator>.arrayInitializer"
           val children = call.astMinusRoot.isCall.l
           val args = call.argument.astChildren.l
-          children match {
+          inside(children) {
             case List(call1, call2) =>
               call1.code shouldBe ".a = 1"
               call1.name shouldBe Operators.assignment
@@ -1792,10 +1691,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               call2.name shouldBe Operators.assignment
               call2.astMinusRoot.code.l shouldBe List("b", "2")
               call2.argument.code.l shouldBe List("b", "2")
-            case _ => fail()
           }
           children shouldBe args
-        case _ => fail()
       }
     }
 
@@ -1814,11 +1711,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """.stripMargin,
       "test.cpp"
     ) { cpg =>
-      cpg.call.code("point3D \\{ .x = 1, .y = 2, .z = 3 \\}").l match {
+      inside(cpg.call.code("point3D \\{ .x = 1, .y = 2, .z = 3 \\}").l) {
         case List(call: Call) =>
           call.name shouldBe "point3D"
           call.methodFullName shouldBe "point3D"
-          call.astChildren.l match {
+          inside(call.astChildren.l) {
             case List(initCall: Call) =>
               initCall.code shouldBe "{ .x = 1, .y = 2, .z = 3 }"
               // TODO: "<operator>.arrayInitializer" is not part of Operators
@@ -1826,7 +1723,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
               initCall.methodFullName shouldBe "<operator>.arrayInitializer"
               val children = initCall.astMinusRoot.isCall.l
               val args = initCall.argument.astChildren.l
-              children match {
+              inside(children) {
                 case List(call1, call2, call3) =>
                   call1.code shouldBe ".x = 1"
                   call1.name shouldBe Operators.assignment
@@ -1840,12 +1737,9 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
                   call3.name shouldBe Operators.assignment
                   call3.astMinusRoot.code.l shouldBe List("z", "3")
                   call3.argument.code.l shouldBe List("z", "3")
-                case _ => fail()
               }
               children shouldBe args
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -1855,18 +1749,16 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |};
       """.stripMargin,
                                                                     "test.cpp") { cpg =>
-      cpg.call.l match {
+      inside(cpg.call.l) {
         case List(fooCall: Call) =>
           fooCall.code shouldBe "foo(x, args...)"
-          fooCall.argument.l match {
+          inside(fooCall.argument.l) {
             case List(x, args) =>
               x.order shouldBe 1
               x.code shouldBe "x"
               args.order shouldBe 2
               args.code shouldBe "args"
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -1877,9 +1769,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
         | "  push %ebx       \n"
         |);
       """.stripMargin) { cpg =>
-      cpg.method.ast.filter(_.label == NodeTypes.UNKNOWN).l match {
+      inside(cpg.method.ast.filter(_.label == NodeTypes.UNKNOWN).l) {
         case List(asm: Unknown) => asm.code should startWith("asm(")
-        case _                  => fail()
       }
     }
 
@@ -1891,9 +1782,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |	);
        |}
       """.stripMargin) { cpg =>
-      cpg.method("foo").ast.filter(_.label == NodeTypes.UNKNOWN).l match {
+      inside(cpg.method("foo").ast.filter(_.label == NodeTypes.UNKNOWN).l) {
         case List(asm: Unknown) => asm.code should startWith("asm(")
-        case _                  => fail()
       }
     }
 
@@ -1901,29 +1791,25 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
       """
         |int x = ({int y = 1; y;}) + ({int z = 2; z;});
         |""".stripMargin) { cpg =>
-      cpg.call(Operators.addition).l match {
+      inside(cpg.call(Operators.addition).l) {
         case List(add) =>
-          add.argument.l match {
+          inside(add.argument.l) {
             case List(y, z) =>
               y.argumentIndex shouldBe 1
               y.order shouldBe 1
-              y.astChildren.l match {
+              inside(y.astChildren.l) {
                 case List(_, c: Call, i: Identifier) =>
                   c.code shouldBe "y = 1"
                   i.code shouldBe "y"
-                case _ => fail()
               }
               z.argumentIndex shouldBe 2
               z.order shouldBe 2
-              z.astChildren.l match {
+              inside(z.astChildren.l) {
                 case List(_, c: Call, i: Identifier) =>
                   c.code shouldBe "z = 2"
                   i.code shouldBe "z"
-                case _ => fail()
               }
-            case _ => fail()
           }
-        case _ => fail()
       }
     }
 
@@ -1950,7 +1836,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
        |int c = 0;
        |}
       """.stripMargin) { cpg =>
-      cpg.identifier.l match {
+      inside(cpg.identifier.l) {
         case List(a, b, c) =>
           a.lineNumber shouldBe Some(3)
           a.columnNumber shouldBe Some(4)
@@ -1958,7 +1844,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with CpgAstOnlyFixt
           b.columnNumber shouldBe Some(4)
           c.lineNumber shouldBe Some(6)
           c.columnNumber shouldBe Some(4)
-        case _ => fail()
       }
     }
 
