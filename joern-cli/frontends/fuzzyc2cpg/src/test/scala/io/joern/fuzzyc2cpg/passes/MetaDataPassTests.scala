@@ -8,12 +8,14 @@ import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class MetaDataPassTests extends AnyWordSpec with Matchers {
 
   "MetaDataPass" should {
     val cpg = Cpg.emptyCpg
+    implicit val ec: ExecutionContext = ExecutionContext.global
     new MetaDataPass(cpg, Languages.C).createAndApply()
 
     "create exactly two nodes" in {

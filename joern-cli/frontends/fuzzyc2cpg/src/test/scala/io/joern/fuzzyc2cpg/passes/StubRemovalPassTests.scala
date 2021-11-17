@@ -8,6 +8,8 @@ import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.concurrent.ExecutionContext
+
 class StubRemovalPassTests extends AnyWordSpec with Matchers {
 
   "StubRemovalPass" should {
@@ -56,6 +58,7 @@ object StubRemovalPassFixture {
       val cpg = Cpg.emptyCpg
       val keyPool = new IntervalKeyPool(1001, 2000)
       val filenames = List(file1.path.toAbsolutePath.toString)
+      implicit val ec: ExecutionContext = ExecutionContext.global
       new AstCreationPass(filenames, cpg, keyPool).createAndApply()
       new CfgCreationPass(cpg).createAndApply()
       new StubRemovalPass(cpg).createAndApply()

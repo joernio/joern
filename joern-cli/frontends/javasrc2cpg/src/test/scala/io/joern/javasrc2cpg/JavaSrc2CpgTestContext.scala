@@ -6,6 +6,7 @@ import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreat
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
+import scala.concurrent.ExecutionContext
 
 class JavaSrc2CpgTestContext {
   private var code: String = ""
@@ -16,6 +17,7 @@ class JavaSrc2CpgTestContext {
       val javaSrc2Cpg = JavaSrc2Cpg()
       val cpg = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
       val context = new LayerCreatorContext(cpg)
+      implicit val ec: ExecutionContext = ExecutionContext.global
       new Base().run(context)
       new TypeRelations().run(context)
       new ControlFlow().run(context)

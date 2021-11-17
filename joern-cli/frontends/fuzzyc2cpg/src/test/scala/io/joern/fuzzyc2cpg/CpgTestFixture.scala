@@ -12,7 +12,10 @@ import io.shiftleft.utils.ProjectRoot
 import io.shiftleft.x2cpg.SourceFiles
 import overflowdb.traversal.TraversalSource
 
+import scala.concurrent.ExecutionContext
+
 case class CpgTestFixture(projectName: String) {
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   val cpg: Cpg = Cpg.emptyCpg
   val dirName = ProjectRoot.relativise(s"joern-cli/frontends/fuzzyc2cpg/src/test/resources/testcode/$projectName")

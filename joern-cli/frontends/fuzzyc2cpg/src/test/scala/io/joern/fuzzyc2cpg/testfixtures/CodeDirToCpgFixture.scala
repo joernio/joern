@@ -8,6 +8,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.io.File
+import scala.concurrent.ExecutionContext
 
 class CodeDirToCpgFixture extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -22,6 +23,7 @@ class CodeDirToCpgFixture extends AnyWordSpec with Matchers with BeforeAndAfterA
 
   def createEnhancements(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)
+    implicit val ec: ExecutionContext = ExecutionContext.global
     new Base().run(context)
   }
 
