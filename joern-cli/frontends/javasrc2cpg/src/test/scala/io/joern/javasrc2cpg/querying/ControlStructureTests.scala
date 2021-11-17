@@ -148,7 +148,7 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
   "should handle a switch conditioned on `this`" in {
     val switchBlock = cpg.method.name("isConnected").switchBlock.l match {
       case List(block) => block
-      case res => fail(s"Expected single switch block but got $res")
+      case res         => fail(s"Expected single switch block but got $res")
     }
 
     switchBlock.astChildren.size shouldBe 2
