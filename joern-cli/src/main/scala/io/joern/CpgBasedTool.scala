@@ -7,6 +7,8 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.language._
 
+import scala.concurrent.ExecutionContext
+
 object CpgBasedTool {
 
   /**
@@ -27,6 +29,7 @@ object CpgBasedTool {
       System.err.println("CPG does not have dataflow overlay. Calculating.")
       val opts = new OssDataFlowOptions()
       val context = new LayerCreatorContext(cpg)
+      implicit val ec: ExecutionContext = ExecutionContext.global
       new OssDataFlow(opts).run(context)
     }
   }

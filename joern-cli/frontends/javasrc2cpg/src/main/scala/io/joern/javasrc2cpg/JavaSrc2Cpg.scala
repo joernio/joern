@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.x2cpg.SourceFiles
 import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 object JavaSrc2Cpg {
@@ -33,6 +34,8 @@ class JavaSrc2Cpg {
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
     val typesKeyPool = new IntervalKeyPool(100, 1000100)
     val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+
+    implicit val ec: ExecutionContext = ExecutionContext.global
 
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 

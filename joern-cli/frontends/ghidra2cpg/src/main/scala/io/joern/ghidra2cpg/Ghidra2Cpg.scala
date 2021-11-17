@@ -23,6 +23,7 @@ import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
@@ -131,6 +132,8 @@ class Ghidra2Cpg() {
     // Also we have + 2 for MetaDataPass and Namespacepass
     val numOfKeypools = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
+
+    implicit val ec: ExecutionContext = ExecutionContext.global
 
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
