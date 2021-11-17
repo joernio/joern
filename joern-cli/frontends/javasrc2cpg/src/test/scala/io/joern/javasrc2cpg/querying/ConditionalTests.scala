@@ -59,7 +59,7 @@ class ConditionalTests extends JavaSrcCodeToCpgFixture {
   "should be able to parse nested conditionals" in {
     val method = cpg.method.name("baz").head
     method.call(Operators.conditional).size shouldBe 2
-    val List (parentC: Call, childC: Call) = method.call(Operators.conditional).l
+    val List(parentC: Call, childC: Call) = method.call(Operators.conditional).l
 
     parentC.argument.size shouldBe 3
     childC.argument.size shouldBe 3

@@ -109,8 +109,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for `identity-like` supplier" - {
-    lazy val cpg = JavaSrc2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = JavaSrc2CpgTestContext.buildCpg("""
         |public class Foo {
         |  public foo() {
         |    String s = "Hello, world";
