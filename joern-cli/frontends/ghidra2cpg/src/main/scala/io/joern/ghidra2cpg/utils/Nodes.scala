@@ -80,7 +80,7 @@ object Nodes {
       .NewMethod()
       .code(code)
       .name(function.getName)
-      .fullName(function.getSignature(true).toString)
+      .fullName(function.getName)
       .isExternal(isExternal)
       .signature(function.getSignature(true).toString)
       .lineNumber(function.getEntryPoint.getOffsetAsBigInteger.intValue())
