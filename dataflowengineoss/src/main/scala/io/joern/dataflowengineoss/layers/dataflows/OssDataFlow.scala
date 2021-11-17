@@ -19,7 +19,8 @@ class OssDataFlow(opts: OssDataFlowOptions) extends LayerCreator {
   override val overlayName: String = OssDataFlow.overlayName
   override val description: String = OssDataFlow.description
 
-  override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(implicit ec: ExecutionContext): Unit = {
+  override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(
+      implicit ec: ExecutionContext): Unit = {
     val cpg = context.cpg
     val enhancementExecList = Iterator(new ReachingDefPass(cpg, opts.maxNumberOfDefinitions))
     enhancementExecList.zipWithIndex.foreach {

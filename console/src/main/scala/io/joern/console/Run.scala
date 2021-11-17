@@ -17,7 +17,8 @@ object Run {
         override val overlayName: String = "custom"
         override val description: String = "A custom pass"
 
-        override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(implicit ec: ExecutionContext): Unit = {
+        override def createWithExecutionContext(context: LayerCreatorContext,
+                                                storeUndoInfo: Boolean)(implicit ec: ExecutionContext): Unit = {
           val pass: CpgPass = new CpgPass(console.cpg) {
             override val name = "custom"
             override def run(): Iterator[DiffGraph] = {
