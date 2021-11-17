@@ -10,59 +10,67 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
   override val code =
     """
       |class Foo {
-      |
-      |int baz(Iterable<Integer> xs) {
-      |  int sum = 0;
-      |  for( Integer x : xs) {
-      |    sum += x;
-      |  }
-      |  return sum;
-      |}
-      |
-      |int bar(boolean x, boolean y, boolean z) {
-      |  if (x || (y && z)) {
-      |    return 1;
-      |  }
-      |  return 2;
-      |}
-      |
-      |void foo(int x, int y) {
-      | try {
-      | } catch(exc_t exc) {
-      |   // ...
-      | }
-      |
-      | for(int i = 0; i < 10; i++) {
-      |     if (x > y) {
-      |     continue;
+      |  int baz(Iterable<Integer> xs) {
+      |    int sum = 0;
+      |    for( Integer x : xs) {
+      |      sum += x;
       |    }
-      |    while(y++ < x) {
-      |     printf("foo\n");
-      |   }
-      | }
+      |    return sum;
+      |  }
       |
-      |switch(y) {
-      |  case 1:
-      |   printf("bar\n");
-      |   break;
-      |  default:
-      |};
+      |  int bar(boolean x, boolean y, boolean z) {
+      |    if (x || (y && z)) {
+      |      return 1;
+      |    }
+      |    return 2;
+      |  }
       |
-      | int i = 0;
-      | do {
-      |   i++;
-      | } while(i < 11);
-      |}
-      |
-      |    public void elseTest(boolean b) {
-      |        int x;
-      |        if (b) {
-      |            x = 42;
-      |        } else {
-      |            x = 39;
-      |        }
+      |  void foo(int x, int y) {
+      |    try { } catch(exc_t exc) {
+      |     // ...
       |    }
       |
+      |    for(int i = 0; i < 10; i++) {
+      |      if (x > y) {
+      |        continue;
+      |      }
+      |      while(y++ < x) {
+      |        printf("foo\n");
+      |      }
+      |    }
+      |
+      |    switch(y) {
+      |      case 1:
+      |        printf("bar\n");
+      |        break;
+      |      default:
+      |    };
+      |
+      |    int i = 0;
+      |    do {
+      |      i++;
+      |    } while(i < 11);
+      |  }
+      |
+      |  public void elseTest(boolean b) {
+      |    int x;
+      |    if (b) {
+      |      x = 42;
+      |    } else {
+      |      x = 39;
+      |    }
+      |  }
+      |
+      |  public boolean isConnected() {
+      |    switch (this) {
+      |      case Reconnected:
+      |        return true;
+      |
+      |      case ConnectionLost:
+      |      default:
+      |        return false;
+      |    }
+      |  }
       |}
       |""".stripMargin
 
@@ -135,5 +143,22 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
     val elseAssign = elseBlock.astChildren.head.astChildren.head.asInstanceOf[Call]
     elseAssign.order shouldBe 1
     elseAssign.code shouldBe "x = 39"
+  }
+
+  "should handle a switch conditioned on `this`" in {
+    val switchBlock = cpg.method.name("isConnected").switchBlock.l match {
+      case List(block) => block
+      case res => fail(s"Expected single switch block but got $res")
+    }
+
+    switchBlock.astChildren.size shouldBe 2
+    val List(cond: Identifier, body: Block) = switchBlock.astChildren.l
+
+    cond.order shouldBe 1
+    cond.code shouldBe "this"
+    cond.typeFullName shouldBe "Foo"
+
+    // The visible statements/labels + jump targets
+    body.astChildren.size shouldBe 7
   }
 }
