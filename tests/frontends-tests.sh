@@ -6,18 +6,18 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 JOERN="$SCRIPT_ABS_DIR"/../joern
 
-frontends=(c javasrc js jimple ghidra)
+frontends=(c javascript javasrc jimple ghidra)
 declare -A minMethodCount=(
   [c]=2
+  [javascript]=4
   [javasrc]=10000
-  [js]=10000
   [jimple]=10000
   [ghidra]=10000
 )
 declare -A expectedMethod=(
   [c]=print_number
+  [javascript]=lookForProperty
   [javasrc]=foo
-  [js]=foo
   [jimple]=foo
   [ghidra]=foo
 )
