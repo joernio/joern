@@ -8,6 +8,7 @@ target
 .idea/
 tests/smoke-test-repos
 tests/**/node_modules
+tests/**/package-lock.json
 joern-cli/frontends/js2cpg
 joern-cli.zip
 joern-server.zip
