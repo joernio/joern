@@ -18,7 +18,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
   override val overlayName: String = Commit.overlayName
   override val description: String = Commit.description
 
-  override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(
+  override def createWithEC(context: LayerCreatorContext, storeUndoInfo: Boolean)(
       implicit ec: ExecutionContext): Unit = {
     val pass: CpgPass = new CpgPass(context.cpg) {
       override val name = "commit"

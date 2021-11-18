@@ -244,7 +244,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   override val overlayName: String = Scan.overlayName
   override val description: String = Scan.description
 
-  override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(
+  override def createWithEC(context: LayerCreatorContext, storeUndoInfo: Boolean)(
       implicit ec: ExecutionContext): Unit = {
     val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
     val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
