@@ -10,10 +10,7 @@ import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.TraversalSource
 
-import scala.concurrent.ExecutionContext
-
 case class TestProjectFixture(projectName: String) {
-  implicit val ec: ExecutionContext = ExecutionContext.global
 
   val cpg: Cpg = Cpg.emptyCpg
 

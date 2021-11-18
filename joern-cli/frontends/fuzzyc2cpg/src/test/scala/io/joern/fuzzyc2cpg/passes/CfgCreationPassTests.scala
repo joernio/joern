@@ -10,7 +10,6 @@ import io.shiftleft.semanticcpg.passes.controlflow.cfgcreation.Cfg._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class CfgCreationPassTests extends AnyWordSpec with Matchers {
@@ -459,7 +458,6 @@ class CfgCreationPassTests extends AnyWordSpec with Matchers {
 }
 
 class CfgFixture(file1Code: String) {
-  implicit val ec: ExecutionContext = ExecutionContext.global
 
   val cpg: Cpg = Cpg.emptyCpg
 

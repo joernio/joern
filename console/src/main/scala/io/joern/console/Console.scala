@@ -13,7 +13,6 @@ import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
 import overflowdb.traversal.help.Doc
 
-import scala.concurrent.ExecutionContext
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
@@ -449,7 +448,6 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   protected def runCreator(creator: LayerCreator, overlayDirName: Option[String]): Unit = {
-    implicit val ec: ExecutionContext = ExecutionContext.global
     val context = new LayerCreatorContext(cpg, overlayDirName)
     creator.run(context, storeUndoInfo = true)
   }

@@ -11,7 +11,6 @@ import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
-import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 class C2Cpg {
@@ -24,8 +23,6 @@ class C2Cpg {
     val headerKeyPool = keyPool(2)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
-
-    implicit val ec: ExecutionContext = ExecutionContext.global
 
     new MetaDataPass(cpg, Languages.NEWC, Some(metaDataKeyPool)).createAndApply()
 
