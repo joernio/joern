@@ -6,20 +6,22 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 JOERN="$SCRIPT_ABS_DIR"/../joern
 
-frontends=(c javascript javasrc jimple ghidra)
+frontends=(c javascript javasrc ghidra)
+# frontends=(c javascript javasrc jvm ghidra)
+# TODO add 'jvm' - will talk to david re jimple
 declare -A minMethodCount=(
   [c]=2
-  [javascript]=4
-  [javasrc]=10000
-  [jimple]=10000
-  [ghidra]=10000
+  [javascript]=3
+  [javasrc]=7
+  [jvm]=7
+  [ghidra]=100
 )
 declare -A expectedMethod=(
   [c]=print_number
   [javascript]=lookForProperty
-  [javasrc]=foo
-  [jimple]=foo
-  [ghidra]=foo
+  [javasrc]=callsExternalMethod
+  [jvm]=callsExternalMethod
+  [ghidra]=reallocarray
 )
 
 for frontend in "${frontends[@]}"; do
