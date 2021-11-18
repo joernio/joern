@@ -55,17 +55,6 @@ class MipsFunctionPass(currentProgram: Program,
               name = symbol.get.getName
             }
           }
-          if (callNode.code == "memcpy" && instruction.getAddress().toString() == "0041d9ec") {
-            println(instruction.getAddress().toString())
-            val b = highFunction
-              .getPcodeOps(target)
-              .asScala
-              .toList
-              .head
-              .getInputs
-            println(highFunction.getPcodeOps(instruction.getPcode.head.getSeqnum.getTarget).asScala.toList)
-          }
-
           val node = createIdentifier(name,
                                       name,
                                       index + 1,
