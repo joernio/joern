@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import scopt.OParser
 
 import java.util.concurrent.ConcurrentHashMap
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
@@ -27,6 +28,8 @@ class FuzzyC2Cpg() {
 
     val cpg = newEmptyCpg(optionalOutputPath)
     val sourceFileNames = SourceFiles.determine(sourcePaths, sourceFileExtensions)
+
+    implicit val ec: ExecutionContext = ExecutionContext.global
 
     new MetaDataPass(cpg, Languages.C, Some(metaDataKeyPool)).createAndApply()
     val astCreator = new AstCreationPass(sourceFileNames, cpg, functionKeyPool)

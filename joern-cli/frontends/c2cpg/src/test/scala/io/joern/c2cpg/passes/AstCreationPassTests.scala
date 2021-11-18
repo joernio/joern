@@ -12,12 +12,15 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal.NodeOps
 
+import scala.concurrent.ExecutionContext
+
 class AstCreationPassTests
     extends AnyWordSpec
     with Matchers
     with Inside
     with CpgAstOnlyFixture
     with TestAstOnlyFixture {
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   "AstCreationPass" should {
 

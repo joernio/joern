@@ -15,6 +15,7 @@ import io.joern.JoernScan.getQueriesFromQueryDb
 import io.joern.Scan.{allTag, defaultTag}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.universe._
 
@@ -243,7 +244,8 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   override val overlayName: String = Scan.overlayName
   override val description: String = Scan.description
 
-  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+  override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(
+      implicit ec: ExecutionContext): Unit = {
     val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
     val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
     if (queriesAfterFilter.isEmpty) {

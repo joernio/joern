@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.passes.frontend.TypeNodePass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class TypeNodePassTests extends AnyWordSpec with Matchers {
@@ -28,6 +29,7 @@ object TypeNodePassFixture {
       val keyPool = new IntervalKeyPool(1001, 2000)
       val filenames = List(file1.path.toAbsolutePath.toString)
       val astCreator = new AstCreationPass(filenames, cpg, keyPool)
+      implicit val ec: ExecutionContext = ExecutionContext.global
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
 

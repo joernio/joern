@@ -10,6 +10,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal._
 
+import scala.concurrent.ExecutionContext
+
 class AstCreationPassTests extends AnyWordSpec with Matchers {
 
   "AstCreationPass" should {
@@ -20,6 +22,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
       expectedFilenameFields.foreach { filename =>
         (dir / filename).write("//foo")
       }
+      implicit val ec: ExecutionContext = ExecutionContext.global
       new AstCreationPass(filenames, cpg, new IntervalKeyPool(1, 1000))
         .createAndApply()
 
@@ -753,6 +756,7 @@ object Fixture {
       val cpg = Cpg.emptyCpg
       val keyPool = new IntervalKeyPool(1001, 2000)
       val filenames = List(file1.path.toAbsolutePath.toString, file2.path.toAbsolutePath.toString)
+      implicit val ec: ExecutionContext = ExecutionContext.global
       new AstCreationPass(filenames, cpg, keyPool).createAndApply()
 
       f(cpg)

@@ -6,6 +6,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.reflections8.Reflections
 import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 object Run {
@@ -16,7 +17,8 @@ object Run {
         override val overlayName: String = "custom"
         override val description: String = "A custom pass"
 
-        override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+        override def createWithExecutionContext(context: LayerCreatorContext,
+                                                storeUndoInfo: Boolean)(implicit ec: ExecutionContext): Unit = {
           val pass: CpgPass = new CpgPass(console.cpg) {
             override val name = "custom"
             override def run(): Iterator[DiffGraph] = {

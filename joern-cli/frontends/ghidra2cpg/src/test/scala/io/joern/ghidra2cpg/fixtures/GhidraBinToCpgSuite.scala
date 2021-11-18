@@ -14,6 +14,7 @@ import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 
 import java.nio.file.Files
+import scala.concurrent.ExecutionContext
 
 class GhidraFrontend extends LanguageFrontend {
   override val fileSuffix: String = ""
@@ -32,6 +33,8 @@ class GhidraFrontend extends LanguageFrontend {
 }
 
 class GhidraBinToCpgSuite extends BinToCpgFixture(new GhidraFrontend) {
+  implicit val ec: ExecutionContext = ExecutionContext.global
+
   override val binDirectory = ProjectRoot.relativise("joern-cli/frontends/ghidra2cpg/src/test/testbinaries/")
 
   def flowToResultPairs(path: Path): List[String] = {
