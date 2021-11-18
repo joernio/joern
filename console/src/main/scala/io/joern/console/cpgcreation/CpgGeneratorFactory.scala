@@ -40,6 +40,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
       Languages.C,
       Languages.CSHARP,
       Languages.GOLANG,
+      Languages.GHIDRA,
       Languages.JAVA,
       Languages.JAVASCRIPT,
       Languages.PYTHON,
