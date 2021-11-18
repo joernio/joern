@@ -7,6 +7,8 @@ project/target
 target
 .idea/
 tests/smoke-test-repos
+tests/**/node_modules
+joern-cli/frontends/js2cpg
 joern-cli.zip
 joern-server.zip
 cpg.bin.zip
