@@ -9,8 +9,6 @@ import io.shiftleft.semanticcpg.layers.{Base, LayerCreatorContext, TypeRelations
 import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 
-import scala.concurrent.ExecutionContext
-
 object CompleteCpgFixture {
   def apply(code: String, fileName: String = "test.cpp")(f: Cpg => Unit): Unit = {
     File.usingTemporaryDirectory("c2cpgtest") { dir =>
@@ -18,7 +16,6 @@ object CompleteCpgFixture {
       file.write(code)
 
       val cpg = Cpg.emptyCpg
-      implicit val ec: ExecutionContext = ExecutionContext.global
       new MetaDataPass(cpg, Languages.NEWC).createAndApply()
       val astCreationPass =
         new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, Config(inputPaths = Set(dir.path.toString)))

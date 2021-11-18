@@ -4,8 +4,6 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.codepropertygraph.Cpg
 
-import scala.concurrent.ExecutionContext
-
 object DefaultOverlays {
 
   val DEFAULT_CPG_IN_FILE = "cpg.bin"
@@ -16,7 +14,6 @@ object DefaultOverlays {
     * @param storeFilename the filename of the cpg
     * */
   def create(storeFilename: String): Cpg = {
-    implicit val ec: ExecutionContext = ExecutionContext.global
     val cpg = CpgBasedTool.loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)
     new Base().run(context)

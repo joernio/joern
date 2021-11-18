@@ -12,12 +12,10 @@ import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreat
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.Traversal
 
-import scala.concurrent.ExecutionContext
 import scala.sys.process.Process
 import scala.util.Try
 
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
-  implicit val ec: ExecutionContext = ExecutionContext.global
 
   var semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
   var semantics: Semantics = _

@@ -9,11 +9,9 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
 import io.shiftleft.semanticcpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
 
-import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class CpgCfgFixture(code: String, fileExtension: String = ".c") {
-  implicit val ec: ExecutionContext = ExecutionContext.global
 
   private val cpg: Cpg = Cpg.emptyCpg
 

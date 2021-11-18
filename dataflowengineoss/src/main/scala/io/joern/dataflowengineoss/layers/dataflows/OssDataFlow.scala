@@ -3,8 +3,6 @@ package io.joern.dataflowengineoss.layers.dataflows
 import io.joern.dataflowengineoss.passes.reachingdef.ReachingDefPass
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 
-import scala.concurrent.ExecutionContext
-
 object OssDataFlow {
   val overlayName: String = "dataflowOss"
   val description: String = "Layer to support the OSS lightweight data flow tracker"
@@ -19,8 +17,7 @@ class OssDataFlow(opts: OssDataFlowOptions) extends LayerCreator {
   override val overlayName: String = OssDataFlow.overlayName
   override val description: String = OssDataFlow.description
 
-  override def createWithExecutionContext(context: LayerCreatorContext, storeUndoInfo: Boolean)(
-      implicit ec: ExecutionContext): Unit = {
+  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
     val enhancementExecList = Iterator(new ReachingDefPass(cpg, opts.maxNumberOfDefinitions))
     enhancementExecList.zipWithIndex.foreach {

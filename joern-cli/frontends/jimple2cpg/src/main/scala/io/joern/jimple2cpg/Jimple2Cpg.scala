@@ -13,7 +13,6 @@ import soot.{G, PhaseOptions, Scene, SootClass}
 import java.io.{File => JFile}
 import java.nio.file.Files
 import java.util.zip.ZipFile
-import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import scala.language.postfixOps
 import scala.tools.nsc
@@ -65,8 +64,6 @@ class Jimple2Cpg {
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
       val typesKeyPool = new IntervalKeyPool(100, 1000100)
       val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
-
-      implicit val ec: ExecutionContext = ExecutionContext.global
 
       new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
