@@ -11,11 +11,10 @@ import soot.options.Options
 import soot.{G, PhaseOptions, Scene, SootClass}
 
 import java.io.{File => JFile}
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 import java.util.zip.ZipFile
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import scala.language.postfixOps
-import scala.tools.nsc
 import scala.util.{Failure, Success, Using}
 
 object Jimple2Cpg {
@@ -29,16 +28,16 @@ object Jimple2Cpg {
     * @return the correctly formatted class path.
     */
   def getQualifiedClassPath(codePath: String, filename: String): String = {
-    val codeDir: String = if (new JFile(codePath).isDirectory) {
-      codePath
+    val pathFile = new JFile(codePath)
+    val codeDir: String = if (pathFile.isDirectory) {
+      pathFile.toPath.toAbsolutePath.normalize.toString
     } else {
-      new JFile(codePath).getParentFile.getAbsolutePath
+      Paths.get(pathFile.getParentFile.getAbsolutePath).normalize.toString
     }
-
     filename
-      .replace(codeDir + nsc.io.File.separator, "")
+      .replace(codeDir + JFile.separator, "")
       .replace(".class", "")
-      .replace(nsc.io.File.separator, ".")
+      .replace(JFile.separator, ".")
   }
 }
 
@@ -50,15 +49,23 @@ class Jimple2Cpg {
 
   /** Creates a CPG from Jimple.
     *
-    * @param sourceCodePath The path to the Jimple code or code that can be transformed into Jimple.
+    * @param rawSourceCodePath The path to the Jimple code or code that can be transformed into Jimple.
     * @param outputPath     The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
     * @return The constructed CPG.
     */
   def createCpg(
-      sourceCodePath: String,
+      rawSourceCodePath: String,
       outputPath: Option[String] = None
   ): Cpg = {
     try {
+      // Determine if the given path is a file or directory and sanitize accordingly
+      val rawSourceCodeFile = new JFile(rawSourceCodePath)
+      val sourceCodePath = if (rawSourceCodeFile.isDirectory) {
+        rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
+      } else {
+        Paths.get(rawSourceCodeFile.getParentFile.getAbsolutePath).normalize.toString
+      }
+
       configureSoot(sourceCodePath)
       val cpg = newEmptyCpg(outputPath)
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
