@@ -1,5 +1,3 @@
-import io.shiftleft.semanticcpg.language._
-
 @main def main(inputPath: String,
                minMethodCount: Int,
                expectedMethod: String,
