@@ -220,9 +220,9 @@ trait AstForExpressionsCreator {
     val cpgCastExpression =
       newCallNode(castExpression, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
-    val expr = astForExpression(castExpression.getOperand, 1)
+    val expr = astForExpression(castExpression.getOperand, 2)
     val argNode = castExpression.getTypeId
-    val arg = newUnknown(argNode, 2)
+    val arg = newUnknown(argNode, 1)
 
     var ast = Ast(cpgCastExpression)
       .withChild(Ast(arg))
