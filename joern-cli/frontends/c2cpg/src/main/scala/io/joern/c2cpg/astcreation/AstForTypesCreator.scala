@@ -246,8 +246,8 @@ trait AstForTypesCreator {
               case d =>
                 astForDeclarator(declaration, d, order)
             }
-          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
           case _ if nodeSignature(declaration) == ";"  => Seq.empty
+          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
         }
       case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias, order))
       case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef, order))
