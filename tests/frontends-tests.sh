@@ -6,21 +6,19 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 JOERN="$SCRIPT_ABS_DIR"/../joern
 
-frontends=(c javascript javasrc ghidra)
-# frontends=(c javascript javasrc jvm ghidra)
-# TODO add 'jvm' - will talk to david re jimple
+frontends=(c javascript javasrc java ghidra)
 declare -A minMethodCount=(
   [c]=2
   [javascript]=3
   [javasrc]=7
-  [jvm]=7
+  [java]=7
   [ghidra]=100
 )
 declare -A expectedMethod=(
   [c]=print_number
   [javascript]=lookForProperty
   [javasrc]=callsExternalMethod
-  [jvm]=callsExternalMethod
+  [java]=callsExternalMethod
   [ghidra]=reallocarray
 )
 
