@@ -54,7 +54,7 @@ class MacroArgumentExtractor(tu: IASTTranslationUnit, loc: IASTFileLocation) {
 
   private def createDictionary(expansion: IASTPreprocessorMacroExpansion): CharArrayMap[PreprocessorMacro] = {
     val refs: Array[IASTName] = Array(expansion.getMacroReference)
-    val map = new CharArrayMap[PreprocessorMacro](refs.length);
+    val map = new CharArrayMap[PreprocessorMacro](refs.length)
     refs.foreach(name => addMacroDefinition(map, name))
     map
   }
