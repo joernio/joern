@@ -34,7 +34,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
     x.fullName shouldBe "mytype"
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName shouldBe List()
-    x.aliasTypeFullName shouldBe Some("int")
+    x.aliasTypeFullName shouldBe Some("typedef int")
     x.order shouldBe 2
     x.filename.startsWith("/") shouldBe true
     x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
@@ -56,7 +56,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should find five external types (`bar`, `char`, `int`, `void`, `ANY`)" in {
-    cpg.typeDecl.external.name.toSet shouldBe Set("bar", "char", "int", "void", "ANY")
+    cpg.typeDecl.external.name.toSet shouldBe Set("bar", "char", "int", "typedef int", "void", "ANY")
   }
 
   "should find two members for `foo`: `x` and `y`" in {
@@ -64,7 +64,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should allow traversing from `int` to its alias `mytype`" in {
-    cpg.typeDecl("int").aliasTypeDecl.name.l shouldBe List("mytype")
+    cpg.typeDecl("typedef int").aliasTypeDecl.name.l shouldBe List("mytype")
     cpg.typeDecl("mytype").aliasTypeDecl.l shouldBe List()
   }
 

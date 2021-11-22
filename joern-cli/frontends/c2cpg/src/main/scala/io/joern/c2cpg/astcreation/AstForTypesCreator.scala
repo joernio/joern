@@ -117,13 +117,12 @@ trait AstForTypesCreator {
         scope.addToScope(name, (l, tpe))
         Ast(l)
       case _ =>
-        val tpe = registerType(typeFor(declarator))
         val l = NewLocal()
           .code(name)
           .name(name)
-          .typeFullName(tpe)
+          .typeFullName(declTypeName)
           .order(order)
-        scope.addToScope(name, (l, tpe))
+        scope.addToScope(name, (l, declTypeName))
         Ast(l)
     }
 

@@ -1672,7 +1672,7 @@ class AstCreationPassTests
       """.stripMargin) { cpg =>
       inside(cpg.assignment.head.astChildren.l) {
         case List(ident: Identifier, call: Call) =>
-          ident.typeFullName shouldBe "foo"
+          ident.typeFullName shouldBe "struct foo"
           ident.order shouldBe 1
           call.code shouldBe "{ .a = 1, .b = 2 }"
           call.order shouldBe 2
