@@ -103,6 +103,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewMethodRef,
   NewMethodReturn,
+  NewModifier,
   NewNamespaceBlock,
   NewNode,
   NewReturn,
@@ -661,31 +662,31 @@ class AstCreator(filename: String, global: Global) {
       order: Int
   ): Seq[AstWithCtx] = {
     // TODO: Implement missing handlers
+    // case _: LocalClassDeclarationStmt  => Seq()
+    // case _: LocalRecordDeclarationStmt => Seq()
+    // case _: UnparsableStmt             => Seq() // TODO: log a warning
+    // case _: YieldStmt                  => Seq()
     statement match {
       case x: ExplicitConstructorInvocationStmt =>
         Seq(astForExplicitConstructorInvocation(x, scopeContext, order))
-      case x: AssertStmt     => Seq(astForAssertStatement(x, scopeContext, order))
-      case x: BlockStmt      => Seq(astForBlockStatement(x, scopeContext, order))
-      case x: BreakStmt      => Seq(astForBreakStatement(x, order))
-      case x: ContinueStmt   => Seq(astForContinueStatement(x, order))
-      case x: DoStmt         => Seq(astForDo(x, scopeContext, order))
-      case _: EmptyStmt      => Seq() // Intentionally skipping this
-      case x: ExpressionStmt => astsForExpression(x.getExpression, scopeContext, order)
-      case x: ForEachStmt    => Seq(astForForEach(x, scopeContext, order))
-      case x: ForStmt        => Seq(astForFor(x, scopeContext, order))
-      case x: IfStmt         => Seq(astForIf(x, scopeContext, order))
-      case x: LabeledStmt    => astsForLabeledStatement(x, scopeContext, order)
-      // case _: LocalClassDeclarationStmt  => Seq()
-      // case _: LocalRecordDeclarationStmt => Seq()
-      case x: ReturnStmt => astsForReturnNode(x, scopeContext, order)
-      case x: SwitchStmt => Seq(astForSwitchStatement(x, scopeContext, order))
-      // case _: SynchronizedStmt           => Seq()
-      case x: ThrowStmt => Seq(astForThrow(x, scopeContext, order))
-      case x: TryStmt   => Seq(astForTry(x, scopeContext, order))
-      // case _: UnparsableStmt             => Seq() // TODO: log a warning
-      case x: WhileStmt => Seq(astForWhile(x, scopeContext, order))
-      // case _: YieldStmt                  => Seq()
-      case x => Seq(unknownAst(x, order))
+      case x: AssertStmt       => Seq(astForAssertStatement(x, scopeContext, order))
+      case x: BlockStmt        => Seq(astForBlockStatement(x, scopeContext, order))
+      case x: BreakStmt        => Seq(astForBreakStatement(x, order))
+      case x: ContinueStmt     => Seq(astForContinueStatement(x, order))
+      case x: DoStmt           => Seq(astForDo(x, scopeContext, order))
+      case _: EmptyStmt        => Seq() // Intentionally skipping this
+      case x: ExpressionStmt   => astsForExpression(x.getExpression, scopeContext, order)
+      case x: ForEachStmt      => Seq(astForForEach(x, scopeContext, order))
+      case x: ForStmt          => Seq(astForFor(x, scopeContext, order))
+      case x: IfStmt           => Seq(astForIf(x, scopeContext, order))
+      case x: LabeledStmt      => astsForLabeledStatement(x, scopeContext, order)
+      case x: ReturnStmt       => astsForReturnNode(x, scopeContext, order)
+      case x: SwitchStmt       => Seq(astForSwitchStatement(x, scopeContext, order))
+      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, scopeContext, order))
+      case x: ThrowStmt        => Seq(astForThrow(x, scopeContext, order))
+      case x: TryStmt          => Seq(astForTry(x, scopeContext, order))
+      case x: WhileStmt        => Seq(astForWhile(x, scopeContext, order))
+      case x                   => Seq(unknownAst(x, order))
     }
   }
 
@@ -927,6 +928,30 @@ class AstCreator(filename: String, global: Global) {
     val ctx = mergedCtx(entryAstsWithCtx.map(_.ctx))
 
     AstWithCtx(switchAst, ctx)
+  }
+
+  private def astForSynchronizedStatement(stmt: SynchronizedStmt,
+                                          scopeContext: ScopeContext,
+                                          order: Int): AstWithCtx = {
+    val parentNode =
+      NewBlock()
+        .lineNumber(line(stmt))
+        .columnNumber(column(stmt))
+        .order(order)
+        .argumentIndex(order)
+
+    val modifier = Ast(NewModifier().modifierType("SYNCHRONIZED"))
+
+    val exprAsts = astsForExpression(stmt.getExpression, scopeContext, 1)
+    val bodyAst = astForBlockStatement(stmt.getBody, scopeContext, 1 + exprAsts.size)
+
+    val ctx = bodyAst.ctx.mergeWith(exprAsts.map(_.ctx))
+    val ast = Ast(parentNode)
+      .withChildren(exprAsts.map(_.ast))
+      .withChild(bodyAst.ast)
+      .withChild(modifier)
+
+    AstWithCtx(ast, ctx)
   }
 
   private def astsForSwitchCases(
@@ -1571,30 +1596,30 @@ class AstCreator(filename: String, global: Global) {
       order: Int
   ): Seq[AstWithCtx] = {
     // TODO: Implement missing handlers
+    // case _: MethodReferenceExpr     => Seq()
+    // case _: PatternExpr             => Seq()
+    // case _: SuperExpr               => Seq()
+    // case _: SwitchExpr              => Seq()
+    // case _: TypeExpr                => Seq()
     expression match {
-      case _: AnnotationExpr       => Seq()
-      case x: ArrayAccessExpr      => Seq(astForArrayAccessExpr(x, scopeContext, order))
-      case x: ArrayCreationExpr    => Seq(astForArrayCreationExpr(x, scopeContext, order))
-      case x: ArrayInitializerExpr => Seq(astForArrayInitializerExpr(x, scopeContext, order))
-      case x: AssignExpr           => Seq(astForAssignExpr(x, scopeContext, order))
-      case x: BinaryExpr           => Seq(astForBinaryExpr(x, scopeContext, order))
-      case x: CastExpr             => Seq(astForCastExpr(x, scopeContext, order))
-      case x: ClassExpr            => Seq(astForClassExpr(x, order))
-      case x: ConditionalExpr      => Seq(astForConditionalExpr(x, scopeContext, order))
-      case x: EnclosedExpr         => astForEnclosedExpression(x, scopeContext, order)
-      case x: FieldAccessExpr      => Seq(astForFieldAccessExpr(x, scopeContext, order))
-      case x: InstanceOfExpr       => Seq(astForInstanceOfExpr(x, scopeContext, order))
-      case x: LambdaExpr           => Seq(astForLambdaExpr(x, scopeContext, order))
-      case x: LiteralExpr          => Seq(astForLiteralExpr(x, order))
-      case x: MethodCallExpr       => Seq(astForMethodCall(x, scopeContext, order))
-      // case _: MethodReferenceExpr     => Seq()
-      case x: NameExpr           => Seq(astForNameExpr(x, order))
-      case x: ObjectCreationExpr => Seq(astForObjectCreationExpr(x, scopeContext, order))
-      // case _: PatternExpr             => Seq()
-      // case _: SuperExpr               => Seq()
-      // case _: SwitchExpr              => Seq()
-      case x: ThisExpr => Seq(astForThisExpr(x, order))
-      // case _: TypeExpr                => Seq()
+      case _: AnnotationExpr          => Seq()
+      case x: ArrayAccessExpr         => Seq(astForArrayAccessExpr(x, scopeContext, order))
+      case x: ArrayCreationExpr       => Seq(astForArrayCreationExpr(x, scopeContext, order))
+      case x: ArrayInitializerExpr    => Seq(astForArrayInitializerExpr(x, scopeContext, order))
+      case x: AssignExpr              => Seq(astForAssignExpr(x, scopeContext, order))
+      case x: BinaryExpr              => Seq(astForBinaryExpr(x, scopeContext, order))
+      case x: CastExpr                => Seq(astForCastExpr(x, scopeContext, order))
+      case x: ClassExpr               => Seq(astForClassExpr(x, order))
+      case x: ConditionalExpr         => Seq(astForConditionalExpr(x, scopeContext, order))
+      case x: EnclosedExpr            => astForEnclosedExpression(x, scopeContext, order)
+      case x: FieldAccessExpr         => Seq(astForFieldAccessExpr(x, scopeContext, order))
+      case x: InstanceOfExpr          => Seq(astForInstanceOfExpr(x, scopeContext, order))
+      case x: LambdaExpr              => Seq(astForLambdaExpr(x, scopeContext, order))
+      case x: LiteralExpr             => Seq(astForLiteralExpr(x, order))
+      case x: MethodCallExpr          => Seq(astForMethodCall(x, scopeContext, order))
+      case x: NameExpr                => Seq(astForNameExpr(x, order))
+      case x: ObjectCreationExpr      => Seq(astForObjectCreationExpr(x, scopeContext, order))
+      case x: ThisExpr                => Seq(astForThisExpr(x, order))
       case x: UnaryExpr               => Seq(astForUnaryExpr(x, scopeContext, order))
       case x: VariableDeclarationExpr => astsForVariableDecl(x, scopeContext, order)
       case x                          => Seq(unknownAst(x, order))
