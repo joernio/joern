@@ -9,9 +9,6 @@ import java.nio.file.Path
   * */
 case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
-  private val dotnetFrameworkOpt = "--dotnet-framework"
-  private val dotnetCoreOpt = "--dotnet-core"
-
   /**
     * Generate a CPG for the given input path.
     * Returns the output path, or None, if no
@@ -22,12 +19,6 @@ case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
                         namespaces: List[String] = List()): Option[String] = {
     var arguments = Seq("-i", inputPath, "-o", outputPath) ++ config.cmdLineParams
     var command = rootPath.resolve("csharp2cpg.sh").toString
-
-    if (!config.cmdLineParams.exists(param => param == dotnetFrameworkOpt || param == dotnetCoreOpt)) {
-      System.err.println(
-        s"Neither $dotnetFrameworkOpt or $dotnetCoreOpt were specified. Defaulting to $dotnetFrameworkOpt...")
-      arguments = arguments :+ dotnetFrameworkOpt
-    }
 
     if (System.getProperty("os.name").startsWith("Windows")) {
       command = "powershell"

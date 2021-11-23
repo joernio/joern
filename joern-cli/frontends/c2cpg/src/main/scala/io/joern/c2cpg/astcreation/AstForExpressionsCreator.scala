@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewMethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier, NewMethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
@@ -98,6 +98,8 @@ trait AstForExpressionsCreator {
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewMethodRef].methodFullName)
       case _ if rec.root.exists(_.isInstanceOf[NewIdentifier]) =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewIdentifier].name)
+      case _ if rec.root.exists(_.isInstanceOf[NewCall]) =>
+        (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewCall].code)
       case reference: IASTIdExpression =>
         (DispatchTypes.STATIC_DISPATCH, nodeSignature(reference))
       case _ =>
@@ -205,9 +207,9 @@ trait AstForExpressionsCreator {
     val cpgCastExpression =
       newCallNode(castExpression, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
-    val expr = astForExpression(castExpression.getOperand, 1)
+    val expr = astForExpression(castExpression.getOperand, 2)
     val argNode = castExpression.getTypeId
-    val arg = newUnknown(argNode, 2)
+    val arg = newUnknown(argNode, 1)
 
     Ast(cpgCastExpression)
       .withChild(Ast(arg))
@@ -257,17 +259,16 @@ trait AstForExpressionsCreator {
     val cpgCastExpression =
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
-    // TODO: how to represent the initializer here?
-    val expr = newUnknown(typeIdInit.getInitializer, 1)
+    val expr = astForNode(typeIdInit.getInitializer, 2)
 
     val typeNode = typeIdInit.getTypeId
-    val typeAst = newUnknown(typeNode, 2)
+    val typeAst = newUnknown(typeNode, 1)
 
-    Ast(cpgCastExpression)
+    val ast = Ast(cpgCastExpression)
       .withChild(Ast(typeAst))
-      .withChild(Ast(expr))
+      .withChild(expr)
       .withArgEdge(cpgCastExpression, typeAst)
-      .withArgEdge(cpgCastExpression, expr)
+    if (expr.root.isDefined) ast.withArgEdge(cpgCastExpression, expr.root.get) else ast
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression, order: Int): Ast = {
