@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier, Method, MethodParameterIn, MethodReturn, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier, Method, MethodParameterIn, MethodReturn, Modifier, Return}
 import io.shiftleft.semanticcpg.language._
 
 class SynchronizedTests extends JavaSrcCodeToCpgFixture {
@@ -34,11 +34,12 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
 
   "it should create a synchronized block" in {
     val List(method: Method) = cpg.method.name("bar").l
-    val List(syncBlock: Block) = method.ast.isBlock.codeExact("synchronized").l
+    val List(syncBlock: Block) = method.ast.isBlock.where(_.astChildren.isModifier.modifierType("SYNCHRONIZED")).l
 
-    syncBlock.astChildren.size shouldBe 2
-    val List(cond: Identifier, body: Block) = syncBlock.astChildren.l
+    syncBlock.astChildren.size shouldBe 3
+    val List(mod: Modifier, cond: Identifier, body: Block) = syncBlock.astChildren.l
 
+    mod.modifierType shouldBe "SYNCHRONIZED"
     cond.code shouldBe "this"
     body.astChildren.head.code shouldBe "s += \"A\""
   }
