@@ -259,16 +259,14 @@ trait AstForExpressionsCreator {
     val cpgCastExpression =
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
+    val typeAst = newUnknown(typeIdInit.getTypeId, 1)
     val expr = astForNode(typeIdInit.getInitializer, 2)
 
-    val typeNode = typeIdInit.getTypeId
-    val typeAst = newUnknown(typeNode, 1)
-
-    val ast = Ast(cpgCastExpression)
+    Ast(cpgCastExpression)
       .withChild(Ast(typeAst))
       .withChild(expr)
       .withArgEdge(cpgCastExpression, typeAst)
-    if (expr.root.isDefined) ast.withArgEdge(cpgCastExpression, expr.root.get) else ast
+      .withArgEdge(cpgCastExpression, expr.root)
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression, order: Int): Ast = {

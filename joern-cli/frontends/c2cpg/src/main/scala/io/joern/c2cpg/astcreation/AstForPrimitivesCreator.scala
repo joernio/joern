@@ -66,7 +66,7 @@ trait AstForPrimitivesCreator {
       .argumentIndex(2)
       .lineNumber(line(fieldRef.getFieldName))
       .columnNumber(column(fieldRef.getFieldName))
-    Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, owner.root.get).withArgEdge(ma, member)
+    Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, owner.root).withArgEdge(ma, member)
   }
 
   protected def astForInitializerList(l: IASTInitializerList, order: Int): Ast = {
