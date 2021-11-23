@@ -932,6 +932,21 @@ class AstCreationPassTests
       }
     }
 
+    "be correct for indirection on call" in TestAstOnlyFixture(
+      """
+       |typedef long unsigned int (*hStrLenFunc)(const char *str);
+       |int main() {
+       |  hStrLenFunc strLenFunc = &strlen;
+       |  return (*strLenFunc)("123");
+       |}
+      """.stripMargin) { cpg =>
+      inside(cpg.method.name("main").ast.isCall.codeExact("(*strLenFunc)(\"123\")").l) {
+        case List(call) =>
+          call.name shouldBe "*strLenFunc"
+          call.methodFullName shouldBe "*strLenFunc"
+      }
+    }
+
     "be correct for sizeof operator on identifier with brackets" in TestAstOnlyFixture(
       """
         |void method() {
