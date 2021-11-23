@@ -1195,8 +1195,8 @@ class AstCreationPassTests
     ) { cpg =>
       inside(cpg.call.name(Operators.cast).l) {
         case List(call: Call) =>
-          call.argument(1).code shouldBe "{ 1 }"
-          call.argument(2).code shouldBe "int"
+          call.argument(2).code shouldBe "{ 1 }"
+          call.argument(1).code shouldBe "int"
       }
     }
 
@@ -1380,11 +1380,11 @@ class AstCreationPassTests
         |""".stripMargin
     ) { cpg =>
       inside(cpg.call.name(Operators.cast).astChildren.l) {
-        case List(call: Call, tpe: Unknown) =>
+        case List(tpe: Unknown, call: Call) =>
           call.code shouldBe "end - str"
-          call.argumentIndex shouldBe 1
+          call.argumentIndex shouldBe 2
           tpe.code shouldBe "int"
-          tpe.argumentIndex shouldBe 2
+          tpe.argumentIndex shouldBe 1
       }
     }
 
