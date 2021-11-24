@@ -40,6 +40,10 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
     vars.foreach(x => {
       assignments contains x shouldBe true
     })
+    cpg.assignment.foreach { assignment =>
+      assignment.name shouldBe Operators.assignment
+      assignment.methodFullName shouldBe Operators.assignment
+    }
   }
 
   "should contain a call node for the addition operator" in {

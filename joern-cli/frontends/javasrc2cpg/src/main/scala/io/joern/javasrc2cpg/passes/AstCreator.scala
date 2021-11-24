@@ -1334,6 +1334,7 @@ class AstCreator(filename: String, global: Global) {
 
         val callNode = NewCall()
           .name(Operators.assignment)
+          .methodFullName(Operators.assignment)
           .code(s"$name = ${initializer.toString()}")
           .order(order + idx)
           .argumentIndex(order + idx)
