@@ -329,9 +329,11 @@ class AstCreator(filename: String, global: Global) {
       List.empty[String]
     }
 
+    val typeFullName = registerType(typ.getFullyQualifiedName.toScala.getOrElse(""))
+
     val typeDecl = NewTypeDecl()
       .name(typ.getNameAsString)
-      .fullName(typ.getFullyQualifiedName.toScala.getOrElse(""))
+      .fullName(typeFullName)
       .inheritsFromTypeFullName(baseTypeFullNames)
       .order(order)
       .filename(filename)
@@ -1401,7 +1403,7 @@ class AstCreator(filename: String, global: Global) {
       .order(order)
 
     val identifier = NewIdentifier()
-      .typeFullName("ANY")
+      .typeFullName(registerType("ANY"))
       .code(expr.getTypeAsString)
       .lineNumber(line(expr))
       .columnNumber(column(expr))
@@ -1550,10 +1552,11 @@ class AstCreator(filename: String, global: Global) {
   }
 
   def astForThisExpr(expr: ThisExpr, order: Int): AstWithCtx = {
+    val typeFullName = registerType(Try(expr.calculateResolvedType().describe()).getOrElse("<empty>"))
     val identifier =
       NewIdentifier()
         .name("this")
-        .typeFullName(Try(expr.calculateResolvedType().describe()).getOrElse("<empty>"))
+        .typeFullName(typeFullName)
         .code(expr.toString)
         .order(order)
         .argumentIndex(order)
@@ -1654,9 +1657,11 @@ class AstCreator(filename: String, global: Global) {
       resolvedDecl: Try[ResolvedMethodDeclaration],
       order: Int
   ) = {
+    val typeFullName = registerType(Try(call.calculateResolvedType().describe()).getOrElse("<empty>"))
     val callNode = NewCall()
       .name(call.getNameAsString)
       .code(s"${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
+      .typeFullName(typeFullName)
       .order(order)
       .argumentIndex(order)
     resolvedDecl match {
@@ -1685,10 +1690,11 @@ class AstCreator(filename: String, global: Global) {
     resolvedDecl.toOption
       .filterNot(_.isStatic)
       .map { resolved =>
+        val typeFullName = registerType(resolved.declaringType().getQualifiedName)
         NewIdentifier()
           .name("this")
           .code("this")
-          .typeFullName(resolved.declaringType().getQualifiedName)
+          .typeFullName(typeFullName)
           .order(0)
           .argumentIndex(0)
       }
