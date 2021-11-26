@@ -4,7 +4,7 @@ import io.joern.scanners.{Crew, QueryTags}
 import io.shiftleft.codepropertygraph.generated._
 import io.joern.console._
 import io.shiftleft.console._
-import io.shiftleft.macros.QueryMacros._
+import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 

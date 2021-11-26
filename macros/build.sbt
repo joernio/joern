@@ -2,10 +2,10 @@ name := "macros"
 
 enablePlugins(JavaAppPackaging)
 
-dependsOn(Projects.codepropertygraph)
 scalacOptions ++= Seq( "-Yrangepos" )
 
 libraryDependencies ++= Seq(
+  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 )
 

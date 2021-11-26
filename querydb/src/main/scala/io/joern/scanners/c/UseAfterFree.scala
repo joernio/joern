@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
-import io.shiftleft.macros.QueryMacros._
+import io.joern.macros.QueryMacros._
 
 object UseAfterFree extends QueryBundle {
 

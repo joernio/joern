@@ -10,12 +10,13 @@ val CirceVersion = "0.12.2"
 val AmmoniteVersion = "2.4.1"
 val ZeroturnaroundVersion = "1.13"
 
-dependsOn(Projects.fuzzyc2cpg % Test)
+dependsOn(
+  Projects.macros,
+  Projects.fuzzyc2cpg % Test)
 
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "io.shiftleft" %% "macros" % Versions.cpg,
   "com.github.scopt" %% "scopt" % ScoptVersion,
   "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
   "org.typelevel" %% "cats-core" % CatsVersion,
