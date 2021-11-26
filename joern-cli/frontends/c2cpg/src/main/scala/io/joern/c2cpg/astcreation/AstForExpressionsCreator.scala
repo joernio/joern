@@ -12,6 +12,8 @@ trait AstForExpressionsCreator {
 
   this: AstCreator =>
 
+  import AstCreatorHelper.OptionSafeAst
+
   private def astForBinaryExpression(bin: IASTBinaryExpression, order: Int): Ast = {
     val op = bin.getOperator match {
       case IASTBinaryExpression.op_multiply         => Operators.multiplication
@@ -53,12 +55,11 @@ trait AstForExpressionsCreator {
     val callNode = newCallNode(bin, op, op, DispatchTypes.STATIC_DISPATCH, order)
     val left = nullSafeAst(bin.getOperand1, 1)
     val right = nullSafeAst(bin.getOperand2, 2)
-    var ast = Ast(callNode)
+    Ast(callNode)
       .withChild(left)
       .withChild(right)
-    if (left.root.isDefined) ast = ast.withArgEdge(callNode, left.root.get)
-    if (right.root.isDefined) ast = ast.withArgEdge(callNode, right.root.get)
-    ast
+      .withArgEdge(callNode, left.root)
+      .withArgEdge(callNode, right.root)
   }
 
   private def astForExpressionList(exprList: IASTExpressionList, order: Int): Ast = {
@@ -106,9 +107,7 @@ trait AstForExpressionsCreator {
     }
 
     val cpgCall = Ast(newCallNode(call, name, name, dd, order))
-    val args = withOrder(call.getArguments) { case (a, o)     => astForNode(a, o) }
-    val validArgs = args.collect { case a if a.root.isDefined => a.root.get }
-
+    val args = withOrder(call.getArguments) { case (a, o) => astForNode(a, o) }
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
       // e.g., for `f(x)`, don't include an `f` identifier node as a first child. Since we
@@ -116,14 +115,14 @@ trait AstForExpressionsCreator {
       // Moreover, the data flow tracker does not need to track `f`, which would not make
       // much sense anyway.
       case Some(r: NewIdentifier) if r.name == name =>
-        cpgCall.withChildren(args).withArgEdges(cpgCall.root.get, validArgs)
+        cpgCall.withChildren(args).withArgEdges(cpgCall.root.get, args)
       case Some(r) =>
         cpgCall
           .withChild(rec)
           .withChildren(args)
-          .withArgEdges(cpgCall.root.get, validArgs)
+          .withArgEdges(cpgCall.root.get, args)
           .withReceiverEdge(cpgCall.root.get, r)
-      case None => cpgCall.withChildren(args).withArgEdges(cpgCall.root.get, validArgs)
+      case None => cpgCall.withChildren(args).withArgEdges(cpgCall.root.get, args)
     }
   }
 
@@ -155,14 +154,8 @@ trait AstForExpressionsCreator {
           opExpr.getOperand
         case opExpr => opExpr
       }
-
       val operand = nullSafeAst(operandExpr, 1)
-
-      val ast = Ast(cpgUnary).withChild(operand)
-      operand.root match {
-        case Some(op) => ast.withArgEdge(cpgUnary, op)
-        case None     => ast
-      }
+      Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
     }
   }
 
@@ -176,11 +169,7 @@ trait AstForExpressionsCreator {
             op == IASTTypeIdExpression.op_typeof =>
         val call = newCallNode(typeId, Operators.sizeOf, Operators.sizeOf, DispatchTypes.STATIC_DISPATCH, order)
         val arg = astForNode(typeId.getTypeId.getDeclSpecifier, 1)
-        val ast = Ast(call).withChild(arg)
-        arg.root match {
-          case Some(r) => ast.withArgEdge(call, r)
-          case _       => ast
-        }
+        Ast(call).withChild(arg).withArgEdge(call, arg.root)
       case _ => notHandledYet(typeId, order)
     }
   }
@@ -192,11 +181,8 @@ trait AstForExpressionsCreator {
     val posAst = nullSafeAst(expr.getPositiveResultExpression, 2)
     val negAst = nullSafeAst(expr.getNegativeResultExpression, 3)
 
-    val children = Seq(condAst, posAst, negAst).collect {
-      case c if c.root.isDefined => c
-    }
-
-    Ast(call).withChildren(children).withArgEdges(call, children.map(_.root.get))
+    val children = Seq(condAst, posAst, negAst)
+    Ast(call).withChildren(children).withArgEdges(call, children)
   }
 
   private def astForArrayIndexExpression(arrayIndexExpression: IASTArraySubscriptExpression, order: Int): Ast = {
@@ -210,12 +196,11 @@ trait AstForExpressionsCreator {
     val expr = astForExpression(arrayIndexExpression.getArrayExpression, 1)
     val arg = astForNode(arrayIndexExpression.getArgument, 2)
 
-    var ast = Ast(cpgArrayIndexing)
+    Ast(cpgArrayIndexing)
       .withChild(expr)
       .withChild(arg)
-    if (expr.root.isDefined) ast = ast.withArgEdge(cpgArrayIndexing, expr.root.get)
-    if (arg.root.isDefined) ast = ast.withArgEdge(cpgArrayIndexing, arg.root.get)
-    ast
+      .withArgEdge(cpgArrayIndexing, expr.root)
+      .withArgEdge(cpgArrayIndexing, arg.root)
   }
 
   private def astForCastExpression(castExpression: IASTCastExpression, order: Int): Ast = {
@@ -226,12 +211,11 @@ trait AstForExpressionsCreator {
     val argNode = castExpression.getTypeId
     val arg = newUnknown(argNode, 1)
 
-    var ast = Ast(cpgCastExpression)
+    Ast(cpgCastExpression)
       .withChild(Ast(arg))
       .withChild(expr)
       .withArgEdge(cpgCastExpression, arg)
-    if (expr.root.isDefined) ast = ast.withArgEdge(cpgCastExpression, expr.root.get)
-    ast
+      .withArgEdge(cpgCastExpression, expr.root)
   }
 
   private def astForNewExpression(newExpression: ICPPASTNewExpression, order: Int): Ast = {
@@ -254,12 +238,11 @@ trait AstForExpressionsCreator {
         } else {
           Seq.empty
         }
-      val validArgs = args.filter(_.root.isDefined)
       Ast(cpgNewExpression)
         .withChild(cpgTypeId)
-        .withChildren(validArgs)
+        .withChildren(args)
         .withArgEdge(cpgNewExpression, cpgTypeId.root.get)
-        .withArgEdges(cpgNewExpression, validArgs.map(_.root.get))
+        .withArgEdges(cpgNewExpression, args)
     }
   }
 
@@ -267,35 +250,30 @@ trait AstForExpressionsCreator {
     val cpgDeleteNode =
       newCallNode(delExpression, Operators.delete, Operators.delete, DispatchTypes.STATIC_DISPATCH, order)
     val arg = astForExpression(delExpression.getOperand, 1)
-    var ast = Ast(cpgDeleteNode).withChild(arg)
-    if (arg.root.isDefined) ast = ast.withArgEdge(cpgDeleteNode, arg.root.get)
-    ast
+    Ast(cpgDeleteNode)
+      .withChild(arg)
+      .withArgEdge(cpgDeleteNode, arg.root)
   }
 
   private def astForTypeIdInitExpression(typeIdInit: IASTTypeIdInitializerExpression, order: Int): Ast = {
     val cpgCastExpression =
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
+    val typeAst = newUnknown(typeIdInit.getTypeId, 1)
     val expr = astForNode(typeIdInit.getInitializer, 2)
 
-    val typeNode = typeIdInit.getTypeId
-    val typeAst = newUnknown(typeNode, 1)
-
-    val ast = Ast(cpgCastExpression)
+    Ast(cpgCastExpression)
       .withChild(Ast(typeAst))
       .withChild(expr)
       .withArgEdge(cpgCastExpression, typeAst)
-    if (expr.root.isDefined) ast.withArgEdge(cpgCastExpression, expr.root.get) else ast
+      .withArgEdge(cpgCastExpression, expr.root)
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression, order: Int): Ast = {
     val name = c.getDeclSpecifier.toString
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-
     val arg = astForNode(c.getInitializer, 1)
-
-    val ast = Ast(callNode).withChild(arg)
-    if (arg.root.isDefined) { ast.withArgEdge(callNode, arg.root.get) } else ast
+    Ast(callNode).withChild(arg).withArgEdge(callNode, arg.root)
   }
 
   private def astForCompoundStatementExpression(compoundExpression: IGNUASTCompoundStatementExpression,
