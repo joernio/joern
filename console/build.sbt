@@ -11,7 +11,7 @@ val AmmoniteVersion = "2.4.1"
 val ZeroturnaroundVersion = "1.13"
 
 dependsOn(
-  Projects.macros,
+  // Projects.macros,
   Projects.fuzzyc2cpg % Test)
 
 libraryDependencies ++= Seq(

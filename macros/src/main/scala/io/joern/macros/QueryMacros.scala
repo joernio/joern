@@ -2,7 +2,7 @@ package io.joern.macros
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import io.shiftleft.console.TraversalWithStrRep
+import io.joern.console.TraversalWithStrRep
 import overflowdb.traversal.Traversal
 
 import scala.language.experimental.macros
@@ -11,6 +11,7 @@ import scala.reflect.macros.whitebox
 object QueryMacros {
 
   def withStrRep(traversal: Cpg => Traversal[StoredNode]): TraversalWithStrRep = macro withStrRepImpl
+  // def withStrRep[A <: StoredNode](traversal: Cpg => Traversal[A]): TraversalWithStrRep = macro withStrRepImpl
 
   def withStrRepImpl(c: whitebox.Context)(traversal: c.Tree): c.Expr[TraversalWithStrRep] = {
     import c.universe._

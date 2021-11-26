@@ -1,12 +1,10 @@
 name := "macros"
 
-enablePlugins(JavaAppPackaging)
+dependsOn(Projects.console)
+
+libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
 scalacOptions ++= Seq( "-Yrangepos" )
-
-libraryDependencies ++= Seq(
-  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
-  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-)
+enablePlugins(JavaAppPackaging)
 
 Test / packageBin / publishArtifact := true
