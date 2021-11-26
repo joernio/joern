@@ -2,13 +2,13 @@ package io.joern.scanners.c
 
 import io.joern.scanners.{Crew, QueryTags}
 import io.joern.console._
-import io.shiftleft.console._
+import io.joern.console._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.macros.QueryMacros._
+import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 import io.joern.console._
-import io.shiftleft.console._
+import io.joern.console._
 import QueryLangExtensions._
 
 object SocketApi extends QueryBundle {

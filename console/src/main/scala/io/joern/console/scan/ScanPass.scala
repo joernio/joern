@@ -1,7 +1,7 @@
 package io.joern.console.scan
 
+import io.joern.console.Query
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.console.Query
 import io.shiftleft.passes.{DiffGraph, KeyPoolCreator, ParallelCpgPass}
 
 class ScanPass(cpg: Cpg, queries: List[Query])
