@@ -10,8 +10,7 @@ import scala.reflect.macros.whitebox
 
 object QueryMacros {
 
-  def withStrRep(traversal: Cpg => Traversal[StoredNode]): TraversalWithStrRep = macro withStrRepImpl
-  // def withStrRep[A <: StoredNode](traversal: Cpg => Traversal[A]): TraversalWithStrRep = macro withStrRepImpl
+  def withStrRep(traversal: Cpg => Traversal[_ <: StoredNode]): TraversalWithStrRep = macro withStrRepImpl
 
   def withStrRepImpl(c: whitebox.Context)(traversal: c.Tree): c.Expr[TraversalWithStrRep] = {
     import c.universe._

@@ -11,7 +11,7 @@ case class Query(name: String,
                  title: String,
                  description: String,
                  score: Double,
-                 traversal: Cpg => Traversal[StoredNode],
+                 traversal: Cpg => Traversal[_ <: StoredNode],
                  traversalAsString: String = "",
                  tags: List[String] = List(),
                  language: String = "",
@@ -40,4 +40,4 @@ object Query {
   }
 }
 
-case class TraversalWithStrRep(traversal: Cpg => Traversal[StoredNode], strRep: String = "")
+case class TraversalWithStrRep(traversal: Cpg => Traversal[_ <: StoredNode], strRep: String = "")
