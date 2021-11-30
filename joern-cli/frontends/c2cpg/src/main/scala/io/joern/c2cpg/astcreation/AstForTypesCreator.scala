@@ -97,11 +97,12 @@ trait AstForTypesCreator {
 
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, order: Int): Ast = {
     val declTypeName = registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
+    val tpe = typeFor(declarator)
     val name = declarator.getName.toString
     declaration match {
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
-        Ast(newTypeDecl(name, registerType(name), filename, alias = Some(declTypeName), order = order))
+        Ast(newTypeDecl(name, registerType(name), filename, s"$tpe $name", alias = Some(declTypeName), order = order))
       case d if parentIsClassDef(d) =>
         Ast(
           NewMember()
@@ -110,21 +111,20 @@ trait AstForTypesCreator {
             .typeFullName(declTypeName)
             .order(order))
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        val tpe = registerType(typeFor(declarator))
         val l = NewLocal()
-          .code(name)
+          .code(s"$tpe $name")
           .name(name)
-          .typeFullName(tpe)
+          .typeFullName(registerType(tpe))
           .order(order)
         scope.addToScope(name, (l, tpe))
         Ast(l)
       case _ =>
         val l = NewLocal()
-          .code(name)
+          .code(s"$declTypeName $name")
           .name(name)
-          .typeFullName(declTypeName)
+          .typeFullName(registerType(tpe))
           .order(order)
-        scope.addToScope(name, (l, declTypeName))
+        scope.addToScope(name, (l, tpe))
         Ast(l)
     }
 
@@ -179,13 +179,14 @@ trait AstForTypesCreator {
     val filename = fileName(aliasDeclaration)
 
     val name = aliasDeclaration.getAlias.toString
-    val mappedName = ASTTypeUtil.getType(aliasDeclaration.getMappingTypeId)
+    val mappedName = registerType(typeFor(aliasDeclaration.getMappingTypeId))
     val typeDeclNode =
       newTypeDecl(
         name,
         registerType(name),
         filename,
-        alias = Some(registerType(mappedName)),
+        mappedName,
+        alias = Some(mappedName),
         line = linenumber,
         column = columnnumber,
         order = order
@@ -229,7 +230,7 @@ trait AstForTypesCreator {
           case spec: IASTNamedTypeSpecifier if declaration.getDeclarators.isEmpty =>
             val filename = fileName(spec)
             val name = nodeSignature(spec.getName)
-            Seq(Ast(newTypeDecl(name, registerType(name), filename, alias = Some(name), order = order)))
+            Seq(Ast(newTypeDecl(name, registerType(name), filename, name, alias = Some(name), order = order)))
           case _ if declaration.getDeclarators.nonEmpty =>
             declaration.getDeclarators.toIndexedSeq.map {
               case d: IASTFunctionDeclarator =>
@@ -280,13 +281,13 @@ trait AstForTypesCreator {
                                    decls: List[IASTDeclarator],
                                    order: Int): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-
     val declAsts = withOrder(decls) { (d, o) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
     }
 
     val name = typeSpecifier.getName.toString
-    val fullname = fullName(typeSpecifier)
+    val fullname = registerType(fullName(typeSpecifier))
+    val code = typeFor(typeSpecifier)
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
 
     val typeDecl = typeSpecifier match {
@@ -294,13 +295,14 @@ trait AstForTypesCreator {
         val baseClassList = cppClass.getBaseSpecifiers.toSeq.map(s => fixQualifiedName(s.getNameSpecifier.toString))
         baseClassList.foreach(registerType)
         newTypeDecl(name,
-                    registerType(fullname),
+                    fullname,
                     filename,
+                    code,
                     inherits = baseClassList,
                     alias = nameWithTemplateParams,
                     order = order)
       case _ =>
-        newTypeDecl(name, registerType(fullname), filename, alias = nameWithTemplateParams, order = order)
+        newTypeDecl(name, fullname, filename, code, alias = nameWithTemplateParams, order = order)
     }
 
     methodAstParentStack.push(typeDecl)
@@ -325,11 +327,11 @@ trait AstForTypesCreator {
     }
 
     val name = typeSpecifier.getName.toString
-    val fullname = fullName(typeSpecifier)
+    val fullname = registerType(fullName(typeSpecifier))
+    val code = s"$name${typeFor(typeSpecifier)}"
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
 
-    val typeDecl =
-      newTypeDecl(name, registerType(fullname), filename, alias = nameWithTemplateParams, order = order)
+    val typeDecl = newTypeDecl(name, fullname, filename, code, alias = nameWithTemplateParams, order = order)
 
     Ast(typeDecl) +: declAsts
   }
@@ -363,22 +365,23 @@ trait AstForTypesCreator {
 
   }
 
-  private def astsForEnum(enumSpecifier: IASTEnumerationSpecifier,
+  private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier,
                           decls: List[IASTDeclarator],
                           order: Int): Seq[Ast] = {
-    val filename = fileName(enumSpecifier)
+    val filename = fileName(typeSpecifier)
     val declAsts = withOrder(decls) { (d, o) =>
-      astForDeclarator(enumSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
     }
 
-    val (name, fullname) = uniqueName("enum", enumSpecifier.getName.toString, fullName(enumSpecifier))
-    val typeDecl = newTypeDecl(name, registerType(fullname), filename, order = order)
+    val (name, fullname) = uniqueName("enum", typeSpecifier.getName.toString, fullName(typeSpecifier))
+    val code = s"$name${typeFor(typeSpecifier)}"
+    val typeDecl = newTypeDecl(name, registerType(fullname), filename, code, order = order)
 
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
     var currentOrder = 0
-    val member = enumSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
+    val member = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
       val eCpg = astsForEnumerator(e, currentOrder)
       currentOrder = eCpg.size + currentOrder
       eCpg

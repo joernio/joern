@@ -44,8 +44,10 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |  free(ptr);
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.call("free").argument(1).evalType.l) {
-        case List(tpe) => tpe shouldBe "struct test*"
+      inside(cpg.call("free").argument(1).l) {
+        case List(arg) =>
+          arg.evalType.l shouldBe List("test*")
+          arg.code shouldBe "ptr"
       }
     }
 

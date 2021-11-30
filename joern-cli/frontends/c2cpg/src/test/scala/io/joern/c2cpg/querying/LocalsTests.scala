@@ -41,8 +41,15 @@ class LocalsTests extends CCodeToCpgSuite {
   }
 
   "should prove correct (name, type) pairs for locals" in {
-    cpg.method.name("free_list").local.map(l => (l.name, l.typeFullName)).toSet shouldBe
-      Set(("q", "struct node*"), ("p", "struct node*"))
+    inside(cpg.method.name("free_list").local.l) {
+      case List(q, p) =>
+        q.name shouldBe "q"
+        q.typeFullName shouldBe "node*"
+        q.code shouldBe "struct node* q"
+        p.name shouldBe "p"
+        p.typeFullName shouldBe "node*"
+        p.code shouldBe "struct node* p"
+    }
   }
 
   "should allow finding filenames by local regex" in {

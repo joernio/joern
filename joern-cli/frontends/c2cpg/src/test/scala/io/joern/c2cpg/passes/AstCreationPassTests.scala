@@ -755,15 +755,17 @@ class AstCreationPassTests
         case List(forStmt) =>
           forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
           inside(forStmt.astChildren.order(1).l) {
-            case List(ident) =>
+            case List(ident: Identifier) =>
               ident.code shouldBe "list"
           }
           inside(forStmt.astChildren.order(2).l) {
-            case List(ident) =>
-              ident.code shouldBe "x"
+            case List(x: Local) =>
+              x.name shouldBe "x"
+              x.typeFullName shouldBe "int"
+              x.code shouldBe "int x"
           }
           inside(forStmt.astChildren.order(3).l) {
-            case List(block) =>
+            case List(block: Block) =>
               block.astChildren.isCall.code.l shouldBe List("z = x")
           }
       }
@@ -1469,7 +1471,7 @@ class AstCreationPassTests
         case List(buf: Local) =>
           buf.typeFullName shouldBe "char[256]"
           buf.name shouldBe "buf"
-          buf.code shouldBe "buf"
+          buf.code shouldBe "char[256] buf"
       }
     }
 
@@ -1687,7 +1689,7 @@ class AstCreationPassTests
       """.stripMargin) { cpg =>
       inside(cpg.assignment.head.astChildren.l) {
         case List(ident: Identifier, call: Call) =>
-          ident.typeFullName shouldBe "struct foo"
+          ident.typeFullName shouldBe "foo"
           ident.order shouldBe 1
           call.code shouldBe "{ .a = 1, .b = 2 }"
           call.order shouldBe 2

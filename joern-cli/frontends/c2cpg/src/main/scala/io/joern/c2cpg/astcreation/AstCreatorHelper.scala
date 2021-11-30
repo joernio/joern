@@ -151,14 +151,7 @@ trait AstCreatorHelper {
       case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node))
       case d: IASTDeclSpecifier =>
-        if (!d.getParent.isInstanceOf[IASTDeclaration])
-          cleanType(ASTStringUtil.getReturnTypeString(d, null))
-        else
-          d match {
-            case _: IASTElaboratedTypeSpecifier | _: IASTNamedTypeSpecifier | _: IASTCompositeTypeSpecifier =>
-              cleanType(ASTStringUtil.getReturnTypeString(d, null))
-            case _ => cleanType(getNodeSignature(node))
-          }
+        cleanType(ASTStringUtil.getReturnTypeString(d, null))
       case _ =>
         cleanType(getNodeSignature(node))
     }

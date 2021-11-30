@@ -77,6 +77,7 @@ trait AstNodeBuilder {
   protected def newTypeDecl(name: String,
                             fullname: String,
                             filename: String,
+                            code: String,
                             astParentType: String = "",
                             astParentFullName: String = "",
                             order: Int = -1,
@@ -87,6 +88,7 @@ trait AstNodeBuilder {
     NewTypeDecl()
       .name(name)
       .fullName(fullname)
+      .code(code)
       .isExternal(false)
       .filename(filename)
       .astParentType(astParentType)
