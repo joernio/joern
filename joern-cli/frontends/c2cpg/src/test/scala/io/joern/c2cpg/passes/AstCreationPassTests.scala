@@ -932,6 +932,21 @@ class AstCreationPassTests
       }
     }
 
+    "be correct for indirection on call" in TestAstOnlyFixture(
+      """
+       |typedef long unsigned int (*hStrLenFunc)(const char *str);
+       |int main() {
+       |  hStrLenFunc strLenFunc = &strlen;
+       |  return (*strLenFunc)("123");
+       |}
+      """.stripMargin) { cpg =>
+      inside(cpg.method.name("main").ast.isCall.codeExact("(*strLenFunc)(\"123\")").l) {
+        case List(call) =>
+          call.name shouldBe "*strLenFunc"
+          call.methodFullName shouldBe "*strLenFunc"
+      }
+    }
+
     "be correct for sizeof operator on identifier with brackets" in TestAstOnlyFixture(
       """
         |void method() {
@@ -1180,8 +1195,8 @@ class AstCreationPassTests
     ) { cpg =>
       inside(cpg.call.name(Operators.cast).l) {
         case List(call: Call) =>
-          call.argument(1).code shouldBe "{ 1 }"
-          call.argument(2).code shouldBe "int"
+          call.argument(2).code shouldBe "{ 1 }"
+          call.argument(1).code shouldBe "int"
       }
     }
 
@@ -1365,11 +1380,11 @@ class AstCreationPassTests
         |""".stripMargin
     ) { cpg =>
       inside(cpg.call.name(Operators.cast).astChildren.l) {
-        case List(call: Call, tpe: Unknown) =>
+        case List(tpe: Unknown, call: Call) =>
           call.code shouldBe "end - str"
-          call.argumentIndex shouldBe 1
+          call.argumentIndex shouldBe 2
           tpe.code shouldBe "int"
-          tpe.argumentIndex shouldBe 2
+          tpe.argumentIndex shouldBe 1
       }
     }
 

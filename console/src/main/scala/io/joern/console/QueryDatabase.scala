@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.console.Query
+import io.joern.console.Query
 import org.reflections8.Reflections
 import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}
 import org.slf4j.{Logger, LoggerFactory}

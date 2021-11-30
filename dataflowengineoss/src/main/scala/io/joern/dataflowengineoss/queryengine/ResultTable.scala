@@ -41,6 +41,11 @@ class ResultTable {
     table.get(node)
   }
 
+  /**
+    * Returns all keys to allow for iteration through the table.
+    */
+  def keys(): Vector[StoredNode] = table.keys.toVector
+
 }
 
 /**

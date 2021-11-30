@@ -11,6 +11,8 @@ trait AstForPrimitivesCreator {
 
   this: AstCreator =>
 
+  import AstCreatorHelper.OptionSafeAst
+
   protected def astForComment(comment: IASTComment): Ast =
     Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
 
@@ -64,7 +66,7 @@ trait AstForPrimitivesCreator {
       .argumentIndex(2)
       .lineNumber(line(fieldRef.getFieldName))
       .columnNumber(column(fieldRef.getFieldName))
-    Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, owner.root.get).withArgEdge(ma, member)
+    Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, owner.root).withArgEdge(ma, member)
   }
 
   protected def astForInitializerList(l: IASTInitializerList, order: Int): Ast = {
@@ -79,9 +81,7 @@ trait AstForPrimitivesCreator {
       case (c, o) =>
         astForNode(c, o)
     }
-    val validArgs = args.collect { case a if a.root.isDefined => a.root.get }
-    val ast = Ast(initCallNode).withChildren(args).withArgEdges(initCallNode, validArgs)
-
+    val ast = Ast(initCallNode).withChildren(args).withArgEdges(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
         .typeFullName("ANY")
@@ -108,13 +108,11 @@ trait AstForPrimitivesCreator {
         val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, order)
         val arg1 = astForNode(head, 1)
         val arg2 = fieldAccesses(tail, 2)
-        var call =
-          Ast(callNode)
-            .withChild(arg1)
-            .withChild(arg2)
-        if (arg1.root.isDefined) call = call.withArgEdge(callNode, arg1.root.get)
-        if (arg2.root.isDefined) call = call.withArgEdge(callNode, arg2.root.get)
-        call
+        Ast(callNode)
+          .withChild(arg1)
+          .withChild(arg2)
+          .withArgEdge(callNode, arg1.root)
+          .withArgEdge(callNode, arg2.root)
     }
 
     val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList, 1)
@@ -132,12 +130,7 @@ trait AstForPrimitivesCreator {
       .argumentIndex(2)
       .lineNumber(line(qualId.getLastName))
       .columnNumber(column(qualId.getLastName))
-    val ast = Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, member)
-    owner.root match {
-      case Some(value) => ast.withArgEdge(ma, value)
-      case None        => ast
-    }
-
+    Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, member).withArgEdge(ma, owner.root)
   }
 
 }
