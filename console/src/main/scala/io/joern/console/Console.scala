@@ -491,8 +491,8 @@ object Console {
 }
 
 class ConsoleException(message: String, cause: Option[Throwable])
-  extends RuntimeException(message, cause.orNull) with NoStackTrace {
+    extends RuntimeException(message, cause.orNull)
+    with NoStackTrace {
   def this(message: String) = this(message, None)
   def this(message: String, cause: Throwable) = this(message, Option(cause))
 }
-

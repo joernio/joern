@@ -29,12 +29,12 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
             language: String = ""): Cpg = {
     if (language != "") {
       generatorFactory.forLanguage(language) match {
-        case None => throw new ConsoleException(s"No CPG generator exists for language: $language")
+        case None           => throw new ConsoleException(s"No CPG generator exists for language: $language")
         case Some(frontend) => apply(frontend, inputPath, projectName, namespaces)
       }
     } else {
       generatorFactory.forCodeAt(inputPath) match {
-        case None => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath")
+        case None           => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath")
         case Some(frontend) => apply(frontend, inputPath, projectName, namespaces)
       }
     }
@@ -87,7 +87,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
         apply(dir.path.toString)
       } match {
         case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
-        case Success(value) => value
+        case Success(value)     => value
       }
     }
   }
@@ -128,10 +128,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
       "\n" + Table(cols, rows).render
   }
 
-  private def apply(frontend: CpgGenerator,
-                    inputPath: String,
-                    projectName: String,
-                    namespaces: List[String]): Cpg = {
+  private def apply(frontend: CpgGenerator, inputPath: String, projectName: String, namespaces: List[String]): Cpg = {
     val name = Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
     report(s"Creating project `$name` for code at `$inputPath`")
 
