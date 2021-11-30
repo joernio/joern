@@ -23,6 +23,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       inside(cpg.typeDecl.internal.l) {
         case List(color) =>
           color.name shouldBe "color"
+          color.code shouldBe "enum color"
           inside(color.member.l) {
             case List(red, yellow, green, blue) =>
               red.name shouldBe "red"
@@ -48,6 +49,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       inside(cpg.typeDecl.filter(x => !x.isExternal).l) {
         case List(color, c) =>
           color.name shouldBe "color"
+          color.code shouldBe "enum color"
           color.aliasTypeFullName shouldBe None
           c.name shouldBe "C"
           c.aliasTypeFullName shouldBe Some("color")
@@ -74,6 +76,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       inside(cpg.typeDecl.internal.l) {
         case List(altitude) =>
           altitude.name shouldBe "altitude"
+          altitude.code shouldBe "enum altitude"
           inside(altitude.member.l) {
             case List(high, low) =>
               high.name shouldBe "high"
@@ -99,6 +102,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       inside(cpg.typeDecl.internal.l) {
         case List(smallenum) =>
           smallenum.name shouldBe "smallenum"
+          smallenum.code shouldBe "enum smallenum"
           inside(smallenum.member.l) {
             case List(a, b, c) =>
               a.name shouldBe "a"
@@ -121,6 +125,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       inside(cpg.typeDecl.internal.l) {
         case List(anon) =>
           anon.name shouldBe "anonymous_enum_0"
+          anon.code shouldBe "enum"
           inside(anon.member.l) {
             case List(d, e, f) =>
               d.name shouldBe "d"
@@ -141,6 +146,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       inside(cpg.typeDecl.internal.l) {
         case List(x) =>
           x.name shouldBe "X"
+          x.code shouldBe "enum X"
           inside(x.member.l) {
             case List(a, b) =>
               a.name shouldBe "a"

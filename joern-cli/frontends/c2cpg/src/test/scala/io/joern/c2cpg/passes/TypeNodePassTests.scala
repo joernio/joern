@@ -32,6 +32,35 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
           }
       }
     }
+
+    "create correct types for structs" in CpgTypeNodeFixture("""
+        |struct test {
+        |  int a;
+        |};
+        |
+        |void free_struct() {
+        |  struct test *ptr;
+        |  ptr = kzalloc(sizeof(struct test), GFP_KERNEL);
+        |  free(ptr);
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.call("free").argument(1).l) {
+        case List(arg) =>
+          arg.evalType.l shouldBe List("test*")
+          arg.code shouldBe "ptr"
+      }
+    }
+
+    "create correct types for arrays" in CpgTypeNodeFixture("""
+        |void bad1(size_t a) {
+        |  uint8_t src[1], dst[1];
+        |  memcpy(dst, src, a);
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.call("memcpy").argument(1).evalType.l) {
+        case List(tpe) => tpe shouldBe "uint8_t[1]"
+      }
+    }
   }
 
 }

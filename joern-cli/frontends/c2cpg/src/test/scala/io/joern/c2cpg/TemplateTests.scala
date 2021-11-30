@@ -29,7 +29,7 @@ class TemplateTests extends AnyWordSpec with Matchers with Inside with CompleteC
           a.aliasTypeFullName shouldBe Some("X<int>")
           b.name shouldBe "B"
           b.fullName shouldBe "B"
-          b.aliasTypeFullName shouldBe Some("Y<int,char>")
+          b.aliasTypeFullName shouldBe Some("Y<int, char>")
       }
     }
 

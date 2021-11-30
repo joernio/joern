@@ -141,12 +141,20 @@ trait AstCreatorHelper {
   }
 
   @nowarn
-  protected def typeFor(node: IASTNode): String = node match {
-    case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
-      cleanType(ASTTypeUtil.getNodeType(node))
-    case _ =>
-      import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
-      cleanType(getNodeSignature(node))
+  protected def typeFor(node: IASTNode): String = {
+    import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
+    node match {
+      case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).startsWith("? ") =>
+        val tpe = cleanType(getNodeSignature(node)).replace("[]", "")
+        val arr = ASTTypeUtil.getNodeType(node).replace("? ", "")
+        s"$tpe$arr"
+      case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
+        cleanType(ASTTypeUtil.getNodeType(node))
+      case d: IASTDeclSpecifier =>
+        cleanType(ASTStringUtil.getReturnTypeString(d, null))
+      case _ =>
+        cleanType(getNodeSignature(node))
+    }
   }
 
   private def notHandledText(node: IASTNode): String =
@@ -279,14 +287,14 @@ trait AstCreatorHelper {
   }
 
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
-    val nodeAsString = ASTStringUtil.getReturnTypeString(spec, null)
+    val tpe = typeFor(spec)
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
       case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
       case _                      => ""
     }
-    if (pointers.isEmpty) { s"$nodeAsString$arr" } else {
-      s"$nodeAsString$arr${"*" * pointers.size}".strip()
+    if (pointers.isEmpty) { s"$tpe$arr" } else {
+      s"$tpe$arr${"*" * pointers.size}".strip()
     }
   }
 

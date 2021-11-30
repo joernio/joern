@@ -35,6 +35,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName shouldBe List()
     x.aliasTypeFullName shouldBe Some("int")
+    x.code shouldBe "typedef int mytype"
     x.order shouldBe 2
     x.filename.startsWith("/") shouldBe true
     x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
