@@ -79,9 +79,16 @@ package object cpgcreation {
       case f if f.endsWith(".php")                       => Some(Languages.PHP)
       case f if f.endsWith(".py")                        => Some(Languages.FUZZY_TEST_LANG)
       case f if f.endsWith(".bc") || f.endsWith(".ll")   => Some(Languages.LLVM)
-      case f if f.endsWith(".c") || f.endsWith(".h")     => Some(Languages.NEWC)
+      case f if isCFile(f)                               => Some(Languages.NEWC)
       case _                                             => None
     }
   }
+
+  /**
+    * check if given filename looks like it might be a C/CPP source or header file
+    * mostly copied from io.joern.c2cpg.parser.FileDefaults
+    *  */
+  private def isCFile(filename: String): Boolean =
+    Seq(".c", ".cc", ".cpp", ".h", ".hpp", ".hh").exists(filename.endsWith)
 
 }
