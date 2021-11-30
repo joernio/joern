@@ -13,6 +13,8 @@ trait AstForTypesCreator {
 
   this: AstCreator =>
 
+  import AstCreatorHelper.OptionSafeAst
+
   private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {
     case Some(_: IASTCompositeTypeSpecifier) => true
     case _                                   => false
@@ -134,34 +136,26 @@ trait AstForTypesCreator {
       val callNode = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
       val left = astForNode(declarator.getName, 1)
       val right = astForNode(i.getInitializerClause, 2)
-      val ast = Ast(callNode)
+      Ast(callNode)
         .withChild(left)
-        .withArgEdge(callNode, left.root.get)
         .withChild(right)
-      right.root match {
-        case Some(value) => ast.withArgEdge(callNode, value)
-        case None        => ast
-      }
+        .withArgEdge(callNode, left.root)
+        .withArgEdge(callNode, right.root)
     case i: ICPPASTConstructorInitializer =>
       val name = declarator.getName.toString
       val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, order)
       val args = withOrder(i.getArguments) { case (a, o) => astForNode(a, o) }
-      val ast = Ast(callNode).withChildren(args)
-      val validArgs = args.collect { case a if a.root.isDefined => a.root.get }
-      ast.withArgEdges(callNode, validArgs)
+      Ast(callNode).withChildren(args).withArgEdges(callNode, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
       val callNode = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
       val left = astForNode(declarator.getName, 1)
       val right = astForNode(i, 2)
-      val ast = Ast(callNode)
+      Ast(callNode)
         .withChild(left)
-        .withArgEdge(callNode, left.root.get)
         .withChild(right)
-      right.root match {
-        case Some(value) => ast.withArgEdge(callNode, value)
-        case None        => ast
-      }
+        .withArgEdge(callNode, left.root)
+        .withArgEdge(callNode, right.root)
     case _ => astForNode(init, order)
   }
 
@@ -245,8 +239,8 @@ trait AstForTypesCreator {
               case d =>
                 astForDeclarator(declaration, d, order)
             }
-          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
           case _ if nodeSignature(declaration) == ";"  => Seq.empty
+          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
         }
       case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias, order))
       case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef, order))
@@ -357,10 +351,11 @@ trait AstForTypesCreator {
       val callNode = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order + 1)
       val left = astForNode(enumerator.getName, 1)
       val right = astForNode(enumerator.getValue, 2)
-
-      var ast = Ast(callNode).withChild(left).withChild(right)
-      if (left.root.isDefined) ast = ast.withArgEdge(callNode, left.root.get)
-      if (right.root.isDefined) ast = ast.withArgEdge(callNode, right.root.get)
+      val ast = Ast(callNode)
+        .withChild(left)
+        .withChild(right)
+        .withArgEdge(callNode, left.root)
+        .withArgEdge(callNode, right.root)
       Seq(Ast(cpgMember), ast)
     } else {
       Seq(Ast(cpgMember))

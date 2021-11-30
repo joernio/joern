@@ -1,7 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.utils.IOUtils
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
@@ -14,9 +14,30 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.nowarn
 
+object AstCreatorHelper {
+  implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
+    def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
+      case Some(value) => ast.withArgEdge(src, value)
+      case None        => ast
+    }
+
+    def withConditionEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
+      case Some(value) => ast.withConditionEdge(src, value)
+      case None        => ast
+    }
+
+    def withArgEdges(src: NewNode, dsts: Seq[Ast]): Ast = {
+      val args = dsts.collect { case a if a.root.isDefined => a.root.get }
+      ast.withArgEdges(src, args)
+    }
+  }
+}
+
 trait AstCreatorHelper {
 
   this: AstCreator =>
+
+  import AstCreatorHelper.OptionSafeAst
 
   private var usedNames: Int = 0
 
@@ -287,14 +308,8 @@ trait AstCreatorHelper {
   private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, order: Int): Ast = {
     val op = "operators.<typeOf>"
     val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, order)
-
     val operand = nullSafeAst(decl.getDecltypeExpression, 1)
-
-    val ast = Ast(cpgUnary).withChild(operand)
-    operand.root match {
-      case Some(op) => ast.withArgEdge(cpgUnary, op)
-      case None     => ast
-    }
+    Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer, order: Int): Ast = {
@@ -310,12 +325,11 @@ trait AstCreatorHelper {
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left = astForNode(des, 1)
       val right = astForNode(d.getOperand, 2)
-      var ast = Ast(callNode)
+      Ast(callNode)
         .withChild(left)
         .withChild(right)
-      if (left.root.isDefined) ast = ast.withArgEdge(callNode, left.root.get)
-      if (right.root.isDefined) ast = ast.withArgEdge(callNode, right.root.get)
-      ast
+        .withArgEdge(callNode, left.root)
+        .withArgEdge(callNode, right.root)
     }
     scope.popScope()
     Ast(b).withChildren(calls)
@@ -334,12 +348,11 @@ trait AstCreatorHelper {
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left = astForNode(des, 1)
       val right = astForNode(d.getOperand, 2)
-      var ast = Ast(callNode)
+      Ast(callNode)
         .withChild(left)
         .withChild(right)
-      if (left.root.isDefined) ast = ast.withArgEdge(callNode, left.root.get)
-      if (right.root.isDefined) ast = ast.withArgEdge(callNode, right.root.get)
-      ast
+        .withArgEdge(callNode, left.root)
+        .withArgEdge(callNode, right.root)
     }
     scope.popScope()
     Ast(b).withChildren(calls)
@@ -349,9 +362,7 @@ trait AstCreatorHelper {
     val name = "<operator>.constructorInitializer"
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
     val args = withOrder(c.getArguments) { case (a, o) => astForNode(a, o) }
-    val ast = Ast(callNode).withChildren(args)
-    val validArgs = args.collect { case a if a.root.isDefined => a.root.get }
-    ast.withArgEdges(callNode, validArgs)
+    Ast(callNode).withChildren(args).withArgEdges(callNode, args)
   }
 
   protected def astForNode(node: IASTNode, order: Int): Ast = {

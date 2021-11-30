@@ -20,6 +20,13 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       | }
       |""".stripMargin
 
+  "should create TYPE node with correct fields for class" in {
+    val List(x) = cpg.typ.name("Foo").l
+    x.name shouldBe "Foo"
+    x.fullName shouldBe "foo.Foo"
+    x.typeDeclFullName shouldBe "foo.Foo"
+  }
+
   "should create TYPE node with correct fields for class member" in {
     val List(x) = cpg.typ.name("Long").l
     x.name shouldBe "Long"

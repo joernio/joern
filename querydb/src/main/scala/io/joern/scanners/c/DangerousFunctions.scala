@@ -2,9 +2,9 @@ package io.joern.scanners.c
 
 import io.joern.scanners._
 import io.joern.console._
-import io.shiftleft.console._
+import io.joern.console._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.macros.QueryMacros._
+import io.joern.macros.QueryMacros._
 
 object DangerousFunctions extends QueryBundle {
 
