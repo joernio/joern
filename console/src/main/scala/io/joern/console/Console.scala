@@ -14,6 +14,7 @@ import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreat
 import overflowdb.traversal.help.Doc
 
 import scala.sys.process.Process
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
 class Console[T <: Project](executor: AmmoniteExecutor,
@@ -487,5 +488,11 @@ object Console {
       name
     }
   }
-
 }
+
+class ConsoleException(message: String, cause: Option[Throwable])
+  extends RuntimeException(message, cause.orNull) with NoStackTrace {
+  def this(message: String) = this(message, None)
+  def this(message: String, cause: Throwable) = this(message, Option(cause))
+}
+

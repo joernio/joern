@@ -1,14 +1,14 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
-import io.joern.console.FrontendConfig
+import io.joern.console.{ConsoleException, FrontendConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.workspacehandling.Project
 import overflowdb.traversal.help.Table
 
 import java.nio.file.Path
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   import io.joern.console.Console._
@@ -26,25 +26,16 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def apply(inputPath: String,
             projectName: String = "",
             namespaces: List[String] = List(),
-            language: String = ""): Option[Cpg] = {
-
+            language: String = ""): Cpg = {
     if (language != "") {
-      val generator = generatorFactory.forLanguage(language)
-      if (generator.isEmpty) {
-        report("No CPG generator exists for language: " + language)
-        return None
-      }
-      generator.flatMap { frontend =>
-        apply(frontend, inputPath, projectName, namespaces)
+      generatorFactory.forLanguage(language) match {
+        case None => throw new ConsoleException(s"No CPG generator exists for language: $language")
+        case Some(frontend) => apply(frontend, inputPath, projectName, namespaces)
       }
     } else {
-      val generator = generatorFactory.forCodeAt(inputPath)
-      if (generator.isEmpty) {
-        report("No suitable CPG generator found for: " + inputPath)
-        return None
-      }
-      generator.flatMap { frontend =>
-        apply(frontend, inputPath, projectName, namespaces)
+      generatorFactory.forCodeAt(inputPath) match {
+        case None => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath")
+        case Some(frontend) => apply(frontend, inputPath, projectName, namespaces)
       }
     }
   }
@@ -73,18 +64,15 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
                                 args: List[String]): Option[CpgGenerator] =
       io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
 
-    def isAvailable: Boolean = {
-      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil)
-        .filter(_.isAvailable)
-        .isDefined
-    }
+    def isAvailable: Boolean =
+      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).exists(_.isAvailable)
 
     def apply(inputPath: String,
               projectName: String = "",
               namespaces: List[String] = List(),
-              args: List[String] = List()): Option[Cpg] = {
+              args: List[String] = List()): Cpg = {
       val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
-        .getOrElse(throw new AssertionError(s"no cpg generator for language=$language available!"))
+        .getOrElse(throw new ConsoleException(s"no cpg generator for language=$language available!"))
       new ImportCode(console)(frontend, inputPath, projectName, namespaces)
     }
   }
@@ -94,19 +82,22 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
                             description: String = "Fuzzy Parser for C/C++",
                             extension: String = "c")
       extends Frontend(name, language, description) {
-    def fromString(str: String): Option[Cpg] = {
+    def fromString(str: String): Cpg = {
       withCodeInTmpFile(str, "tmp." + extension) { dir =>
         apply(dir.path.toString)
+      } match {
+        case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
+        case Success(value) => value
       }
     }
   }
 
-  private def withCodeInTmpFile(str: String, filename: String)(f: File => Option[Cpg]): Option[Cpg] = {
+  private def withCodeInTmpFile(str: String, filename: String)(f: File => Cpg): Try[Cpg] = {
     val dir = File.newTemporaryDirectory("console")
     val result = Try {
       (dir / filename).write(str)
       f(dir)
-    }.toOption.flatten
+    }
     dir.delete()
     result
   }
@@ -140,39 +131,21 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   private def apply(frontend: CpgGenerator,
                     inputPath: String,
                     projectName: String,
-                    namespaces: List[String]): Option[Cpg] = {
-    val name =
-      Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
+                    namespaces: List[String]): Cpg = {
+    val name = Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
     report(s"Creating project `$name` for code at `$inputPath`")
-    val pathToProject = workspace.createProject(inputPath, name)
-    val frontendCpgOutFileOpt = pathToProject.map(_.resolve(nameOfLegacyCpgInProject))
 
-    if (frontendCpgOutFileOpt.isEmpty) {
-      report(s"Error creating project for input path: `$inputPath`")
+    val cpgMaybe = for {
+      pathToProject <- workspace.createProject(inputPath, name)
+      frontendCpgOutFile = pathToProject.resolve(nameOfLegacyCpgInProject)
+      _ <- generatorFactory.runGenerator(frontend, inputPath, frontendCpgOutFile.toString, namespaces)
+      cpg <- console.open(name).flatMap(_.cpg)
+    } yield {
+      report("""|Code successfully imported. You can now query it using `cpg`.
+                |For an overview of all imported code, type `workspace`.""".stripMargin)
+      console.applyDefaultOverlays(cpg)
     }
 
-    val result = frontendCpgOutFileOpt.flatMap { frontendCpgOutFile =>
-      Some(frontend).flatMap { frontend =>
-        generatorFactory
-          .runGenerator(
-            frontend,
-            inputPath,
-            frontendCpgOutFile.toString,
-            namespaces
-          )
-          .flatMap(_ => console.open(name).flatMap(_.cpg))
-          .map { c =>
-            console.applyDefaultOverlays(c)
-          }
-      }
-    }
-    if (result.isDefined) {
-      report(
-        """|Code successfully imported. You can now query it using `cpg`.
-           |For an overview of all imported code, type `workspace`.""".stripMargin
-      )
-    }
-    result
+    cpgMaybe.getOrElse(throw new ConsoleException(s"Error creating project for input path: `$inputPath`"))
   }
-
 }
