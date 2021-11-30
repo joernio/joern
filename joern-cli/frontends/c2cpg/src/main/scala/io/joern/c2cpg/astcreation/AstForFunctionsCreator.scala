@@ -24,7 +24,7 @@ trait AstForFunctionsCreator {
       val astParentType = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
       val newTypeDeclNode =
-        newTypeDecl(methodName, methodFullName, method.filename, method.code, astParentType, astParentFullName)
+        newTypeDecl(methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
       Ast.storeInDiffGraph(Ast(newTypeDeclNode), diffGraph)
       newTypeDeclNode
     }

@@ -328,10 +328,10 @@ trait AstForTypesCreator {
 
     val name = typeSpecifier.getName.toString
     val fullname = registerType(fullName(typeSpecifier))
-    val code = s"$name${typeFor(typeSpecifier)}"
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
 
-    val typeDecl = newTypeDecl(name, fullname, filename, code, alias = nameWithTemplateParams, order = order)
+    val typeDecl =
+      newTypeDecl(name, fullname, filename, typeFor(typeSpecifier), alias = nameWithTemplateParams, order = order)
 
     Ast(typeDecl) +: declAsts
   }
@@ -374,8 +374,7 @@ trait AstForTypesCreator {
     }
 
     val (name, fullname) = uniqueName("enum", typeSpecifier.getName.toString, fullName(typeSpecifier))
-    val code = s"$name${typeFor(typeSpecifier)}"
-    val typeDecl = newTypeDecl(name, registerType(fullname), filename, code, order = order)
+    val typeDecl = newTypeDecl(name, registerType(fullname), filename, typeFor(typeSpecifier), order = order)
 
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
