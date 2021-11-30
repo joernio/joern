@@ -71,7 +71,12 @@ do
     shift
 done
 
-JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
+if [ "$(whoami)" != "root" ]; then
+  JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
+else
+  JOERN_DEFAULT_INSTALL_DIR=/opt/joern
+fi
+
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 JOERN_DEFAULT_VERSION=""
 
