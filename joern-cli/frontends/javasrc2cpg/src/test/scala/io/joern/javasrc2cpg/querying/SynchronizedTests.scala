@@ -1,7 +1,15 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier, Method, MethodParameterIn, MethodReturn, Modifier, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Block,
+  Identifier,
+  Method,
+  MethodParameterIn,
+  MethodReturn,
+  Modifier,
+  Return
+}
 import io.shiftleft.semanticcpg.language._
 
 class SynchronizedTests extends JavaSrcCodeToCpgFixture {
