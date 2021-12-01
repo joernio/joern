@@ -71,7 +71,12 @@ do
     shift
 done
 
-JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
+if [ "$(whoami)" != "root" ]; then
+  JOERN_DEFAULT_INSTALL_DIR=~/bin/joern
+else
+  JOERN_DEFAULT_INSTALL_DIR=/opt/joern
+fi
+
 JOERN_DEFAULT_LINK_DIR="/usr/local/bin"
 JOERN_DEFAULT_VERSION=""
 
@@ -163,8 +168,7 @@ unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
 
 if [ $INTERACTIVE = false ] && [ "$(whoami)" != "root" ]; then
   echo "==============================================================="
-  echo "WARNING: you are NOT root and you are running non-interactively"
-  echo "Symlinks will not be created"
+  echo "you are not root and you are running non-interactively - will not create system symlinks"
   echo "==============================================================="
 else
     # Link to JOERN_LINK_DIR if desired by the user
