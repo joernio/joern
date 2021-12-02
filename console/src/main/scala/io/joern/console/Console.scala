@@ -36,11 +36,11 @@ class Console[T <: Project](executor: AmmoniteExecutor,
 
   implicit object ConsoleImageViewer extends ImageViewer {
     def view(imagePathStr: String): Try[String] = {
+      // We need to copy the file as the original one is only temporary
+      // and gets removed immediately after running this viewer instance asynchronously via .run().
       val tmpFile = File(imagePathStr).copyTo(File.newTemporaryFile(suffix = ".svg"), overwrite = true)
       tmpFile.deleteOnExit(swallowIOExceptions = true)
       Try {
-        // We need to copy the file as the original one is only temporary
-        // and gets removed immediately after running this viewer instance asynchronously via .run().
         Process(Seq(config.tools.imageViewer, tmpFile.path.toAbsolutePath.toString)).run()
       } match {
         case Success(_) =>
