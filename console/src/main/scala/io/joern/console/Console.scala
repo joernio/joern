@@ -49,8 +49,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "Access to the workspace directory",
-    """
+    info = "Access to the workspace directory",
+    longInfo = """
       |All auditing projects are stored in a workspace directory, and `workspace`
       |provides programmatic access to this directory. Entering `workspace` provides
       |a list of all projects, indicating which code the project makes accessible,
@@ -78,21 +78,21 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       |* workspace.reset: create a fresh workspace directory, deleting the current
       |workspace directory
       |
-      |""".stripMargin,
-    "workspace"
+      |""",
+    example = "workspace"
   )
   def workspace: WorkspaceManager[T] = workspaceManager
 
   @Doc(
-    "Close current workspace and open a different one",
-    """ | By default, the workspace in $INSTALL_DIR/workspace is used.
+    info = "Close current workspace and open a different one",
+    longInfo = """ | By default, the workspace in $INSTALL_DIR/workspace is used.
       | This method allows specifying a different workspace directory
       | via the `pathName` parameter.
       | Before changing the workspace, the current workspace will be
       | closed, saving any unsaved changes.
       | If `pathName` points to a non-existing directory, then a new
       | workspace is first created.
-      |""".stripMargin
+      |"""
   )
   def switchWorkspace(pathName: String): Unit = {
     if (workspaceManager != null) {
@@ -104,13 +104,13 @@ class Console[T <: Project](executor: AmmoniteExecutor,
     workspaceManager = new WorkspaceManager[T](pathName, loader)
   }
 
-  @Doc("Currently active project", "", "project")
+  @Doc(info = "Currently active project", example = "project")
   def project: T =
     workspace.projectByCpg(cpg).getOrElse(throw new RuntimeException("No active project"))
 
   @Doc(
-    "CPG of the active project",
-    """
+    info = "CPG of the active project",
+    longInfo = """
       |Upon importing code, a project is created that holds
       |an intermediate representation called `Code Property Graph`. This
       |graph is a composition of low-level program representations such
@@ -123,8 +123,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       |query language constructs can be invoked starting from `cpg`. For example,
       |`cpg.method.l` lists all methods, while `cpg.finding.l` lists all findings
       |of potentially vulnerable code.
-      |""".stripMargin,
-    "cpg.method.l"
+      |""",
+    example = "cpg.method.l"
   )
   implicit def cpg: Cpg = workspace.cpg
 
@@ -150,8 +150,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "Open project by name",
-    """
+    info = "Open project by name",
+    longInfo = """
       |open([projectName])
       |
       |Opens the project named `name` and make it the active project.
@@ -162,8 +162,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       |Upon completion of this operation, the CPG stored in this project
       |can be queried via `cpg`. Returns an optional reference to the
       |project, which is empty on error.
-      |""".stripMargin,
-    """open("projectName")"""
+      |""",
+    example = """open("projectName")"""
   )
   def open(name: String): Option[Project] = {
     val projectName = fixProjectNameAndComplainOnFix(name)
@@ -173,8 +173,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "Open project for input path",
-    """
+    info = "Open project for input path",
+    longInfo = """
       |openForInputPath([input-path])
       |
       |Opens the project of the CPG generated for the input path `input-path`.
@@ -182,7 +182,7 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       |Upon completion of this operation, the CPG stored in this project
       |can be queried via `cpg`. Returns an optional reference to the
       |project, which is empty on error.
-      |""".stripMargin
+      |"""
   )
   def openForInputPath(inputPath: String): Option[Project] = {
     val absInputPath = File(inputPath).path.toAbsolutePath.toString
@@ -209,7 +209,7 @@ class Console[T <: Project](executor: AmmoniteExecutor,
     * project.
     * @param name the name of the project
     * */
-  @Doc("Close and remove project from disk", "", "delete(projectName)")
+  @Doc(info = "Close and remove project from disk", example = "delete(projectName)")
   def delete(name: String): Option[Unit] = {
     defaultProjectNameIfEmpty(name).flatMap(workspace.deleteProject)
   }
@@ -232,11 +232,11 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "undo effects of analyzer",
-    """|Undo the last change, that is, unapply the last
+    info = "undo effects of analyzer",
+    longInfo = """|Undo the last change, that is, unapply the last
        |overlay applied to the active project.
-       |""".stripMargin,
-    "undo"
+       |""",
+    example = "undo"
   )
   def undo: File = {
     project.overlayDirs.lastOption
@@ -264,14 +264,14 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "Write all changes to disk",
-    """
+    info = "Write all changes to disk",
+    longInfo = """
       |Close and reopen all loaded CPGs. This ensures
       |that changes have been flushed to disk.
       |
       |Returns list of affected projects
-      |""".stripMargin,
-    "save"
+      |""",
+    example = "save"
   )
   def save: List[Project] = {
     report("Saving graphs on disk. This may take a while.")
@@ -283,8 +283,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "Create new project from code",
-    """
+    info = "Create new project from code",
+    longInfo = """
       |importCode(<inputPath>, [projectName], [namespaces], [language])
       |
       |Type `importCode` alone to get a list of all supported languages
@@ -320,14 +320,14 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       |If `language` is empty, the language used is guessed by inspecting
       |the filename found and possibly by looking into the file/directory.
       |
-      |""".stripMargin,
-    """importCode("example.jar")"""
+      |""",
+    example = """importCode("example.jar")"""
   )
   def importCode = new ImportCode(this)
 
   @Doc(
-    "Create new project from existing CPG",
-    """
+    info = "Create new project from existing CPG",
+    longInfo = """
       |importCpg(<inputPath>, [projectName])
       |
       |Import an existing CPG. The CPG is stored as part
@@ -342,8 +342,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       |
       |projectName: name of the new project. If this parameter
       |is omitted, the path is derived from `inputPath`
-      |""".stripMargin,
-    """importCpg("cpg.bin.zip")"""
+      |""",
+    example = """importCpg("cpg.bin.zip")"""
   )
   def importCpg(inputPath: String, projectName: String = ""): Option[Cpg] = {
     val name =
@@ -393,12 +393,12 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   }
 
   @Doc(
-    "Close project by name",
-    """|Close project. Resources are freed but the project remains on disk.
+    info = "Close project by name",
+    longInfo = """|Close project. Resources are freed but the project remains on disk.
        |The project remains active, that is, calling `cpg` now raises an
        |exception. A different project can now be activated using `open`.
-       |""".stripMargin,
-    "close(projectName)"
+       |""",
+    example = "close(projectName)"
   )
   def close(name: String): Option[Project] = {
     defaultProjectNameIfEmpty(name).flatMap(workspace.closeProject)

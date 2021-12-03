@@ -1,20 +1,19 @@
 package io.joern.console
 
 import org.apache.commons.lang.WordUtils
-import overflowdb.traversal.help.{Doc, Table}
-
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
+import overflowdb.traversal.help.DocFinder._
+import overflowdb.traversal.help.{Table, DocFinder}
 
 object Help {
 
   private val width = 80
 
-  def overview[C: TypeTag]: String = {
+  def overview(clazz: Class[_]): String = {
     val columnNames = List("command", "description", "example")
-    val rows = Doc
-      .docByMethodName(typeOf[C])
+    val rows = DocFinder
+      .findDocumentedMethodsOf(clazz)
       .map {
-        case (name, doc) => List(name, doc.short, doc.example)
+        case StepDoc(_, funcName, doc) => List(funcName, doc.info, doc.example)
       }
       .toList ++ List(runRow)
 
@@ -58,16 +57,16 @@ object Help {
         |""".stripMargin
     )
 
-  def codeForHelpCommand[C: TypeTag]: String = {
-    val membersCode = Doc
-      .docByMethodName(typeOf[C])
+  def codeForHelpCommand(clazz: Class[_]): String = {
+    val membersCode = DocFinder
+      .findDocumentedMethodsOf(clazz)
       .map {
-        case (funcName, doc) =>
-          s"val $funcName : String = ${Help.format(doc.long)}"
+        case StepDoc(_, funcName, doc) =>
+          s"val $funcName : String = ${Help.format(doc.longInfo)}"
       }
       .mkString("\n")
 
-    val overview = Help.overview[C]
+    val overview = Help.overview(clazz)
     s"""
        | class Helper() {
        |

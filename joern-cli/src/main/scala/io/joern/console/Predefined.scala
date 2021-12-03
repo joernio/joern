@@ -38,7 +38,7 @@ object Predefined {
 
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +
-      Help.codeForHelpCommand[io.joern.console.JoernConsole]
+      Help.codeForHelpCommand(classOf[io.joern.console.JoernConsole])
   }
 
 }
