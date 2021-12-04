@@ -149,7 +149,7 @@ class Ghidra2Cpg() {
           ).createAndApply()
           new LoHiPass(cpg).createAndApply()
         }
-      case "AARCH64" =>
+      case "AARCH64" | "ARM" =>
         functions.foreach { function =>
           new ArmFunctionPass(
             program,
