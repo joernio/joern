@@ -8,7 +8,7 @@ class HelpTests extends AnyWordSpec with Matchers {
 
   "Help" should {
     "provide overview of commands as table" in {
-      Help.overview[io.joern.console.Console[Project]].contains("| CPG") shouldBe true
+      Help.overview(classOf[io.joern.console.Console[Project]]).contains("| CPG") shouldBe true
     }
   }
 
