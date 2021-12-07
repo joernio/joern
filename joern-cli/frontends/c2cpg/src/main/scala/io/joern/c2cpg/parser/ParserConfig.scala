@@ -16,7 +16,7 @@ object ParserConfig {
         val s = define.split("=")
         s.head -> s(1)
       case define => define -> "true"
-    }.toMap,
+    }.toMap ++ DefaultDefines.DEFAULT_CALL_CONVENTIONS,
     config.logProblems,
     config.logPreprocessor
   )
