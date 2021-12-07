@@ -12,6 +12,8 @@ trait AstForStatementsCreator {
 
   this: AstCreator =>
 
+  import AstCreatorHelper.OptionSafeAst
+
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int): Ast = {
     val cpgBlock = NewBlock()
       .order(order)
@@ -66,11 +68,7 @@ trait AstForStatementsCreator {
       .lineNumber(line(ret))
       .columnNumber(column(ret))
     val expr = nullSafeAst(ret.getReturnValue, 1)
-    val ast = Ast(cpgReturn).withChild(expr)
-    expr.root match {
-      case Some(r) => ast.withArgEdge(cpgReturn, r)
-      case None    => ast
-    }
+    Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
   }
 
   private def astForBreakStatement(br: IASTBreakStatement, order: Int): Ast = {
@@ -111,16 +109,10 @@ trait AstForStatementsCreator {
     val conditionAst = nullSafeAst(doStmt.getCondition, 2)
     val stmtAsts = nullSafeAst(doStmt.getBody, 1)
 
-    val ast = Ast(doNode)
+    Ast(doNode)
       .withChild(conditionAst)
       .withChildren(stmtAsts)
-
-    conditionAst.root match {
-      case Some(r) =>
-        ast.withConditionEdge(doNode, r)
-      case None =>
-        ast
-    }
+      .withConditionEdge(doNode, conditionAst.root)
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement, order: Int): Ast = {
@@ -131,16 +123,10 @@ trait AstForStatementsCreator {
     val conditionAst = nullSafeAst(switchStmt.getControllerExpression, 1)
     val stmtAsts = nullSafeAst(switchStmt.getBody, 2)
 
-    val ast = Ast(switchNode)
+    Ast(switchNode)
       .withChild(conditionAst)
       .withChildren(stmtAsts)
-
-    conditionAst.root match {
-      case Some(r) =>
-        ast.withConditionEdge(switchNode, r)
-      case None =>
-        ast
-    }
+      .withConditionEdge(switchNode, conditionAst.root)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement, order: Int): Seq[Ast] = {
@@ -204,17 +190,12 @@ trait AstForStatementsCreator {
     val updateAst = nullSafeAst(forStmt.getIterationExpression, continuedOrder + 2)
     val stmtAst = nullSafeAst(forStmt.getBody, continuedOrder + 3)
 
-    val ast = Ast(forNode)
+    Ast(forNode)
       .withChildren(initAsts)
       .withChild(compareAst)
       .withChild(updateAst)
       .withChildren(stmtAst)
-
-    compareAst.root match {
-      case Some(c) =>
-        ast.withConditionEdge(forNode, c)
-      case None => ast
-    }
+      .withConditionEdge(forNode, compareAst.root)
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement, order: Int): Ast = {
@@ -242,16 +223,10 @@ trait AstForStatementsCreator {
     val conditionAst = nullSafeAst(whileStmt.getCondition, 1)
     val stmtAsts = nullSafeAst(whileStmt.getBody, 2)
 
-    val ast = Ast(whileNode)
+    Ast(whileNode)
       .withChild(conditionAst)
       .withChildren(stmtAsts)
-
-    conditionAst.root match {
-      case Some(r) =>
-        ast.withConditionEdge(whileNode, r)
-      case None =>
-        ast
-    }
+      .withConditionEdge(whileNode, conditionAst.root)
   }
 
   private def astForIf(ifStmt: IASTIfStatement, order: Int): Ast = {
@@ -267,17 +242,11 @@ trait AstForStatementsCreator {
       Ast(elseNode).withChildren(elseAsts)
     } else Ast()
 
-    val ast = Ast(ifNode)
+    Ast(ifNode)
       .withChild(conditionAst)
       .withChildren(stmtAsts)
       .withChild(elseChild)
-
-    conditionAst.root match {
-      case Some(r) =>
-        ast.withConditionEdge(ifNode, r)
-      case None =>
-        ast
-    }
+      .withConditionEdge(ifNode, conditionAst.root)
   }
 
 }
