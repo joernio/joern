@@ -14,6 +14,8 @@ class MipsReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
     implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
     cpg.call.nameNot("<operator>.*").foreach { from =>
       // We expect v1|v0 as return
+      // Note: this is not sufficient but a first approach without using data flow
+      //        the first .cfgNext is skipping a _nop instruction after the call
       val to = from.cfgNext.cfgNext.isCall.argument.code("v(0|1)").headOption
       if (to.nonEmpty) {
         diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, Seq((PropertyNames.VARIABLE, from.code)))
