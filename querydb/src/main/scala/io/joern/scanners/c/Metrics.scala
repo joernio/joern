@@ -47,7 +47,7 @@ object Metrics extends QueryBundle {
       description = s"This query identifies functions with a cyclomatic complexity higher than $n",
       score = 1.0,
       withStrRep({ cpg =>
-        cpg.method.internal.filter(_.controlStructure.size > n)
+        cpg.method.internal.filter(_.controlStructure.size > n).nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),
       codeExamples = CodeExamples(
@@ -128,7 +128,7 @@ object Metrics extends QueryBundle {
       description = "This query identifies functions with more than one return",
       score = 1.0,
       withStrRep({ cpg =>
-        cpg.method.internal.filter(_.ast.isReturn.l.size > 1)
+        cpg.method.internal.filter(_.ast.isReturn.l.size > 1).nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),
       codeExamples = CodeExamples(
@@ -167,6 +167,7 @@ object Metrics extends QueryBundle {
             _.ast.isControlStructure
               .controlStructureType("(FOR|DO|WHILE)")
               .size > n)
+          .nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),
       codeExamples = CodeExamples(
@@ -202,7 +203,7 @@ object Metrics extends QueryBundle {
       description = s"This query identifies functions with a nesting level higher than $n",
       score = 1.0,
       withStrRep({ cpg =>
-        cpg.method.internal.filter(_.depth(_.isControlStructure) > n)
+        cpg.method.internal.filter(_.depth(_.isControlStructure) > n).nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),
       codeExamples = CodeExamples(
