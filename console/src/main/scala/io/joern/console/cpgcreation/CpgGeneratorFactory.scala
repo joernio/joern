@@ -10,6 +10,24 @@ import overflowdb.Config
 import java.nio.file.Path
 import scala.util.Try
 
+object CpgGeneratorFactory {
+  private val KNOWN_LANGUAGES = Set(
+    Languages.C,
+    Languages.CSHARP,
+    Languages.GOLANG,
+    Languages.GHIDRA,
+    Languages.JAVA,
+    Languages.JAVASCRIPT,
+    Languages.PYTHON,
+    Languages.FUZZY_TEST_LANG,
+    Languages.LLVM,
+    Languages.PHP,
+    Languages.KOTLIN,
+    Languages.NEWC,
+    Languages.JAVASRC
+  )
+}
+
 class CpgGeneratorFactory(config: ConsoleConfig) {
 
   /**
@@ -35,23 +53,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
       }
   }
 
-  def languageIsKnown(language: String): Boolean = {
-    Set(
-      Languages.C,
-      Languages.CSHARP,
-      Languages.GOLANG,
-      Languages.GHIDRA,
-      Languages.JAVA,
-      Languages.JAVASCRIPT,
-      Languages.PYTHON,
-      Languages.FUZZY_TEST_LANG,
-      Languages.LLVM,
-      Languages.PHP,
-      Languages.KOTLIN,
-      Languages.NEWC,
-      Languages.JAVASRC
-    ).contains(language)
-  }
+  def languageIsKnown(language: String): Boolean = CpgGeneratorFactory.KNOWN_LANGUAGES.contains(language)
 
   def runGenerator(frontend: CpgGenerator,
                    inputPath: String,

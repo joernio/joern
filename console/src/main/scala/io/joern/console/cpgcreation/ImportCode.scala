@@ -82,9 +82,10 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
                             description: String = "Fuzzy Parser for C/C++",
                             extension: String = "c")
       extends Frontend(name, language, description) {
-    def fromString(str: String): Cpg = {
+
+    def fromString(str: String, args: List[String] = List()): Cpg = {
       withCodeInTmpFile(str, "tmp." + extension) { dir =>
-        apply(dir.path.toString)
+        apply(dir.path.toString, args = args)
       } match {
         case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
         case Success(value)     => value
