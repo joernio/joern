@@ -52,8 +52,15 @@ class MipsFunctionPass(currentProgram: Program,
                     "0x" + input.getWordOffset.toHexString,
                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     } else if (input.isUnique) {
-      val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset,
-                                            input.getDef.getInputs.toList.head.getAddress.getOffset.toString)
+      var valueString = ""
+      if (input.getDescendants.asScala.toList.head.getOutput == null) {
+        valueString = input.getDef.getInputs.toList.head.getAddress.getOffset.toString
+      } else {
+        valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
+      }
+
+      val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
+
       createLiteral(value,
                     index + 1,
                     index + 1,
@@ -99,7 +106,6 @@ class MipsFunctionPass(currentProgram: Program,
     BRANCH = 4;
     CBRANCH = 5;
     BRANCHIND = 6;
-    CALLIND = 8;
     CALLOTHER = 9;
     RETURN = 10;
     INT_ZEXT = 17;
@@ -145,7 +151,7 @@ class MipsFunctionPass(currentProgram: Program,
        */
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
-      case CALL =>
+      case CALL | CALLIND =>
         handleAssignment(instruction, callNode, pcodeAst.getOutput, pcodeAst.getInput(0), index)
       case INT_ADD | FLOAT_ADD =>
         handleTwoArguments(instruction,

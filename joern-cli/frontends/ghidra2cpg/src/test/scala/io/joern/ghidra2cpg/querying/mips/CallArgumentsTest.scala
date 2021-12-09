@@ -45,8 +45,10 @@ class CallArgumentsTest extends GhidraBinToCpgSuite {
       .l shouldBe List("abcdefghij")
   }
 
-  "The call to 'puts' should have two arguments " in {
-    cpg.method.name("main").call.name("puts").argument.code.
-      l shouldBe  List("abcdefghij")
+  "The call to 'puts' in 'main' should have 'abcdefghij' arguments " in {
+    cpg.method.name("main").call.name("puts").argument.code.l shouldBe List("abcdefghij")
+  }
+  "The call to 'puts' in 'test' should have '__s' arguments " in {
+    cpg.method.name("test").call.name("puts").argument.code.l shouldBe List("__s")
   }
 }
