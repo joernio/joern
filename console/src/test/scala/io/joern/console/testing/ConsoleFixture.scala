@@ -2,10 +2,12 @@ package io.joern.console.testing
 
 import better.files.Dsl.mkdir
 import better.files.File
+import io.joern.c2cpg.C2Cpg
 import io.joern.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, FrontendConfig, InstallConfig}
 import io.joern.fuzzyc2cpg.FuzzyC2Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
 
 import java.nio.file.Path
 
@@ -41,12 +43,22 @@ class TestConsole(workspaceDir: String)
   override def importCode: ImportCode[Project] = new ImportCode(this) {
     override val generatorFactory = new TestCpgGeneratorFactory(config)
 
-    override def c: SourceBasedFrontend = new SourceBasedFrontend("testCFrontend") {
+    override def oldc: SourceBasedFrontend = new SourceBasedFrontend("testFuzzyCFrontend", language = Languages.C) {
       override def cpgGeneratorForLanguage(language: String,
                                            config: FrontendConfig,
                                            rootPath: Path,
                                            args: List[String]): Option[CpgGenerator] =
         generatorFactory.forLanguage(language)
+    }
+
+    override def c: SourceBasedFrontend = new SourceBasedFrontend("testCFrontend", language = Languages.NEWC) {
+      override def cpgGeneratorForLanguage(language: String,
+                                           config: FrontendConfig,
+                                           rootPath: Path,
+                                           args: List[String]): Option[CpgGenerator] = {
+        val newConfig = new ConsoleConfig(TestConsole.this.config.install, config.withArgs(args))
+        new TestCpgGeneratorFactory(newConfig).forLanguage(language)
+      }
     }
   }
 }
@@ -58,8 +70,30 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
     Some(new FuzzyCTestingFrontend)
   }
 
-  override def forLanguage(language: String): Option[CpgGenerator] = {
-    Some(new FuzzyCTestingFrontend)
+  override def forLanguage(language: String): Option[CpgGenerator] = language match {
+    case Languages.C    => Some(new FuzzyCTestingFrontend)
+    case Languages.NEWC => Some(new CTestingFrontend)
+    case _              => None // no other languages are tested here
+  }
+
+  private class CTestingFrontend extends CpgGenerator {
+
+    override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
+      val c2cpg = new C2Cpg()
+      val defines = config.frontend.cmdLineParams.toList
+        .sliding(2)
+        .toList
+        .collect {
+          case List(h, t) if h == "--define" => t
+        }
+      val cpg =
+        c2cpg.runAndOutput(C2Cpg.Config(Set(inputPath), outputPath, defines = defines.toSet))
+      cpg.close()
+      Some(outputPath)
+    }
+
+    def isAvailable: Boolean = true
+
   }
 
   private class FuzzyCTestingFrontend extends CpgGenerator {

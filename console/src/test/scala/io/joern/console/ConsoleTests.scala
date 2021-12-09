@@ -20,14 +20,14 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     "allow importing code with specific module" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode.c(codeDir.toString)
+      console.importCode(codeDir.toString)
       console.workspace.numberOfProjects shouldBe 1
     }
 
     "allow importing code" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       console.workspace.numberOfProjects shouldBe 1
-      Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
+      Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
       console.project.appliedOverlays shouldBe List(Base.overlayName,
                                                     ControlFlow.overlayName,
                                                     TypeRelations.overlayName,
@@ -36,6 +36,23 @@ class ConsoleTests extends AnyWordSpec with Matchers {
                                                            ControlFlow.overlayName,
                                                            TypeRelations.overlayName,
                                                            CallGraph.overlayName)
+    }
+
+    "allow importing code with defines and additional args" in ConsoleFixture() { (console, _) =>
+      val code =
+        """
+          |#ifdef D
+          |int foo() {};
+          |#endif
+          |""".stripMargin
+      // importing without args should not yield foo
+      console.importCode.c.fromString(code)
+      console.workspace.numberOfProjects shouldBe 1
+      Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+
+      // importing with args should yield foo
+      console.importCode.c.fromString(code, List("--define", "D"))
+      Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
     }
 
     "allow importing code and setting project name" in ConsoleFixture() { (console, codeDir) =>
@@ -71,7 +88,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "set project to active" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString, "foo")
-      Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
+      Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
     }
 
   }
@@ -114,7 +131,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       try {
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
-        Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
+        Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
         console.project.appliedOverlays shouldBe List(Base.overlayName,
                                                       ControlFlow.overlayName,
                                                       TypeRelations.overlayName,
@@ -130,7 +147,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCpg(tmpCpg.toString, "foobar")
         console.workspace.numberOfProjects shouldBe 1
         console.workspace.project("foobar") should not be empty
-        Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
+        Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
       } finally {
         Some(tmpCpg).find(_.exists).foreach(_.delete())
       }
@@ -166,7 +183,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCpg(tmpCpg.toString)
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
-        Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
+        Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
         console.project.appliedOverlays shouldBe List(Base.overlayName,
                                                       ControlFlow.overlayName,
                                                       TypeRelations.overlayName,
@@ -210,9 +227,9 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString, "foo")
       console.importCode(codeDir.toString, "bar")
       console.close
-      a[RuntimeException] should be thrownBy (console.cpg)
+      a[RuntimeException] should be thrownBy console.cpg
       console.open("foo")
-      Set("main", "bar").subsetOf(console.cpg.method.name.toSet)
+      Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
     }
   }
 
@@ -240,14 +257,14 @@ class ConsoleTests extends AnyWordSpec with Matchers {
                                                     ControlFlow.overlayName,
                                                     TypeRelations.overlayName,
                                                     CallGraph.overlayName)
-      val numOverlayFilesBefore = console.project.path.resolve("overlays").toFile.list().size
+      val numOverlayFilesBefore = console.project.path.resolve("overlays").toFile.list().length
       numOverlayFilesBefore shouldBe 4
       console._runAnalyzer(new Base, new ControlFlow, new TypeRelations, new CallGraph)
       console.project.appliedOverlays shouldBe List(Base.overlayName,
                                                     ControlFlow.overlayName,
                                                     TypeRelations.overlayName,
                                                     CallGraph.overlayName)
-      console.project.path.resolve("overlays").toFile.list().size shouldBe numOverlayFilesBefore
+      console.project.path.resolve("overlays").toFile.list().length shouldBe numOverlayFilesBefore
     }
 
     "store directory of zip files for each overlay in project" in ConsoleFixture() { (console, codeDir) =>
@@ -381,7 +398,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "switchWorkspace" should {
 
     "create workspace if directory does not exist" in ConsoleFixture() { (console, _) =>
-      val otherWorkspaceDir = ("/tmp" / "workspace-doesNotExist")
+      val otherWorkspaceDir = "/tmp" / "workspace-doesNotExist"
       try {
         otherWorkspaceDir.exists shouldBe false
         console.switchWorkspace(otherWorkspaceDir.path.toString)
@@ -395,12 +412,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow changing workspaces" in ConsoleFixture() { (console, codeDir) =>
       val firstWorkspace = File(console.workspace.getPath)
       File.usingTemporaryDirectory("console") { otherWorkspaceDir =>
-        console.importCode(codeDir.toString, "projectInFirstWorkspace")
+        console.importCode.oldc(codeDir.toString, "projectInFirstWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.switchWorkspace(otherWorkspaceDir.path.toString)
         console.workspace.numberOfProjects shouldBe 0
 
-        console.importCode(codeDir.toString, "projectInSecondWorkspace")
+        console.importCode.oldc(codeDir.toString, "projectInSecondWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.project.name shouldBe "projectInSecondWorkspace"
         console.switchWorkspace(firstWorkspace.path.toString)
