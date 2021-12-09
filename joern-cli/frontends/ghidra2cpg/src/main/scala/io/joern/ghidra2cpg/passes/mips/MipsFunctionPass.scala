@@ -28,7 +28,7 @@ class MipsFunctionPass(currentProgram: Program,
     extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompiler) {
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
 
-  def resolveVarNode(instruction: Instruction, callNode: CfgNodeNew, input: Varnode, index: Int): CfgNodeNew = {
+  def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {
       var name = input.getHigh.getName
       val high = input.getHigh
@@ -67,6 +67,8 @@ class MipsFunctionPass(currentProgram: Program,
                     input.getWordOffset.toHexString,
                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     } else {
+      // we default to literal
+      // identifier could be useful too
       createLiteral(input.toString(),
                     index + 1,
                     index + 1,
@@ -74,9 +76,9 @@ class MipsFunctionPass(currentProgram: Program,
                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     }
   }
-  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, from: Varnode, index: Int): Unit = {
-    val toNode = resolveVarNode(instruction, callNode, to, 2)
-    connectCallToArgument(callNode, toNode)
+  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode): Unit = {
+    val node = resolveVarNode(instruction, to, 1)
+    connectCallToArgument(callNode, node)
   }
   def handleTwoArguments(instruction: Instruction,
                          callNode: CfgNodeNew,
@@ -84,8 +86,8 @@ class MipsFunctionPass(currentProgram: Program,
                          arg1: Varnode,
                          operand: String,
                          name: String): Unit = {
-    val firstOp = resolveVarNode(instruction, callNode, arg, 1)
-    val secondOp = resolveVarNode(instruction, callNode, arg1, 2)
+    val firstOp = resolveVarNode(instruction, arg, 1)
+    val secondOp = resolveVarNode(instruction, arg1, 2)
     val code = s"${firstOp.code} $operand ${secondOp.code}"
     val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
@@ -94,7 +96,7 @@ class MipsFunctionPass(currentProgram: Program,
     connectCallToArgument(callNode, opNode)
   }
   def handlePtrSub(instruction: Instruction, callNode: CfgNodeNew, varNode: Varnode, index: Int): Unit = {
-    val arg = resolveVarNode(instruction, callNode, varNode, index)
+    val arg = resolveVarNode(instruction, varNode, index)
     connectCallToArgument(callNode, arg)
   }
   def handleDefault(varNode: PcodeOp): Unit = {
@@ -102,57 +104,10 @@ class MipsFunctionPass(currentProgram: Program,
   }
   def resolveArgument(instruction: Instruction, callNode: CfgNodeNew, pcodeAst: PcodeOp, index: Int): Unit = {
     pcodeAst.getOpcode match {
-      /*
-    BRANCH = 4;
-    CBRANCH = 5;
-    BRANCHIND = 6;
-    CALLOTHER = 9;
-    RETURN = 10;
-    INT_ZEXT = 17;
-    INT_SEXT = 18;
-    INT_CARRY = 21;
-    INT_SCARRY = 22;
-    INT_SBORROW = 23;
-    INT_2COMP = 24;
-    INT_NEGATE = 25;
-    INT_AND = 27;
-    INT_OR = 28;
-    INT_LEFT = 29;
-    INT_RIGHT = 30;
-    INT_SRIGHT = 31;
-    INT_REM = 35;
-    INT_SREM = 36;
-    BOOL_NEGATE = 37;
-    BOOL_XOR = 38;
-    BOOL_AND = 39;
-    BOOL_OR = 40;
-    FLOAT_EQUAL = 41;
-    FLOAT_NOTEQUAL = 42;
-    FLOAT_LESS = 43;
-    FLOAT_LESSEQUAL = 44;
-    FLOAT_NAN = 46;
-    FLOAT_NEG = 51;
-    FLOAT_ABS = 52;
-    FLOAT_SQRT = 53;
-    FLOAT_INT2FLOAT = 54;
-    FLOAT_FLOAT2FLOAT = 55;
-    FLOAT_TRUNC = 56;
-    FLOAT_CEIL = 57;
-    FLOAT_FLOOR = 58;
-    FLOAT_ROUND = 59;
-    INDIRECT = 61;
-    SEGMENTOP = 67;
-    CPOOLREF = 68;
-    NEW = 69;
-    INSERT = 70;
-    EXTRACT = 71;
-    POPCOUNT = 72;
-    PCODE_MAX = 73;
-       */
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
       case CALL | CALLIND =>
-        handleAssignment(instruction, callNode, pcodeAst.getOutput, pcodeAst.getInput(0), index)
+        handleAssignment(instruction, callNode, pcodeAst.getOutput)
       case INT_ADD | FLOAT_ADD =>
         handleTwoArguments(instruction,
                            callNode,
@@ -187,7 +142,7 @@ class MipsFunctionPass(currentProgram: Program,
       case INT_OR =>
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
       case COPY | LOAD | STORE | SUBPIECE =>
-        handleAssignment(instruction, callNode, pcodeAst.getOutput, pcodeAst.getInput(0), index)
+        handleAssignment(instruction, callNode, pcodeAst.getOutput)
       case CAST =>
         // we need to "unpack" the def of the first input of the cast
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
@@ -198,7 +153,7 @@ class MipsFunctionPass(currentProgram: Program,
     }
   }
 
-  def resolveCallIndArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
+  def addCallArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
     val opCodes = highFunction
       .getPcodeOps(instruction.getAddress())
       .asScala
@@ -206,6 +161,8 @@ class MipsFunctionPass(currentProgram: Program,
     if (opCodes.size < 2) {
       return
     }
+    // first input is the address to the called function
+    // we know it already
     val arguments = opCodes.head.getInputs.toList.drop(1)
     arguments.zipWithIndex.foreach {
       case (value, index) =>
@@ -213,22 +170,8 @@ class MipsFunctionPass(currentProgram: Program,
           resolveArgument(instruction, callNode, value.getDef, index)
     }
   }
-  def resolveCallArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
-    // we know that this is a call
-    val opCodes = highFunction
-      .getPcodeOps(instruction.getAddress())
-      .asScala
-      .toList
-    if (opCodes.size < 2) {
-      return
-    }
-    val arguments = opCodes.head.getInputs.toList.drop(1)
-    arguments.zipWithIndex.foreach {
-      case (value, index) =>
-        resolveArgument(instruction, callNode, value.getDef, index)
-    }
-  }
-  def addArguments(instruction: Instruction, instructionNode: CfgNodeNew): Unit = {
+
+  def addInstructionArguments(instruction: Instruction, instructionNode: CfgNodeNew): Unit = {
     for (index <- 0 until instruction.getNumOperands) {
       val opObjects = instruction.getOpObjects(index)
       for (opObject <- opObjects) {
@@ -276,10 +219,10 @@ class MipsFunctionPass(currentProgram: Program,
     val opCodes = instruction.getPcode.toList //.last.getOpcode
     opCodes.last.getOpcode match {
       case CALLIND | CALL =>
-        resolveCallIndArguments(instruction, callNode)
+        addCallArguments(instruction, callNode)
       case _ =>
         // regular instructions, eg. add/sub
-        addArguments(instruction, callNode)
+        addInstructionArguments(instruction, callNode)
     }
   }
 
