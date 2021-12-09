@@ -68,14 +68,8 @@ class MipsFunctionPass(currentProgram: Program,
     }
   }
   def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, from: Varnode, index: Int): Unit = {
-    val fromNode = resolveVarNode(instruction, callNode, from, 1)
     val toNode = resolveVarNode(instruction, callNode, to, 2)
-    //val assingmentNode = createCallNode(code = s"${toNode.code} = ${fromNode.code}", "<opeator>.assignment", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-
-    //connectCallToArgument(assingmentNode, toNode)
-    //connectCallToArgument(assingmentNode, fromNode)
     connectCallToArgument(callNode, toNode)
-    connectCallToArgument(callNode, fromNode)
   }
   def handleTwoArguments(instruction: Instruction,
                          callNode: CfgNodeNew,
@@ -152,13 +146,7 @@ class MipsFunctionPass(currentProgram: Program,
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
       case CALL =>
-        pcodeAst.getInputs.zipWithIndex.foreach {
-          case (value, index) =>
-            if (value.getDef != null)
-              resolveArgument(instruction, callNode, value.getDef, index)
-            else
-              resolveVarNode(instruction, callNode, value, index)
-        }
+        handleAssignment(instruction, callNode, pcodeAst.getOutput, pcodeAst.getInput(0), index)
       case INT_ADD | FLOAT_ADD =>
         handleTwoArguments(instruction,
                            callNode,
