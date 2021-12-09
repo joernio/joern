@@ -43,7 +43,26 @@ class ConsoleTests extends AnyWordSpec with Matchers {
                                                            CallGraph.overlayName)
     }
 
-    "allow importing code with defines and additional args" in ConsoleFixture() { (console, _) =>
+    "allow importing code from file with defines and additional args" in ConsoleFixture() { (console, codeDir) =>
+      val code =
+        """
+          |#ifdef D
+          |int foo() {};
+          |#endif
+          |""".stripMargin
+      File.usingTemporaryFile("console", suffix = ".c", parent = Some(codeDir)) { file =>
+        file.write(code)
+        console.importCode.c(inputPath = codeDir.toString)
+        // importing without args should not yield foo
+        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+
+        // importing with args should yield foo
+        console.importCode.c(inputPath = codeDir.toString(), args = List("--define", "D"))
+        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
+      }
+    }
+
+    "allow importing code from string with defines and additional args" in ConsoleFixture() { (console, _) =>
       val code =
         """
           |#ifdef D
@@ -52,7 +71,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
           |""".stripMargin
       // importing without args should not yield foo
       console.importCode.c.fromString(code)
-      console.workspace.numberOfProjects shouldBe 1
       Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
 
       // importing with args should yield foo
