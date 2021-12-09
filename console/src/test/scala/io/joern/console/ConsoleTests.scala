@@ -412,12 +412,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow changing workspaces" in ConsoleFixture() { (console, codeDir) =>
       val firstWorkspace = File(console.workspace.getPath)
       File.usingTemporaryDirectory("console") { otherWorkspaceDir =>
-        console.importCode.oldc(codeDir.toString, "projectInFirstWorkspace")
+        console.importCode(codeDir.toString, "projectInFirstWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.switchWorkspace(otherWorkspaceDir.path.toString)
         console.workspace.numberOfProjects shouldBe 0
 
-        console.importCode.oldc(codeDir.toString, "projectInSecondWorkspace")
+        console.importCode(codeDir.toString, "projectInSecondWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.project.name shouldBe "projectInSecondWorkspace"
         console.switchWorkspace(firstWorkspace.path.toString)
