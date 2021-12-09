@@ -60,27 +60,22 @@ class MipsFunctionPass(currentProgram: Program,
                     input.getWordOffset.toHexString,
                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     } else {
-      //if (input.getDef != null) {
-      //  resolveArgument(instruction, callNode, input.getDef, index)
-      //} else {
-      //  input.toString()
       createLiteral(input.toString(),
                     index + 1,
                     index + 1,
                     input.toString(),
                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-      //}
     }
   }
-  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, from:Varnode, index: Int):Unit ={
+  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, from: Varnode, index: Int): Unit = {
     val fromNode = resolveVarNode(instruction, callNode, from, 1)
     val toNode = resolveVarNode(instruction, callNode, to, 2)
     //val assingmentNode = createCallNode(code = s"${toNode.code} = ${fromNode.code}", "<opeator>.assignment", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     //connectCallToArgument(assingmentNode, toNode)
     //connectCallToArgument(assingmentNode, fromNode)
-    connectCallToArgument(callNode,toNode)
-    connectCallToArgument(callNode,fromNode)
+    connectCallToArgument(callNode, toNode)
+    connectCallToArgument(callNode, fromNode)
   }
   def handleTwoArguments(instruction: Instruction,
                          callNode: CfgNodeNew,
@@ -154,15 +149,16 @@ class MipsFunctionPass(currentProgram: Program,
     POPCOUNT = 72;
     PCODE_MAX = 73;
        */
-      case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL => logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
+      case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
+        logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
       case CALL =>
         pcodeAst.getInputs.zipWithIndex.foreach {
-        case (value, index) =>
-          if (value.getDef != null)
-            resolveArgument(instruction, callNode, value.getDef, index)
-          else
-            resolveVarNode(instruction, callNode, value, index)
-      }
+          case (value, index) =>
+            if (value.getDef != null)
+              resolveArgument(instruction, callNode, value.getDef, index)
+            else
+              resolveVarNode(instruction, callNode, value, index)
+        }
       case INT_ADD | FLOAT_ADD =>
         handleTwoArguments(instruction,
                            callNode,
@@ -196,13 +192,14 @@ class MipsFunctionPass(currentProgram: Program,
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
       case INT_OR =>
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
-      case COPY | LOAD | STORE | SUBPIECE => handleAssignment(instruction, callNode, pcodeAst.getOutput, pcodeAst.getInput(0), index)
+      case COPY | LOAD | STORE | SUBPIECE =>
+        handleAssignment(instruction, callNode, pcodeAst.getOutput, pcodeAst.getInput(0), index)
       case CAST =>
         // we need to "unpack" the def of the first input of the cast
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
         resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
       case PTRSUB | PTRADD => handlePtrSub(instruction, callNode, pcodeAst.getOutput, index)
-      case _      => handleDefault(pcodeAst)
+      case _               => handleDefault(pcodeAst)
 
     }
   }
@@ -234,7 +231,7 @@ class MipsFunctionPass(currentProgram: Program,
     val arguments = opCodes.head.getInputs.toList.drop(1)
     arguments.zipWithIndex.foreach {
       case (value, index) =>
-          resolveArgument(instruction, callNode, value.getDef, index)
+        resolveArgument(instruction, callNode, value.getDef, index)
     }
   }
   def addArguments(instruction: Instruction, instructionNode: CfgNodeNew): Unit = {
