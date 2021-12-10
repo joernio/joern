@@ -5,8 +5,8 @@ import io.joern.console.FrontendConfig
 import java.nio.file.Path
 
 /**
-  * C/C++ language frontend using Eclipse CDT. Translates C/C++ source files
-  * into code property graphs via fuzzy parsing.
+  * C/C++ language frontend that translates C/C++ source files
+  * into code property graphs using Eclipse CDT parsing / preprocessing.
   * */
 case class CCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
   lazy val command: Path = rootPath.resolve("c2cpg.sh")
