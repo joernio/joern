@@ -191,9 +191,9 @@ object Types {
 
   // Types will be added to the CPG as soon as everything
   // else is done
-  val types: mutable.SortedSet[String] = scala.collection.mutable.SortedSet[String]()
+  val types: mutable.Set[String] = scala.collection.mutable.Set[String]()
   def registerType(typeName: String): String = {
     types += typeName
     typeName
   }
-}
+
