@@ -76,8 +76,8 @@ class MipsFunctionPass(currentProgram: Program,
                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     }
   }
-  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode): Unit = {
-    val node = resolveVarNode(instruction, to, 1)
+  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, index: Int): Unit = {
+    val node = resolveVarNode(instruction, to, index)
     connectCallToArgument(callNode, node)
   }
   def handleTwoArguments(instruction: Instruction,
@@ -107,7 +107,7 @@ class MipsFunctionPass(currentProgram: Program,
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
       case CALL | CALLIND =>
-        handleAssignment(instruction, callNode, pcodeAst.getOutput)
+        handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
       case INT_ADD | FLOAT_ADD =>
         handleTwoArguments(instruction,
                            callNode,
@@ -142,7 +142,7 @@ class MipsFunctionPass(currentProgram: Program,
       case INT_OR =>
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
       case COPY | LOAD | STORE | SUBPIECE =>
-        handleAssignment(instruction, callNode, pcodeAst.getOutput)
+        handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
       case CAST =>
         // we need to "unpack" the def of the first input of the cast
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
