@@ -4,6 +4,9 @@ import io.shiftleft.codepropertygraph.Cpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+// needed in the latest cast-effect version to run .unsafeRunSync()
+import cats.effect.unsafe.implicits.global
+
 import java.nio.file.{Path, Paths}
 
 class AmmoniteExecutorTest extends AnyWordSpec with Matchers {

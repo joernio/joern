@@ -6,13 +6,13 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
   "org.antlr"            %  "antlr4-runtime"           % Versions.antlr,
-  "org.apache.commons"   %  "commons-lang3"            % "3.5",
-  "commons-cli"          %  "commons-cli"              % "1.4",
+  "org.apache.commons"   %  "commons-lang3"            % "3.12.0",
+  "commons-cli"          %  "commons-cli"              % "1.5.0",
   "com.github.pathikrit" %% "better-files"             % "3.9.1",
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.2",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.14.1" % Runtime,
+  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.15.0" % Runtime,
   "com.novocode"         %  "junit-interface"          % "0.11"  % Test,
-  "junit"                %  "junit"                    % "4.12"  % Test,
+  "junit"                %  "junit"                    % "4.13.2"  % Test,
   "org.scalatest"        %% "scalatest"                % Versions.scalatest % Test,
 )
 

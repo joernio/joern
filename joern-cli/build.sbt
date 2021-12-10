@@ -10,12 +10,12 @@ dependsOn(
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "com.lihaoyi" %% "requests" % "0.6.5",
-  "com.github.scopt" %% "scopt" % "3.7.1",
+  "com.lihaoyi" %% "requests" % "0.6.9",
+  "com.github.scopt" %% "scopt" % "4.0.1",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
-  "io.circe" %% "circe-generic" % "0.12.2",
-  "org.reflections" % "reflections" % "0.9.12",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3" % Runtime,
+  "io.circe" %% "circe-generic" % "0.14.1",
+  "org.reflections" % "reflections" % "0.10.2",
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.15.0" % Runtime,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 

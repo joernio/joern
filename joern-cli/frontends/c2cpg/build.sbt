@@ -4,10 +4,10 @@ dependsOn(Projects.dataflowengineoss % Test)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "semanticcpg"                % Versions.cpg,
-  "org.scala-lang.modules"    %% "scala-parallel-collections" % "1.0.3",
-  "com.diffplug.spotless"     % "spotless-eclipse-cdt"        % "10.3.0",
-  "org.slf4j"                 % "slf4j-api"                   % "1.7.30",
-  "org.apache.logging.log4j"  % "log4j-slf4j-impl"            % "2.14.1" % Runtime,
+  "org.scala-lang.modules"    %% "scala-parallel-collections" % "1.0.4",
+  "com.diffplug.spotless"     % "spotless-eclipse-cdt"        % "10.4.0",
+  "org.slf4j"                 % "slf4j-api"                   % "1.7.32",
+  "org.apache.logging.log4j"  % "log4j-slf4j-impl"            % "2.15.0" % Runtime,
   "org.scalatest"             %% "scalatest"                  % Versions.scalatest % Test,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
 )
