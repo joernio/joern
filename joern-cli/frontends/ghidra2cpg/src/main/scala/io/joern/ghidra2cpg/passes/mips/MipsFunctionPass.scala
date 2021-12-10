@@ -137,7 +137,7 @@ class MipsFunctionPass(currentProgram: Program,
                            "*",
                            "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
-      case INT_XOR | BOOL_XOR =>
+      case INT_XOR =>
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
       case INT_OR =>
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
@@ -148,7 +148,7 @@ class MipsFunctionPass(currentProgram: Program,
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
         resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
       case PTRSUB | PTRADD => handlePtrSub(instruction, callNode, pcodeAst.getOutput, index)
-      case _               => handleDefault(pcodeAst)
+      case _               => //handleDefault(pcodeAst)
 
     }
   }
