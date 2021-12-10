@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "commons-cli"          %  "commons-cli"              % "1.4",
   "com.github.pathikrit" %% "better-files"             % "3.9.1",
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.2",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.14.1" % Runtime,
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.15.0" % Runtime,
   "com.novocode"         %  "junit-interface"          % "0.11"  % Test,
   "junit"                %  "junit"                    % "4.12"  % Test,
   "org.scalatest"        %% "scalatest"                % Versions.scalatest % Test,
