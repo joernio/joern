@@ -12,10 +12,10 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi" %% "sourcecode" % "0.1.9",
-  "com.lihaoyi" %% "upickle" % "1.2.2",
-  "com.github.pathikrit" %% "better-files" % "3.8.0",
-  "com.github.scopt" %% "scopt" % "3.7.1",
+  "com.lihaoyi" %% "sourcecode" % "0.2.7",
+  "com.lihaoyi" %% "upickle" % "1.4.2",
+  "com.github.pathikrit" %% "better-files" % "3.9.1",
+  "com.github.scopt" %% "scopt" % "4.0.1",
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,

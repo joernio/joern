@@ -2,8 +2,8 @@
 object Versions {
   val cpg = parseVersion("cpgVersion")
   val js2cpg = parseVersion("js2cpgVersion")
-  val antlr = "4.7.2"
-  val scalatest = "3.1.1"
+  val antlr = "4.9.3"
+  val scalatest = "3.2.10"
 
   private def parseVersion(key: String): String = { 
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r

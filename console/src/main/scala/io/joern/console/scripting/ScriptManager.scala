@@ -127,6 +127,8 @@ abstract class ScriptManager(executor: AmmoniteExecutor) {
   }
 
   def runScript(scriptName: String, parameters: Map[String, String], cpg: Cpg): Any = {
+    // needed in the latest cast-effect version to run .unsafeRunSync()
+    import cats.effect.unsafe.implicits.global
     withScriptFile(scriptName) { script =>
       executor.runScript(script.path, parameters, cpg)
     }.unsafeRunSync()

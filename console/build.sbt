@@ -2,13 +2,12 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-val ScoptVersion = "3.7.1"
-val BetterFilesVersion = "3.8.0"
-val CaskVersion = "0.7.8"
-val CatsVersion = "2.3.1"
-val CirceVersion = "0.12.2"
+val ScoptVersion = "4.0.1"
+val BetterFilesVersion = "3.9.1"
+val CaskVersion = "0.8.0"
+val CirceVersion = "0.14.1"
 val AmmoniteVersion = "2.4.1"
-val ZeroturnaroundVersion = "1.13"
+val ZeroturnaroundVersion = "1.14"
 
 dependsOn(
   // Projects.macros,
@@ -19,8 +18,8 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
   "com.github.scopt" %% "scopt" % ScoptVersion,
   "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
-  "org.typelevel" %% "cats-core" % CatsVersion,
-  "org.typelevel" %% "cats-effect" % CatsVersion,
+  "org.typelevel" %% "cats-core" % "2.7.0",
+  "org.typelevel" %% "cats-effect" % "3.3.0",
   "io.circe" %% "circe-generic" % CirceVersion,
   "io.circe" %% "circe-parser" % CirceVersion,
   "org.zeroturnaround" % "zt-zip" % ZeroturnaroundVersion,

@@ -3,8 +3,8 @@ name := "ghidra2cpg"
 dependsOn(Projects.dataflowengineoss)
 
 libraryDependencies ++= Seq(
-  "com.github.scopt" %% "scopt"                    % "3.7.1",
-  "commons-io"        % "commons-io"               % "2.7",
+  "com.github.scopt" %% "scopt"                    % "4.0.1",
+  "commons-io"        % "commons-io"               % "2.11.0",
   "io.shiftleft"      % "ghidra"                   % "10.0_PUBLIC_20210621",
   "io.shiftleft"     %% "codepropertygraph"        % Versions.cpg,
   "io.shiftleft"     %% "codepropertygraph-protos" % Versions.cpg,
