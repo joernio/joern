@@ -15,7 +15,7 @@ import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
-import io.joern.ghidra2cpg.passes.x86.{X86FunctionPass, ReturnEdgesPass}
+import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.x2cpg.X2Cpg
@@ -23,6 +23,7 @@ import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
@@ -191,7 +192,7 @@ object Types {
 
   // Types will be added to the CPG as soon as everything
   // else is done
-  val types: mutable.SortedSet[String] = scala.collection.mutable.SortedSet[String]()
+  val types: ListBuffer[String] = ListBuffer[String]()
   def registerType(typeName: String): String = {
     types += typeName
     typeName
