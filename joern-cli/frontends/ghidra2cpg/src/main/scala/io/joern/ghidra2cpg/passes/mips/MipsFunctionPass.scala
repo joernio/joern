@@ -149,7 +149,9 @@ class MipsFunctionPass(currentProgram: Program,
       case CAST =>
         // we need to "unpack" the def of the first input of the cast
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
-        resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
+        if (pcodeAst.getInput(0).getDef != null) {
+          resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
+        }
       case PTRSUB | PTRADD => handlePtrSub(instruction, callNode, pcodeAst.getOutput, index)
       case _               => //handleDefault(pcodeAst)
 
