@@ -174,13 +174,9 @@ class Ghidra2Cpg() {
           new ReturnEdgesPass(cpg).createAndApply()
         }
     }
-    try {
-      new TypesPass(cpg).createAndApply()
-      new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-      new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
-    } catch {
-      case e: Exception => e.printStackTrace()
-    }
+    new TypesPass(cpg).createAndApply()
+    new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
+    new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
   }
 
   private class HeadlessProjectConnection(
