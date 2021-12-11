@@ -174,10 +174,13 @@ class Ghidra2Cpg() {
           new ReturnEdgesPass(cpg).createAndApply()
         }
     }
-
-    new TypesPass(cpg).createAndApply()
-    new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-    new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
+    try {
+      new TypesPass(cpg).createAndApply()
+      new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
+      new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
   }
 
   private class HeadlessProjectConnection(
@@ -189,12 +192,15 @@ class Ghidra2Cpg() {
 }
 
 object Types {
-
   // Types will be added to the CPG as soon as everything
   // else is done
-  val types: ListBuffer[String] = ListBuffer[String]()
+  var types: mutable.SortedSet[String] = mutable.SortedSet[String]()
   def registerType(typeName: String): String = {
-    types += typeName
+    try {
+      types += typeName
+    } catch {
+      case e: Exception => println(s" Error adding type: $typeName")
+    }
     typeName
   }
 }

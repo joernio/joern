@@ -40,6 +40,9 @@ class MipsFunctionPass(currentProgram: Program,
           name = symbol.get.getName
         }
       }
+      if (name == null) {
+        name = input.getHigh.getSymbol.getName
+      }
       createIdentifier(name,
                        name,
                        index + 1,

@@ -9,7 +9,7 @@ class TypesPass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(): Iterator[DiffGraph] = {
     implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
-    Types.types.distinct
+    Types.types
       .foreach { typ =>
         val typeNode =
           nodes.NewType().name(typ).fullName(typ).typeDeclFullName(typ)
