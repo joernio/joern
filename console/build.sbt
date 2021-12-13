@@ -25,6 +25,7 @@ libraryDependencies ++= Seq(
   "org.zeroturnaround" % "zt-zip" % ZeroturnaroundVersion,
   "com.lihaoyi" %% "ammonite" % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi" %% "cask" % CaskVersion,
+  "org.scalameta" %% "scalameta" % "4.4.31",
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 
