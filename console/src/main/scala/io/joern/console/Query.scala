@@ -39,5 +39,3 @@ object Query {
     )
   }
 }
-
-case class TraversalWithStrRep(traversal: Cpg => Traversal[_ <: StoredNode], strRep: String = "")
