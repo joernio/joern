@@ -9,7 +9,7 @@ import java.nio.file.Path
   * into code property graphs via fuzzy parsing.
   * */
 case class FuzzyCCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  lazy val command = rootPath.resolve("fuzzyc2cpg.sh")
+  lazy val command: Path = rootPath.resolve("fuzzyc2cpg.sh")
 
   /**
     * Generate a CPG for the given input path.

@@ -5,11 +5,11 @@ import io.joern.console.FrontendConfig
 import java.nio.file.Path
 
 /**
-  * Fuzzy C/C++ language frontend. Translates C/C++ source files
-  * into code property graphs via fuzzy parsing.
+  * C/C++ language frontend that translates C/C++ source files
+  * into code property graphs using Eclipse CDT parsing / preprocessing.
   * */
 case class CCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  lazy val command = rootPath.resolve("c2cpg.sh")
+  lazy val command: Path = rootPath.resolve("c2cpg.sh")
 
   /**
     * Generate a CPG for the given input path.

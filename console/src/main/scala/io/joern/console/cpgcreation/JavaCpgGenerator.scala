@@ -33,7 +33,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
       println("found .apk ending - will first transform it to a jar using dex2jar.sh")
       val dex2jar = rootPath.resolve("dex2jar.sh").toString
       runShellCommand(dex2jar, Seq(inputPath)).flatMap { _ =>
-        val jarPath = s"${inputPath}.jar"
+        val jarPath = s"$inputPath.jar"
         generateCommercial(jarPath, outputPath, namespaces)
       }
     } else {
