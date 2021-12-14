@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "io.circe" %% "circe-generic" % "0.14.1",
   "org.reflections" % "reflections" % "0.10.2",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.15.0" % Runtime,
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.16.0" % Runtime,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 
