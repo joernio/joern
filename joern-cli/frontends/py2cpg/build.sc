@@ -7,7 +7,7 @@ object py2cpg extends SbtModule with ScalafmtModule {
   def scalaVersion = "2.13.4"
   def jfrogUri: String = "https://shiftleft.jfrog.io/shiftleft/libs-release-local"
 
-  val log4jSlf4jImplDependency = ivy"org.apache.logging.log4j:log4j-slf4j-impl:2.13.3"
+  val log4jSlf4jImplDependency = ivy"org.apache.logging.log4j:log4j-slf4j-impl:2.16.0"
 
   // We only have one module in this build. Thus we dont need
   // the usual directory level introduced by the module name.
