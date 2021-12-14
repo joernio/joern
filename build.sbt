@@ -36,7 +36,8 @@ createDistribution := {
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
-  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+  "Atlassian" at "https://packages.atlassian.com/mvn/maven-atlassian-external"
 )
 
 ThisBuild /Test /fork := true
