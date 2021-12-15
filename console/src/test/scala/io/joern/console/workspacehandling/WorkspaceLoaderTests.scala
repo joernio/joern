@@ -5,8 +5,6 @@ import better.files.File
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.reflect.io.Directory
-
 class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
 
   private val tmpDirPrefix = "workspace-tests"
@@ -15,12 +13,12 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
 
     "create workspace and workspace directory if nonexistent" in {
       val dir = File.newTemporaryDirectory(tmpDirPrefix)
-      new Directory(dir.toJava).deleteRecursively()
+      dir.delete()
       TestLoader().load(dir.path.toString)
       try {
         dir.exists shouldBe true
       } finally {
-        new Directory(dir.toJava).deleteRecursively()
+        dir.delete()
       }
     }
 

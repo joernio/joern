@@ -1,5 +1,6 @@
 package io.joern.jimple2cpg.unpacking
 
+import better.files.File
 import io.joern.jimple2cpg.Jimple2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{toMethodTraversalExtGen, toNodeTypeStarters}
@@ -9,7 +10,6 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 
-import scala.reflect.io.File
 import scala.util.{Failure, Success, Try}
 
 class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
@@ -29,8 +29,8 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   "should extract files" in {
     Try(getClass.getResource("/unpacking")) match {
       case Success(x) =>
-        val fs = File(x.getPath).toDirectory.walk.toSeq
-        fs.filter(_.name.contains(".jar")).map(_.name).toList shouldBe List("HelloWorld.jar")
+        val fs = File(x.getPath).walk().toList
+        fs.filter(_.name.contains(".jar")).map(_.name) shouldBe List("HelloWorld.jar")
         fs.count(_.name.contains(".class")) shouldBe 2
       case Failure(x: Throwable) =>
         fail("Unable to view test repository", x)
