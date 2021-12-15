@@ -6,8 +6,6 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 
-import scala.reflect.runtime.universe._
-
 object Main extends App {
 
   dumpQueries()
@@ -30,11 +28,11 @@ object Main extends App {
   class JoernDefaultArgumentProvider(maxCallDepth: Int)(implicit context: EngineContext)
       extends DefaultArgumentProvider {
 
-    override def defaultArgument(method: MethodSymbol, im: InstanceMirror, x: Symbol, i: Int): Option[Any] = {
-      if (x.typeSignature.toString.endsWith("EngineContext")) {
+    override def typeSpecificDefaultArg(argTypeFullName: String): Option[Any] = {
+      if (argTypeFullName.endsWith("EngineContext")) {
         Some(context.copy(config = EngineConfig(maxCallDepth = maxCallDepth)))
       } else {
-        super.defaultArgument(method, im, x, i)
+        None
       }
     }
   }
