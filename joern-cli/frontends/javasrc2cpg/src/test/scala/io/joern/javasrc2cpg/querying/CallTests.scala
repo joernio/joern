@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 
@@ -12,6 +12,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
   override val code: String =
     """
+      |package test;
       | class Foo {
       |   int add(int x, int y) {
       |     return x + y;
@@ -25,17 +26,39 @@ class CallTests extends JavaSrcCodeToCpgFixture {
       |     foo(argc);
       |   }
       | }
+      |
+      |class MyObject {
+      |    public String myMethod(String s) {
+      |        return s;
+      |    }
+      |}
+      |
+      |public class Bar {
+      |    MyObject obj = new MyObject();
+      |
+      |    public String foo(MyObject myObj) {
+      |        return myObj.myMethod("Hello, world!");
+      |    }
+      |
+      |    public void bar() {
+      |        foo(obj);
+      |    }
+      |
+      |    public void baz() {
+      |        this.foo(obj);
+      |    }
+      |}
       |""".stripMargin
 
   "should contain a call node for `add` with correct fields" in {
     val List(x) = cpg.call("add").l
-    x.code shouldBe "add(argc, 3)"
+    x.code shouldBe "this.add(argc, 3)"
     x.name shouldBe "add"
     x.order shouldBe 2
-    x.methodFullName shouldBe "Foo.add:int(int,int)"
+    x.methodFullName shouldBe "test.Foo.add:int(int,int)"
     x.signature shouldBe "int(int,int)"
     x.argumentIndex shouldBe 2
-    x.lineNumber shouldBe Some(8)
+    x.lineNumber shouldBe Some(9)
   }
 
   "should allow traversing from call to arguments" in {
@@ -78,10 +101,92 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should handle unresolved calls with appropriate defaults" in {
-    val List(call: Call) = cpg.call("foo").l
+    val List(call: Call) = cpg.typeDecl.name("Foo").ast.isCall.name("foo").l
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
     call.methodFullName shouldBe "<empty>"
     call.signature shouldBe ""
-    call.code shouldBe "foo(argc)"
+    call.code shouldBe "this.foo(argc)"
+  }
+
+  "should create a call node for call on explicit object" in {
+    val call = cpg.typeDecl.name("Bar").method.name("foo").call.nameExact("myMethod").head
+
+    call.code shouldBe "myObj.myMethod(\"Hello, world!\")"
+    call.name shouldBe "myMethod"
+    call.methodFullName shouldBe "test.MyObject.myMethod:java.lang.String(java.lang.String)"
+    call.signature shouldBe "java.lang.String(java.lang.String)"
+
+    val List(fieldAccess: Call, argument: Literal) = call.astChildren.l
+
+    fieldAccess.code shouldBe "myObj.myMethod"
+    fieldAccess.name shouldBe Operators.fieldAccess
+    fieldAccess.methodFullName shouldBe Operators.fieldAccess
+    fieldAccess.order shouldBe 1
+    fieldAccess.argumentIndex shouldBe 1
+
+    val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = fieldAccess.argument.l
+    identifier.order shouldBe 1
+    identifier.argumentIndex shouldBe 1
+    identifier.code shouldBe "myObj"
+    identifier.name shouldBe "myObj"
+    fieldIdentifier.order shouldBe 2
+    fieldIdentifier.argumentIndex shouldBe 2
+    fieldIdentifier.code shouldBe "myMethod"
+    fieldIdentifier.canonicalName shouldBe "myMethod"
+
+    argument.code shouldBe "\"Hello, world!\""
+    argument.order shouldBe 2
+    argument.argumentIndex shouldBe 2
+  }
+
+  "should create a call node for a call with an implicit `this`" in {
+    val call = cpg.typeDecl.name("Bar").method.name("bar").call.nameExact("foo").head
+
+    call.code shouldBe "this.foo(obj)"
+    call.name shouldBe "foo"
+    call.methodFullName shouldBe "test.Bar.foo:java.lang.String(test.MyObject)"
+    call.signature shouldBe "java.lang.String(test.MyObject)"
+
+    val List(identifier: Identifier, argument: Identifier) = call.argument.l
+    identifier.order shouldBe 0
+    identifier.argumentIndex shouldBe 0
+    identifier.code shouldBe "this"
+    identifier.name shouldBe "this"
+
+    argument.order shouldBe 1
+    argument.argumentIndex shouldBe 1
+    argument.code shouldBe "obj"
+    argument.name shouldBe "obj"
+  }
+
+  "should create a call node for a call with an explicit `this`" in {
+    val call = cpg.typeDecl.name("Bar").method.name("baz").call.nameExact("foo").head
+
+    call.code shouldBe "this.foo(obj)"
+    call.name shouldBe "foo"
+    call.methodFullName shouldBe "test.Bar.foo:java.lang.String(test.MyObject)"
+    call.signature shouldBe "java.lang.String(test.MyObject)"
+
+    val List(fieldAccess: Call, argument: Identifier) = call.astChildren.l
+
+    fieldAccess.code shouldBe "this.foo"
+    fieldAccess.name shouldBe Operators.fieldAccess
+    fieldAccess.methodFullName shouldBe Operators.fieldAccess
+    fieldAccess.order shouldBe 1
+    fieldAccess.argumentIndex shouldBe 1
+
+    val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = fieldAccess.argument.l
+    identifier.order shouldBe 1
+    identifier.argumentIndex shouldBe 1
+    identifier.code shouldBe "this"
+    identifier.name shouldBe "this"
+    fieldIdentifier.order shouldBe 2
+    fieldIdentifier.argumentIndex shouldBe 2
+    fieldIdentifier.code shouldBe "foo"
+    fieldIdentifier.canonicalName shouldBe "foo"
+
+    argument.code shouldBe "obj"
+    argument.order shouldBe 2
+    argument.argumentIndex shouldBe 2
   }
 }

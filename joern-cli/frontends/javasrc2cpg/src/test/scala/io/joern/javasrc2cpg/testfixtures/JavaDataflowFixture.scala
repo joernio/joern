@@ -39,7 +39,7 @@ class JavaDataflowFixture extends AnyFlatSpec with Matchers {
     val sourceMethod = cpg.method(s".*$sourceMethodName.*").head
     val sinkMethod = cpg.method(s".*$sinkMethodName.*").head
     def source = sourceMethod.literal.code(sourceCode)
-    def sink = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
+    def sink = sinkMethod.call.name(sinkPattern).argument(2).ast.collectAll[Expression]
 
     // If either of these fail, then the testcase was written incorrectly or the AST was created incorrectly.
     if (source.size <= 0) {

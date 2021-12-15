@@ -24,16 +24,16 @@ class CallGraphTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find that main calls add and others" in {
-    cpg.method.name("main").callee.name.toSet shouldBe Set("add", "println", "<operator>.addition")
+    cpg.method.name("main").callee.name.toSet shouldBe Set("add", "println", "<operator>.addition", "<operator>.fieldAccess")
   }
 
   "should find three outgoing calls for main" in {
     cpg.method.name("main").call.code.toSet shouldBe
-      Set("1 + 2", "add(1 + 2, 3)", "println(add(1 + 2, 3))")
+      Set("1 + 2", "this.add(1 + 2, 3)", "System.out.println(add(1 + 2, 3))", "System.out", "System.out.println")
   }
 
   "should find one callsite for add" in {
-    cpg.method.name("add").callIn.code.toSet shouldBe Set("add(1 + 2, 3)")
+    cpg.method.name("add").callIn.code.toSet shouldBe Set("this.add(1 + 2, 3)")
   }
 
   "should find that argument '1+2' is passed to parameter 'x'" in {

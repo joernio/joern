@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
 import io.joern.dataflowengineoss.language._
+import io.shiftleft.semanticcpg.language._
 
 class FunctionCallTests extends JavaDataflowFixture {
 
@@ -137,6 +138,11 @@ class FunctionCallTests extends JavaDataflowFixture {
       |        String t = safeReturn(s);
       |        System.out.println(t);
       |    }
+      |
+      |    public static void test17(Object o) {
+      |        String s = (String) o;
+      |        System.out.println(s);
+      |    }
       |}
       |""".stripMargin
 
@@ -220,6 +226,12 @@ class FunctionCallTests extends JavaDataflowFixture {
   it should "not find a path where `MALICIOUS` arg is not included in return" in {
     val (source, sink) = getConstSourceSink("test16")
     // This isn't exactly the expected behaviour, but is on par with c2cpg.
+    sink.reachableBy(source).size shouldBe 1
+  }
+
+  it should "find a path through a cast expression" in {
+    def source = cpg.method.name("test17").parameter.index(1)
+    def sink = cpg.method.name("test17").methodReturn
     sink.reachableBy(source).size shouldBe 1
   }
 }

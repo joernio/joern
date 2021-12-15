@@ -1657,10 +1657,11 @@ class AstCreator(filename: String, global: Global) {
       resolvedDecl: Try[ResolvedMethodDeclaration],
       order: Int
   ) = {
+    val codePrefix = call.getScope.toScala.map(_.toString).getOrElse("this")
     val typeFullName = registerType(Try(call.calculateResolvedType().describe()).getOrElse("<empty>"))
     val callNode = NewCall()
       .name(call.getNameAsString)
-      .code(s"${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
+      .code(s"${codePrefix}.${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
       .typeFullName(typeFullName)
       .order(order)
       .argumentIndex(order)
@@ -1685,6 +1686,7 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def createThisNode(
+      call: MethodCallExpr,
       resolvedDecl: Try[ResolvedMethodDeclaration]
   ): Option[NewIdentifier] = {
     resolvedDecl.toOption
@@ -1697,6 +1699,8 @@ class AstCreator(filename: String, global: Global) {
           .typeFullName(typeFullName)
           .order(0)
           .argumentIndex(0)
+          .lineNumber(line(call))
+          .columnNumber(column(call))
       }
   }
 
@@ -1944,27 +1948,54 @@ class AstCreator(filename: String, global: Global) {
 
     val resolvedDecl = Try(call.resolve())
     val callNode = createCallNode(call, resolvedDecl, order)
-    val thisAsts = createThisNode(resolvedDecl)
-      .map(_.lineNumber(line(call)))
-      .map(_.columnNumber(column(call)))
-      .map(x => AstWithCtx(Ast(x), Context(identifiers = List(x))))
-      .toList
 
-    val argAsts = withOrder(call.getArguments) { (arg, order) =>
-      // FIXME: There's an implicit assumption here that each call to
-      // astsForExpression only returns a single tree.
-      astsForExpression(arg, scopeContext, order)
+    val scopeAst: AstWithCtx = call.getScope.toScala match {
+      case Some(scope) =>
+        createFieldAccessForMethodCall(call, scope, scopeContext)
+
+      case None =>
+        val node = createThisNode(call, resolvedDecl)
+        node.map(x => AstWithCtx(Ast(x), Context(identifiers = List(x)))).getOrElse(AstWithCtx.empty)
+    }
+
+    val argumentOrderOffset = if (call.getScope.isPresent) 1 else 0
+
+    val argumentAsts = withOrder(call.getArguments) { (x, o) =>
+      astsForExpression(x, scopeContext, o + argumentOrderOffset)
     }.flatten
 
-    val ast = Ast(callNode)
-      .withChildren(thisAsts.map(_.ast))
-      .withChildren(argAsts.map(_.ast))
-      .withArgEdges(callNode, thisAsts.flatMap(_.ast.root))
-      .withArgEdges(callNode, argAsts.flatMap(_.ast.root))
+    callAst(callNode, Seq(scopeAst) ++ argumentAsts)
+  }
 
-    val ctx = mergedCtx((thisAsts ++ argAsts).map(_.ctx))
+  private def createFieldAccessForMethodCall(
+      call: MethodCallExpr,
+      scope: Expression,
+      scopeContext: ScopeContext,
+  ): AstWithCtx = {
+    val name = call.getName.toString
 
-    AstWithCtx(ast, ctx)
+    val callNode = NewCall()
+      .code(s"${scope.toString}.$name")
+      .name(Operators.fieldAccess)
+      .methodFullName(Operators.fieldAccess)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .order(0)
+      .argumentIndex(0)
+      .lineNumber(line(call))
+      .columnNumber(column(call))
+
+    val scopeAst = astsForExpression(scope, scopeContext, 1)
+
+    val fieldIdentifier = NewFieldIdentifier()
+      .canonicalName(name)
+      .code(name)
+      .lineNumber(line(call))
+      .columnNumber(column(call))
+      .argumentIndex(2)
+      .order(2)
+    val fieldAstWithCtx = AstWithCtx(Ast(fieldIdentifier), Context())
+
+    callAst(callNode, scopeAst ++ Seq(fieldAstWithCtx))
   }
 
   private def tryResolveType(node: NodeWithType[_, _ <: Resolvable[ResolvedType]]): String = {

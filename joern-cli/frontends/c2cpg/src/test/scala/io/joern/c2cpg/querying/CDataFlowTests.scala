@@ -980,7 +980,7 @@ class CDataFlowTests32 extends DataFlowCodeToCpgSuite {
   }
 }
 
-class CDatFlowTests33 extends DataFlowCodeToCpgSuite {
+class CDataFlowTests33 extends DataFlowCodeToCpgSuite {
   override val code =
     """
       |int bar(int z) {
@@ -995,7 +995,7 @@ class CDatFlowTests33 extends DataFlowCodeToCpgSuite {
       |}
       |""".stripMargin
 
-  "Tes 33: should provide correct flow for source in sibling callee" in {
+  "Test 33: should provide correct flow for source in sibling callee" in {
     cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 1
   }
 
