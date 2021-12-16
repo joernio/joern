@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.utils.MemberAccess.isGenericMemberAccessName
@@ -221,8 +221,19 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
           allIdentifiers(param.name)
             .filter(x => x.id != param.id)
         case identifier: Identifier =>
-          allIdentifiers(identifier.name)
+          val sameIdentifiers = allIdentifiers(identifier.name)
             .filter(x => x.id != identifier.id)
+
+          /**
+            * Killing an identifier should also kill field accesses on that identifier.
+            * For example, a reassignment `x = new Box()` should kill any previous
+            * calls to `x.value`, `x.length()`, etc.
+            */
+          val sameObjects: Iterable[Call] = allCalls.values.flatten
+            .filter(_.name == Operators.fieldAccess)
+            .filter(_.ast.isIdentifier.name(identifier.name).nonEmpty)
+
+          sameIdentifiers ++ sameObjects
         case call: Call =>
           allCalls(call.code)
             .filter(x => x.id != call.id)

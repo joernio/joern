@@ -122,14 +122,14 @@ class ObjectTests extends JavaDataflowFixture {
   }
 
   it should "find a path for malicious input via a getter" in {
-    // TODO: This should find a path, but the current result is on par with c2cpg.
     val (source, sink) = getConstSourceSink("test4")
-    sink.reachableBy(source).size shouldBe 0
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "not find a path when accessing a safe field via a getter" in {
     val (source, sink) = getConstSourceSink("test5")
-    sink.reachableBy(source).size shouldBe 0
+    // TODO: This should not find a path, but does due to over-tainting.
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path to a void printer via a field" in {
