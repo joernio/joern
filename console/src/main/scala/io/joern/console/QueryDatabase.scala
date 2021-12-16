@@ -139,7 +139,7 @@ class QueryDatabase(defaultArgumentProvider: DefaultArgumentProvider = new Defau
   * */
 class DefaultArgumentProvider {
 
-  def typeSpecificDefaultArg(argTypeFullName: String): Option[Any] = {
+  def typeSpecificDefaultArg(@unused argTypeFullName: String): Option[Any] = {
     None
   }
 
