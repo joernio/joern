@@ -11,7 +11,6 @@ import overflowdb.Config
 import java.net.URLEncoder
 import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
-import scala.reflect.io.Directory
 import scala.util.{Failure, Success, Try}
 
 object DefaultLoader extends WorkspaceLoader[Project] {
@@ -72,7 +71,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   def removeProject(name: String): Unit = {
     closeProject(name)
     removeProjectFromList(name)
-    new Directory(projectNameToDir(name).toFile).deleteRecursively()
+    File(projectNameToDir(name)).delete()
   }
 
   /**
@@ -121,7 +120,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
       throw new RuntimeException(s"Directory ${dirFile.toString} does not exist")
     }
 
-    new Directory(dirFile.toJava).deleteRecursively()
+    dirFile.delete()
   }
 
   /**
@@ -411,7 +410,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   private def deleteProject(project: Project): Unit = {
     removeProjectFromList(project.name)
     if (project.path.toString != "") {
-      new Directory(File(project.path).toJava).deleteRecursively()
+      File(project.path).delete()
     }
   }
 
