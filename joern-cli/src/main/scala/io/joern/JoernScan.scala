@@ -16,7 +16,6 @@ import io.joern.Scan.{allTag, defaultTag}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
 import scala.jdk.CollectionConverters._
-import scala.reflect.runtime.universe._
 
 object JoernScanConfig {
   val defaultDbVersion: String = "latest"
@@ -284,11 +283,11 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
 
 class JoernDefaultArgumentProvider(maxCallDepth: Int)(implicit context: EngineContext) extends DefaultArgumentProvider {
 
-  override def defaultArgument(method: MethodSymbol, im: InstanceMirror, x: Symbol, i: Int): Option[Any] = {
-    if (x.typeSignature.toString.endsWith("EngineContext")) {
+  override def typeSpecificDefaultArg(argTypeFullName: String): Option[Any] = {
+    if (argTypeFullName.endsWith("EngineContext")) {
       Some(context.copy(config = EngineConfig(maxCallDepth = maxCallDepth)))
     } else {
-      super.defaultArgument(method, im, x, i)
+      None
     }
   }
 }

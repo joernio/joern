@@ -139,14 +139,21 @@ class QueryDatabase(defaultArgumentProvider: DefaultArgumentProvider = new Defau
   * */
 class DefaultArgumentProvider {
 
-  def defaultArgument(method: MethodSymbol, im: InstanceMirror, @unused x: Symbol, i: Int): Option[Any] = {
-    val typeSignature = im.symbol.typeSignature
-    val defaultMethodName = s"${method.name}$$default$$${i + 1}"
-    val m = typeSignature.member(TermName(defaultMethodName))
-    if (m.isMethod) {
-      Some(im.reflectMethod(m.asMethod).apply())
-    } else {
-      None
+  def typeSpecificDefaultArg(argTypeFullName: String): Option[Any] = {
+    None
+  }
+
+  final def defaultArgument(method: MethodSymbol, im: InstanceMirror, x: Symbol, i: Int): Option[Any] = {
+    val defaultArgOption = typeSpecificDefaultArg(x.typeSignature.toString)
+    defaultArgOption.orElse {
+      val typeSignature = im.symbol.typeSignature
+      val defaultMethodName = s"${method.name}$$default$$${i + 1}"
+      val m = typeSignature.member(TermName(defaultMethodName))
+      if (m.isMethod) {
+        Some(im.reflectMethod(m.asMethod).apply())
+      } else {
+        None
+      }
     }
   }
 
