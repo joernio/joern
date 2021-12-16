@@ -225,10 +225,10 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
             .filter(x => x.id != identifier.id)
 
           /**
-           * Killing an identifier should also kill field accesses on that identifier.
-           * For example, a reassignment `x = new Box()` should kill any previous
-           * calls to `x.value`, `x.length()`, etc.
-           */
+            * Killing an identifier should also kill field accesses on that identifier.
+            * For example, a reassignment `x = new Box()` should kill any previous
+            * calls to `x.value`, `x.length()`, etc.
+            */
           val sameObjects: Iterable[Call] = allCalls.values.flatten
             .filter(_.name == Operators.fieldAccess)
             .filter(_.ast.isIdentifier.name(identifier.name).nonEmpty)
