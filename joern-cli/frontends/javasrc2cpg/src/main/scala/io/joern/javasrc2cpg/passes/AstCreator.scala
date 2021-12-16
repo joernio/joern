@@ -1958,10 +1958,8 @@ class AstCreator(filename: String, global: Global) {
         node.map(x => AstWithCtx(Ast(x), Context(identifiers = List(x)))).getOrElse(AstWithCtx.empty)
     }
 
-    val argumentOrderOffset = if (call.getScope.isPresent) 1 else 0
-
     val argumentAsts = withOrder(call.getArguments) { (x, o) =>
-      astsForExpression(x, scopeContext, o + argumentOrderOffset)
+      astsForExpression(x, scopeContext, o)
     }.flatten
 
     callAst(callNode, Seq(scopeAst) ++ argumentAsts)

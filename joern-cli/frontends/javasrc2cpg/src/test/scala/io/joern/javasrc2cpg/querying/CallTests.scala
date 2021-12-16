@@ -121,8 +121,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     fieldAccess.code shouldBe "myObj.myMethod"
     fieldAccess.name shouldBe Operators.fieldAccess
     fieldAccess.methodFullName shouldBe Operators.fieldAccess
-    fieldAccess.order shouldBe 1
-    fieldAccess.argumentIndex shouldBe 1
+    fieldAccess.order shouldBe 0
+    fieldAccess.argumentIndex shouldBe 0
 
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = fieldAccess.argument.l
     identifier.order shouldBe 1
@@ -135,8 +135,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     fieldIdentifier.canonicalName shouldBe "myMethod"
 
     argument.code shouldBe "\"Hello, world!\""
-    argument.order shouldBe 2
-    argument.argumentIndex shouldBe 2
+    argument.order shouldBe 1
+    argument.argumentIndex shouldBe 1
   }
 
   "should create a call node for a call with an implicit `this`" in {
@@ -172,8 +172,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     fieldAccess.code shouldBe "this.foo"
     fieldAccess.name shouldBe Operators.fieldAccess
     fieldAccess.methodFullName shouldBe Operators.fieldAccess
-    fieldAccess.order shouldBe 1
-    fieldAccess.argumentIndex shouldBe 1
+    fieldAccess.order shouldBe 0
+    fieldAccess.argumentIndex shouldBe 0
 
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = fieldAccess.argument.l
     identifier.order shouldBe 1
@@ -186,7 +186,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     fieldIdentifier.canonicalName shouldBe "foo"
 
     argument.code shouldBe "obj"
-    argument.order shouldBe 2
-    argument.argumentIndex shouldBe 2
+    argument.order shouldBe 1
+    argument.argumentIndex shouldBe 1
   }
 }
