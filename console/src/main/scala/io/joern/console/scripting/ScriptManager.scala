@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import org.zeroturnaround.zip.{NameMapper, ZipUtil}
 
 import java.nio.file.{Files, NoSuchFileException}
+import java.util.regex.Pattern
 import scala.util.Try
 
 object ScriptManager {
@@ -64,8 +65,8 @@ abstract class ScriptManager(executor: AmmoniteExecutor) {
       ScriptManager.this.runScript(name, parameters, cpg)
   }
 
-  private val absoluteJarPathRegex = """jar:file:(.*)!/scripts""".r
-  private val scriptFileRegex = """(scripts/.*)""".r
+  private val absoluteJarPathRegex = ("jar:file:(.*)!" + Pattern.quote(java.io.File.separator) + "scripts").r
+  private val scriptFileRegex = ("(scripts" + Pattern.quote(java.io.File.separator) + ".*)").r
   private val scriptDir = "scripts"
 
   // This is to work around Ammonite failing to read resource files on the classpath.

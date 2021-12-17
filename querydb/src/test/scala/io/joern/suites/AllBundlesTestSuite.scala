@@ -21,8 +21,8 @@ class AllBundlesTestSuite extends AnyWordSpec {
           .filter { q =>
             q._2.size > 1
           }
-          .map(_._1)
-      nonUniqueNames shouldBe List()
+          .keys
+      nonUniqueNames shouldBe empty
     }
   }
 }

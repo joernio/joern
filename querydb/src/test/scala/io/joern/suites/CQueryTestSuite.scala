@@ -44,5 +44,5 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
       .toSetImmutable
   }
 
-  override val code = concatedQueryCodeExamples
+  override val code: String = concatedQueryCodeExamples
 }

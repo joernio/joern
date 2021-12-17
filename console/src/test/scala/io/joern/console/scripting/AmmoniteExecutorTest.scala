@@ -50,13 +50,13 @@ class AmmoniteExecutorTest extends AnyWordSpec with Matchers {
     }
 
     "return a failure if the script can not be found" in withExecutor { executor =>
-      val script = Paths.get("/", "tmp", "cake.sc")
+      val script = Paths.get(System.getProperty("java.io.tmpdir"), "cake.sc")
 
       val ex = intercept[RuntimeException] {
         executor.runScript(script, Map.empty, Cpg.emptyCpg).unsafeRunSync()
       }
 
-      ex.getMessage shouldBe "Script file not found: /tmp/cake.sc"
+      ex.getMessage shouldBe s"Script file not found: ${script.toString}"
     }
 
     "propagate any exceptions thrown by a script" in withExecutor { executor =>

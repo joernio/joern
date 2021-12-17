@@ -59,7 +59,7 @@ class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with Befor
                             "A collection of java-specific scripts.",
                             List(ScriptDescription("list-sl-ns.sc", "Lists all shiftleft namespaces."))
                           )),
-        ScriptCollections("general/general_plus",
+        ScriptCollections(s"general${java.io.File.separator}general_plus",
                           ScriptDescriptions(
                             "Even more general purpose scripts.",
                             List.empty
