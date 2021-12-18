@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """| // A comment
        |int my_func(int x)
        |{
@@ -20,6 +20,10 @@ class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
        |void boop() {
        |  printf("Boop!");
        |  return;
+       |}
+       |
+       |void lemon(){
+       |  goog("\"yes\"");
        |}
        |""".stripMargin
 
@@ -55,6 +59,19 @@ class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
           x.contains("y > 42") shouldBe true
           x.contains("IDENTIFIER,y") shouldBe true
           x.contains("x * 2") shouldBe false
+        case _ => fail()
+      }
+    }
+
+    "allow plotting sub trees of methods correctly escaped" in {
+      cpg.method.name("lemon").dotAst.l match {
+        case x :: _ =>
+          x should (
+            startWith("digraph \"lemon\"") and
+              include("""[label = "(goog,goog(\"\\\"yes\\\"\"))" ]""") and
+              include("""[label = "(LITERAL,\"\\\"yes\\\"\",goog(\"\\\"yes\"\\\"))" ]""") and
+              endWith("}\n")
+          )
         case _ => fail()
       }
     }

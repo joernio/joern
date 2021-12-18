@@ -21,6 +21,10 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
        |  printf("Boop!");
        |  return;
        |}
+       |
+       |void lemon(){
+       |  goog("\"yes\"");
+       |}
        |""".stripMargin
 
   "An AstDotGenerator" should {
@@ -52,6 +56,18 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.ast.isControlStructure.code(".*y > 42.*").dotAst.l) {
         case List(x, _) =>
           x should (include("y > 42") and include("IDENTIFIER,y") and not include "x * 2")
+      }
+    }
+
+    "allow plotting sub trees of methods correctly escaped" in {
+      inside(cpg.method.name("lemon").dotAst.l) {
+        case List(x) =>
+          x should (
+            startWith("digraph \"lemon\"") and
+              include("""[label = "(goog,goog(\"\\\"yes\\\"\"))" ]""") and
+              include("""[label = "(LITERAL,\"\\\"yes\\\"\",goog(\"\\\"yes\"\\\"))" ]""") and
+              endWith("}\n")
+          )
       }
     }
 
