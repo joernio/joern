@@ -69,7 +69,7 @@ class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
           x should (
             startWith("digraph \"lemon\"") and
               include("""[label = "(goog,goog(\"\\\"yes\\\"\"))" ]""") and
-              include("""[label = "(LITERAL,\"\\\"yes\\\"\",goog(\"\\\"yes\"\\\"))" ]""") and
+              include("""[label = "(LITERAL,\"\\\"yes\\\"\",goog(\"\\\"yes\\\"\"))" ]""") and
               endWith("}\n")
           )
         case _ => fail()
