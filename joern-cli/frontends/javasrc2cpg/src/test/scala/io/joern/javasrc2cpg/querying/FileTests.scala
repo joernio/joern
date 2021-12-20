@@ -6,6 +6,7 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.Ignore
 
 import java.io.{File => JFile}
+import java.io.File
 
 class FileTests extends JavaSrcCodeToCpgFixture {
 
@@ -23,7 +24,10 @@ class FileTests extends JavaSrcCodeToCpgFixture {
 
   "should contain exactly one non-placeholder file with absolute path in `name`" in {
     val List(u) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    u.name should startWith(JFile.separator)
+    u.name should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     u.hash.isDefined shouldBe false
   }
 
