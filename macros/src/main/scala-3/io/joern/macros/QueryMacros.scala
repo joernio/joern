@@ -16,7 +16,7 @@ object QueryMacros {
                             (using quotes: Quotes): Expr[TraversalWithStrRep] = {
     import quotes.reflect._
     val pos = travExpr.asTerm.pos
-    val code = Position.apply(pos.sourceFile, pos.start, pos.end).sourceCode.getOrElse("N/A")
+    val code = Position(pos.sourceFile, pos.start, pos.end).sourceCode.getOrElse("N/A")
     '{TraversalWithStrRep(${travExpr}, ${Expr(code)})}
   }
 }
