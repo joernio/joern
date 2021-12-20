@@ -17,10 +17,11 @@ import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](executor: AmmoniteExecutor,
-                            loader: WorkspaceLoader[T],
-                            baseDir: File = File.currentWorkingDirectory)
-    extends ScriptManager(executor) {
+class Console[T <: Project](
+    executor: AmmoniteExecutor,
+    loader: WorkspaceLoader[T],
+    baseDir: File = File.currentWorkingDirectory
+) extends ScriptManager(executor) {
 
   import Console._
 
@@ -135,9 +136,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
   )
   implicit def cpg: Cpg = workspace.cpg
 
-  /**
-    * All cpgs loaded in the workspace
-    * */
+  /** All cpgs loaded in the workspace
+    */
   def cpgs: Iterator[Cpg] = {
     if (workspace.projects.lastOption.isEmpty) {
       Iterator()
@@ -201,30 +201,27 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       .flatten
   }
 
-  /**
-    * Open the active project
-    * */
+  /** Open the active project
+    */
   def open: Option[Project] = {
     workspace.projects.lastOption.flatMap { p =>
       open(p.name)
     }
   }
 
-  /**
-    * Delete project from disk and remove it from
+  /** Delete project from disk and remove it from
     * the workspace manager. Returns the (now invalid)
     * project.
     * @param name the name of the project
-    * */
+    */
   @Doc(info = "Close and remove project from disk", example = "delete(projectName)")
   def delete(name: String): Option[Unit] = {
     workspaceManager.getActiveProject.foreach(_.cpg.foreach(_.close()))
     defaultProjectNameIfEmpty(name).flatMap(workspace.deleteProject)
   }
 
-  /**
-    * Delete the active project
-    * */
+  /** Delete the active project
+    */
   def delete: Option[Unit] = delete("")
 
   protected def defaultProjectNameIfEmpty(name: String): Option[String] = {
@@ -414,11 +411,10 @@ class Console[T <: Project](executor: AmmoniteExecutor,
 
   def close: Option[Project] = close("")
 
-  /**
-    * Close the project and open it again.
+  /** Close the project and open it again.
     *
     * @param name the name of the project
-    * */
+    */
   def reload(name: String): Option[Project] = {
     close(name).flatMap(p => open(p.name))
   }
@@ -452,7 +448,8 @@ class Console[T <: Project](executor: AmmoniteExecutor,
       }
     }
     report(
-      "The graph has been modified. You may want to use the `save` command to persist changes to disk.  All changes will also be saved collectively on exit")
+      "The graph has been modified. You may want to use the `save` command to persist changes to disk.  All changes will also be saved collectively on exit"
+    )
     cpg
   }
 

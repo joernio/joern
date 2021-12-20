@@ -11,22 +11,24 @@ object CPGLSError extends Enumeration {
   val parseError = Value("cpgqls_query_parse_error")
 }
 
-class CPGQLServer(ammonite: EmbeddedAmmonite,
-                  serverHost: String,
-                  serverPort: Int,
-                  serverAuthUsername: String = "",
-                  serverAuthPassword: String = "")
-    extends cask.MainRoutes {
+class CPGQLServer(
+    ammonite: EmbeddedAmmonite,
+    serverHost: String,
+    serverPort: Int,
+    serverAuthUsername: String = "",
+    serverAuthPassword: String = ""
+) extends cask.MainRoutes {
 
   class basicAuth extends cask.RawDecorator {
     def wrapFunction(ctx: Request, delegate: Delegate) = {
-      val authString = try {
-        val authHeader = ctx.exchange.getRequestHeaders.get("authorization").getFirst
-        val strippedHeader = authHeader.toString().replaceFirst("Basic ", "")
-        new String(Base64.getDecoder.decode(strippedHeader))
-      } catch {
-        case _: Exception => ""
-      }
+      val authString =
+        try {
+          val authHeader = ctx.exchange.getRequestHeaders.get("authorization").getFirst
+          val strippedHeader = authHeader.toString().replaceFirst("Basic ", "")
+          new String(Base64.getDecoder.decode(strippedHeader))
+        } catch {
+          case _: Exception => ""
+        }
       val Array(user, password): Array[String] = {
         val split = authString.split(":")
         if (split.length == 2) {
@@ -113,11 +115,12 @@ class CPGQLServer(ammonite: EmbeddedAmmonite,
     val res = if (!isAuthorized) {
       unauthorizedResponse
     } else {
-      val uuid = try {
-        UUID.fromString(uuidParam)
-      } catch {
-        case _: IllegalArgumentException => null
-      }
+      val uuid =
+        try {
+          UUID.fromString(uuidParam)
+        } catch {
+          case _: IllegalArgumentException => null
+        }
       val finalRes = if (uuid == null) {
         ujson.Obj("success" -> false, "err" -> "UUID parameter is incorrectly formatted")
       } else {
@@ -125,10 +128,12 @@ class CPGQLServer(ammonite: EmbeddedAmmonite,
         if (resFromMap == null) {
           ujson.Obj("success" -> false, "err" -> "No result found for specified UUID")
         } else {
-          ujson.Obj("success" -> resFromMap._2,
-                    "uuid" -> resFromMap._1.uuid.toString,
-                    "stdout" -> resFromMap._1.out,
-                    "stderr" -> resFromMap._1.err)
+          ujson.Obj(
+            "success" -> resFromMap._2,
+            "uuid" -> resFromMap._1.uuid.toString,
+            "stdout" -> resFromMap._1.out,
+            "stderr" -> resFromMap._1.err
+          )
         }
       }
       Response(finalRes, 200)

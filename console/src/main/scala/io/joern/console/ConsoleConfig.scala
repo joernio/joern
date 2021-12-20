@@ -3,11 +3,10 @@ package io.joern.console
 import better.files._
 import scala.collection.mutable
 
-/**
-  * Installation configuration of Console
+/** Installation configuration of Console
   *
   * @param environment A map of system environment variables.
-  * */
+  */
 class InstallConfig(environment: Map[String, String] = sys.env) {
 
   /** determining the root path of the joern/ocular installation is rather complex unfortunately,
@@ -50,9 +49,11 @@ object InstallConfig {
   def apply(): InstallConfig = new InstallConfig()
 }
 
-class ConsoleConfig(val install: InstallConfig = InstallConfig(),
-                    val frontend: FrontendConfig = FrontendConfig(),
-                    val tools: ToolsConfig = ToolsConfig()) {}
+class ConsoleConfig(
+    val install: InstallConfig = InstallConfig(),
+    val frontend: FrontendConfig = FrontendConfig(),
+    val tools: ToolsConfig = ToolsConfig()
+) {}
 
 object ToolsConfig {
   def apply(): ToolsConfig = new ToolsConfig()

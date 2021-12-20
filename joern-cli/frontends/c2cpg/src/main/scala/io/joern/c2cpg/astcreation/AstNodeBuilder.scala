@@ -16,10 +16,12 @@ trait AstNodeBuilder {
       .lineNumber(line(node))
       .columnNumber(column(node))
 
-  protected def newMethodRefNode(code: String,
-                                 methodFullName: String,
-                                 typeFullName: String,
-                                 node: IASTNode): NewMethodRef =
+  protected def newMethodRefNode(
+      code: String,
+      methodFullName: String,
+      typeFullName: String,
+      node: IASTNode
+  ): NewMethodRef =
     NewMethodRef()
       .code(code)
       .methodFullName(methodFullName)
@@ -27,11 +29,13 @@ trait AstNodeBuilder {
       .lineNumber(line(node))
       .columnNumber(column(node))
 
-  protected def newCallNode(astNode: IASTNode,
-                            name: String,
-                            fullname: String,
-                            dispatchType: String,
-                            order: Int): NewCall = {
+  protected def newCallNode(
+      astNode: IASTNode,
+      name: String,
+      fullname: String,
+      dispatchType: String,
+      order: Int
+  ): NewCall = {
     NewCall()
       .name(name)
       .dispatchType(dispatchType)
@@ -44,10 +48,12 @@ trait AstNodeBuilder {
       .columnNumber(column(astNode))
   }
 
-  protected def newControlStructureNode(node: IASTNode,
-                                        controlStructureType: String,
-                                        code: String,
-                                        order: Int): NewControlStructure =
+  protected def newControlStructureNode(
+      node: IASTNode,
+      controlStructureType: String,
+      code: String,
+      order: Int
+  ): NewControlStructure =
     NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(controlStructureType)
@@ -74,17 +80,19 @@ trait AstNodeBuilder {
       .columnNumber(column(node))
   }
 
-  protected def newTypeDecl(name: String,
-                            fullname: String,
-                            filename: String,
-                            code: String,
-                            astParentType: String = "",
-                            astParentFullName: String = "",
-                            order: Int = -1,
-                            inherits: Seq[String] = Seq.empty,
-                            alias: Option[String] = None,
-                            line: Option[Integer] = None,
-                            column: Option[Integer] = None): NewTypeDecl =
+  protected def newTypeDecl(
+      name: String,
+      fullname: String,
+      filename: String,
+      code: String,
+      astParentType: String = "",
+      astParentFullName: String = "",
+      order: Int = -1,
+      inherits: Seq[String] = Seq.empty,
+      alias: Option[String] = None,
+      line: Option[Integer] = None,
+      column: Option[Integer] = None
+  ): NewTypeDecl =
     NewTypeDecl()
       .name(name)
       .fullName(fullname)

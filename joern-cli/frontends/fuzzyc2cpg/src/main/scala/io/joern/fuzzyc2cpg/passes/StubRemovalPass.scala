@@ -5,10 +5,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.passes.{DiffGraph, ParallelCpgPass}
 import io.shiftleft.semanticcpg.language._
 
-/**
-  * A pass that ensures that for any method m for which a body exists,
+/** A pass that ensures that for any method m for which a body exists,
   * there are no more method stubs for corresponding declarations.
-  * */
+  */
 class StubRemovalPass(cpg: Cpg) extends ParallelCpgPass[Method](cpg) {
 
   private val sigToMethodWithDef = cpg.method.isNotStub.map(m => (m.signature -> true)).toMap

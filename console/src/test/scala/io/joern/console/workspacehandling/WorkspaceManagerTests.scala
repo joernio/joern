@@ -88,10 +88,13 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
         val projectName = "myproject"
         WorkspaceTests.createFakeProject(workspaceFile, projectName)
         val manager = new WorkspaceManager[Project](workspaceFile.toString)
-        manager.openProject(projectName, { fileName: String =>
-          fileName.endsWith("cpg.bin.tmp") shouldBe true
-          Some(Cpg.emptyCpg)
-        })
+        manager.openProject(
+          projectName,
+          { fileName: String =>
+            fileName.endsWith("cpg.bin.tmp") shouldBe true
+            Some(Cpg.emptyCpg)
+          }
+        )
 
         val project = manager.project(projectName)
         project match {
@@ -173,9 +176,12 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     def createFakeProjectAndOpen(workspaceFile: File, projectName: String): WorkspaceManager[Project] = {
       WorkspaceTests.createFakeProject(workspaceFile, projectName)
       val manager = new WorkspaceManager[Project](workspaceFile.toString)
-      manager.openProject(projectName, { _: String =>
-        Some(Cpg.emptyCpg)
-      })
+      manager.openProject(
+        projectName,
+        { _: String =>
+          Some(Cpg.emptyCpg)
+        }
+      )
       manager
     }
 

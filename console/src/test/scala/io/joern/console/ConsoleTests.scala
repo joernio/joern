@@ -33,14 +33,18 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString)
       console.workspace.numberOfProjects shouldBe 1
       Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
-      console.project.availableOverlays.toSet shouldBe Set(Base.overlayName,
-                                                           ControlFlow.overlayName,
-                                                           TypeRelations.overlayName,
-                                                           CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
+      console.project.availableOverlays.toSet shouldBe Set(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
     }
 
     "allow importing code from file with defines and additional args" in ConsoleFixture() { (console, codeDir) =>
@@ -88,10 +92,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
           p.cpg should not be empty
         case None => fail()
       }
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
     }
 
     "allow importing multiple code bases" in ConsoleFixture() { (console, codeDir) =>
@@ -99,14 +105,18 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString, "bar")
       console.workspace.numberOfProjects shouldBe 2
       console.project.name shouldBe "bar"
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
-      console.workspace.project("foo").get.appliedOverlays shouldBe List(Base.overlayName,
-                                                                         ControlFlow.overlayName,
-                                                                         TypeRelations.overlayName,
-                                                                         CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
+      console.workspace.project("foo").get.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
     }
 
     "set project to active" in ConsoleFixture() { (console, codeDir) =>
@@ -154,10 +164,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
         Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
-        console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                      ControlFlow.overlayName,
-                                                      TypeRelations.overlayName,
-                                                      CallGraph.overlayName)
+        console.project.appliedOverlays shouldBe List(
+          Base.overlayName,
+          ControlFlow.overlayName,
+          TypeRelations.overlayName,
+          CallGraph.overlayName
+        )
       }
     }
 
@@ -201,10 +213,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
         Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
-        console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                      ControlFlow.overlayName,
-                                                      TypeRelations.overlayName,
-                                                      CallGraph.overlayName)
+        console.project.appliedOverlays shouldBe List(
+          Base.overlayName,
+          ControlFlow.overlayName,
+          TypeRelations.overlayName,
+          CallGraph.overlayName
+        )
       }
     }
   }
@@ -268,27 +282,33 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "prohibit adding semanticcpg again" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
       val numOverlayFilesBefore = console.project.path.resolve("overlays").toFile.list().length
       numOverlayFilesBefore shouldBe 4
       console._runAnalyzer(new Base, new ControlFlow, new TypeRelations, new CallGraph)
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
       console.project.path.resolve("overlays").toFile.list().length shouldBe numOverlayFilesBefore
     }
 
     "store directory of zip files for each overlay in project" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       val overlayParentDir = console.project.path.resolve("overlays")
-      overlayParentDir.toFile.list.toSet shouldBe Set(Base.overlayName,
-                                                      ControlFlow.overlayName,
-                                                      TypeRelations.overlayName,
-                                                      CallGraph.overlayName)
+      overlayParentDir.toFile.list.toSet shouldBe Set(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
 
       val overlayDirs = overlayParentDir.toFile.listFiles()
       overlayDirs.foreach { dir =>
@@ -319,16 +339,20 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "remove layer from meta information" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       console._runAnalyzer(new MockLayerCreator)
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName,
-                                                    "fooname")
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName,
+        "fooname"
+      )
       console.undo
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
       console.undo
       console.undo
       console.undo
@@ -340,10 +364,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString)
       val overlayDir = console.project.path.resolve("overlays")
       val overlayFilesBefore = overlayDir.toFile.list.toSet
-      overlayFilesBefore shouldBe Set(Base.overlayName,
-                                      ControlFlow.overlayName,
-                                      TypeRelations.overlayName,
-                                      CallGraph.overlayName)
+      overlayFilesBefore shouldBe Set(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
       console.undo
       console.undo
       console.undo
@@ -355,10 +381,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "actually remove some nodes" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
       console.cpg.parameter.asOutput.l.size should be > 0
-      console.project.appliedOverlays shouldBe List(Base.overlayName,
-                                                    ControlFlow.overlayName,
-                                                    TypeRelations.overlayName,
-                                                    CallGraph.overlayName)
+      console.project.appliedOverlays shouldBe List(
+        Base.overlayName,
+        ControlFlow.overlayName,
+        TypeRelations.overlayName,
+        CallGraph.overlayName
+      )
       console.undo
       console.undo
       console.undo

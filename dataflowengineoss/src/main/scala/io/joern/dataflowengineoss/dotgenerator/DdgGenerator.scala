@@ -64,8 +64,9 @@ class DdgGenerator {
       v.isInstanceOf[JumpTarget]
   )
 
-  private def inEdgesToDisplay(dstNode: StoredNode, visited: List[StoredNode] = List())(
-      implicit semantics: Semantics): List[Edge] = {
+  private def inEdgesToDisplay(dstNode: StoredNode, visited: List[StoredNode] = List())(implicit
+      semantics: Semantics
+  ): List[Edge] = {
 
     if (edgeCache.contains(dstNode)) {
       return edgeCache(dstNode)

@@ -30,7 +30,7 @@ class DataFlowCodeToCpgSuite extends FuzzyCCodeToCpgSuite {
   implicit val viewer: ImageViewer = (pathStr: String) =>
     Try {
       Process(Seq("xdg-open", pathStr)).!!
-  }
+    }
 
   override def passes(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)

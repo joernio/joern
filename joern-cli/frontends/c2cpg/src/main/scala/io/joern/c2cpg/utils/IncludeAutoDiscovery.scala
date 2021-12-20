@@ -43,7 +43,8 @@ object IncludeAutoDiscovery {
       val includePaths = discoverPaths(C_INCLUDE_COMMAND) ++ discoverPaths(CPP_INCLUDE_COMMAND)
       logger.info(
         "Using the following system include paths:" + includePaths
-          .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator()))
+          .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
+      )
       systemIncludePaths = includePaths
       includePaths
     } else {

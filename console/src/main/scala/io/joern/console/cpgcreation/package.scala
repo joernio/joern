@@ -8,13 +8,14 @@ import scala.collection.mutable
 
 package object cpgcreation {
 
-  /**
-    * For a given language, return CPG generator script
-    * */
-  def cpgGeneratorForLanguage(language: String,
-                              config: FrontendConfig,
-                              rootPath: Path,
-                              args: List[String]): Option[CpgGenerator] = {
+  /** For a given language, return CPG generator script
+    */
+  def cpgGeneratorForLanguage(
+      language: String,
+      config: FrontendConfig,
+      rootPath: Path,
+      args: List[String]
+  ): Option[CpgGenerator] = {
     lazy val cCpgGenerator = CCpgGenerator(config.withArgs(args), rootPath)
     lazy val fuzzycCpgGenerator = FuzzyCCpgGenerator(config.withArgs(args), rootPath)
     language match {
@@ -34,9 +35,8 @@ package object cpgcreation {
     }
   }
 
-  /**
-    * Heuristically determines language by inspecting file/dir at path.
-    * */
+  /** Heuristically determines language by inspecting file/dir at path.
+    */
   def guessLanguage(path: String): Option[String] = {
     val file = File(path)
     if (file.isDirectory) {
@@ -49,7 +49,8 @@ package object cpgcreation {
   /** Guess the main language for an entire directory (e.g. a whole project), based on
     * a group count of all individual files.
     * Rationale: many projects contain files from different languages, but most often one language is
-    * standing out in numbers. */
+    * standing out in numbers.
+    */
   private def guessMajorityLanguageInDir(directory: File): Option[String] = {
     assert(directory.isDirectory, s"$directory must be a directory, but wasn't")
     val groupCount = mutable.Map.empty[String, Int].withDefaultValue(0)
@@ -84,10 +85,9 @@ package object cpgcreation {
     }
   }
 
-  /**
-    * check if given filename looks like it might be a C/CPP source or header file
+  /** check if given filename looks like it might be a C/CPP source or header file
     * mostly copied from io.joern.c2cpg.parser.FileDefaults
-    *  */
+    */
   private def isCFile(filename: String): Boolean =
     Seq(".c", ".cc", ".cpp", ".h", ".hpp", ".hh").exists(filename.endsWith)
 

@@ -21,18 +21,20 @@ object JoernScanConfig {
   val defaultDbVersion: String = "latest"
 }
 
-case class JoernScanConfig(src: String = "",
-                           overwrite: Boolean = false,
-                           store: Boolean = false,
-                           dump: Boolean = false,
-                           listQueryNames: Boolean = false,
-                           updateQueryDb: Boolean = false,
-                           queryDbVersion: String = JoernScanConfig.defaultDbVersion,
-                           maxCallDepth: Int = 2,
-                           names: String = "",
-                           tags: String = "",
-                           language: Option[String] = None,
-                           listLanguages: Boolean = false)
+case class JoernScanConfig(
+    src: String = "",
+    overwrite: Boolean = false,
+    store: Boolean = false,
+    dump: Boolean = false,
+    listQueryNames: Boolean = false,
+    updateQueryDb: Boolean = false,
+    queryDbVersion: String = JoernScanConfig.defaultDbVersion,
+    maxCallDepth: Int = 2,
+    names: String = "",
+    tags: String = "",
+    language: Option[String] = None,
+    listLanguages: Boolean = false
+)
 
 object JoernScan extends App with BridgeBase {
 
@@ -150,11 +152,13 @@ object JoernScan extends App with BridgeBase {
 
     val shellConfig = io.joern.console
       .Config()
-      .copy(pluginToRun = Some("scan"),
-            src = Some(config.src),
-            overwrite = config.overwrite,
-            store = config.store,
-            language = config.language)
+      .copy(
+        pluginToRun = Some("scan"),
+        src = Some(config.src),
+        overwrite = config.overwrite,
+        store = config.store,
+        language = config.language
+      )
     runAmmonite(shellConfig, JoernProduct)
     println(s"Run `joern --for-input-path ${config.src}` to explore interactively")
   }
@@ -164,9 +168,8 @@ object JoernScan extends App with BridgeBase {
     getQueriesFromQueryDb(new JoernDefaultArgumentProvider(0)).map(_.name)
   }
 
-  /**
-    * Obtain list of queries from query database, warning the user if the list is empty.
-    * */
+  /** Obtain list of queries from query database, warning the user if the list is empty.
+    */
   def getQueriesFromQueryDb(defaultArgumentProvider: DefaultArgumentProvider): List[Query] = {
     new QueryDatabase(defaultArgumentProvider).allQueries
   }

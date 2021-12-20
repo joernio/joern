@@ -20,16 +20,14 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
        |int main() {
        |  char test[1024];
        |}""".stripMargin) { cpg =>
-      inside(cpg.local.l) {
-        case List(test) =>
-          test.typeFullName shouldBe "char[1024]"
-          test.evalType.l shouldBe List("char[1024]")
-          inside(test.typ.l) {
-            case List(t) =>
-              t.name shouldBe "char[1024]"
-              t.fullName shouldBe "char[1024]"
-              t.typeDeclFullName shouldBe "char[1024]"
-          }
+      inside(cpg.local.l) { case List(test) =>
+        test.typeFullName shouldBe "char[1024]"
+        test.evalType.l shouldBe List("char[1024]")
+        inside(test.typ.l) { case List(t) =>
+          t.name shouldBe "char[1024]"
+          t.fullName shouldBe "char[1024]"
+          t.typeDeclFullName shouldBe "char[1024]"
+        }
       }
     }
 
@@ -44,10 +42,9 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |  free(ptr);
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.call("free").argument(1).l) {
-        case List(arg) =>
-          arg.evalType.l shouldBe List("test*")
-          arg.code shouldBe "ptr"
+      inside(cpg.call("free").argument(1).l) { case List(arg) =>
+        arg.evalType.l shouldBe List("test*")
+        arg.code shouldBe "ptr"
       }
     }
 
@@ -57,8 +54,8 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |  memcpy(dst, src, a);
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.call("memcpy").argument(1).evalType.l) {
-        case List(tpe) => tpe shouldBe "uint8_t[1]"
+      inside(cpg.call("memcpy").argument(1).evalType.l) { case List(tpe) =>
+        tpe shouldBe "uint8_t[1]"
       }
     }
   }

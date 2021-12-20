@@ -16,10 +16,12 @@ trait AstForFunctionsCreator {
 
   this: AstCreator =>
 
-  private def createFunctionTypeAndTypeDecl(method: NewMethod,
-                                            methodName: String,
-                                            methodFullName: String,
-                                            signature: String): Ast = {
+  private def createFunctionTypeAndTypeDecl(
+      method: NewMethod,
+      methodName: String,
+      methodFullName: String,
+      signature: String
+  ): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       val astParentType = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
@@ -61,7 +63,8 @@ trait AstForFunctionsCreator {
       if (!includeParamNames) parameters(func).map {
         case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
         case other                       => typeForDeclSpecifier(other)
-      } else {
+      }
+      else {
         parameters(func).map(p => nodeSignature(p))
       }
     s"(${elements.mkString(",")}$variadic)"
@@ -81,8 +84,8 @@ trait AstForFunctionsCreator {
       case null => Defines.anyTypeName
     }
     val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression))
-    val signature = returnType + " " + fullname + " " + parameterListSignature(lambdaExpression,
-                                                                               includeParamNames = false)
+    val signature =
+      returnType + " " + fullname + " " + parameterListSignature(lambdaExpression, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(lambdaExpression, includeParamNames = true)
     val methodNode: NewMethod = NewMethod()
       .name(name)
@@ -131,9 +134,8 @@ trait AstForFunctionsCreator {
     val name = shortName(funcDecl)
     val fullname = fullName(funcDecl)
     val templateParams = templateParameters(funcDecl).getOrElse("")
-    val signature = returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl,
-                                                                                                includeParamNames =
-                                                                                                  false)
+    val signature =
+      returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDecl, includeParamNames = true)
     val methodNode = NewMethod()
       .name(name)
@@ -182,9 +184,8 @@ trait AstForFunctionsCreator {
     val name = shortName(funcDef)
     val fullname = fullName(funcDef)
     val templateParams = templateParameters(funcDef).getOrElse("")
-    val signature = returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef,
-                                                                                                includeParamNames =
-                                                                                                  false)
+    val signature =
+      returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDef, includeParamNames = true)
     val methodNode = NewMethod()
       .name(name)
@@ -232,17 +233,21 @@ trait AstForFunctionsCreator {
       case p: CASTParameterDeclaration =>
         (nodeSignature(p.getDeclarator.getName), nodeSignature(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
       case p: CPPASTParameterDeclaration =>
-        (nodeSignature(p.getDeclarator.getName),
-         nodeSignature(p),
-         typeForDeclSpecifier(p.getDeclSpecifier),
-         p.getDeclarator.declaresParameterPack())
+        (
+          nodeSignature(p.getDeclarator.getName),
+          nodeSignature(p),
+          typeForDeclSpecifier(p.getDeclSpecifier),
+          p.getDeclarator.declaresParameterPack()
+        )
       case s: IASTSimpleDeclaration =>
-        (s.getDeclarators.headOption
-           .map(x => nodeSignature(x.getName))
-           .getOrElse(uniqueName("parameter", "", "")._1),
-         nodeSignature(s),
-         typeForDeclSpecifier(s),
-         false)
+        (
+          s.getDeclarators.headOption
+            .map(x => nodeSignature(x.getName))
+            .getOrElse(uniqueName("parameter", "", "")._1),
+          nodeSignature(s),
+          typeForDeclSpecifier(s),
+          false
+        )
       case other =>
         (nodeSignature(other), nodeSignature(other), typeForDeclSpecifier(other), false)
     }
@@ -278,6 +283,7 @@ trait AstForFunctionsCreator {
         .code(tpe)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
         .lineNumber(line(func))
-        .columnNumber(column(func)))
+        .columnNumber(column(func))
+    )
 
 }

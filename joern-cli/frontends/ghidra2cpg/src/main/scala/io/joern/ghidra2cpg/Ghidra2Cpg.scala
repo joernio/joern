@@ -28,11 +28,10 @@ import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
 
-  /**
-    * Create a CPG representing the given input file. The CPG
+  /** Create a CPG representing the given input file. The CPG
     * is stored at the given output file. The caller must close
     * the CPG.
-    * */
+    */
   def createCpg(inputFile: File, outputFile: Option[String]): Cpg = {
 
     if (!inputFile.isDirectory && !inputFile.isFile) {

@@ -74,7 +74,9 @@ class HeaderContentLinkerPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
       val ast = Ast(includesFile).withChild(
         Ast(namespaceBlock).withChild(
-          Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn))))
+          Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn))
+        )
+      )
 
       Ast.storeInDiffGraph(ast, dstGraph)
 

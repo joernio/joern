@@ -166,7 +166,8 @@ object Metrics extends QueryBundle {
           .filter(
             _.ast.isControlStructure
               .controlStructureType("(FOR|DO|WHILE)")
-              .size > n)
+              .size > n
+          )
           .nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),

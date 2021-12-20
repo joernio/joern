@@ -19,20 +19,21 @@ package object scan {
 
   implicit class QueryWrapper(q: Query) {
 
-    /**
-      * Obtain list of findings by running query on CPG
-      * */
+    /** Obtain list of findings by running query on CPG
+      */
     def apply(cpg: Cpg): List[NewFinding] = {
       try {
         q.traversal(cpg)
-          .map(
-            evidence =>
-              finding(evidence = evidence,
-                      name = q.name,
-                      author = q.author,
-                      title = q.title,
-                      description = q.description,
-                      score = q.score))
+          .map(evidence =>
+            finding(
+              evidence = evidence,
+              name = q.name,
+              author = q.author,
+              title = q.title,
+              description = q.description,
+              score = q.score
+            )
+          )
           .l
       } catch {
         case ex: Throwable =>
@@ -82,26 +83,29 @@ package object scan {
 
   }
 
-  private def finding(evidence: StoredNode,
-                      name: String,
-                      author: String,
-                      title: String,
-                      description: String,
-                      score: Double): NewFinding = {
+  private def finding(
+      evidence: StoredNode,
+      name: String,
+      author: String,
+      title: String,
+      description: String,
+      score: Double
+  ): NewFinding = {
     NewFinding()
       .evidence(List(evidence))
-      .keyValuePairs(List(
-        NewKeyValuePair().key(FindingKeys.name).value(name),
-        NewKeyValuePair().key(FindingKeys.author).value(author),
-        NewKeyValuePair().key(FindingKeys.title).value(title),
-        NewKeyValuePair().key(FindingKeys.description).value(description),
-        NewKeyValuePair().key(FindingKeys.score).value(score.toString)
-      ))
+      .keyValuePairs(
+        List(
+          NewKeyValuePair().key(FindingKeys.name).value(name),
+          NewKeyValuePair().key(FindingKeys.author).value(author),
+          NewKeyValuePair().key(FindingKeys.title).value(title),
+          NewKeyValuePair().key(FindingKeys.description).value(description),
+          NewKeyValuePair().key(FindingKeys.score).value(score.toString)
+        )
+      )
   }
 
-  /**
-    * Print human readable list of findings to standard out.
-    * */
+  /** Print human readable list of findings to standard out.
+    */
   def outputFindings(cpg: Cpg)(implicit finder: NodeExtensionFinder): Unit = {
     cpg.finding.sortBy(_.score.toInt).foreach { finding =>
       val evidence = finding.evidence.headOption

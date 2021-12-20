@@ -30,9 +30,8 @@ object CpgGeneratorFactory {
 
 class CpgGeneratorFactory(config: ConsoleConfig) {
 
-  /**
-    * For a given input path, try to guess a suitable generator and return it
-    * */
+  /** For a given input path, try to guess a suitable generator and return it
+    */
   def forCodeAt(inputPath: String): Option[CpgGenerator] =
     for {
       language <- guessLanguage(inputPath)
@@ -42,9 +41,8 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
       cpgGenerator
     }
 
-  /**
-    * For a language, return the generator
-    * */
+  /** For a language, return the generator
+    */
   def forLanguage(language: String): Option[CpgGenerator] = {
     Option(language)
       .filter(languageIsKnown)
@@ -55,10 +53,12 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
 
   def languageIsKnown(language: String): Boolean = CpgGeneratorFactory.KNOWN_LANGUAGES.contains(language)
 
-  def runGenerator(frontend: CpgGenerator,
-                   inputPath: String,
-                   outputPath: String,
-                   namespaces: List[String] = List()): Option[Path] = {
+  def runGenerator(
+      frontend: CpgGenerator,
+      inputPath: String,
+      outputPath: String,
+      namespaces: List[String] = List()
+  ): Option[Path] = {
     val outputFileOpt: Option[File] =
       frontend.generate(inputPath, outputPath, namespaces).map(File(_))
     outputFileOpt.map { outFile =>

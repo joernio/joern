@@ -1,7 +1,6 @@
 package io.joern.fuzzyc2cpg.passes.astcreation
 
-/**
-  * Handles the scope stack for tracking identifier to variable relation.
+/** Handles the scope stack for tracking identifier to variable relation.
   * @tparam I Identifier type.
   * @tparam V Variable type.
   * @tparam S Scope type.

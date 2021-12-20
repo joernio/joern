@@ -24,10 +24,9 @@ class DumpCpg14(options: Cpg14DumpOptions)(implicit semantics: Semantics) extend
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
-    cpg.method.zipWithIndex.foreach {
-      case (method, i) =>
-        val str = method.dotCpg14.head
-        (File(options.outDir) / s"${i}-cpg.dot").write(str)
+    cpg.method.zipWithIndex.foreach { case (method, i) =>
+      val str = method.dotCpg14.head
+      (File(options.outDir) / s"${i}-cpg.dot").write(str)
     }
   }
 }

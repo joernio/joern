@@ -18,8 +18,7 @@ object CertificateChecks extends QueryBundle {
       name = "ineffective-certificate-check",
       author = Crew.malte,
       title = "Ineffective Certificate Validation: The validation result is always positive",
-      description =
-        """
+      description = """
         |A certificate validation function is implemented as a function that only consists of a prologue where local
         |variables are initialized to arguments, followed by a (positive) return statement.
         |""".stripMargin,
@@ -32,7 +31,7 @@ object CertificateChecks extends QueryBundle {
           "checkClientTrusted" -> "void(java.security.cert.X509Certificate[],java.lang.String,java.net.Socket)",
           "checkClientTrusted" -> "void(java.security.cert.X509Certificate[],java.lang.String,javax.net.ssl.SSLEngine)",
           "checkServerTrusted" -> "void(java.security.cert.X509Certificate[],java.lang.String,java.net.Socket)",
-          "checkServerTrusted" -> "void(java.security.cert.X509Certificate[],java.lang.String,javax.net.ssl.SSLEngine)",
+          "checkServerTrusted" -> "void(java.security.cert.X509Certificate[],java.lang.String,javax.net.ssl.SSLEngine)"
         )
 
         // skip over arguments getting copied to local variables

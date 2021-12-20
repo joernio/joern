@@ -8,18 +8,19 @@ class ResultTable {
 
   private val table = new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
 
-  /**
-    * Add all results in `value` to table entry at `key`, appending to existing
+  /** Add all results in `value` to table entry at `key`, appending to existing
     * results.
     */
   def add(key: StoredNode, value: Vector[ReachableByResult]): Unit = {
-    table.asJava.compute(key, { (_, existingValue) =>
-      Option(existingValue).toVector.flatten ++ value
-    })
+    table.asJava.compute(
+      key,
+      { (_, existingValue) =>
+        Option(existingValue).toVector.flatten ++ value
+      }
+    )
   }
 
-  /**
-    * For a given path, determine whether results for the first element (`first`) are stored in the
+  /** For a given path, determine whether results for the first element (`first`) are stored in the
     * table, and if so, for each result, determine the path up to `first` and prepend it to
     * `path`, giving us new results via table lookup.
     */
@@ -33,23 +34,20 @@ class ResultTable {
     }
   }
 
-  /**
-    * Retrieve list of results for `node` or None if they are not
+  /** Retrieve list of results for `node` or None if they are not
     * available in the table.
     */
   def get(node: StoredNode): Option[Vector[ReachableByResult]] = {
     table.get(node)
   }
 
-  /**
-    * Returns all keys to allow for iteration through the table.
+  /** Returns all keys to allow for iteration through the table.
     */
   def keys(): Vector[StoredNode] = table.keys.toVector
 
 }
 
-/**
-  * A (partial) result, informing about a path that exists from a source to another
+/** A (partial) result, informing about a path that exists from a source to another
   * node in the graph.
   *
   * @param path this is the main result - a known path
@@ -58,12 +56,14 @@ class ResultTable {
   *                 match call sites to exclude non-realizable paths through other callers
   * @param partial indicate whether this result stands on its own or requires further analysis,
   *                e.g., by expanding output arguments backwards into method output parameters.
-  * */
-case class ReachableByResult(path: Vector[PathElement],
-                             table: ResultTable,
-                             callSite: Option[Call],
-                             callDepth: Int = 0,
-                             partial: Boolean = false) {
+  */
+case class ReachableByResult(
+    path: Vector[PathElement],
+    table: ResultTable,
+    callSite: Option[Call],
+    callDepth: Int = 0,
+    partial: Boolean = false
+) {
   def source: CfgNode = path.head.node
 
   def unresolvedArgs: Vector[CfgNode] =
@@ -73,8 +73,7 @@ case class ReachableByResult(path: Vector[PathElement],
     }.distinct
 }
 
-/**
-  * We represent data flows as sequences of path elements, where each
+/** We represent data flows as sequences of path elements, where each
   * path element consists of a node, flags and the label of its
   * outgoing edge.
   *
@@ -82,5 +81,5 @@ case class ReachableByResult(path: Vector[PathElement],
   * @param visible whether this path element should be shown in the flow
   * @param resolved whether we have resolved the method call this argument belongs to
   * @param outEdgeLabel label of the outgoing DDG edge
-  * */
+  */
 case class PathElement(node: CfgNode, visible: Boolean = true, resolved: Boolean = true, outEdgeLabel: String = "")

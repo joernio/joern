@@ -8,13 +8,15 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.console.JoernWorkspaceLoader
 import overflowdb.traversal.Traversal
 
-case class FlowConfig(cpgFileName: String = "cpg.bin",
-                      verbose: Boolean = false,
-                      srcRegex: String = ".*",
-                      dstRegex: String = ".*",
-                      srcParam: Option[Int] = None,
-                      dstParam: Option[Int] = None,
-                      depth: Int = 1)
+case class FlowConfig(
+    cpgFileName: String = "cpg.bin",
+    verbose: Boolean = false,
+    srcRegex: String = ".*",
+    dstRegex: String = ".*",
+    srcParam: Option[Int] = None,
+    dstParam: Option[Int] = None,
+    depth: Int = 1
+)
 
 object JoernFlow extends App {
 

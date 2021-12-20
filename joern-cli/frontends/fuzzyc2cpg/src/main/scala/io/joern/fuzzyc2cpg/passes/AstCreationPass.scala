@@ -10,10 +10,9 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import org.slf4j.LoggerFactory
 
-/**
-  * Given a list of filenames, this pass creates abstract syntax trees for
+/** Given a list of filenames, this pass creates abstract syntax trees for
   * each file, including File and NamespaceBlock  Files are processed in parallel.
-  * */
+  */
 class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
     extends ConcurrentWriterCpgPass[String](cpg, keyPool = Some(keyPool)) {
 

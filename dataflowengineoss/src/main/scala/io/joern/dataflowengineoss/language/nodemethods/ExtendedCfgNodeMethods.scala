@@ -15,17 +15,17 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
 
   import ExtendedCfgNodeMethods._
 
-  /**
-    * Convert to nearest AST node
-    * */
+  /** Convert to nearest AST node
+    */
   def astNode: AstNode =
     node match {
       case n: AstNode => n
       case _          => ??? //TODO markus/fabs?
     }
 
-  def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(
-      implicit context: EngineContext): Traversal[NodeType] =
+  def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(implicit
+      context: EngineContext
+  ): Traversal[NodeType] =
     node.start.reachableBy(sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
@@ -35,10 +35,10 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     result
   }
 
-  def ddgInPathElem(withInvisible: Boolean,
-                    cache: mutable.HashMap[CfgNode, Vector[PathElement]] =
-                      mutable.HashMap[CfgNode, Vector[PathElement]]())(
-      implicit semantics: Semantics): Traversal[PathElement] =
+  def ddgInPathElem(
+      withInvisible: Boolean,
+      cache: mutable.HashMap[CfgNode, Vector[PathElement]] = mutable.HashMap[CfgNode, Vector[PathElement]]()
+  )(implicit semantics: Semantics): Traversal[PathElement] =
     ddgInPathElem(Vector(PathElement(node)), withInvisible, cache)
 
   def ddgInPathElem(implicit semantics: Semantics): Traversal[PathElement] = {
@@ -48,24 +48,24 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     result
   }
 
-  /**
-    * Traverse back in the data dependence graph by one step, taking into account semantics
+  /** Traverse back in the data dependence graph by one step, taking into account semantics
     * @param path optional list of path elements that have been expanded already
-    * */
+    */
   def ddgIn(path: Vector[PathElement], withInvisible: Boolean, cache: mutable.HashMap[CfgNode, Vector[PathElement]])(
-      implicit semantics: Semantics): Traversal[CfgNode] = {
+      implicit semantics: Semantics
+  ): Traversal[CfgNode] = {
     ddgInPathElem(path, withInvisible, cache).map(_.node)
   }
 
-  /**
-    * Traverse back in the data dependence graph by one step and generate corresponding PathElement,
+  /** Traverse back in the data dependence graph by one step and generate corresponding PathElement,
     * taking into account semantics
     * @param path optional list of path elements that have been expanded already
-    * */
+    */
   def ddgInPathElem(
       path: Vector[PathElement],
       withInvisible: Boolean,
-      cache: mutable.HashMap[CfgNode, Vector[PathElement]])(implicit semantics: Semantics): Traversal[PathElement] = {
+      cache: mutable.HashMap[CfgNode, Vector[PathElement]]
+  )(implicit semantics: Semantics): Traversal[PathElement] = {
     val result = ddgInPathElemInternal(path, withInvisible, cache).to(Traversal)
     result
   }
@@ -73,7 +73,8 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
   private def ddgInPathElemInternal(
       path: Vector[PathElement],
       withInvisible: Boolean,
-      cache: mutable.HashMap[CfgNode, Vector[PathElement]])(implicit semantics: Semantics): Vector[PathElement] = {
+      cache: mutable.HashMap[CfgNode, Vector[PathElement]]
+  )(implicit semantics: Semantics): Vector[PathElement] = {
 
     if (cache.contains(node)) {
       return cache(node)

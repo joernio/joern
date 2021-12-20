@@ -109,7 +109,8 @@ trait AstForTypesCreator {
             .code(nodeSignature(declarator))
             .name(name)
             .typeFullName(declTypeName)
-            .order(order))
+            .order(order)
+        )
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
         val l = NewLocal()
           .code(s"$tpe $name")
@@ -196,8 +197,10 @@ trait AstForTypesCreator {
 
   protected def astForASMDeclaration(asm: IASTASMDeclaration, order: Int): Ast = Ast(newUnknown(asm, order))
 
-  private def astForStructuredBindingDeclaration(structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration,
-                                                 order: Int): Ast = {
+  private def astForStructuredBindingDeclaration(
+      structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration,
+      order: Int
+  ): Ast = {
     val cpgBlock = NewBlock()
       .order(order)
       .argumentIndex(order)
@@ -206,9 +209,8 @@ trait AstForTypesCreator {
       .columnNumber(column(structuredBindingDeclaration))
 
     scope.pushNewScope(cpgBlock)
-    val childAsts = withOrder(structuredBindingDeclaration.getNames) {
-      case (name, o) =>
-        astForNode(name, o)
+    val childAsts = withOrder(structuredBindingDeclaration.getNames) { case (name, o) =>
+      astForNode(name, o)
     }
 
     val blockAst = Ast(cpgBlock).withChildren(childAsts)
@@ -272,14 +274,15 @@ trait AstForTypesCreator {
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =
-    withOrder(l.getDeclarations) {
-      case (d, o) =>
-        astsForDeclaration(d, o)
+    withOrder(l.getDeclarations) { case (d, o) =>
+      astsForDeclaration(d, o)
     }.flatten
 
-  private def astsForCompositeType(typeSpecifier: IASTCompositeTypeSpecifier,
-                                   decls: List[IASTDeclarator],
-                                   order: Int): Seq[Ast] = {
+  private def astsForCompositeType(
+      typeSpecifier: IASTCompositeTypeSpecifier,
+      decls: List[IASTDeclarator],
+      order: Int
+  ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
     val declAsts = withOrder(decls) { (d, o) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
@@ -294,13 +297,15 @@ trait AstForTypesCreator {
       case cppClass: ICPPASTCompositeTypeSpecifier =>
         val baseClassList = cppClass.getBaseSpecifiers.toSeq.map(s => fixQualifiedName(s.getNameSpecifier.toString))
         baseClassList.foreach(registerType)
-        newTypeDecl(name,
-                    fullname,
-                    filename,
-                    code,
-                    inherits = baseClassList,
-                    alias = nameWithTemplateParams,
-                    order = order)
+        newTypeDecl(
+          name,
+          fullname,
+          filename,
+          code,
+          inherits = baseClassList,
+          alias = nameWithTemplateParams,
+          order = order
+        )
       case _ =>
         newTypeDecl(name, fullname, filename, code, alias = nameWithTemplateParams, order = order)
     }
@@ -318,9 +323,11 @@ trait AstForTypesCreator {
     Ast(typeDecl).withChildren(member) +: declAsts
   }
 
-  private def astsForElaboratedType(typeSpecifier: IASTElaboratedTypeSpecifier,
-                                    decls: List[IASTDeclarator],
-                                    order: Int): Seq[Ast] = {
+  private def astsForElaboratedType(
+      typeSpecifier: IASTElaboratedTypeSpecifier,
+      decls: List[IASTDeclarator],
+      order: Int
+  ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
     val declAsts = withOrder(decls) { (d, o) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
@@ -365,9 +372,11 @@ trait AstForTypesCreator {
 
   }
 
-  private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier,
-                          decls: List[IASTDeclarator],
-                          order: Int): Seq[Ast] = {
+  private def astsForEnum(
+      typeSpecifier: IASTEnumerationSpecifier,
+      decls: List[IASTDeclarator],
+      order: Int
+  ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
     val declAsts = withOrder(decls) { (d, o) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)

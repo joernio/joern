@@ -187,11 +187,13 @@ trait AstForExpressionsCreator {
 
   private def astForArrayIndexExpression(arrayIndexExpression: IASTArraySubscriptExpression, order: Int): Ast = {
     val cpgArrayIndexing =
-      newCallNode(arrayIndexExpression,
-                  Operators.indirectIndexAccess,
-                  Operators.indirectIndexAccess,
-                  DispatchTypes.STATIC_DISPATCH,
-                  order)
+      newCallNode(
+        arrayIndexExpression,
+        Operators.indirectIndexAccess,
+        Operators.indirectIndexAccess,
+        DispatchTypes.STATIC_DISPATCH,
+        order
+      )
 
     val expr = astForExpression(arrayIndexExpression.getArrayExpression, 1)
     val arg = astForNode(arrayIndexExpression.getArgument, 2)
@@ -229,8 +231,10 @@ trait AstForExpressionsCreator {
     } else {
       val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier, 1)
       val args =
-        if (newExpression.getInitializer != null && newExpression.getInitializer
-              .isInstanceOf[ICPPASTConstructorInitializer]) {
+        if (
+          newExpression.getInitializer != null && newExpression.getInitializer
+            .isInstanceOf[ICPPASTConstructorInitializer]
+        ) {
           val args = newExpression.getInitializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments
           withOrder(args) { (a, o) =>
             astForNode(a, 1 + o)
@@ -276,8 +280,10 @@ trait AstForExpressionsCreator {
     Ast(callNode).withChild(arg).withArgEdge(callNode, arg.root)
   }
 
-  private def astForCompoundStatementExpression(compoundExpression: IGNUASTCompoundStatementExpression,
-                                                order: Int): Ast =
+  private def astForCompoundStatementExpression(
+      compoundExpression: IGNUASTCompoundStatementExpression,
+      order: Int
+  ): Ast =
     nullSafeAst(compoundExpression.getCompoundStatement, order).headOption.getOrElse(Ast())
 
   private def astForPackExpansionExpression(packExpansionExpression: ICPPASTPackExpansionExpression, order: Int): Ast =

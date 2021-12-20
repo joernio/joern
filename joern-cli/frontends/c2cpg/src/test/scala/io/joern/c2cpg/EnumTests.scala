@@ -20,21 +20,18 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |    green = 20,
         |    blue
         |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) {
-        case List(color) =>
-          color.name shouldBe "color"
-          color.code shouldBe "enum color"
-          inside(color.member.l) {
-            case List(red, yellow, green, blue) =>
-              red.name shouldBe "red"
-              yellow.name shouldBe "yellow"
-              green.name shouldBe "green"
-              blue.name shouldBe "blue"
-          }
-          inside(color.astChildren.isCall.code.l) {
-            case List(greenInit) =>
-              greenInit shouldBe "green = 20"
-          }
+      inside(cpg.typeDecl.internal.l) { case List(color) =>
+        color.name shouldBe "color"
+        color.code shouldBe "enum color"
+        inside(color.member.l) { case List(red, yellow, green, blue) =>
+          red.name shouldBe "red"
+          yellow.name shouldBe "yellow"
+          green.name shouldBe "green"
+          blue.name shouldBe "blue"
+        }
+        inside(color.astChildren.isCall.code.l) { case List(greenInit) =>
+          greenInit shouldBe "green = 20"
+        }
       }
     }
 
@@ -46,24 +43,21 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |    green = 20,
         |    blue
         |} C;""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.filter(x => !x.isExternal).l) {
-        case List(color, c) =>
-          color.name shouldBe "color"
-          color.code shouldBe "enum color"
-          color.aliasTypeFullName shouldBe None
-          c.name shouldBe "C"
-          c.aliasTypeFullName shouldBe Some("color")
-          inside(color.astChildren.isMember.l) {
-            case List(red, yellow, green, blue) =>
-              red.name shouldBe "red"
-              yellow.name shouldBe "yellow"
-              green.name shouldBe "green"
-              blue.name shouldBe "blue"
-          }
-          inside(color.astChildren.isCall.code.l) {
-            case List(greenInit) =>
-              greenInit shouldBe "green = 20"
-          }
+      inside(cpg.typeDecl.filter(x => !x.isExternal).l) { case List(color, c) =>
+        color.name shouldBe "color"
+        color.code shouldBe "enum color"
+        color.aliasTypeFullName shouldBe None
+        c.name shouldBe "C"
+        c.aliasTypeFullName shouldBe Some("color")
+        inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
+          red.name shouldBe "red"
+          yellow.name shouldBe "yellow"
+          green.name shouldBe "green"
+          blue.name shouldBe "blue"
+        }
+        inside(color.astChildren.isCall.code.l) { case List(greenInit) =>
+          greenInit shouldBe "green = 20"
+        }
       }
     }
 
@@ -73,22 +67,19 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |     high='h',
         |     low='l', // C++11 allows the extra comma
         |}; """.stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) {
-        case List(altitude) =>
-          altitude.name shouldBe "altitude"
-          altitude.code shouldBe "enum altitude"
-          inside(altitude.member.l) {
-            case List(high, low) =>
-              high.name shouldBe "high"
-              high.typeFullName shouldBe "char"
-              low.name shouldBe "low"
-              low.typeFullName shouldBe "char"
-          }
-          inside(altitude.astChildren.isCall.code.l) {
-            case List(highInit, lowInit) =>
-              highInit shouldBe "high='h'"
-              lowInit shouldBe "low='l'"
-          }
+      inside(cpg.typeDecl.internal.l) { case List(altitude) =>
+        altitude.name shouldBe "altitude"
+        altitude.code shouldBe "enum altitude"
+        inside(altitude.member.l) { case List(high, low) =>
+          high.name shouldBe "high"
+          high.typeFullName shouldBe "char"
+          low.name shouldBe "low"
+          low.typeFullName shouldBe "char"
+        }
+        inside(altitude.astChildren.isCall.code.l) { case List(highInit, lowInit) =>
+          highInit shouldBe "high='h'"
+          lowInit shouldBe "low='l'"
+        }
       }
     }
 
@@ -99,19 +90,17 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |    b,
         |    c
         |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) {
-        case List(smallenum) =>
-          smallenum.name shouldBe "smallenum"
-          smallenum.code shouldBe "enum smallenum"
-          inside(smallenum.member.l) {
-            case List(a, b, c) =>
-              a.name shouldBe "a"
-              a.typeFullName shouldBe "int"
-              b.name shouldBe "b"
-              b.typeFullName shouldBe "int"
-              c.name shouldBe "c"
-              c.typeFullName shouldBe "int"
-          }
+      inside(cpg.typeDecl.internal.l) { case List(smallenum) =>
+        smallenum.name shouldBe "smallenum"
+        smallenum.code shouldBe "enum smallenum"
+        inside(smallenum.member.l) { case List(a, b, c) =>
+          a.name shouldBe "a"
+          a.typeFullName shouldBe "int"
+          b.name shouldBe "b"
+          b.typeFullName shouldBe "int"
+          c.name shouldBe "c"
+          c.typeFullName shouldBe "int"
+        }
       }
     }
 
@@ -122,16 +111,14 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
          |    e,
          |    f
          |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) {
-        case List(anon) =>
-          anon.name shouldBe "anonymous_enum_0"
-          anon.code shouldBe "enum"
-          inside(anon.member.l) {
-            case List(d, e, f) =>
-              d.name shouldBe "d"
-              e.name shouldBe "e"
-              f.name shouldBe "f"
-          }
+      inside(cpg.typeDecl.internal.l) { case List(anon) =>
+        anon.name shouldBe "anonymous_enum_0"
+        anon.code shouldBe "enum"
+        inside(anon.member.l) { case List(d, e, f) =>
+          d.name shouldBe "d"
+          e.name shouldBe "e"
+          f.name shouldBe "f"
+        }
       }
     }
 
@@ -143,28 +130,24 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
        |};
        |int x = X::a;
        |""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) {
-        case List(x) =>
-          x.name shouldBe "X"
-          x.code shouldBe "enum X"
-          inside(x.member.l) {
-            case List(a, b) =>
-              a.name shouldBe "a"
-              a.typeFullName shouldBe "int"
-              b.name shouldBe "b"
-              b.typeFullName shouldBe "int"
+      inside(cpg.typeDecl.internal.l) { case List(x) =>
+        x.name shouldBe "X"
+        x.code shouldBe "enum X"
+        inside(x.member.l) { case List(a, b) =>
+          a.name shouldBe "a"
+          a.typeFullName shouldBe "int"
+          b.name shouldBe "b"
+          b.typeFullName shouldBe "int"
+        }
+        inside(cpg.call.l) { case List(assign, ma) =>
+          assign.code shouldBe "x = X::a"
+          ma.code shouldBe "X::a"
+          inside(ma.ast.l) { case List(call: Call, x: Identifier, a: FieldIdentifier) =>
+            call.name shouldBe Operators.fieldAccess
+            x.order shouldBe 1
+            a.order shouldBe 2
           }
-          inside(cpg.call.l) {
-            case List(assign, ma) =>
-              assign.code shouldBe "x = X::a"
-              ma.code shouldBe "X::a"
-              inside(ma.ast.l) {
-                case List(call: Call, x: Identifier, a: FieldIdentifier) =>
-                  call.name shouldBe Operators.fieldAccess
-                  x.order shouldBe 1
-                  a.order shouldBe 2
-              }
-          }
+        }
       }
     }
 

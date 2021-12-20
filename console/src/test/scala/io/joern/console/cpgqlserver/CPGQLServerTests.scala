@@ -21,9 +21,11 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
   private val DefaultPromiseAwaitTimeout: FiniteDuration = Duration(10, SECONDS)
 
   private def postQuery(host: String, query: String, authHeaderVal: String = validBasicAuthHeaderVal): Value = {
-    val postResponse = requests.post(s"$host/query",
-                                     data = ujson.Obj("query" -> query).toString,
-                                     headers = Seq("authorization" -> authHeaderVal))
+    val postResponse = requests.post(
+      s"$host/query",
+      data = ujson.Obj("query" -> query).toString,
+      headers = Seq("authorization" -> authHeaderVal)
+    )
     val res =
       if (postResponse.bytes.length > 0)
         ujson.read(postResponse.bytes)
@@ -42,8 +44,8 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
 
     "allow websocket connections to the `/connect` endpoint" in Fixture() { host =>
       val wsMsgPromise = scala.concurrent.Promise[String]()
-      cask.util.WsClient.connect(s"$host/connect") {
-        case cask.Ws.Text(msg) => wsMsgPromise.success(msg)
+      cask.util.WsClient.connect(s"$host/connect") { case cask.Ws.Text(msg) =>
+        wsMsgPromise.success(msg)
       }
       val wsMsg = Await.result(wsMsgPromise.future, DefaultPromiseAwaitTimeout)
       wsMsg shouldBe "connected"
@@ -214,8 +216,8 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
 
   "receive error when attempting to retrieve result with invalid uuid" in Fixture() { host =>
     val connectedPromise = scala.concurrent.Promise[String]()
-    cask.util.WsClient.connect(s"$host/connect") {
-      case cask.Ws.Text(msg) => connectedPromise.success(msg)
+    cask.util.WsClient.connect(s"$host/connect") { case cask.Ws.Text(msg) =>
+      connectedPromise.success(msg)
     }
     Await.result(connectedPromise.future, Duration(1, SECONDS))
     val getResultResponse = getResponse(host, UUID.randomUUID().toString)
@@ -226,8 +228,8 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
 
   "return a valid JSON response when calling /result with incorrectly-formatted UUID parameter" in Fixture() { host =>
     val connectedPromise = scala.concurrent.Promise[String]()
-    cask.util.WsClient.connect(s"$host/connect") {
-      case cask.Ws.Text(msg) => connectedPromise.success(msg)
+    cask.util.WsClient.connect(s"$host/connect") { case cask.Ws.Text(msg) =>
+      connectedPromise.success(msg)
     }
     Await.result(connectedPromise.future, Duration(1, SECONDS))
     val getResultResponse = getResponse(host, "INCORRECTLY_FORMATTED_UUID_PARAM")
@@ -244,21 +246,20 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
 
     val rtl: Lock = new ReentrantLock()
     val connectedPromise = scala.concurrent.Promise[String]()
-    cask.util.WsClient.connect(s"$host/connect") {
-      case cask.Ws.Text(msg) =>
-        if (msg == "connected") {
-          connectedPromise.success(msg)
-        } else {
-          rtl.lock()
-          try {
-            wsUUIDs += msg
-          } finally {
-            rtl.unlock()
-            if (wsUUIDs.size == numQueries) {
-              correctNumberOfUUIDsReceived.success("")
-            }
+    cask.util.WsClient.connect(s"$host/connect") { case cask.Ws.Text(msg) =>
+      if (msg == "connected") {
+        connectedPromise.success(msg)
+      } else {
+        rtl.lock()
+        try {
+          wsUUIDs += msg
+        } finally {
+          rtl.unlock()
+          if (wsUUIDs.size == numQueries) {
+            correctNumberOfUUIDsReceived.success("")
           }
         }
+      }
     }
     Await.result(connectedPromise.future, DefaultPromiseAwaitTimeout)
 
@@ -279,21 +280,20 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
     val connectedPromise = scala.concurrent.Promise[String]()
 
     val rtl: Lock = new ReentrantLock()
-    cask.util.WsClient.connect(s"$host/connect") {
-      case cask.Ws.Text(msg) =>
-        if (msg == "connected") {
-          connectedPromise.success(msg)
-        } else {
-          rtl.lock()
-          try {
-            wsUUIDs += msg
-          } finally {
-            rtl.unlock()
-            if (wsUUIDs.size == queries.size) {
-              correctNumberOfUUIDsReceived.success("")
-            }
+    cask.util.WsClient.connect(s"$host/connect") { case cask.Ws.Text(msg) =>
+      if (msg == "connected") {
+        connectedPromise.success(msg)
+      } else {
+        rtl.lock()
+        try {
+          wsUUIDs += msg
+        } finally {
+          rtl.unlock()
+          if (wsUUIDs.size == queries.size) {
+            correctNumberOfUUIDsReceived.success("")
           }
         }
+      }
     }
     Await.result(connectedPromise.future, DefaultPromiseAwaitTimeout)
 
@@ -327,7 +327,8 @@ object Fixture {
       .build
     server.start()
     val res =
-      try { f(httpEndpoint) } finally {
+      try { f(httpEndpoint) }
+      finally {
         server.stop()
         ammonite.shutdown()
       }

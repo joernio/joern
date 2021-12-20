@@ -243,18 +243,16 @@ class AstCreator(filename: String, global: Global) {
     astWithCtx.ctx.bindingsInfo.foreach { bindingInfo =>
       diffGraph.addNode(bindingInfo.node)
 
-      bindingInfo.edgeMeta.foreach {
-        case (src, dst, label) =>
-          diffGraph.addEdge(src, dst, label)
+      bindingInfo.edgeMeta.foreach { case (src, dst, label) =>
+        diffGraph.addEdge(src, dst, label)
       }
     }
 
     astWithCtx.ctx.closureBindingInfo.foreach { closureBindingInfo =>
       diffGraph.addNode(closureBindingInfo.node)
 
-      closureBindingInfo.edgeMeta.foreach {
-        case (src, dest, label) =>
-          diffGraph.addEdge(src, dest, label)
+      closureBindingInfo.edgeMeta.foreach { case (src, dest, label) =>
+        diffGraph.addEdge(src, dest, label)
       }
     }
   }
@@ -381,17 +379,15 @@ class AstCreator(filename: String, global: Global) {
         fieldDeclaration.getVariables.asScala
       }
       .zipWithIndex
-      .map {
-        case (v, i) =>
-          astForVariableDeclarator(v, i + initMemberOrder)
+      .map { case (v, i) =>
+        astForVariableDeclarator(v, i + initMemberOrder)
       }
       .toList
 
     val enumEntryAsts = if (typ.isEnumDeclaration) {
       val initOrder = memberAsts.size + constructorAsts.size + methodAsts.size
-      withOrder(typ.asEnumDeclaration().getEntries) {
-        case (entry, order) =>
-          astForEnumEntry(entry, initOrder + order)
+      withOrder(typ.asEnumDeclaration().getEntries) { case (entry, order) =>
+        astForEnumEntry(entry, initOrder + order)
       }
     } else {
       List.empty
@@ -420,20 +416,19 @@ class AstCreator(filename: String, global: Global) {
       .name(entry.getName.toString)
       .typeFullName(typ)
 
-    val args = withOrder(entry.getArguments) {
-      case (x, o) =>
-        val children = astsForExpression(x, ScopeContext(), o)
-        val callNode =
-          NewCall()
-            .name(s"$typ.<init>")
-            .methodFullName(s"$typ.<init>")
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .code(entry.toString)
-            .lineNumber(line(entry))
-            .columnNumber(column(entry))
-            .argumentIndex(o)
-            .order(o)
-        callAst(callNode, children)
+    val args = withOrder(entry.getArguments) { case (x, o) =>
+      val children = astsForExpression(x, ScopeContext(), o)
+      val callNode =
+        NewCall()
+          .name(s"$typ.<init>")
+          .methodFullName(s"$typ.<init>")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .code(entry.toString)
+          .lineNumber(line(entry))
+          .columnNumber(column(entry))
+          .argumentIndex(o)
+          .order(o)
+      callAst(callNode, children)
     }.flatten
 
     Ast(entryNode)
@@ -932,9 +927,11 @@ class AstCreator(filename: String, global: Global) {
     AstWithCtx(switchAst, ctx)
   }
 
-  private def astForSynchronizedStatement(stmt: SynchronizedStmt,
-                                          scopeContext: ScopeContext,
-                                          order: Int): AstWithCtx = {
+  private def astForSynchronizedStatement(
+      stmt: SynchronizedStmt,
+      scopeContext: ScopeContext,
+      order: Int
+  ): AstWithCtx = {
     val parentNode =
       NewBlock()
         .lineNumber(line(stmt))
@@ -971,17 +968,16 @@ class AstCreator(filename: String, global: Global) {
         Seq(Ast(target))
 
       case labels =>
-        labels.zipWithIndex.flatMap {
-          case (label, idx) =>
-            val labelOrder = order + idx
-            val jumpTarget = NewJumpTarget()
-              .name("case")
-              .code(label.toString)
-              .order(labelOrder)
-              .argumentIndex(labelOrder)
-            val labelAsts = astsForExpression(label, scopeContext, labelOrder)
+        labels.zipWithIndex.flatMap { case (label, idx) =>
+          val labelOrder = order + idx
+          val jumpTarget = NewJumpTarget()
+            .name("case")
+            .code(label.toString)
+            .order(labelOrder)
+            .argumentIndex(labelOrder)
+          val labelAsts = astsForExpression(label, scopeContext, labelOrder)
 
-            Seq(Ast(jumpTarget)) ++ labelAsts.map(_.ast)
+          Seq(Ast(jumpTarget)) ++ labelAsts.map(_.ast)
         }
     }
   }
@@ -1125,13 +1121,12 @@ class AstCreator(filename: String, global: Global) {
       .lineNumber(line(expr))
       .columnNumber(column(expr))
 
-    val levelAsts = expr.getLevels.asScala.zipWithIndex.flatMap {
-      case (lvl, idx) =>
-        lvl.getDimension.toScala match {
-          case Some(dimension) => astsForExpression(dimension, scopeContext, idx + 1)
+    val levelAsts = expr.getLevels.asScala.zipWithIndex.flatMap { case (lvl, idx) =>
+      lvl.getDimension.toScala match {
+        case Some(dimension) => astsForExpression(dimension, scopeContext, idx + 1)
 
-          case None => Seq.empty
-        }
+        case None => Seq.empty
+      }
     }
 
     val initializerAstWithCtx =
@@ -1164,9 +1159,8 @@ class AstCreator(filename: String, global: Global) {
     val argsWithCtx = expr.getValues.asScala
       .slice(0, MAX_INITIALIZERS)
       .zipWithIndex
-      .flatMap {
-        case (c, o) =>
-          astsForExpression(c, scopeContext, o)
+      .flatMap { case (c, o) =>
+        astsForExpression(c, scopeContext, o)
       }
       .toSeq
 
@@ -1293,13 +1287,12 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def localsForVarDecl(varDecl: VariableDeclarationExpr, order: Int): List[NewLocal] = {
-    varDecl.getVariables.asScala.zipWithIndex.map {
-      case (variable, idx) =>
-        val name = variable.getName.toString
-        val typeFullName = registerType(tryResolveType(variable))
-        val code = s"${variable.getType} $name"
+    varDecl.getVariables.asScala.zipWithIndex.map { case (variable, idx) =>
+      val name = variable.getName.toString
+      val typeFullName = registerType(tryResolveType(variable))
+      val code = s"${variable.getType} $name"
 
-        NewLocal().name(name).code(code).typeFullName(typeFullName).order(order + idx)
+      NewLocal().name(name).code(code).typeFullName(typeFullName).order(order + idx)
     }.toList
   }
 
@@ -1328,36 +1321,35 @@ class AstCreator(filename: String, global: Global) {
   ): Seq[AstWithCtx] = {
     val variablesWithInitializers =
       varDecl.getVariables.asScala.filter(_.getInitializer.toScala.isDefined)
-    val assignments = variablesWithInitializers.zipWithIndex map {
-      case (variable, idx) =>
-        val name = variable.getName.toString
-        val initializer = variable.getInitializer.toScala.get // Won't crash because of filter
-        val initializerTypeFullName = getInitializerType(variable)
+    val assignments = variablesWithInitializers.zipWithIndex map { case (variable, idx) =>
+      val name = variable.getName.toString
+      val initializer = variable.getInitializer.toScala.get // Won't crash because of filter
+      val initializerTypeFullName = getInitializerType(variable)
 
-        val callNode = NewCall()
-          .name(Operators.assignment)
-          .methodFullName(Operators.assignment)
-          .code(s"$name = ${initializer.toString()}")
-          .order(order + idx)
-          .argumentIndex(order + idx)
-          .lineNumber(line(varDecl))
-          .columnNumber(column(varDecl))
-          .typeFullName(tryResolveType(variable))
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      val callNode = NewCall()
+        .name(Operators.assignment)
+        .methodFullName(Operators.assignment)
+        .code(s"$name = ${initializer.toString()}")
+        .order(order + idx)
+        .argumentIndex(order + idx)
+        .lineNumber(line(varDecl))
+        .columnNumber(column(varDecl))
+        .typeFullName(tryResolveType(variable))
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
-        val identifier = NewIdentifier()
-          .name(name)
-          .order(1)
-          .argumentIndex(1)
-          .code(name)
-          .typeFullName(initializerTypeFullName)
-          .lineNumber(line(variable))
-          .columnNumber(column(variable))
-        val identifierAst = AstWithCtx(Ast(identifier), Context(identifiers = Seq(identifier)))
+      val identifier = NewIdentifier()
+        .name(name)
+        .order(1)
+        .argumentIndex(1)
+        .code(name)
+        .typeFullName(initializerTypeFullName)
+        .lineNumber(line(variable))
+        .columnNumber(column(variable))
+      val identifierAst = AstWithCtx(Ast(identifier), Context(identifiers = Seq(identifier)))
 
-        val initializerAstsWithCtx = astsForExpression(initializer, scopeContext, 2)
+      val initializerAstsWithCtx = astsForExpression(initializer, scopeContext, 2)
 
-        callAst(callNode, Seq(identifierAst) ++ initializerAstsWithCtx)
+      callAst(callNode, Seq(identifierAst) ++ initializerAstsWithCtx)
     }
 
     assignments.toList
@@ -1881,19 +1873,18 @@ class AstCreator(filename: String, global: Global) {
         .filename(filename)
 
     val localsForCapturedIdentifiers =
-      closureBindings.zipWithIndex.map {
-        case (bindingWithInfo, idx) =>
-          val identifier = bindingWithInfo.identifier
-          Ast(
-            NewLocal()
-              .name(identifier.name)
-              .code(identifier.code)
-              .typeFullName(identifier.typeFullName)
-              .lineNumber(identifier.lineNumber)
-              .columnNumber(identifier.columnNumber)
-              .closureBindingId(bindingWithInfo.bindingId)
-              .order(idx + 1)
-          )
+      closureBindings.zipWithIndex.map { case (bindingWithInfo, idx) =>
+        val identifier = bindingWithInfo.identifier
+        Ast(
+          NewLocal()
+            .name(identifier.name)
+            .code(identifier.code)
+            .typeFullName(identifier.typeFullName)
+            .lineNumber(identifier.lineNumber)
+            .columnNumber(identifier.columnNumber)
+            .closureBindingId(bindingWithInfo.bindingId)
+            .order(idx + 1)
+        )
       }
 
     val methodReturnOrder = parameterAsts.size + 2
@@ -1968,7 +1959,7 @@ class AstCreator(filename: String, global: Global) {
   private def createFieldAccessForMethodCall(
       call: MethodCallExpr,
       scope: Expression,
-      scopeContext: ScopeContext,
+      scopeContext: ScopeContext
   ): AstWithCtx = {
     val name = call.getName.toString
 
@@ -2067,9 +2058,8 @@ object AstCreator {
   }
 
   def withOrder[T <: Node, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.asScala.zipWithIndex.map {
-      case (x, i) =>
-        f(x, i + 1)
+    nodeList.asScala.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
     }.toSeq
   }
 

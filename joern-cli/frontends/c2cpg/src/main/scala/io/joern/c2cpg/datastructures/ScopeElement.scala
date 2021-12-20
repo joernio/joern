@@ -1,7 +1,6 @@
 package io.joern.c2cpg.datastructures
 
-/**
-  * A single element of a scope stack.
+/** A single element of a scope stack.
   * @tparam I Identifier type.
   * @tparam V Variable type.
   * @tparam S Scope type.

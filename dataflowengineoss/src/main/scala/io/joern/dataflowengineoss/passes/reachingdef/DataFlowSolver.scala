@@ -6,12 +6,11 @@ import scala.collection.mutable
 
 class DataFlowSolver {
 
-  /**
-    * Calculate fix point solution via a standard work list algorithm (Forwards).
+  /** Calculate fix point solution via a standard work list algorithm (Forwards).
     * The result is given by two maps: `in` and `out`. These maps associate
     * all CFG nodes with the set of definitions at node entry and node
     * exit respectively.
-    * */
+    */
   def calculateMopSolutionForwards[T <: Iterable[_]](problem: DataFlowProblem[T]): Solution[T] = {
     var out: Map[StoredNode, T] = problem.inOutInit.initOut
     var in = problem.inOutInit.initIn
@@ -41,12 +40,11 @@ class DataFlowSolver {
     Solution(in, out, problem)
   }
 
-  /**
-    * Calculate fix point solution via a standard work list algorithm (Backwards).
+  /** Calculate fix point solution via a standard work list algorithm (Backwards).
     * The result is given by two maps: `in` and `out`. These maps associate
     * all CFG nodes with the set of definitions at node entry and node
     * exit respectively.
-    * */
+    */
   def calculateMopSolutionBackwards[T <: Iterable[_]](problem: DataFlowProblem[T]): Solution[T] = {
     var out: Map[StoredNode, T] = problem.inOutInit.initOut
     var in = problem.inOutInit.initIn

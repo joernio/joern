@@ -44,18 +44,22 @@ class TestConsole(workspaceDir: String)
     override val generatorFactory = new TestCpgGeneratorFactory(config)
 
     override def oldc: SourceBasedFrontend = new SourceBasedFrontend("testFuzzyCFrontend", language = Languages.C) {
-      override def cpgGeneratorForLanguage(language: String,
-                                           config: FrontendConfig,
-                                           rootPath: Path,
-                                           args: List[String]): Option[CpgGenerator] =
+      override def cpgGeneratorForLanguage(
+          language: String,
+          config: FrontendConfig,
+          rootPath: Path,
+          args: List[String]
+      ): Option[CpgGenerator] =
         generatorFactory.forLanguage(language)
     }
 
     override def c: SourceBasedFrontend = new SourceBasedFrontend("testCFrontend", language = Languages.NEWC) {
-      override def cpgGeneratorForLanguage(language: String,
-                                           config: FrontendConfig,
-                                           rootPath: Path,
-                                           args: List[String]): Option[CpgGenerator] = {
+      override def cpgGeneratorForLanguage(
+          language: String,
+          config: FrontendConfig,
+          rootPath: Path,
+          args: List[String]
+      ): Option[CpgGenerator] = {
         val newConfig = new ConsoleConfig(TestConsole.this.config.install, config.withArgs(args))
         new TestCpgGeneratorFactory(newConfig).forLanguage(language)
       }
@@ -65,7 +69,7 @@ class TestConsole(workspaceDir: String)
 
 class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory(config) {
   override def forCodeAt(
-      inputPath: String,
+      inputPath: String
   ): Option[CpgGenerator] = {
     Some(new FuzzyCTestingFrontend)
   }

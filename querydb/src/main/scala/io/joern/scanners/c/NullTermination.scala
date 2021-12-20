@@ -37,15 +37,14 @@ object NullTermination extends QueryBundle {
           .map { c =>
             (c.method, c.argument(1), c.argument(3))
           }
-          .filter {
-            case (method, dst, size) =>
-              dst.reachableBy(allocations).codeExact(size.code).nonEmpty &&
-                method.assignments
-                  .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
-                  .source
-                  .isLiteral
-                  .code(".*0.*")
-                  .isEmpty
+          .filter { case (method, dst, size) =>
+            dst.reachableBy(allocations).codeExact(size.code).nonEmpty &&
+              method.assignments
+                .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
+                .source
+                .isLiteral
+                .code(".*0.*")
+                .isEmpty
           }
           .map(_._2)
       }),

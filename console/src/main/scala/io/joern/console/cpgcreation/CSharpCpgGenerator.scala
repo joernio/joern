@@ -4,19 +4,19 @@ import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
 
-/**
-  * C# language frontend. Translates C# project files into code property graphs.
-  * */
+/** C# language frontend. Translates C# project files into code property graphs.
+  */
 case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
-  /**
-    * Generate a CPG for the given input path.
+  /** Generate a CPG for the given input path.
     * Returns the output path, or None, if no
     * CPG was generated.
-    **/
-  override def generate(inputPath: String,
-                        outputPath: String = "cpg.bin.zip",
-                        namespaces: List[String] = List()): Option[String] = {
+    */
+  override def generate(
+      inputPath: String,
+      outputPath: String = "cpg.bin.zip",
+      namespaces: List[String] = List()
+  ): Option[String] = {
     var arguments = Seq("-i", inputPath, "-o", outputPath) ++ config.cmdLineParams
     var command = rootPath.resolve("csharp2cpg.sh").toString
 

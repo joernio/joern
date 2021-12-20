@@ -110,15 +110,13 @@ trait AstCreatorHelper {
   }
 
   protected def withOrder[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
-    nodes.zipWithIndex.map {
-      case (x, i) =>
-        f(x, i + 1)
+    nodes.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
     }
 
   protected def withOrder[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
-    nodes.toIndexedSeq.zipWithIndex.map {
-      case (x, i) =>
-        f(x, i + 1)
+    nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
     }
 
   protected def registerType(typeName: String): String = {
@@ -210,8 +208,10 @@ trait AstCreatorHelper {
               f.getDeclarations.headOption.map(x => nodeSignature(x.getName)).getOrElse(f.getName)
             )
           case f: CPPFunction if f.getDefinition != null =>
-            usingDeclarationMappings.getOrElse(fixQualifiedName(nodeSignature(d.getName)),
-                                               nodeSignature(f.getDefinition.getName))
+            usingDeclarationMappings.getOrElse(
+              fixQualifiedName(nodeSignature(d.getName)),
+              nodeSignature(f.getDefinition.getName)
+            )
           case other => other.getName
         }
       case alias: ICPPASTNamespaceAlias =>
@@ -293,7 +293,8 @@ trait AstCreatorHelper {
       case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
       case _                      => ""
     }
-    if (pointers.isEmpty) { s"$tpe$arr" } else {
+    if (pointers.isEmpty) { s"$tpe$arr" }
+    else {
       s"$tpe$arr${"*" * pointers.size}".strip()
     }
   }

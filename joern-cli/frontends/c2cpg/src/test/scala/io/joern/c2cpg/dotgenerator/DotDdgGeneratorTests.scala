@@ -23,12 +23,11 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
   "A DdgDotGenerator" should {
     "create correct dot graph" in {
       implicit val s: Semantics = semantics
-      inside(cpg.method.name("foo").dotDdg.l) {
-        case List(elem) =>
-          val lines = elem.split("\n")
-          lines.head should startWith("digraph \"foo\"")
-          lines.count(x => x.contains("->")) shouldBe 32
-          lines.last should startWith("}")
+      inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
+        val lines = elem.split("\n")
+        lines.head should startWith("digraph \"foo\"")
+        lines.count(x => x.contains("->")) shouldBe 32
+        lines.last should startWith("}")
       }
     }
   }
@@ -48,10 +47,9 @@ class DotDdgGeneratorTests2 extends DataFlowCodeToCpgSuite {
   "A DdgDotGenerator" should {
     "create correct dot graph" in {
       implicit val s: Semantics = semantics
-      inside(cpg.method.name("foo").dotDdg.l) {
-        case List(elem) =>
-          val lines = elem.split("\n")
-          lines.count(x => x.contains("->") && x.contains("\"x\"")) shouldBe 3
+      inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
+        val lines = elem.split("\n")
+        lines.count(x => x.contains("->") && x.contains("\"x\"")) shouldBe 3
       }
     }
   }

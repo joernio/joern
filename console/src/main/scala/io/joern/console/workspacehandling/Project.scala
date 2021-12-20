@@ -14,10 +14,9 @@ object Project {
 
 case class ProjectFile(inputPath: String, name: String)
 
-/**
-  * @param path absolute path to directory holding the project
+/** @param path absolute path to directory holding the project
   * @param cpg reference to loaded CPG or None, if the CPG is not loaded
-  * */
+  */
 case class Project(projectFile: ProjectFile, var path: Path, var cpg: Option[Cpg] = None) {
 
   import Project._
@@ -49,9 +48,8 @@ case class Project(projectFile: ProjectFile, var path: Path, var cpg: Option[Cpg
     List(name, overlays, inputPath, cpgLoaded.toString)
   }
 
-  /**
-    * Close project if it is open and do nothing otherwise.
-    * */
+  /** Close project if it is open and do nothing otherwise.
+    */
   def close: Project = {
     cpg.foreach { c =>
       c.close()

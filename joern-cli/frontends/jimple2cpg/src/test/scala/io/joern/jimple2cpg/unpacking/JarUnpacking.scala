@@ -44,10 +44,12 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
     bar.name shouldBe "Bar"
 
-    cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()",
-                                                                   "Foo.add:int(int,int)",
-                                                                   "pac.Bar.sub:int(int,int)",
-                                                                   "pac.Bar.<init>:void()")
+    cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
+      "Foo.<init>:void()",
+      "Foo.add:int(int,int)",
+      "pac.Bar.sub:int(int,int)",
+      "pac.Bar.<init>:void()"
+    )
   }
 
 }

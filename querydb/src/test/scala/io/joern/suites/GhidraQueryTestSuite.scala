@@ -36,8 +36,8 @@ class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
     nodes.MethodParameterIn
     query(cpg)
       .flatMap(_.evidence)
-      .collect {
-        case cfgNode: nodes.CfgNode => cfgNode.method.name
+      .collect { case cfgNode: nodes.CfgNode =>
+        cfgNode.method.name
       }
       .toSetImmutable
   }

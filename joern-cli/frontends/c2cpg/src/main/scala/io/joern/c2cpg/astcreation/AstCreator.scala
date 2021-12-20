@@ -14,12 +14,13 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(val filename: String,
-                 val config: C2Cpg.Config,
-                 val global: Global,
-                 val diffGraph: DiffGraph.Builder,
-                 val parserResult: IASTTranslationUnit)
-    extends AstForTypesCreator
+class AstCreator(
+    val filename: String,
+    val config: C2Cpg.Config,
+    val global: Global,
+    val diffGraph: DiffGraph.Builder,
+    val parserResult: IASTTranslationUnit
+) extends AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
     with AstForStatementsCreator
@@ -55,10 +56,12 @@ class AstCreator(val filename: String,
     }
   }
 
-  private def createFakeMethod(name: String,
-                               fullName: String,
-                               path: String,
-                               iASTTranslationUnit: IASTTranslationUnit): Ast = {
+  private def createFakeMethod(
+      name: String,
+      fullName: String,
+      path: String,
+      iASTTranslationUnit: IASTTranslationUnit
+  ): Ast = {
     val fakeGlobalMethod =
       NewMethod()
         .name(name)
@@ -79,12 +82,14 @@ class AstCreator(val filename: String,
     var currOrder = 1
     val declsAsts = iASTTranslationUnit.getDeclarations.flatMap { stmt =>
       val r =
-        Global.getAstsFromAstCache(diffGraph,
-                                   fileName(stmt),
-                                   filename,
-                                   line(stmt),
-                                   column(stmt),
-                                   astsForDeclaration(stmt, currOrder))
+        Global.getAstsFromAstCache(
+          diffGraph,
+          fileName(stmt),
+          filename,
+          line(stmt),
+          column(stmt),
+          astsForDeclaration(stmt, currOrder)
+        )
       currOrder = currOrder + r.length
       r
     }.toIndexedSeq

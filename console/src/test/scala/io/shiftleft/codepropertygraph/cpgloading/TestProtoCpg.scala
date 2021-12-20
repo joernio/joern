@@ -22,13 +22,16 @@ object TestProtoCpg {
             CpgStruct.Node.Property
               .newBuilder()
               .setName(Cpg.NodePropertyName.valueOf("FULL_NAME"))
-              .setValue(Cpg.PropertyValue
-                .newBuilder()
-                .setStringValue("foo")
-                .build())
+              .setValue(
+                Cpg.PropertyValue
+                  .newBuilder()
+                  .setStringValue("foo")
+                  .build()
+              )
               .build
           )
-          .build())
+          .build()
+      )
       .build()
       .writeTo(outStream)
     outStream.close()

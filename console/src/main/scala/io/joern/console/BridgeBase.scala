@@ -29,9 +29,8 @@ case class Config(
     forInputPath: Option[String] = None
 )
 
-/**
-  * Base class for Ammonite Bridge. Nothing to see here, move along.
-  * */
+/** Base class for Ammonite Bridge. Nothing to see here, move along.
+  */
 trait BridgeBase {
 
   protected def parseConfig(args: Array[String]): Config = {
@@ -212,8 +211,10 @@ trait BridgeBase {
         }
         .getOrElse("c")
     )
-    val storeCode = if (config.store) { "save" } else { "" }
-    val runDataflow = if (productName == "ocular") { "run.dataflow" } else { "run.ossdataflow" }
+    val storeCode = if (config.store) { "save" }
+    else { "" }
+    val runDataflow = if (productName == "ocular") { "run.dataflow" }
+    else { "run.ossdataflow" }
     val code = s"""
         | if (${config.overwrite} || !workspace.projectExists("$src")) {
         |   workspace.projects
@@ -272,11 +273,13 @@ trait BridgeBase {
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
       ammonite.shutdown()
     }))
-    val server = new CPGQLServer(ammonite,
-                                 config.serverHost,
-                                 config.serverPort,
-                                 config.serverAuthUsername,
-                                 config.serverAuthPassword)
+    val server = new CPGQLServer(
+      ammonite,
+      config.serverHost,
+      config.serverPort,
+      config.serverAuthUsername,
+      config.serverAuthPassword
+    )
     println("Starting CPGQL server ...")
     try {
       server.main(Array.empty)
@@ -347,9 +350,8 @@ trait BridgeBase {
     if (config.nocolors) Colors.BlackWhite
     else Colors.Default
 
-  /**
-    * Override this method to implement script decryption
-    * */
+  /** Override this method to implement script decryption
+    */
   protected def decryptedScript(scriptFile: Path): Path = {
     scriptFile
   }
