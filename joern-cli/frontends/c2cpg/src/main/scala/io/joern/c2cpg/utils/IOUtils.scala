@@ -10,19 +10,26 @@ import scala.util.Using
 
 object IOUtils {
 
-  def readLinesInFile(filePathAsString: String, sep: String = "\n"): Seq[String] = {
-    val decoder = Codec.UTF8.decoder.onMalformedInput(CodingErrorAction.REPLACE)
-    Using.resource(Source.fromFile(filePathAsString)(decoder)) { r =>
-      r.getLines().map(_ + sep).toSeq
+  private def createDecoder = Codec.UTF8.decoder.onMalformedInput(CodingErrorAction.REPLACE)
+
+  def readLinesInFile(filePathAsString: String): Seq[String] =
+    Using.resource(Source.fromFile(filePathAsString)(createDecoder)) { reader =>
+      reader.getLines().toSeq
     }
-  }
 
   def readLineLengthsInFile(filePathAsString: String): Seq[Int] =
-    readLinesInFile(filePathAsString).map(_.length)
+    readLinesInFile(filePathAsString).map(_.length + 1)
 
   def readFileAsFileContent(file: Path): FileContent = {
-    val lines = readLinesInFile(file.toString, System.lineSeparator()).flatMap(_.toCharArray).toArray
-    FileContent.create(file.toString, true, lines)
+    Using.resource(Source.fromFile(file.toString)(createDecoder)) { reader =>
+      val fileLines =
+        reader
+          .getLines()
+          .flatMap(_.toCharArray.appendedAll(System.lineSeparator().toCharArray))
+          .toArray
+
+      FileContent.create(file.toString, true, fileLines)
+    }
   }
 
 }
