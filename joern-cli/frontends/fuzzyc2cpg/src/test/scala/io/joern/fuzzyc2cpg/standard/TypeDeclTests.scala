@@ -4,9 +4,11 @@ import io.joern.fuzzyc2cpg.testfixtures.FuzzyCCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
+import java.io.File
+
 class TypeDeclTests extends FuzzyCCodeToCpgSuite {
 
-  override val code = """
+  override val code: String = """
                    | class foo : bar {
                    |   char x;
                    |   int y;
@@ -25,7 +27,10 @@ class TypeDeclTests extends FuzzyCCodeToCpgSuite {
     x.inheritsFromTypeFullName shouldBe List("bar")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename.startsWith("/") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".c") shouldBe true
   }
 
@@ -37,7 +42,10 @@ class TypeDeclTests extends FuzzyCCodeToCpgSuite {
     x.inheritsFromTypeFullName shouldBe List()
     x.aliasTypeFullName shouldBe Some("int")
     x.order shouldBe 2
-    x.filename.startsWith("/") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".c") shouldBe true
   }
 

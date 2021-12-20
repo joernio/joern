@@ -34,7 +34,7 @@ class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
   }
 
   "should allow retrieving comments" in {
-    cpg.comment.code.toSet shouldBe Set("/* A C comment */", "// A C++ comment\n")
+    cpg.comment.code.toSet shouldBe Set(s"/* A C comment */", s"// A C++ comment${System.lineSeparator()}")
   }
 
   "should allow retrieving parameters" in {
