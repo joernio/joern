@@ -4,6 +4,8 @@ import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
+import java.io.File
+
 class FileTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
@@ -24,7 +26,10 @@ class FileTests extends GhidraBinToCpgSuite {
 
   "should contain exactly one non-placeholder file with absolute path in `name`" in {
     val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    x.name should startWith("/")
+    x.name should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     // Ghidra-frontend currently does not set hash but should do so
     // in the future
     x.hash shouldBe None
