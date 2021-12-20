@@ -9,7 +9,7 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.11
-    - run: sbt scalafmtCheck test
+    - run: sbt scalafmtCheck +test
     - run: ./testDistro.sh
     - run: |
         mkdir /tmp/foo
