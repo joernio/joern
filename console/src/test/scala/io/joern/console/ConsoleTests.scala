@@ -251,9 +251,10 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "delete" should {
 
     "remove a project from disk" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString, "foo")
+      val cpg = console.importCode(codeDir.toString, "foo")
+      val projectDir = console.workspace.projectByCpg(cpg).get.path.toFile
       console.delete("foo")
-      console.workspace.numberOfProjects shouldBe 0
+      projectDir.exists shouldBe false
     }
 
     "handle request to delete non-existing project gracefully" in ConsoleFixture() { (console, _) =>
