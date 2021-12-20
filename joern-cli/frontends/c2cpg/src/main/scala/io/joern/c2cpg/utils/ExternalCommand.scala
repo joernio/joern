@@ -5,15 +5,12 @@ import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
 
 object ExternalCommand {
-  private val windowsSystemPrefix: String = "Windows"
-  private val osNameProperty: String = "os.name"
-  private val systemString: String = System.getProperty(osNameProperty)
 
   def run(command: String): Try[Seq[String]] = {
     val result = mutable.ArrayBuffer.empty[String]
     val lineHandler: String => Unit = result.addOne
     val shellPrefix =
-      if (systemString != null && systemString.startsWith(windowsSystemPrefix)) {
+      if (scala.util.Properties.isWin) {
         "cmd" :: "/c" :: Nil
       } else {
         "sh" :: "-c" :: Nil

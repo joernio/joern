@@ -54,7 +54,7 @@ trait AstCreatorHelper {
 
   private def fileLines(node: IASTNode): Seq[Int] = {
     val f = fileName(node)
-    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLinesInFile(f).map(_.length))
+    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLineLengthsInFile(f))
   }
 
   private def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =

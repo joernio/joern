@@ -71,7 +71,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   def removeProject(name: String): Unit = {
     closeProject(name)
     removeProjectFromList(name)
-    File(projectNameToDir(name)).delete()
+    File(projectNameToDir(name)).delete(swallowIOExceptions = true)
   }
 
   /**
@@ -120,7 +120,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
       throw new RuntimeException(s"Directory ${dirFile.toString} does not exist")
     }
 
-    dirFile.delete()
+    dirFile.delete(swallowIOExceptions = true)
   }
 
   /**
@@ -410,7 +410,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   private def deleteProject(project: Project): Unit = {
     removeProjectFromList(project.name)
     if (project.path.toString != "") {
-      File(project.path).delete()
+      File(project.path).delete(swallowIOExceptions = true)
     }
   }
 

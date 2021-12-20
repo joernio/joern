@@ -150,8 +150,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     "allow importing an existing CPG" in ConsoleFixture() { (console, codeDir) =>
-      val tmpCpg = createStandaloneCpg(console, codeDir)
-      try {
+      WithStandaloneCpg(console, codeDir) { tmpCpg =>
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
         Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
@@ -159,50 +158,45 @@ class ConsoleTests extends AnyWordSpec with Matchers {
                                                       ControlFlow.overlayName,
                                                       TypeRelations.overlayName,
                                                       CallGraph.overlayName)
-      } finally {
-        Some(tmpCpg).find(_.exists).foreach(_.delete())
       }
     }
 
     "allow importing an existing CPG with custom project name" in ConsoleFixture() { (console, codeDir) =>
-      val tmpCpg = createStandaloneCpg(console, codeDir)
-      try {
+      WithStandaloneCpg(console, codeDir) { tmpCpg =>
         console.importCpg(tmpCpg.toString, "foobar")
         console.workspace.numberOfProjects shouldBe 1
         console.workspace.project("foobar") should not be empty
         Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
-      } finally {
-        Some(tmpCpg).find(_.exists).foreach(_.delete())
       }
     }
 
     "allow importing two CPGs with the same filename but different paths" in ConsoleFixture() { (console, codeDir) =>
-      val cpgFile = createStandaloneCpg(console, codeDir)
-      File.usingTemporaryDirectory("console") { dir1 =>
-        File.usingTemporaryDirectory("console") { dir2 =>
-          File.usingTemporaryDirectory("console") { dir3 =>
-            val cpg1Path = dir1.path.resolve("cpg.bin")
-            val cpg2Path = dir2.path.resolve("cpg.bin")
-            val cpg3Path = dir3.path.resolve("cpg.bin")
-            cp(cpgFile, cpg1Path)
-            cp(cpgFile, cpg2Path)
-            cp(cpgFile, cpg3Path)
-            console.importCpg(cpg1Path.toString)
-            console.importCpg(cpg2Path.toString)
-            console.importCpg(cpg3Path.toString)
-            console.workspace.numberOfProjects shouldBe 3
-            console.workspace.project(cpg1Path.toFile.getName) should not be empty
-            console.workspace.project(cpg1Path.toFile.getName + "1") should not be empty
-            console.workspace.project(cpg1Path.toFile.getName + "2") should not be empty
-            console.workspace.project(cpg1Path.toFile.getName + "12") shouldBe empty
+      WithStandaloneCpg(console, codeDir) { tmpCpg =>
+        File.usingTemporaryDirectory("console") { dir1 =>
+          File.usingTemporaryDirectory("console") { dir2 =>
+            File.usingTemporaryDirectory("console") { dir3 =>
+              val cpg1Path = dir1.path.resolve("cpg.bin")
+              val cpg2Path = dir2.path.resolve("cpg.bin")
+              val cpg3Path = dir3.path.resolve("cpg.bin")
+              cp(tmpCpg, cpg1Path)
+              cp(tmpCpg, cpg2Path)
+              cp(tmpCpg, cpg3Path)
+              console.importCpg(cpg1Path.toString)
+              console.importCpg(cpg2Path.toString)
+              console.importCpg(cpg3Path.toString)
+              console.workspace.numberOfProjects shouldBe 3
+              console.workspace.project(cpg1Path.toFile.getName) should not be empty
+              console.workspace.project(cpg1Path.toFile.getName + "1") should not be empty
+              console.workspace.project(cpg1Path.toFile.getName + "2") should not be empty
+              console.workspace.project(cpg1Path.toFile.getName + "12") shouldBe empty
+            }
           }
         }
       }
     }
 
     "overwrite project if a project for the inputPath exists" in ConsoleFixture() { (console, codeDir) =>
-      val tmpCpg = createStandaloneCpg(console, codeDir)
-      try {
+      WithStandaloneCpg(console, codeDir) { tmpCpg =>
         console.importCpg(tmpCpg.toString)
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
@@ -211,8 +205,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
                                                       ControlFlow.overlayName,
                                                       TypeRelations.overlayName,
                                                       CallGraph.overlayName)
-      } finally {
-        Some(tmpCpg).find(_.exists).foreach(_.delete())
       }
     }
   }
@@ -259,10 +251,9 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "delete" should {
 
     "remove a project from disk" in ConsoleFixture() { (console, codeDir) =>
-      val cpg = console.importCode(codeDir.toString, "foo")
-      val projectDir = console.workspace.projectByCpg(cpg).get.path.toFile
+      console.importCode(codeDir.toString, "foo")
       console.delete("foo")
-      projectDir.exists shouldBe false
+      console.workspace.numberOfProjects shouldBe 0
     }
 
     "handle request to delete non-existing project gracefully" in ConsoleFixture() { (console, _) =>
