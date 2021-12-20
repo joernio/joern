@@ -159,7 +159,7 @@ trait MacroHandler {
     if (fileLocation != null) {
       val lineNo = fileLocation.getStartingLineNumber
       val lineNoEnd = lineEnd(macroDef).getOrElse("-1")
-      val fileName = fileLocation.getFileName
+      val fileName = fileLocation.getFileName.replace(":", "")
       fileName + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
     } else {
       "<empty>:-1:-1:" + name + ":" + argAsts.size

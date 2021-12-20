@@ -4,6 +4,8 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
+import java.io.File
+
 class FileTests extends CCodeToCpgSuite {
 
   override val code: String =
@@ -26,7 +28,10 @@ class FileTests extends CCodeToCpgSuite {
 
   "should contain exactly one non-placeholder file with absolute path in `name`" in {
     val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    x.name should startWith("/")
+    x.name should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     // C-frontend currently does not set hash but should do so
     // in the future
     x.hash shouldBe None

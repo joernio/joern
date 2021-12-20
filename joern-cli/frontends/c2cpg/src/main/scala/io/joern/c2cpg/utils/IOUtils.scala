@@ -3,14 +3,20 @@ package io.joern.c2cpg.utils
 import org.eclipse.cdt.core.parser.FileContent
 
 import java.nio.charset.CodingErrorAction
-import java.nio.file.{Path, Paths}
-import scala.io.{Codec, Source}
+import java.nio.file.Path
+import scala.io.Codec
+import scala.io.Source
 import scala.util.Using
 
 object IOUtils {
 
-  def readLinesInFile(filePathAsString: String): Seq[String] =
-    readFileAsFileContent(Paths.get(filePathAsString)).toString.split(System.lineSeparator()).toSeq
+  def readLinesInFile(filePathAsString: String): Seq[String] = {
+    val decoder = Codec.UTF8.decoder.onMalformedInput(CodingErrorAction.REPLACE)
+    Using
+      .resource(Source.fromFile(filePathAsString)(decoder)) { reader =>
+        reader.getLines().map(_ + "\n").toSeq
+      }
+  }
 
   def readFileAsFileContent(file: Path): FileContent = {
     val decoder = Codec.UTF8.decoder.onMalformedInput(CodingErrorAction.REPLACE)
@@ -20,7 +26,6 @@ object IOUtils {
           .getLines()
           .flatMap(_.toCharArray.appendedAll(System.lineSeparator().toCharArray))
           .toArray
-
       FileContent.create(file.toString, true, fileLines)
     }
   }
