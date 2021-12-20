@@ -15,7 +15,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Compile and run tests
-        run: sbt -v -Dfile.encoding=UTF-8 "clean; +test;"
+        run: sbt -v -Dfile.encoding=UTF-8 "clean; scalafmtCheck; +test;"
         shell: bash
   test-scripts:
     needs: test

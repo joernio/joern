@@ -4,7 +4,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should
 import org.scalatest.wordspec.AnyWordSpec
-import io.joern.console.Query
 
 object TestBundle extends QueryBundle {
   @q def foo(n: Int = 4): Query = Query(
@@ -60,7 +59,7 @@ class QueryDatabaseTests extends AnyWordSpec with should.Matchers {
         title = "a-title",
         description = "a-description",
         score = 2.0,
-        traversal = { cpg: Cpg =>
+        traversal = { cpg =>
           cpg.method
         }
       )

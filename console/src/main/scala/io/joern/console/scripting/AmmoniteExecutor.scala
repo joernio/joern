@@ -18,7 +18,6 @@ import java.nio.file.{Files, Path}
   * All scripts are compiled in-memory and no caching is performed.
   */
 trait AmmoniteExecutor {
-  ScalaReflectWorkaround.workaroundScalaReflectBugByTriggeringReflection()
 
   protected def predef: String
 
