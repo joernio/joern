@@ -218,6 +218,7 @@ class Console[T <: Project](executor: AmmoniteExecutor,
     * */
   @Doc(info = "Close and remove project from disk", example = "delete(projectName)")
   def delete(name: String): Option[Unit] = {
+    workspaceManager.getActiveProject.foreach(_.cpg.foreach(_.close()))
     defaultProjectNameIfEmpty(name).flatMap(workspace.deleteProject)
   }
 
