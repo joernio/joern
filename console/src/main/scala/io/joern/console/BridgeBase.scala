@@ -26,7 +26,8 @@ case class Config(
     serverAuthPassword: String = "",
     nocolors: Boolean = false,
     cpgToLoad: Option[File] = None,
-    forInputPath: Option[String] = None
+    forInputPath: Option[String] = None,
+    frontendArgs: Array[String] = Array.empty
 )
 
 /** Base class for Ammonite Bridge. Nothing to see here, move along.
@@ -215,12 +216,21 @@ trait BridgeBase {
     else { "" }
     val runDataflow = if (productName == "ocular") { "run.dataflow" }
     else { "run.ossdataflow" }
+    val argsString = config.frontendArgs match {
+      case Array() => ""
+      case args =>
+        val quotedArgs = args.map { arg =>
+          "\"" ++ arg ++ "\""
+        }
+        val argsString = quotedArgs.mkString(", ")
+        s", args=List($argsString)"
+    }
     val code = s"""
         | if (${config.overwrite} || !workspace.projectExists("$src")) {
         |   workspace.projects
         |   .filter(_.inputPath == "$src")
         |   .map(_.name).foreach(n => workspace.removeProject(n))
-        |   importCode.$language("$src")
+        |   importCode.$language("$src"$argsString)
         |   $runDataflow
         |   save
         | } else {
