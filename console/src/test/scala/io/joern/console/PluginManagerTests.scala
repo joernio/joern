@@ -12,7 +12,8 @@ import java.nio.file.attribute.PosixFilePermission
 
 class PluginManagerTests extends AnyWordSpec with Matchers {
 
-  object OnlyUnderUnix
+  // Tests here are using chmod with POSIX file attributes that are not available under Windows.
+  private object OnlyUnderUnix
       extends Tag(if (scala.util.Properties.isLinux || scala.util.Properties.isMac) "" else classOf[Ignore].getName)
 
   "PluginManager::add" should {

@@ -7,6 +7,8 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.Ignore
+import org.scalatest.Tag
 
 import java.io.FileOutputStream
 import java.util.zip.ZipOutputStream
@@ -60,6 +62,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         // importing without args should not yield foo
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
 
+        console.workspace.reset()
+
         // importing with args should yield foo
         console.importCode.c(inputPath = codeDir.toString(), args = List("--define", "D"))
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
@@ -76,6 +80,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       // importing without args should not yield foo
       console.importCode.c.fromString(code)
       Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+
+      console.workspace.reset()
 
       // importing with args should yield foo
       console.importCode.c.fromString(code, List("--define", "D"))
@@ -441,7 +447,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "switchWorkspace" should {
 
     "create workspace if directory does not exist" in ConsoleFixture() { (console, _) =>
-      val otherWorkspaceDir = "/tmp" / "workspace-doesNotExist"
+      val otherWorkspaceDir = File.temp / "workspace-doesNotExist"
       try {
         otherWorkspaceDir.exists shouldBe false
         console.switchWorkspace(otherWorkspaceDir.path.toString)

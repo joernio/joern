@@ -10,6 +10,7 @@ import io.joern.fuzzyc2cpg.FuzzyC2Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 
 import java.nio.file.Path
+import scala.util.Try
 
 object ConsoleFixture {
   def apply[T <: Console[Project]](constructor: String => T = { x =>
@@ -24,6 +25,8 @@ object ConsoleFixture {
         (codeDir / "dir2" / "bar.c").write("int bar(int x) { return x; }")
         val console = constructor(workspaceDir.toString)
         fun(console, codeDir)
+        Try(console.cpgs.foreach(cpg => cpg.close()))
+        Try(console.workspace.reset())
       }
     }
   }
