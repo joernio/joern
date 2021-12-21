@@ -29,7 +29,7 @@ class DdgGenerator {
       inEdgesToDisplay(dstNode)
     }
 
-    val allIdsReferencedByEdges = edges.flatten.flatMap { edge: Edge =>
+    val allIdsReferencedByEdges = edges.flatten.flatMap { edge =>
       Set(edge.src.id, edge.dst.id)
     }
 
@@ -39,8 +39,8 @@ class DdgGenerator {
       .filterNot(node => node.isInstanceOf[Call] && isGenericMemberAccessName(node.asInstanceOf[Call].name))
 
     val ddgEdges = edges.flatten
-      .map { e: Edge =>
-        e.copy(src = surroundingCall(e.src), dst = surroundingCall(e.dst))
+      .map { edge =>
+        edge.copy(src = surroundingCall(edge.src), dst = surroundingCall(edge.dst))
       }
       .filter(e => e.src != e.dst)
       .filterNot(e => e.dst.isInstanceOf[Call] && isGenericMemberAccessName(e.dst.asInstanceOf[Call].name))

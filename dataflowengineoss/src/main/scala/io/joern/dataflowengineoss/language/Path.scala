@@ -8,7 +8,7 @@ case class Path(elements: List[CfgNode])
 
 object Path {
 
-  implicit val show: Show[Path] = { path: Path =>
+  implicit val show: Show[Path] = { path =>
     Table(
       columnNames = Array("tracked", "lineNumber", "method", "file"),
       rows = path.elements.map { cfgNode =>

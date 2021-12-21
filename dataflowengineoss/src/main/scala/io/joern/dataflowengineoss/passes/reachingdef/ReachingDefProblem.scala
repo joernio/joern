@@ -55,7 +55,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   val nodeToNumber: Map[StoredNode, Int] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => x -> i }.toMap
   val numberToNode: Map[Int, StoredNode] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => i -> x }.toMap
 
-  lazy val allNodesPostOrder: List[StoredNode] = allNodesReversePostOrder.reverse
+  val allNodesPostOrder: List[StoredNode] = allNodesReversePostOrder.reverse
 
   val succ: Map[StoredNode, List[StoredNode]] = initSucc(allNodesReversePostOrder)
   val pred: Map[StoredNode, List[StoredNode]] = initPred(allNodesReversePostOrder, method)

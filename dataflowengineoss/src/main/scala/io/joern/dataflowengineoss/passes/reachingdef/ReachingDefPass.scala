@@ -72,51 +72,49 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
     val allNodes = in.keys.toList
     val usageAnalyzer = new UsageAnalyzer(problem, in)
 
-    allNodes.foreach { node: StoredNode =>
-      node match {
-        case call: Call =>
-          // Edges between arguments of call sites
-          usageAnalyzer.usedIncomingDefs(call).foreach { case (use, ins) =>
-            ins.foreach { in =>
-              val inNode = numberToNode(in)
-              if (inNode != use) {
-                addEdge(inNode, use, nodeToEdgeLabel(inNode))
-              }
+    allNodes.foreach {
+      case call: Call =>
+        // Edges between arguments of call sites
+        usageAnalyzer.usedIncomingDefs(call).foreach { case (use, ins) =>
+          ins.foreach { in =>
+            val inNode = numberToNode(in)
+            if (inNode != use) {
+              addEdge(inNode, use, nodeToEdgeLabel(inNode))
             }
           }
+        }
 
-          // For all calls, assume that input arguments
-          // taint corresponding output arguments
-          // and the return value
-          usageAnalyzer.uses(node).foreach { use =>
-            gen(node).foreach { g =>
-              val genNode = numberToNode(g)
-              if (use != genNode && nodeMayBeSource(use)) {
-                addEdge(use, genNode, nodeToEdgeLabel(use))
-              }
+        // For all calls, assume that input arguments
+        // taint corresponding output arguments
+        // and the return value
+        usageAnalyzer.uses(call).foreach { use =>
+          gen(call).foreach { g =>
+            val genNode = numberToNode(g)
+            if (use != genNode && nodeMayBeSource(use)) {
+              addEdge(use, genNode, nodeToEdgeLabel(use))
             }
           }
+        }
 
-        case ret: Return =>
-          usageAnalyzer.usedIncomingDefs(ret).foreach { case (use, inElements) =>
-            addEdge(use, ret, use.asInstanceOf[CfgNode].code)
-            inElements.filter(x => numberToNode(x) != use).foreach { inElement =>
-              val inElemNode = numberToNode(inElement)
-              addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
-            }
-            if (inElements.isEmpty) {
-              addEdge(method, ret)
-            }
+      case ret: Return =>
+        usageAnalyzer.usedIncomingDefs(ret).foreach { case (use, inElements) =>
+          addEdge(use, ret, use.asInstanceOf[CfgNode].code)
+          inElements.filter(x => numberToNode(x) != use).foreach { inElement =>
+            val inElemNode = numberToNode(inElement)
+            addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
           }
-          addEdge(ret, method.methodReturn, "<RET>")
+          if (inElements.isEmpty) {
+            addEdge(method, ret)
+          }
+        }
+        addEdge(ret, method.methodReturn, "<RET>")
 
-        case exitNode: MethodReturn =>
-          in(exitNode).foreach { i =>
-            val iNode = numberToNode(i)
-            addEdge(iNode, exitNode, nodeToEdgeLabel(iNode))
-          }
-        case _ =>
-      }
+      case exitNode: MethodReturn =>
+        in(exitNode).foreach { i =>
+          val iNode = numberToNode(i)
+          addEdge(iNode, exitNode, nodeToEdgeLabel(iNode))
+        }
+      case _ =>
     }
 
     // Add edges from the entry node

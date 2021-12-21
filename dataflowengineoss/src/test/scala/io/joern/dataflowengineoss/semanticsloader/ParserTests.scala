@@ -37,7 +37,7 @@ class ParserTests extends AnyWordSpec with Matchers {
     }
 
     "skip invalid lines and still parse valid ones" in new Fixture() {
-      private val semantics: Seq[FlowSemantic] = parser.parse("\"abc\"\nfoo\n\"bar\"")
+      private val semantics = parser.parse("\"abc\"\nfoo\n\"bar\"")
       semantics match {
         case List(x, y) =>
           x.methodFullName shouldBe "abc"
