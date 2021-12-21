@@ -49,8 +49,7 @@ class JavaSrc2Cpg {
     cpg
   }
 
-  /**
-    * JavaParser requires that the input path is a directory and not a single source file.
+  /** JavaParser requires that the input path is a directory and not a single source file.
     * This is inconvenient for small-scale testing, so if a single source file is created,
     * copy it to a temp directory.
     */
