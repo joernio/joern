@@ -38,6 +38,20 @@ case class JoernScanConfig(
 
 object JoernScan extends App with BridgeBase {
 
+  val ARGS_DELIMITER = "--frontend-args"
+
+  val (scanArgs, frontendArgs) = splitArgs()
+
+  private def splitArgs(): (List[String], List[String]) = {
+    args.indexOf(ARGS_DELIMITER) match {
+      case -1 => (args.toList, Nil)
+
+      case splitIdx =>
+        val (parseOpts, frontendOpts) = args.toList.splitAt(splitIdx)
+        (parseOpts, frontendOpts.tail) // Take the tail to ignore the delimiter
+    }
+  }
+
   val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
     head("Creates a code property graph and scans it with queries from installed bundles")
     help("help")
@@ -91,9 +105,11 @@ object JoernScan extends App with BridgeBase {
     opt[Unit]("list-languages")
       .action((_, c) => c.copy(listLanguages = true))
       .text("List available language options")
+
+    note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
   }
 
-  optionParser.parse(args, JoernScanConfig()).foreach(run)
+  optionParser.parse(scanArgs, JoernScanConfig()).foreach(run)
 
   private def run(config: JoernScanConfig): Unit = {
     if (config.dump) {
@@ -157,7 +173,8 @@ object JoernScan extends App with BridgeBase {
         src = Some(config.src),
         overwrite = config.overwrite,
         store = config.store,
-        language = config.language
+        language = config.language,
+        frontendArgs = frontendArgs.toArray
       )
     runAmmonite(shellConfig, JoernProduct)
     println(s"Run `joern --for-input-path ${config.src}` to explore interactively")

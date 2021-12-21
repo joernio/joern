@@ -9,6 +9,9 @@ import scala.jdk.CollectionConverters._
 
 object JoernParse extends App {
 
+  // Special string used to separate joern-parse opts from frontend-specific opts
+  val ARGS_DELIMITER = "--frontend-args"
+
   val optionParser = new scopt.OptionParser[ParserConfig]("joern-parse") {
     arg[String]("input")
       .optional()
@@ -46,8 +49,6 @@ object JoernParse extends App {
     note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
   }
 
-  // Special string used to separate joern-parse opts from frontend-specific opts
-  val ARGS_DELIMITER = "--frontend-args"
   val DEFAULT_CPG_OUT_FILE = "cpg.bin"
 
   val (parserArgs, frontendArgs) = splitArgs()
