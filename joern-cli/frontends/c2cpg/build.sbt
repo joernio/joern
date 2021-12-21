@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   "com.diffplug.spotless"     % "spotless-eclipse-cdt"        % "10.5.0",
   "org.jline"                 % "jline"                       % "3.21.0",
   "org.slf4j"                 % "slf4j-api"                   % "1.7.32",
-  "org.apache.logging.log4j"  % "log4j-slf4j-impl"            % "2.16.0" % Runtime,
+  "org.apache.logging.log4j"  % "log4j-slf4j-impl"            % Versions.log4j % Runtime,
   "org.scalatest"             %% "scalatest"                  % Versions.scalatest % Test,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
 )

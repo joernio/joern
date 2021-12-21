@@ -7,7 +7,7 @@ dependsOn(Projects.dataflowengineoss)
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph"        % Versions.cpg,
   "io.shiftleft"  %% "semanticcpg"              % Versions.cpg,
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.16.0" % Runtime,
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j % Runtime,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test classifier "tests",
   "com.github.javaparser" % "javaparser-symbol-solver-core" % "3.23.1",
   "org.scalatest" %% "scalatest"                % Versions.scalatest % Test
