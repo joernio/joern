@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg
 
+import better.files.File
 import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -8,6 +9,7 @@ import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.x2cpg.SourceFiles
 import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
 
+import java.nio.file.Files
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 object JavaSrc2Cpg {
@@ -19,6 +21,8 @@ object JavaSrc2Cpg {
 class JavaSrc2Cpg {
 
   import JavaSrc2Cpg._
+
+  val sourceFileExtensions = Set(".java")
 
   /** Create CPG for Java source code at `sourceCodePath` and store the
     * CPG at `outputPath`. If `outputPath` is `None`, the CPG is created
@@ -36,15 +40,31 @@ class JavaSrc2Cpg {
 
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
-    val sourceFileExtensions = Set(".java")
-    val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
-    val astCreator = new AstCreationPass(sourceCodePath, sourceFileNames, cpg, methodKeyPool)
+    val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
+    val astCreator = new AstCreationPass(sourcesDir, sourceFileNames, cpg, methodKeyPool)
     astCreator.createAndApply()
 
     new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
       .createAndApply()
 
     cpg
+  }
+
+  /**
+   * JavaParser requires that the input path is a directory and not a single source file.
+   * This is inconvenient for small-scale testing, so if a single source file is created,
+   * copy it to a temp directory.
+   */
+  private def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
+    val sourceFile = File(sourceCodePath)
+    if (sourceFile.isDirectory) {
+      val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
+      (sourceCodePath, sourceFileNames)
+    } else {
+      val dir = Files.createTempDirectory("javasrc")
+      sourceFile.copyToDirectory(dir)
+      (dir.toAbsolutePath.toString, List(sourceFile.pathAsString))
+    }
   }
 
 }
