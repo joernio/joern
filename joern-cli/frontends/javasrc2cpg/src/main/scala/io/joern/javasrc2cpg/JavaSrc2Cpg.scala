@@ -51,10 +51,10 @@ class JavaSrc2Cpg {
   }
 
   /**
-   * JavaParser requires that the input path is a directory and not a single source file.
-   * This is inconvenient for small-scale testing, so if a single source file is created,
-   * copy it to a temp directory.
-   */
+    * JavaParser requires that the input path is a directory and not a single source file.
+    * This is inconvenient for small-scale testing, so if a single source file is created,
+    * copy it to a temp directory.
+    */
   private def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
     val sourceFile = File(sourceCodePath)
     if (sourceFile.isDirectory) {
