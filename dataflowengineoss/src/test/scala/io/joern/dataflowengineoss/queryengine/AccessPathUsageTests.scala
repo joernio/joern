@@ -59,10 +59,12 @@ class AccessPathUsageTests extends AnyWordSpec {
   "memberAccess" should {
     "work" in {
       val call =
-        genCALL(g,
-                Operators.memberAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.memberAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
@@ -71,10 +73,12 @@ class AccessPathUsageTests extends AnyWordSpec {
   "indirectMemberAccess" should {
     "work" in {
       val call =
-        genCALL(g,
-                Operators.indirectMemberAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectMemberAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
@@ -83,19 +87,23 @@ class AccessPathUsageTests extends AnyWordSpec {
   "computedMemberAccess" should {
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.computedMemberAccess,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.computedMemberAccess,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.computedMemberAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.computedMemberAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), V)
     }
@@ -104,19 +112,23 @@ class AccessPathUsageTests extends AnyWordSpec {
   "indirectComputedMemberAccess" should {
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.indirectComputedMemberAccess,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectComputedMemberAccess,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.indirectComputedMemberAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectComputedMemberAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), V)
     }
@@ -145,30 +157,36 @@ class AccessPathUsageTests extends AnyWordSpec {
   "FieldAccess" should {
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.fieldAccess,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.fieldAccess,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
 
     "work with FieldIdentifier" in {
       val call =
-        genCALL(g,
-                Operators.fieldAccess,
-                genFID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.fieldAccess,
+          genFID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
 
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.fieldAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.fieldAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), V)
     }
@@ -177,30 +195,36 @@ class AccessPathUsageTests extends AnyWordSpec {
   "IndirectFieldAccess" should {
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.indirectFieldAccess,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectFieldAccess,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), I, C("a"))
     }
 
     "work with FieldIdentifier" in {
       val call =
-        genCALL(g,
-                Operators.indirectFieldAccess,
-                genFID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectFieldAccess,
+          genFID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), I, C("a"))
     }
 
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.indirectFieldAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectFieldAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), I, V)
     }
@@ -209,30 +233,36 @@ class AccessPathUsageTests extends AnyWordSpec {
   "indexAccess" should {
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.indexAccess,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indexAccess,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
 
     "work with FieldIdentifier" in {
       val call =
-        genCALL(g,
-                Operators.indexAccess,
-                genFID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indexAccess,
+          genFID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
 
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.indexAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indexAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), V)
     }
@@ -241,39 +271,47 @@ class AccessPathUsageTests extends AnyWordSpec {
   "indirectIndexAccess" should {
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.indirectIndexAccess,
-                genLit(g, "12"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectIndexAccess,
+          genLit(g, "12"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), S(12), I)
     }
 
     "work with FieldIdentifier" in {
       val call =
-        genCALL(g,
-                Operators.indirectIndexAccess,
-                genFID(g, "12"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectIndexAccess,
+          genFID(g, "12"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), S(12), I)
     }
 
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.indirectIndexAccess,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectIndexAccess,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), VS, I)
     }
     "overtaint on parsing failure" in {
       val call =
-        genCALL(g,
-                Operators.indirectIndexAccess,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.indirectIndexAccess,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), VS, I)
     }
@@ -284,39 +322,47 @@ class AccessPathUsageTests extends AnyWordSpec {
     //fixme
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.pointerShift,
-                genLit(g, "12"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.pointerShift,
+          genLit(g, "12"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), S(12))
     }
 
     "work with FieldIdentifier" in {
       val call =
-        genCALL(g,
-                Operators.pointerShift,
-                genFID(g, "12"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.pointerShift,
+          genFID(g, "12"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), S(12))
     }
 
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.pointerShift,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.pointerShift,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), VS)
     }
     "overtaint with parsing fails" in {
       val call =
-        genCALL(g,
-                Operators.pointerShift,
-                genLit(g, "abc"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.pointerShift,
+          genLit(g, "abc"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), VS)
     }
@@ -327,30 +373,36 @@ class AccessPathUsageTests extends AnyWordSpec {
     //fixme
     "work with Literal" in {
       val call =
-        genCALL(g,
-                Operators.getElementPtr,
-                genLit(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.getElementPtr,
+          genLit(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), I, C("a"), A)
     }
 
     "work with FieldIdentifier" in {
       val call =
-        genCALL(g,
-                Operators.getElementPtr,
-                genFID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.getElementPtr,
+          genFID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), I, C("a"), A)
     }
 
     "overtaint with others" in {
       val call =
-        genCALL(g,
-                Operators.getElementPtr,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.getElementPtr,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E(C("b"), I, V, A)
     }
@@ -359,10 +411,12 @@ class AccessPathUsageTests extends AnyWordSpec {
   "Others" should {
     "not expand through" in {
       val call =
-        genCALL(g,
-                Operators.addition,
-                genID(g, "a"),
-                genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo")))
+        genCALL(
+          g,
+          Operators.addition,
+          genID(g, "a"),
+          genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
+        )
 
       toTrackedAccessPath(call) shouldBe E()
     }

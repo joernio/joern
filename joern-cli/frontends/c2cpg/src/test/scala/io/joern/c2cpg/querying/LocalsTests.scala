@@ -3,9 +3,8 @@ package io.joern.c2cpg.querying
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
-/**
-  * Language primitives for navigating local variables
-  * */
+/** Language primitives for navigating local variables
+  */
 class LocalsTests extends CCodeToCpgSuite {
 
   override val code: String = """
@@ -41,14 +40,13 @@ class LocalsTests extends CCodeToCpgSuite {
   }
 
   "should prove correct (name, type) pairs for locals" in {
-    inside(cpg.method.name("free_list").local.l) {
-      case List(q, p) =>
-        q.name shouldBe "q"
-        q.typeFullName shouldBe "node*"
-        q.code shouldBe "struct node* q"
-        p.name shouldBe "p"
-        p.typeFullName shouldBe "node*"
-        p.code shouldBe "struct node* p"
+    inside(cpg.method.name("free_list").local.l) { case List(q, p) =>
+      q.name shouldBe "q"
+      q.typeFullName shouldBe "node*"
+      q.code shouldBe "struct node* q"
+      p.name shouldBe "p"
+      p.typeFullName shouldBe "node*"
+      p.code shouldBe "struct node* p"
     }
   }
 

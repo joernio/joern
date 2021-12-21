@@ -39,10 +39,9 @@ class ArrayTests extends JavaSrcCodeToCpgFixture {
 
     arg2.code shouldBe "{ 0, 1, 2 }"
     arg2.methodFullName shouldBe "<operator>.arrayInitializer"
-    arg2.astChildren.zipWithIndex.foreach {
-      case (arg, idx) =>
-        arg shouldBe a[Literal]
-        arg.code shouldBe idx.toString
+    arg2.astChildren.zipWithIndex.foreach { case (arg, idx) =>
+      arg shouldBe a[Literal]
+      arg.code shouldBe idx.toString
     }
   }
 

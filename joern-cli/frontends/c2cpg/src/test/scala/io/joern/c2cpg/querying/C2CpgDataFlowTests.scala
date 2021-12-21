@@ -54,7 +54,8 @@ class C2CpgDataFlowTests2 extends DataFlowCodeToCpgSuite {
             ("y + 3", Some(5)),
             ("return y + 3;", Some(5)),
             ("int", Some(2))
-          ))
+          )
+        )
     }
   }
 }
@@ -93,12 +94,15 @@ class C2CpgDataFlowTests3 extends DataFlowCodeToCpgSuite {
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe
         Set(
-          List(("double", Some(7)),
-               ("source(2)", Some(16)),
-               ("k = source(2)", Some(16)),
-               ("point.x = k", Some(18)),
-               ("sink(point.x)", Some(20)),
-               ("sink(int x)", Some(11))))
+          List(
+            ("double", Some(7)),
+            ("source(2)", Some(16)),
+            ("k = source(2)", Some(16)),
+            ("point.x = k", Some(18)),
+            ("sink(point.x)", Some(20)),
+            ("sink(int x)", Some(11))
+          )
+        )
     }
   }
 
@@ -145,7 +149,8 @@ class C2CpgDataFlowTests4 extends DataFlowCodeToCpgSuite {
               ("par", Some(16)),
               ("x", Some(6))
             )
-          ))
+          )
+      )
     }
   }
 
@@ -183,11 +188,14 @@ class C2CpgDataFlowTests5 extends DataFlowCodeToCpgSuite {
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe
         Set(
-          List(("struct Point", Some(7)),
-               ("source(2)", Some(17)),
-               ("point = source(2)", Some(17)),
-               ("sink(point.x)", Some(18)),
-               ("sink(int x)", Some(12))))
+          List(
+            ("struct Point", Some(7)),
+            ("source(2)", Some(17)),
+            ("point = source(2)", Some(17)),
+            ("sink(point.x)", Some(18)),
+            ("sink(int x)", Some(12))
+          )
+        )
     }
   }
 
@@ -244,11 +252,14 @@ class C2CpgDataFlowTests7 extends DataFlowCodeToCpgSuite {
       val flows = sink.reachableByFlows(source).l
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe Set(
-        List(("int", Some(2)),
-             ("source()", Some(6)),
-             ("c[1][2] = source()", Some(6)),
-             ("sink(c[1])", Some(8)),
-             ("sink(int* cont)", Some(3))))
+        List(
+          ("int", Some(2)),
+          ("source()", Some(6)),
+          ("c[1][2] = source()", Some(6)),
+          ("sink(c[1])", Some(8)),
+          ("sink(int* cont)", Some(3))
+        )
+      )
     }
   }
 
@@ -275,11 +286,14 @@ class C2CpgDataFlowTests8 extends DataFlowCodeToCpgSuite {
       val flows = sink.reachableByFlows(source).l
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe Set(
-        List(("int", Some(3)),
-             ("source()", Some(7)),
-             ("arg->field = source()", Some(7)),
-             ("sink((*arg).field)", Some(8)),
-             ("sink(int i)", Some(4))))
+        List(
+          ("int", Some(3)),
+          ("source()", Some(7)),
+          ("arg->field = source()", Some(7)),
+          ("sink((*arg).field)", Some(8)),
+          ("sink(int i)", Some(4))
+        )
+      )
     }
   }
 
@@ -305,11 +319,14 @@ class C2CpgDataFlowTests9 extends DataFlowCodeToCpgSuite {
       val flows = sink.reachableByFlows(source).l
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe Set(
-        List(("int", Some(2)),
-             ("source()", Some(6)),
-             ("arg[0] = source()", Some(6)),
-             ("sink(*arg)", Some(7)),
-             ("sink(int i)", Some(3))))
+        List(
+          ("int", Some(2)),
+          ("source()", Some(6)),
+          ("arg[0] = source()", Some(6)),
+          ("sink(*arg)", Some(7)),
+          ("sink(int i)", Some(3))
+        )
+      )
     }
   }
 
@@ -347,12 +364,15 @@ class C2CpgDataFlowTests10 extends DataFlowCodeToCpgSuite {
 
       flows.map(flow => flowToResultPairs(flow)).toSet shouldBe
         Set(
-          List(("getpid()", Some(9)),
-               ("a = getpid()", Some(9)),
-               ("a == 666", Some(10)),
-               ("a * 666", Some(12)),
-               ("a = a * 666", Some(12)),
-               ("return a;", Some(18))))
+          List(
+            ("getpid()", Some(9)),
+            ("a = getpid()", Some(9)),
+            ("a == 666", Some(10)),
+            ("a * 666", Some(12)),
+            ("a = a * 666", Some(12)),
+            ("return a;", Some(18))
+          )
+        )
     }
   }
 
@@ -384,13 +404,17 @@ class C2CpgDataFlowTests11 extends DataFlowCodeToCpgSuite {
       pendingUntilFixed(
         flows.map(flow => flowToResultPairs(flow)).toSet shouldBe Set(
           // bad flow. delete once fixed, here for documentation only
-          List(("$ret", Some(2)),
-               ("source()", Some(8)),
-               ("p2", None),
-               ("p1", None),
-               ("c[2]", Some(8)),
-               ("c[1]", Some(10)),
-               ("arg", Some(3)))))
+          List(
+            ("$ret", Some(2)),
+            ("source()", Some(8)),
+            ("p2", None),
+            ("p1", None),
+            ("c[2]", Some(8)),
+            ("c[1]", Some(10)),
+            ("arg", Some(3))
+          )
+        )
+      )
 
       pendingUntilFixed(
         { flows.size shouldBe 0 }

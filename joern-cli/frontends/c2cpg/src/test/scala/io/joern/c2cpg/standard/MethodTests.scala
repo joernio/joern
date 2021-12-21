@@ -3,6 +3,8 @@ package io.joern.c2cpg.standard
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class MethodTests extends CCodeToCpgSuite {
 
   override val code: String =
@@ -18,7 +20,10 @@ class MethodTests extends CCodeToCpgSuite {
     x.signature shouldBe "int main (int,char**)"
     x.isExternal shouldBe false
     x.order shouldBe 1
-    x.filename.startsWith("/") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.lineNumber shouldBe Some(2)
     x.lineNumberEnd shouldBe Some(3)
     x.columnNumber shouldBe Some(2)

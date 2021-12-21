@@ -155,7 +155,7 @@ class CDataFlowTests3 extends DataFlowCodeToCpgSuite {
         ),
         List[(String, Option[Integer])](
           ("foo(a)", 5)
-        ),
+        )
       )
   }
 }
@@ -224,8 +224,9 @@ class CDataFlowTests5 extends DataFlowCodeToCpgSuite {
         List[(String, Option[Integer])](
           ("z = a", 3),
           ("b = z", 4),
-          ("return b;", 6),
-        ))
+          ("return b;", 6)
+        )
+      )
   }
 }
 
@@ -262,8 +263,9 @@ class CDataFlowTests6 extends DataFlowCodeToCpgSuite {
           ("a < 5", Some(6)),
           ("a < 2", Some(7)),
           ("x = a", 8),
-          ("return x;", 14),
-        ))
+          ("return x;", 14)
+        )
+      )
   }
 }
 
@@ -297,14 +299,14 @@ class CDataFlowTests7 extends DataFlowCodeToCpgSuite {
       Set(
         List[(String, Option[Integer])](
           ("x = z", 12),
-          ("return x;", 14),
+          ("return x;", 14)
         ),
         List[(String, Option[Integer])](
           ("x = a", 8),
-          ("return x;", 14),
+          ("return x;", 14)
         ),
         List[(String, Option[Integer])](
-          ("return x;", 14),
+          ("return x;", 14)
         )
       )
   }
@@ -329,15 +331,17 @@ class CDataFlowTests8 extends DataFlowCodeToCpgSuite {
     flows.size shouldBe 2
 
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List[(String, Option[Integer])](
-            ("a = x", 3),
-            ("b = a", 4),
-            ("foo(b)", 5)
-          ),
-          List[(String, Option[Integer])](
-            ("b = a", 4),
-            ("foo(b)", 5)
-          ))
+      Set(
+        List[(String, Option[Integer])](
+          ("a = x", 3),
+          ("b = a", 4),
+          ("foo(b)", 5)
+        ),
+        List[(String, Option[Integer])](
+          ("b = a", 4),
+          ("foo(b)", 5)
+        )
+      )
 
   }
 }
@@ -359,15 +363,17 @@ class CDataFlowTests9 extends DataFlowCodeToCpgSuite {
     flows.size shouldBe 2
 
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List[(String, Option[Integer])](
-            ("a = x", 3),
-            ("b = a", 4),
-            ("foo(b)", 5)
-          ),
-          List[(String, Option[Integer])](
-            ("b = a", 4),
-            ("foo(b)", 5)
-          ))
+      Set(
+        List[(String, Option[Integer])](
+          ("a = x", 3),
+          ("b = a", 4),
+          ("foo(b)", 5)
+        ),
+        List[(String, Option[Integer])](
+          ("b = a", 4),
+          ("foo(b)", 5)
+        )
+      )
   }
 }
 
@@ -439,7 +445,8 @@ class CDataFlowTests11 extends DataFlowCodeToCpgSuite {
           ("z = b + c", 6),
           ("z++", Some(7)),
           ("x = z", 9)
-        ))
+        )
+      )
   }
 }
 
@@ -468,7 +475,8 @@ class CDataFlowTests12 extends DataFlowCodeToCpgSuite {
           ("b = a", 4),
           ("z = b", 5),
           ("z+=a", 6)
-        ))
+        )
+      )
   }
 }
 
@@ -574,11 +582,14 @@ class CDataFlowTests16 extends DataFlowCodeToCpgSuite {
     val source = cpg.call("source")
     val sink = cpg.call("sink").argument(1)
     sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
-      List(("source()", Some(4)),
-           ("x = source()", Some(4)),
-           ("foo(x)", Some(5)),
-           ("foo(int y)", Some(8)),
-           ("sink(y)", Some(9))))
+      List(
+        ("source()", Some(4)),
+        ("x = source()", Some(4)),
+        ("foo(x)", Some(5)),
+        ("foo(int y)", Some(8)),
+        ("sink(y)", Some(9))
+      )
+    )
   }
 }
 
@@ -600,12 +611,14 @@ class CDataFlowTests17 extends DataFlowCodeToCpgSuite {
     val source = cpg.call("source")
     val sink = cpg.call("sink").argument(1)
     sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
-      List(("source()", Some(4)),
-           ("return source();", Some(4)),
-           ("int", Some(3)),
-           ("bar()", Some(8)),
-           ("y = bar()", Some(8)),
-           ("sink(y)", Some(9)))
+      List(
+        ("source()", Some(4)),
+        ("return source();", Some(4)),
+        ("int", Some(3)),
+        ("bar()", Some(8)),
+        ("y = bar()", Some(8)),
+        ("sink(y)", Some(9))
+      )
     )
   }
 
@@ -613,13 +626,15 @@ class CDataFlowTests17 extends DataFlowCodeToCpgSuite {
     val source = cpg.call("source")
     val sink = cpg.method("sink").parameter.index(1)
     sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
-      List(("source()", Some(4)),
-           ("return source();", Some(4)),
-           ("int", Some(3)),
-           ("bar()", Some(8)),
-           ("y = bar()", Some(8)),
-           ("sink(y)", Some(9)),
-           ("sink(p1)", None))
+      List(
+        ("source()", Some(4)),
+        ("return source();", Some(4)),
+        ("int", Some(3)),
+        ("bar()", Some(8)),
+        ("y = bar()", Some(8)),
+        ("sink(y)", Some(9)),
+        ("sink(p1)", None)
+      )
     )
   }
 }
@@ -656,12 +671,14 @@ class CDataFlowTests18 extends DataFlowCodeToCpgSuite {
     val flows = sink.reachableByFlows(source).l
     flows.size shouldBe 1
     flows.map(flowToResultPairs).toSet shouldBe Set(
-      List(("double", Some(7)),
-           ("source(2)", Some(16)),
-           ("k = source(2)", Some(16)),
-           ("point.x = k", Some(18)),
-           ("sink(point.x)", Some(20)),
-           ("sink(int x)", Some(11)))
+      List(
+        ("double", Some(7)),
+        ("source(2)", Some(16)),
+        ("k = source(2)", Some(16)),
+        ("point.x = k", Some(18)),
+        ("sink(point.x)", Some(20)),
+        ("sink(int x)", Some(11))
+      )
     )
 
   }
@@ -697,11 +714,13 @@ class CDataFlowTests19 extends DataFlowCodeToCpgSuite {
 
     flows.size shouldBe 1
     flows.map(flowToResultPairs).toSet shouldBe Set(
-      List(("struct Point", Some(7)),
-           ("source(2)", Some(17)),
-           ("point = source(2)", Some(17)),
-           ("sink(point.x)", Some(18)),
-           ("sink(int x)", Some(12)))
+      List(
+        ("struct Point", Some(7)),
+        ("source(2)", Some(17)),
+        ("point = source(2)", Some(17)),
+        ("sink(point.x)", Some(18)),
+        ("sink(int x)", Some(12))
+      )
     )
   }
 }

@@ -3,9 +3,11 @@ package io.joern.fuzzyc2cpg.standard
 import io.joern.fuzzyc2cpg.testfixtures.FuzzyCCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class MethodTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       |  int main(int argc, char **argv) {
       | }""".stripMargin
@@ -18,7 +20,10 @@ class MethodTests extends FuzzyCCodeToCpgSuite {
     x.signature shouldBe "int main (int,char * *)"
     x.isExternal shouldBe false
     x.order shouldBe 1
-    x.filename.startsWith("/") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".c") shouldBe true
     x.lineNumber shouldBe Some(2)
     x.lineNumberEnd shouldBe Some(3)

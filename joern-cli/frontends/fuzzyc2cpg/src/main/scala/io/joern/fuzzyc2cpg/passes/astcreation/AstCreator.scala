@@ -59,11 +59,12 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 
-private[astcreation] class AstCreator(diffGraph: DiffGraph.Builder,
-                                      namespaceBlock: NewNamespaceBlock,
-                                      global: Global,
-                                      childNum: Int)
-    extends ASTNodeVisitor {
+private[astcreation] class AstCreator(
+    diffGraph: DiffGraph.Builder,
+    namespaceBlock: NewNamespaceBlock,
+    global: Global,
+    childNum: Int
+) extends ASTNodeVisitor {
 
   implicit def int2IntegerOpt(x: Option[Int]): Option[Integer] = x.map(java.lang.Integer.valueOf)
   implicit def int2Integer(x: Int): Integer = java.lang.Integer.valueOf(x)
@@ -75,26 +76,29 @@ private[astcreation] class AstCreator(diffGraph: DiffGraph.Builder,
 
   pushContext(namespaceBlock, childNum)
 
-  private class Context(val cpgParent: AbstractNode,
-                        var childNum: Int,
-                        val parentIsClassDef: Boolean,
-                        val parentIsMemberAccess: Boolean = false,
-                        var addConditionEdgeOnNextAstEdge: Boolean = false,
-                        var addArgumentEdgeOnNextAstEdge: Boolean = false) {}
+  private class Context(
+      val cpgParent: AbstractNode,
+      var childNum: Int,
+      val parentIsClassDef: Boolean,
+      val parentIsMemberAccess: Boolean = false,
+      var addConditionEdgeOnNextAstEdge: Boolean = false,
+      var addArgumentEdgeOnNextAstEdge: Boolean = false
+  ) {}
 
-  private def pushContext(cpgParent: AbstractNode,
-                          startChildNum: Int,
-                          parentIsClassDef: Boolean = false,
-                          parentIsMemberAccess: Boolean = false): Unit = {
+  private def pushContext(
+      cpgParent: AbstractNode,
+      startChildNum: Int,
+      parentIsClassDef: Boolean = false,
+      parentIsMemberAccess: Boolean = false
+  ): Unit = {
     contextStack = new Context(cpgParent, startChildNum, parentIsClassDef, parentIsMemberAccess) :: contextStack
   }
 
   private def popContext(): Unit = contextStack = contextStack.tail
   private def context: Context = contextStack.head
 
-  /**
-    * Entry point for AST construction
-    * */
+  /** Entry point for AST construction
+    */
   def convert(astNode: AstNode): Unit = astNode.accept(this)
 
   override def visit(astFunction: FunctionDef): Unit = {
@@ -472,7 +476,8 @@ private[astcreation] class AstCreator(diffGraph: DiffGraph.Builder,
     if (classOfExpression != classOf[Expression]) {
       throw new RuntimeException(
         s"Only direct instances of Expressions expected " +
-          s"but ${classOfExpression.getSimpleName} found")
+          s"but ${classOfExpression.getSimpleName} found"
+      )
     }
 
     val cpgBlock = NewBlock()

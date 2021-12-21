@@ -24,10 +24,9 @@ class DumpPdg(options: PdgDumpOptions)(implicit semantics: Semantics) extends La
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
-    cpg.method.zipWithIndex.foreach {
-      case (method, i) =>
-        val str = method.dotPdg.head
-        (File(options.outDir) / s"${i}-pdg.dot").write(str)
+    cpg.method.zipWithIndex.foreach { case (method, i) =>
+      val str = method.dotPdg.head
+      (File(options.outDir) / s"${i}-pdg.dot").write(str)
     }
   }
 }

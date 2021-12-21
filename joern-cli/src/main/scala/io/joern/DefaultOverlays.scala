@@ -8,11 +8,10 @@ object DefaultOverlays {
 
   val DEFAULT_CPG_IN_FILE = "cpg.bin"
 
-  /**
-    * Load the CPG at `storeFilename` and add enhancements,
+  /** Load the CPG at `storeFilename` and add enhancements,
     * turning the CPG into an SCPG.
     * @param storeFilename the filename of the cpg
-    * */
+    */
   def create(storeFilename: String): Cpg = {
     val cpg = CpgBasedTool.loadFromOdb(storeFilename)
     val context = new LayerCreatorContext(cpg)

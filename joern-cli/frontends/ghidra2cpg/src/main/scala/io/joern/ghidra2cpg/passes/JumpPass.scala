@@ -37,7 +37,7 @@ class JumpPass(cpg: Cpg, keyPool: IntervalKeyPool)
           /*
             TODO:
               - Ask ghidra to resolve addresses of JMPs
-         */
+           */
         }
       }
     Iterator(diffGraph.build())

@@ -26,15 +26,14 @@ object CopyLoops extends QueryBundle {
           .map { access =>
             (access.array, access.subscripts.code.toSet)
           }
-          .filter {
-            case (buf, subscripts) =>
-              val incIdentifiers = buf.inAst.isControlStructure.astChildren
-                .filterNot(_.isBlock)
-                .assignments
-                .target
-                .code
-                .toSet
-              (incIdentifiers & subscripts).nonEmpty
+          .filter { case (buf, subscripts) =>
+            val incIdentifiers = buf.inAst.isControlStructure.astChildren
+              .filterNot(_.isBlock)
+              .assignments
+              .target
+              .code
+              .toSet
+            (incIdentifiers & subscripts).nonEmpty
           }
           .map(_._1)
       }),

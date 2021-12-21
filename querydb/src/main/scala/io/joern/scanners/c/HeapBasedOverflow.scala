@@ -14,13 +14,12 @@ object HeapBasedOverflow extends QueryBundle {
   implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
   implicit val resolver: ICallResolver = NoResolve
 
-  /**
-    * Find calls to malloc where the first argument contains an arithmetic expression,
+  /** Find calls to malloc where the first argument contains an arithmetic expression,
     * the allocated buffer flows into memcpy as the first argument, and the third
     * argument of that memcpy is unequal to the first argument of malloc. This is
     * an adaption of the old-joern query first shown at 31C3 that found a
     * buffer overflow in VLC's MP4 demuxer (CVE-2014-9626).
-    * */
+    */
   @q
   def mallocMemcpyIntOverflow(): Query =
     Query.make(

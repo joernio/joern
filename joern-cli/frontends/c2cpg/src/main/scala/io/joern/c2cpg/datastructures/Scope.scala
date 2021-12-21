@@ -1,7 +1,6 @@
 package io.joern.c2cpg.datastructures
 
-/**
-  * Handles the scope stack for tracking identifier to variable relation.
+/** Handles the scope stack for tracking identifier to variable relation.
   *
   * @tparam I Identifier type.
   * @tparam V Variable type.

@@ -4,12 +4,11 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 
-/**
-  * The following tests show in detail how queries can be started. For
+/** The following tests show in detail how queries can be started. For
   * all node types, for which it seems reasonable, all nodes of that type
   * can be used as a starting point, e.g., `cpg.method` starts at all methods
   * while `cpg.local` starts at all locals.
-  * */
+  */
 class NodeTypeStartersTests extends CCodeToCpgSuite {
 
   override val code = """
@@ -23,11 +22,10 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
     atLeast(1, cpg.file.name.l) should endWith(".c")
   }
 
-  /**
-    * All methods - whether defined (e.g., "main") or only referenced, e.g., "libfunc"
+  /** All methods - whether defined (e.g., "main") or only referenced, e.g., "libfunc"
     * are represented by METHOD nodes in the CPG. Any method for which a definition
     * exists is in `cpg.method.internal`. All other methods are in `cpg.method.external`.
-    * */
+    */
   "should allow retrieving methods" in {
     cpg.method.internal.name.l shouldBe List("<global>", "main")
     cpg.method.external.name.l shouldBe List("libfunc")

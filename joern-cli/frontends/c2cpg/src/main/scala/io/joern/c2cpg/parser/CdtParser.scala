@@ -19,11 +19,13 @@ object CdtParser {
 
   private val logger = LoggerFactory.getLogger(classOf[CdtParser])
 
-  case class ParseResult(translationUnit: Option[IASTTranslationUnit],
-                         preprocessorErrorCount: Int = 0,
-                         problems: Int = 0,
-                         failure: Option[Throwable] = None,
-                         duration: Long = 0)
+  case class ParseResult(
+      translationUnit: Option[IASTTranslationUnit],
+      preprocessorErrorCount: Int = 0,
+      problems: Int = 0,
+      failure: Option[Throwable] = None,
+      duration: Long = 0
+  )
 
 }
 
@@ -71,9 +73,10 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
             )
         }
       } else {
-        ParseResult(None,
-                    failure =
-                      Some(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!")))
+        ParseResult(
+          None,
+          failure = Some(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!"))
+        )
       }
     }
     result.copy(duration = duration)

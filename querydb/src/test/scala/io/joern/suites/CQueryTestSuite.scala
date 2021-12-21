@@ -27,13 +27,14 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
         q.codeExamples.positive
           .mkString("\n")
           .concat("\n")
-          .concat(q.codeExamples.negative
-            .mkString("\n"))
+          .concat(
+            q.codeExamples.negative
+              .mkString("\n")
+          )
       }
       .mkString("\n")
 
-  /**
-    * Used for tests that match names of vulnerable functions
+  /** Used for tests that match names of vulnerable functions
     */
   def findMatchingCalls(query: Query): Set[String] = {
     query(cpg)
@@ -44,5 +45,5 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
       .toSetImmutable
   }
 
-  override val code = concatedQueryCodeExamples
+  override val code: String = concatedQueryCodeExamples
 }

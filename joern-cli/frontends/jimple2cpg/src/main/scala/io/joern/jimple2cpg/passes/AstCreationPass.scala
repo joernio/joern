@@ -9,7 +9,7 @@ import soot.Scene
 import java.util.concurrent.ConcurrentSkipListSet
 
 case class Global(
-    usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String](),
+    usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String]()
 )
 
 class AstCreationPass(codePath: String, filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)

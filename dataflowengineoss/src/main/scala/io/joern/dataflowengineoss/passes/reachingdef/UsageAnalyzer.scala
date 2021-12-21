@@ -8,13 +8,12 @@ import io.shiftleft.semanticcpg.language._
 
 import scala.collection.{Set, mutable}
 
-/**
-  * Upon calculating reaching definitions, we find ourselves with
+/** Upon calculating reaching definitions, we find ourselves with
   * a set of incoming definitions `in(n)` for each node `n` of the
   * flow graph. This component determines those of the incoming
   * definitions that are relevant as the value they define is
   * actually used by `n`.
-  * */
+  */
 class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode, Set[Definition]]) {
 
   val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
@@ -32,16 +31,17 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     uses(node).map { use =>
       use -> in(node).filter { inElement =>
         val inElemNode = numberToNode(inElement)
-        sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(use,
-                                                                                                            inElemNode)
+        sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(
+          use,
+          inElemNode
+        )
       }
     }.toMap
   }
 
-  /**
-    * Determine whether the node `use` describes a container for `inElement`, e.g.,
+  /** Determine whether the node `use` describes a container for `inElement`, e.g.,
     * use = `ptr` while inElement = `ptr->foo`.
-    * */
+    */
   private def isContainer(use: Expression, inElement: StoredNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
@@ -52,10 +52,9 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     }
   }
 
-  /**
-    * Determine whether `use` is a part of `inElement`, e.g.,
+  /** Determine whether `use` is a part of `inElement`, e.g.,
     * use = `argv[0]` while inElement = `argv`
-    * */
+    */
   private def isPart(use: Expression, inElement: StoredNode): Boolean = {
     use match {
       case call: Call if containerSet.contains(call.name) =>
@@ -99,10 +98,9 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     n.filterNot(_.isInstanceOf[FieldIdentifier])
   }
 
-  /**
-    * Compares arguments of calls with incoming definitions
+  /** Compares arguments of calls with incoming definitions
     * to see if they refer to the same variable
-    * */
+    */
   def sameVariable(use: Expression, incoming: StoredNode): Boolean = {
     incoming match {
       case param: MethodParameterIn =>

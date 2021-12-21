@@ -6,10 +6,9 @@ import better.files.File.apply
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Plugin management component
+/** Plugin management component
   * @param installDir the Joern/Ocular installation dir
-  * */
+  */
 class PluginManager(val installDir: File) {
 
   def listPlugins(): List[String] = {

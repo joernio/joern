@@ -2,7 +2,6 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
 
 import java.io.File
 
@@ -24,7 +23,10 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
     x.signature shouldBe "int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
-    x.filename.startsWith(File.separator) shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".java") shouldBe true
     x.lineNumber shouldBe Some(2)
     x.lineNumberEnd shouldBe Some(4)

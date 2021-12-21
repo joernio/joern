@@ -93,7 +93,8 @@ object JoernConsole {
         EngineContext(
           Semantics.fromList(
             new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)
-          ))
+          )
+        )
       override def config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
       )

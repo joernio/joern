@@ -5,6 +5,8 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
+import java.io.File
+
 class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
   override val code: String = """
@@ -24,7 +26,10 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
     x.inheritsFromTypeFullName shouldBe List("bar")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename.startsWith("/") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
   }
 
@@ -37,7 +42,10 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
     x.aliasTypeFullName shouldBe Some("int")
     x.code shouldBe "typedef int mytype"
     x.order shouldBe 2
-    x.filename.startsWith("/") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
   }
 

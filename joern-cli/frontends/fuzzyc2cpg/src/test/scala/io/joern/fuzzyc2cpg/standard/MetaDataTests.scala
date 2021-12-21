@@ -15,10 +15,12 @@ class MetaDataTests extends FuzzyCCodeToCpgSuite {
     val List(x) = cpg.metaData.l
     x.language shouldBe "C"
     x.version shouldBe "0.1"
-    x.overlays shouldBe List(Base.overlayName,
-                             ControlFlow.overlayName,
-                             TypeRelations.overlayName,
-                             CallGraph.overlayName)
+    x.overlays shouldBe List(
+      Base.overlayName,
+      ControlFlow.overlayName,
+      TypeRelations.overlayName,
+      CallGraph.overlayName
+    )
     // C-frontend does not set hash for entire CPG.
     // Change this assertion if it is supposed to.
     x.hash shouldBe None

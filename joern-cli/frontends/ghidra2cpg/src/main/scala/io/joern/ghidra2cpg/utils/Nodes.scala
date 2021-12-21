@@ -23,11 +23,13 @@ object Nodes {
       .lineNumber(lineNumber)
   }
 
-  def createParameterNode(code: String,
-                          name: String,
-                          order: Int,
-                          typ: String,
-                          lineNumber: Int): NewMethodParameterIn = {
+  def createParameterNode(
+      code: String,
+      name: String,
+      order: Int,
+      typ: String,
+      lineNumber: Int
+  ): NewMethodParameterIn = {
     nodes
       .NewMethodParameterIn()
       .code(code)

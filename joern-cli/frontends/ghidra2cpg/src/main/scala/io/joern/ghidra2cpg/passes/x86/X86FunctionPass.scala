@@ -11,13 +11,14 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.language.implicitConversions
-class X86FunctionPass(currentProgram: Program,
-                      filename: String,
-                      function: Function,
-                      cpg: Cpg,
-                      keyPool: IntervalKeyPool,
-                      decompiler: Decompiler)
-    extends FunctionPass(new X86Processor, currentProgram, function, cpg, keyPool, decompiler) {
+class X86FunctionPass(
+    currentProgram: Program,
+    filename: String,
+    function: Function,
+    cpg: Cpg,
+    keyPool: IntervalKeyPool,
+    decompiler: Decompiler
+) extends FunctionPass(new X86Processor, currentProgram, function, cpg, keyPool, decompiler) {
 
   override def handleBody(): Unit = {
     if (instructions.nonEmpty) {
@@ -41,7 +42,8 @@ class X86FunctionPass(currentProgram: Program,
   }
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     methodNode = Some(
-      createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName)))
+      createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+    )
     diffGraph.addNode(methodNode.get)
     diffGraph.addNode(blockNode)
     diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)

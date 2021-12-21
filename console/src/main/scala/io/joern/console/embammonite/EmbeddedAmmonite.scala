@@ -7,10 +7,9 @@ import java.io.{BufferedReader, InputStreamReader, PipedInputStream, PipedOutput
 import java.util.UUID
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
-/**
-  * Result of executing a query, containing in particular
+/** Result of executing a query, containing in particular
   * output received on standard out and on standard error.
-  * */
+  */
 class QueryResult(val out: String, val err: String, val uuid: UUID)
 
 private[embammonite] case class Job(uuid: UUID, query: String, observer: QueryResult => Unit)
@@ -53,27 +52,24 @@ class EmbeddedAmmonite(predef: String = "") {
     (in, out)
   }
 
-  /**
-    * Start the embedded ammonite shell
-    * */
+  /** Start the embedded ammonite shell
+    */
   def start(): Unit = {
     shellThread.start()
     userThread.start()
   }
 
-  /**
-    * Submit query `q` to shell and call `observer` when
+  /** Submit query `q` to shell and call `observer` when
     * the result is ready.
-    * */
+    */
   def queryAsync(q: String)(observer: QueryResult => Unit): UUID = {
     val uuid = UUID.randomUUID()
     jobQueue.add(Job(uuid, q, observer))
     uuid
   }
 
-  /**
-    * Submit query `q` to the shell and return result.
-    * */
+  /** Submit query `q` to the shell and return result.
+    */
   def query(q: String): QueryResult = {
     val mutex = new Semaphore(0)
     var result: QueryResult = null
@@ -85,10 +81,9 @@ class EmbeddedAmmonite(predef: String = "") {
     result
   }
 
-  /**
-    * Shutdown the embedded ammonite shell and
+  /** Shutdown the embedded ammonite shell and
     * associated threads.
-    * */
+    */
   def shutdown(): Unit = {
     shutdownShellThread()
     logger.info("Shell terminated gracefully")

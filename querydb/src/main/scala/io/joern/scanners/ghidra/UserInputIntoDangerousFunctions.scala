@@ -18,8 +18,7 @@ object UserInputIntoDangerousFunctions extends QueryBundle {
       name = "getenv-to-strcpy",
       author = Crew.claudiu,
       title = "`getenv` fn arguments used in strcpy source buffer",
-      description =
-        """
+      description = """
           |User-input ends up in source buffer argument of strcpy, which might overflow the destination buffer.
           |""".stripMargin,
       score = 4,

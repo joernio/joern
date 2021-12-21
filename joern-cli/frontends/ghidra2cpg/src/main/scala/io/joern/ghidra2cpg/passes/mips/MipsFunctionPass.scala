@@ -18,21 +18,24 @@ import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-class MipsFunctionPass(currentProgram: Program,
-                       address2Literal: Map[Long, String],
-                       filename: String,
-                       function: Function,
-                       cpg: Cpg,
-                       keyPool: IntervalKeyPool,
-                       decompiler: Decompiler)
-    extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompiler) {
+class MipsFunctionPass(
+    currentProgram: Program,
+    address2Literal: Map[Long, String],
+    filename: String,
+    function: Function,
+    cpg: Cpg,
+    keyPool: IntervalKeyPool,
+    decompiler: Decompiler
+) extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompiler) {
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {
       var name = input.getHigh.getName
       val high = input.getHigh
-      if (high != null && input.getDef != null && high.getName == "UNNAMED" && input.getDef != null && input.getDef.getInputs != null) {
+      if (
+        high != null && input.getDef != null && high.getName == "UNNAMED" && input.getDef != null && input.getDef.getInputs != null
+      ) {
         val symbol = input.getDef.getInputs.toList.lastOption
           .flatMap(x => Option(x.getHigh))
           .flatMap(x => Option(x.getSymbol))
@@ -43,17 +46,21 @@ class MipsFunctionPass(currentProgram: Program,
       if (name == null) {
         name = input.getHigh.getSymbol.getName
       }
-      createIdentifier(name,
-                       name,
-                       index + 1,
-                       Types.registerType(name),
-                       instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      createIdentifier(
+        name,
+        name,
+        index + 1,
+        Types.registerType(name),
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
     } else if (input.isConstant) {
-      createLiteral("0x" + input.getWordOffset.toHexString,
-                    index + 1,
-                    index + 1,
-                    "0x" + input.getWordOffset.toHexString,
-                    instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      createLiteral(
+        "0x" + input.getWordOffset.toHexString,
+        index + 1,
+        index + 1,
+        "0x" + input.getWordOffset.toHexString,
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
     } else if (input.isUnique) {
       var valueString = ""
       if (input.getDescendants.asScala.toList.head.getOutput == null) {
@@ -64,31 +71,37 @@ class MipsFunctionPass(currentProgram: Program,
 
       val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
 
-      createLiteral(value,
-                    index + 1,
-                    index + 1,
-                    input.getWordOffset.toHexString,
-                    instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      createLiteral(
+        value,
+        index + 1,
+        index + 1,
+        input.getWordOffset.toHexString,
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
     } else {
       // we default to literal
       // identifier could be useful too
-      createLiteral(input.toString(),
-                    index + 1,
-                    index + 1,
-                    input.toString(),
-                    instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      createLiteral(
+        input.toString(),
+        index + 1,
+        index + 1,
+        input.toString(),
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
     }
   }
   def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, index: Int): Unit = {
     val node = resolveVarNode(instruction, to, index)
     connectCallToArgument(callNode, node)
   }
-  def handleTwoArguments(instruction: Instruction,
-                         callNode: CfgNodeNew,
-                         arg: Varnode,
-                         arg1: Varnode,
-                         operand: String,
-                         name: String): Unit = {
+  def handleTwoArguments(
+      instruction: Instruction,
+      callNode: CfgNodeNew,
+      arg: Varnode,
+      arg1: Varnode,
+      operand: String,
+      name: String
+  ): Unit = {
     val firstOp = resolveVarNode(instruction, arg, 1)
     val secondOp = resolveVarNode(instruction, arg1, 2)
     val code = s"${firstOp.code} $operand ${secondOp.code}"
@@ -112,33 +125,41 @@ class MipsFunctionPass(currentProgram: Program,
       case CALL | CALLIND =>
         handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
       case INT_ADD | FLOAT_ADD =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
-                           "+",
-                           "<operator>.addition")
+        handleTwoArguments(
+          instruction,
+          callNode,
+          pcodeAst.getInput(0),
+          pcodeAst.getInput(1),
+          "+",
+          "<operator>.addition"
+        )
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
-                           "/",
-                           "<operator>.division")
+        handleTwoArguments(
+          instruction,
+          callNode,
+          pcodeAst.getInput(0),
+          pcodeAst.getInput(1),
+          "/",
+          "<operator>.division"
+        )
       case INT_SUB | FLOAT_SUB =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
-                           "-",
-                           "<operator>.subtraction")
+        handleTwoArguments(
+          instruction,
+          callNode,
+          pcodeAst.getInput(0),
+          pcodeAst.getInput(1),
+          "-",
+          "<operator>.subtraction"
+        )
       case INT_MULT | FLOAT_MULT =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
-                           "*",
-                           "<operator>.multiplication")
+        handleTwoArguments(
+          instruction,
+          callNode,
+          pcodeAst.getInput(0),
+          pcodeAst.getInput(1),
+          "*",
+          "<operator>.multiplication"
+        )
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
       case INT_XOR =>
         handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
@@ -169,10 +190,9 @@ class MipsFunctionPass(currentProgram: Program,
     // first input is the address to the called function
     // we know it already
     val arguments = opCodes.head.getInputs.toList.drop(1)
-    arguments.zipWithIndex.foreach {
-      case (value, index) =>
-        if (value.getDef != null)
-          resolveArgument(instruction, callNode, value.getDef, index)
+    arguments.zipWithIndex.foreach { case (value, index) =>
+      if (value.getDef != null)
+        resolveArgument(instruction, callNode, value.getDef, index)
     }
   }
 
@@ -182,25 +202,31 @@ class MipsFunctionPass(currentProgram: Program,
       for (opObject <- opObjects) {
         opObject match {
           case register: Register =>
-            val node = createIdentifier(register.getName,
-                                        register.getName,
-                                        index + 1,
-                                        Types.registerType(register.getName),
-                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            val node = createIdentifier(
+              register.getName,
+              register.getName,
+              index + 1,
+              Types.registerType(register.getName),
+              instruction.getMinAddress.getOffsetAsBigInteger.intValue
+            )
             connectCallToArgument(instructionNode, node)
           case scalar: Scalar =>
-            val node = createLiteral(scalar.toString(16, false, false, "", ""),
-                                     index + 1,
-                                     index + 1,
-                                     scalar.toString(16, false, false, "", ""),
-                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            val node = createLiteral(
+              scalar.toString(16, false, false, "", ""),
+              index + 1,
+              index + 1,
+              scalar.toString(16, false, false, "", ""),
+              instruction.getMinAddress.getOffsetAsBigInteger.intValue
+            )
             connectCallToArgument(instructionNode, node)
           case genericAddress: GenericAddress =>
-            val node = createLiteral(genericAddress.toString,
-                                     index + 1,
-                                     index + 1,
-                                     genericAddress.toString,
-                                     instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            val node = createLiteral(
+              genericAddress.toString,
+              index + 1,
+              index + 1,
+              genericAddress.toString,
+              instruction.getMinAddress.getOffsetAsBigInteger.intValue
+            )
             connectCallToArgument(instructionNode, node)
           case _ =>
             println(
@@ -234,7 +260,8 @@ class MipsFunctionPass(currentProgram: Program,
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     try {
       methodNode = Some(
-        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName)))
+        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+      )
       diffGraph.addNode(methodNode.get)
       diffGraph.addNode(blockNode)
       diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)

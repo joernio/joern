@@ -30,7 +30,7 @@ abstract class FunctionPass(
     function: Function,
     cpg: Cpg,
     keyPool: IntervalKeyPool,
-    decompiler: Decompiler,
+    decompiler: Decompiler
 ) extends ParallelCpgPass[String](
       cpg,
       keyPools = Some(keyPool.split(1))
@@ -79,15 +79,16 @@ abstract class FunctionPass(
         .getThunkedFunction(true)
         .getParameters
         .zipWithIndex
-        .foreach {
-          case (parameter, index) =>
-            val node = createParameterNode(parameter.getName,
-                                           parameter.getName,
-                                           index + 1,
-                                           parameter.getDataType.getName,
-                                           function.getEntryPoint.getOffsetAsBigInteger.intValue())
-            diffGraph.addNode(node)
-            diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
+        .foreach { case (parameter, index) =>
+          val node = createParameterNode(
+            parameter.getName,
+            parameter.getName,
+            index + 1,
+            parameter.getDataType.getName,
+            function.getEntryPoint.getOffsetAsBigInteger.intValue()
+          )
+          diffGraph.addNode(node)
+          diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
     } else {
       highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq
@@ -98,11 +99,13 @@ abstract class FunctionPass(
             .flatMap(x => Option(x.getName))
             .getOrElse(parameter.getName)
           val node =
-            createParameterNode(checkedParameter,
-                                checkedParameter,
-                                parameter.getCategoryIndex + 1,
-                                parameter.getDataType.getName,
-                                function.getEntryPoint.getOffsetAsBigInteger.intValue())
+            createParameterNode(
+              checkedParameter,
+              checkedParameter,
+              parameter.getCategoryIndex + 1,
+              parameter.getDataType.getName,
+              function.getEntryPoint.getOffsetAsBigInteger.intValue()
+            )
           diffGraph.addNode(node)
           diffGraph.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
@@ -194,14 +197,15 @@ abstract class FunctionPass(
             (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
           }
         }
-        checkedParameters.foreach {
-          case (checkedParameter, index, dataType) =>
-            val node = createIdentifier(checkedParameter,
-                                        checkedParameter,
-                                        index,
-                                        Types.registerType(dataType),
-                                        instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-            connectCallToArgument(callNode, node)
+        checkedParameters.foreach { case (checkedParameter, index, dataType) =>
+          val node = createIdentifier(
+            checkedParameter,
+            checkedParameter,
+            index,
+            Types.registerType(dataType),
+            instruction.getMinAddress.getOffsetAsBigInteger.intValue
+          )
+          connectCallToArgument(callNode, node)
         }
       }
     } else {
@@ -211,11 +215,13 @@ abstract class FunctionPass(
           val argument = String.valueOf(
             instruction.getDefaultOperandRepresentation(index)
           )
-          val node = createIdentifier(argument,
-                                      argument,
-                                      index + 1,
-                                      Types.registerType(argument),
-                                      instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          val node = createIdentifier(
+            argument,
+            argument,
+            index + 1,
+            Types.registerType(argument),
+            instruction.getMinAddress.getOffsetAsBigInteger.intValue
+          )
           connectCallToArgument(callNode, node)
         } else
           for (opObject <- opObjects) { //
@@ -223,11 +229,13 @@ abstract class FunctionPass(
             opObject.getClass.getSimpleName match {
               case "Register" =>
                 val register = opObject.asInstanceOf[Register]
-                val node = createIdentifier(register.getName,
-                                            register.getName,
-                                            index + 1,
-                                            Types.registerType(register.getName),
-                                            instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+                val node = createIdentifier(
+                  register.getName,
+                  register.getName,
+                  index + 1,
+                  Types.registerType(register.getName),
+                  instruction.getMinAddress.getOffsetAsBigInteger.intValue
+                )
                 connectCallToArgument(callNode, node)
               case "Scalar" =>
                 val scalar =

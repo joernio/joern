@@ -49,16 +49,17 @@ object C2Cpg {
 
   private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 
-  final case class Config(inputPaths: Set[String] = Set.empty,
-                          outputPath: String = X2CpgConfig.defaultOutputPath,
-                          includePaths: Set[String] = Set.empty,
-                          defines: Set[String] = Set.empty,
-                          includeComments: Boolean = false,
-                          logProblems: Boolean = false,
-                          logPreprocessor: Boolean = false,
-                          printIfDefsOnly: Boolean = false,
-                          includePathsAutoDiscovery: Boolean = true)
-      extends X2CpgConfig[Config] {
+  final case class Config(
+      inputPaths: Set[String] = Set.empty,
+      outputPath: String = X2CpgConfig.defaultOutputPath,
+      includePaths: Set[String] = Set.empty,
+      defines: Set[String] = Set.empty,
+      includeComments: Boolean = false,
+      logProblems: Boolean = false,
+      logPreprocessor: Boolean = false,
+      printIfDefsOnly: Boolean = false,
+      includePathsAutoDiscovery: Boolean = true
+  ) extends X2CpgConfig[Config] {
 
     override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
     override def withOutputPath(x: String): Config = copy(outputPath = x)

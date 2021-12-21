@@ -362,12 +362,15 @@ class CfgCreationPassTests extends AnyWordSpec with Matchers {
     }
 
     "be correct with multiple cases and multiple cases on same spot" in new CpgCfgFixture(
-      "switch (x) { case 1: case 2: y; case 3: z;}") {
+      "switch (x) { case 1: case 2: y; case 3: z;}"
+    ) {
       succOf("RET func ()") shouldBe expected(("x", AlwaysEdge))
-      succOf("x") shouldBe expected(("case 1:", CaseEdge),
-                                    ("case 2:", CaseEdge),
-                                    ("case 3:", CaseEdge),
-                                    ("RET", CaseEdge))
+      succOf("x") shouldBe expected(
+        ("case 1:", CaseEdge),
+        ("case 2:", CaseEdge),
+        ("case 3:", CaseEdge),
+        ("RET", CaseEdge)
+      )
       succOf("case 1:") shouldBe expected(("1", AlwaysEdge))
       succOf("1") shouldBe expected(("case 2:", AlwaysEdge))
       succOf("case 2:") shouldBe expected(("2", AlwaysEdge))

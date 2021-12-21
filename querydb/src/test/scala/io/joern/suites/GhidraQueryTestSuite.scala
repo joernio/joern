@@ -19,9 +19,9 @@ class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
     super.beforeAll()
   }
 
-  def queryBundle: QueryBundle = QueryUtil.EmptyBundle
+  protected def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 
-  def allQueries = QueryUtil.allQueries(queryBundle, argumentProvider)
+  protected def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
   def findMatchingCalls(query: Query): Set[String] = {
     query(cpg)
@@ -36,8 +36,8 @@ class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
     nodes.MethodParameterIn
     query(cpg)
       .flatMap(_.evidence)
-      .collect {
-        case cfgNode: nodes.CfgNode => cfgNode.method.name
+      .collect { case cfgNode: nodes.CfgNode =>
+        cfgNode.method.name
       }
       .toSetImmutable
   }

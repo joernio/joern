@@ -27,9 +27,9 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "should extract files" in {
-    Try(getClass.getResource("/unpacking")) match {
+    Try(getClass.getResource("/unpacking").toURI) match {
       case Success(x) =>
-        val fs = File(x.getPath).walk().toList
+        val fs = File(x).walk().toList
         fs.filter(_.name.contains(".jar")).map(_.name) shouldBe List("HelloWorld.jar")
         fs.count(_.name.contains(".class")) shouldBe 2
       case Failure(x: Throwable) =>
@@ -44,10 +44,12 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
     bar.name shouldBe "Bar"
 
-    cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()",
-                                                                   "Foo.add:int(int,int)",
-                                                                   "pac.Bar.sub:int(int,int)",
-                                                                   "pac.Bar.<init>:void()")
+    cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
+      "Foo.<init>:void()",
+      "Foo.add:int(int,int)",
+      "pac.Bar.sub:int(int,int)",
+      "pac.Bar.<init>:void()"
+    )
   }
 
 }

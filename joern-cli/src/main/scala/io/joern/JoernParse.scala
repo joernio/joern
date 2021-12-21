@@ -150,13 +150,15 @@ object JoernParse extends App {
     }
   }
 
-  case class ParserConfig(inputPath: String = "",
-                          outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
-                          namespaces: List[String] = List.empty,
-                          enhance: Boolean = true,
-                          enhanceOnly: Boolean = false,
-                          language: String = "",
-                          listLanguages: Boolean = false)
+  case class ParserConfig(
+      inputPath: String = "",
+      outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
+      namespaces: List[String] = List.empty,
+      enhance: Boolean = true,
+      enhanceOnly: Boolean = false,
+      language: String = "",
+      listLanguages: Boolean = false
+  )
 
   private def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] = {
 

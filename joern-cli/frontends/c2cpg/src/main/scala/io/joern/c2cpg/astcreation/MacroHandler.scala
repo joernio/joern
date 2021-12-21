@@ -20,15 +20,13 @@ trait MacroHandler {
 
   this: AstCreator =>
 
-  /**
-    * For the given node, determine if it is expanded from a macro, and if so,
+  /** For the given node, determine if it is expanded from a macro, and if so,
     * create a Call node to represent the macro invocation and attach `ast`
     * as its child.
-    * */
+    */
   def asChildOfMacroCall(node: IASTNode, ast: Ast, order: Int): Ast = {
-    val macroCallAst = extractMatchingMacro(node).map {
-      case (mac, args) =>
-        createMacroCallAst(ast, node, mac, args, order)
+    val macroCallAst = extractMatchingMacro(node).map { case (mac, args) =>
+      createMacroCallAst(ast, node, mac, args, order)
     }
     if (macroCallAst.isDefined) {
       val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], order = 1)
@@ -38,19 +36,19 @@ trait MacroHandler {
         NewBlock()
           .order(1)
           .argumentIndex(1)
-          .typeFullName(registerType(Defines.voidTypeName)))
+          .typeFullName(registerType(Defines.voidTypeName))
+      )
       macroCallAst.get.withChild(b.withChild(newAst))
     } else {
       ast
     }
   }
 
-  /**
-    * For the given node, determine if it is expanded from a macro, and if so, find the first
+  /** For the given node, determine if it is expanded from a macro, and if so, find the first
     * matching (offset, macro) pair in nodeOffsetMacroPairs, removing non-matching elements
     * from the start of nodeOffsetMacroPairs. Returns (Some(macroDefinition, arguments))
     * if a macro definition matches and None otherwise.
-    * */
+    */
   private def extractMatchingMacro(node: IASTNode): Option[(IASTPreprocessorMacroDefinition, List[String])] = {
     expandedFromMacro(node)
       .filterNot { m =>
@@ -72,10 +70,9 @@ trait MacroHandler {
     None
   }
 
-  /**
-    * Determine whether `node` is expanded from the macro expansion
+  /** Determine whether `node` is expanded from the macro expansion
     * at `loc`.
-    * */
+    */
   private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation) = {
     expandedFromMacro(node)
       .map(_.getExpansion.getMacroDefinition)
@@ -83,12 +80,11 @@ trait MacroHandler {
   }
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
-    arguments.zipWithIndex.map {
-      case (arg, i) =>
-        val rootNode = argForCode(arg, ast)
-        rootNode.map { x =>
-          ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1)
-        }
+    arguments.zipWithIndex.map { case (arg, i) =>
+      val rootNode = argForCode(arg, ast)
+      rootNode.map { x =>
+        ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1)
+      }
     }
   }
 
@@ -105,18 +101,19 @@ trait MacroHandler {
     }
   }
 
-  /**
-    * Create an AST that represents a macro expansion as a call.
+  /** Create an AST that represents a macro expansion as a call.
     * The AST is rooted in a CALL node and contains sub trees
     * for arguments. These are also connected to the AST via
     * ARGUMENT edges. We include line number information in the
     * CALL node that is picked up by the MethodStubCreator.
-    * */
-  private def createMacroCallAst(ast: Ast,
-                                 node: IASTNode,
-                                 macroDef: IASTPreprocessorMacroDefinition,
-                                 arguments: List[String],
-                                 order: Int): Ast = {
+    */
+  private def createMacroCallAst(
+      ast: Ast,
+      node: IASTNode,
+      macroDef: IASTPreprocessorMacroDefinition,
+      arguments: List[String],
+      order: Int
+  ): Ast = {
     val name = macroDef.getName.toString
     val code = node.getRawSignature.replaceAll(";$", "")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
@@ -139,19 +136,17 @@ trait MacroHandler {
 
   private val nodeOffsetMacroPairs: mutable.Buffer[(Int, IASTPreprocessorMacroDefinition)] = {
     parserResult.getNodeLocations.toList
-      .collect {
-        case exp: IASTMacroExpansionLocation =>
-          (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
+      .collect { case exp: IASTMacroExpansionLocation =>
+        (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
       }
       .sortBy(_._1)
       .toBuffer
   }
 
-  /**
-    * Create a full name field that encodes line information that can be picked
+  /** Create a full name field that encodes line information that can be picked
     * up by the MethodStubCreator in order to create a METHOD node with the
     * correct location information.
-    * */
+    */
   private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
     val name = macroDef.getName.toString
     val fileLocation = macroDef.getFileLocation
@@ -159,7 +154,7 @@ trait MacroHandler {
     if (fileLocation != null) {
       val lineNo = fileLocation.getStartingLineNumber
       val lineNoEnd = lineEnd(macroDef).getOrElse("-1")
-      val fileName = fileLocation.getFileName
+      val fileName = fileLocation.getFileName.replace(":", "")
       fileName + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
     } else {
       "<empty>:-1:-1:" + name + ":" + argAsts.size

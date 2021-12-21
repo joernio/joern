@@ -49,21 +49,27 @@ class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with Befor
     "be correct" in withScriptManager { scriptManager =>
       val scripts = scriptManager.scripts()
       val expected = List(
-        ScriptCollections("general",
-                          ScriptDescriptions(
-                            "A collection of general purpose scripts.",
-                            List(ScriptDescription("list-funcs.sc", "Lists all functions."))
-                          )),
-        ScriptCollections("java",
-                          ScriptDescriptions(
-                            "A collection of java-specific scripts.",
-                            List(ScriptDescription("list-sl-ns.sc", "Lists all shiftleft namespaces."))
-                          )),
-        ScriptCollections("general/general_plus",
-                          ScriptDescriptions(
-                            "Even more general purpose scripts.",
-                            List.empty
-                          ))
+        ScriptCollections(
+          "general",
+          ScriptDescriptions(
+            "A collection of general purpose scripts.",
+            List(ScriptDescription("list-funcs.sc", "Lists all functions."))
+          )
+        ),
+        ScriptCollections(
+          "java",
+          ScriptDescriptions(
+            "A collection of java-specific scripts.",
+            List(ScriptDescription("list-sl-ns.sc", "Lists all shiftleft namespaces."))
+          )
+        ),
+        ScriptCollections(
+          s"general${java.io.File.separator}general_plus",
+          ScriptDescriptions(
+            "Even more general purpose scripts.",
+            List.empty
+          )
+        )
       )
 
       scripts should contain theSameElementsAs expected

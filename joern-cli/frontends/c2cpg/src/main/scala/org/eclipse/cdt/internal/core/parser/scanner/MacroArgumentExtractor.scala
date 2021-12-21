@@ -15,8 +15,7 @@ import org.eclipse.cdt.internal.core.parser.scanner.Lexer.LexerOptions
 import scala.annotation.nowarn
 import scala.collection.mutable
 
-/**
-  * Utility class that obtains the arguments of the macro at `loc` of the translation
+/** Utility class that obtains the arguments of the macro at `loc` of the translation
   * unit `tu` (we used CDT's naming convention here.) The way this works is by performing
   * macro expansion using CDT's `MacroExpander`, which accepts a `MacroExpansionTracker`,
   * which is informed of arguments as they are determined. The problem is that the
@@ -30,7 +29,7 @@ import scala.collection.mutable
   * `MacroArgumentExtractor`.
   *
   * This class must be in this package in order to have access to `PreprocessorMacro`.
-  * */
+  */
 class MacroArgumentExtractor(tu: IASTTranslationUnit, loc: IASTFileLocation) {
 
   def getArguments: List[String] = {

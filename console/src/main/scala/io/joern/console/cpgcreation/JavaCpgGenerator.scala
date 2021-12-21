@@ -4,19 +4,19 @@ import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
 
-/**
-  * Language frontend for Java archives (JAR files). Translates Java archives into code property graphs.
-  * */
+/** Language frontend for Java archives (JAR files). Translates Java archives into code property graphs.
+  */
 case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
-  /**
-    * Generate a CPG for the given input path.
+  /** Generate a CPG for the given input path.
     * Returns the output path, or None, if no
     * CPG was generated.
-    **/
-  override def generate(inputPath: String,
-                        outputPath: String = "cpg.bin.zip",
-                        namespaces: List[String] = List()): Option[String] = {
+    */
+  override def generate(
+      inputPath: String,
+      outputPath: String = "cpg.bin.zip",
+      namespaces: List[String] = List()
+  ): Option[String] = {
 
     if (commercialAvailable) {
       generateCommercial(inputPath, outputPath, namespaces)
@@ -38,7 +38,8 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
       }
     } else {
       var command = rootPath.resolve("java2cpg.sh").toString
-      var arguments = Seq(inputPath, "-o", outputPath) ++ jvmLanguages ++ namespaceArgs(namespaces) ++ config.cmdLineParams
+      var arguments =
+        Seq(inputPath, "-o", outputPath) ++ jvmLanguages ++ namespaceArgs(namespaces) ++ config.cmdLineParams
       if (System.getProperty("os.name").startsWith("Windows")) {
         command = "powershell"
         arguments = Seq(rootPath.resolve("java2cpg.ps1").toString) ++ arguments

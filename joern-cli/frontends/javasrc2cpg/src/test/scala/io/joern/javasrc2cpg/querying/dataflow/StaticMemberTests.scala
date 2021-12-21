@@ -5,8 +5,7 @@ import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
-/**
-  * These tests are added as a wishlist for static member accesses. These
+/** These tests are added as a wishlist for static member accesses. These
   * results are consistent with static members in C++ using c2cgp, however.
   * For practical reasons, only handling `final` static members is probably
   * the way to go, so at least the first 2 tests should pass.

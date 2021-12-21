@@ -379,10 +379,12 @@ class CfgCreationPassTests extends AnyWordSpec with Matchers {
     "be correct with multiple cases and multiple cases on same spot" in
       new CfgFixture("switch (x) { case 1: case 2: y; case 3: z;}") {
         succOf("RET func ()") shouldBe expected(("x", AlwaysEdge))
-        succOf("x") shouldBe expected(("case 1:", CaseEdge),
-                                      ("case 2:", CaseEdge),
-                                      ("case 3:", CaseEdge),
-                                      ("RET", CaseEdge))
+        succOf("x") shouldBe expected(
+          ("case 1:", CaseEdge),
+          ("case 2:", CaseEdge),
+          ("case 3:", CaseEdge),
+          ("RET", CaseEdge)
+        )
         succOf("case 1:") shouldBe expected(("case 2:", AlwaysEdge))
         succOf("case 2:") shouldBe expected(("y", AlwaysEdge))
         succOf("y") shouldBe expected(("case 3:", AlwaysEdge))
@@ -476,8 +478,8 @@ class CfgFixture(file1Code: String) {
     }.toMap
 
   def expected(pairs: (String, CfgEdgeType)*): Set[String] = {
-    pairs.map {
-      case (code, _) => codeToNode(code).code
+    pairs.map { case (code, _) =>
+      codeToNode(code).code
     }.toSet
   }
 

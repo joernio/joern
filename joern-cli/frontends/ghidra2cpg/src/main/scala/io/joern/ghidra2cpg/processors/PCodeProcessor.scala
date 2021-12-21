@@ -76,6 +76,6 @@ class PCodeProcessor extends Processor {
       "SEGMENTOP" -> "<operator>.TODO",
       "STORE" -> "<operator>.assignment",
       "SUBPIECE" -> "<operator>.TODO",
-      "UNIMPLEMENTED" -> "<operator>.TODO",
+      "UNIMPLEMENTED" -> "<operator>.TODO"
     )
 }

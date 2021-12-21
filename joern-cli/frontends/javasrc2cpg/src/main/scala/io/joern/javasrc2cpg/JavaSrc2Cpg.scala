@@ -28,7 +28,6 @@ class JavaSrc2Cpg {
       sourceCodePath: String,
       outputPath: Option[String] = None
   ): Cpg = {
-
     val cpg = newEmptyCpg(outputPath)
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
     val typesKeyPool = new IntervalKeyPool(100, 1000100)

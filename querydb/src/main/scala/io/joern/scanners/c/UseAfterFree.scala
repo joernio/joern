@@ -105,7 +105,8 @@ object UseAfterFree extends QueryBundle {
               _.referencingIdentifiers
                 .argumentIndex(1)
                 .inCall
-                .nameExact(Operators.assignment, Operators.addressOf))
+                .nameExact(Operators.assignment, Operators.addressOf)
+            )
 
         def assignedValues =
           outParams.referencingIdentifiers
@@ -119,20 +120,22 @@ object UseAfterFree extends QueryBundle {
             .isIdentifier
 
         def freeAssigned =
-          assignedValues.map(
-            id =>
-              (id,
-               id.refsTo
-                 .flatMap {
-                   case p: MethodParameterIn => p.referencingIdentifiers
-                   case v: Local             => v.referencingIdentifiers
-                 }
-                 .inCall
-                 .name("(.*_)?free")))
+          assignedValues.map(id =>
+            (
+              id,
+              id.refsTo
+                .flatMap {
+                  case p: MethodParameterIn => p.referencingIdentifiers
+                  case v: Local             => v.referencingIdentifiers
+                }
+                .inCall
+                .name("(.*_)?free")
+            )
+          )
 
         freeAssigned
-          .filter {
-            case (id, freeCall) => freeCall.dominatedBy.exists(_ == id)
+          .filter { case (id, freeCall) =>
+            freeCall.dominatedBy.exists(_ == id)
           }
           .flatMap(_._1)
       }),

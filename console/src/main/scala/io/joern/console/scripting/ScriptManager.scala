@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import org.zeroturnaround.zip.{NameMapper, ZipUtil}
 
 import java.nio.file.{Files, NoSuchFileException}
+import java.util.regex.Pattern
 import scala.util.Try
 
 object ScriptManager {
@@ -19,8 +20,7 @@ object ScriptManager {
   private val SCRIPT_DESCS: String = "scripts.json"
 }
 
-/**
-  * This class manages a hierarchy of scripts, and provides an interface
+/** This class manages a hierarchy of scripts, and provides an interface
   * that allows users to easily discover and run scripts on their CPGs.
   *
   * Scripts should be grouped inside folders placed within the application's
@@ -44,8 +44,7 @@ abstract class ScriptManager(executor: AmmoniteExecutor) {
 
   implicit class CpgScriptRunner(cpg: Cpg) {
 
-    /**
-      * Run an arbitrary script over this CPG.
+    /** Run an arbitrary script over this CPG.
       *
       * @param name The name of the script to run.
       * @return The result of running the script against this CPG.
@@ -53,8 +52,7 @@ abstract class ScriptManager(executor: AmmoniteExecutor) {
     def runScript(name: String): Any =
       runScript(name, Map.empty)
 
-    /**
-      * Run an arbitrary script over this CPG with parameters.
+    /** Run an arbitrary script over this CPG with parameters.
       *
       * @param name       The name of the script to run.
       * @param parameters The parameters to pass to the script.
@@ -64,8 +62,8 @@ abstract class ScriptManager(executor: AmmoniteExecutor) {
       ScriptManager.this.runScript(name, parameters, cpg)
   }
 
-  private val absoluteJarPathRegex = """jar:file:(.*)!/scripts""".r
-  private val scriptFileRegex = """(scripts/.*)""".r
+  private val absoluteJarPathRegex = ("jar:file:(.*)!" + Pattern.quote(java.io.File.separator) + "scripts").r
+  private val scriptFileRegex = ("(scripts" + Pattern.quote(java.io.File.separator) + ".*)").r
   private val scriptDir = "scripts"
 
   // This is to work around Ammonite failing to read resource files on the classpath.

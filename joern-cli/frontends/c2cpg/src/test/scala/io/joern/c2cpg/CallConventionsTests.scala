@@ -27,16 +27,15 @@ class CallConventionsTests extends AnyWordSpec with Matchers with Inside with Te
         |	strstr(a, "a");
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.method.nameNot("<global>").l) {
-        case List(foo1, foo2, foo3, foo4) =>
-          foo1.name shouldBe "foo1"
-          foo1.ast.isCall.name.l shouldBe List("strstr")
-          foo2.name shouldBe "foo2"
-          foo2.ast.isCall.name.l shouldBe List("strstr")
-          foo3.name shouldBe "foo3"
-          foo3.ast.isCall.name.l shouldBe List("strstr")
-          foo4.name shouldBe "foo4"
-          foo4.ast.isCall.name.l shouldBe List("strstr")
+      inside(cpg.method.nameNot("<global>").l) { case List(foo1, foo2, foo3, foo4) =>
+        foo1.name shouldBe "foo1"
+        foo1.ast.isCall.name.l shouldBe List("strstr")
+        foo2.name shouldBe "foo2"
+        foo2.ast.isCall.name.l shouldBe List("strstr")
+        foo3.name shouldBe "foo3"
+        foo3.ast.isCall.name.l shouldBe List("strstr")
+        foo4.name shouldBe "foo4"
+        foo4.ast.isCall.name.l shouldBe List("strstr")
       }
     }
 

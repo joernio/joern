@@ -18,9 +18,11 @@ case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new Concurrent
 
 class FuzzyC2Cpg() {
 
-  def runAndOutput(sourcePaths: Set[String],
-                   sourceFileExtensions: Set[String],
-                   optionalOutputPath: Option[String] = None): Cpg = {
+  def runAndOutput(
+      sourcePaths: Set[String],
+      sourceFileExtensions: Set[String],
+      optionalOutputPath: Option[String] = None
+  ): Cpg = {
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
     val typesKeyPool = new IntervalKeyPool(100, 1000100)
     val functionKeyPool = new IntervalKeyPool(1000100, Long.MaxValue)
@@ -42,10 +44,11 @@ object FuzzyC2Cpg {
 
   private val logger = LoggerFactory.getLogger(classOf[FuzzyC2Cpg])
 
-  final case class Config(inputPaths: Set[String] = Set.empty,
-                          outputPath: String = X2CpgConfig.defaultOutputPath,
-                          sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp"))
-      extends X2CpgConfig[Config] {
+  final case class Config(
+      inputPaths: Set[String] = Set.empty,
+      outputPath: String = X2CpgConfig.defaultOutputPath,
+      sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp")
+  ) extends X2CpgConfig[Config] {
 
     override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
     override def withOutputPath(x: String): Config = copy(outputPath = x)
@@ -67,8 +70,9 @@ object FuzzyC2Cpg {
         opt[String]("source-file-ext")
           .unbounded()
           .text(
-            "source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp")
-          .action((pat, cfg) => cfg.copy(sourceFileExtensions = cfg.sourceFileExtensions + pat)),
+            "source file extensions to include when gathering source files. Defaults are .c, .cc, .cpp, .h and .hpp"
+          )
+          .action((pat, cfg) => cfg.copy(sourceFileExtensions = cfg.sourceFileExtensions + pat))
       )
     }
 

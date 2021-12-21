@@ -29,13 +29,12 @@ object QueryLangExtensions {
 
   implicit class MethodExtension(methodTrav: Traversal[nodes.Method]) {
 
-    /**
-      * For a given method, determine all array accesses at constant numeric offsets, e.g.,
+    /** For a given method, determine all array accesses at constant numeric offsets, e.g.,
       * `buf[10]` but not `buf[i + 10]`, and for simplicity, not even `buf[1+2]`,
       * `buf[PROBABLY_A_CONSTANT]` or `buf[PROBABLY_A_CONSTANT + 1]`.
       *
       * or even `buf[PROBABLY_A_CONSTANT]`.
-      * */
+      */
     def arrayAccess: Traversal[opnodes.ArrayAccess] = {
       methodTrav.call
         .nameExact(Operators.indirectIndexAccess)
@@ -59,10 +58,9 @@ object QueryLangExtensions {
 
   implicit class ArrayAccessNodeExtension(arrayAccess: opnodes.ArrayAccess) {
 
-    /**
-      * If the expression on the left side of the array access is a lone
+    /** If the expression on the left side of the array access is a lone
       * identifier, return it.
-      * */
+      */
     def simpleName: Option[String] = {
       // TODO should be part of the standard language
       // TODO language is a bit clumsy here. Should be something like

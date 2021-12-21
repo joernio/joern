@@ -77,9 +77,8 @@ trait AstForPrimitivesCreator {
     val MAX_INITIALIZERS = 1000
     val clauses = l.getClauses.slice(0, MAX_INITIALIZERS)
 
-    val args = withOrder(clauses) {
-      case (c, o) =>
-        astForNode(c, o)
+    val args = withOrder(clauses) { case (c, o) =>
+      astForNode(c, o)
     }
     val ast = Ast(initCallNode).withChildren(args).withArgEdges(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {

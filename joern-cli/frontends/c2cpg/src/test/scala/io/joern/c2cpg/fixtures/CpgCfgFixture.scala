@@ -29,8 +29,8 @@ class CpgCfgFixture(code: String, fileExtension: String = ".c") {
     }.toMap
 
   def expected(pairs: (String, CfgEdgeType)*): Set[String] = {
-    pairs.map {
-      case (code, _) => codeToNode(code).code
+    pairs.map { case (code, _) =>
+      codeToNode(code).code
     }.toSet
   }
 

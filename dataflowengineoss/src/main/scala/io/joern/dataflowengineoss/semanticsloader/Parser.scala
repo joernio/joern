@@ -15,7 +15,8 @@ object Semantics {
         .addAll(elements.map { e =>
           e.methodFullName -> e
         })
-        .result())
+        .result()
+    )
   }
 
   def empty: Semantics = fromList(List())

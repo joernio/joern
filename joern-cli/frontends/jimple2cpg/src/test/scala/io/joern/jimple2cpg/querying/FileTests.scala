@@ -3,9 +3,9 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import org.scalatest.Ignore
 
 import java.io.{File => JFile}
+import java.io.File
 
 class FileTests extends JimpleCodeToCpgFixture {
 
@@ -23,7 +23,10 @@ class FileTests extends JimpleCodeToCpgFixture {
 
   "should contain exactly one non-placeholder file with absolute path in `name`" in {
     val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    x.name should startWith(JFile.separator)
+    x.name should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.hash.isDefined shouldBe false
   }
 

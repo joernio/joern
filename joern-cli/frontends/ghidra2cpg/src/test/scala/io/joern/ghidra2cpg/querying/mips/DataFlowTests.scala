@@ -44,13 +44,16 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     val flowsThroughAddXInstructions = sink.reachableByFlows(source).l
     flowsThroughAddXInstructions.map(flowToResultPairs).toSet shouldBe
       Set(
-        List("li t1,0x2a",
-             "add t2,t0,t1",
-             "addu t3,t2,t0",
-             "addu t4,t3,t0",
-             "addi t5,t4,0x1",
-             "addiu t6,t5,0x1",
-             "or t9,t6,zero"))
+        List(
+          "li t1,0x2a",
+          "add t2,t0,t1",
+          "addu t3,t2,t0",
+          "addu t4,t3,t0",
+          "addi t5,t4,0x1",
+          "addiu t6,t5,0x1",
+          "or t9,t6,zero"
+        )
+      )
   }
 
   "should find flows through `and*` instructions" in {
@@ -99,13 +102,16 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     val flowsThroughShiftXInstructions = sink.reachableByFlows(source).l
     flowsThroughShiftXInstructions.map(flowToResultPairs).toSet shouldBe
       Set(
-        List("or t1,t9,zero",
-             "sll t2,t1,0x1",
-             "sllv t3,t2,t0",
-             "sra t4,t3,0x1",
-             "srav t5,t4,t0",
-             "srl t6,t5,0x0",
-             "or t9,t6,zero"))
+        List(
+          "or t1,t9,zero",
+          "sll t2,t1,0x1",
+          "sllv t3,t2,t0",
+          "sra t4,t3,0x1",
+          "srav t5,t4,t0",
+          "srl t6,t5,0x0",
+          "or t9,t6,zero"
+        )
+      )
   }
 
   "should find flows through `sub*` instructions" in {

@@ -3,9 +3,8 @@ package io.joern.fuzzyc2cpg.querying
 import io.joern.fuzzyc2cpg.testfixtures.FuzzyCCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
-/**
-  * Language primitives for navigating local variables
-  * */
+/** Language primitives for navigating local variables
+  */
 class LocalsTests extends FuzzyCCodeToCpgSuite {
 
   override val code = """| #include <stdlib.h>

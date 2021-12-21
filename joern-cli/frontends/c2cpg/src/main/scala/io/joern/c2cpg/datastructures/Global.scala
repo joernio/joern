@@ -33,14 +33,18 @@ object Global {
     }
   }
 
-  def getAstsFromAstCache(diffGraph: DiffGraph.Builder,
-                          filename: String,
-                          fromFilename: String,
-                          linenumber: Option[Integer],
-                          columnnumber: Option[Integer],
-                          astCreatorFunction: => Seq[Ast]): Seq[Ast] = Global.synchronized {
-    if (FileDefaults
-          .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined) {
+  def getAstsFromAstCache(
+      diffGraph: DiffGraph.Builder,
+      filename: String,
+      fromFilename: String,
+      linenumber: Option[Integer],
+      columnnumber: Option[Integer],
+      astCreatorFunction: => Seq[Ast]
+  ): Seq[Ast] = Global.synchronized {
+    if (
+      FileDefaults
+        .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined
+    ) {
       if (!headerAstCache.contains(filename)) {
         headerAstCache.put(filename, mutable.HashSet((linenumber.get, columnnumber.get)))
         astCreatorFunction.foreach(Ast.storeInDiffGraph(_, diffGraph))

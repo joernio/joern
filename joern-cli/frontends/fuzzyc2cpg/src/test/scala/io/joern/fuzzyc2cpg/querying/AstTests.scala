@@ -50,13 +50,13 @@ class CAstTests extends FuzzyCCodeToCpgSuite {
       .name("moo")
       .callIn
       .argument(1)
-      .filter(
-        arg =>
-          arg.ast
-            .isCallTo("<operator>.(addition|multiplication)")
-            .not(_.inAstMinusLeaf(arg).isCall)
-            .l
-            .nonEmpty)
+      .filter(arg =>
+        arg.ast
+          .isCallTo("<operator>.(addition|multiplication)")
+          .not(_.inAstMinusLeaf(arg).isCall)
+          .l
+          .nonEmpty
+      )
       .code
       .l shouldBe List()
   }

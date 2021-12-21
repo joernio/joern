@@ -9,16 +9,14 @@ import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-/**
-  * This component loads a workspace from disk and creates
+/** This component loads a workspace from disk and creates
   * a corresponding `Workspace` object.
-  * */
+  */
 abstract class WorkspaceLoader[ProjectType <: Project] {
 
-  /**
-    * Initialize workspace from a directory
+  /** Initialize workspace from a directory
     * @param path path to the directory
-    * */
+    */
   def load(path: String): Workspace[ProjectType] = {
     val dirFile = File(path)
     val dirPath = dirFile.path.toAbsolutePath

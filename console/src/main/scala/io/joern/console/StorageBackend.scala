@@ -4,8 +4,7 @@ import ammonite.runtime.Storage
 import ammonite.util.Tag
 import os.Path
 
-/**
-  * like the default ammonite folder storage (which gives us e.g. command history), but without the CodePredef
+/** like the default ammonite folder storage (which gives us e.g. command history), but without the CodePredef
   * error when using multiple ocular installations (see https://github.com/ShiftLeftSecurity/product/issues/2082)
   */
 class StorageBackend(slProduct: SLProduct) extends Storage.Folder(StorageBackend.consoleHome(slProduct)) {

@@ -31,10 +31,9 @@ object Run {
     )
   }
 
-  /**
-    * Generate code for the run command
+  /** Generate code for the run command
     * @param exclude list of analyzers to exclude (by full class name)
-    * */
+    */
   def codeForRunCommand(exclude: List[String] = List()): String = {
     val ioSlLayerCreators = creatorsFor("io.shiftleft", exclude)
     val ioJoernLayerCreators = creatorsFor("io.joern", exclude)
@@ -44,9 +43,8 @@ object Run {
   private def creatorsFor(namespace: String, exclude: List[String]) = {
     new Reflections(
       new ConfigurationBuilder().setUrls(
-        ClasspathHelper.forPackage(namespace,
-                                   ClasspathHelper.contextClassLoader(),
-                                   ClasspathHelper.staticClassLoader()))
+        ClasspathHelper.forPackage(namespace, ClasspathHelper.contextClassLoader(), ClasspathHelper.staticClassLoader())
+      )
     ).getSubTypesOf(classOf[LayerCreator])
       .asScala
       .filterNot(t => t.isAnonymousClass || t.isLocalClass || t.isMemberClass || t.isSynthetic)
@@ -84,10 +82,9 @@ object Run {
          | override def toString() : String = {
          |  val columnNames = List("name", "description")
          |  val rows =
-         |   ${layerCreatorTypeNames.map {
-           case (varName, typeName) =>
-             s"""List("$varName",$typeName.description.trim)"""
-         }}
+         |   ${layerCreatorTypeNames.map { case (varName, typeName) =>
+        s"""List("$varName",$typeName.description.trim)"""
+      }}
          | "\\n" + Table(columnNames, rows).render
          | }
          |""".stripMargin

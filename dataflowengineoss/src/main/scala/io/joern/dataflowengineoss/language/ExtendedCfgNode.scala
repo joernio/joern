@@ -7,9 +7,8 @@ import overflowdb.traversal._
 
 import scala.collection.mutable
 
-/**
-  * Base class for nodes that can occur in data flows
-  * */
+/** Base class for nodes that can occur in data flows
+  */
 class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
@@ -26,8 +25,9 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     result
   }
 
-  def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(
-      implicit context: EngineContext): Traversal[NodeType] = {
+  def reachableBy[NodeType <: CfgNode](
+      sourceTravs: Traversal[NodeType]*
+  )(implicit context: EngineContext): Traversal[NodeType] = {
     val reachedSources = reachableByInternal(sourceTravs).map(_.source)
     Traversal.from(reachedSources).cast[NodeType]
   }
@@ -52,8 +52,9 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     paths.to(Traversal)
   }
 
-  def reachableByDetailed[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(
-      implicit context: EngineContext): List[ReachableByResult] = {
+  def reachableByDetailed[NodeType <: CfgNode](
+      sourceTravs: Traversal[NodeType]*
+  )(implicit context: EngineContext): List[ReachableByResult] = {
     reachableByInternal(sourceTravs)
   }
 
@@ -61,8 +62,9 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     l.headOption.map(x => x :: l.sliding(2).collect { case Seq(a, b) if a != b => b }.toList).getOrElse(List())
   }
 
-  private def reachableByInternal[NodeType <: CfgNode](sourceTravs: Seq[Traversal[NodeType]])(
-      implicit context: EngineContext): List[ReachableByResult] = {
+  private def reachableByInternal[NodeType <: CfgNode](
+      sourceTravs: Seq[Traversal[NodeType]]
+  )(implicit context: EngineContext): List[ReachableByResult] = {
     val sources: List[CfgNode] =
       sourceTravs
         .flatMap(_.toList)

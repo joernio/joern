@@ -12,8 +12,8 @@ object Help {
     val columnNames = List("command", "description", "example")
     val rows = DocFinder
       .findDocumentedMethodsOf(clazz)
-      .map {
-        case StepDoc(_, funcName, doc) => List(funcName, doc.info, doc.example)
+      .map { case StepDoc(_, funcName, doc) =>
+        List(funcName, doc.info, doc.example)
       }
       .toList ++ List(runRow)
 
@@ -60,9 +60,8 @@ object Help {
   def codeForHelpCommand(clazz: Class[_]): String = {
     val membersCode = DocFinder
       .findDocumentedMethodsOf(clazz)
-      .map {
-        case StepDoc(_, funcName, doc) =>
-          s"val $funcName : String = ${Help.format(doc.longInfo)}"
+      .map { case StepDoc(_, funcName, doc) =>
+        s"val $funcName : String = ${Help.format(doc.longInfo)}"
       }
       .mkString("\n")
 

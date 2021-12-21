@@ -20,9 +20,8 @@ class OssDataFlow(opts: OssDataFlowOptions) extends LayerCreator {
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
     val enhancementExecList = Iterator(new ReachingDefPass(cpg, opts.maxNumberOfDefinitions))
-    enhancementExecList.zipWithIndex.foreach {
-      case (pass, index) =>
-        runPass(pass, context, storeUndoInfo, index)
+    enhancementExecList.zipWithIndex.foreach { case (pass, index) =>
+      runPass(pass, context, storeUndoInfo, index)
     }
   }
 }

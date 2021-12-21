@@ -49,10 +49,9 @@ object MissingLengthCheck extends QueryBundle {
       tags = List(QueryTags.default)
     )
 
-  /**
-    * Names of potential length fields for the array named `arrayName` in the
+  /** Names of potential length fields for the array named `arrayName` in the
     * method `method`. Determined heuristically via name matching.
-    * */
+    */
   private def potentialLengthFields(arrayAccess: opnodes.ArrayAccess, method: nodes.Method): List[String] = {
     val arrayName = arrayAccess.simpleName.get
     List(arrayName).flatMap { name =>
@@ -63,12 +62,11 @@ object MissingLengthCheck extends QueryBundle {
     }
   }
 
-  /**
-    * For a given array access with a single constant offset and a set of variable names of
+  /** For a given array access with a single constant offset and a set of variable names of
     * potential length fields of the array, determine whether a check
     * of at least one of the potential length fields exist for each
     * literal
-    * */
+    */
   def checked(arrayAccess: opnodes.ArrayAccess, lens: List[String]): Boolean = {
     val arrayIndex = arrayAccess.argument(2).ast.isLiteral.toInt.head
     val lowerBounds = arrayAccess.method.controlStructure.condition
@@ -78,9 +76,11 @@ object MissingLengthCheck extends QueryBundle {
       .ast
       .isLiteral
       .toInt ++ {
-      if (arrayAccess.method.controlStructure.condition
-            .codeExact(arrayAccess.array.code)
-            .nonEmpty) {
+      if (
+        arrayAccess.method.controlStructure.condition
+          .codeExact(arrayAccess.array.code)
+          .nonEmpty
+      ) {
         List(0)
       } else {
         List()

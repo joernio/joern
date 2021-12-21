@@ -11,8 +11,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 
-/**
-  * Provides an interface for the execution of scripts using the
+/** Provides an interface for the execution of scripts using the
   * Ammonite interpreter.
   *
   * All scripts are compiled in-memory and no caching is performed.
@@ -21,14 +20,15 @@ trait AmmoniteExecutor {
 
   protected def predef: String
 
-  protected lazy val ammoniteMain: Main = ammonite.Main(predefCode = predef,
-                                                        remoteLogging = false,
-                                                        verboseOutput = false,
-                                                        welcomeBanner = None,
-                                                        storageBackend = Storage.InMemory())
+  protected lazy val ammoniteMain: Main = ammonite.Main(
+    predefCode = predef,
+    remoteLogging = false,
+    verboseOutput = false,
+    welcomeBanner = None,
+    storageBackend = Storage.InMemory()
+  )
 
-  /**
-    * Runs the given script, passing any defined parameters in addition to bringing the provided variable
+  /** Runs the given script, passing any defined parameters in addition to bringing the provided variable
     * bindings into scope.
     *
     * @param scriptPath A path pointing to the Ammonite script to be executed.
@@ -43,7 +43,12 @@ trait AmmoniteExecutor {
       repl <- IO.fromEither(replInstance.left.map { case (err, _) => new RuntimeException(err.msg) })
       ammoniteResult <- IO {
         repl.initializePredef()
-        ammonite.main.Scripts.runScript(ammoniteMain.wd, os.Path(scriptPath), repl.interp, args)
+        val wd = if (ammoniteMain.wd.wrapped.getRoot != scriptPath.getRoot) {
+          os.Path(scriptPath.getParent)
+        } else {
+          ammoniteMain.wd
+        }
+        ammonite.main.Scripts.runScript(wd, os.Path(scriptPath), repl.interp, args)
       }
       result <- ammoniteResult match {
         case Res.Success(res)     => IO.pure(res)
@@ -54,8 +59,7 @@ trait AmmoniteExecutor {
     } yield result
   }
 
-  /**
-    * Runs the given script, passing any defined parameters in addition to bringing a cpg into scope.
+  /** Runs the given script, passing any defined parameters in addition to bringing a cpg into scope.
     *
     * @param scriptPath A path pointing to the Ammonite script to be executed.
     * @param parameters A map of parameters to be passed to the script, useful if you have a @main method in the script.
@@ -66,8 +70,7 @@ trait AmmoniteExecutor {
     runScript(scriptPath, parameters, bindings = IndexedSeq("cpg" -> cpg))
   }
 
-  /**
-    * Runs multiple scripts in the order they are specified in `scriptPaths`.
+  /** Runs multiple scripts in the order they are specified in `scriptPaths`.
     *
     * @param scriptPaths A list of paths pointing to Ammonite scripts to be executed.
     * @param parameters  A map from script path to a set of parameter key/values.
@@ -76,17 +79,18 @@ trait AmmoniteExecutor {
     * @param bindings    A list of variable bindings made implicitly available to scripts.
     * @return A list containing the results of running each script, in order.
     */
-  def runScripts(scriptPaths: List[Path],
-                 parameters: Map[Path, Map[String, String]],
-                 bindings: IndexedSeq[Bind[_]]): IO[List[Any]] = {
+  def runScripts(
+      scriptPaths: List[Path],
+      parameters: Map[Path, Map[String, String]],
+      bindings: IndexedSeq[Bind[_]]
+  ): IO[List[Any]] = {
     scriptPaths.map { scriptPath =>
       val scriptParams = parameters.getOrElse(scriptPath, Map.empty)
       runScript(scriptPath, scriptParams, bindings)
     }.sequence
   }
 
-  /**
-    * Runs multiple scripts in the order they are specified in `scriptPaths`.
+  /** Runs multiple scripts in the order they are specified in `scriptPaths`.
     *
     * @param scriptPaths A list of paths pointing to Ammonite scripts to be executed.
     * @param parameters  A map from script path to a set of parameter key/values.
@@ -99,8 +103,7 @@ trait AmmoniteExecutor {
     runScripts(scriptPaths, parameters, bindings = IndexedSeq("cpg" -> cpg))
   }
 
-  /**
-    * Runs a query against the provided CPG.
+  /** Runs a query against the provided CPG.
     *
     * @param query The query to run against the CPG.
     * @param cpg   The CPG made implicitly available in the query

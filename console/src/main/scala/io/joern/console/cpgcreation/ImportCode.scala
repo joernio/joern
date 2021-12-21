@@ -17,16 +17,17 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   private val workspace = console.workspace
   protected val generatorFactory = new CpgGeneratorFactory(config)
 
-  /**
-    * This is the `importCode(...)` method exposed on the console. It attempts
+  /** This is the `importCode(...)` method exposed on the console. It attempts
     * to find a suitable CPG generator first by looking at the `language`
     * parameter and if no generator is found for the language, looking the
     * contents at `inputPath` to determine heuristically which generator to use.
-    * */
-  def apply(inputPath: String,
-            projectName: String = "",
-            namespaces: List[String] = List(),
-            language: String = ""): Cpg = {
+    */
+  def apply(
+      inputPath: String,
+      projectName: String = "",
+      namespaces: List[String] = List(),
+      language: String = ""
+  ): Cpg = {
     if (language != "") {
       generatorFactory.forLanguage(language) match {
         case None           => throw new ConsoleException(s"No CPG generator exists for language: $language")
@@ -58,30 +59,35 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def php: Frontend = new Frontend("php", Languages.PHP, "PHP bytecode frontend")
 
   class Frontend(val name: String, val language: String, val description: String = "") {
-    def cpgGeneratorForLanguage(language: String,
-                                config: FrontendConfig,
-                                rootPath: Path,
-                                args: List[String]): Option[CpgGenerator] =
+    def cpgGeneratorForLanguage(
+        language: String,
+        config: FrontendConfig,
+        rootPath: Path,
+        args: List[String]
+    ): Option[CpgGenerator] =
       io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
 
     def isAvailable: Boolean =
       cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).exists(_.isAvailable)
 
-    def apply(inputPath: String,
-              projectName: String = "",
-              namespaces: List[String] = List(),
-              args: List[String] = List()): Cpg = {
+    def apply(
+        inputPath: String,
+        projectName: String = "",
+        namespaces: List[String] = List(),
+        args: List[String] = List()
+    ): Cpg = {
       val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
         .getOrElse(throw new ConsoleException(s"no cpg generator for language=$language available!"))
       new ImportCode(console)(frontend, inputPath, projectName, namespaces)
     }
   }
 
-  class SourceBasedFrontend(name: String,
-                            language: String = Languages.C,
-                            description: String = "Fuzzy Parser for C/C++",
-                            extension: String = "c")
-      extends Frontend(name, language, description) {
+  class SourceBasedFrontend(
+      name: String,
+      language: String = Languages.C,
+      description: String = "Fuzzy Parser for C/C++",
+      extension: String = "c"
+  ) extends Frontend(name, language, description) {
 
     def fromString(str: String, args: List[String] = List()): Cpg = {
       withCodeInTmpFile(str, "tmp." + extension) { dir =>
@@ -114,12 +120,11 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     llvm,
     oldc,
     python,
-    csharp,
+    csharp
   )
 
-  /**
-    * Provide an overview of the available CPG generators (frontends)
-    * */
+  /** Provide an overview of the available CPG generators (frontends)
+    */
   override def toString: String = {
     val cols = List("name", "description", "available")
     val rows = allFrontends.map { frontend =>

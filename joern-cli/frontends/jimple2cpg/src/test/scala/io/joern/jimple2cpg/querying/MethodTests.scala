@@ -23,7 +23,10 @@ class MethodTests extends JimpleCodeToCpgFixture {
     x.signature shouldBe "int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
-    x.filename.startsWith(File.separator) shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".class") shouldBe true
     x.lineNumber shouldBe Some(2)
     x.columnNumber shouldBe Some(-1)

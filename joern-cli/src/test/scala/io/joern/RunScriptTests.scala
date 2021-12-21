@@ -1,7 +1,6 @@
 package io.joern
 
 import better.files.File
-import better.files.Dsl._
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -12,21 +11,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 
 class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
 
-  private def withCpgZip[T](file: File)(f: Cpg => T): T = {
-    val cpgZip = File(".") / "cpg.bin"
-    withTestCpg(file) {
-      case (cpg, outputFilename) =>
-        cp(File(outputFilename), cpgZip)
-        try {
-          f(cpg)
-        } finally {
-          rm(cpgZip)
-        }
-    }
-  }
-
-  "Executing scripts for example code 'testcode/unsafe-ptr" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/unsafe-ptr"))) { cpg: Cpg =>
+  "Executing scripts for example code 'testcode/unsafe-ptr" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/unsafe-ptr"))
+  ) { case (cpg: Cpg, _) =>
     "work correctly for 'pointer-to-int.sc'" in {
       val calls =
         console.JoernConsole.runScriptTest("c/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
@@ -47,8 +34,9 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
     }
   }
 
-  "Executing scripts for example code 'testcode/syscalls" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/syscalls"))) { cpg: Cpg =>
+  "Executing scripts for example code 'testcode/syscalls" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/syscalls"))
+  ) { case (cpg: Cpg, _) =>
     "work correctly for 'syscalls.sc'" in {
       val calls =
         console.JoernConsole.runScriptTest("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
@@ -69,8 +57,9 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
     }
   }
 
-  "Executing scripts for example code 'testcode/malloc-overflow" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/malloc-overflow"))) { cpg: Cpg =>
+  "Executing scripts for example code 'testcode/malloc-overflow" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/malloc-overflow"))
+  ) { case (cpg: Cpg, _) =>
     "work correctly for 'malloc-overflow.sc'" in {
       val calls =
         console.JoernConsole.runScriptTest("c/malloc-overflow.sc", Map.empty, cpg).asInstanceOf[List[Call]]
@@ -83,8 +72,9 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
     }
   }
 
-  "Executing scripts for example code 'testcode/leak" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/leak"))) { cpg: Cpg =>
+  "Executing scripts for example code 'testcode/leak" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/leak"))
+  ) { case (cpg: Cpg, _) =>
     "work correctly for 'malloc-leak.sc'" in {
       val calls =
         console.JoernConsole.runScriptTest("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[String]]
@@ -93,8 +83,9 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
     }
   }
 
-  "Executing scripts for example code 'testcode/const-ish" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/const-ish"))) { cpg: Cpg =>
+  "Executing scripts for example code 'testcode/const-ish" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/const-ish"))
+  ) { case (cpg: Cpg, _) =>
     "work correctly for 'const-ish.sc'" in {
       val methods =
         console.JoernConsole.runScriptTest("c/const-ish.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
@@ -110,8 +101,9 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
     }
   }
 
-  "Executing scripts for example code 'testcode/free'" should withCpgZip(
-    File(getClass.getClassLoader.getResource("testcode/free"))) { cpg: Cpg =>
+  "Executing scripts for example code 'testcode/free'" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/free"))
+  ) { case (cpg: Cpg, _) =>
     "work correctly for 'list-funcs'" in {
       val expected = cpg.method.name.l
       val actual = console.JoernConsole.runScriptTest("general/list-funcs.sc", Map.empty, cpg)
