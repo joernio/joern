@@ -43,7 +43,12 @@ trait AmmoniteExecutor {
       repl <- IO.fromEither(replInstance.left.map { case (err, _) => new RuntimeException(err.msg) })
       ammoniteResult <- IO {
         repl.initializePredef()
-        ammonite.main.Scripts.runScript(ammoniteMain.wd, os.Path(scriptPath), repl.interp, args)
+        val wd = if (ammoniteMain.wd.wrapped.getRoot != scriptPath.getRoot) {
+          os.Path(scriptPath.getParent)
+        } else {
+          ammoniteMain.wd
+        }
+        ammonite.main.Scripts.runScript(wd, os.Path(scriptPath), repl.interp, args)
       }
       result <- ammoniteResult match {
         case Res.Success(res)     => IO.pure(res)

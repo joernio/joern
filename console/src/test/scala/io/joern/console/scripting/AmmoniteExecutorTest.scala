@@ -1,5 +1,6 @@
 package io.joern.console.scripting
 
+import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -50,7 +51,7 @@ class AmmoniteExecutorTest extends AnyWordSpec with Matchers {
     }
 
     "return a failure if the script can not be found" in withExecutor { executor =>
-      val script = Paths.get(System.getProperty("java.io.tmpdir"), "cake.sc")
+      val script = (File(os.pwd.toNIO) / "cake.sc").path
 
       val ex = intercept[RuntimeException] {
         executor.runScript(script, Map.empty, Cpg.emptyCpg).unsafeRunSync()
