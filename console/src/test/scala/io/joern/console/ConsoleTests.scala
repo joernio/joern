@@ -7,8 +7,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.Ignore
-import org.scalatest.Tag
 
 import java.io.FileOutputStream
 import java.util.zip.ZipOutputStream
