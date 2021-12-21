@@ -17,11 +17,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
 
   /** Convert to nearest AST node
     */
-  def astNode: AstNode =
-    node match {
-      case n: AstNode => n
-      case _          => ??? //TODO markus/fabs?
-    }
+  def astNode: AstNode = node
 
   def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(implicit
       context: EngineContext
