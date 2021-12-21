@@ -61,9 +61,9 @@ class JavaSrc2Cpg {
       val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
       (sourceCodePath, sourceFileNames)
     } else {
-      val dir = Files.createTempDirectory("javasrc")
-      sourceFile.copyToDirectory(dir)
-      (dir.toAbsolutePath.toString, List(sourceFile.pathAsString))
+      val dir = File.newTemporaryDirectory("javasrc").deleteOnExit()
+      sourceFile.copyToDirectory(dir).deleteOnExit()
+      (dir.pathAsString, List(sourceFile.pathAsString))
     }
   }
 
