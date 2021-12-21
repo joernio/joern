@@ -7,12 +7,19 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.Ignore
+import org.scalatest.Tag
 
 import java.io.FileOutputStream
 import java.util.zip.ZipOutputStream
 import scala.util.Try
 
 class ConsoleTests extends AnyWordSpec with Matchers {
+
+  // Some tests here are are copying stuff within TEMP which is not allowed withing the Windows GITHUB actions runners.
+  private object NotInWindowsRunners
+      extends Tag(
+        if (!File.temp.toString().contains(":\\Users\\RUNNER~1\\AppData\\Local\\Temp")) "" else classOf[Ignore].getName)
 
   "importCode" should {
     "provide overview of available language modules" in ConsoleFixture() { (console, _) =>
@@ -47,43 +54,41 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       )
     }
 
-    "allow importing code from file with defines and additional args" in ConsoleFixture() { (console, codeDir) =>
-      val code =
-        """
+    "allow importing code from file with defines and additional args" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, codeDir) =>
+        val code =
+          """
           |#ifdef D
           |int foo() {};
           |#endif
           |""".stripMargin
-      File.usingTemporaryFile("console", suffix = ".c", parent = Some(codeDir)) { file =>
-        file.write(code)
-        console.importCode.c(inputPath = codeDir.toString)
-        // importing without args should not yield foo
-        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+        File.usingTemporaryFile("console", suffix = ".c", parent = Some(codeDir)) { file =>
+          file.write(code)
+          console.importCode.c(inputPath = codeDir.toString)
+          // importing without args should not yield foo
+          Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
 
-        console.workspace.reset()
-
-        // importing with args should yield foo
-        console.importCode.c(inputPath = codeDir.toString(), args = List("--define", "D"))
-        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
-      }
+          // importing with args should yield foo
+          console.importCode.c(inputPath = codeDir.toString(), args = List("--define", "D"))
+          Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
+        }
     }
 
-    "allow importing code from string with defines and additional args" in ConsoleFixture() { (console, _) =>
-      val code =
-        """
+    "allow importing code from string with defines and additional args" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, _) =>
+        val code =
+          """
           |#ifdef D
           |int foo() {};
           |#endif
           |""".stripMargin
-      // importing without args should not yield foo
-      console.importCode.c.fromString(code)
-      Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+        // importing without args should not yield foo
+        console.importCode.c.fromString(code)
+        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
 
-      console.workspace.reset()
-
-      // importing with args should yield foo
-      console.importCode.c.fromString(code, List("--define", "D"))
-      Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
+        // importing with args should yield foo
+        console.importCode.c.fromString(code, List("--define", "D"))
+        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
     }
 
     "allow importing code and setting project name" in ConsoleFixture() { (console, codeDir) =>
@@ -163,7 +168,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "allow importing an existing CPG" in ConsoleFixture() { (console, codeDir) =>
+    "allow importing an existing CPG" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       WithStandaloneCpg(console, codeDir) { tmpCpg =>
         console.importCpg(tmpCpg.toString)
         console.workspace.numberOfProjects shouldBe 1
@@ -177,53 +182,56 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "allow importing an existing CPG with custom project name" in ConsoleFixture() { (console, codeDir) =>
-      WithStandaloneCpg(console, codeDir) { tmpCpg =>
-        console.importCpg(tmpCpg.toString, "foobar")
-        console.workspace.numberOfProjects shouldBe 1
-        console.workspace.project("foobar") should not be empty
-        Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
-      }
+    "allow importing an existing CPG with custom project name" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, codeDir) =>
+        WithStandaloneCpg(console, codeDir) { tmpCpg =>
+          console.importCpg(tmpCpg.toString, "foobar")
+          console.workspace.numberOfProjects shouldBe 1
+          console.workspace.project("foobar") should not be empty
+          Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
+        }
     }
 
-    "allow importing two CPGs with the same filename but different paths" in ConsoleFixture() { (console, codeDir) =>
-      WithStandaloneCpg(console, codeDir) { tmpCpg =>
-        File.usingTemporaryDirectory("console") { dir1 =>
-          File.usingTemporaryDirectory("console") { dir2 =>
-            File.usingTemporaryDirectory("console") { dir3 =>
-              val cpg1Path = dir1.path.resolve("cpg.bin")
-              val cpg2Path = dir2.path.resolve("cpg.bin")
-              val cpg3Path = dir3.path.resolve("cpg.bin")
-              cp(tmpCpg, cpg1Path)
-              cp(tmpCpg, cpg2Path)
-              cp(tmpCpg, cpg3Path)
-              console.importCpg(cpg1Path.toString)
-              console.importCpg(cpg2Path.toString)
-              console.importCpg(cpg3Path.toString)
-              console.workspace.numberOfProjects shouldBe 3
-              console.workspace.project(cpg1Path.toFile.getName) should not be empty
-              console.workspace.project(cpg1Path.toFile.getName + "1") should not be empty
-              console.workspace.project(cpg1Path.toFile.getName + "2") should not be empty
-              console.workspace.project(cpg1Path.toFile.getName + "12") shouldBe empty
+    "allow importing two CPGs with the same filename but different paths" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, codeDir) =>
+        WithStandaloneCpg(console, codeDir) { tmpCpg =>
+          File.usingTemporaryDirectory("console") { dir1 =>
+            File.usingTemporaryDirectory("console") { dir2 =>
+              File.usingTemporaryDirectory("console") { dir3 =>
+                val cpg1Path = dir1.path.resolve("cpg.bin")
+                val cpg2Path = dir2.path.resolve("cpg.bin")
+                val cpg3Path = dir3.path.resolve("cpg.bin")
+                cp(tmpCpg, cpg1Path)
+                cp(tmpCpg, cpg2Path)
+                cp(tmpCpg, cpg3Path)
+                console.importCpg(cpg1Path.toString)
+                console.importCpg(cpg2Path.toString)
+                console.importCpg(cpg3Path.toString)
+                console.workspace.numberOfProjects shouldBe 3
+                console.workspace.project(cpg1Path.toFile.getName) should not be empty
+                console.workspace.project(cpg1Path.toFile.getName + "1") should not be empty
+                console.workspace.project(cpg1Path.toFile.getName + "2") should not be empty
+                console.workspace.project(cpg1Path.toFile.getName + "12") shouldBe empty
+              }
             }
           }
         }
-      }
     }
 
-    "overwrite project if a project for the inputPath exists" in ConsoleFixture() { (console, codeDir) =>
-      WithStandaloneCpg(console, codeDir) { tmpCpg =>
-        console.importCpg(tmpCpg.toString)
-        console.importCpg(tmpCpg.toString)
-        console.workspace.numberOfProjects shouldBe 1
-        Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
-        console.project.appliedOverlays shouldBe List(
-          Base.overlayName,
-          ControlFlow.overlayName,
-          TypeRelations.overlayName,
-          CallGraph.overlayName
-        )
-      }
+    "overwrite project if a project for the inputPath exists" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, codeDir) =>
+        WithStandaloneCpg(console, codeDir) { tmpCpg =>
+          console.importCpg(tmpCpg.toString)
+          console.importCpg(tmpCpg.toString)
+          console.workspace.numberOfProjects shouldBe 1
+          Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
+          console.project.appliedOverlays shouldBe List(
+            Base.overlayName,
+            ControlFlow.overlayName,
+            TypeRelations.overlayName,
+            CallGraph.overlayName
+          )
+        }
     }
   }
 
@@ -241,14 +249,15 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "allow closing and then opening a project again" in ConsoleFixture() { (console, codeDir) =>
-      val projectName = "myproject"
-      console.importCode(codeDir.toString, projectName)
-      console.close(projectName).get.cpg shouldBe empty
-      console.open(projectName).get.cpg should not be empty
+    "allow closing and then opening a project again" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, codeDir) =>
+        val projectName = "myproject"
+        console.importCode(codeDir.toString, projectName)
+        console.close(projectName).get.cpg shouldBe empty
+        console.open(projectName).get.cpg should not be empty
     }
 
-    "allow closing currently active project" in ConsoleFixture() { (console, codeDir) =>
+    "allow closing currently active project" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       val projectName = "myproject"
       console.importCode(codeDir.toString, projectName)
       val project = console.close
@@ -256,19 +265,20 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       project.get.cpg shouldBe empty
     }
 
-    "should keep project active on close and allow setting other as active" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString, "foo")
-      console.importCode(codeDir.toString, "bar")
-      console.close
-      a[RuntimeException] should be thrownBy console.cpg
-      console.open("foo")
-      Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
+    "keep project active on close and allow setting other as active" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, codeDir) =>
+        console.importCode(codeDir.toString, "foo")
+        console.importCode(codeDir.toString, "bar")
+        console.close
+        a[RuntimeException] should be thrownBy console.cpg
+        console.open("foo")
+        Set("main", "bar").subsetOf(console.cpg.method.name.toSet) shouldBe true
     }
   }
 
   "delete" should {
 
-    "remove a project from disk" in ConsoleFixture() { (console, codeDir) =>
+    "remove a project from disk" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       val cpg = console.importCode(codeDir.toString, "foo")
       val projectDir = console.workspace.projectByCpg(cpg).get.path.toFile
       console.delete("foo")
@@ -403,7 +413,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   }
 
   "save" should {
-    "close and reopen projects" in ConsoleFixture() { (console, codeDir) =>
+    "close and reopen projects" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString, "project1")
       console.importCode(codeDir.toString, "project2")
       console.workspace.project("project1").exists(_.cpg.isDefined) shouldBe true
@@ -413,7 +423,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.workspace.project("project2").exists(_.cpg.isDefined) shouldBe true
     }
 
-    "copy working copy to persistent copy" in ConsoleFixture() { (console, codeDir) =>
+    "copy working copy to persistent copy" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString, "project1")
       val projectPath = console.project.path
       console.save
@@ -456,7 +466,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "allow changing workspaces" in ConsoleFixture() { (console, codeDir) =>
+    "allow changing workspaces" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       val firstWorkspace = File(console.workspace.getPath)
       File.usingTemporaryDirectory("console") { otherWorkspaceDir =>
         console.importCode(codeDir.toString, "projectInFirstWorkspace")
