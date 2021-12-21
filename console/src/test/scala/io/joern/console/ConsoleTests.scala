@@ -16,7 +16,7 @@ import scala.util.Try
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 
-  // Some tests here are are copying stuff within TEMP which is not allowed withing the Windows GITHUB actions runners.
+  // Some tests here are are copying stuff within TEMP which is not allowed within the Windows GITHUB actions runners.
   private object NotInWindowsRunners
       extends Tag(
         if (!File.temp.toString().contains(":\\Users\\RUNNER~1\\AppData\\Local\\Temp")) "" else classOf[Ignore].getName)
