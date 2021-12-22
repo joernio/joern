@@ -3,8 +3,7 @@ import better.files.Dsl._
 import better.files._
 import io.joern.console.workspacehandling.Project
 
-import java.nio.file.FileSystemException
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 package object testing {
 
