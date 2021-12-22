@@ -4,9 +4,9 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.semanticcpg.language.{toExpressionMethods, _}
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.utils.MemberAccess
-import overflowdb.traversal.{Traversal, _}
+import overflowdb.traversal._
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -19,8 +19,8 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy(sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] =
-    node.start.reachableBy(sourceTravs: _*)
+  def reachableBy[NodeTypeT <: CfgNode](sourceTravs: Traversal[NodeTypeT]*)(
+      implicit context: EngineContext): Traversal[NodeTypeT] = node.reachableBy(sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
     val cache = mutable.HashMap[CfgNode, Vector[PathElement]]()
