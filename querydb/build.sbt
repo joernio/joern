@@ -13,7 +13,7 @@ dependsOn(
 
 libraryDependencies ++= Seq(
   "com.lihaoyi" %% "sourcecode" % "0.2.7",
-  "com.lihaoyi" %% "upickle" % "1.4.3",
+  "com.lihaoyi" %% "upickle" % "1.4.2",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "com.github.scopt" %% "scopt" % "4.0.1",
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
