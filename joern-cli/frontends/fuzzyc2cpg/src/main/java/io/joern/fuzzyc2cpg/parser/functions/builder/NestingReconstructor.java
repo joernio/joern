@@ -67,7 +67,8 @@ public class NestingReconstructor {
     protected void consolidateBlockStarters(AstNode node) {
         while (true) {
             try {
-                BlockStarter curBlockStarter = (BlockStarter) stack.pop();
+                BlockStarter curBlockStarter = (BlockStarter) stack.peek();
+                curBlockStarter = (BlockStarter) stack.pop();
                 curBlockStarter.addChild(node);
                 node = curBlockStarter;
 

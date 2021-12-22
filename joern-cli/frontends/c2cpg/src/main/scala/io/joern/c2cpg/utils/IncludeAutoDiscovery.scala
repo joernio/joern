@@ -29,8 +29,8 @@ object IncludeAutoDiscovery {
 
   private def discoverPaths(command: String): Set[Path] = {
     ExternalCommand.run(command) match {
-      case Failure(exception) =>
-        logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
+      case Failure(_) =>
+        logger.warn(s"Unable to discover system include paths. Make sure you have 'gcc' installed.")
         Set.empty
       case Success(output) => extractPaths(output)
     }
@@ -41,10 +41,12 @@ object IncludeAutoDiscovery {
       systemIncludePaths
     } else if (config.includePathsAutoDiscovery && systemIncludePaths.isEmpty) {
       val includePaths = discoverPaths(C_INCLUDE_COMMAND) ++ discoverPaths(CPP_INCLUDE_COMMAND)
-      logger.info(
-        "Using the following system include paths:" + includePaths
-          .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
-      )
+      if (includePaths.nonEmpty) {
+        logger.info(
+          "Using the following system include paths:" + includePaths
+            .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
+        )
+      }
       systemIncludePaths = includePaths
       includePaths
     } else {

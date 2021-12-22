@@ -11,12 +11,12 @@ import io.shiftleft.semanticcpg.language._
   */
 class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
 
-  override val code = """
-       /* A C comment */
-       // A C++ comment
-       int main(int argc, char **argv) { int mylocal; libfunc(1); }
-       struct foo { int x; };
-    """
+  override val code: String = """
+    |/* A C comment */
+    |// A C++ comment
+    |int main(int argc, char **argv) { int mylocal; libfunc(1, argc); };
+    |struct foo { int x; };
+    |""".stripMargin
 
   "should allow retrieving files" in {
     atLeast(1, cpg.file.name.l) should endWith(".c")
@@ -32,7 +32,7 @@ class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
   }
 
   "should allow retrieving comments" in {
-    cpg.comment.code.toSet shouldBe Set(s"/* A C comment */", s"// A C++ comment${System.lineSeparator()}")
+    cpg.comment.code.toSet should contain theSameElementsAs Set(s"/* A C comment */", s"// A C++ comment\n")
   }
 
   "should allow retrieving parameters" in {
@@ -86,7 +86,7 @@ class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
   "should allow retrieving all nodes" in {
     val allNodesLabels = cpg.all.label.toSet
 
-    allNodesLabels shouldBe Set(
+    allNodesLabels should contain theSameElementsAs Set(
       NodeTypes.NAMESPACE_BLOCK,
       NodeTypes.MEMBER,
       NodeTypes.TYPE_DECL,
@@ -102,7 +102,8 @@ class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
       NodeTypes.COMMENT,
       NodeTypes.LOCAL,
       NodeTypes.CALL,
-      NodeTypes.LITERAL
+      NodeTypes.LITERAL,
+      NodeTypes.IDENTIFIER
     )
   }
 
