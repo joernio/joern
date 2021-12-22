@@ -36,7 +36,7 @@ class QueryDatabase(
   def queriesInBundle[T <: QueryBundle](bundle: Class[T]): List[Query] = {
     val instance = bundle.getField("MODULE$").get(null)
     queryCreatorsInBundle(bundle).map {
-      case (method, args) => {
+      case (method, args) =>
         val query = method.invoke(instance, args: _*).asInstanceOf[Query]
         val bundleNamespace = bundle.getPackageName
         // the namespace currently looks like `io.joern.scanners.c.CopyLoops`
@@ -44,13 +44,12 @@ class QueryDatabase(
         val language =
           if (bundleNamespace.startsWith("io.shiftleft.ocular.scanners")) {
             namespaceParts(4)
-          } else if (namespaceParts.size > 3) {
+          } else if (namespaceParts.length > 3) {
             namespaceParts(3)
           } else {
             ""
           }
         query.copy(language = language)
-      }
     }
   }
 
@@ -66,8 +65,9 @@ class QueryDatabase(
   }
 
   private def defaultArgs[T <: QueryBundle](method: Method, bundle: Class[T]): List[Any] = {
-    method.getParameters.zipWithIndex.map { case (parameter, index) =>
-      defaultArgumentProvider.defaultArgument(method, bundle, parameter, index)
+    method.getParameters.zipWithIndex.map {
+      case (parameter, index) =>
+        defaultArgumentProvider.defaultArgument(method, bundle, parameter, index)
     }.toList
   }
 
@@ -96,7 +96,7 @@ class DefaultArgumentProvider {
         val defaultValue = defaultMethod.invoke(instance)
         defaultValue
       } catch {
-        case e: NoSuchMethodException =>
+        case _: NoSuchMethodException =>
           throw new RuntimeException(
             s"No default value found for parameter `${parameter.toString}` of query creator method `$method` "
           )
