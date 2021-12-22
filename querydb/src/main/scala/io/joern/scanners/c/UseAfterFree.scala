@@ -118,23 +118,22 @@ object UseAfterFree extends QueryBundle {
             .isIdentifier
 
         def freeAssigned =
-          assignedValues.map(
-            id =>
-              (
-                id,
-                id.refsTo
-                  .flatMap {
-                    case p: MethodParameterIn => p.referencingIdentifiers
-                    case v: Local             => v.referencingIdentifiers
-                  }
-                  .inCall
-                  .name("(.*_)?free")
-            ))
+          assignedValues.map(id =>
+            (
+              id,
+              id.refsTo
+                .flatMap {
+                  case p: MethodParameterIn => p.referencingIdentifiers
+                  case v: Local             => v.referencingIdentifiers
+                }
+                .inCall
+                .name("(.*_)?free")
+            )
+          )
 
         freeAssigned
-          .filter {
-            case (id, freeCall) =>
-              freeCall.dominatedBy.exists(_ == id)
+          .filter { case (id, freeCall) =>
+            freeCall.dominatedBy.exists(_ == id)
           }
           .flatMap(_._1)
       }),

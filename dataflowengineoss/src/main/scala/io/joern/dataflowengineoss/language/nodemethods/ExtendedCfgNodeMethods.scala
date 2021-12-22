@@ -19,8 +19,9 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy[NodeTypeT <: CfgNode](sourceTravs: Traversal[NodeTypeT]*)(
-      implicit context: EngineContext): Traversal[NodeTypeT] = node.reachableBy(sourceTravs: _*)
+  def reachableBy[NodeTypeT <: CfgNode](sourceTravs: Traversal[NodeTypeT]*)(implicit
+      context: EngineContext
+  ): Traversal[NodeTypeT] = node.reachableBy(sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
     val cache = mutable.HashMap[CfgNode, Vector[PathElement]]()
