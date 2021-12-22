@@ -189,7 +189,7 @@ object Engine {
     parentNode match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
-        (sem.isDefined && !(sem.get.mappings.map(_._2).contains(-1)))
+        sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
       case _ =>
         false
     }

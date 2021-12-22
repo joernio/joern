@@ -7,29 +7,31 @@ import io.shiftleft.semanticcpg.language._
   */
 class LocalsTests extends FuzzyCCodeToCpgSuite {
 
-  override val code = """| #include <stdlib.h>
-                    | struct node {
-                    | int value;
-                    | struct node *next;
-                    | };
-                    |
-                    | void free_list(struct node *head) {
-                    | struct node *q;
-                    | for (struct node *p = head; p != NULL; p = q) {
-                    |    q = p->next;
-                    |    free(p);
-                    |    }
-                    | }
-                    | int flow(int p0) {
-                    |    int a = p0;
-                    |    int b=a;
-                    |    int c=0x31;
-                    |    int z = b + c;
-                    |    z++;
-                    |    int x = z;
-                    |    return x;
-                    |    }
-                 """.stripMargin
+  override val code: String = """
+    | #include <stdlib.h>
+    | 
+    | struct node {
+    |   int value;
+    |   struct node *next;
+    | };
+    |
+    | void free_list(struct node *head) {
+    |   struct node *q;
+    |   for (struct node *p = head; p != NULL; p = q) {
+    |     q = p->next;
+    |     free(p);
+    |   }
+    | }
+    | 
+    | int flow(int p0) {
+    |   int a = p0;
+    |   int b=a;
+    |   int c=0x31;
+    |   int z = b + c;
+    |   z++;
+    |   int x = z;
+    |   return x;
+    | }""".stripMargin
 
   "should allow to query for all locals" in {
     cpg.local.name.toSet shouldBe Set("a", "b", "c", "z", "x", "q", "p")

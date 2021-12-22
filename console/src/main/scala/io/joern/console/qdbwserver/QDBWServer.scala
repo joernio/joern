@@ -13,7 +13,7 @@ class QDBWServer(serverHost: String, serverPort: Int, contentDir: String) extend
   }
 
   @cask.staticFiles("/")
-  def staticFileRoutes() = contentDir
+  def staticFileRoutes(): String = contentDir
 
   initialize()
 }

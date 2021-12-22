@@ -7,14 +7,14 @@ import io.joern.fuzzyc2cpg.parser.functions.builder.TemplateParameterListBuilder
 
 public abstract class TemplateAstBuilder<T extends AstNode> extends AstNodeBuilder<T> {
 
-  protected final TemplateParameterListBuilder templateParamBuilder = new TemplateParameterListBuilder();
+    protected final TemplateParameterListBuilder templateParamBuilder = new TemplateParameterListBuilder();
 
-  public void setTemplateList(ModuleParser.Template_declContext ctx) {
-    templateParamBuilder.createNew(ctx);
-    item.addChild(templateParamBuilder.getItem());
-  }
+    public void setTemplateList(ModuleParser.Template_declContext ctx) {
+        templateParamBuilder.createNew(ctx);
+        item.addChild(templateParamBuilder.getItem());
+    }
 
-  public void addTemplateParameter(ModuleParser.Template_nameContext ctx) {
-    templateParamBuilder.addTemplateParameter(ctx);
-  }
+    public void addTemplateParameter(ModuleParser.Template_nameContext ctx) {
+        templateParamBuilder.addTemplateParameter(ctx);
+    }
 }

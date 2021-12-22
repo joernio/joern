@@ -4,12 +4,12 @@ import org.antlr.v4.runtime.ParserRuleContext;
 
 abstract public class AstNodeBuilder<T extends AstNode> {
 
-  protected T item;
+    protected T item;
 
-  public T getItem() {
-    return item;
-  }
+    public T getItem() {
+        return item;
+    }
 
-  abstract public void createNew(ParserRuleContext ctx);
+    abstract public void createNew(ParserRuleContext ctx);
 
 }

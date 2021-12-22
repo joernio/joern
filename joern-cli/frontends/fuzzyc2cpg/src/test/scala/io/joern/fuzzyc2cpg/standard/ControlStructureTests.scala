@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ControlStructureTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       |void foo(int x, int y) {
       | try {

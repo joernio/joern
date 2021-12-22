@@ -67,7 +67,7 @@ class CDataFlowTests1 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests2 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         |struct node {
         | int value;
@@ -83,7 +83,7 @@ class CDataFlowTests2 extends DataFlowCodeToCpgSuite {
       """.stripMargin
 
   "Test 2: flow with pointers" in {
-    implicit val callResolver = NoResolve
+    implicit val callResolver: NoResolve.type = NoResolve
     val source = cpg.identifier
     val sink = cpg.method.name("free").parameter.argument
     val flows = sink
@@ -124,7 +124,7 @@ class CDataFlowTests2 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests3 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | int method(int y){
         |  int a = 10;
@@ -135,7 +135,7 @@ class CDataFlowTests3 extends DataFlowCodeToCpgSuite {
       """.stripMargin
 
   "Test 3: flow from function call argument" in {
-    implicit val callResolver = NoResolve
+    implicit val callResolver: NoResolve.type = NoResolve
     val source = cpg.identifier.name("a")
     val sink = cpg.method.name("foo").parameter.argument
     val flows = sink.reachableByFlows(source).l
@@ -161,7 +161,7 @@ class CDataFlowTests3 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests4 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | void flow(void) {
         |   int a = 0x37;
@@ -202,7 +202,7 @@ class CDataFlowTests4 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests5 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | int flow(int a){
         |   int z = a;
@@ -231,7 +231,7 @@ class CDataFlowTests5 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests6 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | int nested(int a){
         |   int x;
@@ -270,7 +270,7 @@ class CDataFlowTests6 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests7 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | int nested(int a){
         |   int x;
@@ -313,7 +313,7 @@ class CDataFlowTests7 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests8 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | void param(int x){
         |    int a = x;
@@ -323,7 +323,7 @@ class CDataFlowTests8 extends DataFlowCodeToCpgSuite {
       """.stripMargin
 
   "Test 8: flow chain from function argument of foo to a" in {
-    implicit val callResolver = NoResolve
+    implicit val callResolver: NoResolve.type = NoResolve
     val source = cpg.identifier.name("a")
     val sink = cpg.method.name("foo").parameter.argument
     val flows = sink.reachableByFlows(source).l
@@ -347,7 +347,7 @@ class CDataFlowTests8 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests9 extends DataFlowCodeToCpgSuite {
-  override val code = """
+  override val code: String = """
                           | void param(int x){
                           |    int a = x;
                           |    int b = a;
@@ -378,7 +378,7 @@ class CDataFlowTests9 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests10 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | struct node {
         | int value1;
@@ -416,7 +416,7 @@ class CDataFlowTests10 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests11 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | void flow(void) {
         |   int a = 0x37;
@@ -451,7 +451,7 @@ class CDataFlowTests11 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests12 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void flow(void) {
       |    int a = 0x37;
@@ -481,7 +481,7 @@ class CDataFlowTests12 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests13 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | void flow(void) {
         |    int a = 0x37;
@@ -513,7 +513,7 @@ class CDataFlowTests13 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests14 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
         | int main(int argc, char** argv){
         |    int x = argv[1];
@@ -548,7 +548,7 @@ class CDataFlowTests14 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests15 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
   void foo(bool x, void* y) {
     void* z =  x ? f(y) : g(y);
@@ -565,7 +565,7 @@ class CDataFlowTests15 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests16 extends DataFlowCodeToCpgSuite {
-  override val code = """
+  override val code: String = """
 
   int bar() {
     int x = source();
@@ -594,7 +594,7 @@ class CDataFlowTests16 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests17 extends DataFlowCodeToCpgSuite {
-  override val code = """
+  override val code: String = """
 
   int bar() {
     return source();
@@ -640,7 +640,7 @@ class CDataFlowTests17 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests18 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | struct Point {
       |   int x;
@@ -726,7 +726,7 @@ class CDataFlowTests19 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests20 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | typedef struct {
       |   int len;
@@ -752,7 +752,7 @@ class CDataFlowTests20 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests21 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |
       | int source();
@@ -774,7 +774,7 @@ class CDataFlowTests21 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests22 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |typedef struct {int field;} S;
       | int source();
@@ -796,7 +796,7 @@ class CDataFlowTests22 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests23 extends DataFlowCodeToCpgSuite {
-  override val code = """
+  override val code: String = """
       | int source();
       | void sink(int i);
       |
@@ -816,7 +816,7 @@ class CDataFlowTests23 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests24 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int foo() {
       |  source(&a->c);
@@ -833,7 +833,7 @@ class CDataFlowTests24 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests25 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int bar() {
       |  source(&a->b);
@@ -854,7 +854,7 @@ class CDataFlowTests25 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests26 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int foo() {
       |  a->b = source();
@@ -879,7 +879,7 @@ class CDataFlowTests26 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests27 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int foo(int y, int x) {
       |  free(y);
@@ -901,7 +901,7 @@ class CDataFlowTests27 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests28 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int foo() {
       |   int y = 1;
@@ -921,7 +921,7 @@ class CDataFlowTests28 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests29 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int foo() {
       |   char * y = malloc(10);
@@ -941,7 +941,7 @@ class CDataFlowTests29 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests30 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int foo(int b) {
       |  b = source();
@@ -1000,7 +1000,7 @@ class CDataFlowTests32 extends DataFlowCodeToCpgSuite {
 }
 
 class CDataFlowTests33 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       |int bar(int z) {
       |  int x = 10;

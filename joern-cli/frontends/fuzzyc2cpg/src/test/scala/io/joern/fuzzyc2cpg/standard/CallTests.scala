@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.{NoResolve, _}
 
 class CallTests extends FuzzyCCodeToCpgSuite {
 
-  implicit val resolver = NoResolve
+  private implicit val resolver: NoResolve.type = NoResolve
 
   override val code = """
        int add(int x, int y) {

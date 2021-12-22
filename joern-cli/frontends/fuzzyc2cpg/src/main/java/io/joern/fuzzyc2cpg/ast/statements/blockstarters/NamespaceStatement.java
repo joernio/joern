@@ -7,29 +7,29 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public class NamespaceStatement extends BlockStarter {
 
-  private StringExpression name = null;
-  private CompoundStatement content = null;
+    private StringExpression name = null;
+    private CompoundStatement content = null;
 
-  public StringExpression getName() {
-    return this.name;
-  }
+    public StringExpression getName() {
+        return this.name;
+    }
 
-  public void setName(StringExpression name) {
-    this.name = name;
-    super.addChild(name);
-  }
+    public void setName(StringExpression name) {
+        this.name = name;
+        super.addChild(name);
+    }
 
-  public CompoundStatement getContent() {
-    return this.content;
-  }
+    public CompoundStatement getContent() {
+        return this.content;
+    }
 
-  public void setContent(CompoundStatement content) {
-    this.content = content;
-    super.addChild(content);
-  }
+    public void setContent(CompoundStatement content) {
+        this.content = content;
+        super.addChild(content);
+    }
 
-  @Override
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    @Override
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

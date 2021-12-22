@@ -14,5 +14,13 @@ case class CodeLocation(
 ) {
 
   override def toString: String =
-    String.format("%d:%d:%d:%d:%d:%d", startLine, startPos, startIndex, endIndex, endLine, endPos)
+    String.format(
+      "%d:%d:%d:%d:%d:%d",
+      startLine.getOrElse(-1),
+      startPos.getOrElse(-1),
+      startIndex.getOrElse(-1),
+      endIndex.getOrElse(-1),
+      endLine.getOrElse(-1),
+      endPos.getOrElse(-1)
+    )
 }

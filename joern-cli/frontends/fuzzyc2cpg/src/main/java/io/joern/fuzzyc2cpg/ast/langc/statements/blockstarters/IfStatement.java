@@ -6,37 +6,37 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public class IfStatement extends IfStatementBase {
 
-  private ElseStatement elseNode = null;
+    private ElseStatement elseNode = null;
 
-  public int getChildCount() {
-    int childCount = super.getChildCount();
+    public int getChildCount() {
+        int childCount = super.getChildCount();
 
-    if (getElseNode() != null) {
-      childCount++;
+        if (getElseNode() != null) {
+            childCount++;
+        }
+        return childCount;
     }
-    return childCount;
-  }
 
-  public AstNode getChild(int index) {
-    if (index == 0) {
-      return condition;
-    } else if (index == 1) {
-      return statement;
-    } else if (index == 2) {
-      return getElseNode();
+    public AstNode getChild(int index) {
+        if (index == 0) {
+            return condition;
+        } else if (index == 1) {
+            return statement;
+        } else if (index == 2) {
+            return getElseNode();
+        }
+        throw new RuntimeException("Invalid IfItem");
     }
-    throw new RuntimeException("Invalid IfItem");
-  }
 
-  public ElseStatement getElseNode() {
-    return elseNode;
-  }
+    public ElseStatement getElseNode() {
+        return elseNode;
+    }
 
-  public void setElseNode(ElseStatement elseNode) {
-    this.elseNode = elseNode;
-  }
+    public void setElseNode(ElseStatement elseNode) {
+        this.elseNode = elseNode;
+    }
 
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

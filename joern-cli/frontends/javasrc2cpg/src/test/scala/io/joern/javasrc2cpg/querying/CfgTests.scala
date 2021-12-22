@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends JavaSrcCodeToCpgFixture {
 
-  override val code =
+  override val code: String =
     """
       |class Foo {
       | int foo(int x, int y) {

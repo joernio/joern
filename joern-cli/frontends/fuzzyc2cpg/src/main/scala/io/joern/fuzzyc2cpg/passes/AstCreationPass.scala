@@ -50,10 +50,9 @@ class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPoo
       driver.parseAndWalkFile(filename, diffGraph)
       true
     } catch {
-      case ex: Exception => {
+      case ex: Exception =>
         logger.warn("Cannot parse module: " + filename + ", skipping", ex)
         false
-      }
     }
   }
 

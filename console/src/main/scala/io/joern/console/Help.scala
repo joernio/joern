@@ -36,7 +36,7 @@ object Help {
     "\"\"\"" + "\n" + formatNoQuotes(text) + "\"\"\""
   }
 
-  def formatNoQuotes(text: String) = {
+  def formatNoQuotes(text: String): String = {
     text.stripMargin
       .split("\n\n")
       .map(x => WordUtils.wrap(x.replace("\n", " "), width))
@@ -73,7 +73,7 @@ object Help {
        |
        | def run : String = Help.runLongHelp
        |
-       |  override def toString : String = \"\"\"${overview}\"\"\"
+       |  override def toString : String = \"\"\"$overview\"\"\"
        | }
        |
        | val help = new Helper

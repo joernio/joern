@@ -5,7 +5,7 @@ import io.joern.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """| #include <stdlib.h>
        | struct node {
        | int value;
@@ -35,7 +35,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
   }
 
   "should find flows to arguments of `free`" in {
-    implicit val callResolver = NoResolve
+    implicit val callResolver: NoResolve.type = NoResolve
     val source = cpg.identifier
     val sink = cpg.method.name("free").parameter.argument
     sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5

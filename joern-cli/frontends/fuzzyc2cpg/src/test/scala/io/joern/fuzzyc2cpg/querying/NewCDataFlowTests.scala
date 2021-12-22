@@ -5,7 +5,7 @@ import io.joern.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
 class NewCDataFlowTests1 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   int x = source();
@@ -25,7 +25,7 @@ class NewCDataFlowTests1 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests2 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   sink(source());
@@ -44,7 +44,7 @@ class NewCDataFlowTests2 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests3 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   woo(x);
@@ -63,7 +63,7 @@ class NewCDataFlowTests3 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests4 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   x = source();
@@ -83,7 +83,7 @@ class NewCDataFlowTests4 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests5 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   int x = source();
@@ -108,7 +108,7 @@ class NewCDataFlowTests5 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests6 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   x.y = source();
@@ -129,7 +129,7 @@ class NewCDataFlowTests6 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests7 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   x->y = source();
@@ -150,7 +150,7 @@ class NewCDataFlowTests7 extends DataFlowCodeToCpgSuite {
 }
 
 class NewCDataFlowTests8 extends DataFlowCodeToCpgSuite {
-  override val code =
+  override val code: String =
     """
       | void foo() {
       |   int x.y = source();

@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CallGraphTests extends JavaSrcCodeToCpgFixture {
 
-  implicit val resolver = NoResolve
+  private implicit val resolver: NoResolve.type = NoResolve
 
   override val code = """
        class Foo {

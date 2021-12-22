@@ -21,7 +21,7 @@ class TypeNodePassTests extends AnyWordSpec with Matchers {
 object TypeNodePassFixture {
   def apply(file1Code: String)(f: Cpg => Unit): Unit = {
     File.usingTemporaryDirectory("fuzzyctest") { dir =>
-      val file1 = (dir / "file1.c")
+      val file1 = dir / "file1.c"
       file1.write(file1Code)
 
       val cpg = Cpg.emptyCpg

@@ -632,7 +632,7 @@ class AstCreator(filename: String, global: Global) {
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val tryAst = astForBlockStatement(stmt.getTryBlock, scopeContext, 1, "try");
+    val tryAst = astForBlockStatement(stmt.getTryBlock, scopeContext, 1, "try")
     // Catch order must be 2 for CFG generation
     val catchAsts = withOrder(stmt.getCatchClauses) { (s, o) =>
       astForCatchClause(s, scopeContext, o)
@@ -1648,12 +1648,12 @@ class AstCreator(filename: String, global: Global) {
       call: MethodCallExpr,
       resolvedDecl: Try[ResolvedMethodDeclaration],
       order: Int
-  ) = {
+  ): NewCall = {
     val codePrefix = call.getScope.toScala.map(_.toString).getOrElse("this")
     val typeFullName = registerType(Try(call.calculateResolvedType().describe()).getOrElse("<empty>"))
     val callNode = NewCall()
       .name(call.getNameAsString)
-      .code(s"${codePrefix}.${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
+      .code(s"$codePrefix.${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
       .typeFullName(typeFullName)
       .order(order)
       .argumentIndex(order)

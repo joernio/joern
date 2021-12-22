@@ -17,8 +17,9 @@ import scala.util.Try
 
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
-  var semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics = _
+  protected var semanticsFilename: String =
+    ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  protected var semantics: Semantics = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {

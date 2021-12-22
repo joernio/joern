@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodParameterTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       |  int main(int argc, char **argv) {
       | }""".stripMargin

@@ -7,7 +7,7 @@ import overflowdb._
 import overflowdb.traversal._
 
 class MethodInternalLinkageTests extends AnyWordSpec with Matchers with TraversalUtils {
-  val fixture = CpgTestFixture("methodinternallinkage")
+  override val fixture: CpgTestFixture = CpgTestFixture("methodinternallinkage")
 
   implicit class VertexListWrapper(vertexList: List[Node]) {
     def expandAst(filterLabels: String*): List[Node] = {

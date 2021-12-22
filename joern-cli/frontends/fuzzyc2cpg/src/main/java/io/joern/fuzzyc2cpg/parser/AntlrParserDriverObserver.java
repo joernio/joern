@@ -7,13 +7,13 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import java.util.Stack;
 
 public interface AntlrParserDriverObserver {
-  void begin();
+    void begin();
 
-  void end();
+    void end();
 
-  void startOfUnit(ParserRuleContext ctx, String filename);
+    void startOfUnit(ParserRuleContext ctx, String filename);
 
-  void endOfUnit(ParserRuleContext ctx, String filename);
+    void endOfUnit(ParserRuleContext ctx, String filename);
 
-  <T extends AstNode> void processItem(T node, Stack<AstNodeBuilder<? extends AstNode>> builderStack);
+    <T extends AstNode> void processItem(T node, Stack<AstNodeBuilder<? extends AstNode>> builderStack);
 }

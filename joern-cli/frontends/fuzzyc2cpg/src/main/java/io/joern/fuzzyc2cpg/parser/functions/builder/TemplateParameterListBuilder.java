@@ -9,20 +9,20 @@ import io.joern.fuzzyc2cpg.ast.functionDef.TemplateParameterList;
 import io.joern.fuzzyc2cpg.parser.AstNodeFactory;
 
 public class TemplateParameterListBuilder extends AstNodeBuilder<TemplateParameterList> {
-  private final TemplateParameterList templateParameterList = new TemplateParameterList();
+    private final TemplateParameterList templateParameterList = new TemplateParameterList();
 
-  public TemplateParameterListBuilder() {
-    item = templateParameterList;
-  }
+    public TemplateParameterListBuilder() {
+        item = templateParameterList;
+    }
 
-  @Override
-  public void createNew(ParserRuleContext ctx) {
-    AstNodeFactory.initializeFromContext(templateParameterList, ctx);
-  }
+    @Override
+    public void createNew(ParserRuleContext ctx) {
+        AstNodeFactory.initializeFromContext(templateParameterList, ctx);
+    }
 
-  public void addTemplateParameter(Template_nameContext ctx) {
-    Template template = AstNodeFactory.create(ctx);
-    templateParameterList.addChild(template);
-  }
+    public void addTemplateParameter(Template_nameContext ctx) {
+        Template template = AstNodeFactory.create(ctx);
+        templateParameterList.addChild(template);
+    }
 
 }

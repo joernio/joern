@@ -511,8 +511,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
       // TODO requires .aliasTypeFullName accessor missing
       cpg.typeDecl
         .name("abc")
-        .filter(_.aliasTypeFullName.contains("foo"))
-        .size shouldBe 1
+        .count(_.aliasTypeFullName.contains("foo")) shouldBe 1
     }
 
     "be correct for single inheritance" in Fixture(
@@ -527,8 +526,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
     ) { cpg =>
       cpg.typeDecl
         .name("Derived")
-        .filter(_.inheritsFromTypeFullName == List("Base"))
-        .size shouldBe 1
+        .count(_.inheritsFromTypeFullName == List("Base")) shouldBe 1
     }
 
     "be correct for method calls" in Fixture(
@@ -745,8 +743,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
 object Fixture {
   def apply(file1Code: String, file2Code: String = "")(f: Cpg => Unit): Unit = {
     File.usingTemporaryDirectory("fuzzyctest") { dir =>
-      val file1 = (dir / "file1.c")
-      val file2 = (dir / "file2.c")
+      val file1 = dir / "file1.c"
+      val file2 = dir / "file2.c"
       file1.write(file1Code)
       file2.write(file2Code)
 

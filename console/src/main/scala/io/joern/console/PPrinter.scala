@@ -3,9 +3,12 @@ package io.joern.console
 import io.shiftleft.codepropertygraph.generated.nodes
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 
+import scala.util.matching.Regex
+
 object pprinter {
 
-  val AnsiEncodedRegexp = "\u001b\\[[\\d;]+m".r
+  private val AnsiEncodedRegexp: Regex = "\u001b\\[[\\d;]+m".r
+
   def isAnsiEncoded(s: String): Boolean =
     AnsiEncodedRegexp.findFirstIn(s).isDefined
 

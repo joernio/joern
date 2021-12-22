@@ -7,7 +7,6 @@ import better.files.Dsl._
 
 import scala.jdk.CollectionConverters._
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.console.{Console, ConsoleConfig, InstallConfig}
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}

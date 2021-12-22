@@ -5,7 +5,7 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public abstract class IfStatementBase extends BlockStarterWithStmtAndCnd {
 
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

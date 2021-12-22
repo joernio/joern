@@ -17,7 +17,7 @@ Other build tools: see [bintray instructions](https://bintray.com/shiftleft/mave
 
 ## Building the code
 
-The build process has been verified on Linux and it should be possible 
+The build process has been verified on Linux, and it should be possible 
 to build on OS X and BSD systems as well. The build process requires
 the following prerequisites:
 
@@ -56,7 +56,7 @@ and issue the command:
                 --preprocessor-executable <path/to/preprocessor/executable>
 ```
 
-All preprocessor options may be specified more than once, with the exception of `--output` and `--preprocessor-executable`.
+All preprocessor options may be specified more than once, except for `--output` and `--preprocessor-executable`.
 By default, fuzzyc2cpg will attempt to execute the preprocessor at `./fuzzypp/bin/fuzzyppcli`.
 
 Run the following to see a complete list of available options:

@@ -9,26 +9,26 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public class ExpressionHolder extends Expression {
 
-  @Override
-  public String getEscapedCodeStr() {
-    Expression expr = getExpression();
-    if (expr == null) {
-      return "";
+    @Override
+    public String getEscapedCodeStr() {
+        Expression expr = getExpression();
+        if (expr == null) {
+            return "";
+        }
+
+        setCodeStr(expr.getEscapedCodeStr());
+        return getCodeStr();
     }
 
-    setCodeStr(expr.getEscapedCodeStr());
-    return getCodeStr();
-  }
-
-  public Expression getExpression() {
-    if (children == null) {
-      return null;
+    public Expression getExpression() {
+        if (children == null) {
+            return null;
+        }
+        return (Expression) children.get(0);
     }
-    return (Expression) children.get(0);
-  }
 
-  @Override
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    @Override
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

@@ -33,7 +33,7 @@ object Nodes {
     nodes
       .NewMethodParameterIn()
       .code(code)
-      .name(code)
+      .name(name)
       .order(order)
       .typeFullName(Types.registerType(typ))
       .lineNumber(lineNumber)

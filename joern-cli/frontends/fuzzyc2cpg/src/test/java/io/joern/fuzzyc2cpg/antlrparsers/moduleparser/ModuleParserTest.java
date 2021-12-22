@@ -10,19 +10,18 @@ import io.joern.fuzzyc2cpg.ModuleParser;
 
 public class ModuleParserTest {
 
-	protected ModuleParser createParser(String input) {
-		return createParser(input, Token.DEFAULT_CHANNEL);
-	}
+    protected ModuleParser createParser(String input) {
+        return createParser(input, Token.DEFAULT_CHANNEL);
+    }
 
-	protected ModuleParser createHiddenParser(String input) {
-		return createParser(input, Token.HIDDEN_CHANNEL);
-	}
+    protected ModuleParser createHiddenParser(String input) {
+        return createParser(input, Token.HIDDEN_CHANNEL);
+    }
 
-	protected ModuleParser createParser(String input, int chan) {
-		CharStream inputStream = CharStreams.fromString(input);
-		ModuleLexer lex = new ModuleLexer(inputStream);
-		CommonTokenStream tokens = new CommonTokenStream(lex, chan);
-		ModuleParser parser = new ModuleParser(tokens);
-		return parser;
-	}
+    protected ModuleParser createParser(String input, int chan) {
+        CharStream inputStream = CharStreams.fromString(input);
+        ModuleLexer lex = new ModuleLexer(inputStream);
+        CommonTokenStream tokens = new CommonTokenStream(lex, chan);
+        return new ModuleParser(tokens);
+    }
 }

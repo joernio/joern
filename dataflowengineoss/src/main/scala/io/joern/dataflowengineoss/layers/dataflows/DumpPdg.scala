@@ -26,7 +26,7 @@ class DumpPdg(options: PdgDumpOptions)(implicit semantics: Semantics) extends La
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
       val str = method.dotPdg.head
-      (File(options.outDir) / s"${i}-pdg.dot").write(str)
+      (File(options.outDir) / s"$i-pdg.dot").write(str)
     }
   }
 }

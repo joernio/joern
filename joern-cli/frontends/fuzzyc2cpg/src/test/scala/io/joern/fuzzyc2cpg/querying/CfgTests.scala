@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       | int foo(int y, int y) {
       |  if (y < 10)

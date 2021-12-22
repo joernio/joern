@@ -7,7 +7,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
 
 class TypeDeclTests extends AnyWordSpec with Matchers {
-  val fixture = CpgTestFixture("typedecl")
+  private val fixture: CpgTestFixture = CpgTestFixture("typedecl")
 
   "Type decl test project" should {
     "contain one internal type decl node for Foo" in {

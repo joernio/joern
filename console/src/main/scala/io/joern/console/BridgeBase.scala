@@ -182,7 +182,7 @@ trait BridgeBase {
 
   private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
     File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
-      val file = (dir / "script.sc")
+      val file = dir / "script.sc"
       file.write(code)
       f(file)
     }
@@ -294,19 +294,16 @@ trait BridgeBase {
     try {
       server.main(Array.empty)
     } catch {
-      case _: java.net.BindException => {
+      case _: java.net.BindException =>
         println("Could not bind socket for CPGQL server, exiting.")
         ammonite.shutdown()
         System.exit(1)
-      }
-      case e: Throwable => {
+      case e: Throwable =>
         println("Unhandled exception thrown while attempting to start CPGQL server: ")
         println(e.getMessage)
         println("Exiting.")
-
         ammonite.shutdown()
         System.exit(1)
-      }
     }
   }
 

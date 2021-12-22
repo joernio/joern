@@ -7,38 +7,41 @@ import java.util.stream.Collectors;
 
 import io.joern.fuzzyc2cpg.ast.AstNode;
 
-public class TemplateParameterList extends AstNode implements Iterable<TemplateBase>  {
-  private final List<TemplateBase> templates = new LinkedList<>();
+public class TemplateParameterList extends AstNode implements Iterable<TemplateBase> {
+    private final List<TemplateBase> templates = new LinkedList<>();
 
-  private void addTemplateParameter(TemplateBase template) {
-    this.templates.add(template);
-    super.addChild(template);
-  }
+    private void addTemplateParameter(TemplateBase template) {
+        this.templates.add(template);
+        super.addChild(template);
+    }
 
-  public int size() {
-    return templates.size();
-  }
+    public int size() {
+        return templates.size();
+    }
 
-  @Override
-  public void addChild(AstNode node) {
-    if (node instanceof TemplateBase) { addTemplateParameter((TemplateBase) node); }
-    else { super.addChild(node); }
-  }
+    @Override
+    public void addChild(AstNode node) {
+        if (node instanceof TemplateBase) {
+            addTemplateParameter((TemplateBase) node);
+        } else {
+            super.addChild(node);
+        }
+    }
 
-  @Override
-  public String getEscapedCodeStr() {
-    String codeStr = templates
-      .stream()
-      .map(TemplateBase::getEscapedCodeStr)
-      .collect(Collectors.joining(",", "<", ">"));
+    @Override
+    public String getEscapedCodeStr() {
+        String codeStr = templates
+                .stream()
+                .map(TemplateBase::getEscapedCodeStr)
+                .collect(Collectors.joining(",", "<", ">"));
 
-    setCodeStr(codeStr);
+        setCodeStr(codeStr);
 
-    return codeStr;
-  }
+        return codeStr;
+    }
 
-  @Override
-  public Iterator<TemplateBase> iterator() {
-    return templates.iterator();
-  }
+    @Override
+    public Iterator<TemplateBase> iterator() {
+        return templates.iterator();
+    }
 }

@@ -5,7 +5,7 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public class SizeofExpression extends Expression {
 
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

@@ -7,27 +7,27 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public class ThrowStatement extends JumpStatement {
 
-  private Expression throwExpression = null;
+    private Expression throwExpression = null;
 
-  public Expression getThrowExpression() {
-    return this.throwExpression;
-  }
-
-  public void setThrowExpression(Expression expression) {
-    this.throwExpression = expression;
-    super.addChild(expression);
-  }
-
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
-
-  @Override
-  public void addChild(AstNode node) {
-    if (node instanceof Expression) {
-      setThrowExpression((Expression) node);
-    } else {
-      super.addChild(node);
+    public Expression getThrowExpression() {
+        return this.throwExpression;
     }
-  }
+
+    public void setThrowExpression(Expression expression) {
+        this.throwExpression = expression;
+        super.addChild(expression);
+    }
+
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
+
+    @Override
+    public void addChild(AstNode node) {
+        if (node instanceof Expression) {
+            setThrowExpression((Expression) node);
+        } else {
+            super.addChild(node);
+        }
+    }
 }

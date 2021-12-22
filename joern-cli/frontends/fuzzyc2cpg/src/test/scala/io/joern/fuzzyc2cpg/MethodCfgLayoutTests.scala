@@ -7,7 +7,7 @@ import overflowdb.traversal._
 import overflowdb.{Node, PropertyKey}
 
 class MethodCfgLayoutTests extends AnyWordSpec with Matchers with TraversalUtils {
-  val fixture = CpgTestFixture("methodcfglayout")
+  override val fixture: CpgTestFixture = CpgTestFixture("methodcfglayout")
 
   implicit class VertexListWrapper(vertexList: List[Node]) {
     def expandCfg(): List[Node] = {

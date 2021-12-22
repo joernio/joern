@@ -2,12 +2,13 @@ package io.joern.fuzzyc2cpg.querying
 
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{Cpg14DumpOptions, DumpCpg14}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.fuzzyc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       |int foo() {}
       |int bar() {}
@@ -19,7 +20,7 @@ class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
 
       File.usingTemporaryDirectory("dumpast") { tmpDir =>
         val opts = Cpg14DumpOptions(tmpDir.path.toString)
-        implicit val s = semantics
+        implicit val s: Semantics = semantics
         val layerContext = new LayerCreatorContext(cpg)
         new DumpCpg14(opts).run(layerContext)
         (tmpDir / "0-cpg.dot").exists shouldBe true

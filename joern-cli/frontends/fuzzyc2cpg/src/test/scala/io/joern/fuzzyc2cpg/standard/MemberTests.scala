@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MemberTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       |struct foo {
       |  int x;

@@ -4,7 +4,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class TestTest extends AnyWordSpec with Matchers {
-  val fixture = CpgTestFixture("testtest")
+  private val fixture: CpgTestFixture = CpgTestFixture("testtest")
 
   "Tests" should {
     "load graphs" in {

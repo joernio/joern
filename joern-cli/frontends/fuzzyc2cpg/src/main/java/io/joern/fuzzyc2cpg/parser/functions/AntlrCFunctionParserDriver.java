@@ -10,33 +10,33 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 public class AntlrCFunctionParserDriver extends AntlrParserDriver {
 
-  public AntlrCFunctionParserDriver() {
-    super();
-    setListener(new CFunctionParseTreeListener(this));
-  }
-
-  @Override
-  public ParseTree parseTokenStreamImpl(TokenSubStream tokens) {
-    FunctionParser parser = new FunctionParser(tokens);
-    setAntlrParser(parser);
-    ParseTree tree = null;
-
-    try {
-      setSLLMode(parser);
-      tree = parser.statements();
-    } catch (RuntimeException ex) {
-      if (isRecognitionException(ex)) {
-        tokens.reset();
-        setLLStarMode(parser);
-        tree = parser.statements();
-      }
-
+    public AntlrCFunctionParserDriver() {
+        super();
+        setListener(new CFunctionParseTreeListener(this));
     }
-    return tree;
-  }
 
-  @Override
-  public Lexer createLexer(CharStream input) {
-    return new FunctionLexer(input);
-  }
+    @Override
+    public ParseTree parseTokenStreamImpl(TokenSubStream tokens) {
+        FunctionParser parser = new FunctionParser(tokens);
+        setAntlrParser(parser);
+        ParseTree tree = null;
+
+        try {
+            setSLLMode(parser);
+            tree = parser.statements();
+        } catch (RuntimeException ex) {
+            if (isRecognitionException(ex)) {
+                tokens.reset();
+                setLLStarMode(parser);
+                tree = parser.statements();
+            }
+
+        }
+        return tree;
+    }
+
+    @Override
+    public Lexer createLexer(CharStream input) {
+        return new FunctionLexer(input);
+    }
 }

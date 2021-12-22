@@ -6,7 +6,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
 
 class MethodHeaderTests extends AnyWordSpec with Matchers {
-  val fixture = CpgTestFixture("methodheader")
+  private val fixture: CpgTestFixture = CpgTestFixture("methodheader")
 
   "Method header" should {
 

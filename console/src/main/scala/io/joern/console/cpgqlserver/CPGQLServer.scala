@@ -1,14 +1,17 @@
 package io.joern.console.cpgqlserver
 
 import cask.model.{Request, Response}
+import cask.model.Response.Raw
+import cask.router.Result
 import io.joern.console.embammonite.{EmbeddedAmmonite, QueryResult}
+import ujson.Obj
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
 import scala.meta._
 
 object CPGLSError extends Enumeration {
-  val parseError = Value("cpgqls_query_parse_error")
+  val parseError: CPGLSError.Value = Value("cpgqls_query_parse_error")
 }
 
 class CPGQLServer(
@@ -20,11 +23,11 @@ class CPGQLServer(
 ) extends cask.MainRoutes {
 
   class basicAuth extends cask.RawDecorator {
-    def wrapFunction(ctx: Request, delegate: Delegate) = {
+    def wrapFunction(ctx: Request, delegate: Delegate): Result[Raw] = {
       val authString =
         try {
           val authHeader = ctx.exchange.getRequestHeaders.get("authorization").getFirst
-          val strippedHeader = authHeader.toString().replaceFirst("Basic ", "")
+          val strippedHeader = authHeader.replaceFirst("Basic ", "")
           new String(Base64.getDecoder.decode(strippedHeader))
         } catch {
           case _: Exception => ""
@@ -32,7 +35,7 @@ class CPGQLServer(
       val Array(user, password): Array[String] = {
         val split = authString.split(":")
         if (split.length == 2) {
-          Array(split(0).toString(), split(1).toString())
+          Array(split(0), split(1))
         } else {
           Array("", "")
         }
@@ -41,7 +44,7 @@ class CPGQLServer(
         if (serverAuthUsername == "" && serverAuthPassword == "")
           true
         else
-          (user == serverAuthUsername && password == serverAuthPassword)
+          user == serverAuthUsername && password == serverAuthPassword
       delegate(Map("isAuthorized" -> isAuthorized))
     }
   }
@@ -56,7 +59,7 @@ class CPGQLServer(
 
   var openConnections = Set.empty[cask.WsChannelActor]
   val resultMap = new ConcurrentHashMap[UUID, (QueryResult, Boolean)]()
-  val unauthorizedResponse = Response(ujson.Obj(), 401, headers = Seq("WWW-Authenticate" -> "Basic"))
+  val unauthorizedResponse: Response[Obj] = Response(ujson.Obj(), 401, headers = Seq("WWW-Authenticate" -> "Basic"))
 
   @cask.websocket("/connect")
   def handler(): cask.WebsocketResult = {
@@ -64,21 +67,19 @@ class CPGQLServer(
       connection.send(cask.Ws.Text("connected"))
       openConnections += connection
       cask.WsActor {
-        case cask.Ws.Error(e) => {
+        case cask.Ws.Error(e) =>
           println("Connection error: " + e.getMessage)
           openConnections -= connection
-        }
-        case cask.Ws.Close(_, _) | cask.Ws.ChannelClosed() => {
+        case cask.Ws.Close(_, _) | cask.Ws.ChannelClosed() =>
           println("Connection closed.")
           openConnections -= connection
-        }
       }
     }
   }
 
   @basicAuth()
   @cask.postJson("/query")
-  def postQuery(query: String)(isAuthorized: Boolean) = {
+  def postQuery(query: String)(isAuthorized: Boolean): Response[Obj] = {
     val res = if (!isAuthorized) {
       unauthorizedResponse
     } else {
@@ -111,7 +112,7 @@ class CPGQLServer(
 
   @basicAuth()
   @cask.get("/result/:uuidParam")
-  def getResult(uuidParam: String)(isAuthorized: Boolean) = {
+  def getResult(uuidParam: String)(isAuthorized: Boolean): Response[Obj] = {
     val res = if (!isAuthorized) {
       unauthorizedResponse
     } else {

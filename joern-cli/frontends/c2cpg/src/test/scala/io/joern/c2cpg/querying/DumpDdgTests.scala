@@ -3,6 +3,7 @@ package io.joern.c2cpg.querying
 import better.files.File
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.layers.dataflows.{DdgDumpOptions, DumpDdg}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DumpDdgTests extends DataFlowCodeToCpgSuite {
@@ -19,7 +20,7 @@ class DumpDdgTests extends DataFlowCodeToCpgSuite {
 
       File.usingTemporaryDirectory("dumpast") { tmpDir =>
         val opts = DdgDumpOptions(tmpDir.path.toString)
-        implicit val s = semantics
+        implicit val s: Semantics = semantics
         val layerContext = new LayerCreatorContext(cpg)
         new DumpDdg(opts).run(layerContext)
         (tmpDir / "0-ddg.dot").exists shouldBe true

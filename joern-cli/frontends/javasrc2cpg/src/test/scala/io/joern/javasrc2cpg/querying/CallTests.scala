@@ -102,7 +102,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
   "should handle unresolved calls with appropriate defaults" in {
     val List(call: Call) = cpg.typeDecl.name("Foo").ast.isCall.name("foo").l
-    call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+    call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     call.methodFullName shouldBe "<empty>"
     call.signature shouldBe ""
     call.code shouldBe "this.foo(argc)"

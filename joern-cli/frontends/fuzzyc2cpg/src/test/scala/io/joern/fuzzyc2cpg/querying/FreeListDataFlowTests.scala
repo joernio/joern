@@ -6,36 +6,38 @@ import io.shiftleft.semanticcpg.language._
 
 class FreeListDataFlowTests extends DataFlowCodeToCpgSuite {
 
-  override val code = """| #include <stdlib.h>
-                | struct node {
-                | int value;
-                | struct node *next;
-                | };
-                |
-                | void free_list(struct node *head) {
-                | struct node *q;
-                | for (struct node *p = head; p != NULL; p = q) {
-                |    q = p->next;
-                |    free(p);
-                |    }
-                | }
-                | int flow(int p0) {
-                |    int a = p0;
-                |    int b=a;
-                |    int c=0x31;
-                |    int z = b + c;
-                |    z++;
-                |    int x = z;
-                |    return x;
-                |    }
-             """.stripMargin
+  override val code: String = """
+    | #include <stdlib.h>
+    | 
+    | struct node {
+    |   int value;
+    |   struct node *next;
+    | };
+    |
+    | void free_list(struct node *head) {
+    |   struct node *q;
+    |   for (struct node *p = head; p != NULL; p = q) {
+    |     q = p->next;
+    |     free(p);
+    |   }
+    | }
+    | 
+    | int flow(int p0) {
+    |   int a = p0;
+    |   int b=a;
+    |   int c=0x31;
+    |   int z = b + c;
+    |   z++;
+    |   int x = z;
+    |   return x;
+    |}""".stripMargin
 
   "should identify all calls to `free`" in {
     cpg.call.name("free").code.toSet shouldBe Set("free(p)")
   }
 
   "should find flows to arguments of `free`" in {
-    implicit val callResolver = NoResolve
+    implicit val callResolver: NoResolve.type = NoResolve
     val source = cpg.identifier
     val sink = cpg.method.name("free").parameter.argument
     sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5

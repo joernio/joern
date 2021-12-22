@@ -5,9 +5,9 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 // Pseudo node
 public class Callee extends ExpressionHolder {
-  @Override
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    @Override
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 
 }

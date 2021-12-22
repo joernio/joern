@@ -8,9 +8,9 @@ import java.util.regex.Pattern
 
 class CodeDumperTests extends FuzzyCCodeToCpgSuite {
 
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
+  private implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
-  override val code = """
+  override val code: String = """
                 | // A comment
                 |int my_func(int param1)
                 |{

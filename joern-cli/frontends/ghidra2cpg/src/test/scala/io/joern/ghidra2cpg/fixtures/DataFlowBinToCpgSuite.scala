@@ -17,9 +17,9 @@ import scala.util.Try
 
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
-  var semanticsFilename =
+  protected var semanticsFilename: String =
     ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics = _
+  private var semantics: Semantics = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {

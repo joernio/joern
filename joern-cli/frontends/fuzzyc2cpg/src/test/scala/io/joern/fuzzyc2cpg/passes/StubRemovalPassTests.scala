@@ -51,7 +51,7 @@ class StubRemovalPassTests extends AnyWordSpec with Matchers {
 object StubRemovalPassFixture {
   def apply(file1Code: String)(f: Cpg => Unit): Unit = {
     File.usingTemporaryDirectory("fuzzyctest") { dir =>
-      val file1 = (dir / "file1.c")
+      val file1 = dir / "file1.c"
       file1.write(file1Code)
       val cpg = Cpg.emptyCpg
       val keyPool = new IntervalKeyPool(1001, 2000)

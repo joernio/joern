@@ -4,34 +4,35 @@ import io.joern.fuzzyc2cpg.ast.AstNode;
 import io.joern.fuzzyc2cpg.ast.declarations.IdentifierDeclType;
 import io.joern.fuzzyc2cpg.ast.logical.statements.Statement;
 import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
+
 import java.util.List;
 
 public class IdentifierDeclStatement extends Statement {
 
-  private IdentifierDeclType type = new IdentifierDeclType();
+    private IdentifierDeclType type = new IdentifierDeclType();
 
-  public void addChild(AstNode node) {
-    if (node instanceof IdentifierDeclType) {
-      setType((IdentifierDeclType) node);
-      return; // Do NOT add type to children.
+    public void addChild(AstNode node) {
+        if (node instanceof IdentifierDeclType) {
+            setType((IdentifierDeclType) node);
+            return; // Do NOT add type to children.
+        }
+        super.addChild(node);
     }
-    super.addChild(node);
-  }
 
-  public IdentifierDeclType getType() {
-    return type;
-  }
+    public IdentifierDeclType getType() {
+        return type;
+    }
 
-  private void setType(IdentifierDeclType node) {
-    type = node;
-  }
+    private void setType(IdentifierDeclType node) {
+        type = node;
+    }
 
-  public List<AstNode> getIdentifierDeclList() {
-    return children;
-  }
+    public List<AstNode> getIdentifierDeclList() {
+        return children;
+    }
 
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 
 }

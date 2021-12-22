@@ -8,7 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
 
 class ProgramStructureTests extends AnyWordSpec with Matchers {
-  val fixture = CpgTestFixture("structure")
+  private val fixture: CpgTestFixture = CpgTestFixture("structure")
 
   "Program structure of test project" should {
 

@@ -7,40 +7,40 @@ import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;
 
 public class ExpressionHolderStatement extends Statement {
 
-  private Expression expression = null;
+    private Expression expression = null;
 
-  public Expression getExpression() {
-    return this.expression;
-  }
-
-  public void setExpression(Expression expression) {
-    this.expression = expression;
-    super.addChild(expression);
-  }
-
-  @Override
-  public String getEscapedCodeStr() {
-
-    Expression expr = getExpression();
-    if (expr == null) {
-      return "";
+    public Expression getExpression() {
+        return this.expression;
     }
 
-    setCodeStr(expr.getEscapedCodeStr());
-    return getCodeStr();
-  }
-
-  @Override
-  public void addChild(AstNode node) {
-    if (node instanceof Expression) {
-      setExpression((Expression) node);
-    } else {
-      super.addChild(node);
+    public void setExpression(Expression expression) {
+        this.expression = expression;
+        super.addChild(expression);
     }
-  }
 
-  @Override
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    @Override
+    public String getEscapedCodeStr() {
+
+        Expression expr = getExpression();
+        if (expr == null) {
+            return "";
+        }
+
+        setCodeStr(expr.getEscapedCodeStr());
+        return getCodeStr();
+    }
+
+    @Override
+    public void addChild(AstNode node) {
+        if (node instanceof Expression) {
+            setExpression((Expression) node);
+        } else {
+            super.addChild(node);
+        }
+    }
+
+    @Override
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

@@ -6,20 +6,20 @@ import io.joern.fuzzyc2cpg.parser.AstNodeFactory;
 
 public class NewExpression extends CallExpressionBase {
 
-  private Identifier targetClass;
+    private Identifier targetClass;
 
-  public Identifier getTargetClass() {
-    return this.targetClass;
-  }
+    public Identifier getTargetClass() {
+        return this.targetClass;
+    }
 
-  public void setTargetClass(FunctionParser.Type_nameContext ctx) {
-    this.targetClass = new Identifier();
-    AstNodeFactory.initializeFromContext(targetClass, ctx);
-    super.addChild(targetClass);
-  }
+    public void setTargetClass(FunctionParser.Type_nameContext ctx) {
+        this.targetClass = new Identifier();
+        AstNodeFactory.initializeFromContext(targetClass, ctx);
+        super.addChild(targetClass);
+    }
 
-  @Override
-  public void accept(ASTNodeVisitor visitor) {
-    visitor.visit(this);
-  }
+    @Override
+    public void accept(ASTNodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

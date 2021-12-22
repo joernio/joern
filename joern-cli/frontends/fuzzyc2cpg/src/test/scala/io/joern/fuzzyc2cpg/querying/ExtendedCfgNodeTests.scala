@@ -16,7 +16,7 @@ class ExtendedCfgNodeTests extends DataFlowCodeToCpgSuite {
     s = semantics
   }
 
-  override val code =
+  override val code: String =
     """
       |int foo(int y) {
       | int x = source();

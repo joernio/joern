@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CAstTests extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       | int foo(int y) {
       |   int x = 10;
@@ -137,7 +137,7 @@ class CAstTests extends FuzzyCCodeToCpgSuite {
 
 class CAstTests2 extends FuzzyCCodeToCpgSuite {
 
-  override val code =
+  override val code: String =
     """
       |void foo(int bar) {
       | char buf[10];

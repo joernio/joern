@@ -7,7 +7,7 @@ import org.scalatest.Ignore
 
 class ControlStructureTests extends JavaSrcCodeToCpgFixture {
 
-  override val code =
+  override val code: String =
     """
       |class Foo {
       |  int baz(Iterable<Integer> xs) {
