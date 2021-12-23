@@ -12,6 +12,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPASTQualifiedName, CPPFunction}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import java.nio.file.Paths
 import scala.annotation.nowarn
 
 object AstCreatorHelper {
@@ -54,7 +55,7 @@ trait AstCreatorHelper {
 
   private def fileLines(node: IASTNode): Seq[Int] = {
     val f = fileName(node)
-    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLineLengthsInFile(f))
+    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLineLengthsInFile(Paths.get(f)))
   }
 
   private def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =
