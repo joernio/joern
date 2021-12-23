@@ -12,6 +12,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPASTQualifiedName, CPPFunction}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import java.nio.file.Paths
 import scala.annotation.nowarn
 
 object AstCreatorHelper {
@@ -54,7 +55,7 @@ trait AstCreatorHelper {
 
   private def fileLines(node: IASTNode): Seq[Int] = {
     val f = fileName(node)
-    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLineLengthsInFile(f))
+    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLineLengthsInFile(Paths.get(f)))
   }
 
   private def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =
@@ -110,13 +111,15 @@ trait AstCreatorHelper {
   }
 
   protected def withOrder[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
-    nodes.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
+    nodes.zipWithIndex.map {
+      case (x, i) =>
+        f(x, i + 1)
     }
 
   protected def withOrder[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
-    nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
+    nodes.toIndexedSeq.zipWithIndex.map {
+      case (x, i) =>
+        f(x, i + 1)
     }
 
   protected def registerType(typeName: String): String = {
@@ -293,8 +296,7 @@ trait AstCreatorHelper {
       case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
       case _                      => ""
     }
-    if (pointers.isEmpty) { s"$tpe$arr" }
-    else {
+    if (pointers.isEmpty) { s"$tpe$arr" } else {
       s"$tpe$arr${"*" * pointers.size}".strip()
     }
   }
