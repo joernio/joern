@@ -1046,11 +1046,17 @@ class AstCreator(filename: String, global: Global) {
       scopeContext: ScopeContext,
       order: Int
   ): Seq[AstWithCtx] = {
-    // TODO: Make return node with expression as children
     if (ret.getExpression.isPresent) {
       val exprAstsWithCtx = astsForExpression(ret.getExpression.get(), scopeContext, order + 1)
-      val returnNode = NewReturn().order(order)
-      val returnAst = Ast(returnNode).withChildren(exprAstsWithCtx.map(_.ast))
+      val returnNode = NewReturn()
+        .lineNumber(line(ret))
+        .columnNumber(column(ret))
+        .argumentIndex(order)
+        .order(order)
+        .code(ret.toString)
+      val returnAst = Ast(returnNode)
+        .withChildren(exprAstsWithCtx.map(_.ast))
+        .withArgEdges(returnNode, exprAstsWithCtx.flatMap(_.ast.root))
       val ctx = mergedCtx(exprAstsWithCtx.map(_.ctx))
       Seq(AstWithCtx(returnAst, ctx))
     } else {
