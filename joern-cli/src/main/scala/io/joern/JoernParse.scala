@@ -18,7 +18,7 @@ object JoernParse extends App {
       .text("source file or directory containing source files")
       .action((x, c) => c.copy(inputPath = x))
 
-    opt[String]("out")
+    opt[String]('o', "output")
       .text("output filename")
       .action((x, c) => c.copy(outputCpgFile = x))
 
