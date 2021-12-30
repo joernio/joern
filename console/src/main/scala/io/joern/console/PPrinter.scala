@@ -58,7 +58,8 @@ object pprinter {
           original.treeify(
             node.productElement(n),
             escapeUnicode = original.defaultEscapeUnicode,
-            showFieldNames = original.defaultShowFieldNames)
+            showFieldNames = original.defaultShowFieldNames
+          )
         )
       }
     )
