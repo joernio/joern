@@ -1,6 +1,6 @@
 package io.joern.console
 
-import ammonite.ops.{Path, pwd}
+import os.{Path, pwd}
 import ammonite.util.{Colors, Res}
 import better.files._
 import io.joern.console.cpgqlserver.CPGQLServer

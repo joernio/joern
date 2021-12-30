@@ -30,9 +30,11 @@ object pprinter {
           width: Int = defaultWidth,
           height: Int = defaultHeight,
           indent: Int = defaultIndent,
-          initialOffset: Int = 0
+          initialOffset: Int = 0,
+          escapeUnicode: Boolean,
+          showFieldNames: Boolean
       ): Iterator[fansi.Str] = {
-        val tree = this.treeify(x)
+        val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
         val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
           override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
             case Tree.Literal(body) if isAnsiEncoded(body) =>
@@ -50,7 +52,15 @@ object pprinter {
     Tree.Apply(
       node.productPrefix,
       Iterator.range(0, node.productArity).map { n =>
-        Tree.Infix(Tree.Literal(node.productElementLabel(n)), "->", original.treeify(node.productElement(n)))
+        Tree.Infix(
+          Tree.Literal(node.productElementLabel(n)),
+          "->",
+          original.treeify(
+            node.productElement(n),
+            escapeUnicode = original.defaultEscapeUnicode,
+            showFieldNames = original.defaultShowFieldNames
+          )
+        )
       }
     )
   }
