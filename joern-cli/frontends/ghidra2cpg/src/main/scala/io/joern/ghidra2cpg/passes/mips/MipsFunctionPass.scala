@@ -3,7 +3,7 @@ import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.pcode.PcodeOp._
-import ghidra.program.model.pcode.{PcodeOp, Varnode}
+import ghidra.program.model.pcode.{PcodeOp, PcodeOpAST, Varnode}
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
@@ -85,12 +85,11 @@ class MipsFunctionPass(currentProgram: Program,
   }
   def handleTwoArguments(instruction: Instruction,
                          callNode: CfgNodeNew,
-                         arg: Varnode,
-                         arg1: Varnode,
+                         pcodeOp: PcodeOp,
                          operand: String,
                          name: String): Unit = {
-    val firstOp = resolveVarNode(instruction, arg, 1)
-    val secondOp = resolveVarNode(instruction, arg1, 2)
+    val firstOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
+    val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
     val code = s"${firstOp.code} $operand ${secondOp.code}"
     val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
@@ -114,36 +113,32 @@ class MipsFunctionPass(currentProgram: Program,
       case INT_ADD | FLOAT_ADD =>
         handleTwoArguments(instruction,
                            callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
+                           pcodeAst,
                            "+",
                            "<operator>.addition")
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
         handleTwoArguments(instruction,
                            callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
+                           pcodeAst,
                            "/",
                            "<operator>.division")
       case INT_SUB | FLOAT_SUB =>
         handleTwoArguments(instruction,
                            callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
+                           pcodeAst,
                            "-",
                            "<operator>.subtraction")
       case INT_MULT | FLOAT_MULT =>
         handleTwoArguments(instruction,
                            callNode,
-                           pcodeAst.getInput(0),
-                           pcodeAst.getInput(1),
+                           pcodeAst,
                            "*",
                            "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
       case INT_XOR =>
-        handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
+        handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
       case INT_OR =>
-        handleTwoArguments(instruction, callNode, pcodeAst.getInput(0), pcodeAst.getInput(1), "^", "<operator>.xor")
+        handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
       case COPY | LOAD | STORE | SUBPIECE =>
         handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
       case CAST =>
