@@ -111,29 +111,13 @@ class MipsFunctionPass(currentProgram: Program,
       case CALL | CALLIND =>
         handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
       case INT_ADD | FLOAT_ADD =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst,
-                           "+",
-                           "<operator>.addition")
+        handleTwoArguments(instruction, callNode, pcodeAst, "+", "<operator>.addition")
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst,
-                           "/",
-                           "<operator>.division")
+        handleTwoArguments(instruction, callNode, pcodeAst, "/", "<operator>.division")
       case INT_SUB | FLOAT_SUB =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst,
-                           "-",
-                           "<operator>.subtraction")
+        handleTwoArguments(instruction, callNode, pcodeAst, "-", "<operator>.subtraction")
       case INT_MULT | FLOAT_MULT =>
-        handleTwoArguments(instruction,
-                           callNode,
-                           pcodeAst,
-                           "*",
-                           "<operator>.multiplication")
+        handleTwoArguments(instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
       case INT_XOR =>
         handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
