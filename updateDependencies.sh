@@ -28,7 +28,7 @@ function latest_version {
   local NAME=$1
   local REPO_URL=${repos[$NAME]}
   local MVN_META_URL=$REPO_URL/maven-metadata.xml
-  local CURL_PARAMS="--no-progress-meter $MVN_META_URL"
+  local CURL_PARAMS="--silent --show-error $MVN_META_URL"
 
   if (( $USE_XMLLINT ))
   then
