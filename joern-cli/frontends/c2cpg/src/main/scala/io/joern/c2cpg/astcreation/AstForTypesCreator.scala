@@ -117,6 +117,7 @@ trait AstForTypesCreator {
           .name(name)
           .typeFullName(registerType(tpe))
           .order(order)
+          .lineNumber(line(declarator))
         scope.addToScope(name, (l, tpe))
         Ast(l)
       case _ =>
@@ -125,6 +126,7 @@ trait AstForTypesCreator {
           .name(name)
           .typeFullName(registerType(tpe))
           .order(order)
+          .lineNumber(line(declarator))
         scope.addToScope(name, (l, tpe))
         Ast(l)
     }

@@ -83,7 +83,19 @@ class LocationTests extends CCodeToCpgSuite {
     loc.lineNumber shouldBe Some(3)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "IDENTIFIER"
+  }
 
+  "should return location for local" in {
+    val locations = cpg.local.name("x").location.l
+    locations.size shouldBe 1
+
+    val loc = locations.head
+    loc.methodFullName shouldBe "my_func"
+    loc.methodShortName shouldBe "my_func"
+    loc.symbol shouldBe "x"
+    loc.lineNumber shouldBe Some(3)
+    loc.filename should endWith(".c")
+    loc.nodeLabel shouldBe "LOCAL"
   }
 
 }
