@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
 import io.joern.dataflowengineoss.language._
+import io.shiftleft.semanticcpg.language._
 
 class ObjectTests extends JavaDataflowFixture {
 
@@ -104,6 +105,30 @@ class ObjectTests extends JavaDataflowFixture {
       |    }
       |}
       |
+      |class Baz {
+      |    public String value;
+      |
+      |    // public Baz(String s) {
+      |    //     value = s;
+      |    // }
+      |
+      |    public String toString() {
+      |        return value;
+      |    }
+      |
+      |    public static void sink(Baz b) {
+      |        System.out.println(b.toString());
+      |    }
+      |
+      |    public void test11() {
+      |        Baz b = new Baz("MALICIOUS");
+      |        sink(b);
+      |    }
+      |
+      |    public void test12() {
+      |        sink(new Baz("MALICIOUS"));
+      |    }
+      |}
       |""".stripMargin
 
   it should "find a path through the constructor and field of an object" in {
@@ -158,5 +183,23 @@ class ObjectTests extends JavaDataflowFixture {
     val (source, sink) = getConstSourceSink("test10")
     // TODO: This should find a path, but the current result is on par with c2cpg.
     sink.reachableBy(source).size shouldBe 0
+  }
+
+  it should "find a inter-procedural path from object variable" in {
+    def source = cpg.method.name("test11").literal.code("\"MALICIOUS\"")
+    def sink = cpg.method.name("sink").call.name("println").argument
+
+    // It finds the path using reachableBy
+    sink.reachableBy(source).size shouldBe 1
+    // but not using reachableByFlows
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
+  it should "find a inter-procedural path from object instantiation in call argument" in {
+    def source = cpg.method.name("test12").literal.code("\"MALICIOUS\"")
+    def sink = cpg.method.name("sink").call.name("println").argument
+
+    sink.reachableBy(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 1
   }
 }

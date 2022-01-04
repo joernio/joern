@@ -27,14 +27,16 @@ class CallGraphTests extends JavaSrcCodeToCpgFixture {
     cpg.method.name("main").callee.name.toSetMutable shouldBe Set(
       "add",
       "println",
-      "<operator>.addition",
-      "<operator>.fieldAccess"
+      "<operator>.addition"
     )
   }
 
   "should find three outgoing calls for main" in {
-    cpg.method.name("main").call.code.toSetMutable shouldBe
-      Set("1 + 2", "this.add(1 + 2, 3)", "System.out.println(add(1 + 2, 3))", "System.out", "System.out.println")
+    cpg.method.name("main").call.code.toSetMutable shouldBe Set(
+      "1 + 2",
+      "this.add(1 + 2, 3)",
+      "System.out.println(add(1 + 2, 3))",
+    )
   }
 
   "should find one callsite for add" in {

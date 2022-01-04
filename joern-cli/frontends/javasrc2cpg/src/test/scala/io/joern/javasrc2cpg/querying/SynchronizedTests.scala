@@ -17,11 +17,11 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
   override val code: String =
     """
       |public class Foo {
-      |  public synchronized String foo(String s) {
+      |  public static synchronized String foo(String s) {
       |    return s;
       |  }
       |
-      |  public String bar(String s) {
+      |  public static String bar(String s) {
       |    synchronized (this) {
       |      s += "A";
       |    }

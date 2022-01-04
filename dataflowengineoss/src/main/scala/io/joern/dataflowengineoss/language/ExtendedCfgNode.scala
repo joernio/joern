@@ -28,6 +28,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableBy[NodeType <: CfgNode](
       sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): Traversal[NodeType] = {
+    println("called reachableBy in extenddedCfgNode")
     val reachedSources = reachableByInternal(sourceTravs).map(_.source)
     Traversal.from(reachedSources).cast[NodeType]
   }
