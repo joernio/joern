@@ -43,6 +43,10 @@ object JoernParse extends App {
       .text("Only apply default overlays")
       .action((x, c) => c.copy(enhanceOnly = true))
 
+    opt[Int]("max-num-def")
+      .text("Maximum number of definitions in per-method data flow calculation")
+      .action((x, c) => c.copy(maxNumDef = x))
+
     note("Misc")
     help("help").text("display this help message")
 
@@ -143,7 +147,7 @@ object JoernParse extends App {
     try {
       println("[+] Applying default overlays")
       if (config.enhance) {
-        DefaultOverlays.create(config.outputCpgFile).close()
+        DefaultOverlays.create(config.outputCpgFile, config.maxNumDef).close()
       }
       Right("Code property graph generation successful")
     } catch {
@@ -158,7 +162,8 @@ object JoernParse extends App {
       enhance: Boolean = true,
       enhanceOnly: Boolean = false,
       language: String = "",
-      listLanguages: Boolean = false
+      listLanguages: Boolean = false,
+      maxNumDef: Int = DefaultOverlays.defaultMaxNumberOfDefinitions
   )
 
   private def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] = {
