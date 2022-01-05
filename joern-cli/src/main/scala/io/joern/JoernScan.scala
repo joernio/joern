@@ -264,9 +264,13 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
+    if (allQueries.length == 0) {
+      println("No queries found, you probably forgot to install a query database.")
+      return
+    }
     val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
     if (queriesAfterFilter.isEmpty) {
-      println("No queries matching current filter selection")
+      println("No queries matched current filter selection (total number of queries: `" + allQueries.length + "`)")
       return
     }
     runPass(new ScanPass(context.cpg, queriesAfterFilter), context, storeUndoInfo)
