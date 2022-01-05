@@ -35,23 +35,6 @@ object QueryLangExtensions {
     }
   }
 
-  implicit class ArrayAccessNodeExtension(arrayAccess: OpNodes.ArrayAccess) {
-
-    /** If the expression on the left side of the array access is a lone
-      * identifier, return it.
-      */
-    def simpleName: Option[String] = {
-      // TODO should be part of the standard language
-      // TODO language is a bit clumsy here. Should be something like
-      // `arrayAccess.array.identifier.name.headOption`
-      arrayAccess.array
-        .where(_.isIdentifier)
-        .map(_.asInstanceOf[nodes.Identifier])
-        .name
-        .headOption
-    }
-  }
-
   implicit class LiteralExtension(litTrav: Traversal[nodes.Literal]) {
 
     def toInt: Traversal[Int] = {

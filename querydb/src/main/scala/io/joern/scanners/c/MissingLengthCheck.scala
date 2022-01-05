@@ -28,7 +28,7 @@ object MissingLengthCheck extends QueryBundle {
         cpg.method.arrayAccess
           .filter { access =>
             val arrName = access.simpleName
-            arrName.isDefined && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
+            !arrName.isEmpty && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
           }
           .usesConstantOffset
           .flatMap { arrayAccess =>
@@ -52,7 +52,7 @@ object MissingLengthCheck extends QueryBundle {
     * method `method`. Determined heuristically via name matching.
     */
   private def potentialLengthFields(arrayAccess: OpNodes.ArrayAccess, method: nodes.Method): List[String] = {
-    val arrayName = arrayAccess.simpleName.get
+    val arrayName = arrayAccess.simpleName.head
     List(arrayName).flatMap { name =>
       val normalizedName = name.replaceAll("s$", "")
       val regex = s"(?i)$normalizedName(s?)(_?)(len|siz).*"
