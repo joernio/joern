@@ -1417,6 +1417,15 @@ class AstCreationPassTests
       }
     }
 
+    "be correct for locals for array init" in TestAstOnlyFixture("""
+        |bool x[2] = { TRUE, FALSE };
+        |""".stripMargin) { cpg =>
+      inside(cpg.local.l) { case List(x) =>
+        x.name shouldBe "x"
+        x.typeFullName shouldBe "bool[2]"
+      }
+    }
+
     "be correct for array init without actual assignment" in TestAstOnlyFixture(
       """
         |int foo{1};

@@ -144,8 +144,13 @@ trait AstCreatorHelper {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
       case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).startsWith("? ") =>
-        val tpe = cleanType(getNodeSignature(node)).replace("[]", "")
-        val arr = ASTTypeUtil.getNodeType(node).replace("? ", "")
+        val tpe = getNodeSignature(a).replace("[]", "").strip()
+        val arr = ASTTypeUtil.getNodeType(a).replace("? ", "")
+        s"$tpe$arr"
+      case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).contains("} ") =>
+        val tpe = getNodeSignature(a).replace("[]", "").strip()
+        val nodeType = ASTTypeUtil.getNodeType(node)
+        val arr = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
         s"$tpe$arr"
       case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node))
