@@ -3,7 +3,7 @@ package io.joern.scanners.c
 import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.opnodes
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 object QueryLangExtensions {
 
@@ -35,17 +35,17 @@ object QueryLangExtensions {
       *
       * or even `buf[PROBABLY_A_CONSTANT]`.
       */
-    def arrayAccess: Traversal[opnodes.ArrayAccess] = {
+    def arrayAccess: Traversal[OpNodes.ArrayAccess] = {
       methodTrav.call
         .nameExact(Operators.indirectIndexAccess)
-        .map(new opnodes.ArrayAccess(_))
+        .map(new OpNodes.ArrayAccess(_))
     }
 
   }
 
-  implicit class ArrayAccessExtension(arrayAccessTrav: Traversal[opnodes.ArrayAccess]) {
+  implicit class ArrayAccessExtension(arrayAccessTrav: Traversal[OpNodes.ArrayAccess]) {
 
-    def usesConstantOffset: Traversal[opnodes.ArrayAccess] = {
+    def usesConstantOffset: Traversal[OpNodes.ArrayAccess] = {
       arrayAccessTrav
         .whereNot(_.argument(2).ast.isIdentifier)
         .filter { x =>
@@ -56,7 +56,7 @@ object QueryLangExtensions {
 
   }
 
-  implicit class ArrayAccessNodeExtension(arrayAccess: opnodes.ArrayAccess) {
+  implicit class ArrayAccessNodeExtension(arrayAccess: OpNodes.ArrayAccess) {
 
     /** If the expression on the left side of the array access is a lone
       * identifier, return it.

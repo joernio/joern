@@ -4,10 +4,9 @@ import io.joern.scanners._
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Type}
 import io.shiftleft.semanticcpg.language._
 import io.joern.console._
-import io.joern.console._
 import io.joern.macros.QueryMacros._
-import io.shiftleft.semanticcpg.language.operatorextension.opnodes.Assignment
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import overflowdb.traversal.Traversal
 
 object CompilerOptimizations extends QueryBundle {
@@ -31,12 +30,12 @@ object CompilerOptimizations extends QueryBundle {
         cpg.assignment
           .groupBy(_.argument.order(1).code.l)
           .flatMap {
-            case (_: List[String], as: Traversal[Assignment]) => Option(as.l)
-            case _                                            => Option.empty
+            case (_: List[String], as: Traversal[OpNodes.Assignment]) => Option(as.l)
+            case _                                                    => Option.empty
           }
           .filter(_.size == 1)
           .flatMap {
-            case as: List[Assignment] =>
+            case as: List[OpNodes.Assignment] =>
               Option(as.head.argument.head, as.head.argument.l.head.typ.l)
             case _ => Option.empty
           }
