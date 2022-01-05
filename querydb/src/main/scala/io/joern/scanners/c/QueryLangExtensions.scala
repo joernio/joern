@@ -28,32 +28,11 @@ object QueryLangExtensions {
   }
 
   implicit class MethodExtension(methodTrav: Traversal[nodes.Method]) {
-
-    /** For a given method, determine all array accesses at constant numeric offsets, e.g.,
-      * `buf[10]` but not `buf[i + 10]`, and for simplicity, not even `buf[1+2]`,
-      * `buf[PROBABLY_A_CONSTANT]` or `buf[PROBABLY_A_CONSTANT + 1]`.
-      *
-      * or even `buf[PROBABLY_A_CONSTANT]`.
-      */
     def arrayAccess: Traversal[OpNodes.ArrayAccess] = {
       methodTrav.call
         .nameExact(Operators.indirectIndexAccess)
         .map(new OpNodes.ArrayAccess(_))
     }
-
-  }
-
-  implicit class ArrayAccessExtension(arrayAccessTrav: Traversal[OpNodes.ArrayAccess]) {
-
-    def usesConstantOffset: Traversal[OpNodes.ArrayAccess] = {
-      arrayAccessTrav
-        .whereNot(_.argument(2).ast.isIdentifier)
-        .filter { x =>
-          val literalIndices = x.argument(2).ast.isLiteral.l
-          literalIndices.size == 1
-        }
-    }
-
   }
 
   implicit class ArrayAccessNodeExtension(arrayAccess: OpNodes.ArrayAccess) {
