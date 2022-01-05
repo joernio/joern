@@ -3,7 +3,6 @@ package io.joern.scanners.c
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.joern.scanners._
 import io.joern.console._
-import io.joern.console._
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.semanticcpg.language._
@@ -29,7 +28,7 @@ object MissingLengthCheck extends QueryBundle {
         cpg.method.arrayAccess
           .filter { access =>
             val arrName = access.simpleName
-            arrName.isDefined && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
+            !arrName.isEmpty && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
           }
           .usesConstantOffset
           .flatMap { arrayAccess =>
@@ -52,8 +51,8 @@ object MissingLengthCheck extends QueryBundle {
   /** Names of potential length fields for the array named `arrayName` in the
     * method `method`. Determined heuristically via name matching.
     */
-  private def potentialLengthFields(arrayAccess: opnodes.ArrayAccess, method: nodes.Method): List[String] = {
-    val arrayName = arrayAccess.simpleName.get
+  private def potentialLengthFields(arrayAccess: OpNodes.ArrayAccess, method: nodes.Method): List[String] = {
+    val arrayName = arrayAccess.simpleName.head
     List(arrayName).flatMap { name =>
       val normalizedName = name.replaceAll("s$", "")
       val regex = s"(?i)$normalizedName(s?)(_?)(len|siz).*"
@@ -67,7 +66,7 @@ object MissingLengthCheck extends QueryBundle {
     * of at least one of the potential length fields exist for each
     * literal
     */
-  def checked(arrayAccess: opnodes.ArrayAccess, lens: List[String]): Boolean = {
+  def checked(arrayAccess: OpNodes.ArrayAccess, lens: List[String]): Boolean = {
     val arrayIndex = arrayAccess.argument(2).ast.isLiteral.toInt.head
     val lowerBounds = arrayAccess.method.controlStructure.condition
       .where(_.ast.isIdentifier.name.filter { n =>

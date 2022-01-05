@@ -2,7 +2,6 @@ package io.joern.scanners.c
 
 import io.joern.scanners._
 import io.joern.console._
-import io.joern.console._
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 
@@ -24,7 +23,7 @@ object CopyLoops extends QueryBundle {
       withStrRep({ cpg =>
         cpg.assignment.target.arrayAccess
           .map { access =>
-            (access.array, access.subscripts.code.toSet)
+            (access.array, access.subscript.code.toSet)
           }
           .filter { case (buf, subscripts) =>
             val incIdentifiers = buf.inAst.isControlStructure.astChildren
