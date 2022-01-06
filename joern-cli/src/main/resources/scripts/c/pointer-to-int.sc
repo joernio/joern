@@ -8,7 +8,9 @@ import overflowdb.traversal._
 private def expressionIsPointer(argument: Expression, isSubExpression: Boolean = false): Boolean = {
   argument match {
     case identifier: Identifier =>
-      identifier.typeFullName.endsWith("*") || identifier.typeFullName.endsWith("]")
+      identifier.typeFullName.endsWith("*") ||
+        identifier.typeFullName.endsWith("]") ||
+        cpg.local(identifier.name).l.headOption.exists(_.code.contains("*"))
     case call: Call if call.name == Operators.indirectFieldAccess => // On '->', only check the selected field.
       expressionIsPointer(call.start.argument.l.last, isSubExpression = true)
     case call: Call => // On normal nested call, check all arguments are also pointers.

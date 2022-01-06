@@ -135,7 +135,7 @@ trait AstCreatorHelper {
     case t if t.contains(Defines.qualifiedNameSeparator) =>
       fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
     case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
-    case t if t.contains("*")                    => t.replace(" ", "")
+    case t if t.contains("*")                    => t.replace("*", "").replace(" ", "")
     case someType                                => someType
   }
 
