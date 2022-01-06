@@ -758,7 +758,7 @@ class AstCreationPassTests
 
     def childContainsAssignments(node: AstNode, i: Int, list: List[String]) = {
       inside(node.astChildren.order(i).l) { case List(child) =>
-        child.assignments.code.l shouldBe list
+        child.assignment.code.l shouldBe list
       }
     }
 

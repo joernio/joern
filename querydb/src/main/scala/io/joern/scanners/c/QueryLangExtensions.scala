@@ -27,14 +27,6 @@ object QueryLangExtensions {
     }
   }
 
-  implicit class MethodExtension(methodTrav: Traversal[nodes.Method]) {
-    def arrayAccess: Traversal[OpNodes.ArrayAccess] = {
-      methodTrav.call
-        .nameExact(Operators.indirectIndexAccess)
-        .map(new OpNodes.ArrayAccess(_))
-    }
-  }
-
   implicit class LiteralExtension(litTrav: Traversal[nodes.Literal]) {
 
     def toInt: Traversal[Int] = {

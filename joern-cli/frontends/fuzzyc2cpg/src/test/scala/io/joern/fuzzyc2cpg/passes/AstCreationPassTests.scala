@@ -297,7 +297,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
     def childContainsAssignments(node: AstNode, i: Int, list: List[String]) = {
       node.astChildren.order(i).l match {
         case List(child) =>
-          child.assignments.code.l shouldBe list
+          child.assignment.code.l shouldBe list
         case _ => fail()
       }
     }
