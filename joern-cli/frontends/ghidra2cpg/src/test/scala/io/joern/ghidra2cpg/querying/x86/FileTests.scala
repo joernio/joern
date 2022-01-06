@@ -46,7 +46,6 @@ class FileTests extends GhidraBinToCpgSuite {
       "main",
       "level1",
       "deregister_tm_clones",
-      "_start",
       "__gmon_start__",
       "level2",
       "__libc_start_main",

@@ -40,7 +40,6 @@ class NamespaceBlockTests extends GhidraBinToCpgSuite {
       "FUN_00101020",
       "__stack_chk_fail",
       "printf",
-      "_start",
       "deregister_tm_clones",
       "register_tm_clones",
       "__do_global_dtors_aux",
