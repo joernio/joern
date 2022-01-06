@@ -43,8 +43,23 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.call("free").argument(1).l) { case List(arg) =>
-        arg.evalType.l shouldBe List("test*")
+        arg.evalType.l shouldBe List("test")
         arg.code shouldBe "ptr"
+        inside(arg.typ.referencedTypeDecl.l) { case List(tpe) =>
+          tpe.fullName shouldBe "test"
+          tpe.name shouldBe "test"
+          tpe.code shouldBe "struct test"
+        }
+        inside(cpg.local.l) { case List(ptr) =>
+          ptr.name shouldBe "ptr"
+          ptr.typeFullName shouldBe "test"
+          ptr.code shouldBe "struct test* ptr"
+        }
+        inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
+          tpe.fullName shouldBe "test"
+          tpe.name shouldBe "test"
+          tpe.code shouldBe "struct test"
+        }
       }
     }
 
@@ -56,6 +71,20 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |""".stripMargin) { cpg =>
       inside(cpg.call("memcpy").argument(1).evalType.l) { case List(tpe) =>
         tpe shouldBe "uint8_t[1]"
+      }
+    }
+
+    "create correct types for locals with struct type" in CpgTypeNodeFixture("""
+        |struct Foo {
+        |  int x;
+        |};
+        |
+        |int foo() {
+        | struct Foo *ptr;
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
+        tpe.fullName shouldBe "Foo"
       }
     }
   }
