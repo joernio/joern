@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -557,15 +558,16 @@ class AstCreationPassTests
       val localZ = cpg.local.order(3)
       localZ.name.l shouldBe List("z")
 
-      inside(cpg.method.name("method").assignment.l) { case List(assignment) =>
-        assignment.target.code shouldBe "x"
-        assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
-        inside(assignment.source.astChildren.l) { case List(id1: Identifier, id2: Identifier) =>
-          id1.order shouldBe 1
-          id1.code shouldBe "y"
-          id2.order shouldBe 2
-          id2.code shouldBe "z"
-        }
+      inside(cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l) {
+        case List(assignment) =>
+          assignment.target.code shouldBe "x"
+          assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
+          inside(assignment.source.astChildren.l) { case List(id1: Identifier, id2: Identifier) =>
+            id1.order shouldBe 1
+            id1.code shouldBe "y"
+            id2.order shouldBe 2
+            id2.code shouldBe "z"
+          }
       }
     }
 

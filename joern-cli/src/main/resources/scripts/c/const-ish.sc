@@ -10,7 +10,7 @@ import overflowdb.traversal._
     .filter { method =>
       method
         .start
-        .assignments
+        .assignment
         .target
         .reachableBy(method.parameter.filter(_.typeFullName.contains("const")))
         .nonEmpty
