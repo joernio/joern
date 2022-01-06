@@ -33,9 +33,8 @@ class ArmFunctionPass(
       handleLocals()
       handleBody()
     } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        println(e.getMessage)
+      case exception: Exception =>
+        exception.printStackTrace()
     }
     Iterator(diffGraph.build())
   }
