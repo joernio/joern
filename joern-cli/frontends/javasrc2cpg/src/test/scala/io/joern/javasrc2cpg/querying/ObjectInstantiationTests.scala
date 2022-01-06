@@ -23,7 +23,7 @@ class ObjectInstantiationTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   "should create an AST for object instantiations where the class isn't known" in {
-    val assignment: Call = cpg.method(".*foo.*").assignments.l match {
+    val assignment: Call = cpg.method(".*foo.*").assignment.l match {
       case List(assignment: Call) => assignment
       case res =>
         fail(s"Error extracting assignment. Expected `List(a: Call)` but got `$res`")
@@ -48,7 +48,7 @@ class ObjectInstantiationTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should create an AST for object instantiations where the class is known" in {
-    val assignment: Call = cpg.method(".*bar.*").assignments.l match {
+    val assignment: Call = cpg.method(".*bar.*").assignment.l match {
       case List(assignment: Call) => assignment
       case res =>
         fail(s"Error extracting assignment. Expected `List(a: Call)` but got `$res`")

@@ -506,7 +506,7 @@ class AstCreationPassTests
           |  int local = x;
           |}""".stripMargin) { cpg =>
         cpg.local.name("local").order.l shouldBe List(1)
-        inside(cpg.method("method").block.astChildren.assignments.source.l) { case List(identifier: Identifier) =>
+        inside(cpg.method("method").block.astChildren.assignment.source.l) { case List(identifier: Identifier) =>
           identifier.code shouldBe "x"
           identifier.typeFullName shouldBe "int"
           identifier.order shouldBe 2
@@ -557,7 +557,7 @@ class AstCreationPassTests
       val localZ = cpg.local.order(3)
       localZ.name.l shouldBe List("z")
 
-      inside(cpg.method.name("method").assignments.l) { case List(assignment) =>
+      inside(cpg.method.name("method").assignment.l) { case List(assignment) =>
         assignment.target.code shouldBe "x"
         assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
         inside(assignment.source.astChildren.l) { case List(id1: Identifier, id2: Identifier) =>
@@ -601,7 +601,7 @@ class AstCreationPassTests
           inside(controlStruct.condition.l) { case List(cndNode) =>
             cndNode.code shouldBe "x < 1"
           }
-          controlStruct.whenTrue.assignments.code.l shouldBe List("x += 1")
+          controlStruct.whenTrue.assignment.code.l shouldBe List("x += 1")
       }
     }
 
@@ -620,7 +620,7 @@ class AstCreationPassTests
           cndNode.code shouldBe "x > 0"
 
         }
-        controlStruct.whenTrue.assignments.code.l shouldBe List("y = 0")
+        controlStruct.whenTrue.assignment.code.l shouldBe List("y = 0")
       }
     }
 
@@ -644,10 +644,10 @@ class AstCreationPassTests
           cndNode.code shouldBe "x > 0"
         }
 
-        ifStmt.whenTrue.assignments
+        ifStmt.whenTrue.assignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Some(("y", "0"))
-        ifStmt.whenFalse.assignments
+        ifStmt.whenFalse.assignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Some(("y", "1"))
       }
@@ -1750,7 +1750,7 @@ class AstCreationPassTests
        | }
       """.stripMargin) { cpg =>
       cpg.method.name("method").lineNumber.l shouldBe List(6)
-      cpg.method.name("method").block.assignments.lineNumber.l shouldBe List(8)
+      cpg.method.name("method").block.assignment.lineNumber.l shouldBe List(8)
     }
 
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321
