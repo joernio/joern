@@ -1,0 +1,123 @@
+package io.joern.kotlin2cpg.querying
+
+import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.shiftleft.codepropertygraph.generated.nodes.{NewUnknown, Unknown}
+import io.shiftleft.semanticcpg.language._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+
+class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
+  "CPG for code with simple object declaration" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |object Foo {
+        |    val bar = "PLACEHOLDER_1"
+        |    var baz = "PLACEHOLDER_2"
+        |
+        |    fun moo() = println("moo")
+        |}
+        |
+        |fun main() {
+        |  Foo.moo()
+        |}
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node for the object declaration with the correct properties set" in {
+      val List(x) = cpg.typeDecl.isExternal(false).name("Foo").l
+      x.name shouldBe "Foo"
+      x.code shouldBe "Foo"
+      x.fullName shouldBe "mypkg.Foo"
+      x.inheritsFromTypeFullName shouldBe List()
+      x.isExternal shouldBe false
+      x.lineNumber shouldBe Some(3)
+      x.columnNumber shouldBe Some(7)
+    }
+
+    "should contain MEMBER node for `bar` with correct properties" in {
+      val List(x) = cpg.member("bar").l
+      x.name shouldBe "bar"
+      x.code shouldBe "bar"
+      x.typeFullName shouldBe "kotlin.String"
+      x.lineNumber shouldBe Some(4)
+      x.columnNumber shouldBe Some(8)
+    }
+
+    "should contain MEMBER node for `baz` with correct properties" in {
+      val List(x) = cpg.member("baz").l
+      x.name shouldBe "baz"
+      x.code shouldBe "baz"
+      x.typeFullName shouldBe "kotlin.String"
+      x.lineNumber shouldBe Some(5)
+      x.columnNumber shouldBe Some(8)
+    }
+
+    "should contain a CALL node for the call to `moo` with the correct properties set" in {
+      val List(c) = cpg.call.code("Foo.moo.*").l
+      c.methodFullName shouldBe "mypkg.Foo.moo:kotlin.Unit()"
+      c.typeFullName shouldBe "kotlin.Unit"
+    }
+  }
+
+  "CPG for code with complex object declaration" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import android.content.Context
+        |import android.content.SharedPreferences
+        |
+        |object Prefs {
+        |    lateinit var sharedpreferences: SharedPreferences
+        |    var prefs : Prefs? = null
+        |
+        |    fun getInstance(context: Context): Prefs {
+        |        if (prefs == null) {
+        |            sharedpreferences =
+        |                context.getSharedPreferences("Prefs", Context.MODE_PRIVATE)
+        |            prefs = this
+        |        }
+        |        return prefs!!
+        |    }
+        |
+        |    var data: String?
+        |        get() = sharedpreferences.getString("data","")
+        |        set(value) {
+        |            sharedpreferences.edit().putString("data", value).apply()
+        |        }
+        |
+        |    var username: String?
+        |        get() = sharedpreferences.getString("username","")
+        |        set(value) {
+        |            sharedpreferences.edit().putString("username", value).apply()
+        |        }
+        |
+        |    var password: String?
+        |        get() = sharedpreferences.getString("password","")
+        |        set(value) {
+        |            sharedpreferences.edit().putString("password", value).apply()
+        |        }
+        |
+        |    var productList: String?
+        |        get() = sharedpreferences.getString("productList","")
+        |        set(value) {
+        |            sharedpreferences.edit().putString("productList", value).apply()
+        |        }
+        |
+        |    fun clearAll(){
+        |        sharedpreferences.edit().clear().apply()
+        |    }
+        |}
+        |
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node for the object declaration with the correct properties set" in {
+      val List(x) = cpg.typeDecl.isExternal(false).name("Prefs").l
+      x.name shouldBe "Prefs"
+      x.fullName shouldBe "mypkg.Prefs"
+      x.inheritsFromTypeFullName shouldBe List()
+      x.isExternal shouldBe false
+      x.lineNumber shouldBe Some(6)
+      x.columnNumber shouldBe Some(7)
+    }
+  }
+}

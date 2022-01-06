@@ -33,6 +33,7 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
   }
 }
 
+lazy val kotlin2cpg = project.in(file("frontends/kotlin2cpg"))
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
 lazy val jimple2cpg = project.in(file("frontends/jimple2cpg"))
 lazy val fuzzyc2cpg = project.in(file("frontends/fuzzyc2cpg"))
@@ -41,6 +42,7 @@ lazy val js2cpg = project.in(file("frontends/js2cpg")).enablePlugins(JavaAppPack
   Compile/mainClass := Some("io.shiftleft.js2cpg.core.Js2CpgMain")
 )
 
+Universal/mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg/stage).value)
 Universal/mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg/stage).value)
 Universal/mappings ++= frontendMappings("c2cpg", (Projects.c2cpg/stage).value)
 Universal/mappings ++= frontendMappings("fuzzyc2cpg", (fuzzyc2cpg/stage).value)
