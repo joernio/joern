@@ -31,6 +31,7 @@ package object cpgcreation {
       case Languages.PHP             => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
       case Languages.GHIDRA          => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
       case Languages.NEWC            => Seq(cCpgGenerator, fuzzycCpgGenerator).find(_.isAvailable)
+      case Languages.KOTLIN          => Some(KotlinCpgGenerator(config.withArgs(args), rootPath))
       case _                         => None
     }
   }
@@ -77,6 +78,7 @@ package object cpgcreation {
       case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
       case f if f.endsWith(".java")                      => Some(Languages.JAVASRC)
       case f if f.endsWith(".class")                     => Some(Languages.JAVA)
+      case f if f.endsWith(".kt")                        => Some(Languages.KOTLIN)
       case f if f.endsWith(".php")                       => Some(Languages.PHP)
       case f if f.endsWith(".py")                        => Some(Languages.FUZZY_TEST_LANG)
       case f if f.endsWith(".bc") || f.endsWith(".ll")   => Some(Languages.LLVM)

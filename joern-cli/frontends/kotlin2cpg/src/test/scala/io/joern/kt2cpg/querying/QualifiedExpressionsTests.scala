@@ -1,0 +1,96 @@
+package io.joern.kotlin2cpg.querying
+
+import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+
+class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
+  "CPG for code with qualified expression with QE as a receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main(args: Array<String>) {
+        |    val execStr = "touch /tmp/kt2cpg-test-case.txt"
+        |    Runtime.getRuntime().exec(execStr)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the long DQE with the correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.call.code("Runtime.getRuntime\\(\\).exec\\(execStr\\)").l
+      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
+    }
+
+    "should contain a CALL node for the DQE inside the DQE with the correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.call.code("Runtime.getRuntime\\(\\)").l
+      c.methodFullName shouldBe "java.lang.Runtime.getRuntime:java.lang.Runtime()"
+    }
+  }
+
+  "CPG for code with qualified expression with CALL as a receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun getHashMap(): HashMap<String,String> {
+        |   val aMap = HashMap<String, String>()
+        |   aMap["user"] = "foo"
+        |   return aMap
+        |}
+        |
+        |fun foo() {
+        |  val contains = getHashMap().containsKey("user")
+        |  val value = getHashMap()["user"]
+        |  println(contains)
+        |  println(value)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the `.*containsKey.*` QE with the correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment).l
+      c.methodFullName shouldBe "java.util.AbstractMap.containsKey:kotlin.Boolean(kotlin.String)"
+    }
+
+    /* TODO: uncomment after argIdx/order fix is in
+    "should contain a CALL node for the `.*containsKey.*` QE with the correct arguments set" in {
+      def parentCall = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment)
+      val List(firstArg) = parentCall.argument(0).isCall.l
+      firstArg.code shouldBe "getHashMap()"
+
+      val List(secondArg) = parentCall.argument(1).isLiteral.l
+      secondArg.code shouldBe "\"user\""
+    }
+     */
+  }
+
+  "CPG for code with qualified expression with `when` as receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main(args: Array<String>) {
+        |    val r = Random.nextInt(0, 100)
+        |    val foo = when {
+        |        r in 0..50 -> true
+        |        r in 51..100 -> false
+        |        else -> false
+        |    }.toString()
+        |    println(foo)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for QE's selector with the correct METHOD_FULL_NAME set" in {
+      val List(c) =
+        cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code(".*foo.*")).argument(2).isCall.l
+      c.methodFullName shouldBe "kotlin.Comparable.toString:kotlin.String()"
+    }
+
+    /* TODO: uncomment after argIdx/order fix is in
+    "should contain a CALL node for QE's selector with a child with argIdx `0`" in {
+      def args = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code(".*foo.*")).argument(2).isCall.argument
+      args.argumentIndex(0).size shouldBe 1
+    }
+     */
+  }
+}
