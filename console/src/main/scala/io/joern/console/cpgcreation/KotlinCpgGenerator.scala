@@ -4,7 +4,7 @@ import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
 
-/** Source-based front-end for Java
+/** Source-based front-end for Kotlin
   */
 case class KotlinCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
