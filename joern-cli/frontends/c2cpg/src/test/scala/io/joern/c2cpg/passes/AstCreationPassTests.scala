@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -506,7 +507,7 @@ class AstCreationPassTests
           |  int local = x;
           |}""".stripMargin) { cpg =>
         cpg.local.name("local").order.l shouldBe List(1)
-        inside(cpg.method("method").block.astChildren.assignments.source.l) { case List(identifier: Identifier) =>
+        inside(cpg.method("method").block.astChildren.assignment.source.l) { case List(identifier: Identifier) =>
           identifier.code shouldBe "x"
           identifier.typeFullName shouldBe "int"
           identifier.order shouldBe 2
@@ -557,15 +558,16 @@ class AstCreationPassTests
       val localZ = cpg.local.order(3)
       localZ.name.l shouldBe List("z")
 
-      inside(cpg.method.name("method").assignments.l) { case List(assignment) =>
-        assignment.target.code shouldBe "x"
-        assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
-        inside(assignment.source.astChildren.l) { case List(id1: Identifier, id2: Identifier) =>
-          id1.order shouldBe 1
-          id1.code shouldBe "y"
-          id2.order shouldBe 2
-          id2.code shouldBe "z"
-        }
+      inside(cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l) {
+        case List(assignment) =>
+          assignment.target.code shouldBe "x"
+          assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
+          inside(assignment.source.astChildren.l) { case List(id1: Identifier, id2: Identifier) =>
+            id1.order shouldBe 1
+            id1.code shouldBe "y"
+            id2.order shouldBe 2
+            id2.code shouldBe "z"
+          }
       }
     }
 
@@ -601,7 +603,7 @@ class AstCreationPassTests
           inside(controlStruct.condition.l) { case List(cndNode) =>
             cndNode.code shouldBe "x < 1"
           }
-          controlStruct.whenTrue.assignments.code.l shouldBe List("x += 1")
+          controlStruct.whenTrue.assignment.code.l shouldBe List("x += 1")
       }
     }
 
@@ -620,7 +622,7 @@ class AstCreationPassTests
           cndNode.code shouldBe "x > 0"
 
         }
-        controlStruct.whenTrue.assignments.code.l shouldBe List("y = 0")
+        controlStruct.whenTrue.assignment.code.l shouldBe List("y = 0")
       }
     }
 
@@ -644,10 +646,10 @@ class AstCreationPassTests
           cndNode.code shouldBe "x > 0"
         }
 
-        ifStmt.whenTrue.assignments
+        ifStmt.whenTrue.assignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Some(("y", "0"))
-        ifStmt.whenFalse.assignments
+        ifStmt.whenFalse.assignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Some(("y", "1"))
       }
@@ -758,7 +760,7 @@ class AstCreationPassTests
 
     def childContainsAssignments(node: AstNode, i: Int, list: List[String]) = {
       inside(node.astChildren.order(i).l) { case List(child) =>
-        child.assignments.code.l shouldBe list
+        child.assignment.code.l shouldBe list
       }
     }
 
@@ -1750,7 +1752,7 @@ class AstCreationPassTests
        | }
       """.stripMargin) { cpg =>
       cpg.method.name("method").lineNumber.l shouldBe List(6)
-      cpg.method.name("method").block.assignments.lineNumber.l shouldBe List(8)
+      cpg.method.name("method").block.assignment.lineNumber.l shouldBe List(8)
     }
 
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321

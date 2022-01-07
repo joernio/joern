@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal._
@@ -74,7 +75,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
           |void method(int x) {
           |  int local = x;
           |}""".stripMargin) { cpg =>
-        cpg.method.block.astChildren.assignments.source.l match {
+        cpg.method.block.astChildren.assignment.source.l match {
           case List(identifier: Identifier) =>
             identifier.code shouldBe "x"
             identifier.typeFullName shouldBe "int"
@@ -122,7 +123,8 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
       """.stripMargin) { cpg =>
       cpg.local.l.sortBy(_.order).map(_.name) shouldBe List("x", "y", "z")
 
-      cpg.method.assignments.l match {
+      // Note : cpg.method.call doesn't work here because CONTAINS edges don't exist yet
+      cpg.method.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l match {
         case List(assignment) =>
           assignment.target.code shouldBe "x"
           assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
@@ -134,7 +136,9 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
               id2.code shouldBe "z"
             case _ => fail()
           }
-        case _ => fail()
+        case x =>
+          println(x)
+          fail()
       }
     }
 
@@ -175,7 +179,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
               cndNode.code shouldBe "x < 1"
             case _ => fail()
           }
-          controlStruct.whenTrue.assignments.code.l shouldBe List("x += 1")
+          controlStruct.whenTrue.assignment.code.l shouldBe List("x += 1")
         case _ => fail()
       }
     }
@@ -200,7 +204,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
             case _ => fail()
 
           }
-          controlStruct.whenTrue.assignments.code.l shouldBe List("y = 0")
+          controlStruct.whenTrue.assignment.code.l shouldBe List("y = 0")
         case _ => fail()
       }
     }
@@ -231,10 +235,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
           }
 
           // TODO .whenTrue => .whenTrue
-          ifStmt.whenTrue.assignments
+          ifStmt.whenTrue.assignment
             .map(x => (x.target.code, x.source.code))
             .headOption shouldBe Some(("y", "0"))
-          ifStmt.whenFalse.assignments
+          ifStmt.whenFalse.assignment
             .map(x => (x.target.code, x.source.code))
             .headOption shouldBe Some(("y", "1"))
         case _ => fail()
@@ -297,7 +301,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
     def childContainsAssignments(node: AstNode, i: Int, list: List[String]) = {
       node.astChildren.order(i).l match {
         case List(child) =>
-          child.assignments.code.l shouldBe list
+          child.assignment.code.l shouldBe list
         case _ => fail()
       }
     }
@@ -736,7 +740,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
                                                                    | }
       """.stripMargin) { cpg =>
       cpg.method.name("method").lineNumber.l shouldBe List(6)
-      cpg.method.name("method").block.assignments.lineNumber.l shouldBe List(8)
+      cpg.method.name("method").block.assignment.lineNumber.l shouldBe List(8)
     }
   }
 

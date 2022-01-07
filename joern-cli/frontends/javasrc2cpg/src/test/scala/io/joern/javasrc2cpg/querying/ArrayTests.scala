@@ -32,7 +32,7 @@ class ArrayTests extends JavaSrcCodeToCpgFixture {
   "should initialize array with constant initialization expression" in {
     def m = cpg.method(".*foo.*")
 
-    val List(arg1: Identifier, arg2: Call) = m.assignments.argument.l
+    val List(arg1: Identifier, arg2: Call) = m.assignment.argument.l
 
     arg1.code shouldBe "x"
     arg1.typeFullName shouldBe "int[]"
@@ -48,7 +48,7 @@ class ArrayTests extends JavaSrcCodeToCpgFixture {
   "should initialize an array with empty initialization expression" in {
     def m = cpg.method(".*bar.*")
 
-    val List(arg1: Identifier, arg2: Call) = m.assignments.argument.l
+    val List(arg1: Identifier, arg2: Call) = m.assignment.argument.l
 
     arg1.typeFullName shouldBe "int[][]"
 
@@ -61,7 +61,7 @@ class ArrayTests extends JavaSrcCodeToCpgFixture {
   "should handle arrayIndexAccesses correctly" in {
     def m = cpg.method(".*baz.*")
 
-    val List(_, lhsAccess, rhsAccess) = m.assignments.l
+    val List(_, lhsAccess, rhsAccess) = m.assignment.l
 
     withClue("indexAccess on LHS of assignment") {
       val List(indexAccess: Call, _: Literal) = lhsAccess.argument.l

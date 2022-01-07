@@ -38,7 +38,7 @@ object NullTermination extends QueryBundle {
           }
           .filter { case (method, dst, size) =>
             dst.reachableBy(allocations).codeExact(size.code).nonEmpty &&
-              method.assignments
+              method.assignment
                 .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
                 .source
                 .isLiteral
