@@ -12,7 +12,7 @@ import overflowdb.traversal._
         .start
         .assignment
         .target
-        .reachableBy(method.parameter.filter(_.typeFullName.contains("const")))
+        .reachableBy(method.parameter.filter(_.code.contains("const")))
         .nonEmpty
   }.toSetImmutable
 }
