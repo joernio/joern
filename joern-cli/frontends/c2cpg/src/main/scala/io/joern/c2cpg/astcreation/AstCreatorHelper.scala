@@ -126,17 +126,24 @@ trait AstCreatorHelper {
     fixedTypeName
   }
 
-  private def cleanType(t: String): String = t match {
-    case ""                                        => Defines.anyTypeName
-    case t if t.contains("?")                      => Defines.anyTypeName
-    case t if t.contains("#")                      => Defines.anyTypeName
-    case t if t.startsWith("{") && t.endsWith("}") => Defines.anyTypeName
-    case t if t.startsWith("[") && t.endsWith("]") => "[]"
-    case t if t.contains(Defines.qualifiedNameSeparator) =>
-      fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
-    case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
-    case t if t.contains("*")                    => t.replace("*", "").replace(" ", "")
-    case someType                                => someType
+  // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
+  private val reservedTypeKeywords =
+    List("const", "static", "volatile", "restrict", "extern", "typedef", "inline", "constexpr", "auto", "virtual")
+
+  private def cleanType(t: String): String = {
+    val tpe = reservedTypeKeywords.foldLeft(t)((cur, repl) => cur.replace(s"$repl ", ""))
+    tpe match {
+      case ""                                        => Defines.anyTypeName
+      case t if t.contains("?")                      => Defines.anyTypeName
+      case t if t.contains("#")                      => Defines.anyTypeName
+      case t if t.startsWith("{") && t.endsWith("}") => Defines.anyTypeName
+      case t if t.startsWith("[") && t.endsWith("]") => "[]"
+      case t if t.contains(Defines.qualifiedNameSeparator) =>
+        fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
+      case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
+      case t if t.contains("*")                    => t.replace("*", "").replace(" ", "")
+      case someType                                => someType
+    }
   }
 
   @nowarn
