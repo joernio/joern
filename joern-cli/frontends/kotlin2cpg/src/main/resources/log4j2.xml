@@ -1,18 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="info" packages="io.shiftleft.logging">
+<Configuration status="info">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %msg%n"/>
         </Console>
-        <GRPCAppender name="GRPC" host="${env:SHIFTLEFT_GRPC_API_HOST}" sourceType="CLIENT_X2CPG" orgId="${env:SHIFTLEFT_ORG_ID}" accessToken="${env:SHIFTLEFT_ACCESS_TOKEN:-${env:SHIFTLEFT_UPLOAD_TOKEN}}" insecure="${env:SHIFTLEFT_INSECURE}" enabled="${env:SHIFTLEFT_DIAGNOSTIC}" projectId="${env:SHIFTLEFT_PROJECT_NAME}"  logErrors="${env:SHIFTLEFT_LOG_ERRORS:-false}">
-            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %msg%n"/>
-        </GRPCAppender>
-        <File name="LocalSLLogFile" fileName="${env:SL_LOGGING_FILE:-sl-kt2cpg.log}">
-            <Filter>
-                <LevelRangeFilter minLevel="${env:SL_LOGGING_LEVEL:-debug}" maxLevel="debug"/>
-            </Filter>
-            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %msg%n"/>
-        </File>
     </Appenders>
     <Loggers>
         <Logger name="io.grpc" level="error"/>
@@ -20,8 +11,6 @@
 
         <Root level="trace">
             <AppenderRef ref="Console" level="${env:SL_LOGGING_LEVEL:-info}"/>
-            <AppenderRef ref="GRPC" level="${env:SL_LOGGING_LEVEL:-info}"/>
-            <AppenderRef ref="LocalSLLogFile"/>
         </Root>
     </Loggers>
 </Configuration>
