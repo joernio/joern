@@ -102,7 +102,9 @@ trait AstForTypesCreator {
     declaration match {
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
-        Ast(newTypeDecl(name, registerType(name), filename, s"$tpe $name", alias = Some(declTypeName), order = order))
+        Ast(
+          newTypeDecl(name, registerType(name), filename, nodeSignature(d), alias = Some(declTypeName), order = order)
+        )
       case d if parentIsClassDef(d) =>
         Ast(
           NewMember()

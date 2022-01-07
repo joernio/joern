@@ -456,11 +456,55 @@ class AstCreationPassTests
         |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
         local.name shouldBe "local"
-        local.typeFullName shouldBe "static int"
+        local.typeFullName shouldBe "int"
         call.name shouldBe Operators.assignment
         inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
           identifier.name shouldBe "local"
-          identifier.typeFullName shouldBe "static int"
+          identifier.typeFullName shouldBe "int"
+          identifier.order shouldBe 1
+          identifier.argumentIndex shouldBe 1
+          literal.code shouldBe "1"
+          literal.typeFullName shouldBe "int"
+          literal.order shouldBe 2
+          literal.argumentIndex shouldBe 2
+        }
+      }
+    }
+
+    "be correct for const decl assignment" in CpgTypeNodeFixture("""
+        |void method() {
+        |  const int local = 1;
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
+        local.name shouldBe "local"
+        local.typeFullName shouldBe "int"
+        call.name shouldBe Operators.assignment
+        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
+          identifier.name shouldBe "local"
+          identifier.typeFullName shouldBe "int"
+          identifier.order shouldBe 1
+          identifier.argumentIndex shouldBe 1
+          literal.code shouldBe "1"
+          literal.typeFullName shouldBe "int"
+          literal.order shouldBe 2
+          literal.argumentIndex shouldBe 2
+        }
+      }
+    }
+
+    "be correct for static const decl assignment" in CpgTypeNodeFixture("""
+        |void method() {
+        |  static const int local = 1;
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
+        local.name shouldBe "local"
+        local.typeFullName shouldBe "int"
+        call.name shouldBe Operators.assignment
+        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
+          identifier.name shouldBe "local"
+          identifier.typeFullName shouldBe "int"
           identifier.order shouldBe 1
           identifier.argumentIndex shouldBe 1
           literal.code shouldBe "1"
@@ -484,7 +528,7 @@ class AstCreationPassTests
         call1.name shouldBe Operators.assignment
         inside(call2.astChildren.l) { case List(identifier: Identifier, call: Call) =>
           identifier.name shouldBe "is_std_array_v"
-          identifier.typeFullName shouldBe "constexpr bool"
+          identifier.typeFullName shouldBe "bool"
           identifier.order shouldBe 1
           identifier.argumentIndex shouldBe 1
           call.code shouldBe "decltype(local)::value"
@@ -1394,6 +1438,87 @@ class AstCreationPassTests
 
     "be correct for array init" in TestAstOnlyFixture("""
         |int x[] = {0, 1, 2, 3};
+        |""".stripMargin) { cpg =>
+      inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
+        ident.typeFullName shouldBe "int[]"
+        ident.order shouldBe 1
+        call.code shouldBe "{0, 1, 2, 3}"
+        call.order shouldBe 2
+        // TODO: "<operator>.arrayInitializer" is not part of Operators
+        call.name shouldBe "<operator>.arrayInitializer"
+        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        val children = call.astChildren.l
+        val args = call.argument.l
+        inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
+          a.order shouldBe 1
+          a.code shouldBe "0"
+          b.order shouldBe 2
+          b.code shouldBe "1"
+          c.order shouldBe 3
+          c.code shouldBe "2"
+          d.order shouldBe 4
+          d.code shouldBe "3"
+        }
+        children shouldBe args
+      }
+    }
+
+    "be correct for static array init" in TestAstOnlyFixture("""
+        |static int x[] = {0, 1, 2, 3};
+        |""".stripMargin) { cpg =>
+      inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
+        ident.typeFullName shouldBe "int[]"
+        ident.order shouldBe 1
+        call.code shouldBe "{0, 1, 2, 3}"
+        call.order shouldBe 2
+        // TODO: "<operator>.arrayInitializer" is not part of Operators
+        call.name shouldBe "<operator>.arrayInitializer"
+        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        val children = call.astChildren.l
+        val args = call.argument.l
+        inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
+          a.order shouldBe 1
+          a.code shouldBe "0"
+          b.order shouldBe 2
+          b.code shouldBe "1"
+          c.order shouldBe 3
+          c.code shouldBe "2"
+          d.order shouldBe 4
+          d.code shouldBe "3"
+        }
+        children shouldBe args
+      }
+    }
+
+    "be correct for const array init" in TestAstOnlyFixture("""
+        |const int x[] = {0, 1, 2, 3};
+        |""".stripMargin) { cpg =>
+      inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
+        ident.typeFullName shouldBe "int[]"
+        ident.order shouldBe 1
+        call.code shouldBe "{0, 1, 2, 3}"
+        call.order shouldBe 2
+        // TODO: "<operator>.arrayInitializer" is not part of Operators
+        call.name shouldBe "<operator>.arrayInitializer"
+        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        val children = call.astChildren.l
+        val args = call.argument.l
+        inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
+          a.order shouldBe 1
+          a.code shouldBe "0"
+          b.order shouldBe 2
+          b.code shouldBe "1"
+          c.order shouldBe 3
+          c.code shouldBe "2"
+          d.order shouldBe 4
+          d.code shouldBe "3"
+        }
+        children shouldBe args
+      }
+    }
+
+    "be correct for static const array init" in TestAstOnlyFixture("""
+        |static const int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
       inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
         ident.typeFullName shouldBe "int[]"
