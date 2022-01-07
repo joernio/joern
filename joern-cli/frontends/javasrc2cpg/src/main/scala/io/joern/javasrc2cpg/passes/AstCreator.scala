@@ -861,7 +861,7 @@ class AstCreator(filename: String, global: Global) {
       .withChildren(stmtAstsWithCtx.map(_.ast))
 
     val forAst = compareAstsWithCtx.flatMap(_.ast.root) match {
-      case List(c) =>
+      case c :: Nil =>
         ast.withConditionEdge(forNode, c)
       case _ => ast
     }
@@ -1209,7 +1209,6 @@ class AstCreator(filename: String, global: Global) {
       case BinaryExpr.Operator.MINUS                => Operators.subtraction
       case BinaryExpr.Operator.MULTIPLY             => Operators.multiplication
       case BinaryExpr.Operator.REMAINDER            => Operators.modulo
-      case _                                        => ""
     }
 
     val callNode = NewCall()

@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
+import overflowdb.traversal._
 
 class MethodParameterTests extends JavaSrcCodeToCpgFixture {
 
@@ -16,7 +16,7 @@ class MethodParameterTests extends JavaSrcCodeToCpgFixture {
       """.stripMargin
 
   "should return exactly two parameters with correct fields" in {
-    cpg.parameter.name.toSet shouldBe Set("param1", "param2")
+    cpg.parameter.name.toSetMutable shouldBe Set("param1", "param2")
 
     val List(x) = cpg.parameter.filter(_.method.name == "foo").name("param1").l
     x.code shouldBe "int param1"

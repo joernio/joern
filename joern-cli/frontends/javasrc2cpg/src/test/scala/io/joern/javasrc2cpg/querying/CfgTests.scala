@@ -21,7 +21,7 @@ class CfgTests extends JavaSrcCodeToCpgFixture {
     """.stripMargin
 
   "should find that sink is control dependent on condition" in {
-    val controllers = cpg.call("sink").controlledBy.isCall.toSet
+    val controllers = cpg.call("sink").controlledBy.isCall.toSetMutable
     controllers.map(_.code) should contain("y < 10")
     controllers.map(_.code) should contain("x < 10")
   }
@@ -35,7 +35,7 @@ class CfgTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find sink(x) is dominated by `x<10` and `y < 10`" in {
-    cpg.call("sink").dominatedBy.isCall.code.toSet shouldBe Set("x < 10", "y < 10")
+    cpg.call("sink").dominatedBy.isCall.code.toSetMutable shouldBe Set("x < 10", "y < 10")
   }
 
   "should find that println post dominates correct nodes" in {
