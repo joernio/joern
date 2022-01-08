@@ -104,7 +104,9 @@ trait AstForPrimitivesCreator {
       case head :: Nil =>
         astForNode(head, order)
       case head :: tail =>
+        val code = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
         val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, order)
+        callNode.code = code
         val arg1 = astForNode(head, 1)
         val arg2 = fieldAccesses(tail, 2)
         Ast(callNode)
