@@ -11,9 +11,15 @@ object IncludeAutoDiscovery {
 
   private val logger = LoggerFactory.getLogger(IncludeAutoDiscovery.getClass)
 
-  private val GCC_VERSION_COMMAND = "gcc --version"
-  private val CPP_INCLUDE_COMMAND = "gcc -xc++ -E -v /dev/null -o /dev/null"
-  private val C_INCLUDE_COMMAND = "gcc -xc -E -v /dev/null -o /dev/null"
+  private val IS_WIN = scala.util.Properties.isWin
+
+  val GCC_VERSION_COMMAND = "gcc --version"
+
+  private val CPP_INCLUDE_COMMAND =
+    if (IS_WIN) "gcc -xc++ -E -v . -o nul" else "gcc -xc++ -E -v /dev/null -o /dev/null"
+
+  private val C_INCLUDE_COMMAND =
+    if (IS_WIN) "gcc -xc -E -v . -o nul" else "gcc -xc -E -v /dev/null -o /dev/null"
 
   // Only check once
   private var isGccAvailable: Option[Boolean] = None
@@ -25,7 +31,7 @@ object IncludeAutoDiscovery {
     logger.debug("Checking gcc ...")
     ExternalCommand.run(GCC_VERSION_COMMAND) match {
       case Success(result) =>
-        logger.debug(s"GCC is available: $result")
+        logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true
       case _ =>
         logger.warn("GCC is not installed. Discovery of system include paths will not be available.")
@@ -33,7 +39,7 @@ object IncludeAutoDiscovery {
     }
   }
 
-  private def gccAvailable(): Boolean = isGccAvailable match {
+  def gccAvailable(): Boolean = isGccAvailable match {
     case Some(value) =>
       value
     case None =>
@@ -42,8 +48,11 @@ object IncludeAutoDiscovery {
   }
 
   private def extractPaths(output: Seq[String]): Set[Path] = {
-    val startIndex = output.indexWhere(_.contains("#include")) + 2
-    val endIndex = output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
+    val startIndex =
+      output.indexWhere(_.contains("#include")) + 2
+    val endIndex =
+      if (IS_WIN) output.indexWhere(_.startsWith("End of search list.")) - 1
+      else output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
     output
       .slice(startIndex, endIndex)
       .map { p =>
