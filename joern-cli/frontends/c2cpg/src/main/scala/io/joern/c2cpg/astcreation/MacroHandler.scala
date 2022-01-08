@@ -169,7 +169,12 @@ trait MacroHandler {
   def nodeSignature(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     if (isExpandedFromMacro(node)) {
-      getNodeSignature(node)
+      val sig = getNodeSignature(node)
+      if (sig.isEmpty) {
+        node.getRawSignature
+      } else {
+        sig
+      }
     } else {
       node.getRawSignature
     }
