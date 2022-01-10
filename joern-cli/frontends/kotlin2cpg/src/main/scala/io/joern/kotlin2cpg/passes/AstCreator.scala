@@ -2199,8 +2199,8 @@ class AstCreator(
 
     val fullName = methodFqName + ":" + signature
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (fullName, signature))
-    // TODO: register return types
 
+    // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
     val returnType = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(returnType)
 
