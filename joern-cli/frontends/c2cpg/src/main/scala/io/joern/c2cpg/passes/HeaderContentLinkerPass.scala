@@ -22,7 +22,7 @@ import io.shiftleft.passes.{CpgPass, DiffGraph}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.x2cpg.Ast
-import overflowdb.traversal.Traversal
+import overflowdb.traversal._
 
 class HeaderContentLinkerPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 

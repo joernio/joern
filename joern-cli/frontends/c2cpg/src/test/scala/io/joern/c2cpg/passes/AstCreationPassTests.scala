@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal.NodeOps
+import overflowdb.traversal._
 
 class AstCreationPassTests
     extends AnyWordSpec
@@ -1023,7 +1023,7 @@ class AstCreationPassTests
         |   int z;
         | };
       """.stripMargin) { cpg =>
-      cpg.typeDecl.name("foo").member.code.toSet shouldBe Set("x", "y", "z")
+      cpg.typeDecl.name("foo").member.code.toSetMutable shouldBe Set("x", "y", "z")
     }
 
     "be correct for named struct with nested struct" in TestAstOnlyFixture("""

@@ -61,15 +61,15 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should find exactly 1 internal type" in {
-    cpg.typeDecl.internal.name.toSet shouldBe Set("foo")
+    cpg.typeDecl.internal.name.toSetMutable shouldBe Set("foo")
   }
 
   "should find five external types (`bar`, `char`, `int`, `void`, `ANY`)" in {
-    cpg.typeDecl.external.name.toSet shouldBe Set("bar", "char", "int", "void", "ANY")
+    cpg.typeDecl.external.name.toSetMutable shouldBe Set("bar", "char", "int", "void", "ANY")
   }
 
   "should find two members for `foo`: `x` and `y`" in {
-    cpg.typeDecl.name("foo").member.name.toSet shouldBe Set("x", "y")
+    cpg.typeDecl.name("foo").member.name.toSetMutable shouldBe Set("x", "y")
   }
 
   "should allow traversing from `int` to its alias `mytype`" in {
@@ -78,7 +78,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should find one method in type `foo`" in {
-    cpg.typeDecl.name("foo").method.name.toSet shouldBe Set("method")
+    cpg.typeDecl.name("foo").method.name.toSetMutable shouldBe Set("method")
   }
 
   "should allow traversing from type to enclosing file" in {

@@ -79,7 +79,7 @@ trait AstForFunctionsCreator {
       case declarator: IASTDeclarator =>
         declarator.getTrailingReturnType match {
           case id: IASTTypeId => typeForDeclSpecifier(id.getDeclSpecifier)
-          case _              => Defines.anyTypeName
+          case null           => Defines.anyTypeName
         }
       case null => Defines.anyTypeName
     }

@@ -35,7 +35,7 @@ class MethodTests extends CCodeToCpgSuite {
   }
 
   "should allow traversing to parameters" in {
-    cpg.method.name("main").parameter.name.toSet shouldBe Set("argc", "argv")
+    cpg.method.name("main").parameter.name.toSetMutable shouldBe Set("argc", "argv")
   }
 
   "should allow traversing to methodReturn" in {
@@ -52,7 +52,7 @@ class CMethodTests2 extends CCodeToCpgSuite {
   override val code = "int foo(); int bar() { return woo(); }"
 
   "should identify method as stub" in {
-    cpg.method.isStub.name.toSet shouldBe Set("<global>", "foo", "woo")
+    cpg.method.isStub.name.toSetMutable shouldBe Set("<global>", "foo", "woo")
     cpg.method.isNotStub.name.l shouldBe List("bar")
   }
 }

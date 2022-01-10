@@ -11,7 +11,7 @@ class MethodParameterTests extends CCodeToCpgSuite {
       | }""".stripMargin
 
   "should return exactly two parameters with correct fields" in {
-    cpg.parameter.name.toSet shouldBe Set("argc", "argv")
+    cpg.parameter.name.toSetMutable shouldBe Set("argc", "argv")
 
     val List(x) = cpg.parameter.name("argc").l
     x.code shouldBe "int argc"

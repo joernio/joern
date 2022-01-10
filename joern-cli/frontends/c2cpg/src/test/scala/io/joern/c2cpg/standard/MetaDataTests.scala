@@ -4,6 +4,7 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import overflowdb.traversal._
 
 class MetaDataTests extends CCodeToCpgSuite {
 

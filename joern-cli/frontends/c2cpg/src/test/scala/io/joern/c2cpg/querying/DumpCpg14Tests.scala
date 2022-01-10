@@ -6,6 +6,8 @@ import io.joern.dataflowengineoss.layers.dataflows.{Cpg14DumpOptions, DumpCpg14}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
+import java.nio.file.Files
+
 class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
 
   override val code: String =
@@ -25,8 +27,8 @@ class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
         new DumpCpg14(opts).run(layerContext)
         (tmpDir / "0-cpg.dot").exists shouldBe true
         (tmpDir / "1-cpg.dot").exists shouldBe true
-        (tmpDir / "0-cpg.dot").size should not be 0
-        (tmpDir / "1-cpg.dot").size should not be 0
+        Files.size((tmpDir / "0-cpg.dot").path) should not be 0
+        Files.size((tmpDir / "1-cpg.dot").path) should not be 0
       }
     }
 

@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
+import overflowdb.traversal._
 
 class ProgramStructureTests extends AnyWordSpec with Matchers {
 
