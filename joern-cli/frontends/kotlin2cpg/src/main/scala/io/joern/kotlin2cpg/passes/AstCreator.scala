@@ -2199,7 +2199,7 @@ class AstCreator(
 
     val fullName = methodFqName + ":" + signature
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (fullName, signature))
-    registerType(fullNameWithSig._1)
+    // TODO: register return types
 
     val returnType = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(returnType)
