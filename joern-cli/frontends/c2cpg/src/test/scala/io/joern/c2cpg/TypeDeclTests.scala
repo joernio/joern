@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
+import overflowdb.traversal._
 
 class TypeDeclTests extends AnyWordSpec with Matchers {
 
@@ -35,7 +36,7 @@ class TypeDeclTests extends AnyWordSpec with Matchers {
     }
 
     "contain correct code fields for all members" in {
-      fixture.traversalSource.label(Member.Label).property(Properties.CODE).toSet shouldBe Set("x", "y", "*foo")
+      fixture.traversalSource.label(Member.Label).property(Properties.CODE).toSetMutable shouldBe Set("x", "y", "*foo")
     }
 
   }

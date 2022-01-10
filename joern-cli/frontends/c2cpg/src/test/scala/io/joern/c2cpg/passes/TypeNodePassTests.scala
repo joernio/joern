@@ -13,7 +13,7 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |int main() {
         |  int x;
         |}""".stripMargin) { cpg =>
-      cpg.typ.name.toSet shouldBe Set("int", "void", "ANY")
+      cpg.typ.name.toSetMutable shouldBe Set("int", "void", "ANY")
     }
 
     "create correct types for locals" in CpgTypeNodeFixture("""

@@ -3,6 +3,7 @@ package io.joern.c2cpg.querying
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 /** The following tests show in detail how queries can be started. For
   * all node types, for which it seems reasonable, all nodes of that type
@@ -32,11 +33,11 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving comments" in {
-    cpg.comment.code.toSet shouldBe Set("/* A C comment */", "// A C++ comment")
+    cpg.comment.code.toSetMutable shouldBe Set("/* A C comment */", "// A C++ comment")
   }
 
   "should allow retrieving parameters" in {
-    cpg.parameter.where(_.method.internal).name.toSet shouldBe Set("argc", "argv")
+    cpg.parameter.where(_.method.internal).name.toSetMutable shouldBe Set("argc", "argv")
   }
 
   "should allow retrieving locals" in {
@@ -56,7 +57,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving type declarations" in {
-    cpg.typeDecl.internal.name.toSet shouldBe Set("foo", "main")
+    cpg.typeDecl.internal.name.toSetMutable shouldBe Set("foo", "main")
   }
 
   "should allow retrieving members" in {
@@ -64,7 +65,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving (used) types" in {
-    cpg.typ.name.toSet shouldBe Set("int", "void", "char**", "ANY", "foo")
+    cpg.typ.name.toSetMutable shouldBe Set("int", "void", "char**", "ANY", "foo")
   }
 
   "should allow retrieving namespaces" in {
@@ -72,7 +73,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving namespace blocks" in {
-    cpg.namespaceBlock.name.toSet shouldBe Set("<global>")
+    cpg.namespaceBlock.name.toSetMutable shouldBe Set("<global>")
   }
 
   "should allow retrieving of method returns" in {
@@ -84,7 +85,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving all nodes" in {
-    val allNodesLabels = cpg.all.label.toSet
+    val allNodesLabels = cpg.all.label.toSetMutable
 
     allNodesLabels shouldBe Set(
       NodeTypes.NAMESPACE_BLOCK,

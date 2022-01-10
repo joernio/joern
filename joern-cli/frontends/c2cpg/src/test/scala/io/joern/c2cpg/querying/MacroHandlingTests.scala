@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 class MacroHandlingTests1 extends CCodeToCpgSuite {
   override val code: String =
@@ -219,7 +220,7 @@ class CfgMacroTests extends DataFlowCodeToCpgSuite {
   "should create correct CFG for macro expansion and find data flow" in {
     val List(callToMacro: Call) = cpg.method("foo").call.dispatchType(DispatchTypes.INLINED).l
     callToMacro.argument.code.l shouldBe List("x")
-    callToMacro.cfgNext.code.toSet shouldBe Set("x", "i_read")
+    callToMacro.cfgNext.code.toSetMutable shouldBe Set("x", "i_read")
     val source = cpg.method("foo").call.name("MP4_GET4BYTES").argument(1).l
     val sink = cpg.method("foo").call.name("sink").argument(1).l
     sink.reachableByFlows(source).l.foreach(println)

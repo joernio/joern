@@ -3,6 +3,7 @@ package io.joern.c2cpg.fixtures
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import org.scalatest.matchers.should.Matchers
 import overflowdb.{Node, _}
+import overflowdb.traversal._
 
 trait TraversalUtils extends Matchers {
 

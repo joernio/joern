@@ -4,7 +4,7 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import overflowdb.traversal._
 
 class CDataFlowTests1 extends DataFlowCodeToCpgSuite {
 
@@ -30,7 +30,7 @@ class CDataFlowTests1 extends DataFlowCodeToCpgSuite {
     val sink = cpg.call.name("read").l
     def flows = sink.reachableByFlows(source)
 
-    flows.map(flowToResultPairs).toSet shouldBe
+    flows.map(flowToResultPairs).toSetMutable shouldBe
       Set(
         List[(String, Option[Integer])](
           ("sz = 200", 8),

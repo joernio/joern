@@ -5,6 +5,8 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.layers.dataflows.{DdgDumpOptions, DumpDdg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
+import java.nio.file.Files
+
 class DumpDdgTests extends DataFlowCodeToCpgSuite {
 
   override val code: String =
@@ -24,8 +26,8 @@ class DumpDdgTests extends DataFlowCodeToCpgSuite {
         new DumpDdg(opts).run(layerContext)
         (tmpDir / "0-ddg.dot").exists shouldBe true
         (tmpDir / "1-ddg.dot").exists shouldBe true
-        (tmpDir / "0-ddg.dot").size should not be 0
-        (tmpDir / "1-ddg.dot").size should not be 0
+        Files.size((tmpDir / "0-ddg.dot").path) should not be 0
+        Files.size((tmpDir / "1-ddg.dot").path) should not be 0
       }
     }
 

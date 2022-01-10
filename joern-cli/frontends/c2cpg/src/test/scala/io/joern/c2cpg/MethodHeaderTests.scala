@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
+import overflowdb.traversal._
 
 class MethodHeaderTests extends AnyWordSpec with Matchers {
 

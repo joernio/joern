@@ -245,8 +245,8 @@ trait AstCreatorHelper {
         }
         val fullname = s"${fullName(cppClass.getParent)}.$name"
         fullname
-      case enum: IASTEnumerationSpecifier =>
-        fullName(enum.getParent) + "." + nodeSignature(enum.getName)
+      case enumSpecifier: IASTEnumerationSpecifier =>
+        fullName(enumSpecifier.getParent) + "." + nodeSignature(enumSpecifier.getName)
       case c: IASTCompositeTypeSpecifier => nodeSignature(c.getName)
       case f: IASTFunctionDeclarator if f.getName.toString.isEmpty && f.getNestedDeclarator != null =>
         fullName(f.getParent) + "." + nodeSignature(f.getNestedDeclarator.getName)

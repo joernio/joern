@@ -31,7 +31,7 @@ class FreeListDataFlowTests extends DataFlowCodeToCpgSuite {
     | }""".stripMargin
 
   "should identify all calls to `free`" in {
-    cpg.call.name("free").code.toSet shouldBe Set("free(p)")
+    cpg.call.name("free").code.toSetMutable shouldBe Set("free(p)")
   }
 
   "should find flows to arguments of `free`" in {
