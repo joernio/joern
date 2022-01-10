@@ -8,7 +8,7 @@ class CFGTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("cfg.bin")
+    buildCpgForBin("x86/cfg.bin")
   }
 
   "should have the cfgFirst node with the value set in" in {

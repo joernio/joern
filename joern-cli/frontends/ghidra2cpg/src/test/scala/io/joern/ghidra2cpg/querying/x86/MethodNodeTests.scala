@@ -7,7 +7,7 @@ class MethodNodeTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("x86_64.bin")
+    buildCpgForBin("x86/x86_64.bin")
   }
 
   "should contain exactly one node with all mandatory fields set" in {
