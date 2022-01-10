@@ -101,6 +101,7 @@ object Constants {
   val defaultCaseNode = "default"
   val caseNodeParserTypeName = "CaseNode"
   val unknownOperator = "<operator>.unknown"
+  val operatorSuffix  = "<operator>"
   val paramNameLambdaDestructureDecl = "DESTRUCTURE_PARAM"
   val wildcardImportName = "*"
 }
@@ -1592,16 +1593,24 @@ class AstCreator(
         val shortName = expr.getSelectorExpression.getFirstChild.getText
         val args = expr.getSelectorExpression().asInstanceOf[KtCallExpression].getValueArguments()
         receiverPlaceholderType + "." + shortName + ":" + erasedSignature(args.asScala.toList)
+      } else if  (expr.getSelectorExpression.isInstanceOf[KtNameReferenceExpression]) {
+        Operators.fieldAccess
       } else {
-        // TODO: add test cases for this scenario
+        // TODO: add more test cases for this scenario
         ""
       }
     }
 
+    val astDerivedSignature =
+      if (astDerivedMethodFullName.startsWith(Constants.operatorSuffix)) {
+        ""
+      } else {
+        erasedSignature(argAsts)
+      }
     val fullNameWithSig =
       typeInfoProvider.fullNameWithSignature(
         expr,
-        (astDerivedMethodFullName, erasedSignature(argAsts))
+        (astDerivedMethodFullName, astDerivedSignature)
       )
     val declType = typeInfoProvider.containingDeclType(expr, TypeConstants.any)
     registerType(declType)
