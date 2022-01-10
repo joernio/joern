@@ -125,22 +125,6 @@ object Main extends App {
           System.exit(1)
         }
 
-        val otherInputProviders =
-          SourceFilesPicker
-            .configFiles(sourceDir)
-            .map { fileName => () =>
-              {
-                logger.trace("Parsing config file at `" + fileName + "`...")
-                val fileContents =
-                  try {
-                    IOUtils.readLinesInFile(Paths.get(fileName)).mkString("\n")
-                  } catch {
-                    case t: Throwable => parsingError + "\n" + t.toString
-                  }
-                val pair = Kt2Cpg.InputPair(fileContents, fileName)
-                pair
-              }
-            }
         // TODO: iterate over inferencejars dir and get the paths like so
         val inferenceJarsPaths = Seq(
           InferenceJarPath("inferencejars/android-4.1.1.4.jar", true),
@@ -241,10 +225,35 @@ object Main extends App {
               willFilter
             }
 
+        val fileContentsAtPath =
+          SourceFilesPicker
+            .configFiles(sourceDir)
+            .flatMap { fileName =>
+              try {
+                val relPath = PathUtils.relativize(sourceDir, fileName)
+                Some(fileName, relPath)
+              } catch {
+                case _: Throwable => None
+              }
+            }
+            .map { fnm =>
+              val fileContents =
+                try {
+                  IOUtils.readLinesInFile(Paths.get(fnm._1)).mkString("\n")
+                } catch {
+                  case t: Throwable => parsingError + "\n" + t.toString
+                }
+              FileContentAtPath(
+                fileContents,
+                fnm._2,
+                fnm._1
+              )
+            }
+
         val typeInfoProvider = new KotlinTypeInfoProvider(environment)
         val cpg = new Kt2Cpg().createCpg(
           filesWithMeta,
-          otherInputProviders,
+          fileContentsAtPath,
           typeInfoProvider,
           Some(config.outputPath)
         )

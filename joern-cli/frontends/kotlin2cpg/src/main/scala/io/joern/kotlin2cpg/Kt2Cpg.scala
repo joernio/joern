@@ -18,6 +18,7 @@ object Kt2Cpg {
 }
 
 case class KtFileWithMeta(f: KtFile, relativizedPath: String, filename: String)
+case class FileContentAtPath(content: String, relativizedPath: String, filename: String)
 
 class Kt2Cpg {
 
@@ -25,7 +26,7 @@ class Kt2Cpg {
 
   def createCpg(
       filesWithMeta: Iterable[KtFileWithMeta],
-      otherInputProviders: Iterable[InputProvider],
+      fileContentsAtPath: Iterable[FileContentAtPath],
       typeInfoProvider: TypeInfoProvider,
       outputPath: Option[String] = None
   ): Cpg = {
@@ -44,7 +45,7 @@ class Kt2Cpg {
     new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
       .createAndApply()
 
-    val configCreator = new ConfigPass(otherInputProviders, cpg, configKeyPool)
+    val configCreator = new ConfigPass(fileContentsAtPath, cpg, configKeyPool)
     configCreator.createAndApply()
 
     cpg

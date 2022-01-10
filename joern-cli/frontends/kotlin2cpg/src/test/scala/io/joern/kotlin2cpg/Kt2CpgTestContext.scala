@@ -143,7 +143,11 @@ class Kt2CpgTestContext private () {
           }
       val typeInfoProvider = new KotlinTypeInfoProvider(environment)
       val kt2Cpg = new Kt2Cpg()
-      val cpg = kt2Cpg.createCpg(filesWithMeta, codeAndFile.map(inputPair => () => inputPair), typeInfoProvider)
+
+      val nonSourceFiles = codeAndFile.map { entry =>
+        FileContentAtPath(entry.content, entry.fileName, entry.fileName)
+      }
+      val cpg = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, typeInfoProvider)
       val context = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)
