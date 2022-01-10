@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.psi.{
   KtValueArgument
 }
 import better.files._
+import io.shiftleft.utils.ProjectRoot
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -122,7 +123,9 @@ class Kt2CpgTestContext private () {
 
       // TODO: iterate over inferencejars dir and get the paths like so
 
-      val inferenceJarDir = File("src/main/resources/inferencejars")
+      val inferenceJarDir = File(
+        ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/main/resources/inferencejars/")
+      )
       val inferenceJarsPaths =
         inferenceJarDir.list
           .filter(_.hasExtension)
