@@ -8,29 +8,32 @@ import org.scalatest.matchers.should.Matchers
 
 class DataClassTests extends AnyFreeSpec with Matchers {
 
-  lazy val cpg = Kt2CpgTestContext.buildCpg("""
-      |package mypkg
-      |
-      |data class Result(val p: Int, val q: Int)
-      |
-      |data class Account(val username: String, val password: String) {
-      |    var permission: Int = -1
-      |
-      |    constructor(perm: Int) : this("username", "password"){
-      |        permission = perm
-      |    }
-      |}
-      |
-      |fun main(args : Array<String>) {
-      |  val x = Result(1, 0)
-      |  println(x.p)
-      |  println(x.q)
-      |}
-      |""".stripMargin)
+  "CPG for code with simple data class" - {
 
-  "should contain correct number of calls" in {
-    cpg.call.size should not be 0
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class Result(val p: Int, val q: Int)
+        |
+        |data class Account(val username: String, val password: String) {
+        |    var permission: Int = -1
+        |
+        |    constructor(perm: Int) : this("username", "password"){
+        |        permission = perm
+        |    }
+        |}
+        |
+        |fun main(args : Array<String>) {
+        |  val x = Result(1, 0)
+        |  println(x.p)
+        |  println(x.q)
+        |}
+        |""".stripMargin)
+
+    "should contain correct number of calls" in {
+      cpg.call.size should not be 0
+    }
+
+    // TODO: fill out the actual test cases
   }
-
-  // TODO: fill out the actual test cases
 }

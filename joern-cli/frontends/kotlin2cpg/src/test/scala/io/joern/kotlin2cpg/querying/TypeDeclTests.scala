@@ -1,9 +1,9 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -87,5 +87,34 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
       cpg.call.codeExact("println(\"initBlock2\")").size shouldBe 1
     }
      */
+  }
+
+  "CPG for code with usage of setter of simple user-defined class" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |class Simple {
+      |    var message = "HELLO"
+      |}
+      |
+      |fun action(msg: String): String {
+      |    val simple = Simple()
+      |    //println("before: " + simple.message)
+      |    simple.message = msg
+      |    //println("after: " + simple.message)
+      |    println(simple.message)
+      |    return simple.message
+      |}
+      |
+      |fun main() {
+      |    action("HELLO, WORLD")
+      |}
+      | """.stripMargin)
+
+    "should contain a CALL node for the field access inside the assignment with the correct properties set" in {
+      val List(c) = cpg.call.methodFullName(Operators.assignment).argument(1).isCall.code("simple.*").l
+      c.code shouldBe "simple.message"
+      c.methodFullName shouldBe Operators.fieldAccess
+    }
   }
 }

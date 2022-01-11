@@ -7,7 +7,8 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class TopLevelPropertiesTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Kt2CpgTestContext.buildCpg("""
+  "CPG for code with top-level property" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |const val CSRF_SESSION_KEY = "_csrf"
@@ -17,8 +18,9 @@ class TopLevelPropertiesTests extends AnyFreeSpec with Matchers {
       |}
       |""".stripMargin)
 
-  // TODO: lower them correctly
-  "should not contain LOCAL nodes for the pkg-level consts" in {
-    cpg.local.size shouldBe 0
+    // TODO: lower them correctly
+    "should not contain LOCAL nodes for the pkg-level consts" in {
+      cpg.local.size shouldBe 0
+    }
   }
 }

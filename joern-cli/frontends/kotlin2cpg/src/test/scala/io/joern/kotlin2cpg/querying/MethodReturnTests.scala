@@ -9,23 +9,25 @@ import org.scalatest.matchers.should.Matchers
 
 class MethodReturnTests extends AnyFreeSpec with Matchers {
 
-  lazy val cpg = Kt2CpgTestContext.buildCpg("""
+  "CPG for code with simple method with two parameters" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
       |fun foo(x: Int, y: Double): Int {
       |  return x * 2
       |}
       |""".stripMargin)
 
-  "should have METHOD_RETURN node with correct fields" in {
-    val List(x) = cpg.method.name("foo").methodReturn.l
-    x.code shouldBe "kotlin.Int"
-    x.typeFullName shouldBe "kotlin.Int"
-    x.lineNumber shouldBe Some(1)
-    x.columnNumber shouldBe Some(4)
-    x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-    x.order shouldBe 5
-  }
+    "should have METHOD_RETURN node with correct fields" in {
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.code shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "kotlin.Int"
+      x.lineNumber shouldBe Some(1)
+      x.columnNumber shouldBe Some(4)
+      x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+      x.order shouldBe 5
+    }
 
-  "should allow traversing to method" in {
-    cpg.methodReturn.method.isExternal(false).name.l shouldBe List("foo")
+    "should allow traversing to method" in {
+      cpg.methodReturn.method.isExternal(false).name.l shouldBe List("foo")
+    }
   }
 }
