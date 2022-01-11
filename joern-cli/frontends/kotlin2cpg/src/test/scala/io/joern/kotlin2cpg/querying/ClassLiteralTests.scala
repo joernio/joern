@@ -11,8 +11,7 @@ class ClassLiteralTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple class literals" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Bar {}

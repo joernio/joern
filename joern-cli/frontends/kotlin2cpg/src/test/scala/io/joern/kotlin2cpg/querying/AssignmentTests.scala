@@ -10,8 +10,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple assignments" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  x += 1

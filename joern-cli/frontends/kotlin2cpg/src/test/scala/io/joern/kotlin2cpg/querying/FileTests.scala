@@ -12,8 +12,7 @@ import java.io.{File => JFile}
 class FileTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple class definition and one method" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg.bar
         |
         |class Foo {

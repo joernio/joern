@@ -9,8 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class EnumTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple ENUM definition" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |enum class Direction {

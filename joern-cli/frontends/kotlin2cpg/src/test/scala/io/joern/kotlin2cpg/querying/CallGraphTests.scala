@@ -11,8 +11,7 @@ class CallGraphTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple function definition" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun add(x: Int, y: Int): Int {

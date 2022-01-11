@@ -10,8 +10,7 @@ class CompanionObjectTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple companion object definition" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         | class MyClass {
         |   companion object Factory {
         |       fun create(): MyClass = MyClass()

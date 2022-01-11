@@ -10,8 +10,7 @@ class DataClassTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple data class" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |data class Result(val p: Int, val q: Int)

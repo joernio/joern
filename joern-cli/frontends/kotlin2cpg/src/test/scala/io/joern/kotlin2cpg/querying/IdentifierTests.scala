@@ -8,8 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class IdentifierTests extends AnyFreeSpec with Matchers {
   "CPG for code with two simple methods" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun add(x: Int, y: Int): Int {
         |  return x + y
         |}

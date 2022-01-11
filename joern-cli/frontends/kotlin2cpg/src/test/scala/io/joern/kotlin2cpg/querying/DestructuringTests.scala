@@ -12,8 +12,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple destructuring expressions" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |data class Bar(val p: Int, val q: Int)
         |
         |fun foo(): Int {

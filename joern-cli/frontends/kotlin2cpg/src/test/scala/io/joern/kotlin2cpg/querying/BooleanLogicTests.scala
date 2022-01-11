@@ -9,8 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple boolean op usage" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  val w = true
         |  val x: Boolean = !w

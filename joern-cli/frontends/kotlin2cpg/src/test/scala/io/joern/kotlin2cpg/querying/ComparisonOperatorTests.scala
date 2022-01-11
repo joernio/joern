@@ -11,8 +11,7 @@ class ComparisonOperatorTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple comparison operator usage" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>): Int {
         | val x: Int = 1
         | val y: Int = 2

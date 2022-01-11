@@ -9,8 +9,7 @@ class CallableReferenceTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple callback usage" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun isOdd(x: Int) = x % 2 != 0
         |
         |fun firstOdd(x: Int): Int {

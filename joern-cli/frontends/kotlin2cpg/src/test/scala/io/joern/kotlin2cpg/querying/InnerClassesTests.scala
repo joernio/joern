@@ -11,8 +11,7 @@ class InnerClassesTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with a simple inner class definition" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         | class Outer {
         |     private val bar: Int = 1
         |     inner class Inner {

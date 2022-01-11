@@ -55,6 +55,6 @@ class LabelTests extends AnyFreeSpec with Matchers {
         |
         |""".stripMargin)
 
-  // TODO: add the test cases
+    // TODO: add the test cases
   }
 }

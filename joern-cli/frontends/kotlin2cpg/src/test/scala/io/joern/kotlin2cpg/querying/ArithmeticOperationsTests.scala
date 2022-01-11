@@ -10,8 +10,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple arithmetic operations" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  println(1 + 2)
         |  println(1 - 2)
