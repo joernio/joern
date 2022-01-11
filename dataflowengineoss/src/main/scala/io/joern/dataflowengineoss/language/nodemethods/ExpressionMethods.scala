@@ -24,7 +24,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
       if (semantic.methodFullName == "Foo.<init>:void(java.lang.String)") {
         println(s"Found semantic for Foo.<init>: ${semantic}")
         print(s"Looking for node with order ${node.order}: ")
-        println(semantic.mappings.exists { case (_, dstIndex) => dstIndex == node.order})
+        println(semantic.mappings.exists { case (_, dstIndex) => dstIndex == node.order })
       }
     }
     s.isEmpty || s.exists { semantic =>

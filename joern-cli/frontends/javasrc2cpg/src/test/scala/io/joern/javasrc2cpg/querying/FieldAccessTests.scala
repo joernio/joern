@@ -50,7 +50,7 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
     val List(access: Call) = cpg.method(".*foo.*").call(".*fieldAccess").l
     val List(fieldIdentifier: FieldIdentifier, identifier: Identifier) = access.argument.l
     identifier.name shouldBe "Foo"
-    identifier.typeFullName shouldBe "class Foo"
+    identifier.typeFullName shouldBe "Foo"
     fieldIdentifier.canonicalName shouldBe "MAX_VALUE"
   }
 

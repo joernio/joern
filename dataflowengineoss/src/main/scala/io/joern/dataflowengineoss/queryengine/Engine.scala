@@ -217,21 +217,7 @@ object Engine {
       val visible = if (sameCallSite) {
         val semanticExists = parentNode.semanticsForCallByArg.nonEmpty
         val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
-        val vis = (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty || parentNode.order == 0
-        if (!vis) {
-          val output = List(
-            s"Curr node  : ${curNode.asInstanceOf[Identifier].name}",
-            s"Parent node: ${parentNode.asInstanceOf[Literal].code}",
-            s"Call for p :\n${parentNodeCall.map("- " + _.methodFullName).mkString("\n")}",
-            s"Method name: ${argToMethods(parentNode).parameter.map{ param => (param.name, param.order)}.l}",
-            s"- Is same callSite",
-            s"- Semantic exists: $semanticExists",
-            s"- Parent node def: ${parentNode.isDefined}",
-            s"- Internal method: ${internalMethodsForCall.isEmpty}"
-          )
-          println(output.mkString("\n"))
-        }
-        vis
+        (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
       } else {
         parentNode.isDefined
       }

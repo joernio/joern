@@ -189,9 +189,7 @@ class ObjectTests extends JavaDataflowFixture {
     def source = cpg.method.name("test11").literal.code("\"MALICIOUS\"")
     def sink = cpg.method.name("sink").call.name("println").argument
 
-    // It finds the path using reachableBy
     sink.reachableBy(source).size shouldBe 1
-    // but not using reachableByFlows
     sink.reachableByFlows(source).size shouldBe 1
   }
 

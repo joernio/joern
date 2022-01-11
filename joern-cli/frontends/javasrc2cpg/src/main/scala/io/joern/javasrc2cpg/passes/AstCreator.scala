@@ -114,6 +114,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.x2cpg.Ast
+import org.slf4j.LoggerFactory
 
 import java.util.UUID.randomUUID
 import scala.jdk.CollectionConverters._
@@ -202,6 +203,7 @@ object AstWithCtx {
 
 class AstCreator(filename: String, global: Global) {
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
   val stack: mutable.Stack[NewNode] = mutable.Stack()
@@ -499,16 +501,16 @@ class AstCreator(filename: String, global: Global) {
 
     AstWithCtx(Ast(node), Context(methodParameters = Seq(node)))
   }
-  
+
   private def astForMethod(
       methodDeclaration: MethodDeclaration,
       scopeContext: ScopeContext,
       childNum: Int
   ): AstWithCtx = {
     val methodNode = createMethodNode(methodDeclaration, scopeContext.typeDecl, childNum)
-    
+
     val thisAst = if (methodDeclaration.isStatic) {
-      Seq() 
+      Seq()
     } else {
       val typeFullName = Try(methodDeclaration.resolve.declaringType().getQualifiedName).getOrElse("<empty>")
       Seq(thisAstForMethod(typeFullName, line(methodDeclaration)))
@@ -656,7 +658,6 @@ class AstCreator(filename: String, global: Global) {
   }
 
   def astForTry(stmt: TryStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
-    // TODO: Handle try body
     val tryNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.TRY)
       .code("try")
@@ -1328,7 +1329,9 @@ class AstCreator(filename: String, global: Global) {
       val assignAst = callAst(callNode, targetAst ++ argsAsts)
       Seq(assignAst)
     } else {
-      // TODO Log warning if partialConstructors size > 1
+      if (argsCtx.partialConstructors.size > 1) {
+        logger.warn("BUG: Received multiple partial constructors from assignment. Dropping all but the first.")
+      }
       val partialConstructor = argsCtx.partialConstructors.head
 
       targetAst.flatMap(_.ast.root).toList match {
@@ -1338,7 +1341,7 @@ class AstCreator(filename: String, global: Global) {
           val initAst = completeInitForConstructor(partialConstructor, identifier, 2)
           Seq(callAst(callNode, targetAst ++ argsAsts), initAst)
 
-        case res =>
+        case _ =>
           // In this case the left hand side is more complex than an identifier, so
           // we need to contain the constructor in a block.
           // e.g. items[10] = new Foo();
@@ -1411,9 +1414,14 @@ class AstCreator(filename: String, global: Global) {
       val identifierAst = AstWithCtx(Ast(identifier), Context(identifiers = Seq(identifier)))
 
       val initializerAstsWithCtx = astsForExpression(initializer, scopeContext, 2)
+      // Since all partial constructors will be dealt with here, don't pass them up.
+      val initAstsWithoutConstructorCtx = initializerAstsWithCtx.map { case AstWithCtx(ast, ctx) =>
+        AstWithCtx(ast, ctx.clearConstructors())
+      }
 
       // TODO Check if constructor node in ctx
-      val declAst = callAst(callNode, Seq(identifierAst) ++ initializerAstsWithCtx)
+
+      val declAst = callAst(callNode, Seq(identifierAst) ++ initAstsWithoutConstructorCtx)
 
       val constructorAsts = initializerAstsWithCtx
         .flatMap(_.ctx.partialConstructors)
@@ -1605,7 +1613,7 @@ class AstCreator(filename: String, global: Global) {
       } catch {
         case _: Throwable =>
           // TODO: This is a hack to deal with static field accesses. Need to figure out how to deal with this properly.
-          registerType(s"class ${x.getName.toString}")
+          registerType(s"${x.getName.toString}")
       }
     val identifier = NewIdentifier()
       .name(name)
@@ -1644,7 +1652,7 @@ class AstCreator(filename: String, global: Global) {
     * foo({ Foo temp = alloc(); temp.init(42); temp })
     *
     * This is not valid Java code, but this representation is a decent compromise between staying
-    * faithful to Java and being consistent with the Java frontend.
+    * faithful to Java and being consistent with the Java bytecode frontend.
     */
   def astForObjectCreationExpr(
       expr: ObjectCreationExpr,
@@ -1682,6 +1690,8 @@ class AstCreator(filename: String, global: Global) {
       astsForExpression(x, scopeContext, o)
     }.flatten
 
+    // Assume that a block ast is required, since there isn't enough information to decide otherwise.
+    // This simplifies logic elsewhere, and unnecessary blocks will be garbage collected soon.
     val blockAst = blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initNode, args, order)
 
     expr.getParentNode.toScala match {
@@ -1920,7 +1930,8 @@ class AstCreator(filename: String, global: Global) {
         val signature = createCallSignature(resolved)
         callNode.methodFullName(s"${resolved.getQualifiedName}:$signature")
         callNode.signature(signature)
-      case Failure(_) => // TODO: Logging
+      case Failure(_) =>
+        logger.warn(s"Could not resolve method for call ${call.getNameAsString}. Type info will be missing.")
     }
     if (call.getName.getBegin.isPresent) {
       callNode
@@ -1948,14 +1959,16 @@ class AstCreator(filename: String, global: Global) {
 
     if (maybeScope.isDefined || !isStatic) {
       val name = maybeScope.map(_.toString).getOrElse("this")
-      Some(NewIdentifier()
-        .name(name)
-        .code(name)
-        .typeFullName(registerType(typeFullName))
-        .order(0)
-        .argumentIndex(0)
-        .lineNumber(line(call))
-        .columnNumber(column(call)))
+      Some(
+        NewIdentifier()
+          .name(name)
+          .code(name)
+          .typeFullName(registerType(typeFullName))
+          .order(0)
+          .argumentIndex(0)
+          .lineNumber(line(call))
+          .columnNumber(column(call))
+      )
     } else {
       None
     }
