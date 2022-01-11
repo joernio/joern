@@ -8,21 +8,25 @@ import org.scalatest.matchers.should.Matchers
 
 class CompanionObjectTests extends AnyFreeSpec with Matchers {
 
-  lazy val cpg = Kt2CpgTestContext.buildCpg("""
-      | class MyClass {
-      |   companion object Factory {
-      |       fun create(): MyClass = MyClass()
-      |   }
-      |}
-      |
-      |fun main(args : Array<String>) {
-      |  println(MyClass.create())
-      |}
-      |""".stripMargin)
+  "CPG for code with simple companion object definition" - {
 
-  "should contain correct number of calls" in {
-    cpg.call.size should not be 0
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
+        | class MyClass {
+        |   companion object Factory {
+        |       fun create(): MyClass = MyClass()
+        |   }
+        |}
+        |
+        |fun main(args : Array<String>) {
+        |  println(MyClass.create())
+        |}
+        |""".stripMargin)
+
+    "should contain correct number of calls" in {
+      cpg.call.size should not be 0
+    }
+
+    // TODO: fill out the actual test cases
   }
-
-  // TODO: fill out the actual test cases
 }

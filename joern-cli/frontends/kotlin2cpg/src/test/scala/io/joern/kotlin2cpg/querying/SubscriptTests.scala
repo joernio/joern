@@ -8,15 +8,17 @@ import org.scalatest.matchers.should.Matchers
 
 class SubscriptTests extends AnyFreeSpec with Matchers {
 
-  lazy val cpg = Kt2CpgTestContext.buildCpg("""
+  "CPG for code with array index access call" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
       |fun foo(): Int {
       |  val names = listOf(1, 2, 3)
       |  return names[0]
       |}
       |""".stripMargin)
 
-  "should find a call node for `Operators.indexAccess`" in {
-    val List(c) = cpg.call(Operators.indexAccess).l
-    c.code shouldBe "names[0]"
+    "should find a call node for `Operators.indexAccess`" in {
+      val List(c) = cpg.call(Operators.indexAccess).l
+      c.code shouldBe "names[0]"
+    }
   }
 }

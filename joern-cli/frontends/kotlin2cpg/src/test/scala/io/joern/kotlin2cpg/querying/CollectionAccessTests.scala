@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class CollectionAccessTests extends AnyFreeSpec with Matchers {
 
-  "lists" - {
+  "CPG for code with simple list access" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |import kotlin.collections.mutableListOf
         |
@@ -28,7 +28,7 @@ class CollectionAccessTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "maps" - {
+  "CPG for code with simple map access" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |import kotlin.collections.mutableMapOf
         |
