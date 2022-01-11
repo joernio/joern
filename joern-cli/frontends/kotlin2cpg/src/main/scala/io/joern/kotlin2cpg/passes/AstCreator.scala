@@ -411,7 +411,7 @@ class AstCreator(
   ): AstWithCtx = {
     val className = ktClass.getName()
     val explicitFullName = {
-      val fqName = ktClass.getContainingKtFile.getPackageFqName
+      val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
       fqName + "." + className
     }
     val fullName = typeInfoProvider.fullName(ktClass, explicitFullName)
@@ -1013,7 +1013,7 @@ class AstCreator(
       typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
-    val fullName = containingFile.getPackageFqName() + ":" + nextLambdaName()
+    val fullName = containingFile.getPackageFqName.toString() + ":" + nextLambdaName()
     val signature = erasedSignature(expr.getValueParameters().asScala.toList)
     val lambdaMethod =
       NewMethod()
@@ -1069,7 +1069,7 @@ class AstCreator(
       typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
-    val fullName = containingFile.getPackageFqName() + ":" + nextLambdaName()
+    val fullName = containingFile.getPackageFqName().toString + ":" + nextLambdaName()
     val signature = erasedSignature(expr.getValueParameters().asScala.toList)
 
     // TODO: use typeInfoProvider for the fullName and signature
@@ -1408,8 +1408,8 @@ class AstCreator(
             }
           }
           .flatten
-      val ast = callAst(callNode, args.map(_.ast))
-      AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
+      val ast = callAst(callNode, args.toIndexedSeq.map(_.ast))
+      AstWithCtx(ast, mergedCtx(args.toIndexedSeq.map(_.ctx)))
     } else {
       val ast =
         Ast(
@@ -2211,9 +2211,9 @@ class AstCreator(
         importedNames.get(referencedName).get.fqName
       } else if (nameToClass.contains(expr.getCalleeExpression.getText)) {
         val klass = nameToClass(expr.getCalleeExpression.getText)
-        klass.getContainingKtFile.getPackageFqName + "." + referencedName
+        klass.getContainingKtFile.getPackageFqName.toString + "." + referencedName
       } else {
-        expr.getContainingKtFile.getPackageFqName + "." + referencedName
+        expr.getContainingKtFile.getPackageFqName.toString + "." + referencedName
       }
     }
     val signature =
