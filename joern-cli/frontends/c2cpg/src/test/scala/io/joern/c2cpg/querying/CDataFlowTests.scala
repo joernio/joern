@@ -1018,7 +1018,7 @@ class CDataFlowTests33 extends DataFlowCodeToCpgSuite {
     cpg.call("sink").reachableByFlows(cpg.call("source")).foreach {flow =>
       println(flow)
     }
-    cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 1
+    cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 2
   }
 
 }
