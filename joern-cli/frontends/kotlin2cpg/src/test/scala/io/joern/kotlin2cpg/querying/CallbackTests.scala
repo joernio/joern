@@ -50,4 +50,27 @@ class CallbackTests extends AnyFreeSpec with Matchers {
       cpg.methodRef.size shouldBe 1
     }
   }
+
+  "CPG for code with simple callback usage" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun withCallback(fn: (String)->Unit) {
+      |    fn("FROM_INSIDE")
+      |}
+      |
+      |fun main() {
+      |    println("printing with callback")
+      |    val msg = "FROM_OUTSIDE"
+      |    withCallback { x ->
+      |        println(x)
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain CALL nodes for both `println` invocations" in {
+      cpg.call.code("println.*").size shouldBe 2
+    }
+  }
+
 }
