@@ -99,52 +99,6 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code using the Android SDK defining a class inheriting from the `androidx` namespace" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package com.insecureshop
-        |
-        |import android.os.Bundle
-        |import androidx.appcompat.app.AppCompatActivity
-        |
-        |class ResultActivity : AppCompatActivity() {
-        |
-        |  override fun onCreate(savedInstanceState: Bundle?) {
-        |    super.onCreate(savedInstanceState)
-        |    setResult(-1, intent)
-        |    finish()
-        |  }
-        |}
-        | """.stripMargin)
-
-    "should contain a TYPE_DECL node for `ResultActivity` with the correct FULL_NAME set" in {
-      val List(x) = cpg.typeDecl.isExternal(false).name("ResultActivity").l
-      x.fullName shouldBe "com.insecureshop.ResultActivity"
-      x.inheritsFromTypeFullName shouldBe Seq("androidx.appcompat.app.AppCompatActivity")
-    }
-  }
-
-  "CPG for code using the Android SDK" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |import android.net.http.SslError
-        |import android.webkit.SslErrorHandler
-        |import android.webkit.WebView
-        |import android.webkit.WebViewClient
-        |
-        |class Foo : WebViewClient() {
-        |    override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-        |        handler?.proceed()
-        |    }
-        |}
-        | """.stripMargin)
-
-    "should contain a TYPE_DECL node for `Foo` with the correct inheritsFromTypeFullName value set" in {
-      val List(x) = cpg.typeDecl.isExternal(false).name("Foo").l
-      x.inheritsFromTypeFullName shouldBe List("android.webkit.WebViewClient")
-    }
-  }
-
   "CPG for code with array access" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun foo(): Int {
@@ -184,38 +138,6 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain IDENTIFIER nodes for `this` with the correct typeFullNames set" in {
       val typeFullNames = cpg.identifier.codeExact("this").typeFullName.toSet
       typeFullNames shouldBe Set("mypkg.Foo")
-    }
-  }
-
-  // tests type erasure
-  "CPG for code with call to method of superclass" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |import android.content.Intent
-        |import android.content.IntentFilter
-        |import android.os.Bundle
-        |import android.view.View
-        |import android.app.Activity
-        |
-        |class AboutUsActivity : Activity() {
-        |  fun onSendData(view: View) {
-        |    val userName = "USERNAME"
-        |    val password = "PASSWORD"
-        |
-        |    val intent = Intent("com.insecureshop.action.BROADCAST")
-        |    intent.putExtra("username", userName)
-        |    intent.putExtra("password", password)
-        |    sendBroadcast(intent)
-        |
-        |    textView.text = "InsecureShop is an intentionally designed vulnerable android app built in Kotlin."
-        |  }
-        |}
-        | """.stripMargin)
-
-    "should contain a CALL node for `sendBroadcast` with the correct METHOD_FULL_NAME set" in {
-      val List(c) = cpg.call.code("sendBroadcast.*").l
-      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:kotlin.Unit(android.content.Intent)"
     }
   }
 
