@@ -605,7 +605,7 @@ class AstCreator(
         .order(blockOrder)
         .lineNumber(line(initBlock.getBody))
         .columnNumber(column(initBlock.getBody))
-        .code("PLACEHOLDER_CODE")
+        .code(initBlock.getText)
     val bodyAsts = astsForExpression(initBlock.getBody, scopeContext, blockOrder + 1, blockOrder + 1)
     val blockAst =
       Ast(block)

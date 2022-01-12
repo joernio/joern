@@ -22,6 +22,7 @@ class BlockTests extends AnyFreeSpec with Matchers {
       b.lineNumber shouldBe Some(3)
       b.columnNumber shouldBe Some(33)
       b.typeFullName shouldBe "ANY"
+      b.code should not be ""
     }
   }
 }
