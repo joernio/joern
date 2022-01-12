@@ -145,42 +145,4 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       cpg.method.parameter.filter { p => p.name == null }.method.fullName.l shouldBe Seq()
     }
   }
-
-  "CPG for code with a simple lambda which captures a method parameter passed to the ctor of class inside sealed class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |import kotlin.collections.List
-        |
-        |sealed class X {
-        |  class P(val x: String)
-        |}
-        |
-        |internal open class Z {
-        |  internal inline fun updateState(x: String) {
-        |    println("state updated")
-        |  }
-        |}
-        |
-        |class Y : Z {
-        |  fun foo(bar: String): Int {
-        |      updateState {
-        |        X.P(bar)
-        |      }
-        |     return 0
-        |  }
-        |}
-        |""".stripMargin)
-
-    "should contain a METHOD_REF node" in {
-      cpg.methodRef.size shouldBe 1
-    }
-
-    "should not contain any locals without incoming AST edges" in {
-      cpg.identifier
-        .filter(_._astIn.size == 0)
-        .code
-        .l shouldBe Seq()
-    }
-  }
 }

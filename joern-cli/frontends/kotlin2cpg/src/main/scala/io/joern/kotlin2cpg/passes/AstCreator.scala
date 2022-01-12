@@ -801,7 +801,6 @@ class AstCreator(
       )
     val ast = Ast(block)
       .withChildren(expressions.map(_.ast))
-      .withChildren(identifiersNotMatchingLocals.map { i => Ast(i) })
     val astWithRefEdges =
       identifiersMatchingLocals.foldLeft(ast)((acc, nodes) => {
         acc.withRefEdge(nodes._1, nodes._2)

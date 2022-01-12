@@ -11,35 +11,48 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
 class ValidationTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple method containing simple class with higher-order fn usage" - {
+  "CPG for code with simple method containing if-expression" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
-        |class AClass {
-        |    fun withCallback(fn: (String)->Unit) {
-        |        fn("MESSAGE")
-        |        println("state updated")
-        |    }
-        |
-        |    fun printWithCallback(msg: String): Int {
-        |        println("printing with callback")
-        |        withCallback { x ->
-        |            println("msg: " + msg + " | x: " + x)
-        |        }
-        |        return 0
-        |    }
-        |}
-        |
-        |fun main() {
-        |    val a = AClass()
-        |    a.printWithCallback("DO")
+        |fun main(argc: Int): Int {
+        |   val z: Int = if(argc > 0) argc else 0
+        |   return z
         |}
         |""".stripMargin)
 
     "should not contain IDENTIFIER nodes with more than one incoming AST edge" in {
       cpg.identifier
-        .filter(_.inE.filter{e => e.isInstanceOf[Ast]}.size > 1)
-        .code.l shouldBe List()
+        .filter(_.inE.filter { e => e.isInstanceOf[Ast] }.size > 1)
+        .code
+        .l shouldBe List()
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with simple method containing simple class declaration" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |class AClass {
+      |    fun main(argc: Int): Int {
+      |       val z: Int = if(argc > 0) argc else 0
+      |       return z
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should not contain IDENTIFIER nodes with more than one incoming AST edge" in {
+      cpg.identifier
+        .filter(_.inE.filter { e => e.isInstanceOf[Ast] }.size > 1)
+        .code
+        .l shouldBe List()
     }
 
     "should not contain any IDENTIFIER nodes without inbound AST edges" in {
@@ -69,49 +82,4 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
-
-  "CPG for code with stray identifier" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-          |package com.bugsnag.android
-          |
-          |import com.bugsnag.android.internal.ImmutableConfig
-          |
-          |internal class ClientObservable : BaseObservable() {
-          |    fun postOrientationChange(orientation: String?) {
-          |        updateState { StateEvent.UpdateOrientation(orientation) }
-          |    }
-          |
-          |    fun postNdkInstall(
-          |        conf: ImmutableConfig,
-          |        lastRunInfoPath: String,
-          |        consecutiveLaunchCrashes: Int
-          |    ) {
-          |        updateState {
-          |            StateEvent.Install(
-          |                conf.apiKey,
-          |                conf.enabledErrorTypes.ndkCrashes,
-          |                conf.appVersion,
-          |                conf.buildUuid,
-          |                conf.releaseStage,
-          |                lastRunInfoPath,
-          |                consecutiveLaunchCrashes,
-          |                conf.sendThreads
-          |            )
-          |        }
-          |    }
-          |
-          |    fun postNdkDeliverPending() {
-          |        updateState { StateEvent.DeliverPending }
-          |    }
-          |}
-          |""".stripMargin)
-
-    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
-      cpg.identifier
-        .filter(_._astIn.size == 0)
-        .code
-        .l shouldBe Seq()
-    }
-  }
-
 }
