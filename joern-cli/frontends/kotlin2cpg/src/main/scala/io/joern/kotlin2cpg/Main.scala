@@ -124,6 +124,7 @@ object Main extends App {
           println("The input path provided is not a directory `" + sourceDir + "`. Exiting.")
           System.exit(1)
         }
+        logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
         // TODO: iterate over inferencejars dir and get the paths like so
         val inferenceJarsPaths = Seq(
