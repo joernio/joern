@@ -176,7 +176,6 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     objName.name shouldBe "this"
     objName.code shouldBe "this"
 
-
     argument.code shouldBe "obj"
     argument.order shouldBe 1
     argument.argumentIndex shouldBe 1

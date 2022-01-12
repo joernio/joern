@@ -35,7 +35,7 @@ class CallGraphTests extends JavaSrcCodeToCpgFixture {
     cpg.method.name("main").call.code.toSetMutable shouldBe Set(
       "1 + 2",
       "this.add(1 + 2, 3)",
-      "System.out.println(add(1 + 2, 3))",
+      "System.out.println(add(1 + 2, 3))"
     )
   }
 
