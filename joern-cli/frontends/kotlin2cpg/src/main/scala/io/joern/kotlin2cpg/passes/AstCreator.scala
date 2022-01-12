@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
   NewClosureBinding,
   NewControlStructure,
+  NewFieldIdentifier,
   NewFile,
   NewIdentifier,
   NewImport,
@@ -1431,25 +1432,6 @@ class AstCreator(
       order: Int,
       argIdx: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
-    var selectorOrderCount = 1
-    val argAsts =
-      expr.getSelectorExpression() match {
-        case selectorExpression: KtCallExpression =>
-          withOrder(selectorExpression.getValueArguments()) { case (arg, order) =>
-            val selectorOrder = selectorOrderCount + order + 1
-            val selectorArgIndex = selectorOrder - 1
-            val asts = astsForExpression(
-              arg.getArgumentExpression(),
-              scopeContext,
-              selectorOrder,
-              selectorArgIndex
-            )
-            selectorOrderCount += 1
-            asts
-          }.flatten
-        case _ => List()
-      }
-
     val orderForReceiver = 1
     val argIdxForReceiver = 1
     val receiverExpr = expr.getReceiverExpression()
@@ -1592,6 +1574,34 @@ class AstCreator(
               .columnNumber(column(unhandled))
           Ast(node)
       }
+
+    var selectorOrderCount = 1
+    val argAsts =
+      expr.getSelectorExpression() match {
+        case selectorExpression: KtCallExpression =>
+          withOrder(selectorExpression.getValueArguments()) { case (arg, order) =>
+            val selectorOrder = selectorOrderCount + order + 1
+            val selectorArgIndex = selectorOrder - 1
+            val asts = astsForExpression(
+              arg.getArgumentExpression(),
+              scopeContext,
+              selectorOrder,
+              selectorArgIndex
+            )
+            selectorOrderCount += 1
+            asts
+          }.flatten
+        case typedExpr: KtNameReferenceExpression =>
+          val node =
+            NewFieldIdentifier()
+              .code(typedExpr.getText)
+              .canonicalName(typedExpr.getText)
+              .order(2)
+              .argumentIndex(2)
+          List(AstWithCtx(Ast(node), Context()))
+        case _ => List()
+      }
+
     val methodName = expr.getSelectorExpression.getFirstChild.getText
 
     // TODO: add more test cases for this
