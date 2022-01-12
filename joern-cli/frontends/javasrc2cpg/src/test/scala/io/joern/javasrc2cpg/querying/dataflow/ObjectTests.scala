@@ -108,9 +108,9 @@ class ObjectTests extends JavaDataflowFixture {
       |class Baz {
       |    public String value;
       |
-      |    // public Baz(String s) {
-      |    //     value = s;
-      |    // }
+      |    public Baz(String s) {
+      |        value = s;
+      |    }
       |
       |    public String toString() {
       |        return value;

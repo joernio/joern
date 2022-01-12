@@ -36,4 +36,3 @@
 "free" 1->1
 "scanf" 2->2
 "strcmp" 1->-1 2->-1
-"Foo..<init>:void(java.lang.String)" 0->0 1->0 1->1

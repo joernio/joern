@@ -69,7 +69,6 @@ class Engine(context: EngineContext) {
         case Failure(exception) =>
           numberOfTasksRunning -= 1
           logger.warn(s"SolveTask failed with exception: ${exception}")
-          System.out.println(s"SolveTask failed with exception: ${exception}")
           exception.printStackTrace()
       }
     }

@@ -166,7 +166,6 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     node match {
       case _: Call       => true
       case _: Identifier => true
-      case _: Block      => true
       case _             => false
     }
   }

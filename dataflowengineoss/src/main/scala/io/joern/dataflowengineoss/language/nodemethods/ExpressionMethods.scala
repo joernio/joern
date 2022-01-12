@@ -20,13 +20,6 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     */
   def isDefined(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
-    s.foreach { semantic =>
-      if (semantic.methodFullName == "Foo.<init>:void(java.lang.String)") {
-        println(s"Found semantic for Foo.<init>: ${semantic}")
-        print(s"Looking for node with order ${node.order}: ")
-        println(semantic.mappings.exists { case (_, dstIndex) => dstIndex == node.order })
-      }
-    }
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists { case (_, dstIndex) =>
         dstIndex == node.order

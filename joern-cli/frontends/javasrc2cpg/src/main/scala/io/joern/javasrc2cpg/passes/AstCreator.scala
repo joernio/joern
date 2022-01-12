@@ -1419,8 +1419,6 @@ class AstCreator(filename: String, global: Global) {
         AstWithCtx(ast, ctx.clearConstructors())
       }
 
-      // TODO Check if constructor node in ctx
-
       val declAst = callAst(callNode, Seq(identifierAst) ++ initAstsWithoutConstructorCtx)
 
       val constructorAsts = initializerAstsWithCtx
@@ -1952,7 +1950,7 @@ class AstCreator(filename: String, global: Global) {
     val isStatic = resolvedDecl match {
       case Success(decl) => decl.isStatic
 
-      case _ => true //
+      case _ => true // Assume unresolved call is static to avoid adding erroneous "this".
     }
 
     val typeFullName = maybeScopeType.getOrElse(maybeDeclType.getOrElse("<empty>"))
