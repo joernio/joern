@@ -2,8 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
-
-import java.io.{File => JFile}
+import overflowdb.traversal._
 
 class NamespaceBlockTests extends JavaSrcCodeToCpgFixture {
 
@@ -28,7 +27,7 @@ class NamespaceBlockTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from namespace block to method" in {
-    cpg.namespaceBlock.filename(".*java").typeDecl.method.name.toSet shouldBe Set("foo")
+    cpg.namespaceBlock.filename(".*java").typeDecl.method.name.toSetMutable shouldBe Set("foo")
   }
 
   "should allow traversing from namespace block to type declaration" in {

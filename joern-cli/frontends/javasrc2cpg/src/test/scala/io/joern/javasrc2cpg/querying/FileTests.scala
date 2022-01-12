@@ -32,7 +32,7 @@ class FileTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from file to its namespace blocks" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSet shouldBe Set(
+    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set(
       "b"
     )
   }
@@ -42,11 +42,11 @@ class FileTests extends JavaSrcCodeToCpgFixture {
       .name(".*.java".replace("/", s"\\${JFile.separator}"))
       .method
       .name
-      .toSet shouldBe Set("bar")
+      .toSetMutable shouldBe Set("bar")
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set(
+    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set(
       "Foo"
     )
   }

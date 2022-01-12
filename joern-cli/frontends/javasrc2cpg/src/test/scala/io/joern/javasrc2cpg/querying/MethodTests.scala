@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 import java.io.File
 
@@ -39,7 +40,7 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing to parameters" in {
-    cpg.method.name("foo").parameter.name.toSet shouldBe Set("param1", "param2")
+    cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("param1", "param2")
   }
 
   "should allow traversing to methodReturn" in {
