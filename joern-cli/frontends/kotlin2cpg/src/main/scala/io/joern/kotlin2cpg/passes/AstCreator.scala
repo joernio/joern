@@ -724,6 +724,7 @@ class AstCreator(
       fileInfo: FileInfo,
       typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
+    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
     val block =
       NewBlock()
         .order(order)
@@ -731,7 +732,7 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .code(expr.getStatements().asScala.map(_.getText).mkString("\n"))
-        .typeFullName(TypeConstants.any)
+        .typeFullName(typeFullName)
 
     var orderRemainder = 0
     var locals = List[NewLocal]()

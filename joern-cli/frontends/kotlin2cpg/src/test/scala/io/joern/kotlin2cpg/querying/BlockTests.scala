@@ -21,7 +21,7 @@ class BlockTests extends AnyFreeSpec with Matchers {
       val List(b) = cpg.method.block.take(1).l
       b.lineNumber shouldBe Some(3)
       b.columnNumber shouldBe Some(33)
-      b.typeFullName shouldBe "ANY"
+      b.typeFullName shouldBe "kotlin.Nothing"
       b.code should not be ""
     }
   }
