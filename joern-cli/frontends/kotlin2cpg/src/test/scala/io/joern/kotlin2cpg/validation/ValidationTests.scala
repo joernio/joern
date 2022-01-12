@@ -49,6 +49,26 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
+  "CPG for code with simple lazy blocks" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |import java.nio.file.Files
+      |
+      |fun main() {
+      |    val customDir = Files.createTempDirectory("custom").toFile()
+      |    val foo = lazy { customDir }
+      |    println(foo)
+      |}
+      |""".stripMargin)
+
+    "should not contain any identifiers without an ast parent" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
 
   "CPG for code with stray identifier" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""

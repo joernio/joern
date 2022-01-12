@@ -8,6 +8,8 @@ import overflowdb.traversal.jIteratortoTraversal
 
 class LazyBlocksTests extends AnyFreeSpec with Matchers {
 
+  // TODO: add test cases for lazy properties as well
+
   "CPG for code with simple lazy blocks" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
@@ -21,11 +23,6 @@ class LazyBlocksTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should not contain any identifiers without an ast parent" in {
-      cpg.identifier
-        .filter(_._astIn.size == 0)
-        .code
-        .l shouldBe Seq()
-    }
+    // TODO: add test cases
   }
 }
