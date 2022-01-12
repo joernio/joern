@@ -140,7 +140,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
               val edgesToAdd = in(node).toList.flatMap { inDef =>
                 numberToNode(inDef) match {
                   case identifier: Identifier => Some(identifier)
-                  case _ => None
+                  case _                      => None
                 }
               }
               edgesToAdd.foreach { inNode =>
