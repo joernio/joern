@@ -11,6 +11,45 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
 class ValidationTests extends AnyFreeSpec with Matchers {
+  "CPG for code with simple method containing simple class with higher-order fn usage" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |class AClass {
+        |    fun withCallback(fn: (String)->Unit) {
+        |        fn("MESSAGE")
+        |        println("state updated")
+        |    }
+        |
+        |    fun printWithCallback(msg: String): Int {
+        |        println("printing with callback")
+        |        withCallback { x ->
+        |            println("msg: " + msg + " | x: " + x)
+        |        }
+        |        return 0
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val a = AClass()
+        |    a.printWithCallback("DO")
+        |}
+        |""".stripMargin)
+
+    "should not contain IDENTIFIER nodes with more than one incoming AST edge" in {
+      cpg.identifier
+        .filter(_.inE.filter{e => e.isInstanceOf[Ast]}.size > 1)
+        .code.l shouldBe List()
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
   "CPG for code with stray identifier" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
           |package com.bugsnag.android
