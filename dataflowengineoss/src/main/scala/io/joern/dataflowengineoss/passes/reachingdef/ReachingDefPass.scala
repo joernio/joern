@@ -153,6 +153,8 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
             case Some(node: Call) =>
               addEdge(node, call, nodeToEdgeLabel(node))
               addEdge(block, call)
+
+            case _ => // Do nothing
           }
         }
       }
