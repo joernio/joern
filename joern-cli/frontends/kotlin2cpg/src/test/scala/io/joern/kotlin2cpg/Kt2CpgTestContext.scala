@@ -26,64 +26,6 @@ import io.shiftleft.utils.ProjectRoot
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class EmptyTypeInfoProvider extends TypeInfoProvider {
-  def containingDeclType(expr: KtQualifiedExpression, or: String): String = {
-    "EMPTY_TYPE"
-  }
-
-  def returnType(expr: KtNamedFunction, or: String): String = {
-    "EMPTY_TYPE"
-  }
-
-  def expressionType(expr: KtExpression, or: String): String = {
-    "EMPTY_TYPE"
-  }
-
-  def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String] = {
-    Seq("EMPTY_TYPE")
-  }
-
-  def parameterType(expr: KtParameter, or: String): String = {
-    "EMPTY_TYPE"
-  }
-
-  def propertyType(expr: KtProperty, or: String): String = {
-    "EMPTY_TYPE"
-  }
-
-  def fullName(expr: KtClassOrObject, or: String): String = {
-    "EMPTY"
-  }
-
-  def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String) = {
-    ("METHOD_FULL_NAME", "SIGNATURE")
-  }
-
-  def fullNameWithSignature(expr: KtCallExpression, or: (String, String)): (String, String) = {
-    ("METHOD_FULL_NAME", "SIGNATURE")
-  }
-
-  def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String) = {
-    ("METHOD_FULL_NAME", "SIGNATURE")
-  }
-
-  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
-    ("METHOD_FULL_NAME", "SIGNATURE")
-  }
-
-  def fullName(expr: KtTypeAlias, or: String): String = {
-    "FULL_NAME"
-  }
-
-  def aliasTypeFullName(expr: KtTypeAlias, or: String): String = {
-    "ALIAS_TYPE_FULL_NAME"
-  }
-
-  def typeFullName(expr: KtNameReferenceExpression, or: String): String = {
-    "TYPE_FULL_NAME"
-  }
-}
-
 object Kt2CpgTestContext {
   def newContext: Kt2CpgTestContext = {
     new Kt2CpgTestContext()

@@ -191,32 +191,5 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*containsKey.*").l
       m.fullName shouldBe "kotlin.collections.Map.containsKey:kotlin.Boolean(kotlin.Any)"
     }
-
-    // TODO: add more tests
-  }
-
-  // https://developer.android.com/reference/android/R
-  "CPG for code with use of Android's `R`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |import android.app.Activity
-        |import android.os.Bundle
-        |
-        |class ProductListActivity : Activity() {
-        |  override fun onCreate(savedInstanceState: Bundle?) {
-        |    super.onCreate(savedInstanceState)
-        |    // `R.layout.placeholder_custom_view` won't have any type info;
-        |    // the `R` derived props are only available with build info which currently is not taken into account
-        |    // TODO: check if it is possible to specify the `R` jar or content or whatever to get that info if necessary
-        |    setContentView(R.layout.placeholder_custom_view)
-        |  }
-        |}
-        |""".stripMargin)
-
-    "should not contain any CALL nodes which are missing a `:` character in their MFNs" in {
-      val List(c) = cpg.call.code("setContentView.*").l
-      c.methodFullName.contains(":") shouldBe true
-    }
   }
 }

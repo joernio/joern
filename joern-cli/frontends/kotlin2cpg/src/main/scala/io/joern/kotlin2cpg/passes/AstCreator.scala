@@ -605,7 +605,7 @@ class AstCreator(
         .order(blockOrder)
         .lineNumber(line(initBlock.getBody))
         .columnNumber(column(initBlock.getBody))
-        .code("PLACEHOLDER_CODE")
+        .code(initBlock.getText)
     val bodyAsts = astsForExpression(initBlock.getBody, scopeContext, blockOrder + 1, blockOrder + 1)
     val blockAst =
       Ast(block)
@@ -724,6 +724,7 @@ class AstCreator(
       fileInfo: FileInfo,
       typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
+    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
     val block =
       NewBlock()
         .order(order)
@@ -731,7 +732,7 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .code(expr.getStatements().asScala.map(_.getText).mkString("\n"))
-        .typeFullName(TypeConstants.any)
+        .typeFullName(typeFullName)
 
     var orderRemainder = 0
     var locals = List[NewLocal]()
@@ -798,11 +799,8 @@ class AstCreator(
         childrenCtx.lambdaAsts,
         childrenCtx.closureBindingInfo
       )
-    val ast =
-      Ast(block)
-        .withChildren(expressions.map(_.ast))
-        .withChildren(identifiersMatchingLocals.map { i => Ast(i._1) })
-        .withChildren(identifiersNotMatchingLocals.map { i => Ast(i) })
+    val ast = Ast(block)
+      .withChildren(expressions.map(_.ast))
     val astWithRefEdges =
       identifiersMatchingLocals.foldLeft(ast)((acc, nodes) => {
         acc.withRefEdge(nodes._1, nodes._2)
