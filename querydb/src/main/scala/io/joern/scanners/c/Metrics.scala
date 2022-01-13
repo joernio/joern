@@ -16,7 +16,7 @@ object Metrics extends QueryBundle {
       description = s"This query identifies functions with more than $n formal parameters",
       score = 1.0,
       withStrRep({ cpg =>
-        cpg.method.internal.filter(_.parameter.size > n)
+        cpg.method.internal.filter(_.parameter.size > n).nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),
       codeExamples = CodeExamples(
@@ -86,7 +86,7 @@ object Metrics extends QueryBundle {
       description = s"This query identifies functions that are more than $n lines long",
       score = 1.0,
       withStrRep({ cpg =>
-        cpg.method.internal.filter(_.numberOfLines > n)
+        cpg.method.internal.filter(_.numberOfLines > n).nameNot("<global>")
       }),
       tags = List(QueryTags.metrics),
       codeExamples = CodeExamples(
