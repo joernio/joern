@@ -55,7 +55,6 @@ import org.jetbrains.kotlin.psi.{
   KtDoWhileExpression,
   KtDotQualifiedExpression,
   KtExpression,
-  KtFile,
   KtForExpression,
   KtIfExpression,
   KtImportDirective,
@@ -86,7 +85,6 @@ import org.jetbrains.kotlin.psi.{
   KtWhenExpression,
   KtWhileExpression
 }
-import org.jetbrains.kotlin.KtNodeTypes
 import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.types.{BindingKinds, TypeInfoProvider, Constants => TypeConstants}
@@ -480,18 +478,10 @@ class AstCreator(
       methodAsts.map { ast =>
         // TODO: add a try catch here
         val methodNode = ast.root.get.asInstanceOf[NewMethod]
-        val signature = {
-          if (methodNode.signature.endsWith("()")) {
-            "ANY()"
-          } else {
-            val numParams = methodNode.signature.count(_ == ',')
-            "ANY(ANY" + ",ANY" * (numParams - 1) + ")"
-          }
-        }
         val node =
           NewBinding()
             .name(methodNode.name)
-            .signature(signature)
+            .signature(methodNode.signature)
         BindingInfo(
           node,
           List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF))
@@ -1432,9 +1422,10 @@ class AstCreator(
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
     val bindingKind = typeInfoProvider.bindingKind(expr)
     val isStaticCall = bindingKind == BindingKinds.Static
+    val isDynamicCall = bindingKind == BindingKinds.Dynamic
 
     val orderForReceiver = 1
-    val argIdxForReceiver = 1
+    val argIdxForReceiver = if (isDynamicCall) 0 else if (isStaticCall) 1 else 1
     val receiverExpr = expr.getReceiverExpression()
     val receiverAst =
       receiverExpr match {
@@ -1576,7 +1567,7 @@ class AstCreator(
           Ast(node)
       }
 
-    var selectorOrderCount = 1
+    var selectorOrderCount = argIdxForReceiver
     val argAsts =
       expr.getSelectorExpression() match {
         case selectorExpression: KtCallExpression =>
@@ -1604,8 +1595,6 @@ class AstCreator(
           List(AstWithCtx(Ast(node), Context()))
         case _ => List()
       }
-
-    val methodName = expr.getSelectorExpression.getFirstChild.getText
 
     // TODO: add more test cases for this
     val astDerivedMethodFullName = {
@@ -1643,6 +1632,13 @@ class AstCreator(
     val retType = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(retType)
 
+    val dispatchType =
+      if (bindingKind == BindingKinds.Dynamic) {
+        DispatchTypes.DYNAMIC_DISPATCH
+      } else {
+        DispatchTypes.STATIC_DISPATCH
+      }
+    val methodName = expr.getSelectorExpression.getFirstChild.getText
     val callNode =
       NewCall()
         .order(order)
@@ -1653,7 +1649,7 @@ class AstCreator(
         .typeFullName(retType)
         .name(methodName)
         .methodFullName(fullNameWithSig._1)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .dispatchType(dispatchType)
         .signature(fullNameWithSig._2)
     val receiverNode = receiverAst.root.get
     val finalAst =
@@ -2150,11 +2146,6 @@ class AstCreator(
           Some(Constants.unknownOperator)
       }
     }
-    val name = if (operatorOption.isDefined) {
-      operatorOption.get
-    } else {
-      expr.getName
-    }
     val fullNameWithSignature =
       if (operatorOption.isDefined) {
         (operatorOption.get, TypeConstants.any)
@@ -2170,6 +2161,14 @@ class AstCreator(
         fullNameWithSignature._2
       }
     val expressionType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val name = if (operatorOption.isDefined) {
+      operatorOption.get
+    } else if (expr.getChildren().toList.size >= 2) {
+      expr.getChildren().toList(1).getText
+    } else {
+      expr.getName
+    }
+    // TODO: DYNAMIC_DISPATCH check
     val callNode =
       NewCall()
         .name(name)

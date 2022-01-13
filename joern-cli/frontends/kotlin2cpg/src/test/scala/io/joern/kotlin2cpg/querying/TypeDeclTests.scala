@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Binding
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.freespec.AnyFreeSpec
@@ -87,6 +88,30 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
       cpg.call.codeExact("println(\"initBlock2\")").size shouldBe 1
     }
      */
+  }
+
+  "CPG for code with simple class declaration and usage" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |class Foo {
+        |  fun add1(x: Int): Int {
+        |    return x + 1
+        |  }
+        |}
+        |
+        |fun main(argc: Int): Int {
+        |  val x = Foo()
+        |  val y = x.add1(argc)
+        |  return y
+        |}
+        |""".stripMargin)
+
+    "should contain a BINDING node for X with the correct props set" in {
+      val List(b) = cpg.all.collect { case b: Binding => b }.l
+      b.name shouldBe "add1"
+      b.signature shouldBe "kotlin.Int(kotlin.Int)"
+    }
   }
 
   "CPG for code with usage of setter of simple user-defined class" - {

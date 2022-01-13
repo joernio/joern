@@ -82,4 +82,36 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
+
+  "CPG for code call to DSL-like fn" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |import org.http4k.core.HttpHandler
+      |import org.http4k.core.Method.GET
+      |import org.http4k.core.Response
+      |import org.http4k.core.Request
+      |import org.http4k.core.Status.Companion.OK
+      |import org.http4k.routing.bind
+      |import org.http4k.routing.to
+      |import org.http4k.routing.routes
+      |import org.http4k.server.SunHttp
+      |import org.http4k.server.asServer
+      |
+      |import java.io.BufferedReader
+      |import java.io.InputStreamReader
+      |import java.lang.StringBuilder
+      |
+      |fun HelloWorld(): HttpHandler {
+      |   val x = Response(OK).body("ok)
+      |   return routes(
+      |        "/health" bind GET to { Response(OK).body("ok") },
+      |   )
+      |}
+      |""".stripMargin)
+
+    "should not contain any CALL nodes with `null` in their NAME prop" in {
+      cpg.call.filter { c => c.name == null }.code.l shouldBe List()
+    }
+  }
 }

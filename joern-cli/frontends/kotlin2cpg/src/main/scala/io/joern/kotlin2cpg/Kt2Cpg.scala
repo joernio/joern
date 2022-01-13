@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg
 
 import org.jetbrains.kotlin.psi.KtFile
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.kotlin2cpg.types.TypeInfoProvider

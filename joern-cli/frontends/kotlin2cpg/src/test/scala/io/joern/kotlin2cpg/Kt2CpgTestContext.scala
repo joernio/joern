@@ -1,30 +1,15 @@
 package io.joern.kotlin2cpg
 
-import io.joern.kotlin2cpg.types.{CompilerAPI, InferenceSourcesPicker, KotlinTypeInfoProvider, TypeInfoProvider}
+import io.joern.kotlin2cpg.types.{CompilerAPI, KotlinTypeInfoProvider}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
-import org.jetbrains.kotlin.psi.{
-  KtBinaryExpression,
-  KtCallExpression,
-  KtClass,
-  KtClassOrObject,
-  KtDotQualifiedExpression,
-  KtElement,
-  KtExpression,
-  KtNameReferenceExpression,
-  KtNamedFunction,
-  KtObjectDeclaration,
-  KtParameter,
-  KtProperty,
-  KtQualifiedExpression,
-  KtTypeAlias,
-  KtValueArgument
-}
 import better.files._
 import io.shiftleft.utils.ProjectRoot
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+
+import io.shiftleft.semanticcpg.language._
 
 object Kt2CpgTestContext {
   def newContext: Kt2CpgTestContext = {
