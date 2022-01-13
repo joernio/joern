@@ -25,7 +25,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("x86_64.bin")
+    buildCpgForBin("linux/x86/64/x86_64.bin")
   }
 
   "The data flow should contain " in {

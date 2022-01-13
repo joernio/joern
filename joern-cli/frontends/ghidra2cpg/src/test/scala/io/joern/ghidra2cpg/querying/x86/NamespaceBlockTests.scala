@@ -8,7 +8,7 @@ class NamespaceBlockTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("x86_64.bin")
+    buildCpgForBin("linux/x86/64/x86_64.bin")
   }
 
   // The fuzzyC parser currently just ignores namespaces. We place symbols

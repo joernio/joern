@@ -7,7 +7,7 @@ class LiteralNodeTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("x86_64.bin")
+    buildCpgForBin("linux/x86/64/x86_64.bin")
   }
 
   "should contain exactly one literal node containing \"TEST\" with all mandatory fields set" in {

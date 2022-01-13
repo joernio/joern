@@ -25,7 +25,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("t1_to_t9")
+    buildCpgForBin("linux/mips/t1_to_t9")
   }
 
   implicit val resolver: ICallResolver = NoResolve
