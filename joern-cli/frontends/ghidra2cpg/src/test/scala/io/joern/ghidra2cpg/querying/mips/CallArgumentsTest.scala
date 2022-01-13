@@ -7,7 +7,7 @@ class CallArgumentsTest extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("mips/mips32_memcpy_test.bin")
+    buildCpgForBin("linux/mips/mips32_memcpy_test.bin")
   }
   /*
     // Test code is:

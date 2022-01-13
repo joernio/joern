@@ -7,7 +7,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("mips/backdoor.mips")
+    buildCpgForBin("linux/mips/backdoor.mips")
   }
 
   "CPG for binary of a simple program should not contain any CALL nodes with more than two arguments and the same ARGUMENT_INDEX value" in {
