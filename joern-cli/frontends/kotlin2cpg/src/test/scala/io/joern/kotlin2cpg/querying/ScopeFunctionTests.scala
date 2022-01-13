@@ -40,10 +40,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "ANY()"
     }
-
-    "should contain a CALL with node one RECEIVER" in {
-      cpg.call.where(_.argument.isMethodRef).receiver.size shouldBe 1
-    }
   }
 
   "CPG for code with simple `run` scope function" - {
@@ -79,10 +75,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "ANY()"
     }
-
-    "should contain a CALL with one RECEIVER" in {
-      cpg.call.where(_.argument.isMethodRef).receiver.size shouldBe 1
-    }
   }
 
   "CPG for code with simple `also` scope function" - {
@@ -117,10 +109,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "ANY()"
-    }
-
-    "should contain a CALL with one RECEIVER" in {
-      cpg.call.where(_.argument.isMethodRef).receiver.size shouldBe 1
     }
   }
 

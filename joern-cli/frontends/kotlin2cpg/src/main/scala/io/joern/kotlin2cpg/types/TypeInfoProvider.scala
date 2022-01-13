@@ -33,7 +33,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   NoScopeRecordCliBindingTrace
 }
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
-import org.jetbrains.kotlin.resolve.{BindingContext}
+import org.jetbrains.kotlin.resolve.BindingContext
 
 import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
@@ -44,6 +44,11 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 object Constants {
   val kotlinAny = "kotlin.Any"
   val any = "ANY"
+}
+
+object BindingKinds extends Enumeration {
+  type BindingKind = Value
+  val Unknown, Static, Dynamic = Value
 }
 
 trait TypeInfoProvider {
@@ -57,6 +62,7 @@ trait TypeInfoProvider {
   def fullName(expr: KtTypeAlias, or: String): String
   def aliasTypeFullName(expr: KtTypeAlias, or: String): String
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
+  def bindingKind(expr: KtQualifiedExpression): BindingKinds.BindingKind
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
@@ -485,6 +491,36 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
         or
     }
     or
+  }
+
+  def bindingKind(expr: KtQualifiedExpression): BindingKinds.BindingKind = {
+    val selectorExpr = expr.getSelectorExpression
+
+    selectorExpr match {
+      case call: KtCallExpression =>
+        val firstChild = call.getFirstChild
+        if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
+          val asExpr = firstChild.asInstanceOf[KtExpression]
+          val y = bindingContext.get(BindingContext.CALL, asExpr)
+          if (y == null) {
+            logger.debug("Retrieved empty binding context info for `" + expr.getName + "`.")
+            return BindingKinds.Unknown
+          }
+          val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
+          if (z != null) {
+            z.getResultingDescriptor match {
+              case fnDescriptor: FunctionDescriptor =>
+                val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
+                return if (isStatic) BindingKinds.Static else BindingKinds.Dynamic
+              case other: Any =>
+                logger.debug("Unhandled type info fetching for class `" + other.getClass + "`")
+                return BindingKinds.Unknown
+            }
+          }
+        }
+      case _ =>
+    }
+    BindingKinds.Unknown
   }
 
   def fullNameWithSignature(
