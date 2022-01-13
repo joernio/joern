@@ -109,9 +109,9 @@ class CallTests extends AnyFreeSpec with Matchers {
         |}
         |
         |fun main(argc: Int): Int {
-        | val x = Foo()
-        | val y = x.add1(argc)
-        | return y
+        |  val x = Foo()
+        |  val y = x.add1(argc)
+        |  return y
         |}
         |""".stripMargin)
 
@@ -120,21 +120,30 @@ class CallTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call("Foo").l
       p.methodFullName shouldBe "mypkg.Foo.<init>:mypkg.Foo()"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
       p.signature shouldBe "mypkg.Foo()"
       p.code shouldBe "Foo()"
-      p.columnNumber shouldBe Some(9)
+      p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(10)
     }
 
-    "should contain a CALL node for `add1` with the correct fields" in {
+    "should contain a CALL node for `add1` with the correct props set" in {
       val List(p) = cpg.call("add1").l
       p.argument.size shouldBe 2
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
       p.code shouldBe "x.add1(argc)"
-      p.columnNumber shouldBe Some(9)
+      p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(11)
       p.methodFullName shouldBe "mypkg.Foo.add1:kotlin.Int(kotlin.Int)"
       p.signature shouldBe "kotlin.Int(kotlin.Int)"
+      p.typeFullName shouldBe "kotlin.Int"
+
+      val List(firstArg, secondArg) = cpg.call("add1").argument.l
+      firstArg.code shouldBe "x"
+      firstArg.argumentIndex shouldBe 0
+
+      secondArg.code shouldBe "argc"
+      secondArg.argumentIndex shouldBe 1
     }
 
     "should contain a call node for `add1` with a receiver set" in {
@@ -187,6 +196,24 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call("Gson.*").l
       c.methodFullName shouldBe "com.google.gson.Gson.<init>:com.google.gson.Gson()"
       c.signature shouldBe "com.google.gson.Gson()"
+    }
+  }
+
+  "CPG for code with invocation of extension function from stdlib" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |  println(1.toString())
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the `toString` invocation with the correct props set" in {
+      val List(c) = cpg.call.code("1.*toString.*").l
+      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.signature shouldBe "kotlin.String()"
+      c.typeFullName shouldBe "kotlin.String"
     }
   }
 }

@@ -3,6 +3,7 @@ package io.joern.kotlin2cpg.types
 import com.intellij.util.ReflectionUtil
 import com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{
+  CallableDescriptor,
   ClassDescriptor,
   DeclarationDescriptor,
   FunctionDescriptor,

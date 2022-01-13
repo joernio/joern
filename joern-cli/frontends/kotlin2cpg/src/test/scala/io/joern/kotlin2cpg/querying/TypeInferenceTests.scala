@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -217,6 +218,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullNames set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
       c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
     }
 
     "should contain IDENTIFIER nodes for `prog` with the correct typeFullNames set" in {
@@ -236,11 +238,13 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `cpx.pathParam` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("ctx.pathParam.*").l
       c.methodFullName shouldBe "io.javalin.http.Context.pathParam:kotlin.String(kotlin.String)"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
     }
 
     "should contain a CALL node for `ctx.body` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("ctx.header.*").l
       c.methodFullName shouldBe "io.javalin.http.Context.header:kotlin.String(kotlin.String)"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
     }
 
     "should contain IDENTIFIER nodes for `app` with the correct typeFullNames set" in {
@@ -251,6 +255,56 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain IDENTIFIER nodes for `invocation` with the correct typeFullNames set" in {
       val typeFullNames = cpg.identifier.codeExact("invocation").typeFullName.toSet
       typeFullNames shouldBe Set("kotlin.String")
+    }
+  }
+
+  "CPG for code with CALL to `super`" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import android.content.Intent
+        |import android.content.IntentFilter
+        |import android.os.Bundle
+        |import android.view.View
+        |import android.app.Activity
+        |
+        |class AboutUsActivity : Activity() {
+        |    override fun onCreate(savedInstanceState: Bundle?) {
+        |        super.onCreate(savedInstanceState)
+        |    }
+        |}
+        | """.stripMargin)
+
+    /* TODO: change structure to the following:
+    - triggered by a conversation with @ml86 & @bbrehm
+    ```
+    CALL
+       MFN -> android.Activity.onCreate:void(Bundle)
+       DT  -> STATIC_DISPATCH
+       ARG_IDX_0 ->
+          IDENTIFIER
+             NAME -> THIS
+             CODE -> SUPER
+       ARG_IDX_1 ->
+          IDENTIFIER
+             NAME -> saveInstanceState
+             CODE -> saveInstanceState
+     ```
+     */
+    "should contain a CALL node for `onCreate` with the correct props set" in {
+      def createCall = cpg.call.code(".*onCreate.*")
+
+      val List(c) = createCall.l
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
+      c.argument.size shouldBe 2
+
+      val List(firstArg, secondArg) = createCall.argument.l
+      firstArg.code shouldBe "super"
+      firstArg.argumentIndex shouldBe 0
+
+      secondArg.code shouldBe "savedInstanceState"
+      secondArg.argumentIndex shouldBe 1
     }
   }
 

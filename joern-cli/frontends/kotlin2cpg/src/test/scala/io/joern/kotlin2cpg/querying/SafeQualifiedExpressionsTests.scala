@@ -26,7 +26,7 @@ class SafeQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(2)
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
     }
 
     "should contain a CALL node for `r?.exec.*` and `r.exec.*` with the same METHOD_FULL_NAME" in {

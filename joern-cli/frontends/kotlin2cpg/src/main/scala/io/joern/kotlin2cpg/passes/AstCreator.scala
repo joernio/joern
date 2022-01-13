@@ -55,7 +55,6 @@ import org.jetbrains.kotlin.psi.{
   KtDoWhileExpression,
   KtDotQualifiedExpression,
   KtExpression,
-  KtFile,
   KtForExpression,
   KtIfExpression,
   KtImportDirective,
@@ -86,7 +85,6 @@ import org.jetbrains.kotlin.psi.{
   KtWhenExpression,
   KtWhileExpression
 }
-import org.jetbrains.kotlin.KtNodeTypes
 import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.types.{BindingKinds, TypeInfoProvider, Constants => TypeConstants}
@@ -475,8 +473,6 @@ class AstCreator(
         val withScopeCtx = astForMethod(method, scopeCtx, order)
         withScopeCtx.ast
       }
-
-
 
     val bindingsInfo =
       methodAsts.map { ast =>
@@ -1426,9 +1422,10 @@ class AstCreator(
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
     val bindingKind = typeInfoProvider.bindingKind(expr)
     val isStaticCall = bindingKind == BindingKinds.Static
+    val isDynamicCall = bindingKind == BindingKinds.Dynamic
 
     val orderForReceiver = 1
-    val argIdxForReceiver = 1
+    val argIdxForReceiver = if (isDynamicCall) 0 else if (isStaticCall) 1 else 1
     val receiverExpr = expr.getReceiverExpression()
     val receiverAst =
       receiverExpr match {
@@ -1570,7 +1567,7 @@ class AstCreator(
           Ast(node)
       }
 
-    var selectorOrderCount = 1
+    var selectorOrderCount = argIdxForReceiver
     val argAsts =
       expr.getSelectorExpression() match {
         case selectorExpression: KtCallExpression =>
@@ -1598,8 +1595,6 @@ class AstCreator(
           List(AstWithCtx(Ast(node), Context()))
         case _ => List()
       }
-
-    val methodName = expr.getSelectorExpression.getFirstChild.getText
 
     // TODO: add more test cases for this
     val astDerivedMethodFullName = {
@@ -1637,6 +1632,13 @@ class AstCreator(
     val retType = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(retType)
 
+    val dispatchType =
+      if (bindingKind == BindingKinds.Dynamic) {
+        DispatchTypes.DYNAMIC_DISPATCH
+      } else {
+        DispatchTypes.STATIC_DISPATCH
+      }
+    val methodName = expr.getSelectorExpression.getFirstChild.getText
     val callNode =
       NewCall()
         .order(order)
@@ -1647,7 +1649,7 @@ class AstCreator(
         .typeFullName(retType)
         .name(methodName)
         .methodFullName(fullNameWithSig._1)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .dispatchType(dispatchType)
         .signature(fullNameWithSig._2)
     val receiverNode = receiverAst.root.get
     val finalAst =
