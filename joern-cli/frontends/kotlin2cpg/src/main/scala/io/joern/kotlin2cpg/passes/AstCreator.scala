@@ -89,7 +89,7 @@ import org.jetbrains.kotlin.psi.{
 import org.jetbrains.kotlin.KtNodeTypes
 import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{TypeInfoProvider, Constants => TypeConstants}
+import io.joern.kotlin2cpg.types.{BindingKinds, TypeInfoProvider, Constants => TypeConstants}
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -1430,6 +1430,9 @@ class AstCreator(
       order: Int,
       argIdx: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
+    val bindingKind = typeInfoProvider.bindingKind(expr)
+    val isStaticCall = bindingKind == BindingKinds.Static
+
     val orderForReceiver = 1
     val argIdxForReceiver = 1
     val receiverExpr = expr.getReceiverExpression()
@@ -1578,8 +1581,8 @@ class AstCreator(
       expr.getSelectorExpression() match {
         case selectorExpression: KtCallExpression =>
           withOrder(selectorExpression.getValueArguments()) { case (arg, order) =>
-            val selectorOrder = selectorOrderCount + order + 1
-            val selectorArgIndex = selectorOrder - 1
+            val selectorOrder = if (isStaticCall) order else selectorOrderCount + order + 1
+            val selectorArgIndex = if (isStaticCall) order else selectorOrder - 1
             val asts = astsForExpression(
               arg.getArgumentExpression(),
               scopeContext,
@@ -1590,12 +1593,14 @@ class AstCreator(
             asts
           }.flatten
         case typedExpr: KtNameReferenceExpression =>
+          val order = if (isStaticCall) 1 else 2
+          val argIdx = if (isStaticCall) 1 else 2
           val node =
             NewFieldIdentifier()
               .code(typedExpr.getText)
               .canonicalName(typedExpr.getText)
-              .order(2)
-              .argumentIndex(2)
+              .order(order)
+              .argumentIndex(argIdx)
           List(AstWithCtx(Ast(node), Context()))
         case _ => List()
       }
@@ -1651,22 +1656,28 @@ class AstCreator(
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .signature(fullNameWithSig._2)
     val receiverNode = receiverAst.root.get
-    val ast =
-      Ast(callNode)
-        .withChild(receiverAst)
-        .withArgEdge(callNode, receiverNode)
-        .withChildren(argAsts.map(_.ast))
-        .withArgEdges(callNode, argAsts.map(_.ast.root.get))
-
-    val astWithReceiver =
-      if (argAsts.size == 1 && argAsts(0).ast.root.get.isInstanceOf[NewMethodRef]) {
-        ast
-          .withReceiverEdge(callNode, argAsts(0).ast.root.get)
+    val finalAst =
+      if (isStaticCall) {
+        Ast(callNode)
+          .withChild(receiverAst)
+          .withChildren(argAsts.map(_.ast))
+          .withArgEdges(callNode, argAsts.map(_.ast.root.get))
       } else {
-        ast
-          .withReceiverEdge(callNode, receiverNode)
+        val ast =
+          Ast(callNode)
+            .withChild(receiverAst)
+            .withArgEdge(callNode, receiverNode)
+            .withChildren(argAsts.map(_.ast))
+            .withArgEdges(callNode, argAsts.map(_.ast.root.get))
+        if (argAsts.size == 1 && argAsts(0).ast.root.get.isInstanceOf[NewMethodRef]) {
+          ast
+            .withReceiverEdge(callNode, argAsts(0).ast.root.get)
+        } else {
+          ast
+            .withReceiverEdge(callNode, receiverNode)
+        }
       }
-    AstWithCtx(astWithReceiver, mergedCtx(argAsts.map(_.ctx)))
+    AstWithCtx(finalAst, mergedCtx(argAsts.map(_.ctx)))
   }
 
   def astForBreak(expr: KtBreakExpression, scopeContext: ScopeContext, order: Int)(implicit

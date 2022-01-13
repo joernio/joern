@@ -2,6 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, NewIdentifier, NewLiteral}
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -140,6 +142,43 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
     "should not contain any CALL nodes which are missing a `:` character in their MFNs" in {
       val List(c) = cpg.call.code("setContentView.*").l
       c.methodFullName.contains(":") shouldBe true
+    }
+  }
+
+  "CPG for code with use of Android log" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |import android.app.Activity
+      |import android.os.Bundle
+      |import android.util.Log
+      |
+      |class MyActivity : Activity() {
+      |  override fun onCreate(savedInstanceState: Bundle?) {
+      |    super.onCreate(savedInstanceState)
+      |    var message = "MESSAGE"
+      |    message.plus("_2")
+      |    Log.d("PREFIX", username)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node for `Log.d` with the correct props set" in {
+      val List(c) = cpg.call.methodFullName(".*Log.*").l
+      c.methodFullName shouldBe "android.util.Log.d:kotlin.Int(kotlin.String,kotlin.String)"
+      c.argument.size shouldBe 2
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+
+      val List(firstArg: Literal, secondArg: Identifier) = cpg.call.methodFullName(".*Log.*").argument.l
+      firstArg.code shouldBe "\"PREFIX\""
+      firstArg.argumentIndex shouldBe 1
+      firstArg.lineNumber shouldBe Some(12)
+      firstArg.columnNumber shouldBe Some(10)
+
+      secondArg.code shouldBe "username"
+      secondArg.argumentIndex shouldBe 2
+      secondArg.lineNumber shouldBe Some(12)
+      secondArg.columnNumber shouldBe Some(20)
     }
   }
 }
