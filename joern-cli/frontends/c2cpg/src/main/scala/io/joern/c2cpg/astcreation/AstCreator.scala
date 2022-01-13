@@ -62,12 +62,16 @@ class AstCreator(
       path: String,
       iASTTranslationUnit: IASTTranslationUnit
   ): Ast = {
+    val allDecls = iASTTranslationUnit.getDeclarations
+
     val fakeGlobalMethod =
       NewMethod()
         .name(name)
         .code(name)
         .fullName(fullName)
         .filename(path)
+        .lineNumber(allDecls.headOption.flatMap(line))
+        .lineNumberEnd(allDecls.lastOption.flatMap(lineEnd))
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(fullName)
 
@@ -80,7 +84,7 @@ class AstCreator(
       .typeFullName("ANY")
 
     var currOrder = 1
-    val declsAsts = iASTTranslationUnit.getDeclarations.flatMap { stmt =>
+    val declsAsts = allDecls.flatMap { stmt =>
       val r =
         Global.getAstsFromAstCache(
           diffGraph,

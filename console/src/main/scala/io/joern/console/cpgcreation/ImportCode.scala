@@ -105,7 +105,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
       (dir / filename).write(str)
       f(dir)
     }
-    dir.delete()
+    dir.deleteOnExit(swallowIOExceptions = true)
     result
   }
 
