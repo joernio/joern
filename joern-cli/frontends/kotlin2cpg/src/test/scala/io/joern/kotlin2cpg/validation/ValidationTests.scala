@@ -114,4 +114,18 @@ class ValidationTests extends AnyFreeSpec with Matchers {
       cpg.call.filter { c => c.name == null }.code.l shouldBe List()
     }
   }
+
+  "CPG for code with qualified expression inside qualified expression" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |    Runtime.getRuntime().exec("ls -al")
+        |}
+        |""".stripMargin)
+
+    "should not contain any CALL nodes with `null` in their NAME prop" in {
+      cpg.call.filter { c => c.name == null }.code.l shouldBe List()
+    }
+  }
 }

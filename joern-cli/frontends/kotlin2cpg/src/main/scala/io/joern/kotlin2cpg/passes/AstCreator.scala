@@ -1514,6 +1514,7 @@ class AstCreator(
               .dispatchType(DispatchTypes.STATIC_DISPATCH)
               .methodFullName(fullNameWithSig._1)
               .signature(fullNameWithSig._2)
+              .name(dotQExpr.getSelectorExpression.getFirstChild.getText)
           Ast(node)
         case typedExpr: KtClassLiteralExpression =>
           val astWithCtx = astForClassLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
