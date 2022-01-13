@@ -39,7 +39,7 @@ class CfgTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find that println post dominates correct nodes" in {
-    cpg.call("println").postDominates.size shouldBe 11
+    cpg.call("println").postDominates.size shouldBe 7
   }
 
   "should find that method does not post dominate anything" in {

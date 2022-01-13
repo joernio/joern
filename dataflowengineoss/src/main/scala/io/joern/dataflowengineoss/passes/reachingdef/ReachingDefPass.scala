@@ -1,11 +1,13 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.edges.ReachingDef
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.{DiffGraph, ParallelCpgPass}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.traversal.jIteratortoTraversal
 
 import scala.collection.mutable
 
@@ -123,6 +125,37 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
       .foreach { node =>
         if (usageAnalyzer.usedIncomingDefs(node).isEmpty) {
           addEdge(method, node)
+        }
+      }
+
+    // Add edges for blocks used as arguments
+    allNodes
+      .collect { case c: Call => c }
+      .foreach { call =>
+        call.argument.isBlock.foreach { block =>
+          block.astChildren.lastOption match {
+            case None => // Do nothing
+
+            case Some(node: Identifier) =>
+              val edgesToAdd = in(node).toList.flatMap { inDef =>
+                numberToNode(inDef) match {
+                  case identifier: Identifier => Some(identifier)
+                  case _                      => None
+                }
+              }
+              edgesToAdd.foreach { inNode =>
+                addEdge(inNode, block, nodeToEdgeLabel(inNode))
+              }
+              if (edgesToAdd.nonEmpty) {
+                addEdge(block, call)
+              }
+
+            case Some(node: Call) =>
+              addEdge(node, call, nodeToEdgeLabel(node))
+              addEdge(block, call)
+
+            case _ => // Do nothing
+          }
         }
       }
     dstGraph

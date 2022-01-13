@@ -15,8 +15,15 @@ class MethodParameterTests extends JavaSrcCodeToCpgFixture {
       |}
       """.stripMargin
 
-  "should return exactly two parameters with correct fields" in {
-    cpg.parameter.name.toSetMutable shouldBe Set("param1", "param2")
+  "should return exactly three parameters with correct fields" in {
+    cpg.parameter.name.toSetMutable shouldBe Set("this", "param1", "param2")
+
+    val List(t) = cpg.parameter.filter(_.method.name == "foo").name("this").l
+    t.code shouldBe "this"
+    t.typeFullName shouldBe "a.Foo"
+    t.lineNumber shouldBe Some(3)
+    t.columnNumber shouldBe None
+    t.order shouldBe 0
 
     val List(x) = cpg.parameter.filter(_.method.name == "foo").name("param1").l
     x.code shouldBe "int param1"

@@ -14,10 +14,16 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
       |     return 1;
       |   }
       | }
+      |
+      | class Bar {
+      |   static int bar(int param1, int param2) {
+      |     return 1;
+      |   }
+      | }
       |""".stripMargin
 
-  "should contain exactly one non-stub method node with correct fields" in {
-    val List(x) = cpg.method.nameNot("<init>").isExternal(false).l
+  "should contain exactly one non-stub method node in Foo with correct fields" in {
+    val List(x) = cpg.typeDecl.name("Foo").method.nameNot("<init>").isExternal(false).l
     x.name shouldBe "foo"
     x.fullName shouldBe "Foo.foo:int(int,int)"
     x.code shouldBe "int foo(int param1, int param2)"
@@ -39,8 +45,12 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
     cpg.method.name("foo").numberOfLines.l shouldBe List(3)
   }
 
-  "should allow traversing to parameters" in {
-    cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("param1", "param2")
+  "should allow traversing to parameters for non-static methods" in {
+    cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("this", "param1", "param2")
+  }
+
+  "should allow traversing to parameters for static methods" in {
+    cpg.method.name("bar").parameter.name.toSetMutable shouldBe Set("param1", "param2")
   }
 
   "should allow traversing to methodReturn" in {

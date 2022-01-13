@@ -19,7 +19,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     * in definition of this argument.
     */
   def isDefined(implicit semantics: Semantics): Boolean = {
-    val s = semanticsForCallByArg
+    val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists { case (_, dstIndex) =>
         dstIndex == node.order

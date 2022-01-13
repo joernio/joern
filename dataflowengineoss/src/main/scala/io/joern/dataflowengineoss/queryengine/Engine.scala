@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.joern.dataflowengineoss.language._
@@ -67,7 +68,8 @@ class Engine(context: EngineContext) {
             .foreach(submitTask)
         case Failure(exception) =>
           numberOfTasksRunning -= 1
-          logger.warn(exception.getMessage)
+          logger.warn(s"SolveTask failed with exception: ${exception}")
+          exception.printStackTrace()
       }
     }
     deduplicate(result.toVector).toList
