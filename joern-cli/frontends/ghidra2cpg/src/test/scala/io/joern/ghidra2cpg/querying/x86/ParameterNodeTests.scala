@@ -7,7 +7,7 @@ class ParameterNodeTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("x86/x86_64.bin")
+    buildCpgForBin("linux/x86/64/x86_64.bin")
   }
 
   "should contain at least one nodes with all mandatory fields set" in {

@@ -10,7 +10,7 @@ class FileTests extends GhidraBinToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    buildCpgForBin("x86/x86_64.bin")
+    buildCpgForBin("linux/x86/64/x86_64.bin")
   }
 
   "should contain two file nodes in total, both with order=0" in {
