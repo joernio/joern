@@ -476,22 +476,16 @@ class AstCreator(
         withScopeCtx.ast
       }
 
+
+
     val bindingsInfo =
       methodAsts.map { ast =>
         // TODO: add a try catch here
         val methodNode = ast.root.get.asInstanceOf[NewMethod]
-        val signature = {
-          if (methodNode.signature.endsWith("()")) {
-            "ANY()"
-          } else {
-            val numParams = methodNode.signature.count(_ == ',')
-            "ANY(ANY" + ",ANY" * (numParams - 1) + ")"
-          }
-        }
         val node =
           NewBinding()
             .name(methodNode.name)
-            .signature(signature)
+            .signature(methodNode.signature)
         BindingInfo(
           node,
           List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF))
