@@ -2144,11 +2144,6 @@ class AstCreator(
           Some(Constants.unknownOperator)
       }
     }
-    val name = if (operatorOption.isDefined) {
-      operatorOption.get
-    } else {
-      expr.getName
-    }
     val fullNameWithSignature =
       if (operatorOption.isDefined) {
         (operatorOption.get, TypeConstants.any)
@@ -2164,6 +2159,14 @@ class AstCreator(
         fullNameWithSignature._2
       }
     val expressionType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val name = if (operatorOption.isDefined) {
+      operatorOption.get
+    } else if (expr.getChildren().toList.size >= 2) {
+      expr.getChildren().toList(1).getText
+    } else {
+      expr.getName
+    }
+    // TODO: DYNAMIC_DISPATCH check
     val callNode =
       NewCall()
         .name(name)

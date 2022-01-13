@@ -99,7 +99,6 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a class declaration " - {
-    // TODO: add a second class with a similarly-named method
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
