@@ -53,7 +53,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.Foo"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some("kotlin.collections.List<kotlin.Int>")
+      x.aliasTypeFullName shouldBe Some("kotlin.collections.List")
     }
   }
 }

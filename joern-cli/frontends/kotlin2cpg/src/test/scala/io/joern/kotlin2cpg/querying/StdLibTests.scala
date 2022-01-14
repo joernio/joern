@@ -121,20 +121,16 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain CALL nodes for calls to infix fn `to`" in {
       val List(c1) = cpg.call.code("\"key1.*").l
-      // TODO: erase types
-      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair<kotlin.String,kotlin.Int>(kotlin.Int)"
+      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
 
       val List(c2) = cpg.call.code("\"key2.*").l
-      // TODO: erase types
-      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair<kotlin.String,kotlin.Int>(kotlin.Int)"
+      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
 
       val List(c3) = cpg.call.code("\"key3.*").l
-      // TODO: erase types
-      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair<kotlin.String,kotlin.Int>(kotlin.Int)"
+      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
 
       val List(c4) = cpg.call.code("\"key4.*").l
-      // TODO: erase types
-      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair<kotlin.String,kotlin.Int>(kotlin.Int)"
+      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
     }
 
     "CPG for code with local of type MutableMap and optional in it" - {
@@ -149,8 +145,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
       "should contain CALL node with a MFN without optionals in it" in {
         val List(c) = cpg.call.code("HashMap.*").l
-        c.typeFullName shouldBe "kotlin.collections.HashMap<kotlin.String,kotlin.Any>"
-        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:java.util.HashMap<kotlin.String,kotlin.Any>()"
+        c.typeFullName shouldBe "kotlin.collections.HashMap"
+        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:java.util.HashMap()"
       }
     }
 
@@ -170,7 +166,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       "should contain CALL nodes for `split` with the correct MFNs set" in {
         cpg.call.methodFullName(".*split.*").methodFullName.toSet shouldBe
           Set(
-            "kotlin.CharSequence.split:kotlin.collections.List<kotlin.String>(kotlin.Array<kotlin.String>,kotlin.Boolean,kotlin.Int)"
+            "kotlin.CharSequence.split:kotlin.collections.List(kotlin.Array,kotlin.Boolean,kotlin.Int)"
           )
       }
     }

@@ -29,7 +29,7 @@ class HigherOrderFnsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node with the correct METHOD_FULL_NAME" in {
       val List(c) = cpg.call.methodFullName(".*fold.*").l
       // TODO: delete the `acc: ` inside the fullname
-      c.methodFullName shouldBe "kotlin.collections.Iterable<kotlin.Int>.fold:kotlin.Int(kotlin.Int,(acc:kotlin.Int,kotlin.Int)->kotlin.Int)"
+      c.methodFullName shouldBe "kotlin.collections.Iterable.fold:kotlin.Int(kotlin.Int,(acc:kotlin.Int,kotlin.Int)->kotlin.Int)"
     }
   }
 }

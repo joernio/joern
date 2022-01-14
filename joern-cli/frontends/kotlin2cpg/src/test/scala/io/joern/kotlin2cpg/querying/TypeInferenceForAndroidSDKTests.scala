@@ -209,7 +209,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain an IDENTIFIER node for webview with the correct props set" in {
       val List(i) = cpg.call.code(".*findViewB.*").argument(1).isIdentifier.l
-      i.typeFullName shouldBe "android.view.WebView"
+      i.typeFullName shouldBe "android.view.View"
     }
   }
 }

@@ -79,7 +79,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with a placeholder MFN in it" in {
       val List(c) = cpg.call.code("mutableListOf.*").l
-      c.methodFullName shouldBe "kotlin.collections.mutableListOf:kotlin.collections.MutableList<kotlin.Any>()"
+      c.methodFullName shouldBe "kotlin.collections.mutableListOf:kotlin.collections.MutableList()"
     }
   }
 
@@ -110,7 +110,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct MFN set when type info is available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("foo")).argument(2).isCall.l
-      c.methodFullName shouldBe "kotlin.collections.Iterable<kotlin.Int>.filter:kotlin.collections.List<kotlin.Int>((kotlin.Int)->kotlin.Boolean)"
+      c.methodFullName shouldBe "kotlin.collections.Iterable.filter:kotlin.collections.List((kotlin.Int)->kotlin.Boolean)"
     }
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
@@ -160,7 +160,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node with a MFN property that replaced the unresolvable types with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName("kotlin.*clone.*").take(1).l
-      m.fullName shouldBe "kotlin.collections.MutableMap<kotlin.Any,kotlin.Any>.clone:kotlin.collections.MutableMap<kotlin.Any,kotlin.Any>()"
+      m.fullName shouldBe "kotlin.collections.MutableMap.clone:kotlin.collections.MutableMap()"
       // TODO: fix return type
     }
 

@@ -36,9 +36,9 @@ class MethodAtPackageLevelTests extends AnyFreeSpec with Matchers {
 
       val List(y) = cpg.method.name("main").isExternal(false).l
       y.size shouldBe 1
-      y.fullName shouldBe "main:kotlin.Unit(kotlin.Array<kotlin.String>)"
+      y.fullName shouldBe "main:kotlin.Unit(kotlin.Array)"
       y.code shouldBe "(args:Array<String>)"
-      y.signature shouldBe "kotlin.Unit(kotlin.Array<kotlin.String>)"
+      y.signature shouldBe "kotlin.Unit(kotlin.Array)"
       y.isExternal shouldBe false
       y.lineNumber shouldBe Some(5)
       x.columnNumber shouldBe Some(4)

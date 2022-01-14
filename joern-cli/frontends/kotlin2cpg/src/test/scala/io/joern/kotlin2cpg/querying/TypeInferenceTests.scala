@@ -68,7 +68,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain type decl for alias `FooList` of `List<Int>` with the correct aliasTypeFullName set" in {
       val List(x) = cpg.typeDecl("FooList").l
-      x.aliasTypeFullName shouldBe Some("kotlin.collections.List<kotlin.Int>")
+      x.aliasTypeFullName shouldBe Some("kotlin.collections.List")
     }
   }
 
@@ -110,7 +110,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain IDENTIFIER nodes for `x` with the correct typeFullNames set" in {
       val List(i) = cpg.identifier.codeExact("x").where(_.inCall.methodFullNameExact(Operators.assignment)).l
-      i.typeFullName shouldBe "kotlin.collections.List<kotlin.Int>"
+      i.typeFullName shouldBe "kotlin.collections.List"
     }
 
     "should contain a CALL node for `x[0]` with the correct typeFullNames set" in {
@@ -120,7 +120,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `listOf(1, 2, 3)` with the correct typeFullName set" in {
       val List(c) = cpg.call.codeExact("listOf(1, 2, 3)").l
-      c.typeFullName shouldBe "kotlin.collections.List<kotlin.Int>"
+      c.typeFullName shouldBe "kotlin.collections.List"
     }
   }
 
@@ -357,7 +357,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `routes` with the correct methodFullName set" in {
       val List(c) = cpg.call.methodFullName(".*routes.*").l
       // TODO: remove the _out_ from the methodFullName
-      c.methodFullName shouldBe "org.http4k.routing.routes:org.http4k.routing.RoutingHttpHandler(kotlin.Array<org.http4k.routing.RoutingHttpHandler>)"
+      c.methodFullName shouldBe "org.http4k.routing.routes:org.http4k.routing.RoutingHttpHandler(kotlin.Array)"
     }
 
     "should contain a CALL node for `req.query` with the correct methodFullName set" in {
