@@ -39,6 +39,7 @@ import io.shiftleft.x2cpg.Ast
 import java.util.UUID.randomUUID
 import scala.jdk.CollectionConverters._
 import org.jetbrains.kotlin.psi.{
+  KtAnnotatedExpression,
   KtAnonymousInitializer,
   KtArrayAccessExpression,
   KtBinaryExpression,
@@ -937,6 +938,8 @@ class AstCreator(
         Seq(astForQualifiedExpression(sqExpr, scopeContext, order, argIdx))
       case typedExpr: KtThisExpression =>
         Seq(astForThisExpression(typedExpr, scopeContext, order, argIdx))
+      case typedExpr: KtAnnotatedExpression =>
+        astsForExpression(typedExpr.getBaseExpression, scopeContext, order, argIdx)
       case typedExpr: KtObjectLiteralExpression =>
         // TODO: handle properly
         Seq(astForUnknown(typedExpr, order, argIdx))
