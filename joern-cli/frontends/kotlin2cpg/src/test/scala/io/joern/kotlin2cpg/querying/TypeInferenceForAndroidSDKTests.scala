@@ -181,4 +181,35 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       secondArg.columnNumber shouldBe Some(20)
     }
   }
+
+  "CPG for code with use of Android's `findViewById`" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |import android.app.Activity
+      |import android.os.Bundle
+      |import android.util.Log
+      |
+      |class MyActivity : Activity() {
+      |  override fun onCreate(savedInstanceState: Bundle?) {
+      |    super.onCreate(savedInstanceState)
+      |
+      |    val webview = findViewById<WebView>(R.id.webview)
+      |    webview.settings.javaScriptEnabled = true
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node for `findViewById` with the correct props set" in {
+      val List(c) = cpg.call.code("findViewB.*").l
+      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(kotlin.Int)"
+      c.argument.size shouldBe 1
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+    }
+
+    "should contain an IDENTIFIER node for webview with the correct props set" in {
+      val List(i) = cpg.call.code(".*findViewB.*").argument(1).isIdentifier.l
+      i.typeFullName shouldBe "android.view.View"
+    }
+  }
 }

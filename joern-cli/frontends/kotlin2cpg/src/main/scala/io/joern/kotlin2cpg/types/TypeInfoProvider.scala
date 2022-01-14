@@ -10,7 +10,12 @@ import org.jetbrains.kotlin.descriptors.{
   SimpleFunctionDescriptor,
   ValueParameterDescriptor
 }
-import org.jetbrains.kotlin.descriptors.impl.{ClassConstructorDescriptorImpl, LocalVariableDescriptor}
+import org.jetbrains.kotlin.descriptors.impl.{
+  ClassConstructorDescriptorImpl,
+  LocalVariableDescriptor,
+  TypeAliasConstructorDescriptor,
+  TypeAliasConstructorDescriptorImpl
+}
 import org.jetbrains.kotlin.psi.{
   KtBinaryExpression,
   KtCallExpression,
@@ -176,7 +181,11 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
   }
 
   def stripped(typeName: String): String = {
-    stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", "")
+    stripTypeParams(stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", ""))
+  }
+
+  def stripTypeParams(typeName: String): String = {
+    typeName.replaceAll("<.*>", "")
   }
 
   def stripOut(name: String): String = {
@@ -351,7 +360,7 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
 
             // TODO: write descriptor renderer instead of working with the existing ones
             // that render comments in fqnames
-            val renderedFqName = stripDebugInfo(
+            val renderedFqName = stripped(
               DescriptorUtils.getFqName(erasedTypeDescriptor).toString
             )
 
@@ -376,9 +385,7 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
               classifierName + "<" + argNames.mkString(",") + ">"
             } else {
               stripped(
-                renderer.renderType(
-                  retTypeConstructor.getDeclarationDescriptor.getDefaultType
-                )
+                renderer.renderType(fnDescriptor.getReturnType)
               )
             }
 
@@ -389,13 +396,17 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
                   stripped(rendered)
                 }
                 .mkString(",")
-            val signature = retType + "(" + stripped(renderedParameterTypes) + ")"
+            val signature = stripped(retType) + "(" + stripped(renderedParameterTypes) + ")"
             val fullName =
-              if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
-                retType + ".<init>:" + signature
+              if (
+                fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl] ||
+                fnDescriptor.isInstanceOf[TypeAliasConstructorDescriptorImpl]
+              ) {
+                stripped(renderedFqName) + "<init>:" + signature
               } else {
                 stripped(renderedFqName) + ":" + signature
               }
+
             if (!isValidRender(fullName) || !isValidRender(signature)) {
               return (or._1, or._2)
             } else {
@@ -442,10 +453,10 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
                   stripped(rendered)
                 }
                 .mkString(",")
-            val signature = retType + "(" + renderedParameterTypes + ")"
+            val signature = stripped(retType) + "(" + renderedParameterTypes + ")"
             val fullName =
               if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
-                retType + ".<init>:" + signature
+                stripped(retType) + ".<init>:" + signature
               } else {
                 renderedFqName + ":" + signature
               }

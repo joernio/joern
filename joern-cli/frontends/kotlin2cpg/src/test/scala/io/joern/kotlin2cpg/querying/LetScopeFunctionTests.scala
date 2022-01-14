@@ -19,7 +19,7 @@ class LetScopeFunctionTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain IDENTIFIER nodes for the `it`s with the correct types inferred" in {
-      cpg.identifier.nameExact("it").typeFullName.toSet shouldBe Set("kotlin.collections.List<kotlin.Int>")
+      cpg.identifier.nameExact("it").typeFullName.toSet shouldBe Set("kotlin.collections.List")
     }
 
     // TODO: test lowering

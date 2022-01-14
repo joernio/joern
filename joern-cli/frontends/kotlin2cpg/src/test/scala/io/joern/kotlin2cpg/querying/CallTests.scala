@@ -216,4 +216,45 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.typeFullName shouldBe "kotlin.String"
     }
   }
+
+  "CPG for code with QE inside QE" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |    Runtime.getRuntime().exec("ls -al")
+      |    println("DONE")
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node " in {
+      val List(c) = cpg.call.code("Runtime.*").codeNot(".*exec.*").l
+      c.methodFullName shouldBe "java.lang.Runtime.getRuntime:java.lang.Runtime()"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.signature shouldBe "java.lang.Runtime()"
+      c.name shouldBe "getRuntime"
+      c.typeFullName shouldBe "java.lang.Runtime"
+    }
+  }
+
+  "CPG for code with call simple stdlib fn for map creation" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |import kotlin.collections.mutableMapOf
+      |
+      |fun main(args : Array<String>) {
+      |  val numbersMap = mutableMapOf("one" to 1, "two" to 2)
+      |  numbersMap["one"] = 11
+      |  println(numbersMap)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with the correct props set" in {
+      val List(c) = cpg.call.code("mutableMapOf.*").l
+      c.methodFullName shouldBe "kotlin.collections.mutableMapOf:kotlin.collections.MutableMap(kotlin.Array)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.typeFullName shouldBe "kotlin.collections.MutableMap"
+      c.lineNumber shouldBe Some(4)
+      c.columnNumber shouldBe Some(19)
+    }
+  }
 }
