@@ -855,6 +855,9 @@ class AstCreator(
       fileInfo: FileInfo,
       typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
+    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    registerType(typeFullName)
+
     val callNode =
       NewCall()
         .name(Operators.cast)
@@ -865,8 +868,7 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .order(order)
-        .typeFullName(TypeConstants.any)
-
+        .typeFullName(typeFullName)
     val args =
       astsForExpression(expr.getLeft(), scopeContext, 1, 1) ++ Seq(
         astForTypeReference(expr.getRight(), scopeContext, 2, 2)
@@ -984,18 +986,22 @@ class AstCreator(
     val signature = "java.lang.Class()"
     val methodFullName = receiverName + "." + getClassMethodName + ":" + signature
 
+    val fullNameWithSignature = typeInfoProvider.fullNameWithSignature(expr, ("", ""))
+    val typeFullName = typeInfoProvider.expressionType(expr, "java.lang.Class")
+    registerType(typeFullName)
+
     val callNode =
       NewCall()
         .name(getClassMethodName)
         .code(expr.getText())
         .order(order)
         .argumentIndex(argIdx)
-        .methodFullName(methodFullName)
+        .methodFullName(fullNameWithSignature._1)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .signature(signature)
+        .signature(fullNameWithSignature._2)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
-        .typeFullName(TypeConstants.any)
+        .typeFullName(typeFullName)
     AstWithCtx(Ast(callNode), Context())
   }
 
@@ -1436,17 +1442,18 @@ class AstCreator(
           val astWithCtx = astForLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
           astWithCtx.ast
         case typedExpr: KtNameReferenceExpression =>
-          val exprTypeFullName = typeInfoProvider.expressionType(typedExpr, TypeConstants.any)
-          registerType(exprTypeFullName)
+          val typeFullName = typeInfoProvider.typeFullName(typedExpr, TypeConstants.any)
+          registerType(typeFullName)
 
-          val node = NewIdentifier()
-            .name(typedExpr.getText())
-            .order(orderForReceiver)
-            .argumentIndex(argIdxForReceiver)
-            .code(typedExpr.getText())
-            .typeFullName(exprTypeFullName)
-            .lineNumber(line(typedExpr))
-            .columnNumber(column(typedExpr))
+          val node =
+            NewIdentifier()
+              .name(typedExpr.getText())
+              .order(orderForReceiver)
+              .argumentIndex(argIdxForReceiver)
+              .code(typedExpr.getText())
+              .typeFullName(typeFullName)
+              .lineNumber(line(typedExpr))
+              .columnNumber(column(typedExpr))
           Ast(node)
         case thisExpr: KtThisExpression =>
           val astWithCtx = astForThisExpression(thisExpr, scopeContext, orderForReceiver, 0)
