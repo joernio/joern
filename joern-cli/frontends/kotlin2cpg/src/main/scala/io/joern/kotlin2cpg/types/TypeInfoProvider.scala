@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.descriptors.{
   DeclarationDescriptor,
   FunctionDescriptor,
   SimpleFunctionDescriptor,
+  ValueDescriptor,
   ValueParameterDescriptor
 }
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.impl.{
 import org.jetbrains.kotlin.psi.{
   KtBinaryExpression,
   KtCallExpression,
+  KtClassLiteralExpression,
   KtClassOrObject,
   KtElement,
   KtExpression,
@@ -50,6 +52,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 object Constants {
   val kotlinAny = "kotlin.Any"
   val any = "ANY"
+  val classLiteralReplacementMethodName = "getClass"
 }
 
 object BindingKinds extends Enumeration {
@@ -73,6 +76,7 @@ trait TypeInfoProvider {
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
+  def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
 }
 
 object KotlinTypeInfoProvider {
@@ -335,6 +339,22 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
       }
     } else {
       or
+    }
+  }
+
+  def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String) = {
+    printBindingsForEntity(bindingContext, expr)
+
+    val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
+    if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.size() > 0) {
+      val firstTypeArg = typeInfo.getType.getArguments.get(0)
+      val rendered = DescriptorRenderer.FQ_NAMES_IN_TYPES.renderType(firstTypeArg.getType)
+      val retType = expressionType(expr, Constants.any)
+      val signature = retType + "()"
+      val fullName = rendered + "." + Constants.classLiteralReplacementMethodName + ":" + signature
+      (fullName, signature)
+    } else {
+      (or._1, or._2)
     }
   }
 
@@ -691,25 +711,10 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     }
     val renderer = descriptorRenderer(targetDesc)
     val rendered: Option[String] = targetDesc match {
-      case typedDesc: LocalVariableDescriptor =>
-        val r = renderer.renderType(typedDesc.getType)
-        if (isValidRender(r)) {
-          Some(
-            stripped(
-              r
-            )
-          )
-        } else {
-          None
-        }
-      case typedDesc: ValueParameterDescriptor =>
-        val r = renderer.renderType(typedDesc.getType)
-        if (isValidRender(r)) {
-          Some(stripped(r))
-        } else {
-          None
-        }
-      case _ =>
+      case typedDesc: ValueDescriptor =>
+        Some(stripped(renderer.renderType(typedDesc.getType)))
+      case unhandled: Any =>
+        logger.warn("Unhandled class in fetching type info `" + unhandled.getClass + "`.")
         None
     }
 
