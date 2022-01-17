@@ -136,6 +136,8 @@ object Main extends App {
           InferenceJarPath("inferencejars/androidx.constraintlayout-2.1.1.jar", true),
           InferenceJarPath("inferencejars/androidx.core-1.1.0.jar", true),
           InferenceJarPath("inferencejars/androidx.core-ktx-1.6.0.jar", true),
+          InferenceJarPath("inferencejars/androidx.fragment-1.4.0.jar", true),
+          InferenceJarPath("inferencejars/androidx.fragment-ktx-1.4.0.jar", true),
           InferenceJarPath("inferencejars/androidx.lifecycle-viewmodel-ktx-2.2.0.jar", true),
           InferenceJarPath("inferencejars/androidx.localbroadcastmanager-1.0.0.jar", true),
           InferenceJarPath("inferencejars/androidx.preference-ktx-1.1.1.jar", true),
