@@ -456,7 +456,7 @@ class AstCreator(filename: String, global: Global) {
       childNum: Int
   ): AstWithCtx = {
     val constructorNode =
-      createConstructorNode(constructorDeclaration, scopeContext.typeDecl, scopeContext, childNum)
+      createConstructorNode(constructorDeclaration, scopeContext.typeDecl, childNum)
 
     val typeFullName = Try(constructorDeclaration.resolve.declaringType().getQualifiedName).getOrElse("<empty>")
     val thisAst = thisAstForMethod(typeFullName, line(constructorDeclaration))
@@ -499,7 +499,7 @@ class AstCreator(filename: String, global: Global) {
       scopeContext: ScopeContext,
       childNum: Int
   ): AstWithCtx = {
-    val methodNode = createMethodNode(methodDeclaration, scopeContext, childNum)
+    val methodNode = createMethodNode(methodDeclaration, scopeContext.typeDecl, childNum)
 
     val thisAst = if (methodDeclaration.isStatic) {
       Seq()
@@ -579,11 +579,10 @@ class AstCreator(filename: String, global: Global) {
   private def createConstructorNode(
       constructorDeclaration: ConstructorDeclaration,
       typeDecl: Option[NewTypeDecl],
-      scopeContext: ScopeContext,
       childNum: Int
   ): NewMethod = {
-    val fullName = constructorFullName(typeDecl, constructorDeclaration, scopeContext)
-    val signature = s"void${paramListSignature(constructorDeclaration, scopeContext)}"
+    val fullName = constructorFullName(typeDecl, constructorDeclaration)
+    val signature = s"void${paramListSignature(constructorDeclaration)}"
     createPartialMethod(constructorDeclaration, childNum)
       .fullName(fullName)
       .signature(signature)
@@ -591,13 +590,12 @@ class AstCreator(filename: String, global: Global) {
 
   private def createMethodNode(
       methodDeclaration: MethodDeclaration,
-      scopeContext: ScopeContext,
+      typeDecl: Option[NewTypeDecl],
       childNum: Int
   ) = {
-    val typeDecl = scopeContext.typeDecl
-    val fullName = methodFullName(typeDecl, methodDeclaration, scopeContext)
+    val fullName = methodFullName(typeDecl, methodDeclaration)
     val returnType = Try(methodDeclaration.getType.resolve().describe()).getOrElse(methodDeclaration.getTypeAsString)
-    val signature = returnType + paramListSignature(methodDeclaration, scopeContext)
+    val signature = returnType + paramListSignature(methodDeclaration)
     createPartialMethod(methodDeclaration, childNum)
       .fullName(fullName)
       .signature(signature)
@@ -1655,7 +1653,7 @@ class AstCreator(filename: String, global: Global) {
     val name = "<operator>.alloc"
     val typeFullName = registerType(Try(expr.getType.resolve().getQualifiedName).getOrElse("<empty>"))
     val argTypes =
-      expr.getArguments.asScala.map(expr => Try(expr.calculateResolvedType().describe()).getOrElse("<empty>")).toList
+      expr.getArguments.asScala.map(expr => Try(expr.calculateResolvedType().describe()).getOrElse("<empty>"))
     val signature = s"void(${argTypes.mkString(",")})"
 
     val allocNode = NewCall()
@@ -2280,26 +2278,24 @@ class AstCreator(filename: String, global: Global) {
 
   private def methodFullName(
       typeDecl: Option[NewTypeDecl],
-      methodDeclaration: MethodDeclaration,
-      scopeContext: ScopeContext
+      methodDeclaration: MethodDeclaration
   ): String = {
     val typeName = typeDecl.map(_.fullName).getOrElse("")
     val returnType = tryResolveType(methodDeclaration)
     val methodName = methodDeclaration.getNameAsString
-    s"$typeName.$methodName:$returnType${paramListSignature(methodDeclaration, scopeContext)}"
+    s"$typeName.$methodName:$returnType${paramListSignature(methodDeclaration)}"
   }
 
   private def constructorFullName(
       typeDecl: Option[NewTypeDecl],
-      constructorDeclaration: ConstructorDeclaration,
-      scopeContext: ScopeContext
+      constructorDeclaration: ConstructorDeclaration
   ): String = {
     val typeName = typeDecl.map(_.fullName).getOrElse("<unresolved>")
-    s"$typeName.<init>:void${paramListSignature(constructorDeclaration, scopeContext)}"
+    s"$typeName.<init>:void${paramListSignature(constructorDeclaration)}"
   }
 
-  private def paramListSignature(methodDeclaration: CallableDeclaration[_], scopeContext: ScopeContext) = {
-    val paramTypes = methodDeclaration.getParameters.asScala.map(tryResolveType).toList
+  private def paramListSignature(methodDeclaration: CallableDeclaration[_]) = {
+    val paramTypes = methodDeclaration.getParameters.asScala.map(tryResolveType)
     "(" + paramTypes.mkString(",") + ")"
   }
 
