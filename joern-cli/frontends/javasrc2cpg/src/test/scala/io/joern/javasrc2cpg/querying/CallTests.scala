@@ -57,6 +57,10 @@ class CallTests extends JavaSrcCodeToCpgFixture {
       |    public void qux() {
       |        staticMethod();
       |    }
+      |
+      |    public void quux() {
+      |      bar();
+      |    }
       |}
       |""".stripMargin
 
@@ -186,5 +190,12 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.name shouldBe "staticMethod"
     call.methodFullName shouldBe "test.Bar.staticMethod:void()"
     call.code shouldBe "staticMethod()"
+  }
+
+  "should create correct call signature for method call without args" in {
+    val call = cpg.typeDecl.name("Bar").method.name("quux").call.head
+    call.name shouldBe "bar"
+    call.methodFullName shouldBe "test.Bar.bar:void()"
+    call.signature shouldBe "void()"
   }
 }
