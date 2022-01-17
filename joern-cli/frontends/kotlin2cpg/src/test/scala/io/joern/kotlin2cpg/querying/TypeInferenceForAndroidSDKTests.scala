@@ -39,7 +39,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `webview.settings` DQE on with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.codeExact("webview.settings").take(1).l
-      c.methodFullName shouldBe "kotlin.Any.settings:ANY(ANY)"
+      c.methodFullName shouldBe Operators.fieldAccess
     }
   }
 
