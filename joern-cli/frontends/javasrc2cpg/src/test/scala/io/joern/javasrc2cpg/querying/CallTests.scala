@@ -69,8 +69,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     x.code shouldBe "this.add(argc, 3)"
     x.name shouldBe "add"
     x.order shouldBe 2
-    x.methodFullName shouldBe "test.Foo.add:int(test.Foo,int,int)"
-    x.signature shouldBe "int(test.Foo,int,int)"
+    x.methodFullName shouldBe "test.Foo.add:int(int,int)"
+    x.signature shouldBe "int(int,int)"
     x.argumentIndex shouldBe 2
     x.lineNumber shouldBe Some(9)
   }
@@ -127,8 +127,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     call.code shouldBe "myObj.myMethod(\"Hello, world!\")"
     call.name shouldBe "myMethod"
-    call.methodFullName shouldBe "test.MyObject.myMethod:java.lang.String(test.MyObject,java.lang.String)"
-    call.signature shouldBe "java.lang.String(test.MyObject,java.lang.String)"
+    call.methodFullName shouldBe "test.MyObject.myMethod:java.lang.String(java.lang.String)"
+    call.signature shouldBe "java.lang.String(java.lang.String)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(objName: Identifier, argument: Literal) = call.astChildren.l
@@ -148,8 +148,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     call.code shouldBe "this.foo(obj)"
     call.name shouldBe "foo"
-    call.methodFullName shouldBe "test.Bar.foo:java.lang.String(test.Bar,test.MyObject)"
-    call.signature shouldBe "java.lang.String(test.Bar,test.MyObject)"
+    call.methodFullName shouldBe "test.Bar.foo:java.lang.String(test.MyObject)"
+    call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(identifier: Identifier, argument: Identifier) = call.argument.l
@@ -169,8 +169,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     call.code shouldBe "this.foo(obj)"
     call.name shouldBe "foo"
-    call.methodFullName shouldBe "test.Bar.foo:java.lang.String(test.Bar,test.MyObject)"
-    call.signature shouldBe "java.lang.String(test.Bar,test.MyObject)"
+    call.methodFullName shouldBe "test.Bar.foo:java.lang.String(test.MyObject)"
+    call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(objName: Identifier, argument: Identifier) = call.astChildren.l
@@ -195,7 +195,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   "should create correct call signature for method call without args" in {
     val call = cpg.typeDecl.name("Bar").method.name("quux").call.head
     call.name shouldBe "bar"
-    call.methodFullName shouldBe "test.Bar.bar:void(test.Bar)"
-    call.signature shouldBe "void(test.Bar)"
+    call.methodFullName shouldBe "test.Bar.bar:void()"
+    call.signature shouldBe "void()"
   }
 }

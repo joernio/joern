@@ -56,8 +56,8 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   "it should create correct method nodes for constructors" in {
     cpg.method.name("Foo").l match {
       case List(cons: Method) =>
-        cons.fullName shouldBe "Foo.<init>:void(Foo,int)"
-        cons.signature shouldBe "void(Foo,int)"
+        cons.fullName shouldBe "Foo.<init>:void(int)"
+        cons.signature shouldBe "void(int)"
         cons.code shouldBe "public Foo(int x)"
         cons.parameter.size shouldBe 2
         val objParam = cons.parameter.index(0).head
@@ -75,15 +75,15 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
     cpg.method.name("Bar").l match {
       case List(cons1: Method, cons2: Method) =>
-        cons1.fullName shouldBe "Bar.<init>:void(Bar,int)"
-        cons1.signature shouldBe "void(Bar,int)"
+        cons1.fullName shouldBe "Bar.<init>:void(int)"
+        cons1.signature shouldBe "void(int)"
         cons1.code shouldBe "public Bar(int x)"
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "x"
 
-        cons2.fullName shouldBe "Bar.<init>:void(Bar,int,int)"
-        cons2.signature shouldBe "void(Bar,int,int)"
+        cons2.fullName shouldBe "Bar.<init>:void(int,int)"
+        cons2.signature shouldBe "void(int,int)"
         cons2.code shouldBe "public Bar(int x, int y)"
         cons2.parameter.size shouldBe 3
         cons2.parameter.index(0).head.name shouldBe "this"
@@ -111,11 +111,11 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.argument.size shouldBe 0
 
         init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(Bar,int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(Bar,int,int)"
+        init.methodFullName shouldBe "Bar.<init>:void(int,int)"
+        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(Bar,int,int)"
+        init.signature shouldBe "void(int,int)"
         init.code shouldBe "new Bar(4, 2)"
 
         init.argument.size shouldBe 3
@@ -148,11 +148,11 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.argument.size shouldBe 0
 
         init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(Bar,int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(Bar,int,int)"
+        init.methodFullName shouldBe "Bar.<init>:void(int,int)"
+        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(Bar,int,int)"
+        init.signature shouldBe "void(int,int)"
         init.code shouldBe "new Bar(4, 2)"
 
         init.argument.size shouldBe 3
@@ -193,9 +193,9 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.argument.size shouldBe 0
 
         init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(Bar,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(Bar,int)"
-        init.signature shouldBe "void(Bar,int)"
+        init.methodFullName shouldBe "Bar.<init>:void(int)"
+        init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
+        init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
@@ -236,9 +236,9 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.argument.size shouldBe 0
 
         init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(Bar,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(Bar,int)"
-        init.signature shouldBe "void(Bar,int)"
+        init.methodFullName shouldBe "Bar.<init>:void(int)"
+        init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
+        init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
@@ -256,14 +256,14 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create only `init` call for direct invocation using `this`" in {
-    cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(Bar,int,int)").l match {
+    cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int,int)").l match {
       case List(method) =>
         val List(init: Call) = method.astChildren.isBlock.astChildren.l
         init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(Bar,int)"
+        init.methodFullName shouldBe "Bar.<init>:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(Bar,int)"
+        init.signature shouldBe "void(int)"
 
         val List(obj: Identifier, initArg1: Call) = init.argument.l
         obj.name shouldBe "this"
@@ -278,14 +278,14 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create only `init` call for direct invocation using `super`" in {
-    cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(Bar,int)").l match {
+    cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int)").l match {
       case List(method) =>
         val List(init: Call) = method.astChildren.isBlock.astChildren.l
         init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Foo.<init>:void(Foo,int)"
+        init.methodFullName shouldBe "Foo.<init>:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(Foo,int)"
+        init.signature shouldBe "void(int)"
 
         val List(obj: Identifier, initArg: Identifier) = init.argument.l
         obj.name shouldBe "this"

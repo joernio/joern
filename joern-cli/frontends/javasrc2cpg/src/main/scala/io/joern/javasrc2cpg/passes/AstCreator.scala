@@ -363,18 +363,10 @@ class AstCreator(filename: String, global: Global) {
     val bindingsInfo =
       (constructorAsts ++ methodAsts).map(_.ast).map { ast =>
         val methodNode = ast.root.get.asInstanceOf[NewMethod]
-        val signature = {
-          if (methodNode.signature.endsWith("()")) {
-            "ANY()"
-          } else {
-            val numParams = methodNode.signature.count(_ == ',')
-            "ANY(ANY" + ",ANY" * (numParams - 1) + ")"
-          }
-        }
         val node =
           NewBinding()
             .name(methodNode.name)
-            .signature(signature)
+            .signature(methodNode.signature)
         BindingInfo(
           node,
           List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF))
@@ -497,7 +489,7 @@ class AstCreator(filename: String, global: Global) {
       .order(0)
       .typeFullName(typeFullName)
       .dynamicTypeHintFullName(Seq(typeFullName))
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
     AstWithCtx(Ast(node), Context(methodParameters = Seq(node)))
   }
@@ -1660,7 +1652,6 @@ class AstCreator(filename: String, global: Global) {
       scopeContext: ScopeContext,
       order: Int
   ): AstWithCtx = {
-    // VariableDeclarator || AssignExpr
     val name = "<operator>.alloc"
     val typeFullName = registerType(Try(expr.getType.resolve().getQualifiedName).getOrElse("<empty>"))
     val argTypes =
@@ -1798,9 +1789,9 @@ class AstCreator(filename: String, global: Global) {
       order: Int
   ): AstWithCtx = {
     val typeFullName = Try(
-      stmt.resolve().declaringType().getQualifiedName::Nil
+      stmt.resolve().declaringType().getQualifiedName
     ).getOrElse(
-      s"<empty>"::Nil
+      s"<empty>"
     )
     val argTypes =
       stmt.getArguments.asScala.map(expr => Try(expr.calculateResolvedType().describe()).getOrElse("<empty>"))
@@ -1845,7 +1836,7 @@ class AstCreator(filename: String, global: Global) {
     }
   }
 
-private def astsForExpression(
+  private def astsForExpression(
       expression: Expression,
       scopeContext: ScopeContext,
       order: Int

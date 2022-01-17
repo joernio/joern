@@ -29,9 +29,9 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
   "should contain exactly one non-stub method node in Foo with correct fields" in {
     val List(x) = cpg.typeDecl.name("Foo").method.nameNot("<init>").isExternal(false).l
     x.name shouldBe "foo"
-    x.fullName shouldBe "Foo.foo:int(Foo,int,int)"
+    x.fullName shouldBe "Foo.foo:int(int,int)"
     x.code shouldBe "int foo(int param1, int param2)"
-    x.signature shouldBe "int(Foo,int,int)"
+    x.signature shouldBe "int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
     x.filename should (
@@ -46,11 +46,11 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should create correct method node for empty param list to non-static method" in {
-    val x::Nil = cpg.typeDecl.name("Baz").method.name("baz").l
+    val x :: Nil = cpg.typeDecl.name("Baz").method.name("baz").l
     x.name shouldBe "baz"
-    x.fullName shouldBe "Baz.baz:void(Baz)"
+    x.fullName shouldBe "Baz.baz:void()"
     x.code shouldBe "void baz()"
-    x.signature shouldBe "void(Baz)"
+    x.signature shouldBe "void()"
     x.isExternal shouldBe false
   }
 
