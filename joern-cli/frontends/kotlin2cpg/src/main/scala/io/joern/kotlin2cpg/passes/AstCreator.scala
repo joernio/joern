@@ -658,11 +658,13 @@ class AstCreator(
         .withChildren(parametersWithCtx.map(_.ast))
         .withChild(bodyAstWithCtx.ast)
         .withChild(returnAst)
-    val astWithRefEdges =
+    val astWithRefEdges = {
       nodesForRefEdges.foldLeft(ast)((acc, nodes) => {
         acc.withRefEdge(nodes._1, nodes._2)
       })
-    AstWithCtx(astWithRefEdges, mergedCtx(Seq(bodyAstWithCtx.ctx)))
+    }
+    val finalCtx = mergedCtx(Seq(bodyAstWithCtx.ctx))
+    AstWithCtx(astWithRefEdges, finalCtx)
   }
 
   private def mergedCtx(ctxs: Seq[Context]): Context = {
@@ -1190,9 +1192,9 @@ class AstCreator(
     AstWithCtx(
       methodRefAst,
       Context(
-        lambdaAsts = Seq(lamdbaMethodAstWithRefEdges),
+        lambdaAsts = Seq(lamdbaMethodAstWithRefEdges) ++ bodyAstWithCtx.ctx.lambdaAsts,
         identifiers = bodyAstWithCtx.ctx.identifiers,
-        closureBindingInfo = closureBindingInfo
+        closureBindingInfo = closureBindingInfo ++ bodyAstWithCtx.ctx.closureBindingInfo
       )
     )
   }

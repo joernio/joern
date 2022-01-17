@@ -169,4 +169,28 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       m.signature shouldBe "ANY()"
     }
   }
+
+  "CPG for code with a simple lambda which captures a method parameter, nested twice" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo(x: String): Int {
+      |    1.let {
+      |      2.let {
+      |        println(x)
+      |      }
+      |    }
+      |   return 0
+      |}
+      |""".stripMargin)
+
+    "should contain two METHOD nodes representing the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 2
+    }
+
+    "should contain a METHOD node for the second lambda with the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*2.*").l
+      m.signature shouldBe "ANY()"
+    }
+  }
 }
