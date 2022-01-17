@@ -2,8 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -172,6 +172,30 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain CONTROL_STRUCTURE nodes for the `for` statements with the CODE property set" in {
       cpg.controlStructure.code.dedup.l should not be Seq("")
       cpg.controlStructure.code.dedup.l should not be Seq("<empty>")
+    }
+  }
+
+  "CPG for code with simple `if`-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |  val aList = listOf("a", "b", "c")
+        |  val msg = "b"
+        |  if(aList.contains(msg)) {
+        |    println("HELLO")
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the condition inside the `if`-statement" in {
+      val List(c) = cpg.controlStructure.condition.isCall.l
+      c.code shouldBe "aList.contains(msg)"
+      c.methodFullName shouldBe "kotlin.collections.Collection.contains:kotlin.Boolean(kotlin.String)"
+      c.lineNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(5)
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.signature shouldBe "kotlin.Boolean(kotlin.String)"
     }
   }
 }
