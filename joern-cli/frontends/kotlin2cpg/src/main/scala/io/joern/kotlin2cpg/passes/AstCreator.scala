@@ -929,7 +929,7 @@ class AstCreator(
       case typedExpr: KtParenthesizedExpression =>
         astsForExpression(typedExpr.getExpression(), scopeContext, order, argIdx)
       case typedExpr: KtArrayAccessExpression =>
-        astsForArrayAccess(typedExpr, scopeContext, order)
+        Seq(astForArrayAccess(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtLambdaExpression =>
         Seq(astForLambda(typedExpr, scopeContext, order))
       case typedExpr: KtNamedFunction =>
@@ -1196,10 +1196,10 @@ class AstCreator(
     )
   }
 
-  def astsForArrayAccess(expr: KtArrayAccessExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForArrayAccess(expr: KtArrayAccessExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
       typeInfoProvider: TypeInfoProvider
-  ): Seq[AstWithCtx] = {
+  ): AstWithCtx = {
     val identifierElem = expr.getArrayExpression
     val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
@@ -1222,35 +1222,35 @@ class AstCreator(
     if (indexExpr == None) {
       // TODO: check if this should be handled differently,
       // i.e. not return an empty val but throwing an exception
-      Seq()
+      AstWithCtx(Ast(), Context())
     } else if (indexExpr.isInstanceOf[KtConstantExpression]) {
       val assignment =
         NewCall()
           .name(Operators.indexAccess)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .code(expr.getText())
-          .order(order + 1)
-          .argumentIndex(order + 1)
+          .order(order)
+          .argumentIndex(argIdx)
           .typeFullName(typeFullName)
           .methodFullName(Operators.indexAccess)
           .lineNumber(line(expr))
           .columnNumber(column(expr))
       val call = callAst(assignment, Seq(Ast(identifier)))
-      Seq(AstWithCtx(call, Context(identifiers = List(identifier))))
+      AstWithCtx(call, Context(identifiers = List(identifier)))
     } else {
       val assignment =
         NewCall()
           .name(Operators.indexAccess)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .code(expr.getText())
-          .order(order + 1)
-          .argumentIndex(order + 1)
+          .order(order)
+          .argumentIndex(argIdx)
           .typeFullName(typeFullName)
           .methodFullName(Operators.indexAccess)
           .lineNumber(line(expr))
           .columnNumber(column(expr))
       val call = callAst(assignment, Seq(Ast(identifier)))
-      Seq(AstWithCtx(call, Context(identifiers = List(identifier))))
+      AstWithCtx(call, Context(identifiers = List(identifier)))
     }
   }
 
@@ -1563,6 +1563,11 @@ class AstCreator(
         case typedExpr: KtCallExpression =>
           val astWithCtx = astForCall(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
           astWithCtx.ast
+        case typedExpr: KtArrayAccessExpression =>
+          val astWithCtx = astForArrayAccess(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
+          astWithCtx.ast
+        // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
+        // KtObjectLiteralExpression
         case unhandled: KtExpression =>
           logger.debug(
             "Creating UNKNOWN node in DQE for expression `" + unhandled.getText + "` of class `" + unhandled.getClass + "`."
