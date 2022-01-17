@@ -86,6 +86,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(7)
       p.code shouldBe "++x"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `preDecrement` op with correct fields" in {
@@ -95,6 +96,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(8)
       p.code shouldBe "--x"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `postIncrement` op with correct fields" in {
@@ -104,6 +106,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "x++"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `postDecrement` op with correct fields" in {
@@ -113,6 +116,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(10)
       p.code shouldBe "x--"
+      p.typeFullName shouldBe "kotlin.Int"
     }
   }
 }
