@@ -51,7 +51,6 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "java.util.AbstractMap.containsKey:kotlin.Boolean(kotlin.String)"
     }
 
-    /* TODO: uncomment after argIdx/order fix is in
     "should contain a CALL node for the `.*containsKey.*` QE with the correct arguments set" in {
       def parentCall = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment)
       val List(firstArg) = parentCall.argument(0).isCall.l
@@ -60,7 +59,6 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
       val List(secondArg) = parentCall.argument(1).isLiteral.l
       secondArg.code shouldBe "\"user\""
     }
-     */
   }
 
   "CPG for code with qualified expression with `when` as receiver" - {
