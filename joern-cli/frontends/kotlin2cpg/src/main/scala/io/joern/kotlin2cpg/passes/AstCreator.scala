@@ -469,14 +469,13 @@ class AstCreator(
       }
 
     val scopeCtx = ScopeContext(typeDecl = Some(typeDecl))
-    val methodAsts =
+    val methodAstsWithCtx =
       withOrder(classFunctions) { (method, order) =>
-        val withScopeCtx = astForMethod(method, scopeCtx, order)
-        withScopeCtx.ast
+        astForMethod(method, scopeCtx, order)
       }
 
     val bindingsInfo =
-      methodAsts.map { ast =>
+      methodAstsWithCtx.map(_.ast).map { ast =>
         // TODO: add a try catch here
         val methodNode = ast.root.get.asInstanceOf[NewMethod]
         val node =
@@ -555,7 +554,7 @@ class AstCreator(
     val orderAfterCtors = ctorOrder + secondaryConstructorAsts.size
     val ast =
       Ast(typeDecl)
-        .withChildren(methodAsts)
+        .withChildren(methodAstsWithCtx.map(_.ast))
         .withChild(constructorAst)
         .withChildren(secondaryConstructorAsts)
         // TODO: reenable initializer block parsing when methodReturn nodes have been added
@@ -572,7 +571,9 @@ class AstCreator(
             astForMember(method, orderAfterCtors + order)
           }
         )
-    AstWithCtx(ast, Context(bindingsInfo = bindingsInfo))
+
+    val finalCtx = mergedCtx(methodAstsWithCtx.map(_.ctx) ++ List(Context(bindingsInfo = bindingsInfo)))
+    AstWithCtx(ast, finalCtx)
   }
 
   private def astForInitializerBlock(
@@ -1590,12 +1591,13 @@ class AstCreator(
           withOrder(selectorExpression.getValueArguments()) { case (arg, order) =>
             val selectorOrder = if (isStaticCall) order else selectorOrderCount + order + 1
             val selectorArgIndex = if (isStaticCall) order else selectorOrder - 1
-            val asts = astsForExpression(
-              arg.getArgumentExpression(),
-              scopeContext,
-              selectorOrder,
-              selectorArgIndex
-            )
+            val asts =
+              astsForExpression(
+                arg.getArgumentExpression(),
+                scopeContext,
+                selectorOrder,
+                selectorArgIndex
+              )
             selectorOrderCount += 1
             asts
           }.flatten
@@ -1668,7 +1670,7 @@ class AstCreator(
         .dispatchType(dispatchType)
         .signature(fullNameWithSig._2)
     val receiverNode = receiverAst.root.get
-    val finalAst =
+    val finalAst = {
       if (isStaticCall) {
         Ast(callNode)
           .withChild(receiverAst)
@@ -1689,7 +1691,9 @@ class AstCreator(
             .withReceiverEdge(callNode, receiverNode)
         }
       }
-    AstWithCtx(finalAst, mergedCtx(argAsts.map(_.ctx)))
+    }
+    val argCtx = mergedCtx(argAsts.map(_.ctx))
+    AstWithCtx(finalAst, argCtx)
   }
 
   def astForBreak(expr: KtBreakExpression, scopeContext: ScopeContext, order: Int)(implicit
