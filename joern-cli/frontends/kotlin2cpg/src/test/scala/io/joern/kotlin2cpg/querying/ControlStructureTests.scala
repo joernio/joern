@@ -2,8 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -88,20 +88,6 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
         |       val q =  Random.nextInt(0, 100)
         |       print(q)
         |    } while (q < 50)
-        |
-        |    try {
-        |      throw Exception("SAMPLE_EXCEPTION_MESSAGE")
-        |    } catch (e: SomeException) {
-        |      print("Exception caught.")
-        |    } finally {
-        |      print("reached `finally`-block.")
-        |    }
-        |
-        |    try {
-        |      throw Exception("SAMPLE_EXCEPTION_MESSAGE")
-        |    } catch (e: SomeException) {
-        |      print("Exception caught.")
-        |    }
         |  }
         |}
         |""".stripMargin)
@@ -141,10 +127,6 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       cpg.method.name("methodFoo").doBlock.code.size shouldBe 1
     }
 
-    "should identify `try` blocks" in {
-      cpg.method.name("methodFoo").tryBlock.code.size shouldBe 2
-    }
-
     "should identify `break`" in {
       cpg.method.name("methodFoo").break.code.l shouldBe List("break")
     }
@@ -172,6 +154,83 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain CONTROL_STRUCTURE nodes for the `for` statements with the CODE property set" in {
       cpg.controlStructure.code.dedup.l should not be Seq("")
       cpg.controlStructure.code.dedup.l should not be Seq("<empty>")
+    }
+  }
+
+  "CPG for code with simple `if`-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |  val aList = listOf("a", "b", "c")
+        |  val msg = "b"
+        |  if(aList.contains(msg)) {
+        |    println("HELLO")
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the condition inside the `if`-statement" in {
+      val List(c) = cpg.controlStructure.condition.isCall.l
+      c.code shouldBe "aList.contains(msg)"
+      c.methodFullName shouldBe "kotlin.collections.Collection.contains:kotlin.Boolean(kotlin.String)"
+      c.lineNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(5)
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.signature shouldBe "kotlin.Boolean(kotlin.String)"
+    }
+  }
+
+  "CPG for code with try-catch-finally statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |   try {
+      |      println("INSIDE_TRY")
+      |    } catch (e: Exception) {
+      |      print("Exception caught.")
+      |    } finally {
+      |      print("reached `finally`-block.")
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
+      def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
+      val List(cs) = matchTryQ.l
+      cs.lineNumber shouldBe Some(4)
+      cs.columnNumber shouldBe Some(3)
+
+      val List(c1, c2, c3) = matchTryQ.astChildren.l
+      c1.order shouldBe 1
+      c2.order shouldBe 2
+      c3.order shouldBe 3
+    }
+  }
+
+  "CPG for code with try-catch statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |   try {
+      |     println("INSIDE_TRY")
+      |   } catch (e: Exception) {
+      |     print("Exception caught.")
+      |   }
+      |}
+      |""".stripMargin)
+
+    "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
+      def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
+      val List(cs) = matchTryQ.l
+      cs.lineNumber shouldBe Some(4)
+      cs.columnNumber shouldBe Some(3)
+
+      val List(c1, c2) = matchTryQ.astChildren.l
+      c1.order shouldBe 1
+      c2.order shouldBe 2
     }
   }
 }

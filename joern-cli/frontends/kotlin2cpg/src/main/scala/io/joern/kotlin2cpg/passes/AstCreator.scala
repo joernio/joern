@@ -1658,41 +1658,45 @@ class AstCreator(
       fileInfo: FileInfo,
       typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    val tryNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.TRY)
-      .code(expr.getText)
-      .order(order)
-      .lineNumber(line(expr))
-      .columnNumber(column(expr))
-      .argumentIndex(order)
-    val tryBlockNode = astsForExpression(expr.getTryBlock, scopeContext, 1, 1).headOption
+    val tryNode =
+      NewControlStructure()
+        .controlStructureType(ControlStructureTypes.TRY)
+        .code(expr.getText)
+        .order(order)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+        .argumentIndex(order)
+    val tryAstWithCtx = astsForExpression(expr.getTryBlock, scopeContext, 1, 1).headOption
       .getOrElse(AstWithCtx(Ast(), Context()))
     val tryAst =
       Ast(tryNode)
-        .withChild(tryBlockNode.ast)
+        .withChild(tryAstWithCtx.ast)
 
-    var clauseNum = 1
-    var astWithCatchClauses = tryAst
-    for (clause <- expr.getCatchClauses.asScala) {
-      val clauseExpr =
-        astsForExpression(clause.getCatchBody, scopeContext, clauseNum + 1, clauseNum + 1).headOption
-          .getOrElse(AstWithCtx(Ast(), Context()))
-      astWithCatchClauses = astWithCatchClauses.withChild(clauseExpr.ast)
-      clauseNum += 1
-    }
+    val clauseAstsWitCtx =
+      withOrder(expr.getCatchClauses) { (entry, order) =>
+        astsForExpression(entry.getCatchBody, scopeContext, order + 1, order + 1)
+      }.flatten
 
-    val ast =
+    val finallyAstsWithCtx =
       if (expr.getFinallyBlock() == null) {
-        astWithCatchClauses
+        Seq()
       } else {
-        val astForFinally =
-          astsForExpression(expr.getFinallyBlock.getFinalExpression, scopeContext, 3, 3).headOption
-            .getOrElse(AstWithCtx(Ast(), Context()))
-            .ast
-        astWithCatchClauses
-          .withChild(astForFinally)
+        val numClauses = clauseAstsWitCtx.size
+        astsForExpression(expr.getFinallyBlock.getFinalExpression, scopeContext, numClauses + 2, numClauses + 2)
       }
-    AstWithCtx(ast, Context())
+
+    val tryWithClausesAst =
+      tryAst
+        .withChildren(clauseAstsWitCtx.map(_.ast))
+    val finalAst =
+      if (finallyAstsWithCtx.size > 0) {
+        tryWithClausesAst
+          .withChildren(finallyAstsWithCtx.map(_.ast))
+      } else {
+        tryWithClausesAst
+      }
+    val finalCtx = mergedCtx(Seq(tryAstWithCtx.ctx) ++ clauseAstsWitCtx.map(_.ctx) ++ finallyAstsWithCtx.map(_.ctx))
+    AstWithCtx(finalAst, finalCtx)
   }
 
   def astForWhile(expr: KtWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
