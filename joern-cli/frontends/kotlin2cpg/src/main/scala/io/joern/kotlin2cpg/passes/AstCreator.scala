@@ -1309,6 +1309,8 @@ class AstCreator(
           )
           Constants.unknownOperator
       }
+    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    registerType(typeFullName)
 
     val callNode =
       NewCall()
@@ -1320,7 +1322,7 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .order(order)
-        .typeFullName(TypeConstants.any)
+        .typeFullName(typeFullName)
     val args = List(
       astsForExpression(expr.getBaseExpression, scopeContext, 1, 1).headOption
         .getOrElse(AstWithCtx(Ast(), Context()))
