@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -83,12 +84,28 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
         cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code(".*foo.*")).argument(2).isCall.l
       c.methodFullName shouldBe "kotlin.Comparable.toString:kotlin.String()"
     }
+  }
 
-    /* TODO: uncomment after argIdx/order fix is in
-    "should contain a CALL node for QE's selector with a child with argIdx `0`" in {
-      def args = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code(".*foo.*")).argument(2).isCall.argument
-      args.argumentIndex(0).size shouldBe 1
+  "CPG for code with qualified expression in which the receiver is a call to array access" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |    val arr = arrayOf(1, 2, 3)
+        |    val i = arr[0].toString()
+        |    print(i)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node with the first argument a CALL with the correct props set" in {
+      val List(c) = cpg.call.code("arr.*toString.*").l
+      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
+
+      val List(receiver) = cpg.call.code("arr.*toString.*").argument(0).isCall.l
+      receiver.argumentIndex shouldBe 0
+      receiver.code shouldBe "arr[0]"
+      receiver.methodFullName shouldBe Operators.indexAccess
+      receiver.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
     }
-     */
   }
 }
