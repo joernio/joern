@@ -497,7 +497,7 @@ class AstCreator(filename: String, global: Global) {
       .order(0)
       .typeFullName(typeFullName)
       .dynamicTypeHintFullName(Seq(typeFullName))
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
 
     AstWithCtx(Ast(node), Context(methodParameters = Seq(node)))
   }
@@ -1665,7 +1665,7 @@ class AstCreator(filename: String, global: Global) {
     val typeFullName = registerType(Try(expr.getType.resolve().getQualifiedName).getOrElse("<empty>"))
     val argTypes =
       expr.getArguments.asScala.map(expr => Try(expr.calculateResolvedType().describe()).getOrElse("<empty>")).toList
-    val signature = s"void(${(typeFullName::argTypes).mkString(",")})"
+    val signature = s"void(${argTypes.mkString(",")})"
 
     val allocNode = NewCall()
       .name(name)
@@ -1804,7 +1804,7 @@ class AstCreator(filename: String, global: Global) {
     )
     val argTypes =
       stmt.getArguments.asScala.map(expr => Try(expr.calculateResolvedType().describe()).getOrElse("<empty>"))
-    val signature = s"void(${(typeFullName ++ argTypes).mkString(",")})"
+    val signature = s"void(${argTypes.mkString(",")})"
     val callNode = NewCall()
       .name("<init>")
       .methodFullName(s"$typeFullName.<init>:$signature")
@@ -1896,17 +1896,11 @@ private def astsForExpression(
   private def createCallSignature(decl: ResolvedMethodDeclaration): String = {
     val returnType = Try(decl.getReturnType.describe()).toOption.getOrElse("<empty>")
 
-    val thisParam = if (decl.isStatic) {
-      ""::Nil
-    } else {
-      s"${decl.declaringType().getQualifiedName}"::Nil
-    }
-
     val paramTypes =
       for (i <- 0 until decl.getNumberOfParams)
         yield Try(decl.getParam(i).getType.describe()).toOption.getOrElse("<empty>")
 
-    s"$returnType(${(thisParam ++ paramTypes).mkString(",")})"
+    s"$returnType(${paramTypes.mkString(",")})"
   }
 
   private def codePrefixForMethodCall(call: MethodCallExpr): String = {
@@ -2314,13 +2308,8 @@ private def astsForExpression(
   }
 
   private def paramListSignature(methodDeclaration: CallableDeclaration[_], scopeContext: ScopeContext) = {
-    val thisParam = if (methodDeclaration.isStatic) {
-      List()
-    } else {
-      List(scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>"))
-    }
     val paramTypes = methodDeclaration.getParameters.asScala.map(tryResolveType).toList
-    "(" + (thisParam ++ paramTypes).mkString(",") + ")"
+    "(" + paramTypes.mkString(",") + ")"
   }
 
   private def emptyBlock(order: Int): AstWithCtx = {
