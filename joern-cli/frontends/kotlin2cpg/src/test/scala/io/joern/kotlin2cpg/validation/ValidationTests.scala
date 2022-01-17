@@ -233,4 +233,58 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
+
+  "CPG for code with _safe call_ operator" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |class AClass {
+      |    fun printX(x: String?) {
+      |        val msg = x
+      |        msg?.let {
+      |            println(it)
+      |        }
+      |    }
+      |}
+      |
+      |fun main() {
+      |    val a = AClass()
+      |    a.printX("MSG")
+      |}
+      |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with call with lambda param inside try-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |    try {
+      |        1.let{
+      |          println("INSIDE_TRY")
+      |        }
+      |    } catch (e: Exception) {
+      |        print("Exception caught.")
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node for the lambda" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
 }
