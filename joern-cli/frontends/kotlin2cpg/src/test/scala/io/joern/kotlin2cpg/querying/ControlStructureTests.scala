@@ -233,4 +233,47 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       c2.order shouldBe 2
     }
   }
+
+  "CPG for code with range operators inside for-statements" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo() {
+      |  for (i in 1..4 step 2) print(i)
+      |
+      |  for (i in 8 downTo 1 step 2) print(i)
+      |
+      |  for (i in 1 until 10) {
+      |    print(i)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should contain CALL nodes for the loop expressions with the correct props set" in {
+      val List(c1) = cpg.call.code(".*4.*step.*").l
+      c1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c1.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(kotlin.Int)"
+      c1.signature shouldBe "kotlin.ranges.IntProgression(kotlin.Int)"
+      c1.typeFullName shouldBe "kotlin.ranges.IntProgression"
+      c1.lineNumber shouldBe Some(4)
+      c1.columnNumber shouldBe Some(12)
+
+      val List(c2) = cpg.call.code(".*8.*downTo.*step.*").l
+      c2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c2.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(kotlin.Int)"
+      c2.signature shouldBe "kotlin.ranges.IntProgression(kotlin.Int)"
+      c2.typeFullName shouldBe "kotlin.ranges.IntProgression"
+      c2.lineNumber shouldBe Some(6)
+      c2.columnNumber shouldBe Some(12)
+
+      val List(c3) = cpg.call.code(".*until.*10").l
+      c3.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c3.methodFullName shouldBe "kotlin.ranges.until:kotlin.ranges.IntRange(kotlin.Int)"
+      c3.signature shouldBe "kotlin.ranges.IntRange(kotlin.Int)"
+      c3.typeFullName shouldBe "kotlin.ranges.IntRange"
+      c3.lineNumber shouldBe Some(8)
+      c3.columnNumber shouldBe Some(12)
+    }
+  }
+
 }
