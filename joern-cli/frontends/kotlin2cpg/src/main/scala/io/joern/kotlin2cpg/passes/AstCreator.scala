@@ -89,7 +89,7 @@ import org.jetbrains.kotlin.psi.{
 }
 import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{BindingKinds, TypeInfoProvider, Constants => TypeConstants}
+import io.joern.kotlin2cpg.types.{CallKinds, TypeInfoProvider, Constants => TypeConstants}
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -1438,14 +1438,15 @@ class AstCreator(
       order: Int,
       argIdx: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
-    val bindingKind = typeInfoProvider.bindingKind(expr)
-    val isStaticCall = bindingKind == BindingKinds.Static
-    val isDynamicCall = bindingKind == BindingKinds.Dynamic
+    val callKind = typeInfoProvider.bindingKind(expr)
+    val isStaticCall = callKind == CallKinds.StaticCall
+    val isDynamicCall = callKind == CallKinds.DynamicCall
+    val isExtensionCall = callKind == CallKinds.ExtensionCall
 
     val orderForReceiver = 1
-    val argIdxForReceiver = if (isDynamicCall) 0 else if (isStaticCall) 1 else 1
+    val argIdxForReceiver = if (isDynamicCall || isExtensionCall) 0 else if (isStaticCall) 1 else 1
     val receiverExpr = expr.getReceiverExpression()
-    val receiverAstWithCtx: AstWithCtx = {
+    val receiverAstWithCtx: AstWithCtx =
       receiverExpr match {
         case typedExpr: KtConstantExpression =>
           astForLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
@@ -1515,7 +1516,6 @@ class AstCreator(
               .columnNumber(column(unhandled))
           AstWithCtx(Ast(node), Context())
       }
-    }
     val receiverAst = receiverAstWithCtx.ast
 
     var selectorOrderCount = argIdxForReceiver
@@ -1586,7 +1586,9 @@ class AstCreator(
     registerType(retType)
 
     val dispatchType =
-      if (bindingKind == BindingKinds.Dynamic) {
+      if (callKind == CallKinds.DynamicCall) {
+        DispatchTypes.DYNAMIC_DISPATCH
+      } else if (callKind == CallKinds.ExtensionCall) {
         DispatchTypes.DYNAMIC_DISPATCH
       } else {
         DispatchTypes.STATIC_DISPATCH
