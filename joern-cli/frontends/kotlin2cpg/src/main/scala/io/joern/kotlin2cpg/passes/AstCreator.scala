@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassLiteralExpression,
   KtClassOrObject,
   KtConstantExpression,
+  KtContainerNode,
   KtContinueExpression,
   KtDeclaration,
   KtDoWhileExpression,
@@ -1771,11 +1772,34 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .code(expr.getText)
-    val stmtAst =
-      astsForExpression(expr.getBody(), scopeContext, order + 1, order + 1)
-    val ast = Ast(forNode)
-      .withChildren(stmtAst.map(_.ast))
-    AstWithCtx(ast, mergedCtx(stmtAst.map(_.ctx)))
+    val loopAsts = if (expr.getChildren.toList.size >= 2) {
+      val loopExpr = expr.getChildren.toList(1)
+      loopExpr match {
+        case e: KtContainerNode =>
+          e.getFirstChild match {
+            case typed: KtExpression =>
+              astsForExpression(typed, scopeContext, 1, 1)
+            case _ => Seq()
+          }
+        case _ =>
+          Seq()
+      }
+
+    } else {
+      Seq()
+    }
+    val stmtAst = astsForExpression(expr.getBody(), scopeContext, loopAsts.size + 1, loopAsts.size + 1)
+
+    val ast =
+      if (loopAsts.size > 0) {
+        Ast(forNode)
+          .withChildren(loopAsts.map(_.ast))
+          .withChildren(stmtAst.map(_.ast))
+      } else {
+        Ast(forNode)
+          .withChildren(stmtAst.map(_.ast))
+      }
+    AstWithCtx(ast, mergedCtx(stmtAst.map(_.ctx) ++ loopAsts.map(_.ctx)))
   }
 
   def astForWhen(expr: KtWhenExpression, scopeContext: ScopeContext, order: Int)(implicit
