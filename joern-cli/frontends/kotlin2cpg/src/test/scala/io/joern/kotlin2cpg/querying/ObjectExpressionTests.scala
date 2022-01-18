@@ -10,13 +10,13 @@ class ObjectExpressionTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple object expression" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
-                                                |fun foo() {
-                                                |  val bar = object {
-                                                |    override val baz = 1
-                                                |  }
-                                                |  println(bar.y)
-                                                |}
-                                                |""".stripMargin)
+        |fun foo() {
+        |  val bar = object {
+        |    override val baz = 1
+        |  }
+        |  println(bar.y)
+        |}
+        |""".stripMargin)
 
     "should contain an unknown node for the object expression" in {
       val List(u) = cpg.all.filter(_.isInstanceOf[Unknown]).map(_.asInstanceOf[Unknown]).l

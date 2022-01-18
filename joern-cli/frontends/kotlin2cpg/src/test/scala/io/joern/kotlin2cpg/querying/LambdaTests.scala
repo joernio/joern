@@ -145,4 +145,52 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       cpg.method.parameter.filter { p => p.name == null }.method.fullName.l shouldBe Seq()
     }
   }
+
+  "CPG for code with a simple lambda which captures a method parameter inside method" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |class AClass {
+        |    fun doSomething(x: String) {
+        |        1.let {
+        |            println(x)
+        |        }
+        |    }
+        |}
+        |
+        |""".stripMargin)
+
+    "should contain CALL node for println" in {
+      cpg.call.code("print.*").size shouldBe 1
+    }
+
+    "should contain a METHOD node for the lambda with the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.signature shouldBe "ANY()"
+    }
+  }
+
+  "CPG for code with a simple lambda which captures a method parameter, nested twice" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo(x: String): Int {
+      |    1.let {
+      |      2.let {
+      |        println(x)
+      |      }
+      |    }
+      |   return 0
+      |}
+      |""".stripMargin)
+
+    "should contain two METHOD nodes representing the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 2
+    }
+
+    "should contain a METHOD node for the second lambda with the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*2.*").l
+      m.signature shouldBe "ANY()"
+    }
+  }
 }

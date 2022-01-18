@@ -3,6 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -257,4 +258,24 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(19)
     }
   }
+
+  "CPG for code with a simple method call to decl of Java's stdlib" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo(x: String): Int {
+      |   val r = Runtime.getRuntime()
+      |   r.exec(x)
+      |   return 0
+      |}
+      |
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with the correct props set" in {
+      val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l
+      firstArg.typeFullName shouldBe "java.lang.Runtime"
+      secondArg.typeFullName shouldBe "kotlin.String"
+    }
+  }
+
 }
