@@ -128,4 +128,163 @@ class ValidationTests extends AnyFreeSpec with Matchers {
       cpg.call.filter { c => c.name == null }.code.l shouldBe List()
     }
   }
+
+  "CPG for code with a simple lambda which captures a method parameter" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo(x: String): Int {
+      |    1.let {
+      |       println(x)
+      |    }
+      |   return 0
+      |}
+      |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with a simple lambda which captures a method parameter inside method" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |class AClass {
+        |    fun doSomething(x: String) {
+        |        1.let {
+        |            println(x)
+        |        }
+        |    }
+        |}
+        |
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with a simple lambda which captures a method parameter, nested twice" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo(x: String): Int {
+        |    1.let {
+        |      2.let {
+        |        println(x)
+        |      }
+        |    }
+        |   return 0
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with a simple if-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |    val msg = "y"
+        |    if(msg == "y") {
+        |        println("HELLO")
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with simple `if`-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |  val aList = listOf("a", "b", "c")
+        |  val msg = "b"
+        |  if(aList.contains(msg)) {
+        |    println("HELLO")
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with _safe call_ operator" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |class AClass {
+      |    fun printX(x: String?) {
+      |        val msg = x
+      |        msg?.let {
+      |            println(it)
+      |        }
+      |    }
+      |}
+      |
+      |fun main() {
+      |    val a = AClass()
+      |    a.printX("MSG")
+      |}
+      |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with call with lambda param inside try-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |    try {
+      |        1.let{
+      |          println("INSIDE_TRY")
+      |        }
+      |    } catch (e: Exception) {
+      |        print("Exception caught.")
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node for the lambda" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
 }

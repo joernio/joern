@@ -6,7 +6,7 @@ val ScoptVersion = "4.0.1"
 val BetterFilesVersion = "3.9.1"
 val CaskVersion = "0.8.0"
 val CirceVersion = "0.14.1"
-val AmmoniteVersion = "2.5.0"
+val AmmoniteVersion = "2.5.1"
 val ZeroturnaroundVersion = "1.14"
 
 dependsOn(Projects.fuzzyc2cpg % Test, Projects.c2cpg % Test, Projects.macros)
@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "ammonite" % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi" %% "os-lib" % "0.8.0",
   "com.lihaoyi" %% "cask" % CaskVersion,
-  "org.scalameta" %% "scalameta" % "4.4.31",
+  "org.scalameta" %% "scalameta" % "4.4.32",
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 

@@ -363,18 +363,10 @@ class AstCreator(filename: String, global: Global) {
     val bindingsInfo =
       (constructorAsts ++ methodAsts).map(_.ast).map { ast =>
         val methodNode = ast.root.get.asInstanceOf[NewMethod]
-        val signature = {
-          if (methodNode.signature.endsWith("()")) {
-            "ANY()"
-          } else {
-            val numParams = methodNode.signature.count(_ == ',')
-            "ANY(ANY" + ",ANY" * (numParams - 1) + ")"
-          }
-        }
         val node =
           NewBinding()
             .name(methodNode.name)
-            .signature(signature)
+            .signature(methodNode.signature)
         BindingInfo(
           node,
           List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF))
@@ -1451,6 +1443,7 @@ class AstCreator(filename: String, global: Global) {
 
     val ast = Ast(initNode)
       .withChild(Ast(objectNode))
+      .withReceiverEdge(initNode, objectNode)
       .withChildren(args.map(_.ast))
       .withArgEdge(initNode, objectNode)
       .withArgEdges(initNode, args.flatMap(_.ast.root))
@@ -1657,7 +1650,6 @@ class AstCreator(filename: String, global: Global) {
       scopeContext: ScopeContext,
       order: Int
   ): AstWithCtx = {
-    // VariableDeclarator || AssignExpr
     val name = "<operator>.alloc"
     val typeFullName = registerType(Try(expr.getType.resolve().getQualifiedName).getOrElse("<empty>"))
     val argTypes =
@@ -1751,6 +1743,9 @@ class AstCreator(filename: String, global: Global) {
         .argumentIndex(2)
     ).withChild(
       Ast(identifierForInit)
+    ).withReceiverEdge(
+      initNode,
+      identifierForInit
     ).withChildren(
       args.map(_.ast)
     ).withArgEdge(
@@ -1823,7 +1818,20 @@ class AstCreator(filename: String, global: Global) {
       astsForExpression(s, scopeContext, o)
     }.flatten
 
-    callAst(callNode, Seq(thisAst) ++ args)
+    val AstWithCtx(ast, ctx) = callAst(callNode, Seq(thisAst) ++ args)
+
+    // ast.root should just be `callNode`, but do a sanity check in any case.
+    ast.root match {
+      case None =>
+        logger.warn("Attempting to create constructor invocation without root")
+        AstWithCtx(ast, ctx)
+
+      case Some(root) =>
+        AstWithCtx(
+          ast.withReceiverEdge(root, thisNode),
+          ctx
+        )
+    }
   }
 
   private def astsForExpression(
