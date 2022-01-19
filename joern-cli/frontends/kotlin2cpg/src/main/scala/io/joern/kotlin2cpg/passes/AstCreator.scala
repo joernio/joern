@@ -173,7 +173,7 @@ class AstCreator(
     * nodes for each key in the map.
     */
   private def registerType(typeName: String): String = {
-    global.usedTypes.put(typeName, true)
+    global.usedTypes.putIfAbsent(typeName, true)
     typeName
   }
 
