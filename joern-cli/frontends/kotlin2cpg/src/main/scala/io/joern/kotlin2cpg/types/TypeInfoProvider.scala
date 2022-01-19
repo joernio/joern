@@ -1,24 +1,12 @@
 package io.joern.kotlin2cpg.types
 
-import com.intellij.util.ReflectionUtil
 import com.intellij.util.keyFMap.KeyFMap
-import org.jetbrains.kotlin.descriptors.{
-  CallableDescriptor,
-  ClassDescriptor,
-  DeclarationDescriptor,
-  FunctionDescriptor,
-  SimpleFunctionDescriptor,
-  ValueParameterDescriptor
-}
-import org.jetbrains.kotlin.descriptors.impl.{
-  ClassConstructorDescriptorImpl,
-  LocalVariableDescriptor,
-  TypeAliasConstructorDescriptor,
-  TypeAliasConstructorDescriptorImpl
-}
+import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
+import org.jetbrains.kotlin.descriptors.impl.{ClassConstructorDescriptorImpl, TypeAliasConstructorDescriptorImpl}
 import org.jetbrains.kotlin.psi.{
   KtBinaryExpression,
   KtCallExpression,
+  KtClassLiteralExpression,
   KtClassOrObject,
   KtElement,
   KtExpression,
@@ -32,7 +20,7 @@ import org.jetbrains.kotlin.psi.{
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{LazyClassDescriptor, LazyTypeAliasDescriptor}
-import org.jetbrains.kotlin.types.{ErrorType, UnresolvedType}
+import org.jetbrains.kotlin.types.{ErrorType, SimpleType, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -47,14 +35,20 @@ import KotlinTypeInfoProvider._
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 
+// representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
+trait WithDefaultType {
+  def getDefaultType(): SimpleType
+}
+
 object Constants {
   val kotlinAny = "kotlin.Any"
   val any = "ANY"
+  val classLiteralReplacementMethodName = "getClass"
 }
 
-object BindingKinds extends Enumeration {
-  type BindingKind = Value
-  val Unknown, Static, Dynamic = Value
+object CallKinds extends Enumeration {
+  type CallKind = Value
+  val Unknown, StaticCall, DynamicCall, ExtensionCall = Value
 }
 
 trait TypeInfoProvider {
@@ -68,11 +62,12 @@ trait TypeInfoProvider {
   def fullName(expr: KtTypeAlias, or: String): String
   def aliasTypeFullName(expr: KtTypeAlias, or: String): String
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
-  def bindingKind(expr: KtQualifiedExpression): BindingKinds.BindingKind
+  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
+  def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
 }
 
 object KotlinTypeInfoProvider {
@@ -338,6 +333,20 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     }
   }
 
+  def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String) = {
+    val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
+    if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.size() > 0) {
+      val firstTypeArg = typeInfo.getType.getArguments.get(0)
+      val rendered = DescriptorRenderer.FQ_NAMES_IN_TYPES.renderType(firstTypeArg.getType)
+      val retType = expressionType(expr, Constants.any)
+      val signature = retType + "()"
+      val fullName = rendered + "." + Constants.classLiteralReplacementMethodName + ":" + signature
+      (fullName, signature)
+    } else {
+      (or._1, or._2)
+    }
+  }
+
   def fullNameWithSignature(expr: KtCallExpression, or: (String, String)): (String, String) = {
     val firstChild = expr.getFirstChild
     if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
@@ -412,8 +421,10 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
             } else {
               return (fullName, signature)
             }
-          case other: Any =>
-            logger.debug("Unhandled type info fetching for class `" + other.getClass + "`")
+          case unhandled: Any =>
+            logger.debug(
+              s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+            )
             return (or._1, or._2)
         }
       }
@@ -465,8 +476,10 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
             } else {
               return (fullName, signature)
             }
-          case other: Any =>
-            logger.debug("Unhandled type info fetching for class `" + other.getClass + "`")
+          case unhandled: Any =>
+            logger.debug(
+              s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+            )
             return or
         }
       }
@@ -493,8 +506,10 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
                 val decl = fnDescriptor.getContainingDeclaration
                 val renderedFqName = DescriptorUtils.getFqName(decl)
                 return renderedFqName.toString
-              case other: Any =>
-                logger.debug("Unhandled type info fetching for class `" + other.getClass + "`")
+              case unhandled: Any =>
+                logger.debug(
+                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+                )
                 return or
             }
           }
@@ -505,7 +520,7 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     or
   }
 
-  def bindingKind(expr: KtQualifiedExpression): BindingKinds.BindingKind = {
+  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
     val selectorExpr = expr.getSelectorExpression
 
     selectorExpr match {
@@ -516,23 +531,28 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
           val y = bindingContext.get(BindingContext.CALL, asExpr)
           if (y == null) {
             logger.debug("Retrieved empty binding context info for `" + expr.getName + "`.")
-            return BindingKinds.Unknown
+            return CallKinds.Unknown
           }
           val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
           if (z != null) {
             z.getResultingDescriptor match {
               case fnDescriptor: FunctionDescriptor =>
+                val isExtension = DescriptorUtils.isExtension(fnDescriptor)
                 val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
-                return if (isStatic) BindingKinds.Static else BindingKinds.Dynamic
-              case other: Any =>
-                logger.debug("Unhandled type info fetching for class `" + other.getClass + "`")
-                return BindingKinds.Unknown
+                return if (isExtension) CallKinds.ExtensionCall
+                else if (isStatic) CallKinds.StaticCall
+                else CallKinds.DynamicCall
+              case unhandled: Any =>
+                logger.debug(
+                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+                )
+                return CallKinds.Unknown
             }
           }
         }
       case _ =>
     }
-    BindingKinds.Unknown
+    CallKinds.Unknown
   }
 
   def fullNameWithSignature(
@@ -603,8 +623,10 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
                   return fn
                 }
 
-              case other: Any =>
-                logger.debug("Unhandled type info fetching for class `" + other.getClass + "`")
+              case unhandled: Any =>
+                logger.debug(
+                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+                )
                 return (or._1, or._2)
             }
           }
@@ -691,25 +713,12 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     }
     val renderer = descriptorRenderer(targetDesc)
     val rendered: Option[String] = targetDesc match {
-      case typedDesc: LocalVariableDescriptor =>
-        val r = renderer.renderType(typedDesc.getType)
-        if (isValidRender(r)) {
-          Some(
-            stripped(
-              r
-            )
-          )
-        } else {
-          None
-        }
-      case typedDesc: ValueParameterDescriptor =>
-        val r = renderer.renderType(typedDesc.getType)
-        if (isValidRender(r)) {
-          Some(stripped(r))
-        } else {
-          None
-        }
-      case _ =>
+      case typedDesc: ValueDescriptor =>
+        Some(stripped(renderer.renderType(typedDesc.getType())))
+      case typedDesc: WithDefaultType =>
+        Some(stripped(renderer.renderType(typedDesc.getDefaultType())))
+      case unhandled: Any =>
+        logger.debug(s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`.")
         None
     }
 

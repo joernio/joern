@@ -8,6 +8,7 @@ object Predefined {
         |import io.joern.console.{`package` => _, _}
         |import io.joern.console.JoernConsole._
         |import io.shiftleft.codepropertygraph.Cpg
+        |import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
         |import io.shiftleft.codepropertygraph.cpgloading._
         |import io.shiftleft.codepropertygraph.generated._
         |import io.shiftleft.codepropertygraph.generated.nodes._

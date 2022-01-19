@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -168,6 +168,42 @@ class StdLibTests extends AnyFreeSpec with Matchers {
           Set(
             "kotlin.CharSequence.split:kotlin.collections.List(kotlin.Array,kotlin.Boolean,kotlin.Int)"
           )
+      }
+    }
+
+    "CPG for code with calls to stdlib's `trim`s" - {
+      lazy val cpg = Kt2CpgTestContext.buildCpg("""
+          |package mypkg
+          |
+          |fun trimParam(p: String): String {
+          |    val y = p.trim()
+          |    return y
+          |}
+          |
+          |fun main() {
+          |    val out = trimParam(" hello ")
+          |    println(out)
+          |}
+          |
+          |""".stripMargin)
+
+      "should contain a CALL node for `trim` with the correct props set" in {
+        val List(c) = cpg.call.code("p.trim.*").l
+        c.methodFullName shouldBe "kotlin.String.trim:kotlin.String()"
+        c.signature shouldBe "kotlin.String()"
+        c.typeFullName shouldBe "kotlin.String"
+        c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+        c.lineNumber shouldBe Some(4)
+        c.columnNumber shouldBe Some(12)
+      }
+
+      "should contain a CALL node for `trim` a receiver arg with the correct props set" in {
+        val List(receiverArg) = cpg.call.code("p.trim.*").argument(0).isIdentifier.l
+        receiverArg.name shouldBe "p"
+        receiverArg.code shouldBe "p"
+        receiverArg.typeFullName shouldBe "kotlin.String"
+        receiverArg.lineNumber shouldBe Some(4)
+        receiverArg.columnNumber shouldBe Some(12)
       }
     }
   }

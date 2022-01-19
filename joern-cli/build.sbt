@@ -10,7 +10,7 @@ dependsOn(
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg,
-  "com.lihaoyi" %% "requests" % "0.6.9",
+  "com.lihaoyi" %% "requests" % "0.7.0",
   "com.github.scopt" %% "scopt" % "4.0.1",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "io.circe" %% "circe-generic" % "0.14.1",
