@@ -2,7 +2,7 @@ name := "jimple2cpg"
 
 scalaVersion := "2.13.7"
 
-val sootVersion      = "4.2.1"
+val sootVersion      = "4.3.0"
 val slf4jVersion     = "1.7.33"
 val scalatestVersion = "3.2.10"
 
