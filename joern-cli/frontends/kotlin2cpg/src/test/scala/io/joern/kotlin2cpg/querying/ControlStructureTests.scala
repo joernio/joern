@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -176,7 +176,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.collections.Collection.contains:kotlin.Boolean(kotlin.String)"
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(5)
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "kotlin.Boolean(kotlin.String)"
     }
   }
@@ -251,7 +251,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
 
     "should contain CALL nodes for the loop expressions with the correct props set" in {
       val List(c1) = cpg.call.code(".*4.*step.*").l
-      c1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c1.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(kotlin.Int)"
       c1.signature shouldBe "kotlin.ranges.IntProgression(kotlin.Int)"
       c1.typeFullName shouldBe "kotlin.ranges.IntProgression"
@@ -259,7 +259,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       c1.columnNumber shouldBe Some(12)
 
       val List(c2) = cpg.call.code(".*8.*downTo.*step.*").l
-      c2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c2.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(kotlin.Int)"
       c2.signature shouldBe "kotlin.ranges.IntProgression(kotlin.Int)"
       c2.typeFullName shouldBe "kotlin.ranges.IntProgression"
@@ -267,7 +267,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       c2.columnNumber shouldBe Some(12)
 
       val List(c3) = cpg.call.code(".*until.*10").l
-      c3.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c3.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c3.methodFullName shouldBe "kotlin.ranges.until:kotlin.ranges.IntRange(kotlin.Int)"
       c3.signature shouldBe "kotlin.ranges.IntRange(kotlin.Int)"
       c3.typeFullName shouldBe "kotlin.ranges.IntRange"

@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -24,7 +24,7 @@ class ParenthesizedExpressionTests extends AnyFreeSpec with Matchers {
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(19)
       c.code shouldBe "\"a\" + \"b\""
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "kotlin.String"
     }
   }
@@ -44,7 +44,7 @@ class ParenthesizedExpressionTests extends AnyFreeSpec with Matchers {
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(19)
       c.code shouldBe "\"a\" + \"b\""
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "kotlin.String"
     }
   }

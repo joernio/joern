@@ -5,7 +5,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifier}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class FieldAccessTests extends AnyFreeSpec with Matchers {
@@ -33,7 +33,7 @@ class FieldAccessTests extends AnyFreeSpec with Matchers {
       c.typeFullName shouldBe "kotlin.String"
       c.lineNumber shouldBe Some(10)
       c.columnNumber shouldBe Some(4)
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a CALL node for the _fieldAccess_ expression with the correct arguments set" in {
