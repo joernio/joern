@@ -20,14 +20,16 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
        |int main() {
        |  char test[1024];
        |}""".stripMargin) { cpg =>
-      inside(cpg.local.l) { case List(test) =>
-        test.typeFullName shouldBe "char[1024]"
-        test.evalType.l shouldBe List("char[1024]")
-        inside(test.typ.l) { case List(t) =>
-          t.name shouldBe "char[1024]"
-          t.fullName shouldBe "char[1024]"
-          t.typeDeclFullName shouldBe "char[1024]"
-        }
+      inside(cpg.local.l) {
+        case List(test) =>
+          test.typeFullName shouldBe "char[1024]"
+          test.evalType.l shouldBe List("char[1024]")
+          inside(test.typ.l) {
+            case List(t) =>
+              t.name shouldBe "char[1024]"
+              t.fullName shouldBe "char[1024]"
+              t.typeDeclFullName shouldBe "char[1024]"
+          }
       }
     }
 
@@ -42,24 +44,28 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |  free(ptr);
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.call("free").argument(1).l) { case List(arg) =>
-        arg.evalType.l shouldBe List("test")
-        arg.code shouldBe "ptr"
-        inside(arg.typ.referencedTypeDecl.l) { case List(tpe) =>
-          tpe.fullName shouldBe "test"
-          tpe.name shouldBe "test"
-          tpe.code shouldBe "struct test"
-        }
-        inside(cpg.local.l) { case List(ptr) =>
-          ptr.name shouldBe "ptr"
-          ptr.typeFullName shouldBe "test"
-          ptr.code shouldBe "struct test* ptr"
-        }
-        inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
-          tpe.fullName shouldBe "test"
-          tpe.name shouldBe "test"
-          tpe.code shouldBe "struct test"
-        }
+      inside(cpg.call("free").argument(1).l) {
+        case List(arg) =>
+          arg.evalType.l shouldBe List("test")
+          arg.code shouldBe "ptr"
+          inside(arg.typ.referencedTypeDecl.l) {
+            case List(tpe) =>
+              tpe.fullName shouldBe "test"
+              tpe.name shouldBe "test"
+              tpe.code shouldBe "struct test"
+          }
+          inside(cpg.local.l) {
+            case List(ptr) =>
+              ptr.name shouldBe "ptr"
+              ptr.typeFullName shouldBe "test"
+              ptr.code shouldBe "struct test* ptr"
+          }
+          inside(cpg.local.typ.referencedTypeDecl.l) {
+            case List(tpe) =>
+              tpe.fullName shouldBe "test"
+              tpe.name shouldBe "test"
+              tpe.code shouldBe "struct test"
+          }
       }
     }
 
@@ -69,8 +75,9 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |  memcpy(dst, src, a);
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.call("memcpy").argument(1).evalType.l) { case List(tpe) =>
-        tpe shouldBe "uint8_t[1]"
+      inside(cpg.call("memcpy").argument(1).evalType.l) {
+        case List(tpe) =>
+          tpe shouldBe "uint8_t[1]"
       }
     }
 
@@ -83,8 +90,33 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         | struct Foo *ptr;
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
-        tpe.fullName shouldBe "Foo"
+      inside(cpg.local.typ.referencedTypeDecl.l) {
+        case List(tpe) =>
+          tpe.fullName shouldBe "Foo"
+      }
+    }
+
+    "create correct types for identifiers" in CpgTypeNodeFixture("""
+       |void test_func() {
+       |  char * badChar = malloc(0x100);
+       |  free(badChar);
+       |  return;
+       |}""".stripMargin) { cpg =>
+      inside(cpg.call("free").argument(1).isIdentifier.l) {
+        case List(badChar) =>
+          badChar.name shouldBe "badChar"
+          badChar.typeFullName shouldBe "char"
+          inside(badChar.typ.l) {
+            case List(tpe) =>
+              tpe.fullName shouldBe "char"
+              tpe.name shouldBe "char"
+          }
+          inside(cpg.method("test_func").ast.isLocal.name(badChar.name).code(".*\\*.*").l) {
+            case List(ptr) =>
+              ptr.name shouldBe "badChar"
+              ptr.typeFullName shouldBe "char"
+              ptr.code shouldBe "char* badChar"
+          }
       }
     }
   }
