@@ -46,9 +46,9 @@ object Constants {
   val classLiteralReplacementMethodName = "getClass"
 }
 
-object BindingKinds extends Enumeration {
-  type BindingKind = Value
-  val Unknown, Static, Dynamic = Value
+object CallKinds extends Enumeration {
+  type CallKind = Value
+  val Unknown, StaticCall, DynamicCall, ExtensionCall = Value
 }
 
 trait TypeInfoProvider {
@@ -62,7 +62,7 @@ trait TypeInfoProvider {
   def fullName(expr: KtTypeAlias, or: String): String
   def aliasTypeFullName(expr: KtTypeAlias, or: String): String
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
-  def bindingKind(expr: KtQualifiedExpression): BindingKinds.BindingKind
+  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
@@ -520,7 +520,7 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     or
   }
 
-  def bindingKind(expr: KtQualifiedExpression): BindingKinds.BindingKind = {
+  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
     val selectorExpr = expr.getSelectorExpression
 
     selectorExpr match {
@@ -531,25 +531,28 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
           val y = bindingContext.get(BindingContext.CALL, asExpr)
           if (y == null) {
             logger.debug("Retrieved empty binding context info for `" + expr.getName + "`.")
-            return BindingKinds.Unknown
+            return CallKinds.Unknown
           }
           val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
           if (z != null) {
             z.getResultingDescriptor match {
               case fnDescriptor: FunctionDescriptor =>
+                val isExtension = DescriptorUtils.isExtension(fnDescriptor)
                 val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
-                return if (isStatic) BindingKinds.Static else BindingKinds.Dynamic
+                return if (isExtension) CallKinds.ExtensionCall
+                else if (isStatic) CallKinds.StaticCall
+                else CallKinds.DynamicCall
               case unhandled: Any =>
                 logger.debug(
                   s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
                 )
-                return BindingKinds.Unknown
+                return CallKinds.Unknown
             }
           }
         }
       case _ =>
     }
-    BindingKinds.Unknown
+    CallKinds.Unknown
   }
 
   def fullNameWithSignature(
