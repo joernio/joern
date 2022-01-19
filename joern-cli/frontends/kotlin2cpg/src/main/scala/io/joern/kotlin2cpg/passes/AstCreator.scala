@@ -1618,7 +1618,7 @@ class AstCreator(
           .withChild(receiverAst)
           .withChildren(argAsts.map(_.ast))
           .withArgEdges(callNode, argAsts.map(_.ast.root.get))
-      }  else if (isExtensionCall) {
+      } else if (isExtensionCall) {
         root
           .withChild(receiverAst)
           .withArgEdge(callNode, receiverNode)
