@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.types
 
 import com.intellij.util.keyFMap.KeyFMap
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{ClassConstructorDescriptorImpl, TypeAliasConstructorDescriptorImpl}
 import org.jetbrains.kotlin.psi.{
@@ -10,6 +11,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassOrObject,
   KtElement,
   KtExpression,
+  KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
   KtParameter,
@@ -20,7 +22,7 @@ import org.jetbrains.kotlin.psi.{
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{LazyClassDescriptor, LazyTypeAliasDescriptor}
-import org.jetbrains.kotlin.types.{ErrorType, SimpleType, UnresolvedType}
+import org.jetbrains.kotlin.types.{ErrorType, KotlinTypeFactoryKt, KotlinTypeKt, SimpleType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -31,7 +33,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 
 import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
-import KotlinTypeInfoProvider._
+import DefaultNameGenerator._
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 
@@ -51,7 +53,7 @@ object CallKinds extends Enumeration {
   val Unknown, StaticCall, DynamicCall, ExtensionCall = Value
 }
 
-trait TypeInfoProvider {
+trait NameGenerator {
   def returnType(elem: KtNamedFunction, or: String): String
   def containingDeclType(expr: KtQualifiedExpression, or: String): String
   def expressionType(expr: KtExpression, or: String): String
@@ -68,9 +70,10 @@ trait TypeInfoProvider {
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
+  def fullNameWithSignature(expr: KtLambdaExpression, or: (String, String)): (String, String)
 }
 
-object KotlinTypeInfoProvider {
+object DefaultNameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
@@ -120,7 +123,7 @@ object KotlinTypeInfoProvider {
   }
 }
 
-class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInfoProvider {
+class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
 
   // TODO: remove this state
@@ -605,7 +608,25 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
                   fnDescriptor.getValueParameters.asScala
                     .map { vp =>
                       // TODO: good place to handle Function1
+
+                      // cat core/descriptors/src/org/jetbrains/kotlin/builtins/functionTypes.kt
+
+                      val st = TypeUtils.getAllSupertypes(vp.getType)
+                      st.forEach { t =>
+                        println("r: " + renderer.renderType(t))
+                        println("rc: " + renderer.renderTypeConstructor(t.getConstructor))
+                      }
+
                       val rendered = renderer.renderType(vp.getType)
+                      println("vp : " + vp + " fd: " + erasedTypeDescriptor)
+                      vp.getOverriddenDescriptors.forEach { od =>
+                        println("override: " + od)
+                      }
+                      val nt = vp.getType.getHasNotTrivialRefinementFactory
+                      println(
+                        "rendered: " + rendered + " c: " + vp.getType.getConstructor + " nt: " + nt + " rrr: " + renderer
+                          .renderTypeConstructor(vp.getType.getConstructor)
+                      )
                       stripped(rendered)
                     }
                     .mkString(",")
@@ -656,6 +677,12 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     } else {
       or
     }
+  }
+
+  def fullNameWithSignature(expr: KtLambdaExpression, or: (String, String)): (String, String) = {
+    printBindingsForEntity(bindingContext, expr)
+    println("GOT IN HERE")
+    (or._1, or._2)
   }
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {

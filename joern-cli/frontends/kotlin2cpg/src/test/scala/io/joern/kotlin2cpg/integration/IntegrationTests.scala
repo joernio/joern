@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.integration
 
 import better.files.File
 import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta, PathUtils, SourceFilesPicker}
-import io.joern.kotlin2cpg.types.{CompilerAPI, InferenceSourcesPicker, KotlinTypeInfoProvider}
+import io.joern.kotlin2cpg.types.{CompilerAPI, InferenceSourcesPicker, DefaultNameGenerator}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -69,11 +69,11 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
           }
           willFilter
         }
-    val typeInfoProvider = new KotlinTypeInfoProvider(environment)
+    val nameGenerator = new DefaultNameGenerator(environment)
     new Kt2Cpg().createCpg(
       filesWithMeta,
       Seq(),
-      typeInfoProvider,
+      nameGenerator,
       Some(outPath)
     )
   }

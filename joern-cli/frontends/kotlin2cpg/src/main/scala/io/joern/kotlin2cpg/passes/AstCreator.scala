@@ -89,7 +89,7 @@ import org.jetbrains.kotlin.psi.{
 }
 import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{CallKinds, TypeInfoProvider, Constants => TypeConstants}
+import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, Constants => TypeConstants}
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -146,7 +146,7 @@ case class FileInfo(imports: Seq[ImportEntry], classes: List[KtClass])
 // TODO: add description
 class AstCreator(
     fileWithMeta: KtFileWithMeta,
-    xTypeInfoProvider: TypeInfoProvider,
+    xTypeInfoProvider: NameGenerator,
     global: Global
 ) {
 
@@ -160,7 +160,7 @@ class AstCreator(
   val relativizedPath = fileWithMeta.relativizedPath
 
   def createAst(): Iterator[DiffGraph] = {
-    implicit val typeInfoProvider = xTypeInfoProvider
+    implicit val nameGenerator = xTypeInfoProvider
     logger.debug("Started parsing of file `" + fileWithMeta.filename + "`")
     storeInDiffGraph(astForFile(fileWithMeta))
     Iterator(diffGraph.build())
@@ -258,7 +258,7 @@ class AstCreator(
 
   private def astForFile(
       fileWithMeta: KtFileWithMeta
-  )(implicit typeInfoProvider: TypeInfoProvider): AstWithCtx = {
+  )(implicit nameGenerator: NameGenerator): AstWithCtx = {
     val ktFile = fileWithMeta.f
     val classDecls =
       ktFile.getDeclarations.asScala
@@ -360,7 +360,7 @@ class AstCreator(
 
   def astForDeclaration(decl: KtDeclaration, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Seq[AstWithCtx] = {
     decl match {
       case d: KtClass             => Seq(astForClassOrObject(d, order))
@@ -379,16 +379,16 @@ class AstCreator(
   // TODO: lower them
   def astForTopLevelProperty(prop: KtProperty, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ) = {
     Seq()
   }
 
   def astForTypeAlias(typeAlias: KtTypeAlias, order: Int)(implicit
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val fullName = typeInfoProvider.fullName(typeAlias, TypeConstants.any)
-    val aliasTypeFullName = typeInfoProvider.aliasTypeFullName(typeAlias, TypeConstants.any)
+    val fullName = nameGenerator.fullName(typeAlias, TypeConstants.any)
+    val aliasTypeFullName = nameGenerator.aliasTypeFullName(typeAlias, TypeConstants.any)
     registerType(fullName)
     registerType(aliasTypeFullName)
 
@@ -408,14 +408,14 @@ class AstCreator(
 
   def astForClassOrObject(ktClass: KtClassOrObject, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val className = ktClass.getName()
     val explicitFullName = {
       val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
       fqName + "." + className
     }
-    val fullName = typeInfoProvider.fullName(ktClass, explicitFullName)
+    val fullName = nameGenerator.fullName(ktClass, explicitFullName)
     registerType(fullName)
 
     val explicitBaseTypeFullNames =
@@ -428,7 +428,7 @@ class AstCreator(
         ) // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
         .map(_.getText)
         .toList
-    val baseTypeFullNames = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val baseTypeFullNames = nameGenerator.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
     val typeDecl =
       NewTypeDecl()
         .code(ktClass.getName)
@@ -581,7 +581,7 @@ class AstCreator(
       initBlock: KtAnonymousInitializer,
       scopeContext: ScopeContext,
       order: Int
-  )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
+  )(implicit fileInfo: FileInfo, nameGenerator: NameGenerator): AstWithCtx = {
     val methodNode =
       NewMethod()
         .name("PLACEHOLDER_INIT_NAME")
@@ -613,7 +613,7 @@ class AstCreator(
       ktFn: KtNamedFunction,
       scopeContext: ScopeContext,
       childNum: Int
-  )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
+  )(implicit fileInfo: FileInfo, nameGenerator: NameGenerator): AstWithCtx = {
 
     // TODO: add the annotations as soon as they're part of the open source schema
     // ktFn.getModifierList.getAnnotationEntries().asScala.map(_.getText)
@@ -681,7 +681,7 @@ class AstCreator(
   }
 
   private def astForMethodReturn(ktFn: KtNamedFunction, order: Int)(implicit
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Ast = {
     val explicitTypeName =
       if (ktFn.getTypeReference() != null) { // TODO: use `Option` for these types of checks
@@ -689,7 +689,7 @@ class AstCreator(
       } else {
         "" // TODO: add test case for this scenario; maybe replace with Constants.Any
       }
-    val typeFullName = typeInfoProvider.returnType(ktFn, explicitTypeName)
+    val typeFullName = nameGenerator.returnType(ktFn, explicitTypeName)
     registerType(typeFullName)
 
     val node =
@@ -705,7 +705,7 @@ class AstCreator(
 
   private def astForMethodBody(body: KtBlockExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     body match {
       case blockExpr if blockExpr != null => astForBlock(blockExpr, scopeContext, order)
@@ -717,9 +717,9 @@ class AstCreator(
 
   private def astForBlock(expr: KtBlockExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     val block =
       NewBlock()
         .order(order)
@@ -805,7 +805,7 @@ class AstCreator(
 
   private def astsForReturnNode(expr: KtReturnExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Seq[AstWithCtx] = {
     val returnNode =
       NewReturn()
@@ -826,9 +826,9 @@ class AstCreator(
 
   def astForIsExpression(expr: KtIsExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val retType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val retType = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(retType)
 
     val callNode =
@@ -857,9 +857,9 @@ class AstCreator(
       argIdx: Int
   )(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val callNode =
@@ -896,7 +896,7 @@ class AstCreator(
 
   private def astsForExpression(expr: KtExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Seq[AstWithCtx] = {
     expr match {
       case blockStmt: KtBlockExpression    => List(astForBlock(blockStmt, scopeContext, order))
@@ -964,9 +964,9 @@ class AstCreator(
 
   def astForThisExpression(expr: KtThisExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val node =
@@ -983,15 +983,15 @@ class AstCreator(
 
   def astForClassLiteral(expr: KtClassLiteralExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val getClassMethodName = "getClass"
     val receiverName = expr.getReceiverExpression.getText
     val signature = "java.lang.Class()"
     val methodFullName = receiverName + "." + getClassMethodName + ":" + signature
 
-    val fullNameWithSignature = typeInfoProvider.fullNameWithSignature(expr, ("", ""))
-    val typeFullName = typeInfoProvider.expressionType(expr, "java.lang.Class")
+    val fullNameWithSignature = nameGenerator.fullNameWithSignature(expr, ("", ""))
+    val typeFullName = nameGenerator.expressionType(expr, "java.lang.Class")
     registerType(typeFullName)
 
     val callNode =
@@ -1012,7 +1012,7 @@ class AstCreator(
   // TODO: try to merge with astForLambda if possible
   def astForAnonymousFunction(expr: KtNamedFunction, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
     val fullName = containingFile.getPackageFqName.toString() + ":" + nextLambdaName()
@@ -1068,13 +1068,13 @@ class AstCreator(
 
   def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
     val fullName = containingFile.getPackageFqName().toString + ":" + nextLambdaName()
     val signature = erasedSignature(expr.getValueParameters().asScala.toList)
 
-    // TODO: use typeInfoProvider for the fullName and signature
+    // TODO: use nameGenerator for the fullName and signature
     val lambdaMethod =
       NewMethod()
         .name(Constants.lambdaName)
@@ -1202,10 +1202,10 @@ class AstCreator(
 
   def astForArrayAccess(expr: KtArrayAccessExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val identifierElem = expr.getArrayExpression
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val identifier =
@@ -1260,7 +1260,7 @@ class AstCreator(
 
   def astForPostfixExpression(expr: KtPostfixExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val operatorType =
       expr.getOperationToken() match {
@@ -1274,7 +1274,7 @@ class AstCreator(
           Constants.unknownOperator
       }
 
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val callNode =
@@ -1298,7 +1298,7 @@ class AstCreator(
 
   def astForPrefixExpression(expr: KtPrefixExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val operatorType =
       expr.getOperationToken() match {
@@ -1313,7 +1313,7 @@ class AstCreator(
           )
           Constants.unknownOperator
       }
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val callNode =
@@ -1369,9 +1369,9 @@ class AstCreator(
       argIdx: Int
   )(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     if (expr.hasInterpolation()) {
@@ -1437,8 +1437,8 @@ class AstCreator(
       scopeContext: ScopeContext,
       order: Int,
       argIdx: Int
-  )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
-    val callKind = typeInfoProvider.bindingKind(expr)
+  )(implicit fileInfo: FileInfo, nameGenerator: NameGenerator): AstWithCtx = {
+    val callKind = nameGenerator.bindingKind(expr)
     val isStaticCall = callKind == CallKinds.StaticCall
     val isDynamicCall = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
@@ -1579,14 +1579,14 @@ class AstCreator(
         erasedSignature(argAsts)
       }
     val fullNameWithSig =
-      typeInfoProvider.fullNameWithSignature(
+      nameGenerator.fullNameWithSignature(
         expr,
         (astDerivedMethodFullName, astDerivedSignature)
       )
-    val declType = typeInfoProvider.containingDeclType(expr, TypeConstants.any)
+    val declType = nameGenerator.containingDeclType(expr, TypeConstants.any)
     registerType(declType)
 
-    val retType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val retType = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(retType)
 
     val dispatchType =
@@ -1645,7 +1645,7 @@ class AstCreator(
   }
 
   def astForBreak(expr: KtBreakExpression, scopeContext: ScopeContext, order: Int)(implicit
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
@@ -1661,7 +1661,7 @@ class AstCreator(
       expr: KtContinueExpression,
       scopeContext: ScopeContext,
       order: Int
-  )(implicit typeInfoProvider: TypeInfoProvider): AstWithCtx = {
+  )(implicit nameGenerator: NameGenerator): AstWithCtx = {
     val node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.CONTINUE)
       .code(expr.getText)
@@ -1675,7 +1675,7 @@ class AstCreator(
   // TODO: handle parameters passed to the clauses
   def astForTry(expr: KtTryExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val tryNode =
       NewControlStructure()
@@ -1720,7 +1720,7 @@ class AstCreator(
 
   def astForWhile(expr: KtWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val whileNode =
       NewControlStructure()
@@ -1748,7 +1748,7 @@ class AstCreator(
 
   def astForDoWhile(expr: KtDoWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val doNode =
       NewControlStructure()
@@ -1776,7 +1776,7 @@ class AstCreator(
 
   def astForFor(expr: KtForExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val forNode =
       NewControlStructure()
@@ -1817,7 +1817,7 @@ class AstCreator(
 
   def astForWhen(expr: KtWhenExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val astForSubject =
       astsForExpression(expr.getSubjectExpression(), scopeContext, 1, 1).headOption
@@ -1870,7 +1870,7 @@ class AstCreator(
 
   def astsForWhenEntry(entry: KtWhenEntry, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Seq[Ast] = {
     // TODO: get all conditions with entry.getConditions()
     val jumpTargetName =
@@ -1895,7 +1895,7 @@ class AstCreator(
 
   def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     if (expr.getParent.isInstanceOf[KtProperty]) {
       astForIfAsExpression(expr, scopeContext, order)
@@ -1906,7 +1906,7 @@ class AstCreator(
 
   def astForIfAsControlStructure(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val ifNode =
       NewControlStructure()
@@ -1936,9 +1936,9 @@ class AstCreator(
 
   def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val retType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val retType = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(retType)
 
     val callNode =
@@ -1988,7 +1988,7 @@ class AstCreator(
 
   private def astsForProperty(expr: KtProperty, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Seq[AstWithCtx] = {
     val explicitTypeName =
       if (expr.getTypeReference() != null) {
@@ -1997,7 +1997,7 @@ class AstCreator(
         TypeConstants.any
       }
     val elem = expr.getIdentifyingElement()
-    val typeFullName = typeInfoProvider.propertyType(expr, explicitTypeName)
+    val typeFullName = nameGenerator.propertyType(expr, explicitTypeName)
     registerType(typeFullName)
 
     val identifier =
@@ -2047,9 +2047,9 @@ class AstCreator(
   }
 
   def astForIdentifier(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val typeFullName = typeInfoProvider.typeFullName(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val name = expr.getIdentifier().getText()
@@ -2070,8 +2070,8 @@ class AstCreator(
       scopeContext: ScopeContext,
       order: Int,
       argIdx: Int
-  )(implicit typeInfoProvider: TypeInfoProvider): AstWithCtx = {
-    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+  )(implicit nameGenerator: NameGenerator): AstWithCtx = {
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
     val ast = Ast(
@@ -2088,7 +2088,7 @@ class AstCreator(
 
   def astForBinaryExpr(expr: KtBinaryExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val opRef = expr.getOperationReference()
 
@@ -2146,7 +2146,7 @@ class AstCreator(
         (operatorOption.get, TypeConstants.any)
       } else {
         // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
-        typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+        nameGenerator.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
       }
     val fullName = fullNameWithSignature._1
     val signature =
@@ -2155,7 +2155,7 @@ class AstCreator(
       } else {
         fullNameWithSignature._2
       }
-    val expressionType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val expressionType = nameGenerator.expressionType(expr, TypeConstants.any)
     val name = if (operatorOption.isDefined) {
       operatorOption.get
     } else if (expr.getChildren().toList.size >= 2) {
@@ -2201,7 +2201,7 @@ class AstCreator(
       argIdx: Int
   )(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     val args = expr.getValueArguments()
     val argAsts =
@@ -2233,10 +2233,10 @@ class AstCreator(
       TypeConstants.any + "(" + args.asScala.map { _ => TypeConstants.any }.mkString(",") + ")"
 
     val fullName = methodFqName + ":" + signature
-    val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (fullName, signature))
+    val fullNameWithSig = nameGenerator.fullNameWithSignature(expr, (fullName, signature))
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
-    val returnType = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    val returnType = nameGenerator.expressionType(expr, TypeConstants.any)
     registerType(returnType)
 
     val callNode =
@@ -2262,7 +2262,7 @@ class AstCreator(
 
   private def astForMember(decl: KtDeclaration, childNum: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): Ast = {
     // TODO: handle `null` names in a clean way
     // e.g. found in projects like:
@@ -2284,7 +2284,7 @@ class AstCreator(
 
     val typeFullName = decl match {
       case typed: KtProperty =>
-        typeInfoProvider.propertyType(typed, explicitTypeName)
+        nameGenerator.propertyType(typed, explicitTypeName)
       case _ =>
         explicitTypeName
     }
@@ -2303,7 +2303,7 @@ class AstCreator(
 
   private def astForParameter(param: KtParameter, childNum: Int)(implicit
       fileInfo: FileInfo,
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ): AstWithCtx = {
     // TODO: !!!! lower destructuring declarations inside lambdas properly
     val name = if (param.getDestructuringDeclaration != null) {
@@ -2317,7 +2317,7 @@ class AstCreator(
       } else {
         TypeConstants.any
       }
-    val typeFullName = typeInfoProvider.parameterType(param, explicitTypeName)
+    val typeFullName = nameGenerator.parameterType(param, explicitTypeName)
     registerType(typeFullName)
 
     val parameterNode =
@@ -2333,9 +2333,9 @@ class AstCreator(
   }
 
   private def createMethodNode(expr: KtNamedFunction, childNum: Int)(implicit
-      typeInfoProvider: TypeInfoProvider
+      nameGenerator: NameGenerator
   ) = {
-    val fnWithSig = typeInfoProvider.fullNameWithSignature(expr, ("", ""))
+    val fnWithSig = nameGenerator.fullNameWithSignature(expr, ("", ""))
     val code = codeForFn(expr)
     val methodNode =
       NewMethod()

@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.kotlin2cpg.types.NameGenerator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
@@ -27,7 +27,7 @@ class Kt2Cpg {
   def createCpg(
       filesWithMeta: Iterable[KtFileWithMeta],
       fileContentsAtPath: Iterable[FileContentAtPath],
-      typeInfoProvider: TypeInfoProvider,
+      nameGenerator: NameGenerator,
       outputPath: Option[String] = None
   ): Cpg = {
     val cpg = newEmptyCpg(outputPath)
@@ -39,7 +39,7 @@ class Kt2Cpg {
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
     val astCreator =
-      new AstCreationPass(filesWithMeta, typeInfoProvider, cpg, methodKeyPool)
+      new AstCreationPass(filesWithMeta, nameGenerator, cpg, methodKeyPool)
     astCreator.createAndApply()
 
     new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
