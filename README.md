@@ -19,6 +19,9 @@ Documentation: https://docs.joern.io/
 
 Specification: https://cpg.joern.io
 
+## Requirements
+
+- JDK 11 (newer versions _might_ work, but have not been properly tested)
 
 ## Quick Installation
 
