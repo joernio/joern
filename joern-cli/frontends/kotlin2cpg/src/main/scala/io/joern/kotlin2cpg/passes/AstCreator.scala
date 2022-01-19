@@ -1444,7 +1444,11 @@ class AstCreator(
     val isExtensionCall = callKind == CallKinds.ExtensionCall
 
     val orderForReceiver = 1
-    val argIdxForReceiver = if (isDynamicCall || isExtensionCall) 0 else if (isStaticCall) 1 else 1
+    val argIdxForReceiver =
+      if (isDynamicCall) 0
+      else if (isExtensionCall) 0
+      else if (isStaticCall) 1
+      else 1
     val receiverExpr = expr.getReceiverExpression()
     val receiverAstWithCtx: AstWithCtx =
       receiverExpr match {
@@ -1589,7 +1593,7 @@ class AstCreator(
       if (callKind == CallKinds.DynamicCall) {
         DispatchTypes.DYNAMIC_DISPATCH
       } else if (callKind == CallKinds.ExtensionCall) {
-        DispatchTypes.DYNAMIC_DISPATCH
+        DispatchTypes.STATIC_DISPATCH
       } else {
         DispatchTypes.STATIC_DISPATCH
       }
@@ -1606,16 +1610,23 @@ class AstCreator(
         .methodFullName(fullNameWithSig._1)
         .dispatchType(dispatchType)
         .signature(fullNameWithSig._2)
+    val root = Ast(callNode)
     val receiverNode = receiverAst.root.get
     val finalAst = {
       if (isStaticCall) {
-        Ast(callNode)
+        root
           .withChild(receiverAst)
+          .withChildren(argAsts.map(_.ast))
+          .withArgEdges(callNode, argAsts.map(_.ast.root.get))
+      } else if (isExtensionCall) {
+        root
+          .withChild(receiverAst)
+          .withArgEdge(callNode, receiverNode)
           .withChildren(argAsts.map(_.ast))
           .withArgEdges(callNode, argAsts.map(_.ast.root.get))
       } else {
         val ast =
-          Ast(callNode)
+          root
             .withChild(receiverAst)
             .withArgEdge(callNode, receiverNode)
             .withChildren(argAsts.map(_.ast))

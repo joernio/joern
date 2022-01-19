@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifier}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 

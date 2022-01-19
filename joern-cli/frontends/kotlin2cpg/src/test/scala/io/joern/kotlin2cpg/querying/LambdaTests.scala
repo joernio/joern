@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Capture
 import io.shiftleft.codepropertygraph.generated.nodes.ClosureBinding
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

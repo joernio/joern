@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -37,7 +37,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call(Operators.assignment).l
       c.argument.size shouldBe 2
       c.code shouldBe "val argc: Int = args.size"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(8)
       c.columnNumber shouldBe Some(6)
     }
@@ -48,7 +48,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call(Operators.addition).l
       c.argument.size shouldBe 2
       c.code shouldBe "x + y"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(9)
     }
@@ -62,7 +62,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "println(foo(argc, 1))"
       p.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(kotlin.Int)"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(2)
     }
 
@@ -73,7 +73,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "foo(argc, 1)"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(10)
     }
 
@@ -121,7 +121,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call("Foo").l
       p.methodFullName shouldBe "mypkg.Foo.<init>:mypkg.Foo()"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.signature shouldBe "mypkg.Foo()"
       p.code shouldBe "Foo()"
       p.columnNumber shouldBe Some(10)
@@ -131,7 +131,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `add1` with the correct props set" in {
       val List(p) = cpg.call("add1").l
       p.argument.size shouldBe 2
-      p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       p.code shouldBe "x.add1(argc)"
       p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(11)
@@ -212,7 +212,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
       c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
     }
@@ -231,7 +231,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node " in {
       val List(c) = cpg.call.code("Runtime.*").codeNot(".*exec.*").l
       c.methodFullName shouldBe "java.lang.Runtime.getRuntime:java.lang.Runtime()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "java.lang.Runtime()"
       c.name shouldBe "getRuntime"
       c.typeFullName shouldBe "java.lang.Runtime"
@@ -252,7 +252,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node with the correct props set" in {
       val List(c) = cpg.call.code("mutableMapOf.*").l
       c.methodFullName shouldBe "kotlin.collections.mutableMapOf:kotlin.collections.MutableMap(kotlin.Array)"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "kotlin.collections.MutableMap"
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(19)
