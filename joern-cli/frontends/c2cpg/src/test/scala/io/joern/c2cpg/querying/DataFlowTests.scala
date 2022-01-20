@@ -207,8 +207,7 @@ class DataFlowTest5 extends DataFlowCodeToCpgSuite {
               ("par", Some(16)),
               ("x", Some(6))
             )
-          )
-      )
+          ))
     }
   }
 
@@ -1689,23 +1688,83 @@ class DataFlowTest54 extends DataFlowCodeToCpgSuite {
   override val code: String =
     """
       |void foo() {
-      |  char data;
-      |  data = ' ';
-      |  fscanf(stdin, "%c", &data);
-      |  char result = data + 1;
-      |  printf("%c\n", result);
+      |  int data;
+      |  fscanf(stdin, "%d", &data);
+      |  int result = data + 1;
+      |  printf("%d\n", result);
       |}
       |""".stripMargin
 
   "should find flow via fscanf" in {
-    pendingUntilFixed {
-      def source = cpg.call("fscanf")
+    def source = cpg.call("fscanf").argument
 
-      def sink = cpg.identifier("result")
+    def sink = cpg.identifier("result")
 
-      def flows = sink.reachableByFlows(source)
+    def flows = sink.reachableByFlows(source)
 
-      flows.size shouldBe 1
-    }
+    flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+      List(("fscanf(stdin, \"%d\", &data)", Some(4)),
+           ("data + 1", Some(5)),
+           ("result = data + 1", Some(5)),
+           ("printf(\"%d\\n\", result)", Some(6))),
+      List(("fscanf(stdin, \"%d\", &data)", Some(4)), ("data + 1", Some(5)), ("result = data + 1", Some(5)))
+    )
   }
+}
+
+class DataFlowTest55 extends DataFlowCodeToCpgSuite {
+
+  override val code: String = """
+    | struct node {
+    |  int value;
+    |  struct node *next;
+    | };
+    |
+    | void free_list(struct node *head) {
+    |  struct node *q;
+    |  for (struct node *p = head; p != NULL; p = q) {
+    |    q = p->next;
+    |    free(p);
+    |  }
+    | }
+    | 
+    | int flow(int p0) {
+    |  int a = p0;
+    |  int b=a;
+    |  int c=0x31;
+    |  int z = b + c;
+    |  z++;
+    |  int x = z;
+    |  return x;
+    | }""".stripMargin
+
+  "should identify all calls to `free`" in {
+    cpg.call.name("free").code.toSetMutable shouldBe Set("free(p)")
+  }
+
+  "should find flows to arguments of `free`" in {
+    implicit val callResolver: NoResolve.type = NoResolve
+    val source = cpg.identifier
+    val sink = cpg.method.name("free").parameter.argument
+    sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
+  }
+
+  "should find flows to `free`" in {
+    val source = cpg.identifier
+    val sink = cpg.call.name("free")
+    sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
+  }
+
+  "should find flows from identifiers to return values of `flow`" in {
+    val source = cpg.identifier
+    val sink = cpg.method.name("flow").methodReturn
+    sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 9
+  }
+
+  "find flows from z to method returns of flow" in {
+    val source = cpg.identifier.name("z")
+    val sink = cpg.method.name("flow").methodReturn
+    sink.reachableByFlows(source).l.size shouldBe 3
+  }
+
 }

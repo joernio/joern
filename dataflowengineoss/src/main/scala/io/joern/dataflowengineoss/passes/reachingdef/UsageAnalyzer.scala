@@ -5,8 +5,9 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.utils.MemberAccess
 
-import scala.collection.{Set, mutable}
+import scala.collection.{mutable, Set}
 
 /** Upon calculating reaching definitions, we find ourselves with
   * a set of incoming definitions `in(n)` for each node `n` of the
@@ -101,10 +102,12 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
   /** Compares arguments of calls with incoming definitions
     * to see if they refer to the same variable
     */
-  def sameVariable(use: Expression, incoming: StoredNode): Boolean = {
-    incoming match {
+  def sameVariable(use: Expression, inElement: StoredNode): Boolean = {
+    inElement match {
       case param: MethodParameterIn =>
         use.code == param.name
+      case call: Call if MemberAccess.isGenericMemberAccessName(call.name) =>
+        call.argument(1).headOption.exists(use.code == _.code)
       case call: Call =>
         use.code == call.code
       case identifier: Identifier => use.code == identifier.code
