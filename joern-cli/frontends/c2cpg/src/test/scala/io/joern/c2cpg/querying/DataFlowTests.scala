@@ -207,7 +207,8 @@ class DataFlowTest5 extends DataFlowCodeToCpgSuite {
               ("par", Some(16)),
               ("x", Some(6))
             )
-          ))
+          )
+      )
     }
   }
 
@@ -1703,10 +1704,12 @@ class DataFlowTest54 extends DataFlowCodeToCpgSuite {
     def flows = sink.reachableByFlows(source)
 
     flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-      List(("fscanf(stdin, \"%d\", &data)", Some(4)),
-           ("data + 1", Some(5)),
-           ("result = data + 1", Some(5)),
-           ("printf(\"%d\\n\", result)", Some(6))),
+      List(
+        ("fscanf(stdin, \"%d\", &data)", Some(4)),
+        ("data + 1", Some(5)),
+        ("result = data + 1", Some(5)),
+        ("printf(\"%d\\n\", result)", Some(6))
+      ),
       List(("fscanf(stdin, \"%d\", &data)", Some(4)), ("data + 1", Some(5)), ("result = data + 1", Some(5)))
     )
   }
