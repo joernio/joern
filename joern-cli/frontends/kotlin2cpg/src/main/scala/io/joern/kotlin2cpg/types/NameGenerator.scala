@@ -72,9 +72,8 @@ trait NameGenerator {
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
-  def fullNameWithSignature(expr: KtLambdaExpression): (String, String)
+  def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
   def erasedSignature(args: Seq[Any]): String
-  def nextLambdaNumber(): Long
   def returnTypeFullName(expr: KtLambdaExpression): String
 }
 
@@ -128,12 +127,8 @@ object DefaultNameGenerator {
   }
 }
 
-class DefaultNameGenerator(environment: KotlinCoreEnvironment, keyPool: KeyPool) extends NameGenerator {
+class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
-
-  def nextLambdaNumber(): Long = {
-    keyPool.next
-  }
 
   // TODO: remove this state
   var hasEmptyBindingContext = false
@@ -694,11 +689,12 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment, keyPool: KeyPool)
     Constants.kotlinAny
   }
 
-  def fullNameWithSignature(expr: KtLambdaExpression): (String, String) = {
-    val lambdaNum = keyPool.next
+  def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
     val containingFile = expr.getContainingKtFile()
+    val fileName = containingFile.getName.strip()
+    val lambdaNum = keyPool.next
     val astDerivedFullName =
-      containingFile.getPackageFqName().toString + ":" + "<lambda>" + "<no" + lambdaNum + ">" + "()"
+      containingFile.getPackageFqName().toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
     val astDerivedSignature = erasedSignature(expr.getValueParameters().asScala.toList)
 
     val mapForEntity = bindingsForEntity(bindingContext, expr)
@@ -724,7 +720,9 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment, keyPool: KeyPool)
       }
     val signature = Constants.kotlinAny + "(" + renderedArgs + ")"
     val fullName =
-      containingFile.getPackageFqName().toString + ".<lambda><no" + lambdaNum.toString + ">" + ":" + signature
+      containingFile
+        .getPackageFqName()
+        .toString + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
     (fullName, signature)
   }
 

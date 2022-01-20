@@ -256,8 +256,7 @@ object Main extends App {
               )
             }
 
-        val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-        val nameGenerator = new DefaultNameGenerator(environment, lambdaKeyPool)
+        val nameGenerator = new DefaultNameGenerator(environment)
         val cpg = new Kt2Cpg().createCpg(
           filesWithMeta,
           fileContentsAtPath,

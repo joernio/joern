@@ -103,7 +103,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
+      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
       m.signature shouldBe "kotlin.Any(kotlin.Any)"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(14)
@@ -150,7 +150,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
+      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -180,7 +180,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
+      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
       m.signature shouldBe "kotlin.Any(kotlin.Any)"
     }
 
@@ -214,7 +214,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
+      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -247,7 +247,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
+      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
       m.signature shouldBe "kotlin.Any(kotlin.Any)"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(28)
@@ -286,7 +286,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.code shouldBe ""
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
+      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l

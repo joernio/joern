@@ -71,8 +71,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
           willFilter
         }
 
-    val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-    val nameGenerator = new DefaultNameGenerator(environment, lambdaKeyPool)
+    val nameGenerator = new DefaultNameGenerator(environment)
     new Kt2Cpg().createCpg(
       filesWithMeta,
       Seq(),
