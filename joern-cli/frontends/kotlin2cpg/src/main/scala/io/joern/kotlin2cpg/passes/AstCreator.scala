@@ -18,6 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewMethodRef,
   NewMethodReturn,
+  NewModifier,
   NewNamespaceBlock,
   NewNode,
   NewReturn,
@@ -30,6 +31,7 @@ import io.shiftleft.codepropertygraph.generated.{
   DispatchTypes,
   EdgeTypes,
   EvaluationStrategies,
+  ModifierTypes,
   Operators
 }
 import io.shiftleft.passes.DiffGraph
@@ -106,6 +108,8 @@ object Constants {
   val operatorSuffix = "<operator>"
   val paramNameLambdaDestructureDecl = "DESTRUCTURE_PARAM"
   val wildcardImportName = "*"
+  val lambdaBindingName = "invoke" // the underlying _invoke_ fn for Kotlin FunctionX types
+  val lambdaTypeDeclName = "LAMBDA_TYPE_DECL"
 }
 
 case class ImportEntry(
@@ -213,13 +217,6 @@ class AstCreator(
         diffGraph.addEdge(edgeMeta._1, edgeMeta._2, edgeMeta._3)
       }
     }
-  }
-
-  var lambdaCounter = 0
-
-  private def nextLambdaName(): String = {
-    lambdaCounter += 1
-    "<lambda>" + lambdaCounter.toString
   }
 
   def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
@@ -494,7 +491,7 @@ class AstCreator(
     val constructorMethod =
       NewMethod()
         .name(className)
-        .fullName(fullName + ":" + erasedSignature(constructorParams))
+        .fullName(fullName + ":" + nameGenerator.erasedSignature(constructorParams))
         .isExternal(false)
         .order(ctorOrder)
         .filename(relativizedPath)
@@ -525,7 +522,7 @@ class AstCreator(
         val constructorMethod =
           NewMethod()
             .name(className)
-            .fullName(fullName + ":" + erasedSignature(constructorParams))
+            .fullName(fullName + ":" + nameGenerator.erasedSignature(constructorParams))
             .isExternal(false)
             .order(ctorOrder + order)
             .filename(relativizedPath)
@@ -935,7 +932,7 @@ class AstCreator(
       case typedExpr: KtArrayAccessExpression =>
         Seq(astForArrayAccess(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtLambdaExpression =>
-        Seq(astForLambda(typedExpr, scopeContext, order))
+        Seq(astForLambda(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtNamedFunction =>
         Seq(astForAnonymousFunction(typedExpr, scopeContext, order))
       case classExpr: KtClassLiteralExpression =>
@@ -1015,8 +1012,8 @@ class AstCreator(
       nameGenerator: NameGenerator
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
-    val fullName = containingFile.getPackageFqName.toString() + ":" + nextLambdaName()
-    val signature = erasedSignature(expr.getValueParameters().asScala.toList)
+    val fullName = containingFile.getPackageFqName.toString() + ":<lambda>" + nameGenerator.nextLambdaNumber()
+    val signature = nameGenerator.erasedSignature(expr.getValueParameters().asScala.toList)
     val lambdaMethod =
       NewMethod()
         .name(Constants.lambdaName)
@@ -1066,25 +1063,10 @@ class AstCreator(
     )
   }
 
-  def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val containingFile = expr.getContainingKtFile()
-    val fullName = containingFile.getPackageFqName().toString + ":" + nextLambdaName()
-    val signature = erasedSignature(expr.getValueParameters().asScala.toList)
-
-    // TODO: use nameGenerator for the fullName and signature
-    val lambdaMethod =
-      NewMethod()
-        .name(Constants.lambdaName)
-        .code("")
-        .isExternal(false)
-        .fullName(fullName)
-        .lineNumber(line(expr))
-        .columnNumber(column(expr))
-        .signature(signature)
-        .filename(relativizedPath)
 
     val parametersWithCtx =
       withOrder(expr.getValueParameters()) { (p, order) =>
@@ -1141,27 +1123,49 @@ class AstCreator(
         )
       }
 
+    val fullNameWithSig = nameGenerator.fullNameWithSignature(expr)
+    val returnTypeFullName = nameGenerator.returnTypeFullName(expr)
+    registerType(returnTypeFullName)
+
+    val lambdaTypeDeclFullName = fullNameWithSig._1.split(":").head
     val methodRef =
       NewMethodRef()
         .code("")
-        .methodFullName(fullName)
-        .typeFullName(TypeConstants.any)
+        .methodFullName(fullNameWithSig._1)
+        .typeFullName(lambdaTypeDeclFullName)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .order(order)
+        .argumentIndex(argIdx)
     val methodReturnNode =
       NewMethodReturn()
         .order(lastOrder + 1)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .typeFullName(TypeConstants.any)
+        .typeFullName(returnTypeFullName)
         .code(Constants.retCode)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
+
+    val lambdaModifierNode =
+      NewModifier()
+        .modifierType(ModifierTypes.VIRTUAL)
+    val lambdaNode =
+      NewMethod()
+        .name(Constants.lambdaName)
+        .code(expr.getText)
+        .isExternal(false)
+        .fullName(fullNameWithSig._1)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+        .signature(fullNameWithSig._2)
+        .filename(relativizedPath)
+
     val lambdaMethodAst =
-      Ast(lambdaMethod)
+      Ast(lambdaNode)
         .withChildren(parametersWithCtx.map(_.ast))
         .withChild(bodyAstWithCtx.ast.withChildren(localsForCapturedIdentifiers))
         .withChild(Ast(methodReturnNode))
+        .withChild(Ast(lambdaModifierNode))
     val lamdbaMethodAstWithRefEdges =
       refEdgePairs.foldLeft(lambdaMethodAst)((acc, nodes) => {
         acc.withRefEdge(nodes._1, nodes._2)
@@ -1190,13 +1194,36 @@ class AstCreator(
         ClosureBindingInfo(closureBindingInfo._2, edges ++ refEdges)
       }
 
-    AstWithCtx(
-      methodRefAst,
+    val lambdaTypeDeclInheritsFromTypeFullName =
+      TypeConstants.kotlinFunctionXPrefix + expr.getValueParameters.size
+    val lambdaTypeDecl =
+      NewTypeDecl()
+        .code("")
+        .name(Constants.lambdaTypeDeclName)
+        .inheritsFromTypeFullName(Seq(lambdaTypeDeclInheritsFromTypeFullName))
+        .fullName(lambdaTypeDeclFullName)
+        .isExternal(true)
+        .filename(relativizedPath)
+    val lambdaBinding =
+      NewBinding()
+        .name(Constants.lambdaBindingName)
+        .signature(fullNameWithSig._2)
+    val bindingInfo = BindingInfo(
+      lambdaBinding,
+      Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaNode, EdgeTypes.REF))
+    )
+
+    val finalCtx =
       Context(
         lambdaAsts = Seq(lamdbaMethodAstWithRefEdges) ++ bodyAstWithCtx.ctx.lambdaAsts,
         identifiers = bodyAstWithCtx.ctx.identifiers,
-        closureBindingInfo = closureBindingInfo ++ bodyAstWithCtx.ctx.closureBindingInfo
+        closureBindingInfo = closureBindingInfo ++ bodyAstWithCtx.ctx.closureBindingInfo,
+        bindingsInfo = Seq(bindingInfo)
       )
+
+    AstWithCtx(
+      methodRefAst,
+      finalCtx
     )
   }
 
@@ -1347,19 +1374,6 @@ class AstCreator(
         .order(order)
         .argumentIndex(argIdx)
     AstWithCtx(Ast(unknownNode), Context())
-  }
-
-  private def erasedSignature(args: Seq[Any]): String = {
-    val argsSignature = {
-      if (args.size == 0) {
-        ""
-      } else if (args.size == 1) {
-        TypeConstants.any
-      } else {
-        TypeConstants.any + ("," + TypeConstants.any) * (args.size - 1)
-      }
-    }
-    TypeConstants.any + "(" + argsSignature + ")"
   }
 
   def astForStringTemplate(
@@ -1563,7 +1577,7 @@ class AstCreator(
         val receiverPlaceholderType = TypeConstants.kotlinAny
         val shortName = expr.getSelectorExpression.getFirstChild.getText
         val args = expr.getSelectorExpression().asInstanceOf[KtCallExpression].getValueArguments()
-        receiverPlaceholderType + "." + shortName + ":" + erasedSignature(args.asScala.toList)
+        receiverPlaceholderType + "." + shortName + ":" + nameGenerator.erasedSignature(args.asScala.toList)
       } else if (expr.getSelectorExpression.isInstanceOf[KtNameReferenceExpression]) {
         Operators.fieldAccess
       } else {
@@ -1576,7 +1590,7 @@ class AstCreator(
       if (astDerivedMethodFullName.startsWith(Constants.operatorSuffix)) {
         ""
       } else {
-        erasedSignature(argAsts)
+        nameGenerator.erasedSignature(argAsts)
       }
     val fullNameWithSig =
       nameGenerator.fullNameWithSignature(
@@ -1640,8 +1654,8 @@ class AstCreator(
         }
       }
     }
-    val argCtx = mergedCtx(argAsts.map(_.ctx) ++ Seq(receiverAstWithCtx.ctx))
-    AstWithCtx(finalAst, argCtx)
+    val finalCtx = mergedCtx(argAsts.map(_.ctx) ++ Seq(receiverAstWithCtx.ctx))
+    AstWithCtx(finalAst, finalCtx)
   }
 
   def astForBreak(expr: KtBreakExpression, scopeContext: ScopeContext, order: Int)(implicit
@@ -2039,7 +2053,7 @@ class AstCreator(
         initCtx.locals,
         initCtx.identifiers ++ List(identifier),
         Seq(),
-        Seq(),
+        initCtx.bindingsInfo,
         lambdaAsts = initCtx.lambdaAsts
       )
     Seq(AstWithCtx(call, Context())) ++
@@ -2257,7 +2271,8 @@ class AstCreator(
         .withChildren(argAsts.map(_.ast))
         .withArgEdges(callNode, argAsts.flatMap(_.ast.root))
 
-    AstWithCtx(ast, mergedCtx(argAsts.map(_.ctx)))
+    val finalCtx = mergedCtx(argAsts.map(_.ctx))
+    AstWithCtx(ast, finalCtx)
   }
 
   private def astForMember(decl: KtDeclaration, childNum: Int)(implicit

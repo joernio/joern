@@ -38,7 +38,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add the implicit _it_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "ANY()"
+      m.signature shouldBe "kotlin.Any(kotlin.Any)"
     }
   }
 
@@ -73,7 +73,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "ANY()"
+      m.signature shouldBe "kotlin.Any(kotlin.Any)"
     }
   }
 
@@ -108,7 +108,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "ANY()"
+      m.signature shouldBe "kotlin.Any(kotlin.Any)"
     }
   }
 

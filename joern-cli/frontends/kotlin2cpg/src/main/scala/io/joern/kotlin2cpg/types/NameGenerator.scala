@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
 import DefaultNameGenerator._
+import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 
@@ -46,6 +47,7 @@ object Constants {
   val kotlinAny = "kotlin.Any"
   val any = "ANY"
   val classLiteralReplacementMethodName = "getClass"
+  val kotlinFunctionXPrefix = "kotlin.Function"
 }
 
 object CallKinds extends Enumeration {
@@ -70,7 +72,10 @@ trait NameGenerator {
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
-  def fullNameWithSignature(expr: KtLambdaExpression, or: (String, String)): (String, String)
+  def fullNameWithSignature(expr: KtLambdaExpression): (String, String)
+  def erasedSignature(args: Seq[Any]): String
+  def nextLambdaNumber(): Long
+  def returnTypeFullName(expr: KtLambdaExpression): String
 }
 
 object DefaultNameGenerator {
@@ -123,8 +128,12 @@ object DefaultNameGenerator {
   }
 }
 
-class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGenerator {
+class DefaultNameGenerator(environment: KotlinCoreEnvironment, keyPool: KeyPool) extends NameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def nextLambdaNumber(): Long = {
+    keyPool.next
+  }
 
   // TODO: remove this state
   var hasEmptyBindingContext = false
@@ -164,6 +173,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   def descriptorRenderer(desc: DeclarationDescriptor): DescriptorRenderer = {
     val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
     val opts = new DescriptorRendererOptionsImpl
+    opts.setParameterNamesInFunctionalTypes(false)
     opts.setTypeNormalizer { t =>
       if (t.isInstanceOf[UnresolvedType]) {
         anyT.getDefaultType
@@ -212,6 +222,19 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     } else {
       current
     }
+  }
+
+  def erasedSignature(args: Seq[Any]): String = {
+    val argsSignature = {
+      if (args.size == 0) {
+        ""
+      } else if (args.size == 1) {
+        Constants.any
+      } else {
+        Constants.any + ("," + Constants.any) * (args.size - 1)
+      }
+    }
+    Constants.any + "(" + argsSignature + ")"
   }
 
   def fullName(expr: KtTypeAlias, or: String): String = {
@@ -321,11 +344,11 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   }
 
   def expressionType(expr: KtExpression, or: String): String = {
-    val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
-    if (bindingInfo != null && bindingInfo.getType != null) {
-      // TODO: use the renderer to render for this case as well
-      //val renderer = descriptorRenderer(bindingInfo)
-      val rendered = DescriptorRenderer.FQ_NAMES_IN_TYPES.renderType(bindingInfo.getType)
+    val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
+    if (typeInfo != null && typeInfo.getType != null) {
+      val renderer =
+        descriptorRenderer(typeInfo.getType.getConstructor.getDeclarationDescriptor)
+      val rendered = renderer.renderType(typeInfo.getType)
       if (isValidRender(rendered)) {
         stripped(rendered)
       } else {
@@ -340,7 +363,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
     if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.size() > 0) {
       val firstTypeArg = typeInfo.getType.getArguments.get(0)
-      val rendered = DescriptorRenderer.FQ_NAMES_IN_TYPES.renderType(firstTypeArg.getType)
+      val renderer = descriptorRenderer(typeInfo.getType.getConstructor.getDeclarationDescriptor)
+      val rendered = renderer.renderType(firstTypeArg.getType)
       val retType = expressionType(expr, Constants.any)
       val signature = retType + "()"
       val fullName = rendered + "." + Constants.classLiteralReplacementMethodName + ":" + signature
@@ -607,27 +631,14 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
                 val renderedParameterTypes =
                   fnDescriptor.getValueParameters.asScala
                     .map { vp =>
-                      // TODO: good place to handle Function1
-
-                      // cat core/descriptors/src/org/jetbrains/kotlin/builtins/functionTypes.kt
-
-                      val st = TypeUtils.getAllSupertypes(vp.getType)
-                      st.forEach { t =>
-                        println("r: " + renderer.renderType(t))
-                        println("rc: " + renderer.renderTypeConstructor(t.getConstructor))
+                      val renderedTypeConstructor = renderer.renderTypeConstructor(vp.getType.getConstructor)
+                      val isFunctionX = renderedTypeConstructor.startsWith(Constants.kotlinFunctionXPrefix)
+                      if (isFunctionX) {
+                        Constants.kotlinFunctionXPrefix + (vp.getType.getArguments.size() - 1).toString
+                      } else {
+                        val rendered = renderer.renderType(vp.getType)
+                        stripped(rendered)
                       }
-
-                      val rendered = renderer.renderType(vp.getType)
-                      println("vp : " + vp + " fd: " + erasedTypeDescriptor)
-                      vp.getOverriddenDescriptors.forEach { od =>
-                        println("override: " + od)
-                      }
-                      val nt = vp.getType.getHasNotTrivialRefinementFactory
-                      println(
-                        "rendered: " + rendered + " c: " + vp.getType.getConstructor + " nt: " + nt + " rrr: " + renderer
-                          .renderTypeConstructor(vp.getType.getConstructor)
-                      )
-                      stripped(rendered)
                     }
                     .mkString(",")
 
@@ -679,10 +690,42 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
-  def fullNameWithSignature(expr: KtLambdaExpression, or: (String, String)): (String, String) = {
-    printBindingsForEntity(bindingContext, expr)
-    println("GOT IN HERE")
-    (or._1, or._2)
+  def returnTypeFullName(expr: KtLambdaExpression): String = {
+    Constants.kotlinAny
+  }
+
+  def fullNameWithSignature(expr: KtLambdaExpression): (String, String) = {
+    val lambdaNum = keyPool.next
+    val containingFile = expr.getContainingKtFile()
+    val astDerivedFullName =
+      containingFile.getPackageFqName().toString + ":" + "<lambda>" + "<no" + lambdaNum + ">" + "()"
+    val astDerivedSignature = erasedSignature(expr.getValueParameters().asScala.toList)
+
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    if (mapForEntity == null || mapForEntity.getKeys == null) {
+      return (astDerivedFullName, astDerivedSignature)
+    }
+    val expressionTypeFromBindingCtx = mapForEntity.getKeys.contains(BindingContext.EXPECTED_EXPRESSION_TYPE.getKey)
+    if (expressionTypeFromBindingCtx == null) {
+      return (astDerivedFullName, astDerivedSignature)
+    }
+    val typeInfo = mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey)
+    val theType = typeInfo.getType
+    val constructorDesc = theType.getConstructor.getDeclarationDescriptor
+    val constructorType = constructorDesc.getDefaultType
+    val args = constructorType.getArguments.asScala.drop(1)
+    val renderedArgs =
+      if (args.size == 0) {
+        ""
+      } else if (args.size == 1) {
+        Constants.kotlinAny
+      } else {
+        Constants.kotlinAny + ("," + Constants.kotlinAny) * (args.size - 1)
+      }
+    val signature = Constants.kotlinAny + "(" + renderedArgs + ")"
+    val fullName =
+      containingFile.getPackageFqName().toString + ".<lambda><no" + lambdaNum.toString + ">" + ":" + signature
+    (fullName, signature)
   }
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
