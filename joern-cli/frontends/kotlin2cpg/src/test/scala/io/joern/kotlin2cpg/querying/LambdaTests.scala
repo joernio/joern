@@ -147,6 +147,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.isExternal shouldBe true
       td.code shouldBe ""
       td.inheritsFromTypeFullName shouldBe Seq("kotlin.Function1")
+      td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
       bm.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
@@ -210,6 +211,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
       td.isExternal shouldBe true
       td.code shouldBe ""
+      td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
       bm.fullName shouldBe "mypkg.<lambda><no1>:kotlin.Any(kotlin.Any)"
