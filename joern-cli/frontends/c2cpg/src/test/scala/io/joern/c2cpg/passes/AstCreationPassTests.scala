@@ -537,7 +537,7 @@ class AstCreationPassTests
           call.argument(2).code shouldBe "value"
           inside(call.argument(1).l) { case List(fa: Call) =>
             fa.code shouldBe "decltype(local)"
-            fa.methodFullName shouldBe "operators.<typeOf>"
+            fa.methodFullName shouldBe "<operator>.typeOf"
             fa.argument(1).code shouldBe "local"
           }
 

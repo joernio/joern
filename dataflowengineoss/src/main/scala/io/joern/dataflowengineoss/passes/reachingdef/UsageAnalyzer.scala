@@ -20,6 +20,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
   val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
   private val allNodes = in.keys.toList
   private val containerSet = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
+  private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
   val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
 
   def initUsedIncomingDefs(): Map[StoredNode, Map[StoredNode, Set[Definition]]] = {
@@ -106,7 +107,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     inElement match {
       case param: MethodParameterIn =>
         use.code == param.name
-      case call: Call if MemberAccess.isGenericMemberAccessName(call.name) =>
+      case call: Call if indirectionAccessSet.contains(call.name) =>
         call.argument(1).headOption.exists(use.code == _.code)
       case call: Call =>
         use.code == call.code
