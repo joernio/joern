@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.types
 
 import com.intellij.util.keyFMap.KeyFMap
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{ClassConstructorDescriptorImpl, TypeAliasConstructorDescriptorImpl}
 import org.jetbrains.kotlin.psi.{
@@ -10,6 +11,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassOrObject,
   KtElement,
   KtExpression,
+  KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
   KtParameter,
@@ -20,7 +22,7 @@ import org.jetbrains.kotlin.psi.{
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{LazyClassDescriptor, LazyTypeAliasDescriptor}
-import org.jetbrains.kotlin.types.{ErrorType, SimpleType, UnresolvedType}
+import org.jetbrains.kotlin.types.{ErrorType, KotlinTypeFactoryKt, KotlinTypeKt, SimpleType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -31,7 +33,8 @@ import org.jetbrains.kotlin.resolve.BindingContext
 
 import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
-import KotlinTypeInfoProvider._
+import DefaultNameGenerator._
+import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 
@@ -44,6 +47,7 @@ object Constants {
   val kotlinAny = "kotlin.Any"
   val any = "ANY"
   val classLiteralReplacementMethodName = "getClass"
+  val kotlinFunctionXPrefix = "kotlin.Function"
 }
 
 object CallKinds extends Enumeration {
@@ -51,7 +55,7 @@ object CallKinds extends Enumeration {
   val Unknown, StaticCall, DynamicCall, ExtensionCall = Value
 }
 
-trait TypeInfoProvider {
+trait NameGenerator {
   def returnType(elem: KtNamedFunction, or: String): String
   def containingDeclType(expr: KtQualifiedExpression, or: String): String
   def expressionType(expr: KtExpression, or: String): String
@@ -68,9 +72,13 @@ trait TypeInfoProvider {
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
+  def fullNameWithSignature(expr: KtLambdaExpression): (String, String)
+  def erasedSignature(args: Seq[Any]): String
+  def nextLambdaNumber(): Long
+  def returnTypeFullName(expr: KtLambdaExpression): String
 }
 
-object KotlinTypeInfoProvider {
+object DefaultNameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
@@ -120,8 +128,12 @@ object KotlinTypeInfoProvider {
   }
 }
 
-class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInfoProvider {
+class DefaultNameGenerator(environment: KotlinCoreEnvironment, keyPool: KeyPool) extends NameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def nextLambdaNumber(): Long = {
+    keyPool.next
+  }
 
   // TODO: remove this state
   var hasEmptyBindingContext = false
@@ -161,6 +173,7 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
   def descriptorRenderer(desc: DeclarationDescriptor): DescriptorRenderer = {
     val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
     val opts = new DescriptorRendererOptionsImpl
+    opts.setParameterNamesInFunctionalTypes(false)
     opts.setTypeNormalizer { t =>
       if (t.isInstanceOf[UnresolvedType]) {
         anyT.getDefaultType
@@ -209,6 +222,19 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     } else {
       current
     }
+  }
+
+  def erasedSignature(args: Seq[Any]): String = {
+    val argsSignature = {
+      if (args.size == 0) {
+        ""
+      } else if (args.size == 1) {
+        Constants.any
+      } else {
+        Constants.any + ("," + Constants.any) * (args.size - 1)
+      }
+    }
+    Constants.any + "(" + argsSignature + ")"
   }
 
   def fullName(expr: KtTypeAlias, or: String): String = {
@@ -318,11 +344,11 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
   }
 
   def expressionType(expr: KtExpression, or: String): String = {
-    val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
-    if (bindingInfo != null && bindingInfo.getType != null) {
-      // TODO: use the renderer to render for this case as well
-      //val renderer = descriptorRenderer(bindingInfo)
-      val rendered = DescriptorRenderer.FQ_NAMES_IN_TYPES.renderType(bindingInfo.getType)
+    val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
+    if (typeInfo != null && typeInfo.getType != null) {
+      val renderer =
+        descriptorRenderer(typeInfo.getType.getConstructor.getDeclarationDescriptor)
+      val rendered = renderer.renderType(typeInfo.getType)
       if (isValidRender(rendered)) {
         stripped(rendered)
       } else {
@@ -337,7 +363,8 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
     if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.size() > 0) {
       val firstTypeArg = typeInfo.getType.getArguments.get(0)
-      val rendered = DescriptorRenderer.FQ_NAMES_IN_TYPES.renderType(firstTypeArg.getType)
+      val renderer = descriptorRenderer(typeInfo.getType.getConstructor.getDeclarationDescriptor)
+      val rendered = renderer.renderType(firstTypeArg.getType)
       val retType = expressionType(expr, Constants.any)
       val signature = retType + "()"
       val fullName = rendered + "." + Constants.classLiteralReplacementMethodName + ":" + signature
@@ -604,9 +631,14 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
                 val renderedParameterTypes =
                   fnDescriptor.getValueParameters.asScala
                     .map { vp =>
-                      // TODO: good place to handle Function1
-                      val rendered = renderer.renderType(vp.getType)
-                      stripped(rendered)
+                      val renderedTypeConstructor = renderer.renderTypeConstructor(vp.getType.getConstructor)
+                      val isFunctionX = renderedTypeConstructor.startsWith(Constants.kotlinFunctionXPrefix)
+                      if (isFunctionX) {
+                        Constants.kotlinFunctionXPrefix + (vp.getType.getArguments.size() - 1).toString
+                      } else {
+                        val rendered = renderer.renderType(vp.getType)
+                        stripped(rendered)
+                      }
                     }
                     .mkString(",")
 
@@ -656,6 +688,44 @@ class KotlinTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInf
     } else {
       or
     }
+  }
+
+  def returnTypeFullName(expr: KtLambdaExpression): String = {
+    Constants.kotlinAny
+  }
+
+  def fullNameWithSignature(expr: KtLambdaExpression): (String, String) = {
+    val lambdaNum = keyPool.next
+    val containingFile = expr.getContainingKtFile()
+    val astDerivedFullName =
+      containingFile.getPackageFqName().toString + ":" + "<lambda>" + "<no" + lambdaNum + ">" + "()"
+    val astDerivedSignature = erasedSignature(expr.getValueParameters().asScala.toList)
+
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    if (mapForEntity == null || mapForEntity.getKeys == null) {
+      return (astDerivedFullName, astDerivedSignature)
+    }
+    val expressionTypeFromBindingCtx = mapForEntity.getKeys.contains(BindingContext.EXPECTED_EXPRESSION_TYPE.getKey)
+    if (expressionTypeFromBindingCtx == null) {
+      return (astDerivedFullName, astDerivedSignature)
+    }
+    val typeInfo = mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey)
+    val theType = typeInfo.getType
+    val constructorDesc = theType.getConstructor.getDeclarationDescriptor
+    val constructorType = constructorDesc.getDefaultType
+    val args = constructorType.getArguments.asScala.drop(1)
+    val renderedArgs =
+      if (args.size == 0) {
+        ""
+      } else if (args.size == 1) {
+        Constants.kotlinAny
+      } else {
+        Constants.kotlinAny + ("," + Constants.kotlinAny) * (args.size - 1)
+      }
+    val signature = Constants.kotlinAny + "(" + renderedArgs + ")"
+    val fullName =
+      containingFile.getPackageFqName().toString + ".<lambda><no" + lambdaNum.toString + ">" + ":" + signature
+    (fullName, signature)
   }
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {

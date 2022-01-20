@@ -1,14 +1,14 @@
 package io.joern.kotlin2cpg
 
-import io.joern.kotlin2cpg.types.{CompilerAPI, KotlinTypeInfoProvider}
+import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
 import better.files._
+import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.utils.ProjectRoot
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-
 import io.shiftleft.semanticcpg.language._
 
 object Kt2CpgTestContext {
@@ -68,13 +68,15 @@ class Kt2CpgTestContext private () {
           .map { fm =>
             KtFileWithMeta(fm, "GENERATED_PLACEHOLDER_FILE.kt", fm.getVirtualFilePath)
           }
-      val typeInfoProvider = new KotlinTypeInfoProvider(environment)
+
+      val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+      val nameGenerator = new DefaultNameGenerator(environment, lambdaKeyPool)
       val kt2Cpg = new Kt2Cpg()
 
       val nonSourceFiles = codeAndFile.map { entry =>
         FileContentAtPath(entry.content, entry.fileName, entry.fileName)
       }
-      val cpg = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, typeInfoProvider)
+      val cpg = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, nameGenerator)
       val context = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)
