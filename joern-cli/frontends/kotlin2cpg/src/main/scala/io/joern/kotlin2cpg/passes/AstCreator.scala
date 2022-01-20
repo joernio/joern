@@ -131,7 +131,8 @@ case class Context(
     methodParameters: Seq[NewMethodParameterIn] = List(),
     bindingsInfo: Seq[BindingInfo] = List(),
     lambdaAsts: Seq[Ast] = List(),
-    closureBindingInfo: Seq[ClosureBindingInfo] = List()
+    closureBindingInfo: Seq[ClosureBindingInfo] = List(),
+    lambdaBindingInfo: Seq[BindingInfo] = List()
 )
 
 // TODO: add description
@@ -210,6 +211,14 @@ class AstCreator(
       }
     }
 
+    astWithCtx.ctx.lambdaBindingInfo.foreach { bindingInfo =>
+      diffGraph.addNode(bindingInfo.node)
+
+      bindingInfo.edgeMeta.foreach { edgeMeta =>
+        diffGraph.addEdge(edgeMeta._1, edgeMeta._2, edgeMeta._3)
+      }
+    }
+
     astWithCtx.ctx.closureBindingInfo.map { closureBindingInfo =>
       diffGraph.addNode(closureBindingInfo.node)
 
@@ -274,7 +283,7 @@ class AstCreator(
 
     val lastImportOrder = importAsts.size
     var idxEpsilon = 0 // when multiple AST nodes are returned by `astForDeclaration`
-    val declarationsAsts =
+    val declarationsAstsWithCtx =
       withOrder(ktFile.getDeclarations()) { (decl, order) =>
         val asts = astForDeclaration(decl, ScopeContext(), order + lastImportOrder + idxEpsilon)
         idxEpsilon += asts.size - 1
@@ -285,15 +294,26 @@ class AstCreator(
       NewFile()
         .name(fileWithMeta.relativizedPath)
         .order(0)
+    val finalCtx = mergedCtx(declarationsAstsWithCtx.map(_.ctx))
+    val namespaceBlockAstWithCtx = astForPackageDeclaration(ktFile.getPackageFqName.toString)
+    val lambdaTypeDecls =
+      finalCtx.lambdaBindingInfo
+        .map(
+          _.edgeMeta
+            .map(_._1)
+            .collect { case n: NewTypeDecl => Ast(n) }
+        )
+        .flatten
     val ast =
       Ast(fileNode)
         .withChild(
-          astForPackageDeclaration(ktFile.getPackageFqName.toString).ast
+          namespaceBlockAstWithCtx.ast
             .withChildren(importAsts.map(_.ast))
-            .withChildren(declarationsAsts.map(_.ast))
-            .withChildren(mergedCtx(declarationsAsts.map(_.ctx)).lambdaAsts)
+            .withChildren(declarationsAstsWithCtx.map(_.ast))
+            .withChildren(mergedCtx(declarationsAstsWithCtx.map(_.ctx)).lambdaAsts)
+            .withChildren(lambdaTypeDecls)
         )
-    AstWithCtx(ast, mergedCtx(declarationsAsts.map(_.ctx)))
+    AstWithCtx(ast, finalCtx)
   }
 
   def combinedImports(
@@ -673,7 +693,8 @@ class AstCreator(
       val bindingsInfo = acc.bindingsInfo ++ ctx.bindingsInfo
       val lambdaAsts = acc.lambdaAsts ++ ctx.lambdaAsts
       val closureBindingInfo = acc.closureBindingInfo ++ ctx.closureBindingInfo
-      Context(locals, identifiers, methodParameters, bindingsInfo, lambdaAsts, closureBindingInfo)
+      val lambdaBindingInfo = acc.lambdaBindingInfo ++ ctx.lambdaBindingInfo
+      Context(locals, identifiers, methodParameters, bindingsInfo, lambdaAsts, closureBindingInfo, lambdaBindingInfo)
     })
   }
 
@@ -789,7 +810,8 @@ class AstCreator(
         childrenCtx.methodParameters,
         childrenCtx.bindingsInfo,
         childrenCtx.lambdaAsts,
-        childrenCtx.closureBindingInfo
+        childrenCtx.closureBindingInfo,
+        childrenCtx.lambdaBindingInfo
       )
     val ast = Ast(block)
       .withChildren(expressions.map(_.ast))
@@ -1218,7 +1240,7 @@ class AstCreator(
         lambdaAsts = Seq(lamdbaMethodAstWithRefEdges) ++ bodyAstWithCtx.ctx.lambdaAsts,
         identifiers = bodyAstWithCtx.ctx.identifiers,
         closureBindingInfo = closureBindingInfo ++ bodyAstWithCtx.ctx.closureBindingInfo,
-        bindingsInfo = Seq(bindingInfo)
+        lambdaBindingInfo = Seq(bindingInfo)
       )
 
     AstWithCtx(
@@ -2054,7 +2076,9 @@ class AstCreator(
         initCtx.identifiers ++ List(identifier),
         Seq(),
         initCtx.bindingsInfo,
-        lambdaAsts = initCtx.lambdaAsts
+        lambdaAsts = initCtx.lambdaAsts,
+        Seq(),
+        initCtx.lambdaBindingInfo
       )
     Seq(AstWithCtx(call, Context())) ++
       Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
