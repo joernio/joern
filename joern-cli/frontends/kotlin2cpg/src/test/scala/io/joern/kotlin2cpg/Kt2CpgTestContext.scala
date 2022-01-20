@@ -69,8 +69,7 @@ class Kt2CpgTestContext private () {
             KtFileWithMeta(fm, "GENERATED_PLACEHOLDER_FILE.kt", fm.getVirtualFilePath)
           }
 
-      val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-      val nameGenerator = new DefaultNameGenerator(environment, lambdaKeyPool)
+      val nameGenerator = new DefaultNameGenerator(environment)
       val kt2Cpg = new Kt2Cpg()
 
       val nonSourceFiles = codeAndFile.map { entry =>

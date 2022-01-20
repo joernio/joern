@@ -34,7 +34,7 @@ import io.shiftleft.codepropertygraph.generated.{
   ModifierTypes,
   Operators
 }
-import io.shiftleft.passes.DiffGraph
+import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.x2cpg.Ast
 
@@ -161,6 +161,8 @@ class AstCreator(
   private val continueParsingOnAstNodesWithoutRoot = false
 
   private val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+
+  private val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 
   val relativizedPath = fileWithMeta.relativizedPath
 
@@ -1034,7 +1036,10 @@ class AstCreator(
       nameGenerator: NameGenerator
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
-    val fullName = containingFile.getPackageFqName.toString() + ":<lambda>" + nameGenerator.nextLambdaNumber()
+    val fileName = expr.getContainingKtFile.getName.strip()
+    val lambdaNum = lambdaKeyPool.next
+    val fullName =
+      containingFile.getPackageFqName.toString() + ":<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">()"
     val signature = nameGenerator.erasedSignature(expr.getValueParameters().asScala.toList)
     val lambdaMethod =
       NewMethod()
@@ -1145,7 +1150,7 @@ class AstCreator(
         )
       }
 
-    val fullNameWithSig = nameGenerator.fullNameWithSignature(expr)
+    val fullNameWithSig = nameGenerator.fullNameWithSignature(expr, lambdaKeyPool)
     val returnTypeFullName = nameGenerator.returnTypeFullName(expr)
     registerType(returnTypeFullName)
 

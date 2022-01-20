@@ -14,8 +14,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
       val environment = CompilerAPI.makeEnvironment(Seq(sourceDir), Seq())
       environment.getSourceFiles should not be List()
 
-      val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-      val nameGenerator = new DefaultNameGenerator(environment, lambdaKeyPool)
+      val nameGenerator = new DefaultNameGenerator(environment)
       nameGenerator.bindingContext should not be null
       nameGenerator.hasEmptyBindingContext shouldBe true
     }
@@ -26,8 +25,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
       val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq())
       environment.getSourceFiles should not be List()
 
-      val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-      val nameGenerator = new DefaultNameGenerator(environment, lambdaKeyPool)
+      val nameGenerator = new DefaultNameGenerator(environment)
       nameGenerator.bindingContext should not be null
       nameGenerator.hasEmptyBindingContext shouldBe false
     }
