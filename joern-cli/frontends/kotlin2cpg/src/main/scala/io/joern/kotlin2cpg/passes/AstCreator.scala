@@ -1036,7 +1036,7 @@ class AstCreator(
       nameGenerator: NameGenerator
   ): AstWithCtx = {
     val containingFile = expr.getContainingKtFile()
-    val fileName = expr.getContainingKtFile.getName.strip()
+    val fileName = expr.getContainingKtFile.getName
     val lambdaNum = lambdaKeyPool.next
     val fullName =
       containingFile.getPackageFqName.toString() + ":<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">()"
