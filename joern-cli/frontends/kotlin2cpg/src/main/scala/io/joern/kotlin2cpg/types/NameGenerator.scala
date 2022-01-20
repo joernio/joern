@@ -691,7 +691,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
     val containingFile = expr.getContainingKtFile()
-    val fileName = containingFile.getName.strip()
+    val fileName = containingFile.getName
     val lambdaNum = keyPool.next
     val astDerivedFullName =
       containingFile.getPackageFqName().toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
