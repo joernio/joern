@@ -48,6 +48,7 @@ object Constants {
   val any = "ANY"
   val classLiteralReplacementMethodName = "getClass"
   val kotlinFunctionXPrefix = "kotlin.Function"
+  val initPrefix = "<init>"
 }
 
 object CallKinds extends Enumeration {
@@ -381,23 +382,15 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
           case fnDescriptor: FunctionDescriptor =>
             val renderer = descriptorRenderer(fnDescriptor)
 
-            // TODO: check this functionality for more elaborate subclassing situations
-            val erasedTypeDescriptor =
-              if (fnDescriptor.getOverriddenDescriptors.size > 0) {
-                fnDescriptor.getOverriddenDescriptors.asScala.toList(0)
-              } else {
-                fnDescriptor
-              }
-
             // TODO: write descriptor renderer instead of working with the existing ones
             // that render comments in fqnames
             val renderedFqName = stripped(
-              DescriptorUtils.getFqName(erasedTypeDescriptor).toString
+              DescriptorUtils.getFqName(fnDescriptor).toString
             )
 
             // render `kotlin.Any` instead of `???` if one of the type arguments cannot be inferred
-            val retTypeConstructor = erasedTypeDescriptor.getReturnType.getConstructor
-            val typeErrorCount = erasedTypeDescriptor.getReturnType.getArguments.asScala.toList
+            val retTypeConstructor = fnDescriptor.getReturnType.getConstructor
+            val typeErrorCount = fnDescriptor.getReturnType.getArguments.asScala.toList
               .map(_.getType.isInstanceOf[ErrorType])
               .size
             val retType = if (typeErrorCount > 0) {
@@ -405,7 +398,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
                 retTypeConstructor.getDeclarationDescriptor
               )
               val argNames =
-                erasedTypeDescriptor.getReturnType.getArguments.asScala.toList
+                fnDescriptor.getReturnType.getArguments.asScala.toList
                   .map { arg =>
                     if (arg.getType.isInstanceOf[ErrorType]) {
                       Constants.kotlinAny
@@ -433,7 +426,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
                 fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl] ||
                 fnDescriptor.isInstanceOf[TypeAliasConstructorDescriptorImpl]
               ) {
-                stripped(renderedFqName) + "<init>:" + signature
+                stripped(renderedFqName) + Constants.initPrefix + ":" + signature
               } else {
                 stripped(renderedFqName) + ":" + signature
               }
@@ -464,20 +457,12 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       if (z != null) {
         z.getResultingDescriptor match {
           case fnDescriptor: FunctionDescriptor =>
-            // TODO: check this functionality for more elaborate subclassing situations
-            val erasedTypeDescriptor =
-              if (fnDescriptor.getOverriddenDescriptors.size > 0) {
-                fnDescriptor.getOverriddenDescriptors.asScala.toList(0)
-              } else {
-                fnDescriptor
-              }
-
             // TODO: write descriptor renderer instead of working with the existing ones
             // that render comments in fqnames
-            val fqName = DescriptorUtils.getFqName(erasedTypeDescriptor)
-            val renderer = descriptorRenderer(erasedTypeDescriptor)
+            val fqName = DescriptorUtils.getFqName(fnDescriptor)
+            val renderer = descriptorRenderer(fnDescriptor)
             val renderedFqName = stripped(renderer.renderFqName(fqName))
-            val retType = stripped(renderer.renderType(erasedTypeDescriptor.getReturnType))
+            val retType = stripped(renderer.renderType(fnDescriptor.getReturnType))
 
             val renderedParameterTypes =
               fnDescriptor.getValueParameters.asScala
@@ -489,7 +474,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
             val signature = stripped(retType) + "(" + renderedParameterTypes + ")"
             val fullName =
               if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
-                stripped(retType) + ".<init>:" + signature
+                stripped(retType) + "." + Constants.initPrefix + ":" + signature
               } else {
                 renderedFqName + ":" + signature
               }
@@ -605,21 +590,14 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
               case fnDescriptor: FunctionDescriptor =>
                 val renderer = descriptorRenderer(fnDescriptor)
 
-                // TODO: check this functionality for more elaborate subclassing situations
-                val erasedTypeDescriptor =
-                  if (fnDescriptor.getOverriddenDescriptors.size > 0) {
-                    fnDescriptor.getOverriddenDescriptors.asScala.toList(0)
-                  } else {
-                    fnDescriptor
-                  }
                 val renderedFqName =
-                  if (erasedTypeDescriptor.getExtensionReceiverParameter != null) {
-                    val extType = erasedTypeDescriptor.getExtensionReceiverParameter.getType
-                    val extName = erasedTypeDescriptor.getName
+                  if (fnDescriptor.getExtensionReceiverParameter != null) {
+                    val extType = fnDescriptor.getExtensionReceiverParameter.getType
+                    val extName = fnDescriptor.getName
                     val rendered = renderer.renderType(extType)
                     stripped(rendered) + "." + extName
                   } else {
-                    val fqName = DescriptorUtils.getFqName(erasedTypeDescriptor)
+                    val fqName = DescriptorUtils.getFqName(fnDescriptor)
                     renderer.renderFqName(fqName)
                   }
 

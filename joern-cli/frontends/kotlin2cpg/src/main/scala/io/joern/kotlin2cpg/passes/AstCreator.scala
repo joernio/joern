@@ -1289,7 +1289,7 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
     val astsForIndexExpr = indexExpr match {
-      case  Some(ie) =>
+      case Some(ie) =>
         astsForExpression(ie, scopeContext, 2, 2)
       case None =>
         List()

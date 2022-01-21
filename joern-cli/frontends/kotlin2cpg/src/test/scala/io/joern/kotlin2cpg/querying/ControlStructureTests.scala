@@ -173,7 +173,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the condition inside the `if`-statement" in {
       val List(c) = cpg.controlStructure.condition.isCall.l
       c.code shouldBe "aList.contains(msg)"
-      c.methodFullName shouldBe "kotlin.collections.Collection.contains:kotlin.Boolean(kotlin.String)"
+      c.methodFullName shouldBe "kotlin.collections.List.contains:kotlin.Boolean(kotlin.String)"
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(5)
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
