@@ -2,14 +2,15 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.ClassOrInterfaceType
 import com.github.javaparser.ast.body.{ConstructorDeclaration, EnumConstantDeclaration, MethodDeclaration, TypeDeclaration, VariableDeclarator}
-import com.github.javaparser.ast.expr.{BooleanLiteralExpr, CharLiteralExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, NameExpr, NullLiteralExpr, StringLiteralExpr, TextBlockLiteralExpr}
+import com.github.javaparser.ast.expr.{BooleanLiteralExpr, CharLiteralExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, NameExpr, NullLiteralExpr, StringLiteralExpr, TextBlockLiteralExpr, ThisExpr}
 import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
-import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeDeclaration}
+import com.github.javaparser.resolution.declarations.{ResolvedDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeDeclaration, ResolvedTypeParameterDeclaration}
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
 import org.slf4j.LoggerFactory
 
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 
@@ -27,24 +28,60 @@ class TypeInfoProvider(global: Global) {
   }
 
 
-  private def simpleResolvedTypeFullName(resolvedType: ResolvedType): String = {
+  private def simpleResolvedTypeFullName(resolvedType: ResolvedType, typeParameterString: String = ""): String = {
     resolvedType.describe()
   }
 
-  private def resolvedTypeDeclFullName(declaration: ResolvedTypeDeclaration): String = {
-    declaration.getPackageName ++ declaration.getClassName.replaceAll(".", "$")
+  private def buildTypeString(packageName: String, className: String, typeParameterString: String): String = {
+    val dollaredClass = className.replaceAll("\\.", "\\$")
+    if (packageName.nonEmpty) {
+      s"$packageName.$dollaredClass$typeParameterString"
+    } else {
+      s"$dollaredClass$typeParameterString"
+    }
   }
 
-  private def resolvedMethodLikeDeclFullName(declaration: ResolvedMethodLikeDeclaration): String = {
-    declaration.getPackageName ++ declaration.getClassName.replaceAll(".", "$")
+  private def resolvedTypeDeclFullName(declaration: ResolvedTypeDeclaration, typeParameterString: String = ""): String = {
+    buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+  }
+
+  private def resolvedTypeParamFullName(declaration: ResolvedTypeParameterDeclaration, typeParameterString: String = ""): String = {
+    buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+  }
+
+  private def resolvedMethodLikeDeclFullName(declaration: ResolvedMethodLikeDeclaration, typeParameterString: String = ""): String = {
+    val baseString = buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val typeParameters = declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
+
+    val typeParamString = if (typeParameters.nonEmpty) {
+      s"<${typeParameters.mkString(",")}>"
+    } else {
+      ""
+    }
+
+    s"$baseString$typeParamString"
+  }
+
+  private def buildTypeParameterString(typeParams: Iterable[ResolvedType]): String = {
+    typeParams match {
+      case Nil => ""
+
+      case _ =>
+        val innerString = typeParams.map { param =>
+          simpleResolvedTypeFullName(param)
+        }.mkString(",")
+        s"<$innerString>"
+    }
   }
 
   private def resolvedReferenceTypeFullName(resolvedType: ResolvedReferenceType): String = {
+    val typeParamString = buildTypeParameterString(resolvedType.typeParametersValues().asScala)
+
     resolvedType.getTypeDeclaration.toScala match {
-      case Some (typeDeclaration) => resolvedTypeDeclFullName(typeDeclaration)
+      case Some (typeDeclaration) => resolvedTypeDeclFullName(typeDeclaration, typeParamString)
 
       case None =>
-        simpleResolvedTypeFullName(resolvedType)
+        simpleResolvedTypeFullName(resolvedType, typeParamString)
     }
   }
 
@@ -118,13 +155,12 @@ class TypeInfoProvider(global: Global) {
     registerType(typeFullName)
   }
 
-  def getTypeFullName(constructorDeclaration: ConstructorDeclaration): String = {
-    val typeFullName = Try(constructorDeclaration.resolve()) match {
-      case Success(resolvedDeclaration) =>
-        resolvedTypeDeclFullName(resolvedDeclaration.declaringType())
+  def getReturnType(node: Resolvable[ResolvedMethodDeclaration]): String = {
+    val typeFullName = Try(node.resolve().getReturnType) match {
+      case Success(resolved) => resolvedTypeFullName(resolved)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve constructor declaration type for ${constructorDeclaration.toString}")
+        logger.info(s"Failed to resolve return type. Defaulting to <empty>.")
         "<empty>"
     }
 
@@ -145,33 +181,31 @@ class TypeInfoProvider(global: Global) {
     registerType(typeFullName)
   }
 
-
-//  def getTypeFullName(expr: _ <: Resolvable[ResolvedTypeDeclaration]): String = {
-//    val typeFullName = Try(expr.resolve()) match {
-//      case Success(resolvedDecl) =>
-//        resolvedTypeDeclFullName(resolvedDecl)
-//
-//      case Failure(_) =>
-//        logger.info(s"Failed to resolve type for expr ${expr.toString}. Falling back to <empty>.")
-//        "<empty>"
-//    }
-//
-//    registerType(typeFullName)
-//  }
-
-  def getTypeFullName(callExpr: MethodCallExpr): String = {
-    val typeFullName = Try(callExpr.resolve()) match {
-      case Success(declaration) => resolvedMethodLikeDeclFullName(declaration)
+  def getTypeFullName(thisExpr: ThisExpr): String = {
+    val typeFullName = Try(thisExpr.resolve()) match {
+      case Success(declaration) => resolvedTypeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve type for call ${callExpr.getName}. Falling back to <empty>.")
+        logger.info(s"Failed to resolve type for `this` expr. Defaulting to <empty>")
         "<empty>"
     }
 
     registerType(typeFullName)
   }
 
-  def getTypeFullName(literalExpr: LiteralExpr): String = {
+  def getMethodLikeTypeFullName(methodLike: Resolvable[_ <: ResolvedMethodLikeDeclaration]): String = {
+    val typeFullName = Try(methodLike.resolve()) match {
+      case Success(declaration) => resolvedMethodLikeDeclFullName(declaration)
+
+      case Failure(_) =>
+        logger.info(s"Failed to resolve type for method-like ${methodLike}. Defaulting to <empty>")
+        "<empty>"
+    }
+
+    registerType(typeFullName)
+  }
+
+  def getLiteralTypeFullName(literalExpr: LiteralExpr): String = {
     val typeFullName = literalExpr match {
       case _: BooleanLiteralExpr   => "boolean"
       case _: CharLiteralExpr      => "char"
@@ -184,6 +218,7 @@ class TypeInfoProvider(global: Global) {
       case _                       => "<empty>"
     }
 
+    logger.info(s"Processing type for literal ${literalExpr.getClass}: $typeFullName")
     registerType(typeFullName)
   }
 
@@ -212,21 +247,18 @@ class TypeInfoProvider(global: Global) {
     registerType(typeFullName)
   }
 
-  def getInitializerType(variableDeclarator: VariableDeclarator): String = {
-    val typeFullName = variableDeclarator.getInitializer.toScala match {
-      case None => "<empty>"
+  def getInitializerType(variableDeclarator: VariableDeclarator): Option[String] = {
+    variableDeclarator.getInitializer.toScala flatMap { initializer =>
+      Try(initializer.calculateResolvedType()) match {
+        case Success(resolvedType) => Some(
+          registerType(resolvedTypeFullName(resolvedType))
+        )
 
-      case Some(initializer) =>
-        Try(initializer.calculateResolvedType()) match {
-          case Success(resolvedType) => resolvedTypeFullName(resolvedType)
-
-          case Failure(_) =>
-            logger.info(s"Failed to resolve type for initializer ${initializer.toString}")
-            "<empty>"
-        }
+        case Failure(_) =>
+          logger.info(s"Failed to resolve type for initializer ${initializer.toString}")
+          None
+      }
     }
-
-    registerType(typeFullName)
   }
 }
 

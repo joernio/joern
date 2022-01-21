@@ -165,32 +165,36 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     */
   private def astForCompilationUnit(compilationUnit: CompilationUnit): AstWithCtx = {
 
-    println("Outer type names")
-    compilationUnit.getTypes.asScala.map(getTypeDeclName).foreach(println)
 
-    val AstWithCtx(ast, ctx) = astForPackageDeclaration(
-      compilationUnit.getPackageDeclaration.toScala
-    )
-    val namespaceBlockFullName = {
-      ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
+    try {
+      val AstWithCtx(ast, ctx) = astForPackageDeclaration(
+        compilationUnit.getPackageDeclaration.toScala
+      )
+      val namespaceBlockFullName = {
+        ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
+      }
+      val typeDeclAstsWithCtx = withOrder(compilationUnit.getTypes) { (typ, order) =>
+        astForTypeDecl(typ, order, namespaceBlockFullName)
+      }
+
+      val typeDeclAsts = typeDeclAstsWithCtx.map(_.ast)
+      val mergedCtx = ctx.mergeWith(typeDeclAstsWithCtx.map(_.ctx))
+
+      val lambdaTypeDeclAsts = mergedCtx.lambdaAsts.map { lambdaAst =>
+        val root = lambdaAst.root.get.asInstanceOf[NewMethod]
+        // TODO: Inherit from implemented interface and bind to implemented method
+        val lambdaTypeDecl = NewTypeDecl()
+          .name(root.name)
+          .fullName(root.fullName)
+        Ast(lambdaTypeDecl).withChild(lambdaAst)
+      }
+
+      AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
+    } catch {
+      case t: Throwable =>
+        println(s"Parsing failed with $t")
+        throw t
     }
-    val typeDeclAstsWithCtx = withOrder(compilationUnit.getTypes) { (typ, order) =>
-      astForTypeDecl(typ, order, namespaceBlockFullName)
-    }
-
-    val typeDeclAsts = typeDeclAstsWithCtx.map(_.ast)
-    val mergedCtx = ctx.mergeWith(typeDeclAstsWithCtx.map(_.ctx))
-
-    val lambdaTypeDeclAsts = mergedCtx.lambdaAsts.map { lambdaAst =>
-      val root = lambdaAst.root.get.asInstanceOf[NewMethod]
-      // TODO: Inherit from implemented interface and bind to implemented method
-      val lambdaTypeDecl = NewTypeDecl()
-        .name(root.name)
-        .fullName(root.fullName)
-      Ast(lambdaTypeDecl).withChild(lambdaAst)
-    }
-
-    AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
   }
 
   /** Translate package declaration into AST consisting of
@@ -220,50 +224,12 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       .fullName(globalNamespaceName)
 
 
-//  private def astForTypeDeclMember(
-//      member: BodyDeclaration[_],
-//      order: Int,
-//      astParentType: String,
-//      astParentFullname: String
-//  ): AstWithCtx = {
-//    member match {
-//      case typ: TypeDeclaration[_] =>
-//        astForTypeDecl()
-//    }
-//  }
-
   private def getTypeDeclName(typeDecl: TypeDeclaration[_]): String = {
     if (typeDecl.isNestedType) {
       getTypeDeclName(typeDecl.getParentNode.get().asInstanceOf[TypeDeclaration[_]]) ++ "$" ++ typeDecl.getNameAsString
     } else {
       typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
     }
-  }
-
-  private def processInnerTyp(typeDecl: TypeDeclaration[_]): Unit = {
-    println("###################################################")
-    println(s"Processing inner type decl ${typeDecl.getName}")
-
-    try {
-      println(s"Name: ${getTypeDeclName(typeDecl)}")
-    } catch {
-      case t: Throwable => println(s"GetTypeDeclName crashed with ${t}")
-    }
-
-    typeDecl.getMembers.asScala.collect { case t: TypeDeclaration[_] => t}.foreach(processInnerTyp)
-
-    println("###################################################")
-  }
-
-  private def getTypeString(resolvedRefType: ResolvedReferenceType): String = {
-
-    val packageName = resolvedRefType.getTypeDeclaration.get().getPackageName
-    val className = resolvedRefType.getTypeDeclaration.get().getClassName
-
-    println(s"Found type string for type ${resolvedRefType.getQualifiedName}")
-    println(s"Package name: $packageName")
-    println(s"Class name: $className")
-    "cake"
   }
 
   private def astForTypeDecl(
@@ -403,7 +369,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     val constructorNode =
       createConstructorNode(constructorDeclaration, scopeContext.typeDecl, childNum)
 
-    val typeFullName = typeInfoProvider.getTypeFullName(constructorDeclaration)
+    val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(constructorDeclaration)
     val thisAst = thisAstForMethod(typeFullName, line(constructorDeclaration))
 
     val parameterAstsWithCtx = astsForParameterList(constructorDeclaration.getParameters)
@@ -449,7 +415,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     val thisAst = if (methodDeclaration.isStatic) {
       Seq()
     } else {
-      val typeFullName = typeInfoProvider.getTypeFullName(methodDeclaration)
+      val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(methodDeclaration)
       Seq(thisAstForMethod(typeFullName, line(methodDeclaration)))
     }
     val parameterAstsWithCtx = astsForParameterList(methodDeclaration.getParameters)
@@ -473,7 +439,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
   }
 
   private def astForMethodReturn(methodDeclaration: MethodDeclaration): Ast = {
-    val typeFullName = typeInfoProvider.getTypeFullName(methodDeclaration)
+    val typeFullName = typeInfoProvider.getReturnType(methodDeclaration)
     val methodReturnNode =
       NewMethodReturn()
         .order(methodDeclaration.getParameters.size + 2)
@@ -484,7 +450,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
   }
 
   private def astForConstructorReturn(constructorDeclaration: ConstructorDeclaration): Ast = {
-    val typeFullName = typeInfoProvider.getTypeFullName(constructorDeclaration)
+    val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(constructorDeclaration)
     val constructorReturnNode =
       NewMethodReturn()
         .order(constructorDeclaration.getParameters.size + 2)
@@ -1309,6 +1275,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       val name = variable.getName.toString
       val initializer = variable.getInitializer.toScala.get // Won't crash because of filter
       val initializerTypeFullName = typeInfoProvider.getInitializerType(variable)
+      val typeFullName = typeInfoProvider.getTypeFullName(variable)
 
       val callNode = NewCall()
         .name(Operators.assignment)
@@ -1318,7 +1285,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
         .argumentIndex(order + idx + constructorCount)
         .lineNumber(line(varDecl))
         .columnNumber(column(varDecl))
-        .typeFullName(typeInfoProvider.getTypeFullName(variable))
+        .typeFullName(typeFullName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
       val identifier = NewIdentifier()
@@ -1326,7 +1293,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
         .order(1)
         .argumentIndex(1)
         .code(name)
-        .typeFullName(initializerTypeFullName)
+        .typeFullName(initializerTypeFullName.getOrElse(typeFullName))
         .lineNumber(line(variable))
         .columnNumber(column(variable))
       val identifierAst = AstWithCtx(Ast(identifier), Context(identifiers = Seq(identifier)))
@@ -1837,6 +1804,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       case _ => DispatchTypes.DYNAMIC_DISPATCH
 
     }
+
     val callNode = NewCall()
       .name(call.getNameAsString)
       .code(s"${codePrefix}${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
@@ -2113,7 +2081,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
           .order(order)
           .argumentIndex(order)
           .code(expr.toString)
-          .typeFullName(typeInfoProvider.getTypeFullName(expr))
+          .typeFullName(typeInfoProvider.getLiteralTypeFullName(expr))
       ),
       Context()
     )
@@ -2126,7 +2094,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
   ): AstWithCtx = {
 
     val resolvedDecl = Try(call.resolve())
-    val typeFullName = typeInfoProvider.getTypeFullName(call)
+    val typeFullName = typeInfoProvider.getReturnType(call)
     val callNode = createCallNode(call, resolvedDecl, typeFullName, order)
 
     val objectNode = createObjectNode(call, resolvedDecl, typeFullName)
