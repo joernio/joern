@@ -1272,44 +1272,34 @@ class AstCreator(
         .lineNumber(line(identifierElem))
         .columnNumber(column(identifierElem))
     val indexExpr =
-      if (expr.getIndexExpressions.size == 1) {
-        expr.getIndexExpressions.get(0)
+      if (expr.getIndexExpressions.size >= 1) {
+        Some(expr.getIndexExpressions.get(0))
       } else {
         None
       }
-    if (indexExpr == None) {
-      // TODO: check if this should be handled differently,
-      // i.e. not return an empty val but throwing an exception
-      AstWithCtx(Ast(), Context())
-    } else if (indexExpr.isInstanceOf[KtConstantExpression]) {
-      val assignment =
-        NewCall()
-          .name(Operators.indexAccess)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code(expr.getText())
-          .order(order)
-          .argumentIndex(argIdx)
-          .typeFullName(typeFullName)
-          .methodFullName(Operators.indexAccess)
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-      val call = callAst(assignment, Seq(Ast(identifier)))
-      AstWithCtx(call, Context(identifiers = List(identifier)))
-    } else {
-      val assignment =
-        NewCall()
-          .name(Operators.indexAccess)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code(expr.getText())
-          .order(order)
-          .argumentIndex(argIdx)
-          .typeFullName(typeFullName)
-          .methodFullName(Operators.indexAccess)
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-      val call = callAst(assignment, Seq(Ast(identifier)))
-      AstWithCtx(call, Context(identifiers = List(identifier)))
+    val callNode =
+      NewCall()
+        .name(Operators.indexAccess)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(expr.getText())
+        .order(order)
+        .argumentIndex(argIdx)
+        .typeFullName(typeFullName)
+        .methodFullName(Operators.indexAccess)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val astsForIndexExpr = indexExpr match {
+      case Some(ie) =>
+        astsForExpression(ie, scopeContext, 2, 2)
+      case None =>
+        List()
     }
+    val call = callAst(callNode, Seq(Ast(identifier)))
+    val finalAst =
+      call
+        .withChildren(astsForIndexExpr.map(_.ast))
+        .withArgEdges(callNode, astsForIndexExpr.map(_.ast.root.get))
+    AstWithCtx(finalAst, Context(identifiers = List(identifier)))
   }
 
   def astForPostfixExpression(expr: KtPostfixExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit

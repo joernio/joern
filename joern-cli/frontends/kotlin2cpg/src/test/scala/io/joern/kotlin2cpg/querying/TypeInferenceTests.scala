@@ -351,7 +351,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `port.toString()` with the correct methodFullName set" in {
       val List(c) = cpg.call.codeExact("port.toString()").l
-      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
     }
 
     "should contain a CALL node for `routes` with the correct methodFullName set" in {
