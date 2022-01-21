@@ -12,6 +12,7 @@ import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal.NodeOps
+import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests
     extends AnyWordSpec
