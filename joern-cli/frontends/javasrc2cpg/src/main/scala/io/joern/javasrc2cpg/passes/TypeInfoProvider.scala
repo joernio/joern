@@ -1,12 +1,39 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.ClassOrInterfaceType
-import com.github.javaparser.ast.body.{ConstructorDeclaration, EnumConstantDeclaration, MethodDeclaration, TypeDeclaration, VariableDeclarator}
-import com.github.javaparser.ast.expr.{BooleanLiteralExpr, CharLiteralExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, NameExpr, NullLiteralExpr, StringLiteralExpr, TextBlockLiteralExpr, ThisExpr}
+import com.github.javaparser.ast.body.{
+  ConstructorDeclaration,
+  EnumConstantDeclaration,
+  MethodDeclaration,
+  TypeDeclaration,
+  VariableDeclarator
+}
+import com.github.javaparser.ast.expr.{
+  BooleanLiteralExpr,
+  CharLiteralExpr,
+  DoubleLiteralExpr,
+  Expression,
+  IntegerLiteralExpr,
+  LiteralExpr,
+  LongLiteralExpr,
+  MethodCallExpr,
+  NameExpr,
+  NullLiteralExpr,
+  StringLiteralExpr,
+  TextBlockLiteralExpr,
+  ThisExpr
+}
 import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
-import com.github.javaparser.resolution.declarations.{ResolvedDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeDeclaration, ResolvedTypeParameterDeclaration}
+import com.github.javaparser.resolution.declarations.{
+  ResolvedDeclaration,
+  ResolvedMethodDeclaration,
+  ResolvedMethodLikeDeclaration,
+  ResolvedReferenceTypeDeclaration,
+  ResolvedTypeDeclaration,
+  ResolvedTypeParameterDeclaration
+}
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
 import org.slf4j.LoggerFactory
 
@@ -27,7 +54,6 @@ class TypeInfoProvider(global: Global) {
     typeName
   }
 
-
   private def simpleResolvedTypeFullName(resolvedType: ResolvedType, typeParameterString: String = ""): String = {
     resolvedType.describe()
   }
@@ -41,17 +67,27 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
-  private def resolvedTypeDeclFullName(declaration: ResolvedTypeDeclaration, typeParameterString: String = ""): String = {
+  private def resolvedTypeDeclFullName(
+      declaration: ResolvedTypeDeclaration,
+      typeParameterString: String = ""
+  ): String = {
     buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
   }
 
-  private def resolvedTypeParamFullName(declaration: ResolvedTypeParameterDeclaration, typeParameterString: String = ""): String = {
+  private def resolvedTypeParamFullName(
+      declaration: ResolvedTypeParameterDeclaration,
+      typeParameterString: String = ""
+  ): String = {
     buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
   }
 
-  private def resolvedMethodLikeDeclFullName(declaration: ResolvedMethodLikeDeclaration, typeParameterString: String = ""): String = {
+  private def resolvedMethodLikeDeclFullName(
+      declaration: ResolvedMethodLikeDeclaration,
+      typeParameterString: String = ""
+  ): String = {
     val baseString = buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
-    val typeParameters = declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
+    val typeParameters =
+      declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
 
     val typeParamString = if (typeParameters.nonEmpty) {
       s"<${typeParameters.mkString(",")}>"
@@ -67,9 +103,11 @@ class TypeInfoProvider(global: Global) {
       case Nil => ""
 
       case _ =>
-        val innerString = typeParams.map { param =>
-          simpleResolvedTypeFullName(param)
-        }.mkString(",")
+        val innerString = typeParams
+          .map { param =>
+            simpleResolvedTypeFullName(param)
+          }
+          .mkString(",")
         s"<$innerString>"
     }
   }
@@ -78,7 +116,7 @@ class TypeInfoProvider(global: Global) {
     val typeParamString = buildTypeParameterString(resolvedType.typeParametersValues().asScala)
 
     resolvedType.getTypeDeclaration.toScala match {
-      case Some (typeDeclaration) => resolvedTypeDeclFullName(typeDeclaration, typeParamString)
+      case Some(typeDeclaration) => resolvedTypeDeclFullName(typeDeclaration, typeParamString)
 
       case None =>
         simpleResolvedTypeFullName(resolvedType, typeParamString)
@@ -250,9 +288,10 @@ class TypeInfoProvider(global: Global) {
   def getInitializerType(variableDeclarator: VariableDeclarator): Option[String] = {
     variableDeclarator.getInitializer.toScala flatMap { initializer =>
       Try(initializer.calculateResolvedType()) match {
-        case Success(resolvedType) => Some(
-          registerType(resolvedTypeFullName(resolvedType))
-        )
+        case Success(resolvedType) =>
+          Some(
+            registerType(resolvedTypeFullName(resolvedType))
+          )
 
         case Failure(_) =>
           logger.info(s"Failed to resolve type for initializer ${initializer.toString}")
