@@ -42,13 +42,10 @@ class MethodReturnTest2 extends CCodeToCpgSuite {
 
   "be correct for multiple returns" in {
     // synthetic method returns; these do not represent the actual return statements from C/C++!
-    inside(cpg.methodReturn.l) { case List(ret1, ret2, _) =>
+    inside(cpg.method("main").methodReturn.l) { case List(ret1) =>
       // method return from main
-      ret1.code shouldBe "RET"
+      ret1.code shouldBe "int"
       ret1.typeFullName shouldBe "int"
-      // method return from synthetic fake global method
-      ret2.code shouldBe "RET"
-      ret2.typeFullName shouldBe "ANY"
     }
     inside(cpg.method("main").ast.isReturn.l) { case List(ret1, ret2) =>
       ret1.code shouldBe "return 1;"

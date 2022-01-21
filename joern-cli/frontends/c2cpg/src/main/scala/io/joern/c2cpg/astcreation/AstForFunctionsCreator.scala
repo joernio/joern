@@ -280,7 +280,7 @@ trait AstForFunctionsCreator {
       NewMethodReturn()
         .order(order)
         .typeFullName(registerType(tpe))
-        .code("RET")
+        .code(tpe)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
         .lineNumber(line(func))
         .columnNumber(column(func))
