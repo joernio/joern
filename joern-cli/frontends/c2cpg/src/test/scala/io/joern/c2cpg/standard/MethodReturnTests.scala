@@ -42,12 +42,14 @@ class MethodReturnTest2 extends CCodeToCpgSuite {
 
   "be correct for multiple returns" in {
     // synthetic method returns; these do not represent the actual return statements from C/C++!
-    inside(cpg.method("main").methodReturn.l) { case List(ret1) =>
-      // method return from main
-      ret1.code shouldBe "int"
-      ret1.typeFullName shouldBe "int"
+    inside(cpg.method("main").methodReturn.l) { case List(mainMethodReturn) =>
+      mainMethodReturn.code shouldBe "int"
+      mainMethodReturn.typeFullName shouldBe "int"
     }
-    inside(cpg.method("main").ast.isReturn.l) { case List(ret1, ret2) =>
+    val astReturns = cpg.method("main").ast.isReturn.l
+    val cfgReturns = cpg.method("main").methodReturn.cfgPrev.l
+    val travReturns = cpg.method("main").methodReturn.toReturn.l
+    inside(astReturns) { case List(ret1, ret2) =>
       ret1.code shouldBe "return 1;"
       ret1.lineNumber shouldBe Some(4)
       ret1.columnNumber shouldBe Some(4)
@@ -55,23 +57,7 @@ class MethodReturnTest2 extends CCodeToCpgSuite {
       ret2.lineNumber shouldBe Some(6)
       ret2.columnNumber shouldBe Some(2)
     }
-    inside(cpg.method("main").methodReturn.cfgPrev.l) { case List(ret1, ret2) =>
-      ret1.code shouldBe "return 1;"
-      ret1.lineNumber shouldBe Some(4)
-      ret1.columnNumber shouldBe Some(4)
-      ret2.code shouldBe "return 2;"
-      ret2.lineNumber shouldBe Some(6)
-      ret2.columnNumber shouldBe Some(2)
-    }
-    pendingUntilFixed {
-      inside(cpg.method("main").methodReturn.toReturn.l) { case List(ret1, ret2) =>
-        ret1.code shouldBe "return 1;"
-        ret1.lineNumber shouldBe Some(4)
-        ret1.columnNumber shouldBe Some(4)
-        ret2.code shouldBe "return 2;"
-        ret2.lineNumber shouldBe Some(6)
-        ret2.columnNumber shouldBe Some(2)
-      }
-    }
+    astReturns shouldBe cfgReturns
+    astReturns shouldBe travReturns
   }
 }
