@@ -58,6 +58,7 @@ class HeaderContentLinkerPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
           .code(globalName)
           .fullName(fullName)
           .filename(filename)
+          .lineNumber(1)
           .astParentType(NodeTypes.NAMESPACE_BLOCK)
           .astParentFullName(fullName)
 
