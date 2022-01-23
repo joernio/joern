@@ -211,7 +211,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
-      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
@@ -278,4 +278,54 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with " - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    |package mypkg
+    |
+    |fun main() {
+    |    val str = "ASTRING"
+    |    val res = str.length.toString()
+    |    println(res)
+    |}
+    |
+    |""".stripMargin)
+
+    "should contain a CALL node for `p.length` with the correct props set" in {
+      val List(c) = cpg.call.codeExact("str.length").l
+      c.methodFullName shouldBe Operators.fieldAccess
+      c.signature shouldBe ""
+      c.typeFullName shouldBe "kotlin.Int"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+
+    "should contain a CALL node for `p.length.toString` with the correct props set" in {
+      val List(c) = cpg.call.code("str.length.toString.*").l
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
+      c.signature shouldBe "kotlin.String()"
+      c.typeFullName shouldBe "kotlin.String"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+    }
+  }
+
+  "CPG for code with a simple call to write to a file" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |import java.io.File
+      |
+      |fun main() {
+      |   val fullPath = "/tmp/kotlin2cpg.example.txt"
+      |   val msg = "AMESSAGE"
+      |   File(fullPath).writeText(msg)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node for the `File` init with the correct props set" in {
+      val List(c) = cpg.call.methodFullName(".*init.*").l
+      c.methodFullName shouldBe "java.io.File.<init>:java.io.File(kotlin.String)"
+      c.signature shouldBe "java.io.File(kotlin.String)"
+      c.typeFullName shouldBe "java.io.File"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+  }
 }

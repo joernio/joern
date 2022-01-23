@@ -70,7 +70,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `sendBroadcast` with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code("sendBroadcast.*").l
-      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:kotlin.Unit(android.content.Intent)"
+      c.methodFullName shouldBe "mypkg.AboutUsActivity.sendBroadcast:kotlin.Unit(android.content.Intent)"
     }
   }
 
@@ -202,7 +202,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
       val List(c) = cpg.call.code("findViewB.*").l
-      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(kotlin.Int)"
+      c.methodFullName shouldBe "mypkg.MyActivity.findViewById:android.view.View(kotlin.Int)"
       c.argument.size shouldBe 1
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }

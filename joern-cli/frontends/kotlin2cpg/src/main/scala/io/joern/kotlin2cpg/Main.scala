@@ -1,11 +1,12 @@
 package io.joern.kotlin2cpg
 
-import java.nio.file.{Files, Paths, Path}
+import java.nio.file.{Files, Path, Paths}
 import org.slf4j.LoggerFactory
 import scopt.OParser
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-import io.joern.kotlin2cpg.types.{CompilerAPI, InferenceSourcesPicker, KotlinTypeInfoProvider}
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
+import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.x2cpg.{IOUtils, SourceFiles, X2Cpg, X2CpgConfig}
 
 case class InferenceJarPath(path: String, isResource: Boolean)
@@ -255,11 +256,11 @@ object Main extends App {
               )
             }
 
-        val typeInfoProvider = new KotlinTypeInfoProvider(environment)
+        val nameGenerator = new DefaultNameGenerator(environment)
         val cpg = new Kt2Cpg().createCpg(
           filesWithMeta,
           fileContentsAtPath,
-          typeInfoProvider,
+          nameGenerator,
           Some(config.outputPath)
         )
         cpg.close()

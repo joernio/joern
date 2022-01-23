@@ -49,7 +49,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `.*containsKey.*` QE with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment).l
-      c.methodFullName shouldBe "java.util.AbstractMap.containsKey:kotlin.Boolean(kotlin.String)"
+      c.methodFullName shouldBe "java.util.HashMap.containsKey:kotlin.Boolean(kotlin.String)"
     }
 
     "should contain a CALL node for the `.*containsKey.*` QE with the correct arguments set" in {
@@ -82,7 +82,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for QE's selector with the correct METHOD_FULL_NAME set" in {
       val List(c) =
         cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code(".*foo.*")).argument(2).isCall.l
-      c.methodFullName shouldBe "kotlin.Comparable.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Boolean.toString:kotlin.String()"
     }
   }
 
@@ -99,7 +99,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the first argument a CALL with the correct props set" in {
       val List(c) = cpg.call.code("arr.*toString.*").l
-      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
 
       val List(receiver) = cpg.call.code("arr.*toString.*").argument(0).isCall.l
       receiver.argumentIndex shouldBe 0

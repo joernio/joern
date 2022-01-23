@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.types
 
+import io.shiftleft.passes.IntervalKeyPool
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -13,9 +14,9 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
       val environment = CompilerAPI.makeEnvironment(Seq(sourceDir), Seq())
       environment.getSourceFiles should not be List()
 
-      val typeInfoProvider = new KotlinTypeInfoProvider(environment)
-      typeInfoProvider.bindingContext should not be null
-      typeInfoProvider.hasEmptyBindingContext shouldBe true
+      val nameGenerator = new DefaultNameGenerator(environment)
+      nameGenerator.bindingContext should not be null
+      nameGenerator.hasEmptyBindingContext shouldBe true
     }
 
     "should not return an empty binding context" in {
@@ -24,9 +25,9 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
       val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq())
       environment.getSourceFiles should not be List()
 
-      val typeInfoProvider = new KotlinTypeInfoProvider(environment)
-      typeInfoProvider.bindingContext should not be null
-      typeInfoProvider.hasEmptyBindingContext shouldBe false
+      val nameGenerator = new DefaultNameGenerator(environment)
+      nameGenerator.bindingContext should not be null
+      nameGenerator.hasEmptyBindingContext shouldBe false
     }
   }
 }
