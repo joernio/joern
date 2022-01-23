@@ -335,7 +335,7 @@ class AstCreator(
           }
 
         ImportEntry(
-          entry.getText().replaceAll("^import ", ""),
+          entry.getImportPath.getPathStr,
           importedName,
           true,
           isWildcard,

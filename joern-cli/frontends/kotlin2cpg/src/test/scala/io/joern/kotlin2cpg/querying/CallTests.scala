@@ -328,4 +328,58 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
+
+  "CPG for code with a simple call to class from Java's stdlib imported with _as_" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import java.io.File as MyFile
+        |
+        |fun main() {
+        |   val fullPath = "/tmp/kotlin2cpg.example.txt"
+        |   val f = MyFile(fullPath)
+        |   val msg = "AMESSAGE"
+        |   f.writeText(msg)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node `writeText` with the correct props set" in {
+      val List(c) = cpg.call.code("f.writeText.*").l
+      c.methodFullName shouldBe "java.io.File.writeText:kotlin.Unit(kotlin.String,java.nio.charset.Charset)"
+    }
+  }
+
+  "CPG for code with a simple call with unknown identifier imported via _as_" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import no.such.CaseClass as MyCaseClass
+        |
+        |fun main() {
+        |  val res = MyCaseClass.PROP
+        |  println(res)
+        |
+        |  val otherRes = MyCaseClass("AN_ARGUMENT")
+        |  println(otherRes.aFn())
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for `MyCaseClass.PROP` with the correct props set" in {
+      val List(c) = cpg.call.code("MyCaseClass.PROP").l
+      c.methodFullName shouldBe Operators.fieldAccess
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(12)
+      c.signature shouldBe ""
+    }
+
+    "should contain a CALL node for `MyCaseClass(\\\"AN_ARGUMENT\\\")` with the correct props set" in {
+      val List(c) = cpg.call.code("MyCaseClass.*AN_ARGUMENT.*").l
+      c.methodFullName shouldBe "no.such.CaseClass:ANY(ANY)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(9)
+      c.columnNumber shouldBe Some(17)
+      c.signature shouldBe "ANY(ANY)"
+    }
+  }
 }
