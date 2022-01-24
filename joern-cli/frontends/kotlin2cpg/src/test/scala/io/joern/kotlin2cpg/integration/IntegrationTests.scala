@@ -127,7 +127,27 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
     }
 
     "should not contain any CALL nodes with MFNs with a space character in them" in {
-      cpg.call.methodFullName(".*[ ].*").methodFullName.take(1).l shouldBe List()
+      cpg.call.methodFullName(".*[ ].*").methodFullName.l shouldBe List()
+    }
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .l shouldBe List()
     }
 
     "should not contain any IDENTIFIER nodes without inbound AST edges" in {
