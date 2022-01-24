@@ -958,7 +958,9 @@ class AstCreator(
       case typedExpr: KtLambdaExpression =>
         Seq(astForLambda(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtNamedFunction =>
-        Seq(astForAnonymousFunction(typedExpr, scopeContext, order))
+        // TODO: re-enable after all AST issues have been fixed
+        //Seq(astForAnonymousFunction(typedExpr, scopeContext, order))
+        Seq()
       case classExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(classExpr, scopeContext, order, argIdx))
       case sqExpr: KtSafeQualifiedExpression =>
@@ -1030,7 +1032,6 @@ class AstCreator(
     AstWithCtx(Ast(callNode), Context())
   }
 
-  // TODO: try to merge with astForLambda if possible
   def astForAnonymousFunction(expr: KtNamedFunction, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
@@ -1084,10 +1085,15 @@ class AstCreator(
         .order(order)
     val methodRefAst = Ast(methodRef)
 
-    AstWithCtx(
-      methodRefAst,
-      Context(lambdaAsts = Seq(lambdaMethodAst), identifiers = bodyAstWithCtx.ctx.identifiers)
-    )
+    val finalCtx =
+      Context(
+        lambdaAsts = Seq(lambdaMethodAst),
+        identifiers = bodyAstWithCtx.ctx.identifiers,
+        closureBindingInfo = bodyAstWithCtx.ctx.closureBindingInfo,
+        lambdaBindingInfo = bodyAstWithCtx.ctx.lambdaBindingInfo,
+        bindingsInfo = bodyAstWithCtx.ctx.bindingsInfo
+      )
+    AstWithCtx(methodRefAst, finalCtx)
   }
 
   def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit

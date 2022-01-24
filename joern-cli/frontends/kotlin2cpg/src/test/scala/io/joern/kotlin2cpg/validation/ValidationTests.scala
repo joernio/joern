@@ -360,6 +360,53 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with anonymous function as argument" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.collections.List
+        |import kotlin.collections.listOf
+        |
+        |fun foo(x: String): Int {
+        |    val l: kotlin.collections.List = listOf(1, x)
+        |    l.filter(fun(item) = { println(item); item > 0 })
+        |    return 0
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with function defined inside another function" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun withInline(): Int {
+        |    fun add1(x: Int): Int {
+        |        return 1
+        |    }
+        |    return add1(1)
+        |}
+        |
+        |fun main() {
+        |    val x = withInline()
+        |    println(x)
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
   "CPG for code with lambda inside while-statement" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg(
       """
