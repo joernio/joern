@@ -2,8 +2,17 @@ package io.joern.kotlin2cpg.types
 
 import com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
-import org.jetbrains.kotlin.descriptors.impl.{ClassConstructorDescriptorImpl, TypeAliasConstructorDescriptorImpl}
+import org.jetbrains.kotlin.descriptors.{
+  DeclarationDescriptor,
+  FunctionDescriptor,
+  ValueDescriptor,
+  ValueParameterDescriptor
+}
+import org.jetbrains.kotlin.descriptors.impl.{
+  ClassConstructorDescriptorImpl,
+  LazyPackageViewDescriptorImpl,
+  TypeAliasConstructorDescriptorImpl
+}
 import org.jetbrains.kotlin.psi.{
   KtBinaryExpression,
   KtCallExpression,
@@ -368,8 +377,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       val renderer = descriptorRenderer(typeInfo.getType.getConstructor.getDeclarationDescriptor)
       val rendered = renderer.renderType(firstTypeArg.getType)
       val retType = expressionType(expr, Constants.any)
-      val signature = retType + "()"
-      val fullName = rendered + "." + Constants.classLiteralReplacementMethodName + ":" + signature
+      val signature = stripped(retType) + "()"
+      val fullName = stripped(rendered) + "." + Constants.classLiteralReplacementMethodName + ":" + signature
       (fullName, signature)
     } else {
       (or._1, or._2)
@@ -419,13 +428,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
               )
             }
 
-            val renderedParameterTypes =
-              fnDescriptor.getValueParameters.asScala
-                .map { vp =>
-                  val rendered = renderer.renderType(vp.getType)
-                  stripped(rendered)
-                }
-                .mkString(",")
+            val renderedParameterTypes = renderValueParameters(renderer, fnDescriptor.getValueParameters.asScala.toList)
             val signature = stripped(retType) + "(" + stripped(renderedParameterTypes) + ")"
             val fullName =
               if (
@@ -470,13 +473,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
             val renderedFqName = stripped(renderer.renderFqName(fqName))
             val retType = stripped(renderer.renderType(fnDescriptor.getReturnType))
 
-            val renderedParameterTypes =
-              fnDescriptor.getValueParameters.asScala
-                .map { vp =>
-                  val rendered = renderer.renderType(vp.getType)
-                  stripped(rendered)
-                }
-                .mkString(",")
+            val renderedParameterTypes = renderValueParameters(renderer, fnDescriptor.getValueParameters.asScala.toList)
             val signature = stripped(retType) + "(" + renderedParameterTypes + ")"
             val fullName =
               if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
@@ -645,6 +642,21 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       case _ =>
     }
     (or._1, or._2)
+  }
+
+  private def renderValueParameters(renderer: DescriptorRenderer, params: List[ValueParameterDescriptor]): String = {
+    params
+      .map { vp =>
+        val renderedTypeConstructor = renderer.renderTypeConstructor(vp.getType.getConstructor)
+        val isFunctionX = renderedTypeConstructor.startsWith(Constants.kotlinFunctionXPrefix)
+        if (isFunctionX) {
+          Constants.kotlinFunctionXPrefix + (vp.getType.getArguments.size() - 1).toString
+        } else {
+          val rendered = renderer.renderType(vp.getType)
+          stripped(rendered)
+        }
+      }
+      .mkString(",")
   }
 
   def parameterType(expr: KtParameter, or: String): String = {
