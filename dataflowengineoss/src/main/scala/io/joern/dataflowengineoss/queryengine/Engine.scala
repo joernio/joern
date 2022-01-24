@@ -49,7 +49,7 @@ class Engine(context: EngineContext) {
     }
     val sourcesSet = sources.toSet
     val tasks = sinks.map { sink =>
-      val table = context.config.initialTable.map(x => new ResultTable(x.table)).getOrElse(new ResultTable)
+      val table = context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
       ReachableByTask(sink, sourcesSet, table)
     }
     solveTasks(tasks, sourcesSet)
