@@ -159,10 +159,10 @@ object TypeRenderer {
     if (desc != null) {
       val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
       opts.setTypeNormalizer { t =>
-        if (t.isInstanceOf[UnresolvedType]) {
-          anyT.getDefaultType
-        } else {
-          t
+        t match {
+          case _: UnresolvedType => anyT.getDefaultType
+          case _: ErrorType => anyT.getDefaultType
+          case  _ => t
         }
       }
     }
