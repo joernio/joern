@@ -429,25 +429,77 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with lambda inside do-while-statement" - {
+  "CPG for code with with function which takes a lambda as an argument" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |
         |package main
+        |
+        |fun withCallback(callback: (String) -> Unit) {
+        |    callback("AMESSAGE")
+        |}
+        |
         |fun main() {
-        |    val str = "ASTRING"
-        |    do {
-        |        1.let {
-        |            println(str)
-        |        }
-        |    } while(true)
+        |    withCallback { println(it) }
         |}
         |""".stripMargin)
 
-    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
-      cpg.identifier
-        .filter(_._astIn.size == 0)
-        .code
-        .l shouldBe Seq()
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .take(1)
+        .l shouldBe List()
     }
   }
+
+  "CPG for code with class with method which takes a lambda as an argument" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass {
+        |    fun withCallback(callback: (String) -> Unit) {
+        |        callback("AMESSAGE")
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val a = AClass()
+        |    a.withCallback { println(it) }
+        |}
+        |""".stripMargin)
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .take(1)
+        .l shouldBe List()
+    }
+  }
+
 }

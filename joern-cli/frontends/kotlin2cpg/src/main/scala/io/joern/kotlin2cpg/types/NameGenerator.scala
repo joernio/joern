@@ -605,29 +605,18 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
                   }
 
                 val renderedParameterTypes =
-                  fnDescriptor.getValueParameters.asScala
-                    .map { vp =>
-                      val renderedTypeConstructor = renderer.renderTypeConstructor(vp.getType.getConstructor)
-                      val isFunctionX = renderedTypeConstructor.startsWith(Constants.kotlinFunctionXPrefix)
-                      if (isFunctionX) {
-                        Constants.kotlinFunctionXPrefix + (vp.getType.getArguments.size() - 1).toString
-                      } else {
-                        val rendered = renderer.renderType(vp.getType)
-                        stripped(rendered)
-                      }
-                    }
-                    .mkString(",")
-
+                  renderValueParameters(renderer, fnDescriptor.getValueParameters.asScala.toList)
                 val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
                 if (bindingInfo != null && bindingInfo.getType != null) {
-                  val rendered =
+                  val renderedReturnType = {
                     if (bindingInfo.getType.isInstanceOf[UnresolvedType]) {
                       Constants.kotlinAny
                     } else {
                       renderer.renderType(bindingInfo.getType)
                     }
-                  val signature = stripped(rendered) + "(" + renderedParameterTypes + ")"
-                  val fn = (renderedFqName + ":" + signature, signature)
+                  }
+                  val signature = stripped(renderedReturnType) + "(" + renderedParameterTypes + ")"
+                  val fn = (stripped(renderedFqName) + ":" + signature, signature)
                   return fn
                 }
 
@@ -670,9 +659,19 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     if (mapForEntity.getKeys.contains(BindingContext.VALUE_PARAMETER.getKey)) {
       val variableDesc = mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey)
       val renderer = descriptorRenderer(variableDesc)
-      val rendered = renderer.renderType(variableDesc.getType)
-      if (isValidRender(rendered)) {
-        stripped(rendered)
+
+      val theType = variableDesc.getType
+      val renderedConstructor = renderer.renderTypeConstructor(theType.getConstructor)
+      val isFunctionX = renderedConstructor.startsWith(Constants.kotlinFunctionXPrefix)
+      val finalRender =
+        if (isFunctionX) {
+          Constants.kotlinFunctionXPrefix + (theType.getArguments.size() - 1).toString
+        } else {
+          val rendered = renderer.renderType(theType)
+          stripped(rendered)
+        }
+      if (isValidRender(finalRender)) {
+        finalRender
       } else {
         or
       }
