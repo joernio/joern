@@ -37,7 +37,9 @@ object SourceFilesPicker {
         "integrationtest",
         "androidTest",
         "sharedTest",
-        "fixtures"
+        "fixtures",
+        "commonTest",
+        "jvmTest"
       )
     val containsUnwantedSubstring =
       substringsToFilterFor.exists { str =>

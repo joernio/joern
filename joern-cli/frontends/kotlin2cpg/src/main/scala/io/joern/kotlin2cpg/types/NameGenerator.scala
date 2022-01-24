@@ -21,7 +21,11 @@ import org.jetbrains.kotlin.psi.{
 }
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
-import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{LazyClassDescriptor, LazyTypeAliasDescriptor}
+import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{
+  LazyClassDescriptor,
+  LazyPackageDescriptor,
+  LazyTypeAliasDescriptor
+}
 import org.jetbrains.kotlin.types.{ErrorType, KotlinTypeFactoryKt, KotlinTypeKt, SimpleType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
@@ -35,8 +39,10 @@ import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
 import DefaultNameGenerator._
 import io.shiftleft.passes.KeyPool
+import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 
 // representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
 trait WithDefaultType {
@@ -164,17 +170,17 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
-  // replaces `ERROR` types with `kotlin.Any`
-  // TODO: consider erasing types over here
   def descriptorRenderer(desc: DeclarationDescriptor): DescriptorRenderer = {
-    val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
     val opts = new DescriptorRendererOptionsImpl
     opts.setParameterNamesInFunctionalTypes(false)
-    opts.setTypeNormalizer { t =>
-      if (t.isInstanceOf[UnresolvedType]) {
-        anyT.getDefaultType
-      } else {
-        t
+    if (desc != null) {
+      val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
+      opts.setTypeNormalizer { t =>
+        if (t.isInstanceOf[UnresolvedType]) {
+          anyT.getDefaultType
+        } else {
+          t
+        }
       }
     }
     new DescriptorRendererImpl(opts)
@@ -762,6 +768,13 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       case typedDesc: ValueDescriptor =>
         Some(stripped(renderer.renderType(typedDesc.getType())))
       case typedDesc: WithDefaultType =>
+        Some(stripped(renderer.renderType(typedDesc.getDefaultType())))
+      // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
+      case typedDesc: LazyClassDescriptor =>
+        Some(stripped(renderer.renderType(typedDesc.getDefaultType())))
+      case typedDesc: LazyJavaClassDescriptor =>
+        Some(stripped(renderer.renderType(typedDesc.getDefaultType())))
+      case typedDesc: DeserializedClassDescriptor =>
         Some(stripped(renderer.renderType(typedDesc.getDefaultType())))
       case unhandled: Any =>
         logger.debug(s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`.")

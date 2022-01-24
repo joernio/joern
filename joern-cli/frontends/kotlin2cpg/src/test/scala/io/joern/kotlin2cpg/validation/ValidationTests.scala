@@ -287,4 +287,167 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
+
+  "CPG for code with call with lambda param inside if-else-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val rand = Random.nextInt(0,  100)
+        |    if (rand < 50) {
+        |        1.let {
+        |            println("`rand` is smaller than 50: " + rand)
+        |        }
+        |    } else {
+        |        2.let {
+        |            println("`rand` is greater than or eq to 50: " + rand)
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should METHOD nodes for the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 2
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with call with lambda inside method definition" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |class AClass() {
+        |    fun check(col: List<Int?>) {
+        |        val rand = Random.nextInt(0, 100)
+        |        when (rand) {
+        |            1 -> println("1!")
+        |            2 -> println("2!")
+        |            else -> {
+        |                val filtered = col.all { entry -> entry != null }
+        |                println(filtered)
+        |            }
+        |        }
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val list = listOf(1, 2, 3)
+        |    val a = AClass()
+        |    a.check(list)
+        |    println("SCOPE")
+        |}
+        |""".stripMargin)
+
+    "should METHOD nodes for the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with anonymous function as argument" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.collections.List
+        |import kotlin.collections.listOf
+        |
+        |fun foo(x: String): Int {
+        |    val l: kotlin.collections.List = listOf(1, x)
+        |    l.filter(fun(item) = { println(item); item > 0 })
+        |    return 0
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with function defined inside another function" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun withInline(): Int {
+        |    fun add1(x: Int): Int {
+        |        return 1
+        |    }
+        |    return add1(1)
+        |}
+        |
+        |fun main() {
+        |    val x = withInline()
+        |    println(x)
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with lambda inside while-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |
+        |package main
+        |fun main() {
+        |    val str = "ASTRING"
+        |    while(true) {
+        |        1.let {
+        |            println(str)
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with lambda inside do-while-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |
+        |package main
+        |fun main() {
+        |    val str = "ASTRING"
+        |    do {
+        |        1.let {
+        |            println(str)
+        |        }
+        |    } while(true)
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
 }

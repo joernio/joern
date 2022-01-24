@@ -335,7 +335,7 @@ class AstCreator(
           }
 
         ImportEntry(
-          entry.getText().replaceAll("^import ", ""),
+          entry.getImportPath.getPathStr,
           importedName,
           true,
           isWildcard,
@@ -958,7 +958,9 @@ class AstCreator(
       case typedExpr: KtLambdaExpression =>
         Seq(astForLambda(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtNamedFunction =>
-        Seq(astForAnonymousFunction(typedExpr, scopeContext, order))
+        // TODO: re-enable after all AST issues have been fixed
+        //Seq(astForAnonymousFunction(typedExpr, scopeContext, order))
+        Seq()
       case classExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(classExpr, scopeContext, order, argIdx))
       case sqExpr: KtSafeQualifiedExpression =>
@@ -1030,7 +1032,6 @@ class AstCreator(
     AstWithCtx(Ast(callNode), Context())
   }
 
-  // TODO: try to merge with astForLambda if possible
   def astForAnonymousFunction(expr: KtNamedFunction, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
@@ -1084,10 +1085,15 @@ class AstCreator(
         .order(order)
     val methodRefAst = Ast(methodRef)
 
-    AstWithCtx(
-      methodRefAst,
-      Context(lambdaAsts = Seq(lambdaMethodAst), identifiers = bodyAstWithCtx.ctx.identifiers)
-    )
+    val finalCtx =
+      Context(
+        lambdaAsts = Seq(lambdaMethodAst),
+        identifiers = bodyAstWithCtx.ctx.identifiers,
+        closureBindingInfo = bodyAstWithCtx.ctx.closureBindingInfo,
+        lambdaBindingInfo = bodyAstWithCtx.ctx.lambdaBindingInfo,
+        bindingsInfo = bodyAstWithCtx.ctx.bindingsInfo
+      )
+    AstWithCtx(methodRefAst, finalCtx)
   }
 
   def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
@@ -1767,14 +1773,16 @@ class AstCreator(
       .withChild(conditionAst.ast)
       .withChildren(stmtAsts.map(_.ast))
 
-    val ast =
+    val ast = {
       conditionAst.ast.root match {
         case Some(r) =>
           tempAst.withConditionEdge(whileNode, r)
         case None =>
           tempAst
       }
-    AstWithCtx(ast, Context())
+    }
+    val finalCtx = mergedCtx(Seq(conditionAst.ctx) ++ stmtAsts.map(_.ctx))
+    AstWithCtx(ast, finalCtx)
   }
 
   def astForDoWhile(expr: KtDoWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
@@ -1868,7 +1876,7 @@ class AstCreator(
         .typeFullName(TypeConstants.any)
     val astForBlock =
       Ast(switchBlockNode)
-        .withChildren(astsForEntries)
+        .withChildren(astsForEntries.map(_.ast))
 
     val codeForSwitch =
       if (expr.getSubjectExpression() != null) {
@@ -1889,20 +1897,22 @@ class AstCreator(
       Ast(switchNode)
         .withChild(astForSubject.ast)
         .withChild(astForBlock)
-    val astWithCondition =
+    val astWithCondition = {
       astForSubject.ast.root match {
         case Some(root) =>
           ast.withConditionEdge(switchNode, root)
         case None =>
           ast
       }
-    AstWithCtx(astWithCondition, Context())
+    }
+    val finalCtx = mergedCtx(astsForEntries.map(_.ctx))
+    AstWithCtx(astWithCondition, finalCtx)
   }
 
   def astsForWhenEntry(entry: KtWhenEntry, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
-  ): Seq[Ast] = {
+  ): Seq[AstWithCtx] = {
     // TODO: get all conditions with entry.getConditions()
     val jumpTargetName =
       if (entry.getElseKeyword == null) {
@@ -1921,7 +1931,8 @@ class AstCreator(
         .parserTypeName(Constants.caseNodeParserTypeName)
     val exprNode = astsForExpression(entry.getExpression, scopeContext, order + 1, order + 1).headOption
       .getOrElse(AstWithCtx(Ast(), Context()))
-    Seq(Ast(jumpNode)) ++ Seq(exprNode.ast)
+    val jumpNodeAstsWithCtx = AstWithCtx(Ast(jumpNode), Context())
+    Seq(jumpNodeAstsWithCtx) ++ Seq(exprNode)
   }
 
   def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
@@ -1955,14 +1966,14 @@ class AstCreator(
       .withChild(conditionAst.head.ast)
       .withChildren(thenAsts.map(_.ast) ++ elseAsts.map(_.ast))
 
-    val withCondition =
-      conditionAst.head.ast.root match {
-        case Some(r) =>
-          ast.withConditionEdge(ifNode, r)
-        case None =>
-          ast
-      }
-    AstWithCtx(withCondition, Context())
+    val withCondition = conditionAst.head.ast.root match {
+      case Some(r) =>
+        ast.withConditionEdge(ifNode, r)
+      case None =>
+        ast
+    }
+    val finalCtx = mergedCtx(conditionAst.map(_.ctx) ++ thenAsts.map(_.ctx) ++ elseAsts.map(_.ctx))
+    AstWithCtx(withCondition, finalCtx)
   }
 
   def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
