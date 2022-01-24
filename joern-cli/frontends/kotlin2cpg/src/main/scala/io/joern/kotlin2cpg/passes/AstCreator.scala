@@ -1955,14 +1955,14 @@ class AstCreator(
       .withChild(conditionAst.head.ast)
       .withChildren(thenAsts.map(_.ast) ++ elseAsts.map(_.ast))
 
-    val withCondition =
-      conditionAst.head.ast.root match {
-        case Some(r) =>
-          ast.withConditionEdge(ifNode, r)
-        case None =>
-          ast
-      }
-    AstWithCtx(withCondition, Context())
+    val withCondition = conditionAst.head.ast.root match {
+      case Some(r) =>
+        ast.withConditionEdge(ifNode, r)
+      case None =>
+        ast
+    }
+    val finalCtx = mergedCtx(conditionAst.map(_.ctx) ++ thenAsts.map(_.ctx) ++ elseAsts.map(_.ctx))
+    AstWithCtx(withCondition, finalCtx)
   }
 
   def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit

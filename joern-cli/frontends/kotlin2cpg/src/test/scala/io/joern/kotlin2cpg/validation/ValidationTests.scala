@@ -287,4 +287,37 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
+
+  "CPG for code with call with lambda param inside if-else-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val rand = Random.nextInt(0,  100)
+        |    if (rand < 50) {
+        |        1.let {
+        |            println("`rand` is smaller than 50: " + rand)
+        |        }
+        |    } else {
+        |        2.let {
+        |            println("`rand` is greater than or eq to 50: " + rand)
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should METHOD nodes for the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 2
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
 }
