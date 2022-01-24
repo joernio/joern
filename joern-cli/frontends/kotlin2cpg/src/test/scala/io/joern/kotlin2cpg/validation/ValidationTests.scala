@@ -497,7 +497,6 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .methodFullNameNot("<operator>.*")
         .methodFullName(".*>.*")
         .methodFullName
-        .take(1)
         .l shouldBe List()
     }
   }

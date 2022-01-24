@@ -147,7 +147,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       "should contain CALL node with a MFN without optionals in it" in {
         val List(c) = cpg.call.code("HashMap.*").l
         c.typeFullName shouldBe "kotlin.collections.HashMap"
-        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:java.util.HashMap()"
+        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:kotlin.collections.HashMap()"
       }
     }
 
