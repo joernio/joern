@@ -408,8 +408,7 @@ class ValidationTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with lambda inside while-statement" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |
         |package main
         |fun main() {
@@ -431,8 +430,7 @@ class ValidationTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with lambda inside do-while-statement" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |
         |package main
         |fun main() {
