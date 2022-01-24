@@ -10,6 +10,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Ignore
+import overflowdb.traversal.jIteratortoTraversal
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import java.nio.file.Files
@@ -32,7 +33,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
   }
 
   def makeCpg(inPath: String, outPath: String): Cpg = {
-    val inferenceJarDir = File("src/main/resources/inferencejars")
+    val inferenceJarDir = File("joern-cli/frontends/kotlin2cpg/src/main/resources/inferencejars/")
     val inferenceJarsPaths =
       inferenceJarDir.list
         .filter(_.extension.exists { e => e == ".jar" })
@@ -127,6 +128,13 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
 
     "should not contain any CALL nodes with MFNs with a space character in them" in {
       cpg.call.methodFullName(".*[ ].*").methodFullName.take(1).l shouldBe List()
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
     }
   }
 }
