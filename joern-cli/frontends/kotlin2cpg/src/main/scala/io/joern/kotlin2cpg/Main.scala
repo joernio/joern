@@ -184,6 +184,7 @@ object Main extends App {
           InferenceJarPath("inferencejars/gson-2.8.9.jar", true),
           InferenceJarPath("inferencejars/http4k-core-4.14.1.4.jar", true),
           InferenceJarPath("inferencejars/io.reactivex.rxjava2.rxandroid-2.1.0.jar", true),
+          InferenceJarPath("inferencejars/javax.servlet-api-4.0.1.jar", true),
           InferenceJarPath("inferencejars/javalin-4.1.1.jar", true),
           InferenceJarPath("inferencejars/jncryptor-1.2.0.jar", true),
           InferenceJarPath("inferencejars/kotlin-android-extensions-runtime-1.6.0-M1.jar", true),
