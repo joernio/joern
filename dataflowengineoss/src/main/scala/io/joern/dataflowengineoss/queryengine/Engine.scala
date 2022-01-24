@@ -48,7 +48,10 @@ class Engine(context: EngineContext) {
       logger.warn("Attempting to determine flows to empty list of sinks.")
     }
     val sourcesSet = sources.toSet
-    val tasks = sinks.map(sink => ReachableByTask(sink, sourcesSet, new ResultTable))
+    val tasks = sinks.map { sink =>
+      val table = context.config.initialTable.map(x => new ResultTable(x.table)).getOrElse(new ResultTable)
+      ReachableByTask(sink, sourcesSet, table)
+    }
     solveTasks(tasks, sourcesSet)
   }
 
@@ -279,7 +282,7 @@ object Engine {
 }
 
 case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConfig())
-case class EngineConfig(var maxCallDepth: Int = 2)
+case class EngineConfig(var maxCallDepth: Int = 2, initialTable: Option[ResultTable] = None)
 
 /** Callable for solving a ReachableByTask
   *
