@@ -161,8 +161,8 @@ object TypeRenderer {
       opts.setTypeNormalizer { t =>
         t match {
           case _: UnresolvedType => anyT.getDefaultType
-          case _: ErrorType => anyT.getDefaultType
-          case  _ => t
+          case _: ErrorType      => anyT.getDefaultType
+          case _                 => t
         }
       }
     }
