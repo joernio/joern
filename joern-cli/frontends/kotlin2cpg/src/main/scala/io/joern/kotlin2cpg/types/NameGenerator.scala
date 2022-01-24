@@ -698,9 +698,6 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       return (astDerivedFullName, astDerivedSignature)
     }
     val expressionTypeFromBindingCtx = mapForEntity.getKeys.contains(BindingContext.EXPECTED_EXPRESSION_TYPE.getKey)
-    if (expressionTypeFromBindingCtx == null) {
-      return (astDerivedFullName, astDerivedSignature)
-    }
     val typeInfo = mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey)
     val theType = typeInfo.getType
     val constructorDesc = theType.getConstructor.getDeclarationDescriptor
