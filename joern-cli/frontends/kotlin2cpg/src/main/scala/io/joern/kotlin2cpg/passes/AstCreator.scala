@@ -1767,14 +1767,16 @@ class AstCreator(
       .withChild(conditionAst.ast)
       .withChildren(stmtAsts.map(_.ast))
 
-    val ast =
+    val ast = {
       conditionAst.ast.root match {
         case Some(r) =>
           tempAst.withConditionEdge(whileNode, r)
         case None =>
           tempAst
       }
-    AstWithCtx(ast, Context())
+    }
+    val finalCtx = mergedCtx(Seq(conditionAst.ctx) ++ stmtAsts.map(_.ctx))
+    AstWithCtx(ast, finalCtx)
   }
 
   def astForDoWhile(expr: KtDoWhileExpression, scopeContext: ScopeContext, order: Int)(implicit

@@ -360,4 +360,49 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with lambda inside while-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
+        |
+        |package main
+        |fun main() {
+        |    val str = "ASTRING"
+        |    while(true) {
+        |        1.let {
+        |            println(str)
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with lambda inside do-while-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
+        |
+        |package main
+        |fun main() {
+        |    val str = "ASTRING"
+        |    do {
+        |        1.let {
+        |            println(str)
+        |        }
+        |    } while(true)
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
 }
