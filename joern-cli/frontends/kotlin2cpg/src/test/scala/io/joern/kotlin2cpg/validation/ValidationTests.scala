@@ -320,4 +320,44 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with call with lambda inside method definition" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |class AClass() {
+        |    fun check(col: List<Int?>) {
+        |        val rand = Random.nextInt(0, 100)
+        |        when (rand) {
+        |            1 -> println("1!")
+        |            2 -> println("2!")
+        |            else -> {
+        |                val filtered = col.all { entry -> entry != null }
+        |                println(filtered)
+        |            }
+        |        }
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val list = listOf(1, 2, 3)
+        |    val a = AClass()
+        |    a.check(list)
+        |    println("SCOPE")
+        |}
+        |""".stripMargin)
+
+    "should METHOD nodes for the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
 }

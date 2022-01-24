@@ -361,4 +361,37 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       m.signature shouldBe "kotlin.Any(kotlin.Any)"
     }
   }
+
+  "CPG for code with call with lambda inside method definition" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |class AClass() {
+        |    fun check(col: List<Int?>) {
+        |        val rand = Random.nextInt(0, 100)
+        |        when (rand) {
+        |            1 -> println("1!")
+        |            2 -> println("2!")
+        |            else -> {
+        |                val filtered = col.all { entry -> entry != null }
+        |                println(filtered)
+        |            }
+        |        }
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val list = listOf(1, 2, 3)
+        |    val a = AClass()
+        |    a.check(list)
+        |    println("SCOPE")
+        |}
+        |""".stripMargin)
+
+    "should a METHOD node for the lambda" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+  }
 }

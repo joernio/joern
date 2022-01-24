@@ -1868,7 +1868,7 @@ class AstCreator(
         .typeFullName(TypeConstants.any)
     val astForBlock =
       Ast(switchBlockNode)
-        .withChildren(astsForEntries)
+        .withChildren(astsForEntries.map(_.ast))
 
     val codeForSwitch =
       if (expr.getSubjectExpression() != null) {
@@ -1889,20 +1889,22 @@ class AstCreator(
       Ast(switchNode)
         .withChild(astForSubject.ast)
         .withChild(astForBlock)
-    val astWithCondition =
+    val astWithCondition = {
       astForSubject.ast.root match {
         case Some(root) =>
           ast.withConditionEdge(switchNode, root)
         case None =>
           ast
       }
-    AstWithCtx(astWithCondition, Context())
+    }
+    val finalCtx = mergedCtx(astsForEntries.map(_.ctx))
+    AstWithCtx(astWithCondition, finalCtx)
   }
 
   def astsForWhenEntry(entry: KtWhenEntry, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
-  ): Seq[Ast] = {
+  ): Seq[AstWithCtx] = {
     // TODO: get all conditions with entry.getConditions()
     val jumpTargetName =
       if (entry.getElseKeyword == null) {
@@ -1921,7 +1923,8 @@ class AstCreator(
         .parserTypeName(Constants.caseNodeParserTypeName)
     val exprNode = astsForExpression(entry.getExpression, scopeContext, order + 1, order + 1).headOption
       .getOrElse(AstWithCtx(Ast(), Context()))
-    Seq(Ast(jumpNode)) ++ Seq(exprNode.ast)
+    val jumpNodeAstsWithCtx = AstWithCtx(Ast(jumpNode), Context())
+    Seq(jumpNodeAstsWithCtx) ++ Seq(exprNode)
   }
 
   def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
