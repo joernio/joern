@@ -501,4 +501,22 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with simple object expression with apply called after it" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |fun main() {
+        |    val o = object { var prop = 1 }.apply { prop = 2 }
+        |    println(o.prop) // prints `2`
+        |}
+        |
+        |""".stripMargin)
+
+    "should not contain any CALL nodes with MFNs starting with `.`" in {
+      cpg.call
+        .methodFullName("\\..*")
+        .methodFullName
+        .l shouldBe List()
+    }
+  }
 }

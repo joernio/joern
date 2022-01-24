@@ -72,6 +72,7 @@ object Constants {
   val any = "ANY"
   val classLiteralReplacementMethodName = "getClass"
   val kotlinFunctionXPrefix = "kotlin.Function"
+  val kotlinApplyPrefix = "kotlin.apply"
   val initPrefix = "<init>"
 }
 
@@ -574,28 +575,35 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
           if (z != null) {
             z.getResultingDescriptor match {
               case fnDescriptor: FunctionDescriptor =>
+                val renderedFqNameForDesc = TypeRenderer.renderFqName(fnDescriptor)
                 val renderedFqName =
                   if (fnDescriptor.getExtensionReceiverParameter != null) {
                     val extType = fnDescriptor.getExtensionReceiverParameter.getType
                     val extName = fnDescriptor.getName
-                    val rendered = TypeRenderer.render(extType)
+                    val rendered =
+                      if (renderedFqNameForDesc.startsWith(Constants.kotlinApplyPrefix)) {
+                        Constants.kotlinAny
+                      } else {
+                        TypeRenderer.render(extType)
+                      }
                     rendered + "." + extName
                   } else {
-                    TypeRenderer.renderFqName(fnDescriptor)
+                    renderedFqNameForDesc
                   }
+                val valueParameters = fnDescriptor.getValueParameters.asScala.toSeq
                 val renderedParameterTypes =
-                  fnDescriptor.getValueParameters.asScala.toSeq
+                  valueParameters
                     .map { valueParam => TypeRenderer.render(valueParam.getType) }
                     .mkString(",")
                 val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
                 if (bindingInfo != null && bindingInfo.getType != null) {
-                  val renderedReturnType = {
-                    if (bindingInfo.getType.isInstanceOf[UnresolvedType]) {
+                  val renderedReturnType =
+                    if (renderedFqNameForDesc.startsWith(Constants.kotlinApplyPrefix)) {
+                      // TODO: handle `T` in Kotlin stdlib's `apply`
                       Constants.kotlinAny
                     } else {
                       TypeRenderer.render(bindingInfo.getType)
                     }
-                  }
                   val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
                   val fn = (renderedFqName + ":" + signature, signature)
                   return fn
