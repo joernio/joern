@@ -502,7 +502,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
                 TypeRenderer.renderFqName(decl)
               case unhandled: Any =>
                 logger.debug(
-                  s"4 Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
                 )
                 return or
             }
