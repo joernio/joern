@@ -164,17 +164,17 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
-  // replaces `ERROR` types with `kotlin.Any`
-  // TODO: consider erasing types over here
   def descriptorRenderer(desc: DeclarationDescriptor): DescriptorRenderer = {
-    val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
     val opts = new DescriptorRendererOptionsImpl
     opts.setParameterNamesInFunctionalTypes(false)
-    opts.setTypeNormalizer { t =>
-      if (t.isInstanceOf[UnresolvedType]) {
-        anyT.getDefaultType
-      } else {
-        t
+    if (desc != null) {
+      val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
+      opts.setTypeNormalizer { t =>
+        if (t.isInstanceOf[UnresolvedType]) {
+          anyT.getDefaultType
+        } else {
+          t
+        }
       }
     }
     new DescriptorRendererImpl(opts)
