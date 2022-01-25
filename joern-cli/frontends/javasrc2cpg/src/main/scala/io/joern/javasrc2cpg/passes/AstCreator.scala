@@ -294,7 +294,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
     } catch {
       case t: Throwable =>
-        println(s"Parsing failed with $t")
+        logger.error(s"Parsing file $filename failed with $t")
         throw t
     }
   }
