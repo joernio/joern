@@ -519,4 +519,59 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe List()
     }
   }
+
+  "CPG for code with method with two callbacks with two generic types" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass<T>(private val x: T) {
+        |    fun <R> doWithTwoTs(cbOne: () -> R, cbTwo: (T) -> Unit) {
+        |        println(cbOne())
+        |        cbTwo(x)
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val x = 1
+        |    val a = AClass(x)
+        |    // prints
+        |    //```
+        |    //FIRST
+        |    //SECOND: 3
+        |    //```
+        |    a.doWithTwoTs({ "FIRST" }, { val res = it + 2; println("SECOND: $res"); res })
+        |}
+        |
+        |
+        |""".stripMargin)
+
+    "should not contain any CALL nodes with MFNs starting with `.`" in {
+      cpg.call
+        .methodFullName("\\..*")
+        .methodFullName
+        .l shouldBe List()
+    }
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .map { c =>
+          (c.methodFullName, c.code)
+        }
+        .l shouldBe List()
+    }
+  }
 }
