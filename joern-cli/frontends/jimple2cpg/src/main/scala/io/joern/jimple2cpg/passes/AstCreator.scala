@@ -304,7 +304,7 @@ class AstCreator(filename: String, global: Global) {
       .columnNumber(column(parentUnit))
       .typeFullName(registerType(arrRef.getType.toQuotedString))
 
-    val astChildren = astsForValue(arrRef.getBase, 0, parentUnit) ++ astsForValue(arrRef.getIndex, 1, parentUnit)
+    val astChildren = astsForValue(arrRef.getBase, 1, parentUnit) ++ astsForValue(arrRef.getIndex, 2, parentUnit)
     Ast(indexAccess)
       .withChildren(astChildren)
       .withArgEdges(indexAccess, astChildren.flatMap(_.root))
@@ -377,15 +377,20 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def astForNewExpr(x: AnyNewExpr, order: Int, parentUnit: soot.Unit): Ast = {
-    Ast(
-      NewUnknown()
-        .typeFullName(registerType(x.getType.toQuotedString))
-        .code("new")
-        .order(order)
-        .argumentIndex(order)
-        .lineNumber(line(parentUnit))
-        .columnNumber(column(parentUnit))
-    )
+    x match {
+      case u: NewArrayExpr =>
+        astForUnaryExpr(Operators.arrayInitializer, x, u.getSize, order, parentUnit)
+      case _ =>
+        Ast(
+          NewUnknown()
+            .typeFullName(registerType(x.getType.toQuotedString))
+            .code("new")
+            .order(order)
+            .argumentIndex(order)
+            .lineNumber(line(parentUnit))
+            .columnNumber(column(parentUnit))
+        )
+    }
   }
 
   private def astForUnaryExpr(
