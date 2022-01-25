@@ -88,7 +88,8 @@ object SourceFilesPicker {
       .filterNot { fileName =>
         // TODO: add test for this type of filtering
         // TODO: support Windows paths
-        val willFilter = SourceFilesPicker.shouldFilter(fileName)
+        val relativized = PathUtils.relativize(forDir, fileName)
+        val willFilter = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
           logger.debug("Filtered file at `" + fileName + "`.")
         }
@@ -230,7 +231,7 @@ object Main extends App {
             .filterNot { fwp =>
               // TODO: add test for this type of filtering
               // TODO: support Windows paths
-              val willFilter = SourceFilesPicker.shouldFilter(fwp.f.getVirtualFilePath)
+              val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
               if (willFilter) {
                 logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
               }
