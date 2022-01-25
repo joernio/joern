@@ -1,6 +1,5 @@
 package io.joern.kotlin2cpg.types
 
-import io.shiftleft.passes.IntervalKeyPool
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

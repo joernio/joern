@@ -39,7 +39,8 @@ object SourceFilesPicker {
         "sharedTest",
         "fixtures",
         "commonTest",
-        "jvmTest"
+        "jvmTest",
+        "test"
       )
     val containsUnwantedSubstring =
       substringsToFilterFor.exists { str =>
@@ -56,11 +57,13 @@ object SourceFilesPicker {
       fileName.endsWith("xml") && (fileName.contains("drawable") || fileName.contains("layout"))
     val containsSrcTest = fileName.contains("src/test")
     val isSettingsXml = fileName.endsWith("strings.xml") // some projects contain many i18n files
+    val containsBenchmarks = fileName.contains("benchmarks")
     containsUnwantedSubstring ||
     hasUnwantedExt ||
     isSettingsXml ||
     containsSrcTest ||
-    isAndroidLayoutXml
+    isAndroidLayoutXml ||
+    containsBenchmarks
   }
 
   protected def isConfigFile(fileName: String): Boolean = {
@@ -184,6 +187,7 @@ object Main extends App {
           InferenceJarPath("inferencejars/gson-2.8.9.jar", true),
           InferenceJarPath("inferencejars/http4k-core-4.14.1.4.jar", true),
           InferenceJarPath("inferencejars/io.reactivex.rxjava2.rxandroid-2.1.0.jar", true),
+          InferenceJarPath("inferencejars/javax.servlet-api-4.0.1.jar", true),
           InferenceJarPath("inferencejars/javalin-4.1.1.jar", true),
           InferenceJarPath("inferencejars/jncryptor-1.2.0.jar", true),
           InferenceJarPath("inferencejars/kotlin-android-extensions-runtime-1.6.0-M1.jar", true),
