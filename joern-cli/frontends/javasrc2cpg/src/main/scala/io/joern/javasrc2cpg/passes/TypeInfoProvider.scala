@@ -71,21 +71,27 @@ class TypeInfoProvider(global: Global) {
       declaration: ResolvedTypeDeclaration,
       typeParameterString: String = ""
   ): String = {
-    buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val packageName = Try(declaration.getPackageName).getOrElse("")
+    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    buildTypeString(packageName, className, typeParameterString)
   }
 
   private def resolvedTypeParamFullName(
       declaration: ResolvedTypeParameterDeclaration,
       typeParameterString: String = ""
   ): String = {
-    buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val packageName = Try(declaration.getPackageName).getOrElse("")
+    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    buildTypeString(packageName, className, typeParameterString)
   }
 
   private def resolvedMethodLikeDeclFullName(
       declaration: ResolvedMethodLikeDeclaration,
       typeParameterString: String = ""
   ): String = {
-    val baseString = buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val packageName = Try(declaration.getPackageName).getOrElse("")
+    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    val baseString = buildTypeString(packageName, className, typeParameterString)
     val typeParameters =
       declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
 
