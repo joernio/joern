@@ -39,7 +39,8 @@ object SourceFilesPicker {
         "sharedTest",
         "fixtures",
         "commonTest",
-        "jvmTest"
+        "jvmTest",
+        "test"
       )
     val containsUnwantedSubstring =
       substringsToFilterFor.exists { str =>
@@ -56,11 +57,13 @@ object SourceFilesPicker {
       fileName.endsWith("xml") && (fileName.contains("drawable") || fileName.contains("layout"))
     val containsSrcTest = fileName.contains("src/test")
     val isSettingsXml = fileName.endsWith("strings.xml") // some projects contain many i18n files
+    val containsBenchmarks = fileName.contains("benchmarks")
     containsUnwantedSubstring ||
     hasUnwantedExt ||
     isSettingsXml ||
     containsSrcTest ||
-    isAndroidLayoutXml
+    isAndroidLayoutXml ||
+    containsBenchmarks
   }
 
   protected def isConfigFile(fileName: String): Boolean = {
