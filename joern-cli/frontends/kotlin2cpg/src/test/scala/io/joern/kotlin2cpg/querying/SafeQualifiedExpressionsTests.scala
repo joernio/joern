@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -26,7 +26,7 @@ class SafeQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(2)
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
     "should contain a CALL node for `r?.exec.*` and `r.exec.*` with the same METHOD_FULL_NAME" in {

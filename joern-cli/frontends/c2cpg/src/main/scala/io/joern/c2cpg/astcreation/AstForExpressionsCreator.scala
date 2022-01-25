@@ -139,9 +139,9 @@ trait AstForExpressionsCreator {
       case IASTUnaryExpression.op_sizeof      => Operators.sizeOf
       case IASTUnaryExpression.op_postFixIncr => Operators.postIncrement
       case IASTUnaryExpression.op_postFixDecr => Operators.postDecrement
-      case IASTUnaryExpression.op_throw       => "operator.<throw>"
-      case IASTUnaryExpression.op_typeid      => "operators.<typeOf>"
-      case _                                  => "operators.<unknown>"
+      case IASTUnaryExpression.op_throw       => "<operator>.throw"
+      case IASTUnaryExpression.op_typeid      => "<operator>.typeOf"
+      case _                                  => "<operator>.unknown"
     }
 
     if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {

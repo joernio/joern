@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import com.intellij.psi.PsiManager
 import com.intellij.testFramework.LightVirtualFile
-import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.kotlin2cpg.types.NameGenerator
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.cli.common.messages.{
@@ -25,7 +25,7 @@ case class Global(
 
 class AstCreationPass(
     filesWithMeta: Iterable[KtFileWithMeta],
-    typeInfoProvider: TypeInfoProvider,
+    nameGenerator: NameGenerator,
     cpg: Cpg,
     keyPool: IntervalKeyPool
 ) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(filesWithMeta.size))) {
@@ -46,7 +46,7 @@ class AstCreationPass(
     fileWithMeta match {
       case Some(fm) =>
         val diffGraph =
-          new AstCreator(fm, typeInfoProvider, global).createAst()
+          new AstCreator(fm, nameGenerator, global).createAst()
         logger.debug("AST created for file at `" + filename + "`.")
         diffGraph
       case None =>

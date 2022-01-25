@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifier}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
@@ -285,6 +285,293 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .filter(_._astIn.size == 0)
         .code
         .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with call with lambda param inside if-else-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val rand = Random.nextInt(0,  100)
+        |    if (rand < 50) {
+        |        1.let {
+        |            println("`rand` is smaller than 50: " + rand)
+        |        }
+        |    } else {
+        |        2.let {
+        |            println("`rand` is greater than or eq to 50: " + rand)
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should METHOD nodes for the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 2
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with call with lambda inside method definition" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |class AClass() {
+        |    fun check(col: List<Int?>) {
+        |        val rand = Random.nextInt(0, 100)
+        |        when (rand) {
+        |            1 -> println("1!")
+        |            2 -> println("2!")
+        |            else -> {
+        |                val filtered = col.all { entry -> entry != null }
+        |                println(filtered)
+        |            }
+        |        }
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val list = listOf(1, 2, 3)
+        |    val a = AClass()
+        |    a.check(list)
+        |    println("SCOPE")
+        |}
+        |""".stripMargin)
+
+    "should METHOD nodes for the lambdas" in {
+      cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with anonymous function as argument" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.collections.List
+        |import kotlin.collections.listOf
+        |
+        |fun foo(x: String): Int {
+        |    val l: kotlin.collections.List = listOf(1, x)
+        |    l.filter(fun(item) = { println(item); item > 0 })
+        |    return 0
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with function defined inside another function" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun withInline(): Int {
+        |    fun add1(x: Int): Int {
+        |        return 1
+        |    }
+        |    return add1(1)
+        |}
+        |
+        |fun main() {
+        |    val x = withInline()
+        |    println(x)
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with lambda inside while-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |
+        |package main
+        |fun main() {
+        |    val str = "ASTRING"
+        |    while(true) {
+        |        1.let {
+        |            println(str)
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
+    }
+  }
+
+  "CPG for code with with function which takes a lambda as an argument" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |fun withCallback(callback: (String) -> Unit) {
+        |    callback("AMESSAGE")
+        |}
+        |
+        |fun main() {
+        |    withCallback { println(it) }
+        |}
+        |""".stripMargin)
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .take(1)
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with class with method which takes a lambda as an argument" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass {
+        |    fun withCallback(callback: (String) -> Unit) {
+        |        callback("AMESSAGE")
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val a = AClass()
+        |    a.withCallback { println(it) }
+        |}
+        |""".stripMargin)
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with simple object expression with apply called after it" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |fun main() {
+        |    val o = object { var prop = 1 }.apply { prop = 2 }
+        |    println(o.prop) // prints `2`
+        |}
+        |
+        |""".stripMargin)
+
+    "should not contain any CALL nodes with MFNs starting with `.`" in {
+      cpg.call
+        .methodFullName("\\..*")
+        .methodFullName
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with method with two callbacks with two generic types" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass<T>(private val x: T) {
+        |    fun <R> doWithTwoTs(cbOne: () -> R, cbTwo: (T) -> Unit) {
+        |        println(cbOne())
+        |        cbTwo(x)
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val x = 1
+        |    val a = AClass(x)
+        |    // prints
+        |    //```
+        |    //FIRST
+        |    //SECOND: 3
+        |    //```
+        |    a.doWithTwoTs({ "FIRST" }, { val res = it + 2; println("SECOND: $res"); res })
+        |}
+        |
+        |
+        |""".stripMargin)
+
+    "should not contain any CALL nodes with MFNs starting with `.`" in {
+      cpg.call
+        .methodFullName("\\..*")
+        .methodFullName
+        .l shouldBe List()
+    }
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .map { c =>
+          (c.methodFullName, c.code)
+        }
+        .l shouldBe List()
     }
   }
 }

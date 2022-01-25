@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -29,8 +29,9 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME for `takeIf`" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      // TODO: erase types
-      c.methodFullName shouldBe "java.util.UUID.takeIf:java.util.UUID((java.util.UUID)->kotlin.Boolean)"
+      c.methodFullName shouldBe "java.util.UUID.takeIf:java.util.UUID(kotlin.Function1)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.signature shouldBe "java.util.UUID(kotlin.Function1)"
     }
   }
 
@@ -146,7 +147,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       "should contain CALL node with a MFN without optionals in it" in {
         val List(c) = cpg.call.code("HashMap.*").l
         c.typeFullName shouldBe "kotlin.collections.HashMap"
-        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:java.util.HashMap()"
+        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:kotlin.collections.HashMap()"
       }
     }
 
@@ -192,7 +193,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
         c.methodFullName shouldBe "kotlin.String.trim:kotlin.String()"
         c.signature shouldBe "kotlin.String()"
         c.typeFullName shouldBe "kotlin.String"
-        c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+        c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         c.lineNumber shouldBe Some(4)
         c.columnNumber shouldBe Some(12)
       }

@@ -2,11 +2,13 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, StoredNode}
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
-class ResultTable {
-
-  private val table = new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
+class ResultTable(
+    val table: mutable.Map[StoredNode, Vector[ReachableByResult]] =
+      new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
+) {
 
   /** Add all results in `value` to table entry at `key`, appending to existing
     * results.

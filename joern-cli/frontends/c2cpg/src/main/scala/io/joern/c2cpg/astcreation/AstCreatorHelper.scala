@@ -313,7 +313,7 @@ trait AstCreatorHelper {
   }
 
   private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, order: Int): Ast = {
-    val op = "operators.<typeOf>"
+    val op = "<operator>.typeOf"
     val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, order)
     val operand = nullSafeAst(decl.getDecltypeExpression, 1)
     Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)

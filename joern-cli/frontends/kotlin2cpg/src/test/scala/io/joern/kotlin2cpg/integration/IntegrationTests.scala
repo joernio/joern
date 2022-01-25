@@ -2,13 +2,15 @@ package io.joern.kotlin2cpg.integration
 
 import better.files.File
 import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta, PathUtils, SourceFilesPicker}
-import io.joern.kotlin2cpg.types.{CompilerAPI, InferenceSourcesPicker, KotlinTypeInfoProvider}
+import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Ignore
+import overflowdb.traversal.jIteratortoTraversal
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import java.nio.file.Files
@@ -31,7 +33,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
   }
 
   def makeCpg(inPath: String, outPath: String): Cpg = {
-    val inferenceJarDir = File("src/main/resources/inferencejars")
+    val inferenceJarDir = File("joern-cli/frontends/kotlin2cpg/src/main/resources/inferencejars/")
     val inferenceJarsPaths =
       inferenceJarDir.list
         .filter(_.extension.exists { e => e == ".jar" })
@@ -69,11 +71,12 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
           }
           willFilter
         }
-    val typeInfoProvider = new KotlinTypeInfoProvider(environment)
+
+    val nameGenerator = new DefaultNameGenerator(environment)
     new Kt2Cpg().createCpg(
       filesWithMeta,
       Seq(),
-      typeInfoProvider,
+      nameGenerator,
       Some(outPath)
     )
   }
@@ -124,7 +127,34 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
     }
 
     "should not contain any CALL nodes with MFNs with a space character in them" in {
-      cpg.call.methodFullName(".*[ ].*").methodFullName.take(1).l shouldBe List()
+      cpg.call.methodFullName(".*[ ].*").methodFullName.l shouldBe List()
+    }
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .l shouldBe List()
+    }
+
+    "should not contain any IDENTIFIER nodes without inbound AST edges" in {
+      cpg.identifier
+        .filter(_._astIn.size == 0)
+        .code
+        .l shouldBe Seq()
     }
   }
 }

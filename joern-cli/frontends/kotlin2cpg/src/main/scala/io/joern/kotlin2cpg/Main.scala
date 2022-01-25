@@ -1,11 +1,12 @@
 package io.joern.kotlin2cpg
 
-import java.nio.file.{Files, Paths, Path}
+import java.nio.file.{Files, Path, Paths}
 import org.slf4j.LoggerFactory
 import scopt.OParser
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-import io.joern.kotlin2cpg.types.{CompilerAPI, InferenceSourcesPicker, KotlinTypeInfoProvider}
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
+import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.x2cpg.{IOUtils, SourceFiles, X2Cpg, X2CpgConfig}
 
 case class InferenceJarPath(path: String, isResource: Boolean)
@@ -36,7 +37,10 @@ object SourceFilesPicker {
         "integrationtest",
         "androidTest",
         "sharedTest",
-        "fixtures"
+        "fixtures",
+        "commonTest",
+        "jvmTest",
+        "test"
       )
     val containsUnwantedSubstring =
       substringsToFilterFor.exists { str =>
@@ -53,11 +57,13 @@ object SourceFilesPicker {
       fileName.endsWith("xml") && (fileName.contains("drawable") || fileName.contains("layout"))
     val containsSrcTest = fileName.contains("src/test")
     val isSettingsXml = fileName.endsWith("strings.xml") // some projects contain many i18n files
+    val containsBenchmarks = fileName.contains("benchmarks")
     containsUnwantedSubstring ||
     hasUnwantedExt ||
     isSettingsXml ||
     containsSrcTest ||
-    isAndroidLayoutXml
+    isAndroidLayoutXml ||
+    containsBenchmarks
   }
 
   protected def isConfigFile(fileName: String): Boolean = {
@@ -82,7 +88,8 @@ object SourceFilesPicker {
       .filterNot { fileName =>
         // TODO: add test for this type of filtering
         // TODO: support Windows paths
-        val willFilter = SourceFilesPicker.shouldFilter(fileName)
+        val relativized = PathUtils.relativize(forDir, fileName)
+        val willFilter = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
           logger.debug("Filtered file at `" + fileName + "`.")
         }
@@ -181,6 +188,7 @@ object Main extends App {
           InferenceJarPath("inferencejars/gson-2.8.9.jar", true),
           InferenceJarPath("inferencejars/http4k-core-4.14.1.4.jar", true),
           InferenceJarPath("inferencejars/io.reactivex.rxjava2.rxandroid-2.1.0.jar", true),
+          InferenceJarPath("inferencejars/javax.servlet-api-4.0.1.jar", true),
           InferenceJarPath("inferencejars/javalin-4.1.1.jar", true),
           InferenceJarPath("inferencejars/jncryptor-1.2.0.jar", true),
           InferenceJarPath("inferencejars/kotlin-android-extensions-runtime-1.6.0-M1.jar", true),
@@ -223,7 +231,7 @@ object Main extends App {
             .filterNot { fwp =>
               // TODO: add test for this type of filtering
               // TODO: support Windows paths
-              val willFilter = SourceFilesPicker.shouldFilter(fwp.f.getVirtualFilePath)
+              val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
               if (willFilter) {
                 logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
               }
@@ -255,11 +263,11 @@ object Main extends App {
               )
             }
 
-        val typeInfoProvider = new KotlinTypeInfoProvider(environment)
+        val nameGenerator = new DefaultNameGenerator(environment)
         val cpg = new Kt2Cpg().createCpg(
           filesWithMeta,
           fileContentsAtPath,
-          typeInfoProvider,
+          nameGenerator,
           Some(config.outputPath)
         )
         cpg.close()

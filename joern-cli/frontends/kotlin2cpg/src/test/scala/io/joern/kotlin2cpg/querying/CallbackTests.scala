@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -101,7 +101,7 @@ class CallbackTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(".*withCallback.*").l
       c.lineNumber shouldBe Some(9)
       c.columnNumber shouldBe Some(8)
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 1
     }
   }

@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "ammonite" % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi" %% "os-lib" % "0.8.0",
   "com.lihaoyi" %% "cask" % CaskVersion,
-  "org.scalameta" %% "scalameta" % "4.4.32",
+  "org.scalameta" %% "scalameta" % "4.4.33",
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test,
 )
 

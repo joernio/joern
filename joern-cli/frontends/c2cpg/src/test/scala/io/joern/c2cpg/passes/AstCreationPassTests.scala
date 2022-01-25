@@ -11,7 +11,8 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal._
+import overflowdb.traversal.NodeOps
+import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests
     extends AnyWordSpec
@@ -537,7 +538,7 @@ class AstCreationPassTests
           call.argument(2).code shouldBe "value"
           inside(call.argument(1).l) { case List(fa: Call) =>
             fa.code shouldBe "decltype(local)"
-            fa.methodFullName shouldBe "operators.<typeOf>"
+            fa.methodFullName shouldBe "<operator>.typeOf"
             fa.argument(1).code shouldBe "local"
           }
 
