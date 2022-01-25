@@ -60,10 +60,14 @@ class Jimple2Cpg {
     try {
       // Determine if the given path is a file or directory and sanitize accordingly
       val rawSourceCodeFile = new JFile(rawSourceCodePath)
+      val normSourceCodePath = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
       val sourceCodePath = if (rawSourceCodeFile.isDirectory) {
-        rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
+        normSourceCodePath
       } else {
-        Paths.get(rawSourceCodeFile.getParentFile.getAbsolutePath).normalize.toString
+        Paths
+          .get(new JFile(normSourceCodePath).getParentFile.getAbsolutePath)
+          .normalize
+          .toString
       }
 
       configureSoot(sourceCodePath)
@@ -77,21 +81,14 @@ class Jimple2Cpg {
       val sourceFileExtensions = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
       // Unpack any archives on the path onto the source code path as project root
-      val archives = SourceFiles.determine(Set(sourceCodePath), archiveFileExtensions)
+      val archives: List[String] =
+        if (rawSourceCodeFile.isDirectory)
+          SourceFiles.determine(Set(sourceCodePath), archiveFileExtensions)
+        else if (normSourceCodePath.endsWith(archiveFileExtensions))
+          List(normSourceCodePath)
+        else List()
       // Load source files and unpack archives if necessary
-      val sourceFileNames = (archives
-        .map(new ZipFile(_))
-        .flatMap(x => {
-          unzipArchive(x, sourceCodePath) match {
-            case Failure(e) =>
-              logger.error(s"Error extracting files from archive at ${x.getName}", e); null
-            case Success(value) => value
-          }
-        })
-        .map(_.getAbsolutePath) ++ SourceFiles.determine(
-        Set(sourceCodePath),
-        sourceFileExtensions
-      )).distinct
+      val sourceFileNames = loadSourceFiles(sourceCodePath, sourceFileExtensions, archives)
 
       // Load classes into Soot
       sourceFileNames
@@ -114,6 +111,26 @@ class Jimple2Cpg {
     } finally {
       closeSoot()
     }
+  }
+
+  private def loadSourceFiles(
+      sourceCodePath: String,
+      sourceFileExtensions: Set[String],
+      archives: List[String]
+  ) = {
+    (archives
+      .map(new ZipFile(_))
+      .flatMap(x => {
+        unzipArchive(x, sourceCodePath) match {
+          case Failure(e) =>
+            logger.error(s"Error extracting files from archive at ${x.getName}", e); null
+          case Success(value) => value
+        }
+      })
+      .map(_.getAbsolutePath) ++ SourceFiles.determine(
+      Set(sourceCodePath),
+      sourceFileExtensions
+    )).distinct
   }
 
   private def configureSoot(sourceCodePath: String): Unit = {
