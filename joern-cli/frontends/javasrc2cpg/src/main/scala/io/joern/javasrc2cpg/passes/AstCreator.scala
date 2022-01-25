@@ -1,18 +1,118 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{BodyDeclaration, CallableDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.body.{
+  BodyDeclaration,
+  CallableDeclaration,
+  ConstructorDeclaration,
+  EnumConstantDeclaration,
+  FieldDeclaration,
+  MethodDeclaration,
+  Parameter,
+  TypeDeclaration,
+  VariableDeclarator
+}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, BooleanLiteralExpr, CastExpr, CharLiteralExpr, ClassExpr, ConditionalExpr, DoubleLiteralExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, IntegerLiteralExpr, LambdaExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, MethodReferenceExpr, NameExpr, NullLiteralExpr, ObjectCreationExpr, PatternExpr, StringLiteralExpr, SuperExpr, SwitchExpr, TextBlockLiteralExpr, ThisExpr, TypeExpr, UnaryExpr, VariableDeclarationExpr}
+import com.github.javaparser.ast.expr.{
+  AnnotationExpr,
+  ArrayAccessExpr,
+  ArrayCreationExpr,
+  ArrayInitializerExpr,
+  AssignExpr,
+  BinaryExpr,
+  BooleanLiteralExpr,
+  CastExpr,
+  CharLiteralExpr,
+  ClassExpr,
+  ConditionalExpr,
+  DoubleLiteralExpr,
+  EnclosedExpr,
+  Expression,
+  FieldAccessExpr,
+  InstanceOfExpr,
+  IntegerLiteralExpr,
+  LambdaExpr,
+  LiteralExpr,
+  LongLiteralExpr,
+  MethodCallExpr,
+  MethodReferenceExpr,
+  NameExpr,
+  NullLiteralExpr,
+  ObjectCreationExpr,
+  PatternExpr,
+  StringLiteralExpr,
+  SuperExpr,
+  SwitchExpr,
+  TextBlockLiteralExpr,
+  ThisExpr,
+  TypeExpr,
+  UnaryExpr,
+  VariableDeclarationExpr
+}
 import com.github.javaparser.ast.nodeTypes.NodeWithType
-import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, LocalClassDeclarationStmt, LocalRecordDeclarationStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, UnparsableStmt, WhileStmt, YieldStmt}
+import com.github.javaparser.ast.stmt.{
+  AssertStmt,
+  BlockStmt,
+  BreakStmt,
+  CatchClause,
+  ContinueStmt,
+  DoStmt,
+  EmptyStmt,
+  ExplicitConstructorInvocationStmt,
+  ExpressionStmt,
+  ForEachStmt,
+  ForStmt,
+  IfStmt,
+  LabeledStmt,
+  LocalClassDeclarationStmt,
+  LocalRecordDeclarationStmt,
+  ReturnStmt,
+  Statement,
+  SwitchEntry,
+  SwitchStmt,
+  SynchronizedStmt,
+  ThrowStmt,
+  TryStmt,
+  UnparsableStmt,
+  WhileStmt,
+  YieldStmt
+}
 import com.github.javaparser.resolution.Resolvable
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  Operators
+}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBinding,
+  NewBlock,
+  NewCall,
+  NewClosureBinding,
+  NewControlStructure,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewJumpTarget,
+  NewLiteral,
+  NewLocal,
+  NewMember,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodRef,
+  NewMethodReturn,
+  NewModifier,
+  NewNamespaceBlock,
+  NewNode,
+  NewReturn,
+  NewTypeDecl,
+  NewTypeRef,
+  NewUnknown
+}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.x2cpg.Ast
@@ -281,7 +381,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       typ: TypeDeclaration[_],
       order: Int,
       astParentType: String,
-      astParentFullName: String,
+      astParentFullName: String
   ): AstWithCtx = {
     val baseTypeFullNames = if (typ.isClassOrInterfaceDeclaration) {
       val decl = typ.asClassOrInterfaceDeclaration()
@@ -317,8 +417,15 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       List.empty
     }
 
-    val (memberAsts, _) = withOrderAndCtx(typ.getMembers.asScala, initScopeContext, initialOrder = enumEntryAsts.size) { (member, scopeContext, idx) =>
-      astForTypeDeclMember(member, scopeContext, order + idx, astParentType = "TYPE_DECL", astParentFullName = typeFullName)
+    val (memberAsts, _) = withOrderAndCtx(typ.getMembers.asScala, initScopeContext, initialOrder = enumEntryAsts.size) {
+      (member, scopeContext, idx) =>
+        astForTypeDeclMember(
+          member,
+          scopeContext,
+          order + idx,
+          astParentType = "TYPE_DECL",
+          astParentFullName = typeFullName
+        )
     }
 
     val typeDeclAst = Ast(typeDecl)
