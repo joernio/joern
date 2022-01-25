@@ -96,11 +96,10 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should create type decl for inner class implementing interface" in {
-    // TODO Fix this
-    cpg.typeDecl.name("OuterClass$InnerClass").l match {
+    cpg.typeDecl.nameExact("OuterClass$InnerClass").l match {
       case List(innerClass) =>
-        innerClass.fullName shouldBe "a.b.c.d.OuterClas$.InnerClass"
-        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List("Foo.OuterClass.InnerInterface")
+        innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
+        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List("a.b.c.d.OuterClass$InnerInterface")
         innerClass.isExternal shouldBe false
 
         innerClass.method.nameExact("id").l match {

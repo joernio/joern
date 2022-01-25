@@ -131,17 +131,21 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
-  private def typeFullNameForTypeDecl(typeDecl: TypeDeclaration[_]): String = {
-    val javaParserName = typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
+  private def typeNameForTypeDecl(typeDecl: TypeDeclaration[_], fullName: Boolean): String = {
+    val javaParserName = if (fullName) {
+      typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
+    } else {
+      typeDecl.getNameAsString
+    }
 
     if (typeDecl.isNestedType) {
 
       typeDecl.getParentNode.toScala match {
         case Some(parentDecl: TypeDeclaration[_]) =>
-          typeFullNameForTypeDecl(parentDecl) ++ "$" ++ typeDecl.getNameAsString
+          typeNameForTypeDecl(parentDecl, fullName) ++ "$" ++ typeDecl.getNameAsString
 
         case _ =>
-          logger.warn("typeFullNameForTypeDecl expected nested typeDecl to have typeDecl parent.")
+          logger.warn("typeNameForTypeDecl expected nested typeDecl to have typeDecl parent.")
           javaParserName
       }
 
@@ -150,8 +154,13 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
-  def getTypeFullName(typeDecl: TypeDeclaration[_]): String = {
-    registerType(typeFullNameForTypeDecl(typeDecl))
+  def getTypeName(typeDecl: TypeDeclaration[_], fullName: Boolean = true): String = {
+    val typeName = typeNameForTypeDecl(typeDecl, fullName)
+    if (fullName) {
+      registerType(typeName)
+    } else {
+      typeName
+    }
   }
 
   def getTypeFullName(node: NodeWithType[_, _ <: Resolvable[ResolvedType]]): String = {

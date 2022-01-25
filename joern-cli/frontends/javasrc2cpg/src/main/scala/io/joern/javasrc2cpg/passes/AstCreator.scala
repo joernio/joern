@@ -1,117 +1,18 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  BodyDeclaration,
-  CallableDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.{BodyDeclaration, CallableDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  AssignExpr,
-  BinaryExpr,
-  BooleanLiteralExpr,
-  CastExpr,
-  CharLiteralExpr,
-  ClassExpr,
-  ConditionalExpr,
-  DoubleLiteralExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  IntegerLiteralExpr,
-  LambdaExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MethodCallExpr,
-  MethodReferenceExpr,
-  NameExpr,
-  NullLiteralExpr,
-  ObjectCreationExpr,
-  PatternExpr,
-  StringLiteralExpr,
-  SuperExpr,
-  SwitchExpr,
-  TextBlockLiteralExpr,
-  ThisExpr,
-  TypeExpr,
-  UnaryExpr,
-  VariableDeclarationExpr
-}
+import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, BooleanLiteralExpr, CastExpr, CharLiteralExpr, ClassExpr, ConditionalExpr, DoubleLiteralExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, IntegerLiteralExpr, LambdaExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, MethodReferenceExpr, NameExpr, NullLiteralExpr, ObjectCreationExpr, PatternExpr, StringLiteralExpr, SuperExpr, SwitchExpr, TextBlockLiteralExpr, ThisExpr, TypeExpr, UnaryExpr, VariableDeclarationExpr}
 import com.github.javaparser.ast.nodeTypes.NodeWithType
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  LocalClassDeclarationStmt,
-  LocalRecordDeclarationStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  UnparsableStmt,
-  WhileStmt,
-  YieldStmt
-}
+import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, LocalClassDeclarationStmt, LocalRecordDeclarationStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, UnparsableStmt, WhileStmt, YieldStmt}
 import com.github.javaparser.resolution.Resolvable
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  Operators
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.x2cpg.Ast
@@ -153,6 +54,10 @@ case class Context(
     val newConstructorInits = partialConstructors ++ other.partialConstructors
 
     Context(newLocals, newIdentifiers, newParameters, newBindings, newLambdas, newClosureBindings, newConstructorInits)
+  }
+
+  def addBindings(bindings: Seq[BindingInfo]): Context = {
+    this.copy(bindingsInfo = this.bindingsInfo ++ bindings)
   }
 
   def mergeWith(others: Iterable[Context]): Context = {
@@ -271,7 +176,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
         ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
       }
       val typeDeclAstsWithCtx = withOrder(compilationUnit.getTypes) { (typ, order) =>
-        astForTypeDecl(typ, order, namespaceBlockFullName)
+        astForTypeDecl(typ, order, astParentType = "NAMESPACE_BLOCK", astParentFullName = namespaceBlockFullName)
       }
 
       val typeDeclAsts = typeDeclAstsWithCtx.map(_.ast)
@@ -315,102 +220,112 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     )
   }
 
+  private def bindingForMethod(maybeMethodNode: Option[NewMethod], scopeContext: ScopeContext): List[BindingInfo] = {
+    maybeMethodNode match {
+      case Some(methodNode) =>
+        scopeContext.typeDecl match {
+          case Some(typeDecl) =>
+            val node = NewBinding()
+              .name(methodNode.name)
+              .signature(methodNode.signature)
+
+            BindingInfo(
+              node,
+              List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF))
+            ) :: Nil
+
+          case None => Nil
+        }
+
+      case None => Nil
+    }
+  }
+
   private def createGlobalNamespaceBlock: NewNamespaceBlock =
     NewNamespaceBlock()
       .name(globalNamespaceName)
       .fullName(globalNamespaceName)
 
-  private def getTypeDeclName(typeDecl: TypeDeclaration[_]): String = {
-    if (typeDecl.isNestedType) {
-      getTypeDeclName(typeDecl.getParentNode.get().asInstanceOf[TypeDeclaration[_]]) ++ "$" ++ typeDecl.getNameAsString
-    } else {
-      typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
+  private def astForTypeDeclMember(
+      member: BodyDeclaration[_],
+      scopeContext: ScopeContext,
+      order: Int,
+      astParentType: String,
+      astParentFullName: String
+  ): Seq[AstWithCtx] = {
+    member match {
+      case constructor: ConstructorDeclaration =>
+        val AstWithCtx(ast, ctx) = astForConstructor(constructor, scopeContext, order)
+        val rootNode = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
+        val bindingInfo = bindingForMethod(rootNode, scopeContext)
+        AstWithCtx(ast, ctx.addBindings(bindingInfo))
+
+      case method: MethodDeclaration =>
+        val AstWithCtx(ast, ctx) = astForMethod(method, scopeContext, order)
+        val rootNode = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
+        val bindingInfo = bindingForMethod(rootNode, scopeContext)
+        AstWithCtx(ast, ctx.addBindings(bindingInfo))
+
+      case typeDeclaration: TypeDeclaration[_] =>
+        astForTypeDecl(typeDeclaration, order, astParentType, astParentFullName)
+
+      case fieldDeclaration: FieldDeclaration =>
+        withOrder(fieldDeclaration.getVariables) { (variable, idx) =>
+          astForVariableDeclarator(variable, order + idx - 1)
+        }
+
     }
   }
 
   private def astForTypeDecl(
       typ: TypeDeclaration[_],
       order: Int,
-      namespaceBlockFullName: String
+      astParentType: String,
+      astParentFullName: String,
   ): AstWithCtx = {
     val baseTypeFullNames = if (typ.isClassOrInterfaceDeclaration) {
-      typ
-        .asClassOrInterfaceDeclaration()
-        .getExtendedTypes
-        .asScala
+      val decl = typ.asClassOrInterfaceDeclaration()
+      val extendedTypes = decl.getExtendedTypes.asScala
+      val implementedTypes = decl.getImplementedTypes.asScala
+      (extendedTypes ++ implementedTypes)
         .map(typeInfoProvider.getTypeFullName)
         .toList
     } else {
       List.empty[String]
     }
 
-    val typeFullName = typeInfoProvider.getTypeFullName(typ)
+    val typeFullName = typeInfoProvider.getTypeName(typ)
+    val name = typeInfoProvider.getTypeName(typ, fullName = false)
 
     val typeDecl = NewTypeDecl()
-      .name(typ.getNameAsString)
+      .name(name)
       .fullName(typeFullName)
       .inheritsFromTypeFullName(baseTypeFullNames)
       .order(order)
       .filename(filename)
       .code(typ.getNameAsString)
-      .astParentType("NAMESPACE_BLOCK")
-      .astParentFullName(namespaceBlockFullName)
+      .astParentType(astParentType)
+      .astParentFullName(astParentFullName)
 
     val initScopeContext = ScopeContext(typeDecl = Some(typeDecl))
 
-    val (constructorAsts, scopeContextWithCons) =
-      withOrderAndCtx(typ.getConstructors.asScala, initScopeContext) { (c, scopeCtx, order) =>
-        astForConstructor(c, scopeCtx, order)
-      }
-
-    val (methodAsts, _) = withOrderAndCtx(typ.getMethods.asScala, scopeContextWithCons) { (m, scopeCtx, order) =>
-      astForMethod(m, scopeCtx, order + typ.getConstructors.size)
-    }
-
-    val bindingsInfo =
-      (constructorAsts ++ methodAsts).map(_.ast).map { ast =>
-        val methodNode = ast.root.get.asInstanceOf[NewMethod]
-        val node =
-          NewBinding()
-            .name(methodNode.name)
-            .signature(methodNode.signature)
-        BindingInfo(
-          node,
-          List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF))
-        )
-      }
-
-    val initMemberOrder = methodAsts.size + constructorAsts.size + 1
-    val memberAsts = typ.getMembers.asScala
-      .filter(_.isFieldDeclaration)
-      .flatMap { m =>
-        val fieldDeclaration = m.asFieldDeclaration()
-        fieldDeclaration.getVariables.asScala
-      }
-      .zipWithIndex
-      .map { case (v, i) =>
-        astForVariableDeclarator(v, i + initMemberOrder)
-      }
-      .toList
-
     val enumEntryAsts = if (typ.isEnumDeclaration) {
-      val initOrder = memberAsts.size + constructorAsts.size + methodAsts.size
       withOrder(typ.asEnumDeclaration().getEntries) { case (entry, order) =>
-        astForEnumEntry(entry, initOrder + order)
+        astForEnumEntry(entry, order)
       }
     } else {
       List.empty
     }
 
-    val typeDeclAst = Ast(typeDecl)
-      .withChildren(memberAsts.map(_.ast))
-      .withChildren(constructorAsts.map(_.ast))
-      .withChildren(methodAsts.map(_.ast))
-      .withChildren(enumEntryAsts)
+    val (memberAsts, _) = withOrderAndCtx(typ.getMembers.asScala, initScopeContext, initialOrder = enumEntryAsts.size) { (member, scopeContext, idx) =>
+      astForTypeDeclMember(member, scopeContext, order + idx, astParentType = "TYPE_DECL", astParentFullName = typeFullName)
+    }
 
-    val bindingsContext = Context(bindingsInfo = bindingsInfo)
-    val typeDeclContext =
-      bindingsContext.mergeWith((constructorAsts ++ methodAsts ++ memberAsts).map(_.ctx))
+    val typeDeclAst = Ast(typeDecl)
+      .withChildren(enumEntryAsts)
+      .withChildren(memberAsts.map(_.ast))
+
+    val typeDeclContext = Context.mergedCtx(memberAsts.map(_.ctx))
 
     AstWithCtx(typeDeclAst, typeDeclContext)
   }
@@ -2285,7 +2200,7 @@ object AstCreator {
       initialCtx: ScopeContext,
       initialOrder: Int = 1
   )(f: (T, ScopeContext, Int) => Seq[AstWithCtx]): (Seq[AstWithCtx], ScopeContext) = {
-    var scopeContext = initialCtx
+    var scopeContext = initialCtx.copy()
     var orderOffset = 0
 
     val asts = nodeList.flatMap { x =>
