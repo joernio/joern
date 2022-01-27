@@ -1771,3 +1771,50 @@ class DataFlowTest55 extends DataFlowCodeToCpgSuite {
   }
 
 }
+
+class DataFlowTest56 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |int test() {
+      |  char inputBuffer[0x100] = "";
+      |  int buffer[10] = {0};
+      |  int data = 1;     
+      |  fgets(inputBuffer, 0x100, stdin);
+      |  data = atoi(inputBuffer);
+      |  buffer[data] = 1;
+      |  strncpy(buffer, "hello", data);
+      |  return 0;
+      |}""".stripMargin
+
+  "should find flow from <operator>.indirectIndexAccess" in {
+
+    def source = cpg.call("fgets").argument(1)
+
+    def sink1 = cpg.call("strncpy").argument(3)
+
+    def sink2 = cpg.call("<operator>.indirectIndexAccess").argument(2)
+
+    def flows1 = sink1.reachableByFlows(source)
+
+    flows1.map(flowToResultPairs).toSetMutable shouldBe Set(
+      List(
+        ("fgets(inputBuffer, 0x100, stdin)", Some(6)),
+        ("atoi(inputBuffer)", Some(7)),
+        ("data = atoi(inputBuffer)", Some(7)),
+        ("strncpy(buffer, \"hello\", data)", Some(9))
+      )
+    )
+
+    def flows2 = sink2.reachableByFlows(source)
+
+    flows2.map(flowToResultPairs).toSetMutable shouldBe Set(
+      List(
+        ("fgets(inputBuffer, 0x100, stdin)", Some(6)),
+        ("atoi(inputBuffer)", Some(7)),
+        ("data = atoi(inputBuffer)", Some(7)),
+        ("buffer[data] = 1", Some(8))
+      )
+    )
+  }
+}
