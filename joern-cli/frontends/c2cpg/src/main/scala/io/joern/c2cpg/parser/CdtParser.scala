@@ -1,7 +1,7 @@
 package io.joern.c2cpg.parser
 
 import better.files.File
-import io.joern.c2cpg.utils.{IOUtils, TimeUtils}
+import io.joern.c2cpg.utils.IOUtils
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
 import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
@@ -23,8 +23,7 @@ object CdtParser {
       translationUnit: Option[IASTTranslationUnit],
       preprocessorErrorCount: Int = 0,
       problems: Int = 0,
-      failure: Option[Throwable] = None,
-      duration: Long = 0
+      failure: Option[Throwable] = None
   )
 
 }
@@ -52,34 +51,31 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
 
   private def parseInternal(file: Path): ParseResult = {
     val realPath = File(file)
-    val (result, duration) = TimeUtils.time {
-      if (realPath.isRegularFile) { // handling potentially broken symlinks
-        val fileContent = IOUtils.readFileAsFileContent(realPath.path)
-        val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-        val lang = createParseLanguage(realPath.path)
-        Try(
-          lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
-        ) match {
-          case Failure(e) =>
-            ParseResult(None, failure = Some(e))
-          case Success(translationUnit) =>
-            val problems = CPPVisitor.getProblems(translationUnit)
-            if (parseConfig.logProblems) logProblems(problems.toList)
-            if (parseConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
-            ParseResult(
-              Some(translationUnit),
-              preprocessorErrorCount = translationUnit.getPreprocessorProblemsCount,
-              problems = problems.length
-            )
-        }
-      } else {
-        ParseResult(
-          None,
-          failure = Some(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!"))
-        )
+    if (realPath.isRegularFile) { // handling potentially broken symlinks
+      val fileContent = IOUtils.readFileAsFileContent(realPath.path)
+      val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
+      val lang = createParseLanguage(realPath.path)
+      Try(
+        lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
+      ) match {
+        case Failure(e) =>
+          ParseResult(None, failure = Some(e))
+        case Success(translationUnit) =>
+          val problems = CPPVisitor.getProblems(translationUnit)
+          if (parseConfig.logProblems) logProblems(problems.toList)
+          if (parseConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
+          ParseResult(
+            Some(translationUnit),
+            preprocessorErrorCount = translationUnit.getPreprocessorProblemsCount,
+            problems = problems.length
+          )
       }
+    } else {
+      ParseResult(
+        None,
+        failure = Some(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!"))
+      )
     }
-    result.copy(duration = duration)
   }
 
   def preprocessorStatements(file: Path): Iterable[IASTPreprocessorStatement] = {
@@ -88,13 +84,12 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
 
   def parse(file: Path): Option[IASTTranslationUnit] = {
     val parseResult = parseInternal(file)
-    val duration = TimeUtils.pretty(parseResult.duration)
     parseResult match {
-      case ParseResult(Some(t), c, p, _, _) =>
-        logger.info(s"Parsed '${t.getFilePath}' in $duration ($c preprocessor error(s), $p problems)")
+      case ParseResult(Some(t), c, p, _) =>
+        logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
         Some(t)
-      case ParseResult(_, _, _, maybeThrowable, _) =>
-        logger.warn(s"Failed to parse '$file' (took: $duration) ${maybeThrowable.map(_.getMessage).getOrElse("")}")
+      case ParseResult(_, _, _, maybeThrowable) =>
+        logger.warn(s"Failed to parse '$file' ${maybeThrowable.map(_.getMessage).getOrElse("")}")
         None
     }
   }

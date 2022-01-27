@@ -2,6 +2,7 @@ package io.joern.c2cpg
 
 import io.joern.c2cpg.C2Cpg.Config
 import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentLinkerPass, PreprocessorPass}
+import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{IntervalKeyPool, KeyPoolCreator}
@@ -15,6 +16,8 @@ import scala.util.control.NonFatal
 
 class C2Cpg {
 
+  private val report: Report = new Report()
+
   def runAndOutput(config: Config): Cpg = {
     val keyPool = KeyPoolCreator.obtain(3, minValue = 101)
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
@@ -26,15 +29,19 @@ class C2Cpg {
 
     new MetaDataPass(cpg, Languages.NEWC, Some(metaDataKeyPool)).createAndApply()
 
-    val astCreationPass = new AstCreationPass(cpg, AstCreationPass.SourceFiles, Some(astKeyPool), config)
+    val astCreationPass =
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, Some(astKeyPool), config, report)
     astCreationPass.createAndApply()
-    val headerAstCreationPass = new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config)
+    val headerAstCreationPass =
+      new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config, report)
     headerAstCreationPass.createAndApply()
 
     new HeaderContentLinkerPass(cpg, config).createAndApply()
 
     val types = astCreationPass.usedTypes() ++ headerAstCreationPass.usedTypes()
     new TypeNodePass(types.distinct, cpg, Some(typesKeyPool)).createAndApply()
+
+    report.print()
     cpg
   }
 
