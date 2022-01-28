@@ -647,8 +647,6 @@ class ValidationTests extends AnyFreeSpec with Matchers {
           .collect { case c: ClosureBinding => c }
           .closureBindingId
           .l
-      println(allClosureBindingIds)
-      println(cpg.local.where(_.closureBindingId).l)
 
       cpg.local
         .where(_.closureBindingId)
