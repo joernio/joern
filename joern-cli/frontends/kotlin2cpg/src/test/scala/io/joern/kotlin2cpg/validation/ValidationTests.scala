@@ -622,4 +622,71 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe List()
     }
   }
+
+  "CPG for code with local declaration with RHS a call with lambda argument capturing the parameter of its containing method" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |fun getValidPredefs(startingWith: String): List<String> {
+        |    val validPrefixes = listOf("one_predef", "two_predef", "three_predef")
+        |    val afterFilter = validPrefixes.filter { it ->
+        |        it.startsWith(startingWith)
+        |    }
+        |    return afterFilter
+        |}
+        |
+        |fun main() {
+        |    val toPrint = getValidPredefs("o")
+        |    println(toPrint)
+        |}
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with lambda inside method with captured constructor parameter and method parameter" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass constructor(val prefix: String = "default_prefix") {
+        |    fun printX(x: String) {
+        |       1.let {
+        |            println(prefix + ": " + x)
+        |       }
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val a = AClass("my_prefix")
+        |    a.printX("a_message")
+        |}
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+  }
+
 }
