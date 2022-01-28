@@ -689,4 +689,66 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with method that has a suspend lambda parameter" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |
+        |package main
+        |
+        |import kotlinx.coroutines.*
+        |
+        |fun doSomething(block: suspend (String) -> Unit) {
+        |     runBlocking {
+        |        val waitAndExec = async {
+        |            println("BEFORE")
+        |            delay(1000)
+        |            block("ARG_FROM_INSIDE")
+        |            println("AFTER")
+        |        }
+        |        waitAndExec.await()
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val toSuspend = {x: String ->
+        |        println("VALUE_IN_BLOCK: " + x)
+        |    }
+        |    doSomething(toSuspend)
+        |}
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .l shouldBe List()
+    }
+  }
+
 }

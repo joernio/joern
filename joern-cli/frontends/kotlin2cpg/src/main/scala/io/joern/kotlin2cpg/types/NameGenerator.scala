@@ -72,6 +72,7 @@ object Constants {
   val any = "ANY"
   val classLiteralReplacementMethodName = "getClass"
   val kotlinFunctionXPrefix = "kotlin.Function"
+  val kotlinSuspendFunctionXPrefix = "kotlin.coroutines.SuspendFunction"
   val kotlinApplyPrefix = "kotlin.apply"
   val initPrefix = "<init>"
 }
@@ -214,7 +215,8 @@ object TypeRenderer {
   private def isFunctionXType(t: KotlinType): Boolean = {
     val renderer = DescriptorRenderer.FQ_NAMES_IN_TYPES
     val renderedConstructor = renderer.renderTypeConstructor(t.getConstructor)
-    renderedConstructor.startsWith(Constants.kotlinFunctionXPrefix)
+    renderedConstructor.startsWith(Constants.kotlinFunctionXPrefix) ||
+    renderedConstructor.startsWith(Constants.kotlinSuspendFunctionXPrefix)
   }
 
   def stripped(typeName: String): String = {
