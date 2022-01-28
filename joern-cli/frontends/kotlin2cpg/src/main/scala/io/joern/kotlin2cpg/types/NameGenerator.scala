@@ -216,7 +216,7 @@ object TypeRenderer {
     val renderer = DescriptorRenderer.FQ_NAMES_IN_TYPES
     val renderedConstructor = renderer.renderTypeConstructor(t.getConstructor)
     renderedConstructor.startsWith(Constants.kotlinFunctionXPrefix) ||
-      renderedConstructor.startsWith(Constants.kotlinSuspendFunctionXPrefix)
+    renderedConstructor.startsWith(Constants.kotlinSuspendFunctionXPrefix)
   }
 
   def stripped(typeName: String): String = {

@@ -690,8 +690,7 @@ class ValidationTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with method that has a suspend lambda parameter" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |
         |package main
         |
@@ -751,6 +750,5 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe List()
     }
   }
-
 
 }
