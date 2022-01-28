@@ -1110,28 +1110,28 @@ class AstCreator(
     val bodyAstWithCtx = astForMethodBody(expr.getBodyExpression, scopeContext, lastOrder)
     val bodyIndentifiers = bodyAstWithCtx.ctx.identifiers // TODO: delete refs to global decls
 
-    val namesToMethodParams =
+    val methodParameterNodes: Seq[NewMethodParameterIn] =
       parametersWithCtx
         .map(_.ast)
         .filter(_.root.get.isInstanceOf[NewMethodParameterIn])
-        .map { paramAst =>
-          val node = paramAst.root.get.asInstanceOf[NewMethodParameterIn]
-          node.name -> paramAst
-        }
-        .toMap
+        .map(_.root.get.asInstanceOf[NewMethodParameterIn])
+    val namesToMethodParams =
+      methodParameterNodes.map { node => node.name -> node }.toMap
     val (identifiersMatchingMethodParams, identifiersNotMatchingMethodParams) = {
       bodyAstWithCtx.ctx.identifiers.partition { ident =>
         namesToMethodParams.contains(ident.name)
       }
     }
     val refEdgePairs =
-      identifiersMatchingMethodParams.map { ident =>
-        val methodParamInNode =
-          namesToMethodParams.get(ident.name).get.root.get.asInstanceOf[NewMethodParameterIn]
-        (ident, methodParamInNode)
+      identifiersMatchingMethodParams.flatMap { ident =>
+        val methodParamInNode = namesToMethodParams.get(ident.name)
+        methodParamInNode match {
+          case Some(mp) =>
+            Some((ident, mp))
+          case _ => None
+        }
       }
 
-    // TODO: delete refs to METHOD_PARAMETER
     val closureBindings =
       identifiersNotMatchingMethodParams.map { ident =>
         val closureBindingId = randomUUID().toString
@@ -2075,17 +2075,15 @@ class AstCreator(
     val call = callAst(assignment, Seq(Ast(identifier)) ++ initAsts.map(_.ast))
 
     val initCtx = mergedCtx(initAsts.map(_.ctx))
-    // TODO: check if everything is merged as it should be in this place (i.e. all entries)
-    val finalCtx =
-      Context(
-        initCtx.locals,
-        initCtx.identifiers ++ List(identifier),
-        Seq(),
-        initCtx.bindingsInfo,
-        lambdaAsts = initCtx.lambdaAsts,
-        Seq(),
-        initCtx.lambdaBindingInfo
-      )
+    val finalCtx = Context(
+      initCtx.locals,
+      initCtx.identifiers ++ List(identifier),
+      Seq(),
+      initCtx.bindingsInfo,
+      initCtx.lambdaAsts,
+      initCtx.closureBindingInfo,
+      initCtx.lambdaBindingInfo
+    )
     Seq(AstWithCtx(call, Context())) ++
       Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
   }
