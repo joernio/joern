@@ -81,26 +81,51 @@ object CallKinds extends Enumeration {
   val Unknown, StaticCall, DynamicCall, ExtensionCall = Value
 }
 
+object NameReferenceKinds extends Enumeration {
+  type NameReferenceKind = Value
+  val Unknown, ClassName, LocalVariable, Property = Value
+}
+
 trait NameGenerator {
   def returnType(elem: KtNamedFunction, or: String): String
+
   def containingDeclType(expr: KtQualifiedExpression, or: String): String
+
   def expressionType(expr: KtExpression, or: String): String
+
   def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]
+
   def parameterType(expr: KtParameter, or: String): String
+
   def propertyType(expr: KtProperty, or: String): String
+
   def fullName(expr: KtClassOrObject, or: String): String
+
   def fullName(expr: KtTypeAlias, or: String): String
+
   def aliasTypeFullName(expr: KtTypeAlias, or: String): String
+
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
+
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
+
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
+
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
+
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
+
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
+
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
+
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
+
   def erasedSignature(args: Seq[Any]): String
+
   def returnTypeFullName(expr: KtLambdaExpression): String
+
+  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
 }
 
 object DefaultNameGenerator {
@@ -720,6 +745,33 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val signature = returnTypeFullName + paramListSignature
     val fullname = s"$methodName:$signature"
     (fullname, signature)
+  }
+
+  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    if (mapForEntity == null) {
+      return NameReferenceKinds.Unknown
+    }
+    val targetDesc = bindingContext.get(BindingContext.REFERENCE_TARGET, expr)
+    if (targetDesc == null) {
+      return NameReferenceKinds.Unknown
+    }
+
+    targetDesc match {
+      case _: ValueDescriptor =>
+        NameReferenceKinds.Property
+      case _: LazyClassDescriptor =>
+        NameReferenceKinds.ClassName
+      case _: LazyJavaClassDescriptor =>
+        NameReferenceKinds.ClassName
+      case _: DeserializedClassDescriptor =>
+        NameReferenceKinds.ClassName
+      case unhandled: Any =>
+        logger.debug(
+          s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
+        )
+        NameReferenceKinds.Unknown
+    }
   }
 
   def typeFullName(expr: KtNameReferenceExpression, or: String): String = {

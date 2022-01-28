@@ -91,7 +91,7 @@ import org.jetbrains.kotlin.psi.{
 }
 import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, Constants => TypeConstants}
+import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, NameReferenceKinds, Constants => TypeConstants}
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -2106,7 +2106,15 @@ class AstCreator(
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .typeFullName(typeFullName)
-    AstWithCtx(Ast(identifierNode), Context(identifiers = List(identifierNode)))
+
+    val nameRefKind = nameGenerator.nameReferenceKind(expr)
+    val identifiersForCtx =
+      if (nameRefKind == NameReferenceKinds.ClassName) {
+        Seq()
+      } else {
+        Seq(identifierNode)
+      }
+    AstWithCtx(Ast(identifierNode), Context(identifiers = identifiersForCtx))
   }
 
   def astForLiteral(
