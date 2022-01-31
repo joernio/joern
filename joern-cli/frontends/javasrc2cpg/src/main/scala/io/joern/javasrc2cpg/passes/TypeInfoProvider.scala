@@ -1,39 +1,12 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.ClassOrInterfaceType
-import com.github.javaparser.ast.body.{
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  MethodDeclaration,
-  TypeDeclaration,
-  VariableDeclarator
-}
-import com.github.javaparser.ast.expr.{
-  BooleanLiteralExpr,
-  CharLiteralExpr,
-  DoubleLiteralExpr,
-  Expression,
-  IntegerLiteralExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MethodCallExpr,
-  NameExpr,
-  NullLiteralExpr,
-  StringLiteralExpr,
-  TextBlockLiteralExpr,
-  ThisExpr
-}
+import com.github.javaparser.ast.body.{ConstructorDeclaration, EnumConstantDeclaration, MethodDeclaration, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.expr.{BooleanLiteralExpr, CharLiteralExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, NameExpr, NullLiteralExpr, StringLiteralExpr, TextBlockLiteralExpr, ThisExpr}
 import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
-import com.github.javaparser.resolution.declarations.{
-  ResolvedDeclaration,
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeDeclaration,
-  ResolvedTypeParameterDeclaration
-}
+import com.github.javaparser.resolution.declarations.{ResolvedDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedParameterDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeDeclaration, ResolvedTypeParameterDeclaration}
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
 import org.slf4j.LoggerFactory
 
@@ -284,6 +257,12 @@ class TypeInfoProvider(global: Global) {
         logger.info(s"Could not resolve type for constructor invocation $invocation. Defaulting to <empty>.")
         "<empty>"
     }
+
+    registerType(typeFullName)
+  }
+
+  def getTypeFullName(resolvedParam: ResolvedParameterDeclaration): String = {
+    val typeFullName = resolvedTypeFullName(resolvedParam.getType)
 
     registerType(typeFullName)
   }

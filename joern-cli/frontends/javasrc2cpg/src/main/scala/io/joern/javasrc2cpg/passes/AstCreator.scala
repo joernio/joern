@@ -327,6 +327,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
           case Some(typeDecl) =>
             val node = NewBinding()
               .name(methodNode.name)
+              .methodFullName(methodNode.fullName)
               .signature(methodNode.signature)
 
             BindingInfo(
@@ -533,7 +534,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     val thisAst = if (methodDeclaration.isStatic) {
       Seq()
     } else {
-      val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(methodDeclaration)
+      val typeFullName = scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>")
       Seq(thisAstForMethod(typeFullName, line(methodDeclaration)))
     }
     val parameterAstsWithCtx = astsForParameterList(methodDeclaration.getParameters)
@@ -1885,7 +1886,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
   private def createCallSignature(decl: ResolvedMethodDeclaration, returnType: String): String = {
     val paramTypes =
       for (i <- 0 until decl.getNumberOfParams)
-        yield Try(decl.getParam(i).getType.describe()).toOption.getOrElse("<empty>")
+        yield typeInfoProvider.getTypeFullName(decl.getParam(i))
 
     s"$returnType(${paramTypes.mkString(",")})"
   }
@@ -1949,7 +1950,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
   private def createObjectNode(
       call: MethodCallExpr,
       resolvedDecl: Try[ResolvedMethodDeclaration],
-      resolvedCallType: String
+      scopeContext: ScopeContext
   ): Option[NewIdentifier] = {
 
     val maybeScope = call.getScope.toScala
@@ -1960,7 +1961,9 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       case _ => true // Assume unresolved call is static to avoid adding erroneous "this".
     }
 
-    val typeFullName = maybeScopeType.getOrElse(resolvedCallType)
+    // Default to the type of the enclosing `typeDecl` for implicit this nodes.
+    val typeDeclType = scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>")
+    val typeFullName = maybeScopeType.getOrElse(typeDeclType)
 
     if (maybeScope.isDefined || !isStatic) {
       val name = maybeScope.map(_.toString).getOrElse("this")
@@ -2215,7 +2218,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     val typeFullName = typeInfoProvider.getReturnType(call)
     val callNode = createCallNode(call, resolvedDecl, typeFullName, order)
 
-    val objectNode = createObjectNode(call, resolvedDecl, typeFullName)
+    val objectNode = createObjectNode(call, resolvedDecl, scopeContext)
     val objectAst = objectNode.map(x => AstWithCtx(Ast(x), Context(identifiers = List(x)))).getOrElse(AstWithCtx.empty)
 
     val argumentAsts = withOrder(call.getArguments) { (x, o) =>
