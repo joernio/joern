@@ -1442,8 +1442,7 @@ class AstCreator(
                   .lineNumber(line(entry.getExpression))
                   .columnNumber(column(entry.getExpression))
                   .order(idx + 1)
-                  // TODO: specify _String_ type directly
-                  .typeFullName(TypeConstants.any)
+                  .typeFullName(TypeConstants.kotlinString)
               val valueArgs = astsForExpression(entry.getExpression, scopeContext, idx + 1, idx + 1)
               val call = callAst(valueCallNode, valueArgs.map(_.ast))
               Seq(AstWithCtx(call, Context()))

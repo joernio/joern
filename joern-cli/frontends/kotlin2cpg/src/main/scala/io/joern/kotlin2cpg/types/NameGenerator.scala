@@ -69,6 +69,7 @@ trait WithDefaultType {
 
 object Constants {
   val kotlinAny = "kotlin.Any"
+  val kotlinString = "kotlin.String"
   val any = "ANY"
   val classLiteralReplacementMethodName = "getClass"
   val kotlinFunctionXPrefix = "kotlin.Function"
