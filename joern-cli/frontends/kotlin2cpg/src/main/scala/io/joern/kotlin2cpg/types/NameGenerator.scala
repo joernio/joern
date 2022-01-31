@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.descriptors.{
 }
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
+  EnumEntrySyntheticClassDescriptor,
   LazyPackageViewDescriptorImpl,
   TypeAliasConstructorDescriptorImpl
 }
@@ -85,7 +86,7 @@ object CallKinds extends Enumeration {
 
 object NameReferenceKinds extends Enumeration {
   type NameReferenceKind = Value
-  val Unknown, ClassName, LocalVariable, Property = Value
+  val Unknown, ClassName, EnumEntry, LocalVariable, Property = Value
 }
 
 trait NameGenerator {
@@ -769,6 +770,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         NameReferenceKinds.ClassName
       case _: DeserializedClassDescriptor =>
         NameReferenceKinds.ClassName
+      case _: EnumEntrySyntheticClassDescriptor =>
+        NameReferenceKinds.EnumEntry
       case unhandled: Any =>
         logger.debug(
           s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
@@ -797,6 +800,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       case typedDesc: LazyJavaClassDescriptor =>
         Some(TypeRenderer.render(typedDesc.getDefaultType()))
       case typedDesc: DeserializedClassDescriptor =>
+        Some(TypeRenderer.render(typedDesc.getDefaultType()))
+      case typedDesc: EnumEntrySyntheticClassDescriptor =>
         Some(TypeRenderer.render(typedDesc.getDefaultType()))
       case unhandled: Any =>
         logger.debug(s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`.")
