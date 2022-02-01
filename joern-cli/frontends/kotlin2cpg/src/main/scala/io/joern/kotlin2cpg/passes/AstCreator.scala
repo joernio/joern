@@ -164,6 +164,7 @@ class AstCreator(
   private val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
 
   private val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  private val tmpKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 
   val relativizedPath = fileWithMeta.relativizedPath
 
@@ -921,9 +922,15 @@ class AstCreator(
       nameGenerator: NameGenerator
   ): Seq[AstWithCtx] = {
     expr match {
-      case blockStmt: KtBlockExpression    => List(astForBlock(blockStmt, scopeContext, order))
-      case returnExpr: KtReturnExpression  => astsForReturnNode(returnExpr, scopeContext, order)
-      case typedExpr: KtCallExpression     => Seq(astForCall(typedExpr, scopeContext, order, argIdx))
+      case blockStmt: KtBlockExpression   => List(astForBlock(blockStmt, scopeContext, order))
+      case returnExpr: KtReturnExpression => astsForReturnNode(returnExpr, scopeContext, order)
+      case typedExpr: KtCallExpression =>
+        val isCtorCall = nameGenerator.isConstructorCall(typedExpr)
+        if (isCtorCall.getOrElse(false)) {
+          Seq(astForCtorCall(typedExpr, scopeContext, order, argIdx))
+        } else {
+          Seq(astForCall(typedExpr, scopeContext, order, argIdx))
+        }
       case typedExpr: KtConstantExpression => Seq(astForLiteral(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtBinaryExpression   => Seq(astForBinaryExpr(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtIsExpression       => Seq(astForIsExpression(typedExpr, scopeContext, order, argIdx))
@@ -1538,7 +1545,12 @@ class AstCreator(
         case typedExpr: KtWhenExpression =>
           astForWhen(typedExpr, scopeContext, orderForReceiver)
         case typedExpr: KtCallExpression =>
-          astForCall(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
+          val isCtorCall = nameGenerator.isConstructorCall(typedExpr)
+          if (isCtorCall.getOrElse(false)) {
+            astForCtorCall(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
+          } else {
+            astForCall(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
+          }
         case typedExpr: KtArrayAccessExpression =>
           astForArrayAccess(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
@@ -2028,6 +2040,123 @@ class AstCreator(
     }
   }
 
+  private def astForCtorCall(expr: KtCallExpression, scopeContext: ScopeContext, order: Int = 1, argIdx: Int)(implicit
+      fileInfo: FileInfo,
+      nameGenerator: NameGenerator
+  ): AstWithCtx = {
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.kotlinAny)
+    registerType(typeFullName)
+
+    val tmpBlockNode =
+      NewBlock()
+        .code("")
+        .typeFullName(typeFullName)
+        .order(order)
+    val tmpName = "tmp_" + tmpKeyPool.next
+    val tmpLocalNode =
+      NewLocal()
+        .code(tmpName)
+        .name(tmpName)
+        .typeFullName(typeFullName)
+        .order(1)
+    val assignmentRhsNode =
+      NewCall()
+        .name("<operator>.alloc")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code("alloc")
+        .order(2)
+        .argumentIndex(2)
+        .typeFullName(typeFullName)
+        .methodFullName("<operator>.alloc")
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+
+    // TODO: add check here for the `.get`
+    val assignmentLhsNode =
+      NewIdentifier()
+        .name(tmpName)
+        .order(1)
+        .argumentIndex(0)
+        .code(tmpName)
+        .typeFullName(typeFullName)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val assignmentNode =
+      NewCall()
+        .name(Operators.assignment)
+        .code(Operators.assignment)
+        .methodFullName(Operators.assignment)
+        .signature("")
+        .order(2)
+    val assignmentAst =
+      Ast(assignmentNode)
+        .withChild(Ast(assignmentLhsNode))
+        .withChild(Ast(assignmentRhsNode))
+        .withArgEdges(assignmentNode, Seq(assignmentLhsNode, assignmentRhsNode))
+
+    val initReceiverNode =
+      NewIdentifier()
+        .name(tmpName)
+        .order(1)
+        .argumentIndex(0)
+        .code(tmpName)
+        .typeFullName(typeFullName)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val initReceiverAst = Ast(initReceiverNode)
+
+    val args = expr.getValueArguments()
+    val argAsts =
+      withOrder(args) { case (arg, argOrder) =>
+        astsForExpression(arg.getArgumentExpression(), scopeContext, argOrder, argOrder)
+      }.flatten
+
+    val fullNameWithSig = nameGenerator.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+    val returnType = nameGenerator.expressionType(expr, TypeConstants.any)
+    registerType(returnType)
+
+    val initCallNode =
+      NewCall()
+        .name(Constants.init)
+        .code(expr.getText())
+        .order(3)
+        .argumentIndex(2)
+        .methodFullName(fullNameWithSig._1)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .signature(fullNameWithSig._2)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val initCallAst =
+      Ast(initCallNode)
+        .withChild(initReceiverAst)
+        .withChildren(argAsts.map(_.ast))
+        .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.ast.root))
+
+    val lastIdentifier =
+      NewIdentifier()
+        .name(tmpName)
+        .order(3)
+        .code(tmpName)
+        .typeFullName(typeFullName)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val lastIdentifierAst = Ast(lastIdentifier)
+    val tmpLocalAst =
+      Ast(tmpLocalNode)
+        .withRefEdge(assignmentLhsNode, tmpLocalNode)
+        .withRefEdge(initReceiverNode, tmpLocalNode)
+        .withRefEdge(lastIdentifier, tmpLocalNode)
+    val blockAst =
+      Ast(tmpBlockNode)
+        .withChild(tmpLocalAst)
+        .withChild(assignmentAst)
+        .withChild(initCallAst)
+        .withChild(lastIdentifierAst)
+
+    val initArgsCtx = mergedCtx(argAsts.map(_.ctx))
+    AstWithCtx(blockAst, initArgsCtx)
+  }
+
   private def astsForProperty(expr: KtProperty, scopeContext: ScopeContext, order: Int)(implicit
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
@@ -2076,82 +2205,25 @@ class AstCreator(
         nameGenerator.isConstructorCall(typed).getOrElse(false)
       case _ => false
     }
-
-    if (hasRHSCtorCall) {
-      val typedRhsExpr = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression]
-
-      val allocNode =
-        NewCall()
-          .name("<operator>.alloc")
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code("alloc")
-          .order(2)
-          .argumentIndex(2)
-          .typeFullName(typeFullName)
-          .methodFullName("<operator>.alloc")
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-      val allocAst = Ast(allocNode)
-
-      val initReceiverNode =
-        NewIdentifier()
-          .name(elem.getText())
-          .order(1)
-          .argumentIndex(0)
-          .code(elem.getText())
-          .typeFullName(typeFullName)
-          .lineNumber(line(elem))
-          .columnNumber(column(elem))
-      val initReceiverAst = Ast(initReceiverNode)
-
-      val args = typedRhsExpr.getValueArguments()
-      val argAsts =
-        withOrder(args) { case (arg, argOrder) =>
-          astsForExpression(arg.getArgumentExpression(), scopeContext, argOrder, argOrder)
-        }.flatten
-
-      val fullNameWithSig = nameGenerator.fullNameWithSignature(typedRhsExpr, (TypeConstants.any, TypeConstants.any))
-      val returnType = nameGenerator.expressionType(expr, TypeConstants.any)
-      registerType(returnType)
-
-      val initCallNode =
-        NewCall()
-          .name(Constants.init)
-          .code(typedRhsExpr.getText())
-          .order(2)
-          .argumentIndex(2)
-          .methodFullName(fullNameWithSig._1)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .signature(fullNameWithSig._2)
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-          .typeFullName(returnType)
-      val initAst =
-        Ast(initCallNode)
-          .withChild(initReceiverAst)
-          .withChildren(argAsts.map(_.ast))
-          .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.ast.root))
-      val initArgsCtx = mergedCtx(argAsts.map(_.ctx))
-      val assignmentAst = callAst(assignmentNode, Seq(Ast(identifier)) ++ Seq(allocAst))
-      val localAst = Ast(localNode).withRefEdge(identifier, localNode).withRefEdge(initReceiverNode, localNode)
-      Seq(AstWithCtx(assignmentAst, Context()), AstWithCtx(initAst, initArgsCtx), AstWithCtx(localAst, Context()))
+    val rhsAsts = if (hasRHSCtorCall) {
+      Seq(astForCtorCall(expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression], scopeContext, 2, 2))
     } else {
-      val rhsAsts = astsForExpression(expr.getDelegateExpressionOrInitializer, scopeContext, 2, 2)
-      val call = callAst(assignmentNode, Seq(Ast(identifier)) ++ rhsAsts.map(_.ast))
-
-      val rhsCtx = mergedCtx(rhsAsts.map(_.ctx))
-      val finalCtx = Context(
-        rhsCtx.locals,
-        rhsCtx.identifiers ++ List(identifier),
-        Seq(),
-        rhsCtx.bindingsInfo,
-        rhsCtx.lambdaAsts,
-        rhsCtx.closureBindingInfo,
-        rhsCtx.lambdaBindingInfo
-      )
-      Seq(AstWithCtx(call, Context())) ++
-        Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
+      astsForExpression(expr.getDelegateExpressionOrInitializer, scopeContext, 2, 2)
     }
+    val call = callAst(assignmentNode, Seq(Ast(identifier)) ++ rhsAsts.map(_.ast))
+
+    val rhsCtx = mergedCtx(rhsAsts.map(_.ctx))
+    val finalCtx = Context(
+      rhsCtx.locals,
+      rhsCtx.identifiers ++ List(identifier),
+      Seq(),
+      rhsCtx.bindingsInfo,
+      rhsCtx.lambdaAsts,
+      rhsCtx.closureBindingInfo,
+      rhsCtx.lambdaBindingInfo
+    )
+    Seq(AstWithCtx(call, Context())) ++
+      Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
   }
 
   def astForIdentifier(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit

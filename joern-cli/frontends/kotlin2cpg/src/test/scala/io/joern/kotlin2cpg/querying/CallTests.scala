@@ -122,7 +122,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.signature shouldBe "void()"
       p.code shouldBe "Foo()"
-      p.columnNumber shouldBe Some(6)
+      p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(10)
     }
 
@@ -192,7 +192,7 @@ class CallTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a call node for `Gson()`" in {
-      val List(c) = cpg.call("Gson.*").l
+      val List(c) = cpg.call.methodFullName(".*Gson.*init.*").l
       c.methodFullName shouldBe "com.google.gson.Gson.<init>:void()"
       c.signature shouldBe "void()"
     }
