@@ -98,6 +98,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object Constants {
   val empty = "<empty>"
   val lambdaName = "<lambda>"
+  val init = "<init>"
   val retCode = "RET"
   val tryCode = "try"
   val parserTypeName = "KOTLIN_PSI_PARSER"
@@ -2050,7 +2051,7 @@ class AstCreator(
         .typeFullName(typeFullName)
         .lineNumber(line(elem))
         .columnNumber(column(elem))
-    val assignment =
+    val assignmentNode =
       NewCall()
         .name(Operators.assignment)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -2070,21 +2071,87 @@ class AstCreator(
         .columnNumber(column(elem))
         .order(order)
 
-    val initAsts = astsForExpression(expr.getDelegateExpressionOrInitializer, scopeContext, 2, 2)
-    val call = callAst(assignment, Seq(Ast(identifier)) ++ initAsts.map(_.ast))
+    val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
+      case typed: KtCallExpression =>
+        nameGenerator.isConstructorCall(typed).getOrElse(false)
+      case _ => false
+    }
 
-    val initCtx = mergedCtx(initAsts.map(_.ctx))
-    val finalCtx = Context(
-      initCtx.locals,
-      initCtx.identifiers ++ List(identifier),
-      Seq(),
-      initCtx.bindingsInfo,
-      initCtx.lambdaAsts,
-      initCtx.closureBindingInfo,
-      initCtx.lambdaBindingInfo
-    )
-    Seq(AstWithCtx(call, Context())) ++
-      Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
+    if (hasRHSCtorCall) {
+      val typedRhsExpr = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression]
+
+      val allocNode =
+        NewCall()
+          .name("<operator>.alloc")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .code("alloc")
+          .order(2)
+          .argumentIndex(2)
+          .typeFullName(typeFullName)
+          .methodFullName("<operator>.alloc")
+          .lineNumber(line(expr))
+          .columnNumber(column(expr))
+      val allocAst = Ast(allocNode)
+
+      val initReceiverNode =
+        NewIdentifier()
+          .name(elem.getText())
+          .order(1)
+          .argumentIndex(0)
+          .code(elem.getText())
+          .typeFullName(typeFullName)
+          .lineNumber(line(elem))
+          .columnNumber(column(elem))
+      val initReceiverAst = Ast(initReceiverNode)
+
+      val args = typedRhsExpr.getValueArguments()
+      val argAsts =
+        withOrder(args) { case (arg, argOrder) =>
+          astsForExpression(arg.getArgumentExpression(), scopeContext, argOrder, argOrder)
+        }.flatten
+
+      val fullNameWithSig = nameGenerator.fullNameWithSignature(typedRhsExpr, (TypeConstants.any, TypeConstants.any))
+      val returnType = nameGenerator.expressionType(expr, TypeConstants.any)
+      registerType(returnType)
+
+      val initCallNode =
+        NewCall()
+          .name(Constants.init)
+          .code(typedRhsExpr.getText())
+          .order(2)
+          .argumentIndex(2)
+          .methodFullName(fullNameWithSig._1)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .signature(fullNameWithSig._2)
+          .lineNumber(line(expr))
+          .columnNumber(column(expr))
+          .typeFullName(returnType)
+      val initAst =
+        Ast(initCallNode)
+          .withChild(initReceiverAst)
+          .withChildren(argAsts.map(_.ast))
+          .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.ast.root))
+      val initArgsCtx = mergedCtx(argAsts.map(_.ctx))
+      val assignmentAst = callAst(assignmentNode, Seq(Ast(identifier)) ++ Seq(allocAst))
+      val localAst = Ast(localNode).withRefEdge(identifier, localNode).withRefEdge(initReceiverNode, localNode)
+      Seq(AstWithCtx(assignmentAst, Context()), AstWithCtx(initAst, initArgsCtx), AstWithCtx(localAst, Context()))
+    } else {
+      val rhsAsts = astsForExpression(expr.getDelegateExpressionOrInitializer, scopeContext, 2, 2)
+      val call = callAst(assignmentNode, Seq(Ast(identifier)) ++ rhsAsts.map(_.ast))
+
+      val rhsCtx = mergedCtx(rhsAsts.map(_.ctx))
+      val finalCtx = Context(
+        rhsCtx.locals,
+        rhsCtx.identifiers ++ List(identifier),
+        Seq(),
+        rhsCtx.bindingsInfo,
+        rhsCtx.lambdaAsts,
+        rhsCtx.closureBindingInfo,
+        rhsCtx.lambdaBindingInfo
+      )
+      Seq(AstWithCtx(call, Context())) ++
+        Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
+    }
   }
 
   def astForIdentifier(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit

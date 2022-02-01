@@ -72,6 +72,7 @@ object Constants {
   val kotlinAny = "kotlin.Any"
   val kotlinString = "kotlin.String"
   val any = "ANY"
+  val void = "void"
   val classLiteralReplacementMethodName = "getClass"
   val kotlinFunctionXPrefix = "kotlin.Function"
   val kotlinSuspendFunctionXPrefix = "kotlin.coroutines.SuspendFunction"
@@ -129,6 +130,8 @@ trait NameGenerator {
   def returnTypeFullName(expr: KtLambdaExpression): String
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
+
+  def isConstructorCall(expr: KtCallExpression): Option[Boolean]
 }
 
 object DefaultNameGenerator {
@@ -479,14 +482,38 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
+  def isConstructorCall(expr: KtCallExpression): Option[Boolean] = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        fnDescriptor match {
+          case _: ClassConstructorDescriptorImpl     => Some(true)
+          case _: TypeAliasConstructorDescriptorImpl => Some(true)
+          case _                                     => Some(false)
+        }
+      case None => None
+    }
+  }
+
   def fullNameWithSignature(expr: KtCallExpression, or: (String, String)): (String, String) = {
     val resolvedDesc = resolvedCallDescriptor(expr)
     resolvedDesc match {
       case Some(fnDescriptor) =>
+        val isCtor = fnDescriptor match {
+          case _: ClassConstructorDescriptorImpl     => true
+          case _: TypeAliasConstructorDescriptorImpl => true
+          case _                                     => false
+        }
+
         // TODO: write descriptor renderer instead of working with the existing ones
         // that render comments in fqnames
         val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
-        val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
+        val renderedReturnType =
+          if (isCtor) {
+            Constants.void
+          } else {
+            TypeRenderer.render(fnDescriptor.getReturnType)
+          }
 
         val renderedParameterTypes =
           fnDescriptor.getValueParameters.asScala.toSeq
@@ -494,10 +521,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
             .mkString(",")
         val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
         val fullName =
-          if (
-            fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl] ||
-            fnDescriptor.isInstanceOf[TypeAliasConstructorDescriptorImpl]
-          ) {
+          if (isCtor) {
             renderedFqName + Constants.initPrefix + ":" + signature
           } else {
             renderedFqName + ":" + signature

@@ -116,15 +116,13 @@ class CallTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a CALL node for `Foo()` with the correct fields set" in {
-      cpg.call("Foo").size shouldBe 1
-
-      val List(p) = cpg.call("Foo").l
-      p.methodFullName shouldBe "mypkg.Foo.<init>:mypkg.Foo()"
+    "should contain a CALL node for `Foo()` with the correct properties set" in {
+      val List(p) = cpg.call.methodFullName(".*init.*").l
+      p.methodFullName shouldBe "mypkg.Foo.<init>:void()"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      p.signature shouldBe "mypkg.Foo()"
+      p.signature shouldBe "void()"
       p.code shouldBe "Foo()"
-      p.columnNumber shouldBe Some(10)
+      p.columnNumber shouldBe Some(6)
       p.lineNumber shouldBe Some(10)
     }
 
@@ -195,8 +193,8 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a call node for `Gson()`" in {
       val List(c) = cpg.call("Gson.*").l
-      c.methodFullName shouldBe "com.google.gson.Gson.<init>:com.google.gson.Gson()"
-      c.signature shouldBe "com.google.gson.Gson()"
+      c.methodFullName shouldBe "com.google.gson.Gson.<init>:void()"
+      c.signature shouldBe "void()"
     }
   }
 
@@ -304,28 +302,6 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    }
-  }
-
-  "CPG for code with a simple call to write to a file" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-      |package mypkg
-      |
-      |import java.io.File
-      |
-      |fun main() {
-      |   val fullPath = "/tmp/kotlin2cpg.example.txt"
-      |   val msg = "AMESSAGE"
-      |   File(fullPath).writeText(msg)
-      |}
-      |""".stripMargin)
-
-    "should contain a CALL node for the `File` init with the correct props set" in {
-      val List(c) = cpg.call.methodFullName(".*init.*").l
-      c.methodFullName shouldBe "java.io.File.<init>:java.io.File(kotlin.String)"
-      c.signature shouldBe "java.io.File(kotlin.String)"
-      c.typeFullName shouldBe "java.io.File"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
