@@ -1,17 +1,10 @@
 package io.joern.kotlin2cpg.types
 
 import com.intellij.util.keyFMap.KeyFMap
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.descriptors.{
-  DeclarationDescriptor,
-  FunctionDescriptor,
-  ValueDescriptor,
-  ValueParameterDescriptor
-}
+import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
   EnumEntrySyntheticClassDescriptor,
-  LazyPackageViewDescriptorImpl,
   TypeAliasConstructorDescriptorImpl
 }
 import org.jetbrains.kotlin.psi.{
@@ -31,20 +24,8 @@ import org.jetbrains.kotlin.psi.{
 }
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
-import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{
-  LazyClassDescriptor,
-  LazyPackageDescriptor,
-  LazyTypeAliasDescriptor
-}
-import org.jetbrains.kotlin.types.{
-  ErrorType,
-  KotlinType,
-  KotlinTypeFactoryKt,
-  KotlinTypeKt,
-  SimpleType,
-  TypeUtils,
-  UnresolvedType
-}
+import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{LazyClassDescriptor, LazyTypeAliasDescriptor}
+import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, SimpleType, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -58,9 +39,7 @@ import org.slf4j.LoggerFactory
 import DefaultNameGenerator._
 import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
-import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 
 // representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
@@ -71,6 +50,7 @@ trait WithDefaultType {
 object Constants {
   val kotlinAny = "kotlin.Any"
   val kotlinString = "kotlin.String"
+  val cpgUnresolved = "codepropertygraph.Unresolved"
   val any = "ANY"
   val void = "void"
   val classLiteralReplacementMethodName = "getClass"
@@ -185,30 +165,30 @@ object DefaultNameGenerator {
 }
 
 object TypeRenderer {
-  def descriptorRenderer(desc: DeclarationDescriptor): DescriptorRenderer = {
+  private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(Constants.cpgUnresolved, List().asJava)
+
+  def descriptorRenderer(): DescriptorRenderer = {
     val opts = new DescriptorRendererOptionsImpl
     opts.setParameterNamesInFunctionalTypes(false)
-    if (desc != null) {
-      val anyT = DescriptorUtilsKt.getBuiltIns(desc).getAny()
-      opts.setTypeNormalizer { t =>
-        t match {
-          case _: UnresolvedType => anyT.getDefaultType
-          case _: ErrorType      => anyT.getDefaultType
-          case _                 => t
-        }
+    opts.setInformativeErrorType(false)
+    opts.setTypeNormalizer { t =>
+      t match {
+        case _: UnresolvedType => cpgUnresolvedType
+        case _: ErrorType      => cpgUnresolvedType
+        case _                 => t
       }
     }
     new DescriptorRendererImpl(opts)
   }
 
   def renderFqName(desc: DeclarationDescriptor): String = {
-    val renderer = descriptorRenderer(desc)
+    val renderer = descriptorRenderer()
     val fqName = DescriptorUtils.getFqName(desc)
     stripped(renderer.renderFqName(fqName))
   }
 
   def render(t: KotlinType): String = {
-    val renderer = descriptorRenderer(t.getConstructor.getDeclarationDescriptor)
+    val renderer = descriptorRenderer()
     if (isFunctionXType(t)) {
       Constants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
     } else {
@@ -218,7 +198,7 @@ object TypeRenderer {
   }
 
   private def isFunctionXType(t: KotlinType): Boolean = {
-    val renderer = DescriptorRenderer.FQ_NAMES_IN_TYPES
+    val renderer = descriptorRenderer()
     val renderedConstructor = renderer.renderTypeConstructor(t.getConstructor)
     renderedConstructor.startsWith(Constants.kotlinFunctionXPrefix) ||
     renderedConstructor.startsWith(Constants.kotlinSuspendFunctionXPrefix)
@@ -245,6 +225,7 @@ object TypeRenderer {
         typeName
       }
     }
+
     stripTypeParams(stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", ""))
   }
 }
@@ -254,14 +235,6 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
 
   // TODO: remove this state
   var hasEmptyBindingContext = false
-
-  // TODO: consider the psiFactory fns like `createExpression` for
-  // adding information to the PSI graph which would not be there otherwise
-  /*
-  lazy val psiFactory = {
-    new KtPsiFactory(environment.getProject)
-  }
-   */
 
   lazy val bindingContext = {
     logger.info("Running Kotlin compiler analysis...")
