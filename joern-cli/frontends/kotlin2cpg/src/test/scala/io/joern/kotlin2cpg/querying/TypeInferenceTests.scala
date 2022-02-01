@@ -72,34 +72,6 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a variable declared to return value of contructor of simple user-defined class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |class Bar {
-        |  fun baz(x: Int, y: Int): Int {
-        |    return x * 2
-        |  }
-        |}
-        |
-        |fun foo() {
-        |  val foo = Bar()
-        |  println(foo.baz(1, 2))
-        |}
-        |
-        |""".stripMargin)
-
-    "should contain a LOCAL node with the correct TYPE_FULL_NAME set" in {
-      val List(x) = cpg.local.name("foo").l
-      x.typeFullName shouldBe "mypkg.Bar"
-    }
-
-    "should contain a CALL node with the correct TYPE_FULL_NAME set" in {
-      val List(c) = cpg.call.code("Bar.*").l
-      c.typeFullName shouldBe "mypkg.Bar"
-    }
-  }
-
   "CPG for code with array access" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun foo(): Int {

@@ -72,6 +72,7 @@ object Constants {
   val kotlinAny = "kotlin.Any"
   val kotlinString = "kotlin.String"
   val any = "ANY"
+  val void = "void"
   val classLiteralReplacementMethodName = "getClass"
   val kotlinFunctionXPrefix = "kotlin.Function"
   val kotlinSuspendFunctionXPrefix = "kotlin.coroutines.SuspendFunction"
@@ -129,6 +130,8 @@ trait NameGenerator {
   def returnTypeFullName(expr: KtLambdaExpression): String
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
+
+  def isConstructorCall(expr: KtCallExpression): Option[Boolean]
 }
 
 object DefaultNameGenerator {
@@ -425,230 +428,210 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
-  def fullNameWithSignature(expr: KtCallExpression, or: (String, String)): (String, String) = {
-    val firstChild = expr.getFirstChild
-    if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
-      val asExpr = firstChild.asInstanceOf[KtExpression]
-      val y = bindingContext.get(BindingContext.CALL, asExpr)
-      val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
-
-      if (z != null) {
-        z.getResultingDescriptor match {
-          case fnDescriptor: FunctionDescriptor =>
-            // TODO: write descriptor renderer instead of working with the existing ones
-            // that render comments in fqnames
-            val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
-            val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
-
-            val renderedParameterTypes =
-              fnDescriptor.getValueParameters.asScala.toSeq
-                .map { valueParam => TypeRenderer.render(valueParam.getType) }
-                .mkString(",")
-            val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
-            val fullName =
-              if (
-                fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl] ||
-                fnDescriptor.isInstanceOf[TypeAliasConstructorDescriptorImpl]
-              ) {
-                renderedFqName + Constants.initPrefix + ":" + signature
-              } else {
-                renderedFqName + ":" + signature
-              }
-
-            if (!isValidRender(fullName) || !isValidRender(signature)) {
-              return (or._1, or._2)
+  private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
+    expr match {
+      case typedExpr: KtCallExpression =>
+        val firstChild = typedExpr.getFirstChild
+        if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
+          firstChild.asInstanceOf[KtExpression]
+        } else {
+          expr
+        }
+      case typedExpr: KtQualifiedExpression =>
+        val selectorExpr = typedExpr.getSelectorExpression
+        selectorExpr match {
+          case call: KtCallExpression =>
+            val firstChild = call.getFirstChild
+            if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
+              firstChild.asInstanceOf[KtExpression]
             } else {
-              return (fullName, signature)
+              expr
             }
-          case unhandled: Any =>
-            logger.debug(
-              s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
-            )
-            return (or._1, or._2)
+          case _ => typedExpr
+        }
+      case typedExpr: KtBinaryExpression =>
+        val secondChild = typedExpr.getChildren.toList(1)
+        if (secondChild != null && secondChild.isInstanceOf[KtExpression]) {
+          secondChild.asInstanceOf[KtExpression]
+        } else {
+          expr
+        }
+      case _ => expr
+    }
+  }
+
+  private def resolvedCallDescriptor(expr: KtExpression): Option[FunctionDescriptor] = {
+    val relevantSubexpression = subexpressionForResolvedCallInfo(expr)
+    val callForSubexpression = Option(bindingContext.get(BindingContext.CALL, relevantSubexpression))
+    if (!callForSubexpression.isDefined) {
+      None
+    } else {
+      val resolvedCallForSubexpression = Option(
+        bindingContext.get(BindingContext.RESOLVED_CALL, callForSubexpression.get)
+      )
+      if (!resolvedCallForSubexpression.isDefined) {
+        None
+      } else {
+        resolvedCallForSubexpression.get.getResultingDescriptor match {
+          case desc: FunctionDescriptor =>
+            Some(desc)
+          case _ =>
+            None
         }
       }
     }
-    (or._1, or._2)
+  }
+
+  def isConstructorCall(expr: KtCallExpression): Option[Boolean] = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        fnDescriptor match {
+          case _: ClassConstructorDescriptorImpl     => Some(true)
+          case _: TypeAliasConstructorDescriptorImpl => Some(true)
+          case _                                     => Some(false)
+        }
+      case None => None
+    }
+  }
+
+  def fullNameWithSignature(expr: KtCallExpression, or: (String, String)): (String, String) = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val isCtor = fnDescriptor match {
+          case _: ClassConstructorDescriptorImpl     => true
+          case _: TypeAliasConstructorDescriptorImpl => true
+          case _                                     => false
+        }
+
+        // TODO: write descriptor renderer instead of working with the existing ones
+        // that render comments in fqnames
+        val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
+        val renderedReturnType =
+          if (isCtor) {
+            Constants.void
+          } else {
+            TypeRenderer.render(fnDescriptor.getReturnType)
+          }
+
+        val renderedParameterTypes =
+          fnDescriptor.getValueParameters.asScala.toSeq
+            .map { valueParam => TypeRenderer.render(valueParam.getType) }
+            .mkString(",")
+        val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
+        val fullName =
+          if (isCtor) {
+            renderedFqName + Constants.initPrefix + ":" + signature
+          } else {
+            renderedFqName + ":" + signature
+          }
+
+        if (!isValidRender(fullName) || !isValidRender(signature)) {
+          (or._1, or._2)
+        } else {
+          (fullName, signature)
+        }
+      case None =>
+        (or._1, or._2)
+    }
   }
 
   def fullNameWithSignature(expr: KtBinaryExpression, or: (String, String)): (String, String) = {
-    val secondChild = expr.getChildren.toList(1)
-    if (secondChild != null && secondChild.isInstanceOf[KtExpression]) {
-      val asExpr = secondChild.asInstanceOf[KtExpression]
-      val y = bindingContext.get(BindingContext.CALL, asExpr)
-      val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
-
-      if (z != null) {
-        z.getResultingDescriptor match {
-          case fnDescriptor: FunctionDescriptor =>
-            // TODO: write descriptor renderer instead of working with the existing ones
-            // that render comments in fqnames
-            val renderedParameterTypes =
-              fnDescriptor.getValueParameters.asScala.toSeq
-                .map { valueParam => TypeRenderer.render(valueParam.getType) }
-                .mkString(",")
-            val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
-            val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
-            val fullName =
-              if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
-                renderedReturnType + "." + Constants.initPrefix + ":" + signature
-              } else {
-                val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
-                renderedFqName + ":" + signature
-              }
-            if (!isValidRender(fullName) || !isValidRender(signature)) {
-              return (or._1, or._2)
-            } else {
-              return (fullName, signature)
-            }
-          case unhandled: Any =>
-            logger.debug(
-              s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
-            )
-            return or
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        // TODO: write descriptor renderer instead of working with the existing ones
+        // that render comments in fqnames
+        val renderedParameterTypes =
+          fnDescriptor.getValueParameters.asScala.toSeq
+            .map { valueParam => TypeRenderer.render(valueParam.getType) }
+            .mkString(",")
+        val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
+        val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
+        val fullName =
+          if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
+            renderedReturnType + "." + Constants.initPrefix + ":" + signature
+          } else {
+            val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
+            renderedFqName + ":" + signature
+          }
+        if (!isValidRender(fullName) || !isValidRender(signature)) {
+          (or._1, or._2)
+        } else {
+          (fullName, signature)
         }
-      }
+      case None => or
     }
-    (or._1, or._2)
   }
 
   def containingDeclType(expr: KtQualifiedExpression, or: String): String = {
-    val selectorExpr = expr.getSelectorExpression
-
-    selectorExpr match {
-      case call: KtCallExpression =>
-        val firstChild = call.getFirstChild
-        if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
-          val asExpr = firstChild.asInstanceOf[KtExpression]
-          val y = bindingContext.get(BindingContext.CALL, asExpr)
-          if (y == null) {
-            return or
-          }
-          val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
-          if (z != null) {
-            z.getResultingDescriptor match {
-              case fnDescriptor: FunctionDescriptor =>
-                val decl = fnDescriptor.getContainingDeclaration
-                TypeRenderer.renderFqName(decl)
-              case unhandled: Any =>
-                logger.debug(
-                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
-                )
-                return or
-            }
-          }
-        }
-      case _ =>
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val decl = fnDescriptor.getContainingDeclaration
+        TypeRenderer.renderFqName(decl)
+      case None => or
     }
-    or
   }
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
-    val selectorExpr = expr.getSelectorExpression
-
-    selectorExpr match {
-      case call: KtCallExpression =>
-        val firstChild = call.getFirstChild
-        if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
-          val asExpr = firstChild.asInstanceOf[KtExpression]
-          val y = bindingContext.get(BindingContext.CALL, asExpr)
-          if (y == null) {
-            logger.debug("Retrieved empty binding context info for `" + expr.getName + "`.")
-            return CallKinds.Unknown
-          }
-          val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
-          if (z != null) {
-            z.getResultingDescriptor match {
-              case fnDescriptor: FunctionDescriptor =>
-                val isExtension = DescriptorUtils.isExtension(fnDescriptor)
-                val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
-                return if (isExtension) CallKinds.ExtensionCall
-                else if (isStatic) CallKinds.StaticCall
-                else CallKinds.DynamicCall
-              case unhandled: Any =>
-                logger.debug(
-                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
-                )
-                return CallKinds.Unknown
-            }
-          }
-        }
-      case _ =>
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val isExtension = DescriptorUtils.isExtension(fnDescriptor)
+        val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
+        if (isExtension) CallKinds.ExtensionCall
+        else if (isStatic) CallKinds.StaticCall
+        else CallKinds.DynamicCall
+      case None => CallKinds.Unknown
     }
-    CallKinds.Unknown
   }
 
   def fullNameWithSignature(
       expr: KtQualifiedExpression,
       or: (String, String)
   ): (String, String) = {
-    val selectorExpr = expr.getSelectorExpression
-
-    selectorExpr match {
-      case call: KtCallExpression =>
-        val firstChild = call.getFirstChild
-        if (firstChild != null && firstChild.isInstanceOf[KtExpression]) {
-          val asExpr = firstChild.asInstanceOf[KtExpression]
-          val y = bindingContext.get(BindingContext.CALL, asExpr)
-          // TODO: add more specific test case for situations in which type inference fails for
-          // a certain type of expressions
-          // e.g. for
-          //   -> https://github.com/coil-kt/coil
-          //   -> https://github.com/mozilla-lockwise/lockwise-android
-          if (y == null) {
-            logger.debug("Retrieved empty binding context info for `" + expr.getName + "`.")
-            return (or._1, or._2)
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val renderedFqNameForDesc = TypeRenderer.renderFqName(fnDescriptor)
+        val renderedFqName =
+          if (fnDescriptor.getExtensionReceiverParameter != null) {
+            val extType = fnDescriptor.getExtensionReceiverParameter.getType
+            val extName = fnDescriptor.getName
+            val rendered =
+              if (renderedFqNameForDesc.startsWith(Constants.kotlinApplyPrefix)) {
+                Constants.kotlinAny
+              } else {
+                TypeRenderer.render(extType)
+              }
+            rendered + "." + extName
+          } else {
+            renderedFqNameForDesc
           }
-          val z = bindingContext.get(BindingContext.RESOLVED_CALL, y)
-
-          if (z != null) {
-            z.getResultingDescriptor match {
-              case fnDescriptor: FunctionDescriptor =>
-                val renderedFqNameForDesc = TypeRenderer.renderFqName(fnDescriptor)
-                val renderedFqName =
-                  if (fnDescriptor.getExtensionReceiverParameter != null) {
-                    val extType = fnDescriptor.getExtensionReceiverParameter.getType
-                    val extName = fnDescriptor.getName
-                    val rendered =
-                      if (renderedFqNameForDesc.startsWith(Constants.kotlinApplyPrefix)) {
-                        Constants.kotlinAny
-                      } else {
-                        TypeRenderer.render(extType)
-                      }
-                    rendered + "." + extName
-                  } else {
-                    renderedFqNameForDesc
-                  }
-                val valueParameters = fnDescriptor.getValueParameters.asScala.toSeq
-                val renderedParameterTypes =
-                  valueParameters
-                    .map { valueParam => TypeRenderer.render(valueParam.getType) }
-                    .mkString(",")
-                val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
-                if (bindingInfo != null && bindingInfo.getType != null) {
-                  val renderedReturnType =
-                    if (renderedFqNameForDesc.startsWith(Constants.kotlinApplyPrefix)) {
-                      // TODO: handle `T` in Kotlin stdlib's `apply`
-                      Constants.kotlinAny
-                    } else {
-                      TypeRenderer.render(bindingInfo.getType)
-                    }
-                  val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
-                  val fn = (renderedFqName + ":" + signature, signature)
-                  return fn
-                }
-
-              case unhandled: Any =>
-                logger.debug(
-                  s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
-                )
-                return (or._1, or._2)
+        val valueParameters = fnDescriptor.getValueParameters.asScala.toSeq
+        val renderedParameterTypes =
+          valueParameters
+            .map { valueParam => TypeRenderer.render(valueParam.getType) }
+            .mkString(",")
+        val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
+        if (bindingInfo != null && bindingInfo.getType != null) {
+          val renderedReturnType =
+            if (renderedFqNameForDesc.startsWith(Constants.kotlinApplyPrefix)) {
+              // TODO: handle `T` in Kotlin stdlib's `apply`
+              Constants.kotlinAny
+            } else {
+              TypeRenderer.render(bindingInfo.getType)
             }
-          }
+          val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
+          val fn = (renderedFqName + ":" + signature, signature)
+          fn
+        } else {
+          or
         }
-      case _ =>
+      case None => or
     }
-    (or._1, or._2)
   }
 
   def parameterType(expr: KtParameter, or: String): String = {
@@ -751,66 +734,68 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     (fullname, signature)
   }
 
-  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    if (mapForEntity == null) {
-      return NameReferenceKinds.Unknown
+  private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {
+    val mapForEntity = Option(bindingsForEntity(bindingContext, expr))
+    if (mapForEntity.isDefined) {
+      Option(bindingContext.get(BindingContext.REFERENCE_TARGET, expr))
+    } else {
+      None
     }
-    val targetDesc = bindingContext.get(BindingContext.REFERENCE_TARGET, expr)
-    if (targetDesc == null) {
-      return NameReferenceKinds.Unknown
-    }
+  }
 
-    targetDesc match {
-      case _: ValueDescriptor =>
-        NameReferenceKinds.Property
-      case _: LazyClassDescriptor =>
-        NameReferenceKinds.ClassName
-      case _: LazyJavaClassDescriptor =>
-        NameReferenceKinds.ClassName
-      case _: DeserializedClassDescriptor =>
-        NameReferenceKinds.ClassName
-      case _: EnumEntrySyntheticClassDescriptor =>
-        NameReferenceKinds.EnumEntry
-      case unhandled: Any =>
-        logger.debug(
-          s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`."
-        )
-        NameReferenceKinds.Unknown
+  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
+    val targetDesc = descriptorForNameReference(expr)
+    if (targetDesc.isDefined) {
+      targetDesc.get match {
+        case _: ValueDescriptor =>
+          NameReferenceKinds.Property
+        case _: LazyClassDescriptor =>
+          NameReferenceKinds.ClassName
+        case _: LazyJavaClassDescriptor =>
+          NameReferenceKinds.ClassName
+        case _: DeserializedClassDescriptor =>
+          NameReferenceKinds.ClassName
+        case _: EnumEntrySyntheticClassDescriptor =>
+          NameReferenceKinds.EnumEntry
+        case unhandled: Any =>
+          logger.debug(
+            s"Unhandled class in type info fetch in `nameReferenceKind[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
+          )
+          NameReferenceKinds.Unknown
+      }
+    } else {
+      NameReferenceKinds.Unknown
     }
   }
 
   def typeFullName(expr: KtNameReferenceExpression, or: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    if (mapForEntity == null) {
-      return or
-    }
-    val targetDesc = bindingContext.get(BindingContext.REFERENCE_TARGET, expr)
-    if (targetDesc == null) {
-      return or
-    }
-    val rendered: Option[String] = targetDesc match {
-      case typedDesc: ValueDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getType()))
-      case typedDesc: WithDefaultType =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
-      case typedDesc: LazyClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case typedDesc: LazyJavaClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case typedDesc: DeserializedClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case typedDesc: EnumEntrySyntheticClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case unhandled: Any =>
-        logger.debug(s"Unhandled class in fetching type info for `${expr.getText}` with class `${unhandled.getClass}`.")
-        None
-    }
-
-    rendered match {
-      case Some(r) => r
-      case None    => or
-    }
+    val targetDesc = descriptorForNameReference(expr)
+    if (targetDesc.isDefined) {
+      val rendered =
+        targetDesc.get match {
+          case typedDesc: ValueDescriptor =>
+            Some(TypeRenderer.render(typedDesc.getType()))
+          case typedDesc: WithDefaultType =>
+            Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
+          case typedDesc: LazyClassDescriptor =>
+            Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          case typedDesc: LazyJavaClassDescriptor =>
+            Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          case typedDesc: DeserializedClassDescriptor =>
+            Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          case typedDesc: EnumEntrySyntheticClassDescriptor =>
+            Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          case unhandled: Any =>
+            logger.debug(
+              s"Unhandled class type info fetch in `typeFullName[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
+            )
+            None
+        }
+      rendered match {
+        case Some(r) => r
+        case None    => or
+      }
+    } else or
   }
 }
