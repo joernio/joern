@@ -60,8 +60,7 @@ class TypeInfoProvider(global: Global) {
   }
 
   private def buildTypeString(packageName: String, className: String, typeParameterString: String): String = {
-    // val dollaredClass = className.replaceAll("\\.", "\\$")
-    val dollaredClass = className
+    val dollaredClass = className.replaceAll("\\.", "\\$")
     if (packageName.nonEmpty) {
       s"$packageName.$dollaredClass$typeParameterString"
     } else {
@@ -150,8 +149,7 @@ class TypeInfoProvider(global: Global) {
 
       typeDecl.getParentNode.toScala match {
         case Some(parentDecl: TypeDeclaration[_]) =>
-          // typeNameForTypeDecl(parentDecl, fullName) ++ "$" ++ typeDecl.getNameAsString
-          typeNameForTypeDecl(parentDecl, fullName) ++ "." ++ typeDecl.getNameAsString
+          typeNameForTypeDecl(parentDecl, fullName) ++ "$" ++ typeDecl.getNameAsString
 
         case _ =>
           logger.warn("typeNameForTypeDecl expected nested typeDecl to have typeDecl parent.")
