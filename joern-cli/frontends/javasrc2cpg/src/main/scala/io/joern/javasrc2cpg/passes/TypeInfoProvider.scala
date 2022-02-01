@@ -1,12 +1,40 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.ClassOrInterfaceType
-import com.github.javaparser.ast.body.{ConstructorDeclaration, EnumConstantDeclaration, MethodDeclaration, TypeDeclaration, VariableDeclarator}
-import com.github.javaparser.ast.expr.{BooleanLiteralExpr, CharLiteralExpr, DoubleLiteralExpr, Expression, IntegerLiteralExpr, LiteralExpr, LongLiteralExpr, MethodCallExpr, NameExpr, NullLiteralExpr, StringLiteralExpr, TextBlockLiteralExpr, ThisExpr}
+import com.github.javaparser.ast.body.{
+  ConstructorDeclaration,
+  EnumConstantDeclaration,
+  MethodDeclaration,
+  TypeDeclaration,
+  VariableDeclarator
+}
+import com.github.javaparser.ast.expr.{
+  BooleanLiteralExpr,
+  CharLiteralExpr,
+  DoubleLiteralExpr,
+  Expression,
+  IntegerLiteralExpr,
+  LiteralExpr,
+  LongLiteralExpr,
+  MethodCallExpr,
+  NameExpr,
+  NullLiteralExpr,
+  StringLiteralExpr,
+  TextBlockLiteralExpr,
+  ThisExpr
+}
 import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
-import com.github.javaparser.resolution.declarations.{ResolvedDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedParameterDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeDeclaration, ResolvedTypeParameterDeclaration}
+import com.github.javaparser.resolution.declarations.{
+  ResolvedDeclaration,
+  ResolvedMethodDeclaration,
+  ResolvedMethodLikeDeclaration,
+  ResolvedParameterDeclaration,
+  ResolvedReferenceTypeDeclaration,
+  ResolvedTypeDeclaration,
+  ResolvedTypeParameterDeclaration
+}
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
 import org.slf4j.LoggerFactory
 
@@ -32,7 +60,8 @@ class TypeInfoProvider(global: Global) {
   }
 
   private def buildTypeString(packageName: String, className: String, typeParameterString: String): String = {
-    val dollaredClass = className.replaceAll("\\.", "\\$")
+    // val dollaredClass = className.replaceAll("\\.", "\\$")
+    val dollaredClass = className
     if (packageName.nonEmpty) {
       s"$packageName.$dollaredClass$typeParameterString"
     } else {
@@ -121,7 +150,8 @@ class TypeInfoProvider(global: Global) {
 
       typeDecl.getParentNode.toScala match {
         case Some(parentDecl: TypeDeclaration[_]) =>
-          typeNameForTypeDecl(parentDecl, fullName) ++ "$" ++ typeDecl.getNameAsString
+          // typeNameForTypeDecl(parentDecl, fullName) ++ "$" ++ typeDecl.getNameAsString
+          typeNameForTypeDecl(parentDecl, fullName) ++ "." ++ typeDecl.getNameAsString
 
         case _ =>
           logger.warn("typeNameForTypeDecl expected nested typeDecl to have typeDecl parent.")
