@@ -16,9 +16,13 @@ class SubscriptTests extends AnyFreeSpec with Matchers {
       |}
       |""".stripMargin)
 
-    "should find a call node for `Operators.indexAccess`" in {
+    "should contain a CALL node for `Operators.indexAccess`" in {
       val List(c) = cpg.call(Operators.indexAccess).l
       c.code shouldBe "names[0]"
+      c.typeFullName shouldBe "kotlin.Int"
+      c.lineNumber shouldBe Some(3)
+      c.columnNumber shouldBe Some(9)
+      c.methodFullName shouldBe Operators.indexAccess
     }
   }
 }

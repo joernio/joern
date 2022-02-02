@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -29,8 +29,9 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME for `takeIf`" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      // TODO: erase types
-      c.methodFullName shouldBe "java.util.UUID.takeIf:java.util.UUID((java.util.UUID)->kotlin.Boolean)"
+      c.methodFullName shouldBe "java.util.UUID.takeIf:java.util.UUID(kotlin.Function1)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.signature shouldBe "java.util.UUID(kotlin.Function1)"
     }
   }
 
@@ -133,23 +134,6 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
     }
 
-    "CPG for code with local of type MutableMap and optional in it" - {
-      lazy val cpg = Kt2CpgTestContext.buildCpg("""
-          |package mypkg
-          |
-          |fun foo() {
-          |  val payload: MutableMap<String, Any?> = HashMap()
-          |  println(payload)
-          |}
-          |""".stripMargin)
-
-      "should contain CALL node with a MFN without optionals in it" in {
-        val List(c) = cpg.call.code("HashMap.*").l
-        c.typeFullName shouldBe "kotlin.collections.HashMap"
-        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:java.util.HashMap()"
-      }
-    }
-
     "CPG for code with calls to stdlib's `split`s" - {
       lazy val cpg = Kt2CpgTestContext.buildCpg("""
           |package mypkg
@@ -168,6 +152,42 @@ class StdLibTests extends AnyFreeSpec with Matchers {
           Set(
             "kotlin.CharSequence.split:kotlin.collections.List(kotlin.Array,kotlin.Boolean,kotlin.Int)"
           )
+      }
+    }
+
+    "CPG for code with calls to stdlib's `trim`s" - {
+      lazy val cpg = Kt2CpgTestContext.buildCpg("""
+          |package mypkg
+          |
+          |fun trimParam(p: String): String {
+          |    val y = p.trim()
+          |    return y
+          |}
+          |
+          |fun main() {
+          |    val out = trimParam(" hello ")
+          |    println(out)
+          |}
+          |
+          |""".stripMargin)
+
+      "should contain a CALL node for `trim` with the correct props set" in {
+        val List(c) = cpg.call.code("p.trim.*").l
+        c.methodFullName shouldBe "kotlin.String.trim:kotlin.String()"
+        c.signature shouldBe "kotlin.String()"
+        c.typeFullName shouldBe "kotlin.String"
+        c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        c.lineNumber shouldBe Some(4)
+        c.columnNumber shouldBe Some(12)
+      }
+
+      "should contain a CALL node for `trim` a receiver arg with the correct props set" in {
+        val List(receiverArg) = cpg.call.code("p.trim.*").argument(0).isIdentifier.l
+        receiverArg.name shouldBe "p"
+        receiverArg.code shouldBe "p"
+        receiverArg.typeFullName shouldBe "kotlin.String"
+        receiverArg.lineNumber shouldBe Some(4)
+        receiverArg.columnNumber shouldBe Some(12)
       }
     }
   }

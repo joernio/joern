@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, NewIdentifier, NewLiteral}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -39,7 +39,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `webview.settings` DQE on with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.codeExact("webview.settings").take(1).l
-      c.methodFullName shouldBe "kotlin.Any.settings:ANY(ANY)"
+      c.methodFullName shouldBe Operators.fieldAccess
     }
   }
 
@@ -70,7 +70,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `sendBroadcast` with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code("sendBroadcast.*").l
-      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:kotlin.Unit(android.content.Intent)"
+      c.methodFullName shouldBe "mypkg.AboutUsActivity.sendBroadcast:kotlin.Unit(android.content.Intent)"
     }
   }
 
@@ -167,7 +167,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(".*Log.*").l
       c.methodFullName shouldBe "android.util.Log.d:kotlin.Int(kotlin.String,kotlin.String)"
       c.argument.size shouldBe 2
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(firstArg: Literal, secondArg: Identifier) = cpg.call.methodFullName(".*Log.*").argument.l
       firstArg.code shouldBe "\"PREFIX\""
@@ -202,9 +202,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
       val List(c) = cpg.call.code("findViewB.*").l
-      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(kotlin.Int)"
+      c.methodFullName shouldBe "mypkg.MyActivity.findViewById:android.view.View(kotlin.Int)"
       c.argument.size shouldBe 1
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain an IDENTIFIER node for webview with the correct props set" in {

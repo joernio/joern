@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -17,9 +17,13 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    // TODO: add the CALL node if the missing information becomes an issue
     "should contain a call node with safe call details erased" in {
-      cpg.call.code(".*length.*").size should not be 0
+      val List(c) = cpg.call.code("b.*length.*").l
+      c.code shouldBe "b?.length"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.methodFullName shouldBe Operators.fieldAccess
+      c.lineNumber shouldBe Some(3)
+      c.columnNumber shouldBe Some(12)
     }
   }
 
@@ -36,6 +40,8 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "\"PLACEHOLDER\" as String"
       c.columnNumber shouldBe Some(12)
       c.lineNumber shouldBe Some(2)
+      c.typeFullName shouldBe "kotlin.String"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
@@ -48,7 +54,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain call to `<operator>.notNullAssert`" in {
-      cpg.call.methodFullNameExact("<operator>.notNullAssert").size shouldBe 1
+      cpg.call.methodFullNameExact(Operators.notNullAssert).size shouldBe 1
     }
   }
 
@@ -65,6 +71,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "\" PLACEHOLDER \"!!"
       c.columnNumber shouldBe Some(14)
       c.lineNumber shouldBe Some(2)
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
@@ -91,7 +98,8 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(12)
       c.methodFullName shouldBe Operators.is
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.typeFullName shouldBe "kotlin.Boolean"
     }
   }
 
@@ -116,7 +124,8 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(12)
       c.methodFullName shouldBe Operators.range
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.typeFullName shouldBe "kotlin.ranges.IntRange"
     }
   }
 
@@ -136,8 +145,9 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(14)
       c.methodFullName shouldBe Operators.elvis
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
+      c.typeFullName shouldBe "kotlin.Int"
     }
   }
 
@@ -156,8 +166,9 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "1 !in 0..10"
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(14)
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
+      c.typeFullName shouldBe "kotlin.Boolean"
     }
   }
 
@@ -176,8 +187,9 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "1 in 0..10"
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(14)
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
+      c.typeFullName shouldBe "kotlin.Boolean"
     }
   }
 }

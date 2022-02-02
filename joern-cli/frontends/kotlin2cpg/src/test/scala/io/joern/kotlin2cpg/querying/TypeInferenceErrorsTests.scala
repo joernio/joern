@@ -24,7 +24,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with an MFN starting with a placeholder type" in {
       val List(c) = cpg.call.drop(1).take(1).l
-      c.methodFullName shouldBe Constants.kotlinAny + ".flatMap:ANY(ANY)"
+      c.methodFullName shouldBe Constants.cpgUnresolved + ".flatMap:ANY(ANY)"
     }
   }
 
@@ -110,12 +110,12 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct MFN set when type info is available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("foo")).argument(2).isCall.l
-      c.methodFullName shouldBe "kotlin.collections.Iterable.filter:kotlin.collections.List((kotlin.Int)->kotlin.Boolean)"
+      c.methodFullName shouldBe "kotlin.collections.Iterable.filter:kotlin.collections.List(kotlin.Function1)"
     }
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("bar")).argument(2).isCall.l
-      c.methodFullName shouldBe "kotlin.Any.filter:ANY(ANY)"
+      c.methodFullName shouldBe Constants.cpgUnresolved + ".filter:ANY(ANY)"
     }
   }
 
@@ -138,8 +138,6 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*getFileSize.*").l
       m.fullName shouldBe "kotlin.Any.getFileSize:kotlin.Int(kotlin.Boolean)"
     }
-
-    // TODO: add more tests
   }
 
   "CPG for code with extension fn defined on resolvable type with unresolvable subtypes" - {
@@ -161,10 +159,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node with a MFN property that replaced the unresolvable types with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName("kotlin.*clone.*").take(1).l
       m.fullName shouldBe "kotlin.collections.MutableMap.clone:kotlin.collections.MutableMap()"
-      // TODO: fix return type
     }
-
-    // TODO: add more tests
   }
 
   "CPG for code with `containsKey` call on collection of elements without corresponding imported class" - {
@@ -187,9 +182,9 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*ERROR.*").fullName.l shouldBe List()
     }
 
-    "should contain a METHOD node for `containsKey` with `kotlin.Any` as a replacement for failing type inference" in {
+    "should contain a METHOD node for `containsKey` with placeholder type as replacement for failing type inference" in {
       val List(m) = cpg.method.fullName(".*containsKey.*").l
-      m.fullName shouldBe "kotlin.collections.Map.containsKey:kotlin.Boolean(kotlin.Any)"
+      m.fullName shouldBe "kotlin.collections.Map.containsKey:kotlin.Boolean(codepropertygraph.Unresolved)"
     }
   }
 }

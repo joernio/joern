@@ -3,7 +3,8 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -36,7 +37,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call(Operators.assignment).l
       c.argument.size shouldBe 2
       c.code shouldBe "val argc: Int = args.size"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(8)
       c.columnNumber shouldBe Some(6)
     }
@@ -47,7 +48,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call(Operators.addition).l
       c.argument.size shouldBe 2
       c.code shouldBe "x + y"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(9)
     }
@@ -61,7 +62,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "println(foo(argc, 1))"
       p.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(kotlin.Int)"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(2)
     }
 
@@ -72,7 +73,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "foo(argc, 1)"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(10)
     }
 
@@ -115,13 +116,11 @@ class CallTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a CALL node for `Foo()` with the correct fields set" in {
-      cpg.call("Foo").size shouldBe 1
-
-      val List(p) = cpg.call("Foo").l
-      p.methodFullName shouldBe "mypkg.Foo.<init>:mypkg.Foo()"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
-      p.signature shouldBe "mypkg.Foo()"
+    "should contain a CALL node for `Foo()` with the correct properties set" in {
+      val List(p) = cpg.call.methodFullName(".*init.*").l
+      p.methodFullName shouldBe "mypkg.Foo.<init>:void()"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      p.signature shouldBe "void()"
       p.code shouldBe "Foo()"
       p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(10)
@@ -130,7 +129,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `add1` with the correct props set" in {
       val List(p) = cpg.call("add1").l
       p.argument.size shouldBe 2
-      p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       p.code shouldBe "x.add1(argc)"
       p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(11)
@@ -193,9 +192,9 @@ class CallTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a call node for `Gson()`" in {
-      val List(c) = cpg.call("Gson.*").l
-      c.methodFullName shouldBe "com.google.gson.Gson.<init>:com.google.gson.Gson()"
-      c.signature shouldBe "com.google.gson.Gson()"
+      val List(c) = cpg.call.methodFullName(".*Gson.*init.*").l
+      c.methodFullName shouldBe "com.google.gson.Gson.<init>:void()"
+      c.signature shouldBe "void()"
     }
   }
 
@@ -210,8 +209,8 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
-      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
     }
@@ -230,7 +229,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node " in {
       val List(c) = cpg.call.code("Runtime.*").codeNot(".*exec.*").l
       c.methodFullName shouldBe "java.lang.Runtime.getRuntime:java.lang.Runtime()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "java.lang.Runtime()"
       c.name shouldBe "getRuntime"
       c.typeFullName shouldBe "java.lang.Runtime"
@@ -251,10 +250,112 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node with the correct props set" in {
       val List(c) = cpg.call.code("mutableMapOf.*").l
       c.methodFullName shouldBe "kotlin.collections.mutableMapOf:kotlin.collections.MutableMap(kotlin.Array)"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "kotlin.collections.MutableMap"
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(19)
+    }
+  }
+
+  "CPG for code with a simple method call to decl of Java's stdlib" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo(x: String): Int {
+      |   val r = Runtime.getRuntime()
+      |   r.exec(x)
+      |   return 0
+      |}
+      |
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with the correct props set" in {
+      val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l
+      firstArg.typeFullName shouldBe "java.lang.Runtime"
+      secondArg.typeFullName shouldBe "kotlin.String"
+    }
+  }
+
+  "CPG for code with " - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    |package mypkg
+    |
+    |fun main() {
+    |    val str = "ASTRING"
+    |    val res = str.length.toString()
+    |    println(res)
+    |}
+    |
+    |""".stripMargin)
+
+    "should contain a CALL node for `p.length` with the correct props set" in {
+      val List(c) = cpg.call.codeExact("str.length").l
+      c.methodFullName shouldBe Operators.fieldAccess
+      c.signature shouldBe ""
+      c.typeFullName shouldBe "kotlin.Int"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+
+    "should contain a CALL node for `p.length.toString` with the correct props set" in {
+      val List(c) = cpg.call.code("str.length.toString.*").l
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
+      c.signature shouldBe "kotlin.String()"
+      c.typeFullName shouldBe "kotlin.String"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+    }
+  }
+
+  "CPG for code with a simple call to class from Java's stdlib imported with _as_" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import java.io.File as MyFile
+        |
+        |fun main() {
+        |   val fullPath = "/tmp/kotlin2cpg.example.txt"
+        |   val f = MyFile(fullPath)
+        |   val msg = "AMESSAGE"
+        |   f.writeText(msg)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node `writeText` with the correct props set" in {
+      val List(c) = cpg.call.code("f.writeText.*").l
+      c.methodFullName shouldBe "java.io.File.writeText:kotlin.Unit(kotlin.String,java.nio.charset.Charset)"
+    }
+  }
+
+  "CPG for code with a simple call with unknown identifier imported via _as_" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import no.such.CaseClass as MyCaseClass
+        |
+        |fun main() {
+        |  val res = MyCaseClass.PROP
+        |  println(res)
+        |
+        |  val otherRes = MyCaseClass("AN_ARGUMENT")
+        |  println(otherRes.aFn())
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for `MyCaseClass.PROP` with the correct props set" in {
+      val List(c) = cpg.call.code("MyCaseClass.PROP").l
+      c.methodFullName shouldBe Operators.fieldAccess
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(12)
+      c.signature shouldBe ""
+    }
+
+    "should contain a CALL node for `MyCaseClass(\\\"AN_ARGUMENT\\\")` with the correct props set" in {
+      val List(c) = cpg.call.code("MyCaseClass.*AN_ARGUMENT.*").l
+      c.methodFullName shouldBe "no.such.CaseClass:ANY(ANY)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(9)
+      c.columnNumber shouldBe Some(17)
+      c.signature shouldBe "ANY(ANY)"
     }
   }
 }

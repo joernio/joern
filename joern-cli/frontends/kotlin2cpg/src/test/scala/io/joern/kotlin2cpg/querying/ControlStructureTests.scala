@@ -2,8 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -88,20 +88,6 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
         |       val q =  Random.nextInt(0, 100)
         |       print(q)
         |    } while (q < 50)
-        |
-        |    try {
-        |      throw Exception("SAMPLE_EXCEPTION_MESSAGE")
-        |    } catch (e: SomeException) {
-        |      print("Exception caught.")
-        |    } finally {
-        |      print("reached `finally`-block.")
-        |    }
-        |
-        |    try {
-        |      throw Exception("SAMPLE_EXCEPTION_MESSAGE")
-        |    } catch (e: SomeException) {
-        |      print("Exception caught.")
-        |    }
         |  }
         |}
         |""".stripMargin)
@@ -141,10 +127,6 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       cpg.method.name("methodFoo").doBlock.code.size shouldBe 1
     }
 
-    "should identify `try` blocks" in {
-      cpg.method.name("methodFoo").tryBlock.code.size shouldBe 2
-    }
-
     "should identify `break`" in {
       cpg.method.name("methodFoo").break.code.l shouldBe List("break")
     }
@@ -174,4 +156,124 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       cpg.controlStructure.code.dedup.l should not be Seq("<empty>")
     }
   }
+
+  "CPG for code with simple `if`-statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |  val aList = listOf("a", "b", "c")
+        |  val msg = "b"
+        |  if(aList.contains(msg)) {
+        |    println("HELLO")
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the condition inside the `if`-statement" in {
+      val List(c) = cpg.controlStructure.condition.isCall.l
+      c.code shouldBe "aList.contains(msg)"
+      c.methodFullName shouldBe "kotlin.collections.List.contains:kotlin.Boolean(kotlin.String)"
+      c.lineNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(5)
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.signature shouldBe "kotlin.Boolean(kotlin.String)"
+    }
+  }
+
+  "CPG for code with try-catch-finally statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |   try {
+      |      println("INSIDE_TRY")
+      |    } catch (e: Exception) {
+      |      print("Exception caught.")
+      |    } finally {
+      |      print("reached `finally`-block.")
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
+      def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
+      val List(cs) = matchTryQ.l
+      cs.lineNumber shouldBe Some(4)
+      cs.columnNumber shouldBe Some(3)
+
+      val List(c1, c2, c3) = matchTryQ.astChildren.l
+      c1.order shouldBe 1
+      c2.order shouldBe 2
+      c3.order shouldBe 3
+    }
+  }
+
+  "CPG for code with try-catch statement" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |   try {
+      |     println("INSIDE_TRY")
+      |   } catch (e: Exception) {
+      |     print("Exception caught.")
+      |   }
+      |}
+      |""".stripMargin)
+
+    "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
+      def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
+      val List(cs) = matchTryQ.l
+      cs.lineNumber shouldBe Some(4)
+      cs.columnNumber shouldBe Some(3)
+
+      val List(c1, c2) = matchTryQ.astChildren.l
+      c1.order shouldBe 1
+      c2.order shouldBe 2
+    }
+  }
+
+  "CPG for code with range operators inside for-statements" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun foo() {
+      |  for (i in 1..4 step 2) print(i)
+      |
+      |  for (i in 8 downTo 1 step 2) print(i)
+      |
+      |  for (i in 1 until 10) {
+      |    print(i)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should contain CALL nodes for the loop expressions with the correct props set" in {
+      val List(c1) = cpg.call.code(".*4.*step.*").l
+      c1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c1.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(kotlin.Int)"
+      c1.signature shouldBe "kotlin.ranges.IntProgression(kotlin.Int)"
+      c1.typeFullName shouldBe "kotlin.ranges.IntProgression"
+      c1.lineNumber shouldBe Some(4)
+      c1.columnNumber shouldBe Some(12)
+
+      val List(c2) = cpg.call.code(".*8.*downTo.*step.*").l
+      c2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c2.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(kotlin.Int)"
+      c2.signature shouldBe "kotlin.ranges.IntProgression(kotlin.Int)"
+      c2.typeFullName shouldBe "kotlin.ranges.IntProgression"
+      c2.lineNumber shouldBe Some(6)
+      c2.columnNumber shouldBe Some(12)
+
+      val List(c3) = cpg.call.code(".*until.*10").l
+      c3.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c3.methodFullName shouldBe "kotlin.ranges.until:kotlin.ranges.IntRange(kotlin.Int)"
+      c3.signature shouldBe "kotlin.ranges.IntRange(kotlin.Int)"
+      c3.typeFullName shouldBe "kotlin.ranges.IntRange"
+      c3.lineNumber shouldBe Some(8)
+      c3.columnNumber shouldBe Some(12)
+    }
+  }
+
 }

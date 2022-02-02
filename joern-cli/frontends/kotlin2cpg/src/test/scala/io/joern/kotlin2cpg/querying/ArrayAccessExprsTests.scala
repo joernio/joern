@@ -2,7 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -21,12 +22,22 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a CALL node for `foo[\"one\"]` with the correct properties set" in {
-      val List(c) = cpg.call.code("val bar.*").argument.isCall.l
+      def callNodeQ = cpg.call.code("val bar.*").argument.isCall
+
+      val List(c) = callNodeQ.l
       c.code shouldBe "foo[\"one\"]"
       c.methodFullName shouldBe Operators.indexAccess
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(14)
+
+      val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l
+      firstArg.argumentIndex shouldBe 1
+      firstArg.code shouldBe "foo"
+      firstArg.lineNumber shouldBe c.lineNumber
+      secondArg.argumentIndex shouldBe 2
+      secondArg.code shouldBe "\"one\""
+      secondArg.lineNumber shouldBe c.lineNumber
     }
   }
 
@@ -45,7 +56,7 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.code("val bar.*").argument.isCall.l
       c.code shouldBe "foo[1]"
       c.methodFullName shouldBe Operators.indexAccess
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(14)
     }

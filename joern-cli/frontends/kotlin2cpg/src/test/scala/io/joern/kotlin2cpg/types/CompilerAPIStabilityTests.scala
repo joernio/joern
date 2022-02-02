@@ -11,8 +11,8 @@ class CompilerAPIStabilityTests extends AnyFreeSpec with Matchers {
       val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq())
       environment.getSourceFiles should not be List()
 
-      val typeInfoProvider = new KotlinTypeInfoProvider(environment)
-      typeInfoProvider.bindingContext should not be null
+      val nameGenerator = new DefaultNameGenerator(environment)
+      nameGenerator.bindingContext should not be null
     }
   }
 }

@@ -1,7 +1,7 @@
 name := "macros"
 
-scalaVersion := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.0")
+scalaVersion := "2.13.7"
+crossScalaVersions := Seq("2.13.7", "3.1.1")
 libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "io.shiftleft" %% "semanticcpg" % Versions.cpg % Test,

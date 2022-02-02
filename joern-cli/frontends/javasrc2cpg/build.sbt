@@ -1,7 +1,7 @@
 name := "javasrc2cpg"
 
-scalaVersion := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.0")
+scalaVersion := "2.13.7"
+crossScalaVersions := Seq("2.13.7", "3.1.1")
 
 dependsOn(Projects.dataflowengineoss)
 

@@ -304,7 +304,7 @@ class AstCreator(filename: String, global: Global) {
       .columnNumber(column(parentUnit))
       .typeFullName(registerType(arrRef.getType.toQuotedString))
 
-    val astChildren = astsForValue(arrRef.getBase, 0, parentUnit) ++ astsForValue(arrRef.getIndex, 1, parentUnit)
+    val astChildren = astsForValue(arrRef.getBase, 1, parentUnit) ++ astsForValue(arrRef.getIndex, 2, parentUnit)
     Ast(indexAccess)
       .withChildren(astChildren)
       .withArgEdges(indexAccess, astChildren.flatMap(_.root))
@@ -377,15 +377,44 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def astForNewExpr(x: AnyNewExpr, order: Int, parentUnit: soot.Unit): Ast = {
-    Ast(
-      NewUnknown()
-        .typeFullName(registerType(x.getType.toQuotedString))
-        .code("new")
-        .order(order)
-        .argumentIndex(order)
-        .lineNumber(line(parentUnit))
-        .columnNumber(column(parentUnit))
-    )
+    x match {
+      case u: NewArrayExpr =>
+        astForArrayInitializeExpr(x, List(u.getSize), order, parentUnit)
+      case u: NewMultiArrayExpr =>
+        astForArrayInitializeExpr(x, u.getSizes.asScala, order, parentUnit)
+      case _ =>
+        Ast(
+          NewUnknown()
+            .typeFullName(registerType(x.getType.toQuotedString))
+            .code("new")
+            .order(order)
+            .argumentIndex(order)
+            .lineNumber(line(parentUnit))
+            .columnNumber(column(parentUnit))
+        )
+    }
+  }
+
+  private def astForArrayInitializeExpr(
+      arrayInitExpr: Expr,
+      sizes: Iterable[Value],
+      order: Int,
+      parentUnit: soot.Unit
+  ): Ast = {
+    val callBlock = NewCall()
+      .name(Operators.arrayInitializer)
+      .methodFullName(Operators.arrayInitializer)
+      .code(arrayInitExpr.toString())
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .order(order)
+      .typeFullName(registerType(arrayInitExpr.getType.toQuotedString))
+      .argumentIndex(order)
+      .lineNumber(line(parentUnit))
+      .columnNumber(column(parentUnit))
+    val valueAsts = withOrder(sizes) { (s, o) => astsForValue(s, o, parentUnit) }.flatten
+    Ast(callBlock)
+      .withChildren(valueAsts)
+      .withArgEdges(callBlock, valueAsts.flatMap(_.root))
   }
 
   private def astForUnaryExpr(

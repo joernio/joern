@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -69,34 +69,6 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain type decl for alias `FooList` of `List<Int>` with the correct aliasTypeFullName set" in {
       val List(x) = cpg.typeDecl("FooList").l
       x.aliasTypeFullName shouldBe Some("kotlin.collections.List")
-    }
-  }
-
-  "CPG for code with a variable declared to return value of contructor of simple user-defined class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |class Bar {
-        |  fun baz(x: Int, y: Int): Int {
-        |    return x * 2
-        |  }
-        |}
-        |
-        |fun foo() {
-        |  val foo = Bar()
-        |  println(foo.baz(1, 2))
-        |}
-        |
-        |""".stripMargin)
-
-    "should contain a LOCAL node with the correct TYPE_FULL_NAME set" in {
-      val List(x) = cpg.local.name("foo").l
-      x.typeFullName shouldBe "mypkg.Bar"
-    }
-
-    "should contain a CALL node with the correct TYPE_FULL_NAME set" in {
-      val List(c) = cpg.call.code("Bar.*").l
-      c.typeFullName shouldBe "mypkg.Bar"
     }
   }
 
@@ -218,7 +190,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullNames set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
       c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
     "should contain IDENTIFIER nodes for `prog` with the correct typeFullNames set" in {
@@ -238,13 +210,13 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `cpx.pathParam` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("ctx.pathParam.*").l
       c.methodFullName shouldBe "io.javalin.http.Context.pathParam:kotlin.String(kotlin.String)"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
     "should contain a CALL node for `ctx.body` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("ctx.header.*").l
       c.methodFullName shouldBe "io.javalin.http.Context.header:kotlin.String(kotlin.String)"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
     "should contain IDENTIFIER nodes for `app` with the correct typeFullNames set" in {
@@ -295,7 +267,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
       def createCall = cpg.call.code(".*onCreate.*")
 
       val List(c) = createCall.l
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
       c.argument.size shouldBe 2
 
@@ -351,7 +323,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `port.toString()` with the correct methodFullName set" in {
       val List(c) = cpg.call.codeExact("port.toString()").l
-      c.methodFullName shouldBe "kotlin.Number.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
     }
 
     "should contain a CALL node for `routes` with the correct methodFullName set" in {

@@ -87,6 +87,27 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         tpe.fullName shouldBe "Foo"
       }
     }
+
+    "create correct types for identifiers" in CpgTypeNodeFixture("""
+       |void test_func() {
+       |  char * badChar = malloc(0x100);
+       |  free(badChar);
+       |  return;
+       |}""".stripMargin) { cpg =>
+      inside(cpg.call("free").argument(1).isIdentifier.l) { case List(badChar) =>
+        badChar.name shouldBe "badChar"
+        badChar.typeFullName shouldBe "char"
+        inside(badChar.typ.l) { case List(tpe) =>
+          tpe.fullName shouldBe "char"
+          tpe.name shouldBe "char"
+        }
+        inside(cpg.method("test_func").ast.isLocal.name(badChar.name).code(".*\\*.*").l) { case List(ptr) =>
+          ptr.name shouldBe "badChar"
+          ptr.typeFullName shouldBe "char"
+          ptr.code shouldBe "char* badChar"
+        }
+      }
+    }
   }
 
 }
