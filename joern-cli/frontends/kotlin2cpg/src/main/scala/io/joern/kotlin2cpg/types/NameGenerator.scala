@@ -54,6 +54,8 @@ object Constants {
   val any = "ANY"
   val void = "void"
   val classLiteralReplacementMethodName = "getClass"
+  val tType = "T"
+  val javaLangObject = "java.lang.Object"
   val kotlinFunctionXPrefix = "kotlin.Function"
   val kotlinSuspendFunctionXPrefix = "kotlin.coroutines.SuspendFunction"
   val kotlinApplyPrefix = "kotlin.apply"
@@ -481,18 +483,19 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         // TODO: write descriptor renderer instead of working with the existing ones
         // that render comments in fqnames
         val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
-        val renderedReturnType =
+        val returnTypeFullName = {
           if (isCtor) {
             Constants.void
           } else {
-            TypeRenderer.render(fnDescriptor.getReturnType)
+            renderedReturnType(fnDescriptor.getOriginal)
           }
+        }
 
         val renderedParameterTypes =
           fnDescriptor.getValueParameters.asScala.toSeq
             .map { valueParam => TypeRenderer.render(valueParam.getType) }
             .mkString(",")
-        val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
+        val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
         val fullName =
           if (isCtor) {
             renderedFqName + Constants.initPrefix + ":" + signature
@@ -665,9 +668,35 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     (fullName, signature)
   }
 
-  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
-    val returnTypeFullName = returnType(expr, Constants.any)
+  private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
+    val typeParams = fnDesc.getTypeParameters.asScala.toList
+    val returnT = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
+    val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
+    val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
+    if (hasReturnTypeFromTypeParams) {
+      if (returnT.getConstructor.getSupertypes.size() > 0) {
+        val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
+        TypeRenderer.render(firstSuperType)
+      } else {
+        val renderedReturnT = TypeRenderer.render(returnT)
+        if (renderedReturnT == Constants.tType) {
+          Constants.kotlinAny
+        } else {
+          renderedReturnT
+        }
+      }
+    } else {
+      TypeRenderer.render(fnDesc.getReturnType)
+    }
+  }
 
+  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
+    val fnDesc = Option(bindingContext.get(BindingContext.FUNCTION, expr))
+    val returnTypeFullName =
+      fnDesc match {
+        case Some(desc) => renderedReturnType(desc)
+        case None       => Constants.any
+      }
     val paramTypeNames =
       try {
         val nodeParams = expr.getValueParameters()
@@ -687,14 +716,13 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       }
     val paramListSignature = "(" + paramTypeNames.mkString(",") + ")"
 
-    val bindingInfo = bindingContext.get(BindingContext.FUNCTION, expr)
     val methodName =
-      if (bindingInfo != null && bindingInfo.getExtensionReceiverParameter != null) {
-        val erpType = bindingInfo.getExtensionReceiverParameter.getType
+      if (fnDesc.isDefined && fnDesc.get.getExtensionReceiverParameter != null) {
+        val erpType = fnDesc.get.getExtensionReceiverParameter.getType
         if (erpType.isInstanceOf[UnresolvedType]) {
           Constants.kotlinAny + "." + expr.getName
         } else {
-          val theType = bindingInfo.getExtensionReceiverParameter.getType
+          val theType = fnDesc.get.getExtensionReceiverParameter.getType
           val renderedType = TypeRenderer.render(theType)
           renderedType + "." + expr.getName
         }
