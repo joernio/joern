@@ -1609,7 +1609,7 @@ class AstCreator(
         val name = expr.getSelectorExpression.getText.replace("(", "").replace(")", "")
         scopeContext.typeDecl.get.fullName + "." + name + ":ANY()"
       } else if (expr.getSelectorExpression.isInstanceOf[KtCallExpression]) {
-        val receiverPlaceholderType = TypeConstants.kotlinAny
+        val receiverPlaceholderType = TypeConstants.cpgUnresolved
         val shortName = expr.getSelectorExpression.getFirstChild.getText
         val args = expr.getSelectorExpression().asInstanceOf[KtCallExpression].getValueArguments()
         receiverPlaceholderType + "." + shortName + ":" + nameGenerator.erasedSignature(args.asScala.toList)
@@ -2044,7 +2044,7 @@ class AstCreator(
       fileInfo: FileInfo,
       nameGenerator: NameGenerator
   ): AstWithCtx = {
-    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.kotlinAny)
+    val typeFullName = nameGenerator.expressionType(expr, TypeConstants.cpgUnresolved)
     registerType(typeFullName)
 
     val tmpBlockNode =
