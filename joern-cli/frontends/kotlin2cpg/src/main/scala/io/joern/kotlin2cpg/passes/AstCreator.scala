@@ -2052,6 +2052,7 @@ class AstCreator(
         .code("")
         .typeFullName(typeFullName)
         .order(order)
+        .argumentIndex(argIdx)
     val tmpName = "tmp_" + tmpKeyPool.next
     val tmpLocalNode =
       NewLocal()
