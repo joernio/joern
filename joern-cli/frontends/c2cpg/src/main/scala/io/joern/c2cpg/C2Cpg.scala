@@ -21,7 +21,7 @@ class C2Cpg {
     val typesKeyPool = keyPool.head
     val astKeyPool = keyPool(1)
     val headerKeyPool = keyPool(2)
-    val headerContentKeyPool = keyPool(2)
+    val headerContentKeyPool = keyPool(3)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
 
