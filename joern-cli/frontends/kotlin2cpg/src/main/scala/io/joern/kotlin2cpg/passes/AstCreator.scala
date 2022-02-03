@@ -1487,9 +1487,15 @@ class AstCreator(
     val isDynamicCall = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
 
+    val isCallToSuper = expr.getReceiverExpression match {
+      case _: KtSuperExpression => true
+      case _                    => false
+    }
+
     val orderForReceiver = 1
     val argIdxForReceiver =
-      if (isDynamicCall) 0
+      if (isCallToSuper) 0
+      else if (isDynamicCall) 0
       else if (isExtensionCall) 0
       else if (isStaticCall) 1
       else 1
@@ -1503,10 +1509,13 @@ class AstCreator(
         case thisExpr: KtThisExpression =>
           astForThisExpression(thisExpr, scopeContext, orderForReceiver, 0)
         case superExpr: KtSuperExpression =>
+          val typeFullName = nameGenerator.expressionType(superExpr, TypeConstants.any)
+          registerType(typeFullName)
+
           val node =
-            NewUnknown()
+            NewIdentifier()
               .code(superExpr.getText)
-              .typeFullName(TypeConstants.any)
+              .typeFullName(typeFullName)
               .order(orderForReceiver)
               .argumentIndex(argIdxForReceiver)
               .lineNumber(line(superExpr))
@@ -1662,15 +1671,15 @@ class AstCreator(
     val root = Ast(callNode)
     val receiverNode = receiverAst.root.get
     val finalAst = {
-      if (isStaticCall) {
-        root
-          .withChild(receiverAst)
-          .withChildren(argAsts.map(_.ast))
-          .withArgEdges(callNode, argAsts.map(_.ast.root.get))
-      } else if (isExtensionCall) {
+      if (isExtensionCall || isCallToSuper) {
         root
           .withChild(receiverAst)
           .withArgEdge(callNode, receiverNode)
+          .withChildren(argAsts.map(_.ast))
+          .withArgEdges(callNode, argAsts.map(_.ast.root.get))
+      } else if (isStaticCall) {
+        root
+          .withChild(receiverAst)
           .withChildren(argAsts.map(_.ast))
           .withArgEdges(callNode, argAsts.map(_.ast.root.get))
       } else {

@@ -247,27 +247,11 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
         |}
         | """.stripMargin)
 
-    /* TODO: change structure to the following:
-    - triggered by a conversation with @ml86 & @bbrehm
-    ```
-    CALL
-       MFN -> android.Activity.onCreate:void(Bundle)
-       DT  -> STATIC_DISPATCH
-       ARG_IDX_0 ->
-          IDENTIFIER
-             NAME -> THIS
-             CODE -> SUPER
-       ARG_IDX_1 ->
-          IDENTIFIER
-             NAME -> saveInstanceState
-             CODE -> saveInstanceState
-     ```
-     */
     "should contain a CALL node for `onCreate` with the correct props set" in {
       def createCall = cpg.call.code(".*onCreate.*")
 
       val List(c) = createCall.l
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
       c.argument.size shouldBe 2
 
