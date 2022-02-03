@@ -1,7 +1,7 @@
 package io.joern.c2cpg.fixtures
 
 import io.joern.c2cpg.C2Cpg.Config
-import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentLinkerPass}
+import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.passes.base.FileCreationPass
@@ -22,7 +22,7 @@ case class TestProjectFixture(projectName: String) {
   new MetaDataPass(cpg, Languages.C).createAndApply()
   new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, config).createAndApply()
   new AstCreationPass(cpg, AstCreationPass.HeaderFiles, None, config).createAndApply()
-  new HeaderContentLinkerPass(cpg, config).createAndApply()
+  new HeaderContentPass(cpg, None, config).createAndApply()
   new CfgCreationPass(cpg).createAndApply()
   new FileCreationPass(cpg).createAndApply()
 
