@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.psi.{
   KtParameter,
   KtProperty,
   KtQualifiedExpression,
+  KtSuperExpression,
   KtTypeAlias
 }
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -479,15 +480,21 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
           case _: TypeAliasConstructorDescriptorImpl => true
           case _                                     => false
         }
+        val relevantDesc =
+          if (!fnDescriptor.isActual && fnDescriptor.getOverriddenDescriptors.size() > 0) {
+            fnDescriptor.getOverriddenDescriptors.asScala.toList.head
+          } else {
+            fnDescriptor
+          }
 
         // TODO: write descriptor renderer instead of working with the existing ones
         // that render comments in fqnames
-        val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
+        val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
         val returnTypeFullName = {
           if (isCtor) {
             Constants.void
           } else {
-            renderedReturnType(fnDescriptor.getOriginal)
+            renderedReturnType(relevantDesc.getOriginal)
           }
         }
 
@@ -552,6 +559,11 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   }
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
+    val callToSuper = expr.getReceiverExpression match {
+      case _: KtSuperExpression => true
+      case _                    => false
+    }
+
     val resolvedDesc = resolvedCallDescriptor(expr)
     resolvedDesc match {
       case Some(fnDescriptor) =>
@@ -559,6 +571,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
         if (isExtension) CallKinds.ExtensionCall
         else if (isStatic) CallKinds.StaticCall
+        else if (callToSuper) CallKinds.StaticCall
         else CallKinds.DynamicCall
       case None => CallKinds.Unknown
     }
