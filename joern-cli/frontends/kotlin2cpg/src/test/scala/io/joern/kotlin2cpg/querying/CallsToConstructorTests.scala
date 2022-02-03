@@ -31,6 +31,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
 
       val List(assignmentCall) = cpg.call.methodFullNameExact(Operators.assignment).take(1).l
       assignmentCall.signature shouldBe ""
+      assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(assignmentLhs: Identifier, assignmentRhs: Block) = assignmentCall.argument.l
       assignmentLhs.code shouldBe "f"

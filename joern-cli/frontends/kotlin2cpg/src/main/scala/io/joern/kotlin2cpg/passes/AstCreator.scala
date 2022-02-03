@@ -2086,6 +2086,7 @@ class AstCreator(
         .name(Operators.assignment)
         .code(Operators.assignment)
         .methodFullName(Operators.assignment)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .signature("")
         .order(2)
     val assignmentAst =
