@@ -1594,7 +1594,6 @@ class AstCreator(
                 selectorOrder,
                 selectorArgIndex
               )
-            selectorOrderCount += 1
             asts
           }.flatten
         case typedExpr: KtNameReferenceExpression =>

@@ -104,14 +104,15 @@ class CallTests extends AnyFreeSpec with Matchers {
         |package mypkg
         |
         |class Foo {
-        |    fun add1(x: Int): Int {
+        |    fun add1(x: Int, toPrint: kotlin.String): Int {
+        |        println(toPrint)
         |        return x + 1
         |    }
         |}
         |
         |fun main(argc: Int): Int {
         |  val x = Foo()
-        |  val y = x.add1(argc)
+        |  val y = x.add1(argc, "AMESSAGE")
         |  return y
         |}
         |""".stripMargin)
@@ -123,26 +124,28 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.signature shouldBe "void()"
       p.code shouldBe "Foo()"
       p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(10)
+      p.lineNumber shouldBe Some(11)
     }
 
     "should contain a CALL node for `add1` with the correct props set" in {
       val List(p) = cpg.call("add1").l
-      p.argument.size shouldBe 2
+      p.argument.size shouldBe 3
       p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      p.code shouldBe "x.add1(argc)"
+      p.code shouldBe "x.add1(argc, \"AMESSAGE\")"
       p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(11)
-      p.methodFullName shouldBe "mypkg.Foo.add1:kotlin.Int(kotlin.Int)"
-      p.signature shouldBe "kotlin.Int(kotlin.Int)"
+      p.lineNumber shouldBe Some(12)
+      p.methodFullName shouldBe "mypkg.Foo.add1:kotlin.Int(kotlin.Int,kotlin.String)"
+      p.signature shouldBe "kotlin.Int(kotlin.Int,kotlin.String)"
       p.typeFullName shouldBe "kotlin.Int"
 
-      val List(firstArg, secondArg) = cpg.call("add1").argument.l
+      val List(firstArg, secondArg, thirdArg) = cpg.call("add1").argument.l
       firstArg.code shouldBe "x"
       firstArg.argumentIndex shouldBe 0
 
       secondArg.code shouldBe "argc"
       secondArg.argumentIndex shouldBe 1
+
+      thirdArg.argumentIndex shouldBe 2
     }
 
     "should contain a call node for `add1` with a receiver set" in {

@@ -224,8 +224,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |class MyCustomActivity : Activity() {
         |  fun onCreate(savedInstanceState: Bundle?) {
         |    super.onCreate(savedInstanceState)
+        |    val aSecret = "SECRETSECRETSECRETSECRETSECRETSECRET"
         |    val intent = Intent("com.insecureshop.action.BROADCAST")
-        |    intent.putExtra("ONE_TIME_PAD", "SECRETSECRETSECRETSECRETSECRETSECRET")
+        |    intent.putExtra("ONE_TIME_PAD", aSecret)
         |    sendBroadcast(intent)
         |  }
         |}
@@ -257,6 +258,25 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       val List(firstArg: Identifier) = callQ.argument.l
       firstArg.code shouldBe "intent"
       firstArg.typeFullName shouldBe "android.content.Intent"
+    }
+
+    "should contain a CALL node for `putExtra.*` with the correct props set" in {
+      def callQ = cpg.call.code(".*putExtra.*").take(1)
+
+      val List(c) = callQ.l
+      c.methodFullName shouldBe "android.content.Intent.putExtra:android.content.Intent(kotlin.String,kotlin.String)"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(firstArg: Identifier, secondArg: Literal, thirdArg: Identifier) = callQ.argument.l
+      firstArg.code shouldBe "intent"
+      firstArg.typeFullName shouldBe "android.content.Intent"
+      firstArg.argumentIndex shouldBe 0
+      secondArg.code shouldBe "\"ONE_TIME_PAD\""
+      secondArg.typeFullName shouldBe "kotlin.String"
+      secondArg.argumentIndex shouldBe 1
+      thirdArg.code shouldBe "aSecret"
+      thirdArg.typeFullName shouldBe "kotlin.String"
+      thirdArg.argumentIndex shouldBe 2
     }
   }
 }
