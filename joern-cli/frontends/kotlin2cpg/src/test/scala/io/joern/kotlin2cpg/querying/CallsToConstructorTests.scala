@@ -98,10 +98,13 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
     "should contain a correct lowered representation" in {
       val List(qeCall) = cpg.call.methodFullName(".*writeText.*").l
 
-      val List(assignmentLhs: Block, assignmentRhs: Literal) = qeCall.argument.l
-      val loweredBlock = assignmentLhs
+      val List(callLhs: Block, callRhs: Literal) = qeCall.argument.l
+      callRhs.argumentIndex shouldBe 1
+
+      val loweredBlock = callLhs
       loweredBlock.typeFullName shouldBe "java.io.File"
       loweredBlock.code shouldBe ""
+      loweredBlock.argumentIndex shouldBe 0
 
       val List(firstBlockChild: Local) = loweredBlock.astChildren.take(1).l
       firstBlockChild.name shouldBe "tmp_1"
