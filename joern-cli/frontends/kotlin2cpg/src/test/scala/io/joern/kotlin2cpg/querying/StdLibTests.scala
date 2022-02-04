@@ -134,23 +134,6 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
     }
 
-    "CPG for code with local of type MutableMap and optional in it" - {
-      lazy val cpg = Kt2CpgTestContext.buildCpg("""
-          |package mypkg
-          |
-          |fun foo() {
-          |  val payload: MutableMap<String, Any?> = HashMap()
-          |  println(payload)
-          |}
-          |""".stripMargin)
-
-      "should contain CALL node with a MFN without optionals in it" in {
-        val List(c) = cpg.call.code("HashMap.*").l
-        c.typeFullName shouldBe "kotlin.collections.HashMap"
-        c.methodFullName shouldBe "kotlin.collections.HashMap.<init>:kotlin.collections.HashMap()"
-      }
-    }
-
     "CPG for code with calls to stdlib's `split`s" - {
       lazy val cpg = Kt2CpgTestContext.buildCpg("""
           |package mypkg

@@ -72,34 +72,6 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a variable declared to return value of contructor of simple user-defined class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |package mypkg
-        |
-        |class Bar {
-        |  fun baz(x: Int, y: Int): Int {
-        |    return x * 2
-        |  }
-        |}
-        |
-        |fun foo() {
-        |  val foo = Bar()
-        |  println(foo.baz(1, 2))
-        |}
-        |
-        |""".stripMargin)
-
-    "should contain a LOCAL node with the correct TYPE_FULL_NAME set" in {
-      val List(x) = cpg.local.name("foo").l
-      x.typeFullName shouldBe "mypkg.Bar"
-    }
-
-    "should contain a CALL node with the correct TYPE_FULL_NAME set" in {
-      val List(c) = cpg.call.code("Bar.*").l
-      c.typeFullName shouldBe "mypkg.Bar"
-    }
-  }
-
   "CPG for code with array access" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun foo(): Int {
@@ -275,27 +247,11 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
         |}
         | """.stripMargin)
 
-    /* TODO: change structure to the following:
-    - triggered by a conversation with @ml86 & @bbrehm
-    ```
-    CALL
-       MFN -> android.Activity.onCreate:void(Bundle)
-       DT  -> STATIC_DISPATCH
-       ARG_IDX_0 ->
-          IDENTIFIER
-             NAME -> THIS
-             CODE -> SUPER
-       ARG_IDX_1 ->
-          IDENTIFIER
-             NAME -> saveInstanceState
-             CODE -> saveInstanceState
-     ```
-     */
     "should contain a CALL node for `onCreate` with the correct props set" in {
       def createCall = cpg.call.code(".*onCreate.*")
 
       val List(c) = createCall.l
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
       c.argument.size shouldBe 2
 

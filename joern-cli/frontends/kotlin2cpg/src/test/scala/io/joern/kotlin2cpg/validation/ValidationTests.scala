@@ -5,7 +5,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, FieldIdentifier, Identifier}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
@@ -574,4 +574,181 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe List()
     }
   }
+
+  "CPG for code with dynamic dispatch call inside lambda with class name in the receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class BClass {
+        |    val msg = "Hello from B!"
+        |}
+        |
+        |internal object AnObject {
+        |    private var m: BClass? = null
+        |
+        |    fun bClass(): BClass {
+        |        return checkNotNull(m) {
+        |            "You can't access `m` if you don't initialize it!"
+        |        }
+        |    }
+        |
+        |    fun initialize() {
+        |        m = BClass()
+        |    }
+        |}
+        |
+        |fun main() {
+        |    AnObject.initialize()
+        |    1.let {
+        |        val b = AnObject.bClass()
+        |        print(b.msg)
+        |    }
+        |}
+        |
+        |
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with local declaration with RHS a call with lambda argument capturing the parameter of its containing method" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |fun getValidPredefs(startingWith: String): List<String> {
+        |    val validPrefixes = listOf("one_predef", "two_predef", "three_predef")
+        |    val afterFilter = validPrefixes.filter { it ->
+        |        it.startsWith(startingWith)
+        |    }
+        |    return afterFilter
+        |}
+        |
+        |fun main() {
+        |    val toPrint = getValidPredefs("o")
+        |    println(toPrint)
+        |}
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with lambda inside method with captured constructor parameter and method parameter" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass constructor(val prefix: String = "default_prefix") {
+        |    fun printX(x: String) {
+        |       1.let {
+        |            println(prefix + ": " + x)
+        |       }
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val a = AClass("my_prefix")
+        |    a.printX("a_message")
+        |}
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with method that has a suspend lambda parameter" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |
+        |package main
+        |
+        |import kotlinx.coroutines.*
+        |
+        |fun doSomething(block: suspend (String) -> Unit) {
+        |     runBlocking {
+        |        val waitAndExec = async {
+        |            println("BEFORE")
+        |            delay(1000)
+        |            block("ARG_FROM_INSIDE")
+        |            println("AFTER")
+        |        }
+        |        waitAndExec.await()
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val toSuspend = {x: String ->
+        |        println("VALUE_IN_BLOCK: " + x)
+        |    }
+        |    doSomething(toSuspend)
+        |}
+        |""".stripMargin)
+
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds =
+        cpg.all
+          .collect { case c: ClosureBinding => c }
+          .closureBindingId
+          .l
+
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
+
+    "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
+      cpg.method
+        .fullNameNot(".*<lambda>.*")
+        .fullNameNot(".*<init>.*")
+        .fullNameNot("<operator>.*")
+        .fullName(".*>.*")
+        .fullName
+        .l shouldBe List()
+    }
+
+    "should not contain any CALL nodes with MFNs with a the `>` character in them" in {
+      cpg.call
+        .methodFullNameNot(".*<lambda>.*")
+        .methodFullNameNot(".*<init>.*")
+        .methodFullNameNot("<operator>.*")
+        .methodFullName(".*>.*")
+        .methodFullName
+        .l shouldBe List()
+    }
+  }
+
 }
