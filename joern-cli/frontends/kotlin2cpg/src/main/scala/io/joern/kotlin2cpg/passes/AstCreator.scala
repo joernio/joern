@@ -905,8 +905,12 @@ class AstCreator(
   }
 
   private def astForTypeReference(expr: KtTypeReference, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+      nameGenerator: NameGenerator,
       fileInfo: FileInfo
   ): AstWithCtx = {
+    val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
+    registerType(typeFullName)
+
     val node =
       NewTypeRef()
         .code(expr.getText)
@@ -914,6 +918,7 @@ class AstCreator(
         .argumentIndex(argIdx)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
+        .typeFullName(typeFullName)
     AstWithCtx(Ast(node), Context())
   }
 
