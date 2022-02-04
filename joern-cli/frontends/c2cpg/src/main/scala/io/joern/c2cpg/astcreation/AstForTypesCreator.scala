@@ -3,6 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
@@ -317,14 +318,27 @@ trait AstForTypesCreator {
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val member = withOrder(typeSpecifier.getDeclarations(true)) { (m, o) =>
+    val memberAsts = withOrder(typeSpecifier.getDeclarations(true)) { (m, o) =>
       astsForDeclaration(m, o)
     }.flatten
 
     methodAstParentStack.pop()
     scope.popScope()
 
-    Ast(typeDecl).withChildren(member) +: declAsts
+    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+    if (calls.isEmpty) {
+      Ast(typeDecl).withChildren(member) +: declAsts
+    } else {
+      val init = astForFakeStaticInitMethod(
+        fullname,
+        line(typeSpecifier),
+        NodeTypes.TYPE_DECL,
+        fullname,
+        member.length + 1,
+        calls
+      )
+      Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
+    }
   }
 
   private def astsForElaboratedType(
@@ -393,7 +407,7 @@ trait AstForTypesCreator {
     scope.pushNewScope(typeDecl)
 
     var currentOrder = 0
-    val member = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
+    val memberAsts = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
       val eCpg = astsForEnumerator(e, currentOrder)
       currentOrder = eCpg.size + currentOrder
       eCpg
@@ -401,7 +415,20 @@ trait AstForTypesCreator {
     methodAstParentStack.pop()
     scope.popScope()
 
-    Ast(typeDecl).withChildren(member) +: declAsts
+    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+    if (calls.isEmpty) {
+      Ast(typeDecl).withChildren(member) +: declAsts
+    } else {
+      val init = astForFakeStaticInitMethod(
+        fullname,
+        line(typeSpecifier),
+        NodeTypes.TYPE_DECL,
+        fullname,
+        member.length + 1,
+        calls
+      )
+      Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
+    }
   }
 
 }

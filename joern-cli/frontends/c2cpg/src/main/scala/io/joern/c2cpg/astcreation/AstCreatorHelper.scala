@@ -3,6 +3,10 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -370,6 +374,39 @@ trait AstCreatorHelper {
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
     val args = withOrder(c.getArguments) { case (a, o) => astForNode(a, o) }
     Ast(callNode).withChildren(args).withArgEdges(callNode, args)
+  }
+
+  protected def astForFakeStaticInitMethod(
+      name: String,
+      lineNumber: Option[Integer],
+      astParentType: String,
+      astParentFullName: String,
+      order: Int,
+      childrenAsts: Seq[Ast]
+  ): Ast = {
+    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
+    val fakeStaticInitMethod =
+      NewMethod()
+        .name("<sinit>")
+        .fullName(s"$name:<sinit>")
+        .code(code)
+        .filename(filename)
+        .lineNumber(lineNumber)
+        .astParentType(astParentType)
+        .astParentFullName(astParentFullName)
+        .order(order)
+
+    val blockNode = NewBlock()
+      .order(1)
+      .argumentIndex(1)
+      .typeFullName("ANY")
+
+    val methodReturn = NewMethodReturn()
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName("ANY")
+      .order(2)
+    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
   }
 
   protected def astForNode(node: IASTNode, order: Int): Ast = {

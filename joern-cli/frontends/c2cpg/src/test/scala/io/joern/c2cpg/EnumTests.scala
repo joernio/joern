@@ -29,8 +29,13 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
           green.name shouldBe "green"
           blue.name shouldBe "blue"
         }
-        inside(color.astChildren.isCall.code.l) { case List(greenInit) =>
-          greenInit shouldBe "green = 20"
+        inside(color.astChildren.isMethod.l) { case List(sinit) =>
+          sinit.name shouldBe "<sinit>"
+          sinit.fullName shouldBe "color:<sinit>"
+          sinit.code shouldBe "green = 20"
+          inside(sinit.ast.isCall.l) { case List(greenInit) =>
+            greenInit.code shouldBe "green = 20"
+          }
         }
       }
     }
@@ -55,8 +60,13 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
           green.name shouldBe "green"
           blue.name shouldBe "blue"
         }
-        inside(color.astChildren.isCall.code.l) { case List(greenInit) =>
-          greenInit shouldBe "green = 20"
+        inside(color.astChildren.isMethod.l) { case List(sinit) =>
+          sinit.name shouldBe "<sinit>"
+          sinit.fullName shouldBe "color:<sinit>"
+          sinit.code shouldBe "green = 20"
+          inside(sinit.ast.isCall.l) { case List(greenInit) =>
+            greenInit.code shouldBe "green = 20"
+          }
         }
       }
     }
@@ -76,9 +86,14 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
           low.name shouldBe "low"
           low.typeFullName shouldBe "char"
         }
-        inside(altitude.astChildren.isCall.code.l) { case List(highInit, lowInit) =>
-          highInit shouldBe "high='h'"
-          lowInit shouldBe "low='l'"
+        inside(altitude.astChildren.isMethod.l) { case List(sinit) =>
+          sinit.name shouldBe "<sinit>"
+          sinit.fullName shouldBe "altitude:<sinit>"
+          sinit.code shouldBe "high='h',low='l'"
+          inside(sinit.ast.isCall.code.l) { case List(highInit, lowInit) =>
+            highInit shouldBe "high='h'"
+            lowInit shouldBe "low='l'"
+          }
         }
       }
     }
@@ -101,6 +116,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
           c.name shouldBe "c"
           c.typeFullName shouldBe "int"
         }
+        smallenum.astChildren.isMethod shouldBe empty
       }
     }
 
@@ -119,6 +135,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
           e.name shouldBe "e"
           f.name shouldBe "f"
         }
+        anon.astChildren.isMethod shouldBe empty
       }
     }
 
@@ -139,6 +156,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
           b.name shouldBe "b"
           b.typeFullName shouldBe "int"
         }
+        x.astChildren.isMethod shouldBe empty
         inside(cpg.call.l) { case List(assign, ma) =>
           assign.code shouldBe "x = X::a"
           ma.code shouldBe "X::a"
