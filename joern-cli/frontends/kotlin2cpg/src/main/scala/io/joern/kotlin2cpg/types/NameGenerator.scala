@@ -21,7 +21,8 @@ import org.jetbrains.kotlin.psi.{
   KtProperty,
   KtQualifiedExpression,
   KtSuperExpression,
-  KtTypeAlias
+  KtTypeAlias,
+  KtTypeReference
 }
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
@@ -115,6 +116,8 @@ trait NameGenerator {
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
 
   def isConstructorCall(expr: KtCallExpression): Option[Boolean]
+
+  def typeFullName(expr: KtTypeReference, or: String): String
 }
 
 object DefaultNameGenerator {
@@ -286,6 +289,24 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         return or
       }
       val rendered = TypeRenderer.renderFqName(variableDesc)
+      if (isValidRender(rendered)) {
+        rendered
+      } else {
+        or
+      }
+    } else {
+      or
+    }
+  }
+
+  def typeFullName(expr: KtTypeReference, or: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    if (mapForEntity.getKeys.contains(BindingContext.TYPE.getKey)) {
+      val variableDesc = mapForEntity.get(BindingContext.TYPE.getKey)
+      if (variableDesc == null) {
+        return or
+      }
+      val rendered = TypeRenderer.render(variableDesc)
       if (isValidRender(rendered)) {
         rendered
       } else {
