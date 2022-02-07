@@ -9,6 +9,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
+import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
 
@@ -231,10 +232,15 @@ trait AstForFunctionsCreator {
   private def astForParameter(parameter: IASTNode, childNum: Int): Ast = {
     val (name, code, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
-        (nodeSignature(p.getDeclarator.getName), nodeSignature(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
+        (
+          ASTStringUtil.getSimpleName(p.getDeclarator.getName),
+          nodeSignature(p),
+          typeForDeclSpecifier(p.getDeclSpecifier),
+          false
+        )
       case p: CPPASTParameterDeclaration =>
         (
-          nodeSignature(p.getDeclarator.getName),
+          ASTStringUtil.getSimpleName(p.getDeclarator.getName),
           nodeSignature(p),
           typeForDeclSpecifier(p.getDeclSpecifier),
           p.getDeclarator.declaresParameterPack()
@@ -242,7 +248,7 @@ trait AstForFunctionsCreator {
       case s: IASTSimpleDeclaration =>
         (
           s.getDeclarators.headOption
-            .map(x => nodeSignature(x.getName))
+            .map(n => ASTStringUtil.getSimpleName(n.getName))
             .getOrElse(uniqueName("parameter", "", "")._1),
           nodeSignature(s),
           typeForDeclSpecifier(s),
