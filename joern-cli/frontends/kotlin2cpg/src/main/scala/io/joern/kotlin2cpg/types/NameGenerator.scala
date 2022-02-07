@@ -281,22 +281,12 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     Constants.any + "(" + argsSignature + ")"
   }
 
-  def fullName(expr: KtTypeAlias, or: String): String = {
+  def fullName(expr: KtTypeAlias, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    if (mapForEntity.getKeys.contains(BindingContext.TYPE_ALIAS.getKey)) {
-      val variableDesc = mapForEntity.get(BindingContext.TYPE_ALIAS.getKey)
-      if (variableDesc == null) {
-        return or
-      }
-      val rendered = TypeRenderer.renderFqName(variableDesc)
-      if (isValidRender(rendered)) {
-        rendered
-      } else {
-        or
-      }
-    } else {
-      or
-    }
+    Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
+      .map(TypeRenderer.renderFqName)
+      .filter(isValidRender)
+      .getOrElse(defaultValue)
   }
 
   def typeFullName(expr: KtTypeReference, or: String): String = {
