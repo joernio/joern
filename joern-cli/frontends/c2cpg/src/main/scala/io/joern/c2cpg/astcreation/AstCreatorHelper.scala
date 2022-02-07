@@ -215,62 +215,60 @@ trait AstCreatorHelper {
   }
 
   protected def fullName(node: IASTNode): String = {
-    val qualifiedName = node match {
+    val qualifiedName: String = node match {
       case d: CPPASTIdExpression if d.getEvaluation.isInstanceOf[EvalBinding] =>
         val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
         evaluation.getBinding match {
           case f: CPPFunction if f.getDeclarations != null =>
             usingDeclarationMappings.getOrElse(
-              fixQualifiedName(nodeSignature(d.getName)),
-              f.getDeclarations.headOption.map(x => nodeSignature(x.getName)).getOrElse(f.getName)
+              fixQualifiedName(ASTStringUtil.getSimpleName(d.getName)),
+              f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
             )
           case f: CPPFunction if f.getDefinition != null =>
             usingDeclarationMappings.getOrElse(
-              fixQualifiedName(nodeSignature(d.getName)),
-              nodeSignature(f.getDefinition.getName)
+              fixQualifiedName(ASTStringUtil.getSimpleName(d.getName)),
+              ASTStringUtil.getSimpleName(f.getDefinition.getName)
             )
           case other => other.getName
         }
-      case alias: ICPPASTNamespaceAlias =>
-        nodeSignature(alias.getMappingName)
-      case namespace: ICPPASTNamespaceDefinition if nodeSignature(namespace.getName).nonEmpty =>
-        fullName(namespace.getParent) + "." + nodeSignature(namespace.getName)
-      case namespace: ICPPASTNamespaceDefinition if nodeSignature(namespace.getName).isEmpty =>
+      case alias: ICPPASTNamespaceAlias => alias.getMappingName.toString
+      case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).nonEmpty =>
+        fullName(namespace.getParent) + "." + ASTStringUtil.getSimpleName(namespace.getName)
+      case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).isEmpty =>
         fullName(namespace.getParent) + "." + uniqueName("namespace", "", "")._1
-      case cppClass: ICPPASTCompositeTypeSpecifier if nodeSignature(cppClass.getName).nonEmpty =>
-        fullName(cppClass.getParent) + "." + cppClass.getName.toString
-      case cppClass: ICPPASTCompositeTypeSpecifier if nodeSignature(cppClass.getName).isEmpty =>
+      case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).nonEmpty =>
+        fullName(cppClass.getParent) + "." + ASTStringUtil.getSimpleName(cppClass.getName)
+      case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
         val name = cppClass.getParent match {
           case decl: IASTSimpleDeclaration =>
             decl.getDeclarators.headOption
-              .map(x => nodeSignature(x.getName))
+              .map(n => ASTStringUtil.getSimpleName(n.getName))
               .getOrElse(uniqueName("composite_type", "", "")._1)
           case _ => uniqueName("composite_type", "", "")._1
         }
-        val fullname = s"${fullName(cppClass.getParent)}.$name"
-        fullname
+        s"${fullName(cppClass.getParent)}.$name"
       case enumSpecifier: IASTEnumerationSpecifier =>
-        fullName(enumSpecifier.getParent) + "." + nodeSignature(enumSpecifier.getName)
-      case c: IASTCompositeTypeSpecifier => nodeSignature(c.getName)
-      case f: IASTFunctionDeclarator if f.getName.toString.isEmpty && f.getNestedDeclarator != null =>
-        fullName(f.getParent) + "." + nodeSignature(f.getNestedDeclarator.getName)
+        fullName(enumSpecifier.getParent) + "." + ASTStringUtil.getSimpleName(enumSpecifier.getName)
+      case c: IASTCompositeTypeSpecifier =>
+        fullName(c.getParent) + "." + ASTStringUtil.getSimpleName(c.getName)
+      case f: IASTFunctionDeclarator
+          if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
+        fullName(f.getParent) + "." + ASTStringUtil.getSimpleName(f.getNestedDeclarator.getName)
       case f: IASTFunctionDeclarator =>
-        fullName(f.getParent) + "." + nodeSignature(f.getName)
+        fullName(f.getParent) + "." + ASTStringUtil.getSimpleName(f.getName)
       case f: ICPPASTLambdaExpression =>
         fullName(f.getParent) + "."
+      case f: IASTFunctionDefinition if f.getDeclarator != null =>
+        fullName(f.getParent) + "." + ASTStringUtil.getQualifiedName(f.getDeclarator.getName)
       case f: IASTFunctionDefinition =>
-        fullName(f.getParent) + "." + nodeSignature(f.getDeclarator.getName)
-      case d: IASTIdExpression    => nodeSignature(d.getName)
-      case _: IASTTranslationUnit => ""
-      case u: IASTUnaryExpression => nodeSignature(u.getOperand)
-      case e: IASTElaboratedTypeSpecifier =>
-        fullName(e.getParent) + "." + nodeSignature(e.getName)
-      case other if other.getParent != null =>
-        fullName(other.getParent)
-      case other if other != null =>
-        notHandledYet(other, -1); ""
-      case null =>
-        ""
+        fullName(f.getParent) + "." + ASTStringUtil.getSimpleName(f.getDeclarator.getName)
+      case d: IASTIdExpression              => ASTStringUtil.getSimpleName(d.getName)
+      case _: IASTTranslationUnit           => ""
+      case u: IASTUnaryExpression           => nodeSignature(u.getOperand)
+      case e: IASTElaboratedTypeSpecifier   => fullName(e.getParent) + "." + ASTStringUtil.getSimpleName(e.getName)
+      case other if other.getParent != null => fullName(other.getParent)
+      case other if other != null           => notHandledYet(other, -1); ""
+      case null                             => ""
     }
     val cleaned = fixQualifiedName(qualifiedName)
     if (cleaned.startsWith(".")) {
@@ -280,22 +278,23 @@ trait AstCreatorHelper {
 
   protected def shortName(node: IASTNode): String = {
     val name = node match {
-      case f: ICPPASTFunctionDefinition => lastNameOfQualifiedName(f.getDeclarator.getName.toString)
-      case f: IASTFunctionDefinition    => f.getDeclarator.getName.toString
-      case f: IASTFunctionDeclarator if f.getName.toString.isEmpty && f.getNestedDeclarator != null =>
-        f.getNestedDeclarator.getName.toString
-      case f: IASTFunctionDeclarator => f.getName.toString
+      case f: ICPPASTFunctionDefinition => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(f.getDeclarator.getName))
+      case f: IASTFunctionDefinition    => ASTStringUtil.getSimpleName(f.getDeclarator.getName)
+      case f: IASTFunctionDeclarator
+          if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
+        ASTStringUtil.getSimpleName(f.getNestedDeclarator.getName)
+      case f: IASTFunctionDeclarator => ASTStringUtil.getSimpleName(f.getName)
       case d: CPPASTIdExpression if d.getEvaluation.isInstanceOf[EvalBinding] =>
         val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
         evaluation.getBinding match {
           case f: CPPFunction if f.getDeclarations != null =>
-            f.getDeclarations.headOption.map(_.getName.toString).getOrElse(f.getName)
+            f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
           case f: CPPFunction if f.getDefinition != null =>
-            f.getDefinition.getName.toString
+            ASTStringUtil.getSimpleName(f.getDefinition.getName)
           case other =>
             other.getName
         }
-      case d: IASTIdExpression           => lastNameOfQualifiedName(d.getName.toString)
+      case d: IASTIdExpression           => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
       case u: IASTUnaryExpression        => shortName(u.getOperand)
       case c: IASTFunctionCallExpression => shortName(c.getFunctionNameExpression)
       case other                         => notHandledYet(other, -1); ""
@@ -447,9 +446,9 @@ trait AstCreatorHelper {
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl)
-      case s: IASTNamedTypeSpecifier     => s.getName.toString
-      case s: IASTCompositeTypeSpecifier => s.getName.toString
-      case s: IASTEnumerationSpecifier   => s.getName.toString
+      case s: IASTNamedTypeSpecifier     => ASTStringUtil.getSimpleName(s.getName)
+      case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
+      case s: IASTEnumerationSpecifier   => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl)
