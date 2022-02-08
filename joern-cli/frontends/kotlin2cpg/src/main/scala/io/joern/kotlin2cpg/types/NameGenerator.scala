@@ -179,8 +179,8 @@ object TypeRenderer {
     opts.setInformativeErrorType(false)
     opts.setTypeNormalizer {
       case _: UnresolvedType => cpgUnresolvedType
-      case _: ErrorType => cpgUnresolvedType
-      case t => t
+      case _: ErrorType      => cpgUnresolvedType
+      case t                 => t
     }
     new DescriptorRendererImpl(opts)
   }
@@ -366,17 +366,23 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
     expr match {
       case typedExpr: KtCallExpression =>
-        Option(typedExpr.getFirstChild).collect {
-          case firstChild: KtExpression => firstChild
-        }.getOrElse(expr)
+        Option(typedExpr.getFirstChild)
+          .collect { case firstChild: KtExpression =>
+            firstChild
+          }
+          .getOrElse(expr)
       case typedExpr: KtQualifiedExpression =>
-        Option(typedExpr.getSelectorExpression).collect {
-          case call: KtCallExpression => subexpressionForResolvedCallInfo(call)
-        }.getOrElse(typedExpr)
+        Option(typedExpr.getSelectorExpression)
+          .collect { case call: KtCallExpression =>
+            subexpressionForResolvedCallInfo(call)
+          }
+          .getOrElse(typedExpr)
       case typedExpr: KtBinaryExpression =>
-        Option(typedExpr.getChildren.toList(1)).collect {
-          case secondChild: KtExpression => secondChild
-        }.getOrElse(expr)
+        Option(typedExpr.getChildren.toList(1))
+          .collect { case secondChild: KtExpression =>
+            secondChild
+          }
+          .getOrElse(expr)
       case _ => expr
     }
   }
@@ -389,8 +395,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       desc = resolvedCallForSubexpression.getResultingDescriptor
     } yield desc
 
-    descMaybe.collect {
-      case desc: FunctionDescriptor => desc
+    descMaybe.collect { case desc: FunctionDescriptor =>
+      desc
     }
   }
 
@@ -680,47 +686,51 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   }
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
-    descriptorForNameReference(expr).collect {
-      case _: ValueDescriptor =>
-        NameReferenceKinds.Property
-      case _: LazyClassDescriptor =>
-        NameReferenceKinds.ClassName
-      case _: LazyJavaClassDescriptor =>
-        NameReferenceKinds.ClassName
-      case _: DeserializedClassDescriptor =>
-        NameReferenceKinds.ClassName
-      case _: EnumEntrySyntheticClassDescriptor =>
-        NameReferenceKinds.EnumEntry
-      case unhandled: Any =>
-        logger.debug(
-          s"Unhandled class in type info fetch in `nameReferenceKind[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
-        )
-        NameReferenceKinds.Unknown
-    }.getOrElse(NameReferenceKinds.Unknown)
+    descriptorForNameReference(expr)
+      .collect {
+        case _: ValueDescriptor =>
+          NameReferenceKinds.Property
+        case _: LazyClassDescriptor =>
+          NameReferenceKinds.ClassName
+        case _: LazyJavaClassDescriptor =>
+          NameReferenceKinds.ClassName
+        case _: DeserializedClassDescriptor =>
+          NameReferenceKinds.ClassName
+        case _: EnumEntrySyntheticClassDescriptor =>
+          NameReferenceKinds.EnumEntry
+        case unhandled: Any =>
+          logger.debug(
+            s"Unhandled class in type info fetch in `nameReferenceKind[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
+          )
+          NameReferenceKinds.Unknown
+      }
+      .getOrElse(NameReferenceKinds.Unknown)
   }
 
   def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
-    descriptorForNameReference(expr).flatMap {
-      case typedDesc: ValueDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getType()))
-      case typedDesc: WithDefaultType =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
-      case typedDesc: LazyClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case typedDesc: LazyJavaClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case typedDesc: DeserializedClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case typedDesc: EnumEntrySyntheticClassDescriptor =>
-        Some(TypeRenderer.render(typedDesc.getDefaultType()))
-      case unhandled: Any =>
-        logger.debug(
-          s"Unhandled class type info fetch in `typeFullName[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
-        )
-        None
-      case _ => None
-    }.getOrElse(defaultValue)
+    descriptorForNameReference(expr)
+      .flatMap {
+        case typedDesc: ValueDescriptor =>
+          Some(TypeRenderer.render(typedDesc.getType()))
+        case typedDesc: WithDefaultType =>
+          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+        // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
+        case typedDesc: LazyClassDescriptor =>
+          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+        case typedDesc: LazyJavaClassDescriptor =>
+          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+        case typedDesc: DeserializedClassDescriptor =>
+          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+        case typedDesc: EnumEntrySyntheticClassDescriptor =>
+          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+        case unhandled: Any =>
+          logger.debug(
+            s"Unhandled class type info fetch in `typeFullName[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
+          )
+          None
+        case _ => None
+      }
+      .getOrElse(defaultValue)
   }
 
 }
