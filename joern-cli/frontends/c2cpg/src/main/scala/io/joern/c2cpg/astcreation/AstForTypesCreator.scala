@@ -295,14 +295,14 @@ trait AstForTypesCreator {
     }
 
     val name = ASTStringUtil.getSimpleName(typeSpecifier.getName)
-    val fullname = registerType(fullName(typeSpecifier))
+    val fullname = registerType(cleanType(fullName(typeSpecifier)))
     val code = typeFor(typeSpecifier)
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
 
     val typeDecl = typeSpecifier match {
       case cppClass: ICPPASTCompositeTypeSpecifier =>
-        val baseClassList = cppClass.getBaseSpecifiers.toSeq.map(s => fixQualifiedName(s.getNameSpecifier.toString))
-        baseClassList.foreach(registerType)
+        val baseClassList =
+          cppClass.getBaseSpecifiers.toSeq.map(s => registerType(s.getNameSpecifier.toString))
         newTypeDecl(
           name,
           fullname,
@@ -353,7 +353,7 @@ trait AstForTypesCreator {
     }
 
     val name = ASTStringUtil.getSimpleName(typeSpecifier.getName)
-    val fullname = registerType(fullName(typeSpecifier))
+    val fullname = registerType(cleanType(fullName(typeSpecifier)))
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
 
     val typeDecl =
@@ -371,7 +371,7 @@ trait AstForTypesCreator {
     val cpgMember = NewMember()
       .code(nodeSignature(enumerator))
       .name(ASTStringUtil.getSimpleName(enumerator.getName))
-      .typeFullName(registerType(tpe))
+      .typeFullName(registerType(cleanType(tpe)))
       .order(order)
 
     if (enumerator.getValue != null) {

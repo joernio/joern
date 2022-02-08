@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.x2cpg.Ast
+import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp._
@@ -125,7 +126,7 @@ trait AstCreatorHelper {
     }
 
   protected def registerType(typeName: String): String = {
-    val fixedTypeName = fixQualifiedName(typeName)
+    val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
     global.usedTypes.putIfAbsent(fixedTypeName, true)
     fixedTypeName
   }
@@ -134,13 +135,15 @@ trait AstCreatorHelper {
   private val reservedTypeKeywords =
     List("const", "static", "volatile", "restrict", "extern", "typedef", "inline", "constexpr", "auto", "virtual")
 
-  private def cleanType(t: String): String = {
-    val tpe = reservedTypeKeywords.foldLeft(t)((cur, repl) => cur.replace(s"$repl ", ""))
-    tpe match {
-      case ""                                        => Defines.anyTypeName
-      case t if t.contains("?")                      => Defines.anyTypeName
-      case t if t.contains("#")                      => Defines.anyTypeName
-      case t if t.startsWith("{") && t.endsWith("}") => Defines.anyTypeName
+  protected def cleanType(rawType: String): String = {
+    val tpe = reservedTypeKeywords.foldLeft(rawType)((cur, repl) => cur.replace(s"$repl ", ""))
+    StringUtils.normalizeSpace(tpe) match {
+      case ""                   => Defines.anyTypeName
+      case t if t.contains("?") => Defines.anyTypeName
+      case t if t.contains("#") => Defines.anyTypeName
+      case t if t.contains("{") && t.contains("}") =>
+        val anonType = uniqueName("type", "", "")._1 + t.substring(0, t.indexOf("{")) + t.substring(t.indexOf("}") + 1)
+        anonType.replace(" ", "")
       case t if t.startsWith("[") && t.endsWith("]") => "[]"
       case t if t.contains(Defines.qualifiedNameSeparator) =>
         fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
@@ -412,6 +415,7 @@ trait AstCreatorHelper {
     node match {
       case id: IASTIdExpression if id.getName.isInstanceOf[CPPASTQualifiedName] =>
         astForQualifiedName(id.getName.asInstanceOf[CPPASTQualifiedName], order)
+      case id: IASTIdExpression             => astForIdentifier(id, order)
       case name: IASTName                   => astForIdentifier(name, order)
       case decl: IASTDeclSpecifier          => astForIdentifier(decl, order)
       case expr: IASTExpression             => astForExpression(expr, order)
