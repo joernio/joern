@@ -53,14 +53,14 @@ import io.joern.fuzzyc2cpg.ast.statements.jump.{
 import io.joern.fuzzyc2cpg.ast.statements.{ExpressionStatement, IdentifierDeclStatement}
 import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor
 import io.joern.fuzzyc2cpg.{Defines, Global}
-import io.shiftleft.passes.DiffGraph
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.proto.cpg.Cpg.{DispatchTypes, EvaluationStrategies}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 
 private[astcreation] class AstCreator(
-    diffGraph: DiffGraph.Builder,
+    diffGraph: DiffGraphBuilder,
     namespaceBlock: NewNamespaceBlock,
     global: Global,
     childNum: Int
@@ -72,12 +72,12 @@ private[astcreation] class AstCreator(
   private val logger = LoggerFactory.getLogger(getClass)
 
   private var contextStack = List[Context]()
-  private val scope = new Scope[String, (AbstractNode, String), AbstractNode]()
+  private val scope = new Scope[String, (NewNode, String), NewNode]()
 
   pushContext(namespaceBlock, childNum)
 
   private class Context(
-      val cpgParent: AbstractNode,
+      val cpgParent: NewNode,
       var childNum: Int,
       val parentIsClassDef: Boolean,
       val parentIsMemberAccess: Boolean = false,
@@ -86,7 +86,7 @@ private[astcreation] class AstCreator(
   ) {}
 
   private def pushContext(
-      cpgParent: AbstractNode,
+      cpgParent: NewNode,
       startChildNum: Int,
       parentIsClassDef: Boolean = false,
       parentIsMemberAccess: Boolean = false
