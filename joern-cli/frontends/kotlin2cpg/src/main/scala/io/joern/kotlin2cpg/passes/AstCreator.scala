@@ -287,7 +287,7 @@ class AstCreator(
     val namespaceBlocksForImports =
       allImports.asJava.asScala.collect {
         case e if !e.isWildcard =>
-          Ast(NewNamespaceBlock().name(importEntry.fqName).fullName(importEntry.fqName))
+          Ast(NewNamespaceBlock().name(e.fqName).fullName(e.fqName))
       }.toSeq
 
     val lastImportOrder = importAsts.size
