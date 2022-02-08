@@ -53,4 +53,33 @@ class NamespaceBlockTests extends AnyFreeSpec with Matchers {
 
   }
 
+  "CPG for code with imports of simple Android packages" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+       |package mypkg
+       |
+       |import android.content.Intent
+       |import android.os.Bundle
+       |import android.webkit.WebView
+       |import android.app.Activity
+       |import kotlinx.android.synthetic.main.activity_product_list.*
+       |
+       |class MyCustomActivity : Activity() {
+       |  fun onCreate(savedInstanceState: Bundle?) {
+       |    val webView = WebView(this)
+       |    webview.settings.allowUniversalAccessFromFileURLs = true
+       |    webview.loadUrl("https://vx-underground.org/cozy_bear/homepage.html")
+       |  }
+       |}
+       | """.stripMargin)
+
+    "should contain a NAMESPACE_BLOCK for the `import android.app.Activity` with the correct props set" in {
+      val List(nsb) = cpg.namespaceBlock.name(".*Activity.*").l
+      nsb.fullName shouldBe "android.app.Activity"
+    }
+
+    "should contain a NAMESPACE_BLOCK for the `import android.webkit.WebView` with the correct props set" in {
+      val List(nsb) = cpg.namespaceBlock.name(".*WebView.*").l
+      nsb.fullName shouldBe "android.webkit.WebView"
+    }
+  }
 }
