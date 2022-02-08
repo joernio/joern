@@ -57,7 +57,8 @@ object SourceFilesPicker {
     val containsSrcTest = fileName.contains("src/test")
     val isSettingsXml = fileName.endsWith("strings.xml") // some projects contain many i18n files
     val containsBenchmarks = fileName.contains("benchmarks")
-    val isBuildGradle = fileName == "build.gradle"
+    val isBuildGradle = fileName.endsWith("build.gradle")
+
     (containsUnwantedSubstring && !isBuildGradle) ||
     hasUnwantedExt ||
     isSettingsXml ||
