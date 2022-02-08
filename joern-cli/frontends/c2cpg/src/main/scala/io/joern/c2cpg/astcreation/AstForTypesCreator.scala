@@ -215,9 +215,8 @@ trait AstForTypesCreator {
       .columnNumber(column(structuredBindingDeclaration))
 
     scope.pushNewScope(cpgBlock)
-    val childAsts = withOrder(structuredBindingDeclaration.getNames) {
-      case (name, o) =>
-        astForNode(name, o)
+    val childAsts = withOrder(structuredBindingDeclaration.getNames) { case (name, o) =>
+      astForNode(name, o)
     }
 
     val blockAst = Ast(cpgBlock).withChildren(childAsts)
@@ -281,9 +280,8 @@ trait AstForTypesCreator {
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =
-    withOrder(l.getDeclarations) {
-      case (d, o) =>
-        astsForDeclaration(d, o)
+    withOrder(l.getDeclarations) { case (d, o) =>
+      astsForDeclaration(d, o)
     }.flatten
 
   private def astsForCompositeType(
