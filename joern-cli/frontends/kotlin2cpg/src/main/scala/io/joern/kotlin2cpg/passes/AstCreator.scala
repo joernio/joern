@@ -284,6 +284,14 @@ class AstCreator(
       withOrder(allImports.asJava) { (entry, order) =>
         astForImportEntry(entry, order)
       }
+    val namespaceBlocksForImports =
+      allImports.asJava.asScala.flatMap { importEntry =>
+        importEntry match {
+          case e if e.isWildcard => None
+          case _ =>
+            Some(Ast(NewNamespaceBlock().name(importEntry.fqName).fullName(importEntry.fqName)))
+        }
+      }.toSeq
 
     val lastImportOrder = importAsts.size
     var idxEpsilon = 0 // when multiple AST nodes are returned by `astForDeclaration`
@@ -317,6 +325,7 @@ class AstCreator(
             .withChildren(mergedCtx(declarationsAstsWithCtx.map(_.ctx)).lambdaAsts)
             .withChildren(lambdaTypeDecls)
         )
+        .withChildren(namespaceBlocksForImports)
     AstWithCtx(ast, finalCtx)
   }
 
