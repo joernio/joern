@@ -7,6 +7,7 @@ import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
+import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForStatementsCreator {
 
@@ -80,7 +81,7 @@ trait AstForStatementsCreator {
   }
 
   private def astForGotoStatement(goto: IASTGotoStatement, order: Int): Ast = {
-    val code = s"goto ${goto.getName.toString};"
+    val code = s"goto ${ASTStringUtil.getSimpleName(goto.getName)};"
     Ast(newControlStructureNode(goto, ControlStructureTypes.GOTO, code, order))
   }
 

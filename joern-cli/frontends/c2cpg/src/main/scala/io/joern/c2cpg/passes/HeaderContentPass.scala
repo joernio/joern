@@ -23,6 +23,9 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
   private val globalName: String = NamespaceTraversal.globalNamespaceName
   private val fullName: String = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
 
+  private val typeDeclFullNames: Set[String] =
+    cpg.graph.nodes(NodeTypes.TYPE_DECL).map(_.property(Properties.FULL_NAME)).toSetImmutable
+
   private def setExternal(node: HasFilename, diffGraph: DiffGraph.Builder): Unit = {
     if (node.isInstanceOf[HasIsExternal] && systemIncludePaths.exists(p => node.filename.startsWith(p.toString))) {
       diffGraph.addNodeProperty(node.asInstanceOf[StoredNode], PropertyNames.IS_EXTERNAL, Boolean.box(true))
@@ -82,7 +85,7 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
   }
 
   private def typeNeedsTypeDeclStub(t: Type): Boolean =
-    cpg.graph.nodes(NodeTypes.TYPE_DECL).has(Properties.FULL_NAME, t.typeDeclFullName).isEmpty
+    !typeDeclFullNames.contains(t.typeDeclFullName)
 
   private def createMissingTypeDecls(dstGraph: DiffGraph.Builder): Unit = {
     Traversal(cpg.graph.nodes(NodeTypes.TYPE))

@@ -3,6 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
@@ -75,7 +76,7 @@ trait AstForTypesCreator {
     val columnnumber = column(namespaceAlias)
     val filename = fileName(namespaceAlias)
 
-    val name = namespaceAlias.getAlias.toString
+    val name = ASTStringUtil.getSimpleName(namespaceAlias.getAlias)
     val fullname = fullName(namespaceAlias)
 
     if (!isQualifiedName(name)) {
@@ -98,7 +99,7 @@ trait AstForTypesCreator {
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, order: Int): Ast = {
     val declTypeName = registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
     val tpe = typeFor(declarator)
-    val name = declarator.getName.toString
+    val name = ASTStringUtil.getSimpleName(declarator.getName)
     declaration match {
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
@@ -147,7 +148,7 @@ trait AstForTypesCreator {
         .withArgEdge(callNode, left.root)
         .withArgEdge(callNode, right.root)
     case i: ICPPASTConstructorInitializer =>
-      val name = declarator.getName.toString
+      val name = ASTStringUtil.getSimpleName(declarator.getName)
       val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, order)
       val args = withOrder(i.getArguments) { case (a, o) => astForNode(a, o) }
       Ast(callNode).withChildren(args).withArgEdges(callNode, args)
@@ -165,14 +166,15 @@ trait AstForTypesCreator {
   }
 
   protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
-    val mappedName = lastNameOfQualifiedName(usingDecl.getName.toString)
+    val simpleName = ASTStringUtil.getSimpleName(usingDecl.getName)
+    val mappedName = lastNameOfQualifiedName(simpleName)
     // we only do the mapping if the declaration is not global because this is already handled by the parser itself
-    if (!isQualifiedName(usingDecl.getName.toString)) {
+    if (!isQualifiedName(simpleName)) {
       usingDecl.getParent match {
         case ns: ICPPASTNamespaceDefinition =>
-          usingDeclarationMappings.put(fullName(ns) + "." + mappedName, fixQualifiedName(usingDecl.getName.toString))
+          usingDeclarationMappings.put(fullName(ns) + "." + mappedName, fixQualifiedName(simpleName))
         case _ =>
-          usingDeclarationMappings.put(mappedName, fixQualifiedName(usingDecl.getName.toString))
+          usingDeclarationMappings.put(mappedName, fixQualifiedName(simpleName))
       }
     }
     Seq.empty
@@ -235,7 +237,7 @@ trait AstForTypesCreator {
             astsForElaboratedType(spec, declaration.getDeclarators.toList, order)
           case spec: IASTNamedTypeSpecifier if declaration.getDeclarators.isEmpty =>
             val filename = fileName(spec)
-            val name = nodeSignature(spec.getName)
+            val name = ASTStringUtil.getSimpleName(spec.getName)
             Seq(Ast(newTypeDecl(name, registerType(name), filename, name, alias = Some(name), order = order)))
           case _ if declaration.getDeclarators.nonEmpty =>
             declaration.getDeclarators.toIndexedSeq.map {
@@ -292,7 +294,7 @@ trait AstForTypesCreator {
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
     }
 
-    val name = typeSpecifier.getName.toString
+    val name = ASTStringUtil.getSimpleName(typeSpecifier.getName)
     val fullname = registerType(fullName(typeSpecifier))
     val code = typeFor(typeSpecifier)
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
@@ -317,14 +319,27 @@ trait AstForTypesCreator {
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val member = withOrder(typeSpecifier.getDeclarations(true)) { (m, o) =>
+    val memberAsts = withOrder(typeSpecifier.getDeclarations(true)) { (m, o) =>
       astsForDeclaration(m, o)
     }.flatten
 
     methodAstParentStack.pop()
     scope.popScope()
 
-    Ast(typeDecl).withChildren(member) +: declAsts
+    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+    if (calls.isEmpty) {
+      Ast(typeDecl).withChildren(member) +: declAsts
+    } else {
+      val init = astForFakeStaticInitMethod(
+        fullname,
+        line(typeSpecifier),
+        NodeTypes.TYPE_DECL,
+        fullname,
+        member.length + 1,
+        calls
+      )
+      Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
+    }
   }
 
   private def astsForElaboratedType(
@@ -337,7 +352,7 @@ trait AstForTypesCreator {
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
     }
 
-    val name = typeSpecifier.getName.toString
+    val name = ASTStringUtil.getSimpleName(typeSpecifier.getName)
     val fullname = registerType(fullName(typeSpecifier))
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(fullname + _)
 
@@ -355,7 +370,7 @@ trait AstForTypesCreator {
     }
     val cpgMember = NewMember()
       .code(nodeSignature(enumerator))
-      .name(enumerator.getName.toString)
+      .name(ASTStringUtil.getSimpleName(enumerator.getName))
       .typeFullName(registerType(tpe))
       .order(order)
 
@@ -386,14 +401,15 @@ trait AstForTypesCreator {
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
     }
 
-    val (name, fullname) = uniqueName("enum", typeSpecifier.getName.toString, fullName(typeSpecifier))
+    val (name, fullname) =
+      uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
     val typeDecl = newTypeDecl(name, registerType(fullname), filename, typeFor(typeSpecifier), order = order)
 
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
     var currentOrder = 0
-    val member = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
+    val memberAsts = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
       val eCpg = astsForEnumerator(e, currentOrder)
       currentOrder = eCpg.size + currentOrder
       eCpg
@@ -401,7 +417,20 @@ trait AstForTypesCreator {
     methodAstParentStack.pop()
     scope.popScope()
 
-    Ast(typeDecl).withChildren(member) +: declAsts
+    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+    if (calls.isEmpty) {
+      Ast(typeDecl).withChildren(member) +: declAsts
+    } else {
+      val init = astForFakeStaticInitMethod(
+        fullname,
+        line(typeSpecifier),
+        NodeTypes.TYPE_DECL,
+        fullname,
+        member.length + 1,
+        calls
+      )
+      Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
+    }
   }
 
 }
