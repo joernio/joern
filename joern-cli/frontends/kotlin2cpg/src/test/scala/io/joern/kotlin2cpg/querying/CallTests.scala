@@ -104,47 +104,48 @@ class CallTests extends AnyFreeSpec with Matchers {
         |package mypkg
         |
         |class Foo {
-        |    fun add1(x: Int): Int {
+        |    fun add1(x: Int, toPrint: kotlin.String): Int {
+        |        println(toPrint)
         |        return x + 1
         |    }
         |}
         |
         |fun main(argc: Int): Int {
         |  val x = Foo()
-        |  val y = x.add1(argc)
+        |  val y = x.add1(argc, "AMESSAGE")
         |  return y
         |}
         |""".stripMargin)
 
-    "should contain a CALL node for `Foo()` with the correct fields set" in {
-      cpg.call("Foo").size shouldBe 1
-
-      val List(p) = cpg.call("Foo").l
-      p.methodFullName shouldBe "mypkg.Foo.<init>:mypkg.Foo()"
+    "should contain a CALL node for `Foo()` with the correct properties set" in {
+      val List(p) = cpg.call.methodFullName(".*init.*").l
+      p.methodFullName shouldBe "mypkg.Foo.<init>:void()"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      p.signature shouldBe "mypkg.Foo()"
+      p.signature shouldBe "void()"
       p.code shouldBe "Foo()"
       p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(10)
+      p.lineNumber shouldBe Some(11)
     }
 
     "should contain a CALL node for `add1` with the correct props set" in {
       val List(p) = cpg.call("add1").l
-      p.argument.size shouldBe 2
+      p.argument.size shouldBe 3
       p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      p.code shouldBe "x.add1(argc)"
+      p.code shouldBe "x.add1(argc, \"AMESSAGE\")"
       p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(11)
-      p.methodFullName shouldBe "mypkg.Foo.add1:kotlin.Int(kotlin.Int)"
-      p.signature shouldBe "kotlin.Int(kotlin.Int)"
+      p.lineNumber shouldBe Some(12)
+      p.methodFullName shouldBe "mypkg.Foo.add1:kotlin.Int(kotlin.Int,kotlin.String)"
+      p.signature shouldBe "kotlin.Int(kotlin.Int,kotlin.String)"
       p.typeFullName shouldBe "kotlin.Int"
 
-      val List(firstArg, secondArg) = cpg.call("add1").argument.l
+      val List(firstArg, secondArg, thirdArg) = cpg.call("add1").argument.l
       firstArg.code shouldBe "x"
       firstArg.argumentIndex shouldBe 0
 
       secondArg.code shouldBe "argc"
       secondArg.argumentIndex shouldBe 1
+
+      thirdArg.argumentIndex shouldBe 2
     }
 
     "should contain a call node for `add1` with a receiver set" in {
@@ -194,9 +195,9 @@ class CallTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a call node for `Gson()`" in {
-      val List(c) = cpg.call("Gson.*").l
-      c.methodFullName shouldBe "com.google.gson.Gson.<init>:com.google.gson.Gson()"
-      c.signature shouldBe "com.google.gson.Gson()"
+      val List(c) = cpg.call.methodFullName(".*Gson.*init.*").l
+      c.methodFullName shouldBe "com.google.gson.Gson.<init>:void()"
+      c.signature shouldBe "void()"
     }
   }
 
@@ -304,28 +305,6 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    }
-  }
-
-  "CPG for code with a simple call to write to a file" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
-      |package mypkg
-      |
-      |import java.io.File
-      |
-      |fun main() {
-      |   val fullPath = "/tmp/kotlin2cpg.example.txt"
-      |   val msg = "AMESSAGE"
-      |   File(fullPath).writeText(msg)
-      |}
-      |""".stripMargin)
-
-    "should contain a CALL node for the `File` init with the correct props set" in {
-      val List(c) = cpg.call.methodFullName(".*init.*").l
-      c.methodFullName shouldBe "java.io.File.<init>:java.io.File(kotlin.String)"
-      c.signature shouldBe "java.io.File(kotlin.String)"
-      c.typeFullName shouldBe "java.io.File"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 

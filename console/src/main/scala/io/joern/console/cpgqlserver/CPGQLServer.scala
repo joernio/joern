@@ -5,7 +5,7 @@ import io.joern.console.embammonite.{EmbeddedAmmonite, QueryResult}
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
-import scala.meta._
+import ammonite.compiler.{Parsers => AmmoniteParser}
 
 object CPGLSError extends Enumeration {
   val parseError = Value("cpgqls_query_parse_error")
@@ -83,12 +83,8 @@ class CPGQLServer(
       unauthorizedResponse
     } else {
       val hasErrorOnParseQuery =
-        try {
-          query.parse[Stat].toOption.isEmpty
-        } catch {
-          case _: org.scalameta.invariants.InvariantFailedException => true
-          case _: Throwable                                         => true
-        }
+        // With ignoreIncomplete = false the result is always Some. Thus .get is ok.
+        AmmoniteParser.split(query, false, "N/A").get.isLeft
       if (hasErrorOnParseQuery) {
         val result = new QueryResult("", CPGLSError.parseError.toString, UUID.randomUUID())
         resultMap.put(result.uuid, (result, false))

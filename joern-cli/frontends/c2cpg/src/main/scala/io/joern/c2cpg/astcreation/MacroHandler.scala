@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
+import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 
 import scala.annotation.nowarn
@@ -56,11 +57,11 @@ trait MacroHandler {
       }
       .foreach { m =>
         val nodeOffset = node.getFileLocation.getNodeOffset
-        val macroName = m.getExpansion.getMacroDefinition.getName.toString
+        val macroName = ASTStringUtil.getSimpleName(m.getExpansion.getMacroDefinition.getName)
         while (nodeOffsetMacroPairs.headOption.exists(x => x._1 <= nodeOffset)) {
           val (_, macroDefinition) = nodeOffsetMacroPairs.head
           nodeOffsetMacroPairs.remove(0)
-          val name = macroDefinition.getName.toString
+          val name = ASTStringUtil.getSimpleName(macroDefinition.getName)
           if (macroName == name) {
             val arguments = new MacroArgumentExtractor(parserResult, node.getFileLocation).getArguments
             return Some((macroDefinition, arguments))
@@ -114,7 +115,7 @@ trait MacroHandler {
       arguments: List[String],
       order: Int
   ): Ast = {
-    val name = macroDef.getName.toString
+    val name = ASTStringUtil.getSimpleName(macroDef.getName)
     val code = node.getRawSignature.replaceAll(";$", "")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
@@ -148,7 +149,7 @@ trait MacroHandler {
     * correct location information.
     */
   private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
-    val name = macroDef.getName.toString
+    val name = ASTStringUtil.getSimpleName(macroDef.getName)
     val fileLocation = macroDef.getFileLocation
 
     if (fileLocation != null) {

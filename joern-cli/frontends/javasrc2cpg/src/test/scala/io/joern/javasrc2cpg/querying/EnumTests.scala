@@ -56,7 +56,7 @@ class EnumTests extends JavaSrcCodeToCpgFixture {
     cpg.typeDecl.name(".*Color.*").nonEmpty shouldBe true
     // 2 enum values and `label` makes 3 members
     cpg.typeDecl.name(".*Color.*").member.size shouldBe 3
-    val List(l, r, b) = cpg.typeDecl.name(".*Color.*").member.l
+    val List(r, b, l) = cpg.typeDecl.name(".*Color.*").member.l
 
     l.code shouldBe "java.lang.String label"
 

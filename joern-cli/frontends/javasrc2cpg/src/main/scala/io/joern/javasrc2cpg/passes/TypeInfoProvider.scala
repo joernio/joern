@@ -30,6 +30,7 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
+  ResolvedParameterDeclaration,
   ResolvedReferenceTypeDeclaration,
   ResolvedTypeDeclaration,
   ResolvedTypeParameterDeclaration
@@ -71,21 +72,27 @@ class TypeInfoProvider(global: Global) {
       declaration: ResolvedTypeDeclaration,
       typeParameterString: String = ""
   ): String = {
-    buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val packageName = Try(declaration.getPackageName).getOrElse("")
+    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    buildTypeString(packageName, className, typeParameterString)
   }
 
   private def resolvedTypeParamFullName(
       declaration: ResolvedTypeParameterDeclaration,
       typeParameterString: String = ""
   ): String = {
-    buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val packageName = Try(declaration.getPackageName).getOrElse("")
+    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    buildTypeString(packageName, className, typeParameterString)
   }
 
   private def resolvedMethodLikeDeclFullName(
       declaration: ResolvedMethodLikeDeclaration,
       typeParameterString: String = ""
   ): String = {
-    val baseString = buildTypeString(declaration.getPackageName, declaration.getClassName, typeParameterString)
+    val packageName = Try(declaration.getPackageName).getOrElse("")
+    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    val baseString = buildTypeString(packageName, className, typeParameterString)
     val typeParameters =
       declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
 
@@ -131,17 +138,21 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
-  private def typeFullNameForTypeDecl(typeDecl: TypeDeclaration[_]): String = {
-    val javaParserName = typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
+  private def typeNameForTypeDecl(typeDecl: TypeDeclaration[_], fullName: Boolean): String = {
+    val javaParserName = if (fullName) {
+      typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
+    } else {
+      typeDecl.getNameAsString
+    }
 
     if (typeDecl.isNestedType) {
 
       typeDecl.getParentNode.toScala match {
         case Some(parentDecl: TypeDeclaration[_]) =>
-          typeFullNameForTypeDecl(parentDecl) ++ "$" ++ typeDecl.getNameAsString
+          typeNameForTypeDecl(parentDecl, fullName) ++ "$" ++ typeDecl.getNameAsString
 
         case _ =>
-          logger.warn("typeFullNameForTypeDecl expected nested typeDecl to have typeDecl parent.")
+          logger.warn("typeNameForTypeDecl expected nested typeDecl to have typeDecl parent.")
           javaParserName
       }
 
@@ -150,8 +161,13 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
-  def getTypeFullName(typeDecl: TypeDeclaration[_]): String = {
-    registerType(typeFullNameForTypeDecl(typeDecl))
+  def getTypeName(typeDecl: TypeDeclaration[_], fullName: Boolean = true): String = {
+    val typeName = typeNameForTypeDecl(typeDecl, fullName)
+    if (fullName) {
+      registerType(typeName)
+    } else {
+      typeName
+    }
   }
 
   def getTypeFullName(node: NodeWithType[_, _ <: Resolvable[ResolvedType]]): String = {
@@ -269,6 +285,12 @@ class TypeInfoProvider(global: Global) {
         logger.info(s"Could not resolve type for constructor invocation $invocation. Defaulting to <empty>.")
         "<empty>"
     }
+
+    registerType(typeFullName)
+  }
+
+  def getTypeFullName(resolvedParam: ResolvedParameterDeclaration): String = {
+    val typeFullName = resolvedTypeFullName(resolvedParam.getType)
 
     registerType(typeFullName)
   }

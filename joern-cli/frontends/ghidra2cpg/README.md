@@ -12,22 +12,6 @@ Requirements:
  - We recommend openjdk 11 (at least). It does not work with adoptopenjdk 16. 
  - sbt (https://www.scala-sbt.org/)
 
-### Quickstart
-
-1. Clone the project
-2. Build the project `sbt stage`
-3. Create a CPG `./ghidra2cpg.sh /path/to/your/binary -o /path/to/cpg.bin`
-4. Download joern with
-   ```
-   wget https://github.com/joernio/joern/releases/download/v1.1.164/joern-cli.zip
-   unzip joern-cli.zip
-   cd joern-cli
-   ```
-5. Copy `cpg.bin` into the joern directory
-6. Start joern with `./joern.sh`
-7. Import the cpg with `importCpg("cpg.bin")`
-8. Now you can query the CPG 
-
 ### Known issues
 `varags` are not handled properly: https://github.com/NationalSecurityAgency/ghidra/issues/234
 

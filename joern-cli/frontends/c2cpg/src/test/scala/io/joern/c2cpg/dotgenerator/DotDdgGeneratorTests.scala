@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._
 
-class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
+class DotDdgGeneratorTest1 extends DataFlowCodeToCpgSuite {
 
   override val code: String =
     """
@@ -33,7 +33,7 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
   }
 }
 
-class DotDdgGeneratorTests2 extends DataFlowCodeToCpgSuite {
+class DotDdgGeneratorTest2 extends DataFlowCodeToCpgSuite {
 
   override val code: String =
     """
