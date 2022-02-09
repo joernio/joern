@@ -37,8 +37,11 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
   "should contain call nodes with <operation>.assignment for all variables" in {
     val assignments = cpg.assignment.map(x => (x.target.code, x.typeFullName)).l
     assignments.size shouldBe 6
+    assignments.foreach(println)
     vars.foreach(x => {
-      assignments contains x shouldBe true
+      withClue(s"Assignments should contain $x") {
+        assignments contains x shouldBe true
+      }
     })
     cpg.assignment.foreach { assignment =>
       assignment.name shouldBe Operators.assignment
