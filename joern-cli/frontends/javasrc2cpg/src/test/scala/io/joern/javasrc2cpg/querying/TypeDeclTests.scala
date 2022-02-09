@@ -125,7 +125,10 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     cpg.typeDecl.nameExact("OuterClass$InnerClass").l match {
       case List(innerClass) =>
         innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
-        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List("java.lang.Object", "a.b.c.d.OuterClass$InnerInterface")
+        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List(
+          "java.lang.Object",
+          "a.b.c.d.OuterClass$InnerInterface"
+        )
         innerClass.isExternal shouldBe false
 
         innerClass.method.nameExact("id").l match {
