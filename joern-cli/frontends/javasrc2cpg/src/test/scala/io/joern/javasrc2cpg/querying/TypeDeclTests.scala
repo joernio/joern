@@ -60,7 +60,10 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     constructor.name shouldBe "<init>"
     constructor.fullName shouldBe s"$typeFullName.<init>:void()"
     constructor.signature shouldBe "void()"
-    constructor.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+    constructor.modifier.map(_.modifierType).toList should contain theSameElementsAs List(
+      ModifierTypes.CONSTRUCTOR,
+      ModifierTypes.PUBLIC
+    )
 
     constructor.parameter.size shouldBe 1
     val thisParam = constructor.parameter.head
