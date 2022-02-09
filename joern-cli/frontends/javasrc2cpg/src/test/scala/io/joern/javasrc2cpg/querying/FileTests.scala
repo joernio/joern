@@ -42,7 +42,7 @@ class FileTests extends JavaSrcCodeToCpgFixture {
       .name(".*.java".replace("/", s"\\${JFile.separator}"))
       .method
       .name
-      .toSetMutable shouldBe Set("bar")
+      .toSetMutable shouldBe Set("bar", "<init>")
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {
