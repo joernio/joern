@@ -189,19 +189,20 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       |import android.app.Activity
       |import android.os.Bundle
       |import android.util.Log
+      |import android.webkit.WebView
       |
       |class MyActivity : Activity() {
       |  override fun onCreate(savedInstanceState: Bundle?) {
       |    super.onCreate(savedInstanceState)
       |
-      |    val webview = findViewById<WebView>(R.id.webview)
+      |    val webview = findViewById<WebView>(R.id.webview) as WebView
       |    webview.settings.javaScriptEnabled = true
       |  }
       |}
       |""".stripMargin)
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
-      val List(c) = cpg.call.code("findViewB.*").l
+      val List(c) = cpg.call.code("findViewB.*").codeNot(".*as.*").l
       c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(kotlin.Int)"
       c.argument.size shouldBe 1
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -209,7 +210,13 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain an IDENTIFIER node for webview with the correct props set" in {
       val List(i) = cpg.call.code(".*findViewB.*").argument(1).isIdentifier.l
-      i.typeFullName shouldBe "android.view.View"
+      i.typeFullName shouldBe "android.webkit.WebView"
+    }
+
+    "should contain an TYPE_REF node for the `as` CALL lhs with the correct props set" in {
+      val List(tr) = cpg.typeRef.codeExact("WebView").l
+      tr.argumentIndex shouldBe 2
+      tr.typeFullName shouldBe "android.webkit.WebView"
     }
   }
 

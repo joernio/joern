@@ -50,7 +50,7 @@ class TypeInfoProvider(global: Global) {
     * map is later passed to a pass that creates TYPE
     * nodes for each key in the map.
     */
-  private def registerType(typeName: String): String = {
+  def registerType(typeName: String): String = {
     global.usedTypes.putIfAbsent(typeName, true)
     typeName
   }
@@ -177,7 +177,7 @@ class TypeInfoProvider(global: Global) {
       case Success(resolvedType: ResolvedType) => simpleResolvedTypeFullName(resolvedType)
 
       case Failure(_) =>
-        logger.info(s"Resolving type ${node.getTypeAsString} failed. Falling back to unresolved default.")
+        logger.debug(s"Resolving type ${node.getTypeAsString} failed. Falling back to unresolved default.")
         "<unresolved>." ++ node.getTypeAsString
     }
 
@@ -189,7 +189,7 @@ class TypeInfoProvider(global: Global) {
       case Success(resolvedType) => resolvedReferenceTypeFullName(resolvedType)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve class type ${typ.getNameAsString}. Falling back to unresolved default.")
+        logger.debug(s"Failed to resolve class type ${typ.getNameAsString}. Falling back to unresolved default.")
         "<unresolved>." ++ typ.getNameAsString
     }
 
@@ -202,7 +202,7 @@ class TypeInfoProvider(global: Global) {
         resolvedTypeFullName(resolvedDeclaration.getType)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve enum entry type for ${enumConstant.getNameAsString}")
+        logger.debug(s"Failed to resolve enum entry type for ${enumConstant.getNameAsString}")
         "<empty>"
     }
 
@@ -214,7 +214,7 @@ class TypeInfoProvider(global: Global) {
       case Success(resolved) => resolvedTypeFullName(resolved)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve return type. Defaulting to <empty>.")
+        logger.debug(s"Failed to resolve return type. Defaulting to <empty>.")
         "<empty>"
     }
 
@@ -227,7 +227,7 @@ class TypeInfoProvider(global: Global) {
         resolvedTypeFullName(resolvedValueDeclaration.getType)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolved type for nameExpr ${nameExpr.getNameAsString}. Falling back to name.")
+        logger.debug(s"Failed to resolved type for nameExpr ${nameExpr.getNameAsString}. Falling back to name.")
         nameExpr.getNameAsString
 
     }
@@ -240,7 +240,7 @@ class TypeInfoProvider(global: Global) {
       case Success(declaration) => resolvedTypeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve type for `this` expr. Defaulting to <empty>")
+        logger.debug(s"Failed to resolve type for `this` expr. Defaulting to <empty>")
         "<empty>"
     }
 
@@ -252,7 +252,7 @@ class TypeInfoProvider(global: Global) {
       case Success(declaration) => resolvedMethodLikeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.info(s"Failed to resolve type for method-like ${methodLike}. Defaulting to <empty>")
+        logger.debug(s"Failed to resolve type for method-like ${methodLike}. Defaulting to <empty>")
         "<empty>"
     }
 
@@ -272,7 +272,7 @@ class TypeInfoProvider(global: Global) {
       case _                       => "<empty>"
     }
 
-    logger.info(s"Processing type for literal ${literalExpr.getClass}: $typeFullName")
+    logger.debug(s"Processing type for literal ${literalExpr.getClass}: $typeFullName")
     registerType(typeFullName)
   }
 
@@ -282,7 +282,7 @@ class TypeInfoProvider(global: Global) {
         resolvedMethodLikeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.info(s"Could not resolve type for constructor invocation $invocation. Defaulting to <empty>.")
+        logger.debug(s"Could not resolve type for constructor invocation $invocation. Defaulting to <empty>.")
         "<empty>"
     }
 
@@ -300,7 +300,7 @@ class TypeInfoProvider(global: Global) {
       case Success(resolvedType) => resolvedTypeFullName(resolvedType)
 
       case Failure(_) =>
-        logger.info(s"Could not resolve type for expr $expr")
+        logger.debug(s"Could not resolve type for expr $expr")
         "<empty>"
     }
 
@@ -316,7 +316,7 @@ class TypeInfoProvider(global: Global) {
           )
 
         case Failure(_) =>
-          logger.info(s"Failed to resolve type for initializer ${initializer.toString}")
+          logger.debug(s"Failed to resolve type for initializer ${initializer.toString}")
           None
       }
     }
@@ -327,4 +327,27 @@ object TypeInfoProvider {
   def apply(global: Global): TypeInfoProvider = {
     new TypeInfoProvider(global)
   }
+
+  def isAutocastType(typeName: String): Boolean = {
+    NumericTypes.contains(typeName)
+  }
+
+  val NumericTypes = Set(
+    "byte",
+    "short",
+    "int",
+    "long",
+    "float",
+    "double",
+    "char",
+    "boolean",
+    "java.lang.Byte",
+    "java.lang.Short",
+    "java.lang.Integer",
+    "java.lang.Long",
+    "java.lang.Float",
+    "java.lang.Double",
+    "java.lang.Character",
+    "java.lang.Boolean"
+  )
 }

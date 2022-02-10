@@ -8,7 +8,7 @@ import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, ParserC
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool}
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.x2cpg.SourceFiles
 
 import java.nio.file.Paths
@@ -49,16 +49,16 @@ class AstCreationPass(
     case AstCreationPass.SourceFiles => sourceFiles.toArray
   }
 
-  override def runOnPart(diffGraph: DiffGraph.Builder, filename: String): Unit = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val parser = new CdtParser(parserConfig, headerFileFinder)
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(Paths.get(filename))
       parseResult match {
         case Some(translationUnit) =>
           report.addReportInfo(filename, File(filename).lineCount, parsed = true)
-          val localDiff = DiffGraph.newBuilder
+          val localDiff = new DiffGraphBuilder
           new AstCreator(filename, config, global, localDiff, translationUnit).createAst()
-          diffGraph.moveFrom(localDiff)
+          diffGraph.absorb(localDiff)
           true
         case None =>
           report.addReportInfo(filename, File(filename).lineCount)

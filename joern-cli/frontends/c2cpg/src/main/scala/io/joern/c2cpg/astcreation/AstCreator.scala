@@ -5,7 +5,7 @@ import io.joern.c2cpg.datastructures.Stack._
 import io.joern.c2cpg.datastructures.{Global, Scope}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
-import io.shiftleft.passes.DiffGraph
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.x2cpg.Ast
@@ -18,7 +18,7 @@ class AstCreator(
     val filename: String,
     val config: C2Cpg.Config,
     val global: Global,
-    val diffGraph: DiffGraph.Builder,
+    val diffGraph: DiffGraphBuilder,
     val parserResult: IASTTranslationUnit
 ) extends AstForTypesCreator
     with AstForFunctionsCreator

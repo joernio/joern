@@ -38,7 +38,9 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
     val assignments = cpg.assignment.map(x => (x.target.code, x.typeFullName)).l
     assignments.size shouldBe 6
     vars.foreach(x => {
-      assignments contains x shouldBe true
+      withClue(s"Assignments should contain $x") {
+        assignments contains x shouldBe true
+      }
     })
     cpg.assignment.foreach { assignment =>
       assignment.name shouldBe Operators.assignment

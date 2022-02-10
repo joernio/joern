@@ -2,6 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
+import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstNodeBuilder {
 
@@ -66,7 +67,7 @@ trait AstNodeBuilder {
   protected def newJumpTarget(node: IASTNode, order: Int): NewJumpTarget = {
     val code = nodeSignature(node)
     val name = node match {
-      case label: IASTLabelStatement    => label.getName.toString
+      case label: IASTLabelStatement    => ASTStringUtil.getSimpleName(label.getName)
       case _ if code.startsWith("case") => "case"
       case _                            => "default"
     }

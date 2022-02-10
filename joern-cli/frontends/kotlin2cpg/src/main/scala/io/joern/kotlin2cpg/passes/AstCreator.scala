@@ -284,6 +284,11 @@ class AstCreator(
       withOrder(allImports.asJava) { (entry, order) =>
         astForImportEntry(entry, order)
       }
+    val namespaceBlocksForImports =
+      allImports.asJava.asScala.collect {
+        case e if !e.isWildcard =>
+          Ast(NewNamespaceBlock().name(e.fqName).fullName(e.fqName))
+      }.toSeq
 
     val lastImportOrder = importAsts.size
     var idxEpsilon = 0 // when multiple AST nodes are returned by `astForDeclaration`
@@ -317,6 +322,7 @@ class AstCreator(
             .withChildren(mergedCtx(declarationsAstsWithCtx.map(_.ctx)).lambdaAsts)
             .withChildren(lambdaTypeDecls)
         )
+        .withChildren(namespaceBlocksForImports)
     AstWithCtx(ast, finalCtx)
   }
 
@@ -905,8 +911,12 @@ class AstCreator(
   }
 
   private def astForTypeReference(expr: KtTypeReference, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+      nameGenerator: NameGenerator,
       fileInfo: FileInfo
   ): AstWithCtx = {
+    val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
+    registerType(typeFullName)
+
     val node =
       NewTypeRef()
         .code(expr.getText)
@@ -914,6 +924,7 @@ class AstCreator(
         .argumentIndex(argIdx)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
+        .typeFullName(typeFullName)
     AstWithCtx(Ast(node), Context())
   }
 
