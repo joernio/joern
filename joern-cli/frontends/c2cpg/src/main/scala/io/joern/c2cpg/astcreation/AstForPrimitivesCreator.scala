@@ -17,7 +17,7 @@ trait AstForPrimitivesCreator {
     Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression, order: Int): Ast = {
-    val tpe = ASTTypeUtil.getType(lit.getExpressionType)
+    val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
     val litNode = NewLiteral()
       .typeFullName(registerType(tpe))
       .code(nodeSignature(lit))
@@ -30,18 +30,32 @@ trait AstForPrimitivesCreator {
 
   protected def astForIdentifier(ident: IASTNode, order: Int): Ast = {
     val identifierName = ident match {
-      case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
-      case _                    => ident.toString
+      case id: IASTIdExpression                                                             => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty                          => uniqueName("name", "", "")._1
+      case _                                                                                => ident.toString
     }
     val variableOption = scope.lookupVariable(identifierName)
     val identifierTypeName = variableOption match {
       case Some((_, variableTypeName)) => variableTypeName
-      case None                        => typeFor(ident)
+      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
+        val id = ident.asInstanceOf[IASTName]
+        id.getBinding match {
+          case v: IVariable =>
+            v.getType match {
+              case f: IFunctionType => f.getReturnType.toString
+              case other            => other.toString
+            }
+          case other => other.getName
+        }
+      case None if ident.isInstanceOf[IASTName] =>
+        typeFor(ident.getParent)
+      case None => typeFor(ident)
     }
 
     val cpgIdentifier = NewIdentifier()
       .name(identifierName)
-      .typeFullName(registerType(identifierTypeName))
+      .typeFullName(registerType(cleanType(identifierTypeName)))
       .code(nodeSignature(ident))
       .order(order)
       .argumentIndex(order)
