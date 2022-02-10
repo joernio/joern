@@ -113,7 +113,7 @@ public class FunctionContentBuilder extends AstNodeBuilder<AstNode> {
 
   ContentBuilderStack stack = new ContentBuilderStack();
   NestingReconstructor nesting = new NestingReconstructor(stack);
-  HashMap<AstNode, ParserRuleContext> nodeToRuleContext = new HashMap<AstNode, ParserRuleContext>();
+  HashMap<AstNode, ParserRuleContext> nodeToRuleContext = new HashMap<>();
 
   // exitStatements is called when the entire
   // function-content has been walked

@@ -23,7 +23,6 @@ import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
@@ -189,12 +188,12 @@ class Ghidra2Cpg() {
 object Types {
   // Types will be added to the CPG as soon as everything
   // else is done
-  var types: mutable.SortedSet[String] = mutable.SortedSet[String]()
+  val types: mutable.SortedSet[String] = mutable.SortedSet[String]()
   def registerType(typeName: String): String = {
     try {
       types += typeName
     } catch {
-      case e: Exception => println(s" Error adding type: $typeName")
+      case _: Exception => println(s" Error adding type: $typeName")
     }
     typeName
   }

@@ -358,12 +358,12 @@ private[astcreation] class AstCreator(
   }
 
   override def visit(astDelete: DeleteExpression): Unit = {
-    val call = newCallNode(astDelete, Operators.delete);
+    val call = newCallNode(astDelete, Operators.delete)
 
     diffGraph.addNode(call)
     connectAstChild(call)
     pushContext(call, 1)
-    context.addArgumentEdgeOnNextAstEdge = true;
+    context.addArgumentEdgeOnNextAstEdge = true
     astDelete.getTarget.accept(this)
     popContext()
   }

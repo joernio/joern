@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.psi.{
 }
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
-import org.jetbrains.kotlin.resolve.`lazy`.descriptors.{LazyClassDescriptor, LazyTypeAliasDescriptor}
+import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, SimpleType, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
@@ -46,7 +46,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 
 // representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
 trait WithDefaultType {
-  def getDefaultType(): SimpleType
+  def getDefaultType: SimpleType
 }
 
 object Constants {
@@ -240,7 +240,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   // TODO: remove this state
   var hasEmptyBindingContext = false
 
-  lazy val bindingContext = {
+  lazy val bindingContext: BindingContext = {
     logger.info("Running Kotlin compiler analysis...")
     try {
       val t0 = System.currentTimeMillis()
@@ -268,7 +268,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
 
   def erasedSignature(args: Seq[Any]): String = {
     val argsSignature = {
-      if (args.size == 0) {
+      if (args.isEmpty) {
         ""
       } else if (args.size == 1) {
         Constants.any
@@ -442,7 +442,9 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
 
         val renderedParameterTypes =
           fnDescriptor.getValueParameters.asScala.toSeq
-            .map { valueParam => TypeRenderer.render(valueParam.getType) }
+            .map { valueParam =>
+              TypeRenderer.render(valueParam.getType)
+            }
             .mkString(",")
         val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
         val fullName =
@@ -470,7 +472,9 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         // that render comments in fqnames
         val renderedParameterTypes =
           fnDescriptor.getValueParameters.asScala.toSeq
-            .map { valueParam => TypeRenderer.render(valueParam.getType) }
+            .map { valueParam =>
+              TypeRenderer.render(valueParam.getType)
+            }
             .mkString(",")
         val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
         val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
@@ -540,7 +544,9 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         val valueParameters = fnDescriptor.getValueParameters.asScala.toSeq
         val renderedParameterTypes =
           valueParameters
-            .map { valueParam => TypeRenderer.render(valueParam.getType) }
+            .map { valueParam =>
+              TypeRenderer.render(valueParam.getType)
+            }
             .mkString(",")
         val bindingInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
         if (bindingInfo != null && bindingInfo.getType != null) {
@@ -562,7 +568,6 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   }
 
   def parameterType(expr: KtParameter, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
     // TODO: add specific test for no binding info of parameter
     // triggered by exception in https://github.com/agrosner/DBFlow
     // TODO: ...also test cases for non-null binding info for other fns
@@ -581,12 +586,12 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   }
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
-    val containingFile = expr.getContainingKtFile()
+    val containingFile = expr.getContainingKtFile
     val fileName = containingFile.getName
     val lambdaNum = keyPool.next
     val astDerivedFullName =
-      containingFile.getPackageFqName().toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
-    val astDerivedSignature = erasedSignature(expr.getValueParameters().asScala.toList)
+      containingFile.getPackageFqName.toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
+    val astDerivedSignature = erasedSignature(expr.getValueParameters.asScala.toList)
 
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     if (mapForEntity == null || mapForEntity.getKeys == null) {
@@ -598,7 +603,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val constructorType = constructorDesc.getDefaultType
     val args = constructorType.getArguments.asScala.drop(1)
     val renderedArgs =
-      if (args.size == 0) {
+      if (args.isEmpty) {
         ""
       } else if (args.size == 1) {
         Constants.kotlinAny
@@ -607,9 +612,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       }
     val signature = Constants.kotlinAny + "(" + renderedArgs + ")"
     val fullName =
-      containingFile
-        .getPackageFqName()
-        .toString + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
+      containingFile.getPackageFqName.toString + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
     (fullName, signature)
   }
 
@@ -644,11 +647,11 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       }
     val paramTypeNames =
       try {
-        val nodeParams = expr.getValueParameters()
+        val nodeParams = expr.getValueParameters
         nodeParams.asScala
           .map { p =>
-            val explicitTypeFullName = if (p.getTypeReference() != null) {
-              p.getTypeReference().getText()
+            val explicitTypeFullName = if (p.getTypeReference != null) {
+              p.getTypeReference.getText
             } else {
               Constants.any
             }
@@ -711,18 +714,18 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     descriptorForNameReference(expr)
       .flatMap {
         case typedDesc: ValueDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getType()))
+          Some(TypeRenderer.render(typedDesc.getType))
         case typedDesc: WithDefaultType =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          Some(TypeRenderer.render(typedDesc.getDefaultType))
         // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
         case typedDesc: LazyClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          Some(TypeRenderer.render(typedDesc.getDefaultType))
         case typedDesc: LazyJavaClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          Some(TypeRenderer.render(typedDesc.getDefaultType))
         case typedDesc: DeserializedClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          Some(TypeRenderer.render(typedDesc.getDefaultType))
         case typedDesc: EnumEntrySyntheticClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType()))
+          Some(TypeRenderer.render(typedDesc.getDefaultType))
         case unhandled: Any =>
           logger.debug(
             s"Unhandled class type info fetch in `typeFullName[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."

@@ -10,7 +10,7 @@ import java.util.Stack;
 
 public class ShadowStack {
 
-  private Stack<StackItem> stack = new Stack<StackItem>();
+  private Stack<StackItem> stack = new Stack<>();
   private Stack<AstNode> itemStack;
 
   public ShadowStack(Stack<AstNode> aItemStack) {
@@ -127,7 +127,7 @@ public class ShadowStack {
     return retval;
   }
 
-  private class StackItem {
+  private static class StackItem {
 
     public AstNode parentCompound;
     public AstNode ifOrDoOrTry;
