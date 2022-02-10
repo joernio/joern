@@ -1776,7 +1776,7 @@ class AstCreator(
       tryAst
         .withChildren(clauseAstsWitCtx.map(_.ast))
     val finalAst =
-      if (finallyAstsWithCtx.size > 0) {
+      if (finallyAstsWithCtx.nonEmpty) {
         tryWithClausesAst
           .withChildren(finallyAstsWithCtx.map(_.ast))
       } else {
@@ -1874,7 +1874,7 @@ class AstCreator(
     val stmtAst = astsForExpression(expr.getBody(), scopeContext, loopAsts.size + 1, loopAsts.size + 1)
 
     val ast =
-      if (loopAsts.size > 0) {
+      if (loopAsts.nonEmpty) {
         Ast(forNode)
           .withChildren(loopAsts.map(_.ast))
           .withChildren(stmtAst.map(_.ast))
@@ -2033,7 +2033,7 @@ class AstCreator(
     val ctx = mergedCtx(
       conditionAsts.map(_.ctx) ++ thenAsts.map(_.ctx) ++ elseAsts.map(_.ctx)
     )
-    if (conditionAsts.size > 0 && conditionAsts.head.ast.root != null) {
+    if (conditionAsts.nonEmpty && conditionAsts.head.ast.root != null) {
       val ast =
         Ast(callNode)
           .withChildren(childAsts)
