@@ -24,7 +24,8 @@ class InterfaceTests extends JimpleCodeToCpgFixture {
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename.startsWith(JFile.separator) shouldBe true
+    x.filename.startsWith(JFile.separator) ||
+      x.filename.startsWith("C:\\\\") shouldBe true
     x.filename.endsWith(".class") shouldBe true
   }
 

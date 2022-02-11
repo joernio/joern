@@ -31,10 +31,8 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object", "java.io.Serializable")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    val logger = LoggerFactory.getLogger(ImplementsInterfaceTests.super.getClass)
-    println(x.filename)
-    logger.info(x.filename)
-    x.filename.startsWith(JFile.separator) shouldBe true
+    x.filename.startsWith(JFile.separator) ||
+      x.filename.startsWith("C:\\\\") shouldBe true
     x.filename.endsWith(".class") shouldBe true
   }
 
