@@ -118,9 +118,8 @@ class AstCreator(filename: String, global: Global) {
     val memberAsts = typ.getSootClass.getFields.asScala
       .filter(_.isDeclared)
       .zipWithIndex
-      .map {
-        case (v, i) =>
-          astForField(v, i + methodAsts.size + 1)
+      .map { case (v, i) =>
+        astForField(v, i + methodAsts.size + 1)
       }
       .toList
 
@@ -164,13 +163,12 @@ class AstCreator(filename: String, global: Global) {
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
-      controlTargets.foreach({
-        case (asts, units) =>
-          asts.headOption match {
-            case Some(value) =>
-              diffGraph.addEdge(value.root.get, unitToAsts(units).last.root.get, EdgeTypes.CFG)
-            case None =>
-          }
+      controlTargets.foreach({ case (asts, units) =>
+        asts.headOption match {
+          case Some(value) =>
+            diffGraph.addEdge(value.root.get, unitToAsts(units).last.root.get, EdgeTypes.CFG)
+          case None =>
+        }
       })
       // Clear these maps
       controlTargets.clear()
@@ -372,9 +370,8 @@ class AstCreator(filename: String, global: Global) {
     val argAsts = withOrder(invokeExpr match {
       case x: DynamicInvokeExpr => x.getArgs.asScala ++ x.getBootstrapArgs.asScala
       case x                    => x.getArgs.asScala
-    }) {
-      case (arg, order) =>
-        astsForValue(arg, order, parentUnit)
+    }) { case (arg, order) =>
+      astsForValue(arg, order, parentUnit)
     }.flatten
 
     Ast(callNode)
@@ -582,17 +579,16 @@ class AstCreator(filename: String, global: Global) {
       i <- 0 until totalTgts
       if lookupSwitchStmt.getTarget(i) != lookupSwitchStmt.getDefaultTarget
     } yield (lookupSwitchStmt.getLookupValue(i), lookupSwitchStmt.getTarget(i))
-    val tgtAsts = tgts.map {
-      case (lookup, target) =>
-        Ast(
-          NewJumpTarget()
-            .name(s"case $lookup")
-            .code(s"case $lookup:")
-            .argumentIndex(lookup)
-            .order(lookup)
-            .lineNumber(line(target))
-            .columnNumber(column(target))
-        )
+    val tgtAsts = tgts.map { case (lookup, target) =>
+      Ast(
+        NewJumpTarget()
+          .name(s"case $lookup")
+          .code(s"case $lookup:")
+          .argumentIndex(lookup)
+          .order(lookup)
+          .lineNumber(line(target))
+          .columnNumber(column(target))
+      )
     }
 
     Seq(
@@ -606,17 +602,16 @@ class AstCreator(filename: String, global: Global) {
     val tgtAsts = tableSwitchStmt.getTargets.asScala
       .filter(x => tableSwitchStmt.getDefaultTarget != x)
       .zipWithIndex
-      .map({
-        case (tgt, i) =>
-          Ast(
-            NewJumpTarget()
-              .name(s"case $i")
-              .code(s"case $i:")
-              .argumentIndex(i)
-              .order(i)
-              .lineNumber(line(tgt))
-              .columnNumber(column(tgt))
-          )
+      .map({ case (tgt, i) =>
+        Ast(
+          NewJumpTarget()
+            .name(s"case $i")
+            .code(s"case $i:")
+            .argumentIndex(i)
+            .order(i)
+            .lineNumber(line(tgt))
+            .columnNumber(column(tgt))
+        )
       })
       .toSeq
 
@@ -840,16 +835,14 @@ object AstCreator {
   }
 
   def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.asScala.zipWithIndex.map {
-      case (x, i) =>
-        f(x, i + 1)
+    nodeList.asScala.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
     }.toSeq
   }
 
   def withOrder[T <: Any, X](nodeList: Iterable[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.zipWithIndex.map {
-      case (x, i) =>
-        f(x, i + 1)
+    nodeList.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
     }.toSeq
   }
 }
