@@ -3,6 +3,7 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
+import org.slf4j.LoggerFactory
 
 import java.io.{File => JFile}
 
@@ -30,6 +31,9 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object", "java.io.Serializable")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
+    val logger = LoggerFactory.getLogger(ImplementsInterfaceTests.super.getClass)
+    println(x.filename)
+    logger.info(x.filename)
     x.filename.startsWith(JFile.separator) shouldBe true
     x.filename.endsWith(".class") shouldBe true
   }
