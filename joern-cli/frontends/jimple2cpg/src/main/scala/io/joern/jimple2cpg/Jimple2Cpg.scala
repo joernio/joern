@@ -13,11 +13,9 @@ import soot.options.Options
 import soot.{G, PhaseOptions, Scene, SootClass}
 
 import java.io.{File => JFile}
-import java.nio.file.{Files, Paths}
-import java.util.zip.ZipFile
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
+import java.nio.file.Paths
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.language.postfixOps
-import scala.util.{Failure, Success, Using}
 
 object Jimple2Cpg {
   val language = "JAVA"
