@@ -30,10 +30,7 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object", "java.io.Serializable")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
-    )
+    x.filename should (startWith(File.separator) or startWith regex "[A-Z]:")
     x.filename.endsWith(".class") shouldBe true
   }
 
