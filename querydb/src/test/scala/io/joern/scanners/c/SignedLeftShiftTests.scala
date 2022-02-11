@@ -10,7 +10,7 @@ class SignedLeftShiftTests extends CQueryTestSuite {
   override def queryBundle = SignedLeftShift
 
   "find signed left shift" in {
-    val query = queryBundle.signedLeftShift()
+    val query   = queryBundle.signedLeftShift()
     val results = findMatchingCalls(query)
 
     results shouldBe Set("bad1", "bad2", "bad3")

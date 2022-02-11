@@ -22,18 +22,18 @@ object JoernScanConfig {
 }
 
 case class JoernScanConfig(
-    src: String = "",
-    overwrite: Boolean = false,
-    store: Boolean = false,
-    dump: Boolean = false,
-    listQueryNames: Boolean = false,
-    updateQueryDb: Boolean = false,
-    queryDbVersion: String = JoernScanConfig.defaultDbVersion,
-    maxCallDepth: Int = 2,
-    names: String = "",
-    tags: String = "",
-    language: Option[String] = None,
-    listLanguages: Boolean = false
+  src: String = "",
+  overwrite: Boolean = false,
+  store: Boolean = false,
+  dump: Boolean = false,
+  listQueryNames: Boolean = false,
+  updateQueryDb: Boolean = false,
+  queryDbVersion: String = JoernScanConfig.defaultDbVersion,
+  maxCallDepth: Int = 2,
+  names: String = "",
+  tags: String = "",
+  language: Option[String] = None,
+  listLanguages: Boolean = false
 )
 
 object JoernScan extends App with BridgeBase {
@@ -128,14 +128,12 @@ object JoernScan extends App with BridgeBase {
   private def dumpQueriesAsJson(): Unit = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
     implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
-    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
+    val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     // TODO allow specifying file from the outside and make this portable
     val outFileName = "/tmp/querydb.json"
     better.files
       .File(outFileName)
-      .write(
-        Serialization.write(queryDb.allQueries)
-      )
+      .write(Serialization.write(queryDb.allQueries))
     println(s"Queries written to: $outFileName")
   }
 
@@ -207,9 +205,9 @@ object JoernScan extends App with BridgeBase {
   private def downloadDefaultQueryDatabase(version: String, outDir: File): String = {
     val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
-    val r = requests.get(url)
+    val r          = requests.get(url)
     val queryDbZip = (outDir / "querydb.zip")
-    val absPath = queryDbZip.path.toAbsolutePath.toString
+    val absPath    = queryDbZip.path.toAbsolutePath.toString
     queryDbZip.writeBytes(r.bytes.iterator)
     println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
     absPath
@@ -240,8 +238,8 @@ object JoernScan extends App with BridgeBase {
   }
 
   override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
-  override protected def shutdownHooks: List[String] = AmmoniteBridge.shutdownHooks
-  override protected def promptStr() = AmmoniteBridge.promptStr()
+  override protected def shutdownHooks: List[String]             = AmmoniteBridge.shutdownHooks
+  override protected def promptStr()                             = AmmoniteBridge.promptStr()
 }
 
 object Scan {
@@ -250,7 +248,7 @@ object Scan {
   var defaultOpts = new ScanOptions(maxCallDepth = 2, names = Array[String](), tags = Array[String]())
 
   val defaultTag = "default"
-  val allTag = "all"
+  val allTag     = "all"
 }
 
 class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Array[String])

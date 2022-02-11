@@ -7,27 +7,27 @@ import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 
 case class Config(
-    scriptFile: Option[Path] = None,
-    command: Option[String] = None,
-    params: Map[String, String] = Map.empty,
-    additionalImports: List[Path] = Nil,
-    addPlugin: Option[String] = None,
-    rmPlugin: Option[String] = None,
-    pluginToRun: Option[String] = None,
-    listPlugins: Boolean = false,
-    src: Option[String] = None,
-    language: Option[String] = None,
-    overwrite: Boolean = false,
-    store: Boolean = false,
-    server: Boolean = false,
-    serverHost: String = "localhost",
-    serverPort: Int = 8080,
-    serverAuthUsername: String = "",
-    serverAuthPassword: String = "",
-    nocolors: Boolean = false,
-    cpgToLoad: Option[File] = None,
-    forInputPath: Option[String] = None,
-    frontendArgs: Array[String] = Array.empty
+  scriptFile: Option[Path] = None,
+  command: Option[String] = None,
+  params: Map[String, String] = Map.empty,
+  additionalImports: List[Path] = Nil,
+  addPlugin: Option[String] = None,
+  rmPlugin: Option[String] = None,
+  pluginToRun: Option[String] = None,
+  listPlugins: Boolean = false,
+  src: Option[String] = None,
+  language: Option[String] = None,
+  overwrite: Boolean = false,
+  store: Boolean = false,
+  server: Boolean = false,
+  serverHost: String = "localhost",
+  serverPort: Int = 8080,
+  serverAuthUsername: String = "",
+  serverAuthPassword: String = "",
+  nocolors: Boolean = false,
+  cpgToLoad: Option[File] = None,
+  forInputPath: Option[String] = None,
+  frontendArgs: Array[String] = Array.empty
 )
 
 /** Base class for Ammonite Bridge. Nothing to see here, move along.
@@ -37,7 +37,7 @@ trait BridgeBase {
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
       scopt.Read.stringRead
-        .map(Path(_, pwd)) //support both relative and absolute paths
+        .map(Path(_, pwd)) // support both relative and absolute paths
 
     val parser = new scopt.OptionParser[Config]("(joern|ocular)") {
       override def errorOnUnknownArgument = false
@@ -195,7 +195,7 @@ trait BridgeBase {
     }
 
     val bundleName = config.pluginToRun.get
-    val src = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
     val language = config.language.getOrElse(
       io.joern.console.cpgcreation
         .guessLanguage(src)
@@ -277,7 +277,7 @@ trait BridgeBase {
   }
 
   private def startHttpServer(config: Config): Unit = {
-    val predef = predefPlus(additionalImportCode(config))
+    val predef   = predefPlus(additionalImportCode(config))
     val ammonite = new EmbeddedAmmonite(predef)
     ammonite.start()
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
@@ -314,7 +314,7 @@ trait BridgeBase {
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
     val scriptArgs: Seq[String] = {
-      val commandArgs = config.command.toList
+      val commandArgs   = config.command.toList
       val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
       commandArgs ++ parameterArgs
     }

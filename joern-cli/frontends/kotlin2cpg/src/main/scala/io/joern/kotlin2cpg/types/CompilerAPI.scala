@@ -65,8 +65,8 @@ object CompilerAPI {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def makeEnvironment(
-      forDirectories: Seq[String],
-      inferenceJarPaths: Seq[InferenceJarPath] = List()
+    forDirectories: Seq[String],
+    inferenceJarPaths: Seq[InferenceJarPath] = List()
   ): KotlinCoreEnvironment = {
     val configuration = {
       val config = new CompilerConfiguration()
@@ -80,13 +80,9 @@ object CompilerAPI {
           val f = new File(path.path)
           if (f.exists()) {
             config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(f))
-            logger.debug(
-              "Added inference jar from path `" + path.path + "`."
-            )
+            logger.debug("Added inference jar from path `" + path.path + "`.")
           } else {
-            logger.warn(
-              "Path to inference jar does not point to existing file `" + path.path + "`."
-            )
+            logger.warn("Path to inference jar does not point to existing file `" + path.path + "`.")
           }
         } else {
           val resourceStream = getClass.getClassLoader.getResourceAsStream(path.path)
@@ -99,13 +95,9 @@ object CompilerAPI {
               LazyList.continually(resourceStream.read).takeWhile(_ != -1).map(_.toByte).toArray
             outStream.write(bytes)
             config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(tempFile))
-            logger.debug(
-              "Added inference jar from resources `" + path.path + "`."
-            )
+            logger.debug("Added inference jar from resources `" + path.path + "`.")
           } else {
-            logger.warn(
-              "Path to inference jar does not point to existing resource `" + path.path + "`."
-            )
+            logger.warn("Path to inference jar does not point to existing resource `" + path.path + "`.")
           }
         }
       }
@@ -114,11 +106,7 @@ object CompilerAPI {
     }
     val environment =
       KotlinCoreEnvironment
-        .createForProduction(
-          Disposer.newDisposable(),
-          configuration,
-          EnvironmentConfigFiles.JVM_CONFIG_FILES
-        )
+        .createForProduction(Disposer.newDisposable(), configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
     environment
   }
 }

@@ -53,8 +53,8 @@ object StubRemovalPassFixture {
     File.usingTemporaryDirectory("fuzzyctest") { dir =>
       val file1 = (dir / "file1.c")
       file1.write(file1Code)
-      val cpg = Cpg.emptyCpg
-      val keyPool = new IntervalKeyPool(1001, 2000)
+      val cpg       = Cpg.emptyCpg
+      val keyPool   = new IntervalKeyPool(1001, 2000)
       val filenames = List(file1.path.toAbsolutePath.toString)
       new AstCreationPass(filenames, cpg, keyPool).createAndApply()
       new CfgCreationPass(cpg).createAndApply()

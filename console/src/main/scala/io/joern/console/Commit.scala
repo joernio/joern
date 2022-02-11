@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Layer
 object Commit {
   val overlayName: String = "commit"
   val description: String = "Apply current custom diffgraph"
-  def defaultOpts = new CommitOptions(DiffGraph.newBuilder)
+  def defaultOpts         = new CommitOptions(DiffGraph.newBuilder)
 }
 
 class CommitOptions(var diffGraphBuilder: DiffGraph.Builder) extends LayerCreatorOptions
@@ -18,7 +18,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val pass: CpgPass = new CpgPass(context.cpg) {
-      override val name = "commit"
+      override val name                       = "commit"
       override def run(): Iterator[DiffGraph] = Iterator(opts.diffGraphBuilder.build())
     }
     runPass(pass, context, storeUndoInfo)

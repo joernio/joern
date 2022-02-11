@@ -30,15 +30,11 @@ object CrossSiteScripting extends QueryBundle {
           )
 
         def responseWriter =
-          cpg.call.methodFullNameExact(
-            "javax.servlet.http.HttpServletResponse.getWriter:java.io.PrintWriter()"
-          )
+          cpg.call.methodFullNameExact("javax.servlet.http.HttpServletResponse.getWriter:java.io.PrintWriter()")
 
         def sinks =
           cpg.call
-            .methodFullNameExact(
-              "java.io.PrintWriter.println:void(java.lang.String)"
-            )
+            .methodFullNameExact("java.io.PrintWriter.println:void(java.lang.String)")
             .where(_.argument(0).reachableBy(responseWriter))
 
         sinks.where(_.argument(1).reachableBy(source))

@@ -24,11 +24,11 @@ object Nodes {
   }
 
   def createParameterNode(
-      code: String,
-      name: String,
-      order: Int,
-      typ: String,
-      lineNumber: Int
+    code: String,
+    name: String,
+    order: Int,
+    typ: String,
+    lineNumber: Int
   ): NewMethodParameterIn = {
     nodes
       .NewMethodParameterIn()
@@ -43,7 +43,7 @@ object Nodes {
     nodes
       .NewIdentifier()
       .code(code)
-      .name(name) //parameter.getName)
+      .name(name) // parameter.getName)
       .order(index)
       .argumentIndex(index)
       .typeFullName(Types.registerType(typ))

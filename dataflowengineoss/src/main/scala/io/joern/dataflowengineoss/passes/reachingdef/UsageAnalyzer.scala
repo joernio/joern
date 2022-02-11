@@ -9,17 +9,15 @@ import io.shiftleft.semanticcpg.utils.MemberAccess
 
 import scala.collection.{mutable, Set}
 
-/** Upon calculating reaching definitions, we find ourselves with
-  * a set of incoming definitions `in(n)` for each node `n` of the
-  * flow graph. This component determines those of the incoming
-  * definitions that are relevant as the value they define is
-  * actually used by `n`.
+/** Upon calculating reaching definitions, we find ourselves with a set of incoming definitions `in(n)` for each node
+  * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
+  * they define is actually used by `n`.
   */
 class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode, Set[Definition]]) {
 
-  val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-  private val allNodes = in.keys.toList
-  private val containerSet = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
+  val numberToNode                 = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+  private val allNodes             = in.keys.toList
+  private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
   private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
   val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
 
@@ -41,8 +39,8 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     }.toMap
   }
 
-  /** Determine whether the node `use` describes a container for `inElement`, e.g.,
-    * use = `ptr` while inElement = `ptr->foo`.
+  /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
+    * `ptr->foo`.
     */
   private def isContainer(use: Expression, inElement: StoredNode): Boolean = {
     inElement match {
@@ -54,8 +52,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     }
   }
 
-  /** Determine whether `use` is a part of `inElement`, e.g.,
-    * use = `argv[0]` while inElement = `argv`
+  /** Determine whether `use` is a part of `inElement`, e.g., use = `argv[0]` while inElement = `argv`
     */
   private def isPart(use: Expression, inElement: StoredNode): Boolean = {
     use match {
@@ -81,7 +78,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
         inElement match {
           case inCall: Call =>
             val (useBase, useAccessPath) = toTrackedBaseAndAccessPathSimple(useCall)
-            val (inBase, inAccessPath) = toTrackedBaseAndAccessPathSimple(inCall)
+            val (inBase, inAccessPath)   = toTrackedBaseAndAccessPathSimple(inCall)
             useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH
           case _ => false
         }
@@ -100,8 +97,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     n.filterNot(_.isInstanceOf[FieldIdentifier])
   }
 
-  /** Compares arguments of calls with incoming definitions
-    * to see if they refer to the same variable
+  /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
     */
   def sameVariable(use: Expression, inElement: StoredNode): Boolean = {
     inElement match {

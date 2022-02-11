@@ -19,9 +19,9 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
   private val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
 
   private val absolutePath: String = File(config.inputPaths.head).path.toAbsolutePath.normalize().toString
-  private val filename: String = s"$absolutePath:<includes>"
-  private val globalName: String = NamespaceTraversal.globalNamespaceName
-  private val fullName: String = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+  private val filename: String     = s"$absolutePath:<includes>"
+  private val globalName: String   = NamespaceTraversal.globalNamespaceName
+  private val fullName: String     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
 
   private val typeDeclFullNames: Set[String] =
     cpg.graph.nodes(NodeTypes.TYPE_DECL).map(_.property(Properties.FULL_NAME)).toSetImmutable
@@ -63,9 +63,8 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
       .order(2)
 
     val ast = Ast(includesFile).withChild(
-      Ast(namespaceBlock).withChild(
-        Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn))
-      )
+      Ast(namespaceBlock)
+        .withChild(Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn)))
     )
 
     Ast.storeInDiffGraph(ast, dstGraph)

@@ -37,9 +37,9 @@ class GhidraBinToCpgSuite extends BinToCpgFixture(new GhidraFrontend) {
   def flowToResultPairs(path: Path): List[String] = {
     val pairs = path.elements.map {
       case point: nodes.MethodParameterIn => {
-        val method = point.method.head
+        val method      = point.method.head
         val method_name = method.name
-        val code = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
+        val code        = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
         code
       }
       case point => point.statement.repr

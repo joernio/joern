@@ -8,14 +8,12 @@ import java.nio.file.Path
   */
 case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
-  /** Generate a CPG for the given input path.
-    * Returns the output path, or None, if no
-    * CPG was generated.
+  /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(
-      inputPath: String,
-      outputPath: String = "cpg.bin.zip",
-      namespaces: List[String] = List()
+    inputPath: String,
+    outputPath: String = "cpg.bin.zip",
+    namespaces: List[String] = List()
   ): Option[String] = {
 
     if (commercialAvailable) {
@@ -49,7 +47,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   }
 
   private def generateOss(inputPath: String, outputPath: String): Option[String] = {
-    val command = rootPath.resolve("jimple2cpg").toString
+    val command   = rootPath.resolve("jimple2cpg").toString
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
     runShellCommand(command, arguments).map(_ => outputPath)
   }
@@ -75,7 +73,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   }
 
   private def commercialAvailable: Boolean = rootPath.resolve("java2cpg.sh").toFile.exists()
-  private def ossAvailable: Boolean = rootPath.resolve("jimple2cpg").toFile.exists()
+  private def ossAvailable: Boolean        = rootPath.resolve("jimple2cpg").toFile.exists()
 
 }
 

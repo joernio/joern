@@ -9,13 +9,13 @@ object pprinter {
   def isAnsiEncoded(s: String): Boolean =
     AnsiEncodedRegexp.findFirstIn(s).isDefined
 
-  /** We use source-highlight to encode source as ansi strings, e.g. the .dump step
-    * Ammonite uses fansi for it's colour-coding, and while both pledge to follow the ansi codec, they aren't compatible
-    * TODO: PR for fansi to support these standard encodings out of the box
+  /** We use source-highlight to encode source as ansi strings, e.g. the .dump step Ammonite uses fansi for it's
+    * colour-coding, and while both pledge to follow the ansi codec, they aren't compatible TODO: PR for fansi to
+    * support these standard encodings out of the box
     */
   def fixForFansi(ansiEncoded: String): String =
     ansiEncoded
-      .replaceAll("\u001b\\[m", "\u001b[39m") //encoding ends with [39m for fansi instead of [m
+      .replaceAll("\u001b\\[m", "\u001b[39m")       // encoding ends with [39m for fansi instead of [m
       .replaceAll("\u001b\\[0(\\d)m", "\u001b[$1m") // `[01m` is encoded as `[1m` in fansi for all single digit numbers
       .replaceAll("\u001b\\[0?(\\d+);0?(\\d+)m", "\u001b[$1m\u001b[$2m") // `[01;34m` is encoded as `[1m[34m` in fansi
       .replaceAll(
@@ -26,13 +26,13 @@ object pprinter {
   def create(original: PPrinter): PPrinter =
     new PPrinter(defaultHeight = 99999, additionalHandlers = myAdditionalHandlers(original)) {
       override def tokenize(
-          x: Any,
-          width: Int = defaultWidth,
-          height: Int = defaultHeight,
-          indent: Int = defaultIndent,
-          initialOffset: Int = 0,
-          escapeUnicode: Boolean,
-          showFieldNames: Boolean
+        x: Any,
+        width: Int = defaultWidth,
+        height: Int = defaultHeight,
+        indent: Int = defaultIndent,
+        initialOffset: Int = 0,
+        escapeUnicode: Boolean,
+        showFieldNames: Boolean
       ): Iterator[fansi.Str] = {
         val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
         val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {

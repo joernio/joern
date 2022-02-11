@@ -24,8 +24,8 @@ object ParserConfig {
 }
 
 case class ParserConfig(
-    includePaths: Set[Path],
-    definedSymbols: Map[String, String],
-    logProblems: Boolean,
-    logPreprocessor: Boolean
+  includePaths: Set[Path],
+  definedSymbols: Map[String, String],
+  logProblems: Boolean,
+  logPreprocessor: Boolean
 )

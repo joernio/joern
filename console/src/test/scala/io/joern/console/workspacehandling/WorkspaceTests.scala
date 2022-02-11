@@ -20,15 +20,13 @@ class WorkspaceTests extends AnyWordSpec with Matchers {
     "return a valid row for a project" in {
       File.usingTemporaryDirectory("project") { project =>
         mkdir(project / "overlays")
-        val inputPath = "/input/path"
+        val inputPath   = "/input/path"
         val projectFile = ProjectFile(inputPath, project.name)
-        val cpg = MockCpg().withMetaData("C", List("foo", "bar")).cpg
-        val projects = ListBuffer(
-          Project(projectFile, project.path, Some(cpg))
-        )
-        val workspace = new Workspace(projects)
-        val output = workspace.toString
-        val lines = output.split("\n")
+        val cpg         = MockCpg().withMetaData("C", List("foo", "bar")).cpg
+        val projects    = ListBuffer(Project(projectFile, project.path, Some(cpg)))
+        val workspace   = new Workspace(projects)
+        val output      = workspace.toString
+        val lines       = output.split("\n")
         lines.length shouldBe 5
         lines(4).contains(project.name) shouldBe true
         lines(4).contains(inputPath)

@@ -7,7 +7,8 @@ import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
 /** Plugin management component
-  * @param installDir the Joern/Ocular installation dir
+  * @param installDir
+  *   the Joern/Ocular installation dir
   */
 class PluginManager(val installDir: File) {
 
@@ -40,7 +41,7 @@ class PluginManager(val installDir: File) {
 
   private def addExisting(file: File): Unit = {
     val pluginName = file.name.replace(".zip", "")
-    val tmpDir = extractToTemporaryDir(file)
+    val tmpDir     = extractToTemporaryDir(file)
     tmpDir.foreach(dir => addExistingUnzipped(dir, pluginName))
   }
 
@@ -49,7 +50,7 @@ class PluginManager(val installDir: File) {
       pluginDir.foreach { pDir =>
         if (!(pDir / jar.name).exists) {
           val dstFileName = s"joernext-$pluginName-${jar.name}"
-          val dstFile = pDir / dstFileName
+          val dstFile     = pDir / dstFileName
           cp(jar, dstFile)
         }
       }

@@ -45,11 +45,11 @@ package object scan {
   }
 
   private object FindingKeys {
-    val name = "name"
-    val author = "author"
-    val title = "title"
+    val name        = "name"
+    val author      = "author"
+    val title       = "title"
     val description = "description"
-    val score = "score"
+    val score       = "score"
   }
 
   implicit class ScannerFindingStep(val traversal: Traversal[Finding]) extends AnyRef {
@@ -84,12 +84,12 @@ package object scan {
   }
 
   private def finding(
-      evidence: StoredNode,
-      name: String,
-      author: String,
-      title: String,
-      description: String,
-      score: Double
+    evidence: StoredNode,
+    name: String,
+    author: String,
+    title: String,
+    description: String,
+    score: Double
   ): NewFinding = {
     NewFinding()
       .evidence(List(evidence))

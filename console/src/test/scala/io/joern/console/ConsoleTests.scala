@@ -147,7 +147,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       File.usingTemporaryFile("console") { file =>
         new ZipOutputStream(new FileOutputStream(file.toString)).close()
         val projectName = "myproject"
-        val cpg = console.importCpg(file.toString, projectName)
+        val cpg         = console.importCpg(file.toString, projectName)
         console.workspace.numberOfProjects shouldBe 1
         console.workspace.projectByCpg(cpg.get).map(_.name) shouldBe Some(projectName)
         console.project.appliedOverlays shouldBe List()
@@ -280,7 +280,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "delete" should {
 
     "remove a project from disk" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
-      val cpg = console.importCode(codeDir.toString, "foo")
+      val cpg        = console.importCode(codeDir.toString, "foo")
       val projectDir = console.workspace.projectByCpg(cpg).get.path.toFile
       console.delete("foo")
       projectDir.exists shouldBe false
@@ -377,7 +377,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "remove overlay file from project" in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString)
-      val overlayDir = console.project.path.resolve("overlays")
+      val overlayDir         = console.project.path.resolve("overlays")
       val overlayFilesBefore = overlayDir.toFile.list.toSet
       overlayFilesBefore shouldBe Set(
         Base.overlayName,
@@ -429,7 +429,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       val projectPath = console.project.path
       console.save
       val persistentCpgSize = projectPath.resolve("cpg.bin").toFile.length()
-      val workingCpgSize = projectPath.resolve("cpg.bin.tmp").toFile.length()
+      val workingCpgSize    = projectPath.resolve("cpg.bin.tmp").toFile.length()
       persistentCpgSize shouldBe workingCpgSize
     }
 

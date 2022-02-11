@@ -30,7 +30,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   "The data flow should contain " in {
     implicit val resolver: ICallResolver = NoResolve
-    val semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+    val semanticsFilename    = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
     val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
     implicit var context: EngineContext = EngineContext(semantics)
 

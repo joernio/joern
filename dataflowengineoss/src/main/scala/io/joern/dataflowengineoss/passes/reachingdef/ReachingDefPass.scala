@@ -34,14 +34,12 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
     Iterator(dstGraph.build())
   }
 
-  /** Before we start propagating definitions in the graph, which is the bulk
-    * of the work, we check how many definitions were are dealing with in total.
-    * If a threshold is reached, we bail out instead, leaving reaching definitions
-    * uncalculated for the method in question. Users can increase the threshold
-    * if desired.
+  /** Before we start propagating definitions in the graph, which is the bulk of the work, we check how many definitions
+    * were are dealing with in total. If a threshold is reached, we bail out instead, leaving reaching definitions
+    * uncalculated for the method in question. Users can increase the threshold if desired.
     */
   private def shouldBailOut(problem: DataFlowProblem[mutable.BitSet]): Boolean = {
-    val method = problem.flowGraph.entryNode.asInstanceOf[Method]
+    val method           = problem.flowGraph.entryNode.asInstanceOf[Method]
     val transferFunction = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
     // For each node, the `gen` map contains the list of definitions it generates
     // We add up the sizes of these lists to obtain the total number of definitions
@@ -55,23 +53,22 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
     }
   }
 
-  /** Once reaching definitions have been computed, we create a data dependence graph
-    * by seeing which of these reaching definitions are relevant in the sense that
-    * they are used.
+  /** Once reaching definitions have been computed, we create a data dependence graph by seeing which of these reaching
+    * definitions are relevant in the sense that they are used.
     */
   private def addReachingDefEdges(
-      problem: DataFlowProblem[mutable.BitSet],
-      method: Method,
-      solution: Solution[mutable.BitSet]
+    problem: DataFlowProblem[mutable.BitSet],
+    method: Method,
+    solution: Solution[mutable.BitSet]
   ): DiffGraph.Builder = {
-    val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val numberToNode                         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
     implicit val dstGraph: DiffGraph.Builder = DiffGraph.newBuilder
-    val in = solution.in
+    val in                                   = solution.in
     val gen = solution.problem.transferFunction
       .asInstanceOf[ReachingDefTransferFunction]
       .gen
 
-    val allNodes = in.keys.toList
+    val allNodes      = in.keys.toList
     val usageAnalyzer = new UsageAnalyzer(problem, in)
 
     allNodes.foreach {
@@ -135,7 +132,6 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
         call.argument.isBlock.foreach { block =>
           block.astChildren.lastOption match {
             case None => // Do nothing
-
             case Some(node: Identifier) =>
               val edgesToAdd = in(node).toList.flatMap { inDef =>
                 numberToNode(inDef) match {
@@ -162,7 +158,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
   }
 
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
-      dstGraph: DiffGraph.Builder
+    dstGraph: DiffGraph.Builder
   ): Unit = {
     val properties = List((PropertyNames.VARIABLE, variable))
     if (
@@ -189,22 +185,20 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
     }
   }
 
-  /** This is part of the Lone-identifier optimization: as we
-    * remove lone identifiers from `gen` sets, we must now
-    * retrieve them and create an edge from each lone identifier
-    * to the exit node.
+  /** This is part of the Lone-identifier optimization: as we remove lone identifiers from `gen` sets, we must now
+    * retrieve them and create an edge from each lone identifier to the exit node.
     */
   def addEdgesFromLoneIdentifiersToExit(
-      builder: DiffGraph.Builder,
-      problem: DataFlowProblem[mutable.BitSet],
-      method: Method,
-      solution: Solution[mutable.BitSet]
+    builder: DiffGraph.Builder,
+    problem: DataFlowProblem[mutable.BitSet],
+    method: Method,
+    solution: Solution[mutable.BitSet]
   ): Unit = {
-    val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val numberToNode                         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
     implicit val dstGraph: DiffGraph.Builder = builder
-    val exitNode = method.methodReturn
+    val exitNode                             = method.methodReturn
     val transferFunction = solution.problem.transferFunction.asInstanceOf[OptimizedReachingDefTransferFunction]
-    val genOnce = transferFunction.loneIdentifiers
+    val genOnce          = transferFunction.loneIdentifiers
     genOnce.foreach { case (_, defs) =>
       defs.foreach { d =>
         val dNode = numberToNode(d)

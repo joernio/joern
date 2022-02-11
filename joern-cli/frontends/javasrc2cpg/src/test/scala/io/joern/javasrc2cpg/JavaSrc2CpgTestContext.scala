@@ -9,13 +9,13 @@ import java.nio.file.Files
 
 class JavaSrc2CpgTestContext {
   private var code: String = ""
-  private var buildResult = Option.empty[Cpg]
+  private var buildResult  = Option.empty[Cpg]
 
   def buildCpg(runDataflow: Boolean): Cpg = {
     if (buildResult.isEmpty) {
       val javaSrc2Cpg = JavaSrc2Cpg()
-      val cpg = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
-      val context = new LayerCreatorContext(cpg)
+      val cpg         = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
+      val context     = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)
       new ControlFlow().run(context)

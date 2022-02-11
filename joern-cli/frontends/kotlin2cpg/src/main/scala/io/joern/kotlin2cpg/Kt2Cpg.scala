@@ -25,16 +25,16 @@ class Kt2Cpg {
   import Kt2Cpg._
 
   def createCpg(
-      filesWithMeta: Iterable[KtFileWithMeta],
-      fileContentsAtPath: Iterable[FileContentAtPath],
-      nameGenerator: NameGenerator,
-      outputPath: Option[String] = None
+    filesWithMeta: Iterable[KtFileWithMeta],
+    fileContentsAtPath: Iterable[FileContentAtPath],
+    nameGenerator: NameGenerator,
+    outputPath: Option[String] = None
   ): Cpg = {
-    val cpg = newEmptyCpg(outputPath)
+    val cpg             = newEmptyCpg(outputPath)
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool = new IntervalKeyPool(100, 1000100)
-    val configKeyPool = new IntervalKeyPool(1000100, 2000100)
-    val methodKeyPool = new IntervalKeyPool(first = 2000100, last = Long.MaxValue)
+    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
+    val configKeyPool   = new IntervalKeyPool(1000100, 2000100)
+    val methodKeyPool   = new IntervalKeyPool(first = 2000100, last = Long.MaxValue)
 
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
