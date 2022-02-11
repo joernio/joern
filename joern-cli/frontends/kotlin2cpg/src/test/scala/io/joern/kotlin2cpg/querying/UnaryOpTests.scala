@@ -10,8 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class UnaryOpTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with calls to unary operators" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  val y: Boolean = true
@@ -23,8 +22,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
         |  x++
         |  x--
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "should contain correct number of calls" in {
       cpg.call.size should not be 0

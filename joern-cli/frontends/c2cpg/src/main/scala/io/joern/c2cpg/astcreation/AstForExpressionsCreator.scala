@@ -53,8 +53,8 @@ trait AstForExpressionsCreator {
       case _                                        => "<operator>.unknown"
     }
     val callNode = newCallNode(bin, op, op, DispatchTypes.STATIC_DISPATCH, order)
-    val left = nullSafeAst(bin.getOperand1, 1)
-    val right = nullSafeAst(bin.getOperand2, 2)
+    val left     = nullSafeAst(bin.getOperand1, 1)
+    val right    = nullSafeAst(bin.getOperand2, 2)
     Ast(callNode)
       .withChild(left)
       .withChild(right)
@@ -107,7 +107,7 @@ trait AstForExpressionsCreator {
     }
 
     val cpgCall = Ast(newCallNode(call, name, name, dd, order))
-    val args = withOrder(call.getArguments) { case (a, o) => astForNode(a, o) }
+    val args    = withOrder(call.getArguments) { case (a, o) => astForNode(a, o) }
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
       // e.g., for `f(x)`, don't include an `f` identifier node as a first child. Since we
@@ -168,7 +168,7 @@ trait AstForExpressionsCreator {
             op == IASTTypeIdExpression.op_alignof ||
             op == IASTTypeIdExpression.op_typeof =>
         val call = newCallNode(typeId, Operators.sizeOf, Operators.sizeOf, DispatchTypes.STATIC_DISPATCH, order)
-        val arg = astForNode(typeId.getTypeId.getDeclSpecifier, 1)
+        val arg  = astForNode(typeId.getTypeId.getDeclSpecifier, 1)
         Ast(call).withChild(arg).withArgEdge(call, arg.root)
       case _ => notHandledYet(typeId, order)
     }
@@ -178,8 +178,8 @@ trait AstForExpressionsCreator {
     val call = newCallNode(expr, Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH, order)
 
     val condAst = nullSafeAst(expr.getLogicalConditionExpression, 1)
-    val posAst = nullSafeAst(expr.getPositiveResultExpression, 2)
-    val negAst = nullSafeAst(expr.getNegativeResultExpression, 3)
+    val posAst  = nullSafeAst(expr.getPositiveResultExpression, 2)
+    val negAst  = nullSafeAst(expr.getNegativeResultExpression, 3)
 
     val children = Seq(condAst, posAst, negAst)
     Ast(call).withChildren(children).withArgEdges(call, children)
@@ -196,7 +196,7 @@ trait AstForExpressionsCreator {
       )
 
     val expr = astForExpression(arrayIndexExpression.getArrayExpression, 1)
-    val arg = astForNode(arrayIndexExpression.getArgument, 2)
+    val arg  = astForNode(arrayIndexExpression.getArgument, 2)
 
     Ast(cpgArrayIndexing)
       .withChild(expr)
@@ -209,9 +209,9 @@ trait AstForExpressionsCreator {
     val cpgCastExpression =
       newCallNode(castExpression, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
-    val expr = astForExpression(castExpression.getOperand, 2)
+    val expr    = astForExpression(castExpression.getOperand, 2)
     val argNode = castExpression.getTypeId
-    val arg = newUnknown(argNode, 1)
+    val arg     = newUnknown(argNode, 1)
 
     Ast(cpgCastExpression)
       .withChild(Ast(arg))
@@ -264,7 +264,7 @@ trait AstForExpressionsCreator {
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH, order)
 
     val typeAst = newUnknown(typeIdInit.getTypeId, 1)
-    val expr = astForNode(typeIdInit.getInitializer, 2)
+    val expr    = astForNode(typeIdInit.getInitializer, 2)
 
     Ast(cpgCastExpression)
       .withChild(Ast(typeAst))
@@ -274,15 +274,15 @@ trait AstForExpressionsCreator {
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression, order: Int): Ast = {
-    val name = c.getDeclSpecifier.toString
+    val name     = c.getDeclSpecifier.toString
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val arg = astForNode(c.getInitializer, 1)
+    val arg      = astForNode(c.getInitializer, 1)
     Ast(callNode).withChild(arg).withArgEdge(callNode, arg.root)
   }
 
   private def astForCompoundStatementExpression(
-      compoundExpression: IGNUASTCompoundStatementExpression,
-      order: Int
+    compoundExpression: IGNUASTCompoundStatementExpression,
+    order: Int
   ): Ast =
     nullSafeAst(compoundExpression.getCompoundStatement, order).headOption.getOrElse(Ast())
 
@@ -319,11 +319,11 @@ trait AstForExpressionsCreator {
   }
 
   protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration, order: Int): Ast = {
-    val name = "static_assert"
-    val call = newCallNode(a, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val cond = nullSafeAst(a.getCondition, 1)
+    val name  = "static_assert"
+    val call  = newCallNode(a, name, name, DispatchTypes.STATIC_DISPATCH, order)
+    val cond  = nullSafeAst(a.getCondition, 1)
     val messg = nullSafeAst(a.getMessage, 2)
-    var ast = Ast(call).withChild(cond).withChild(messg)
+    var ast   = Ast(call).withChild(cond).withChild(messg)
     cond.root.foreach(r => ast = ast.withArgEdge(call, r))
     messg.root.foreach(m => ast = ast.withArgEdge(call, m))
     ast

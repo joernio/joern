@@ -32,7 +32,7 @@ class SocketApiTests extends CQueryTestSuite {
       |""".stripMargin
 
   "should flag function `return_not_checked` only" in {
-    val query = queryBundle.uncheckedSend()
+    val query   = queryBundle.uncheckedSend()
     val results = findMatchingCalls(query)
 
     results shouldBe Set("return_not_checked")

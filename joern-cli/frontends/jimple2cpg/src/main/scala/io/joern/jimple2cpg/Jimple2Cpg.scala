@@ -48,18 +48,18 @@ class Jimple2Cpg {
 
   /** Creates a CPG from Jimple.
     *
-    * @param rawSourceCodePath The path to the Jimple code or code that can be transformed into Jimple.
-    * @param outputPath     The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
-    * @return The constructed CPG.
+    * @param rawSourceCodePath
+    *   The path to the Jimple code or code that can be transformed into Jimple.
+    * @param outputPath
+    *   The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
+    * @return
+    *   The constructed CPG.
     */
-  def createCpg(
-      rawSourceCodePath: String,
-      outputPath: Option[String] = None
-  ): Cpg = {
+  def createCpg(rawSourceCodePath: String, outputPath: Option[String] = None): Cpg = {
     try {
       // Determine if the given path is a file or directory and sanitize accordingly
       val rawSourceCodeFile = new JFile(rawSourceCodePath)
-      val sourceTarget = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
+      val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
       val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
         sourceTarget
       } else {
@@ -72,12 +72,12 @@ class Jimple2Cpg {
       configureSoot()
       val cpg = newEmptyCpg(outputPath)
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
-      val typesKeyPool = new IntervalKeyPool(100, 1000100)
-      val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+      val typesKeyPool    = new IntervalKeyPool(100, 1000100)
+      val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
 
       new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
-      val sourceFileExtensions = Set(".class", ".jimple")
+      val sourceFileExtensions  = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
       // Load source files and unpack archives if necessary
       val sourceFileNames = if (sourceTarget == sourceCodeDir) {
@@ -111,9 +111,9 @@ class Jimple2Cpg {
   /** Load all source files from archive and/or source file types.
     */
   private def loadSourceFiles(
-      sourceCodePath: String,
-      sourceFileExtensions: Set[String],
-      archiveFileExtensions: Set[String]
+    sourceCodePath: String,
+    sourceFileExtensions: Set[String],
+    archiveFileExtensions: Set[String]
   ): List[String] = {
     (
       extractSourceFilesFromArchive(sourceCodePath, archiveFileExtensions) ++

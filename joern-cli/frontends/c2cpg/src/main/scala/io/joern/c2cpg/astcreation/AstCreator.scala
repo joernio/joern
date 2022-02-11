@@ -15,11 +15,11 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 
 class AstCreator(
-    val filename: String,
-    val config: C2Cpg.Config,
-    val global: Global,
-    val diffGraph: DiffGraphBuilder,
-    val parserResult: IASTTranslationUnit
+  val filename: String,
+  val config: C2Cpg.Config,
+  val global: Global,
+  val diffGraph: DiffGraphBuilder,
+  val parserResult: IASTTranslationUnit
 ) extends AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -44,7 +44,7 @@ class AstCreator(
     Ast.storeInDiffGraph(astForFile(parserResult), diffGraph)
 
   private def astForFile(parserResult: IASTTranslationUnit): Ast = {
-    val cpgFile = Ast(NewFile().name(filename).order(0))
+    val cpgFile            = Ast(NewFile().name(filename).order(0))
     val translationUnitAst = astForTranslationUnit(parserResult)
 
     val ast = cpgFile.withChild(translationUnitAst)
@@ -57,10 +57,10 @@ class AstCreator(
   }
 
   private def createFakeMethod(
-      name: String,
-      fullName: String,
-      path: String,
-      iASTTranslationUnit: IASTTranslationUnit
+    name: String,
+    fullName: String,
+    path: String,
+    iASTTranslationUnit: IASTTranslationUnit
   ): Ast = {
     val allDecls = iASTTranslationUnit.getDeclarations
 
@@ -111,8 +111,8 @@ class AstCreator(
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
     val absolutePath = better.files.File(iASTTranslationUnit.getFilePath).path.toAbsolutePath.normalize().toString
-    val name = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
+    val name         = NamespaceTraversal.globalNamespaceName
+    val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(fullName)

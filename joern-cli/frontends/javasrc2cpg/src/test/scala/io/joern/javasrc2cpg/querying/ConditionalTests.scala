@@ -29,7 +29,7 @@ class ConditionalTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   "should parse ternary expression" in {
-    val List(ternaryExpr: Call) = cpg.method.name("foo").call(Operators.conditional).l
+    val List(ternaryExpr: Call)                                  = cpg.method.name("foo").call(Operators.conditional).l
     val List(condition: Call, thenExpr: Literal, elseExpr: Call) = ternaryExpr.argument.l
 
     condition.code shouldBe "x > 5"

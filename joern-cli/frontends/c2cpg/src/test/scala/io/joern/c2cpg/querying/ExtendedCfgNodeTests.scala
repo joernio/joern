@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 class ExtendedCfgNodeTests extends DataFlowCodeToCpgSuite {
 
   implicit val resolver: NoResolve.type = NoResolve
-  implicit var s: Semantics = _
+  implicit var s: Semantics             = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()

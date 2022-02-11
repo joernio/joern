@@ -198,7 +198,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
 
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
       def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
-      val List(cs) = matchTryQ.l
+      val List(cs)  = matchTryQ.l
       cs.lineNumber shouldBe Some(4)
       cs.columnNumber shouldBe Some(3)
 
@@ -224,7 +224,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
 
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
       def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
-      val List(cs) = matchTryQ.l
+      val List(cs)  = matchTryQ.l
       cs.lineNumber shouldBe Some(4)
       cs.columnNumber shouldBe Some(3)
 

@@ -15,20 +15,20 @@ import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 private case class ReachableByTask(
-    sink: CfgNode,
-    sources: Set[CfgNode],
-    table: ResultTable,
-    initialPath: Vector[PathElement] = Vector(),
-    callDepth: Int = 0,
-    callSite: Option[Call] = None
+  sink: CfgNode,
+  sources: Set[CfgNode],
+  table: ResultTable,
+  initialPath: Vector[PathElement] = Vector(),
+  callDepth: Int = 0,
+  callSite: Option[Call] = None
 )
 
 class Engine(context: EngineContext) {
 
   import Engine._
 
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  private var numberOfTasksRunning: Int = 0
+  private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
+  private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
 
@@ -36,9 +36,8 @@ class Engine(context: EngineContext) {
     executorService.shutdown()
   }
 
-  /** Determine flows from sources to sinks by analyzing backwards from sinks.
-    * Returns the list of results along with the ResultTable, a cache of known
-    * paths created during the analysis.
+  /** Determine flows from sources to sinks by analyzing backwards from sinks. Returns the list of results along with
+    * the ResultTable, a cache of known paths created during the analysis.
     */
   def backwards(sinks: List[CfgNode], sources: List[CfgNode]): List[ReachableByResult] = {
     if (sources.isEmpty) {
@@ -79,8 +78,8 @@ class Engine(context: EngineContext) {
   }
 
   private def newTasksFromResults(
-      resultsOfTask: Vector[ReachableByResult],
-      sources: Set[CfgNode]
+    resultsOfTask: Vector[ReachableByResult],
+    sources: Set[CfgNode]
   ): Vector[ReachableByTask] = {
     tasksForParams(resultsOfTask, sources) ++ tasksForUnresolvedOutArgs(resultsOfTask, sources)
   }
@@ -91,8 +90,8 @@ class Engine(context: EngineContext) {
   }
 
   private def tasksForParams(
-      resultsOfTask: Vector[ReachableByResult],
-      sources: Set[CfgNode]
+    resultsOfTask: Vector[ReachableByResult],
+    sources: Set[CfgNode]
   ): Vector[ReachableByTask] = {
     val pathsFromParams = resultsOfTask.map(x => (x, x.path, x.callDepth))
     pathsFromParams.flatMap { case (result, path, callDepth) =>
@@ -113,8 +112,8 @@ class Engine(context: EngineContext) {
   }
 
   private def tasksForUnresolvedOutArgs(
-      resultsOfTask: Vector[ReachableByResult],
-      sources: Set[CfgNode]
+    resultsOfTask: Vector[ReachableByResult],
+    sources: Set[CfgNode]
   ): Vector[ReachableByTask] = {
 
     val outArgsAndCalls = resultsOfTask
@@ -174,7 +173,7 @@ object Engine {
 
   private def edgeToPathElement(e: Edge): PathElement = {
     val parentNode = e.outNode().asInstanceOf[CfgNode]
-    val outLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
+    val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
     PathElement(parentNode, outEdgeLabel = outLabel)
   }
 
@@ -200,16 +199,15 @@ object Engine {
     }
   }
 
-  /** For a given `(parentNode, curNode)` pair, determine whether to expand into
-    * `parentNode`. If so, return a corresponding path element or None if
-    * `parentNode` should not be followed. The Path element contains a Boolean
-    * field to specify whether it should be visible in the flow or not, a decision
-    * that can also only be made by looking at both the parent and the child.
+  /** For a given `(parentNode, curNode)` pair, determine whether to expand into `parentNode`. If so, return a
+    * corresponding path element or None if `parentNode` should not be followed. The Path element contains a Boolean
+    * field to specify whether it should be visible in the flow or not, a decision that can also only be made by looking
+    * at both the parent and the child.
     */
   private def elemForArgument(e: Edge, curNode: Expression)(implicit semantics: Semantics): Option[PathElement] = {
-    val parentNode = e.outNode().asInstanceOf[Expression]
+    val parentNode     = e.outNode().asInstanceOf[Expression]
     val parentNodeCall = parentNode.inCall.l
-    val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
+    val sameCallSite   = parentNode.inCall.l == curNode.start.inCall.l
 
     if (
       sameCallSite && parentNode.isUsed && curNode.isDefined ||
@@ -217,7 +215,7 @@ object Engine {
     ) {
 
       val visible = if (sameCallSite) {
-        val semanticExists = parentNode.semanticsForCallByArg.nonEmpty
+        val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
         val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
         (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
       } else {
@@ -286,11 +284,13 @@ case class EngineConfig(var maxCallDepth: Int = 2, initialTable: Option[ResultTa
 
 /** Callable for solving a ReachableByTask
   *
-  * A Java Callable is "a task that returns a result and may throw an exception", and this
-  * is the callable for calculating the result for `task`.
+  * A Java Callable is "a task that returns a result and may throw an exception", and this is the callable for
+  * calculating the result for `task`.
   *
-  * @param task the data flow problem to solve
-  * @param context state of the data flow engine
+  * @param task
+  *   the data flow problem to solve
+  * @param context
+  *   state of the data flow engine
   */
 private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
     extends Callable[Vector[ReachableByResult]] {
@@ -311,22 +311,20 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
     }
   }
 
-  /** Recursively expand the DDG backwards and return a list of all
-    * results, given by at least a source node in `sourceSymbols` and the
-    * path between the source symbol and the sink.
+  /** Recursively expand the DDG backwards and return a list of all results, given by at least a source node in
+    * `sourceSymbols` and the path between the source symbol and the sink.
     *
-    * This method stays within the method (intra-procedural analysis) but
-    * call sites which should be resolved are marked as such in the
-    * ResultTable.
+    * This method stays within the method (intra-procedural analysis) but call sites which should be resolved are marked
+    * as such in the ResultTable.
     *
-    * @param path This is a path from a node to the sink. The first node
-    *             of the path is expanded by this method
+    * @param path
+    *   This is a path from a node to the sink. The first node of the path is expanded by this method
     */
   private def results[NodeType <: CfgNode](
-      path: Vector[PathElement],
-      sources: Set[NodeType],
-      table: ResultTable,
-      callSite: Option[Call]
+    path: Vector[PathElement],
+    sources: Set[NodeType],
+    table: ResultTable,
+    callSite: Option[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
     val curNode = path.head.node
 

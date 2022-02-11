@@ -8,9 +8,7 @@ import soot.Scene
 
 import java.util.concurrent.ConcurrentSkipListSet
 
-case class Global(
-    usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String]()
-)
+case class Global(usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String]())
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */

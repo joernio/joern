@@ -53,7 +53,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a CALL node for the `.*containsKey.*` QE with the correct arguments set" in {
-      def parentCall = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment)
+      def parentCall     = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment)
       val List(firstArg) = parentCall.argument(0).isCall.l
       firstArg.code shouldBe "getHashMap()"
 

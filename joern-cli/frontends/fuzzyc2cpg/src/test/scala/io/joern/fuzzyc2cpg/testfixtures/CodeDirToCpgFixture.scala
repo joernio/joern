@@ -11,10 +11,10 @@ import java.io.File
 
 class CodeDirToCpgFixture extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  val dir: java.io.File = null
-  var cpg: Cpg = _
+  val dir: java.io.File          = null
+  var cpg: Cpg                   = _
   val frontend: LanguageFrontend = new FuzzycFrontend
-  def passes(cpg: Cpg): Unit = createEnhancements(cpg)
+  def passes(cpg: Cpg): Unit     = createEnhancements(cpg)
 
   override def beforeAll(): Unit = {
     buildCpgForDir(dir)

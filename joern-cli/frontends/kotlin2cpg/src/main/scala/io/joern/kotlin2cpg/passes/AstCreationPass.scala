@@ -19,15 +19,13 @@ import org.jetbrains.kotlin.cli.common.messages.{
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 
-case class Global(
-    usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]()
-)
+case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
 class AstCreationPass(
-    filesWithMeta: Iterable[KtFileWithMeta],
-    nameGenerator: NameGenerator,
-    cpg: Cpg,
-    keyPool: IntervalKeyPool
+  filesWithMeta: Iterable[KtFileWithMeta],
+  nameGenerator: NameGenerator,
+  cpg: Cpg,
+  keyPool: IntervalKeyPool
 ) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(filesWithMeta.size))) {
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(getClass)
@@ -62,10 +60,10 @@ class AstCreationPass(
 // unfortunately Scala-Kotlin interop is not good enough to allow to pass it in the `put` method of the config.
 class EmptyMessageCollector extends MessageCollector {
   override def report(
-      compilerMessageSeverity: CompilerMessageSeverity,
-      s: String,
-      compilerMessageSourceLocation: CompilerMessageSourceLocation
+    compilerMessageSeverity: CompilerMessageSeverity,
+    s: String,
+    compilerMessageSourceLocation: CompilerMessageSourceLocation
   ): Unit = {}
   override def hasErrors: Boolean = false
-  override def clear(): Unit = {}
+  override def clear(): Unit      = {}
 }

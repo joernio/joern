@@ -46,9 +46,8 @@ class TypeInfoProvider(global: Global) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  /** Add `typeName` to a global map and return it. The
-    * map is later passed to a pass that creates TYPE
-    * nodes for each key in the map.
+  /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
+    * key in the map.
     */
   def registerType(typeName: String): String = {
     global.usedTypes.putIfAbsent(typeName, true)
@@ -69,30 +68,30 @@ class TypeInfoProvider(global: Global) {
   }
 
   private def resolvedTypeDeclFullName(
-      declaration: ResolvedTypeDeclaration,
-      typeParameterString: String = ""
+    declaration: ResolvedTypeDeclaration,
+    typeParameterString: String = ""
   ): String = {
     val packageName = Try(declaration.getPackageName).getOrElse("")
-    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    val className   = Try(declaration.getClassName).getOrElse(declaration.getName)
     buildTypeString(packageName, className, typeParameterString)
   }
 
   private def resolvedTypeParamFullName(
-      declaration: ResolvedTypeParameterDeclaration,
-      typeParameterString: String = ""
+    declaration: ResolvedTypeParameterDeclaration,
+    typeParameterString: String = ""
   ): String = {
     val packageName = Try(declaration.getPackageName).getOrElse("")
-    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
+    val className   = Try(declaration.getClassName).getOrElse(declaration.getName)
     buildTypeString(packageName, className, typeParameterString)
   }
 
   private def resolvedMethodLikeDeclFullName(
-      declaration: ResolvedMethodLikeDeclaration,
-      typeParameterString: String = ""
+    declaration: ResolvedMethodLikeDeclaration,
+    typeParameterString: String = ""
   ): String = {
     val packageName = Try(declaration.getPackageName).getOrElse("")
-    val className = Try(declaration.getClassName).getOrElse(declaration.getName)
-    val baseString = buildTypeString(packageName, className, typeParameterString)
+    val className   = Try(declaration.getClassName).getOrElse(declaration.getName)
+    val baseString  = buildTypeString(packageName, className, typeParameterString)
     val typeParameters =
       declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
 
@@ -311,9 +310,7 @@ class TypeInfoProvider(global: Global) {
     variableDeclarator.getInitializer.toScala flatMap { initializer =>
       Try(initializer.calculateResolvedType()) match {
         case Success(resolvedType) =>
-          Some(
-            registerType(resolvedTypeFullName(resolvedType))
-          )
+          Some(registerType(resolvedTypeFullName(resolvedType)))
 
         case Failure(_) =>
           logger.debug(s"Failed to resolve type for initializer ${initializer.toString}")

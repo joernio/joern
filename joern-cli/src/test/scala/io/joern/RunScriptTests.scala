@@ -41,19 +41,14 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
       val calls =
         console.JoernConsole.runScriptTest("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
-      calls.map(_.name) should contain theSameElementsAs List(
-        "gettimeofday",
-        "exit"
-      )
+      calls.map(_.name) should contain theSameElementsAs List("gettimeofday", "exit")
     }
 
     "work correctly for 'userspace-memory-access.sc'" in {
       val calls =
         console.JoernConsole.runScriptTest("c/userspace-memory-access.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
-      calls.map(_.name) should contain theSameElementsAs List(
-        "get_user"
-      )
+      calls.map(_.name) should contain theSameElementsAs List("get_user")
     }
   }
 
@@ -106,7 +101,7 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'list-funcs'" in {
       val expected = cpg.method.name.l
-      val actual = console.JoernConsole.runScriptTest("general/list-funcs.sc", Map.empty, cpg)
+      val actual   = console.JoernConsole.runScriptTest("general/list-funcs.sc", Map.empty, cpg)
       actual shouldBe expected
     }
 

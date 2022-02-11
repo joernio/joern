@@ -9,13 +9,10 @@ import overflowdb.traversal._
 
 import scala.collection.{Set, mutable}
 
-/** The variables defined/used in the reaching def problem can
-  * all be represented via nodes in the graph, however, that's
-  * pretty confusing because it is then unclear that variables
-  * and nodes are actually two separate domains. To make the
-  * definition domain visible, we use the type alias `Definition`.
-  * From a computational standpoint, this is not necessary,
-  * but it greatly improves readability.
+/** The variables defined/used in the reaching def problem can all be represented via nodes in the graph, however,
+  * that's pretty confusing because it is then unclear that variables and nodes are actually two separate domains. To
+  * make the definition domain visible, we use the type alias `Definition`. From a computational standpoint, this is not
+  * necessary, but it greatly improves readability.
   */
 object Definition {
   def fromNode(node: StoredNode, nodeToNumber: Map[StoredNode, Int]): Definition = {
@@ -26,8 +23,8 @@ object Definition {
 object ReachingDefProblem {
   def create(method: Method): DataFlowProblem[mutable.BitSet] = {
     val flowGraph = new ReachingDefFlowGraph(method)
-    val transfer = new OptimizedReachingDefTransferFunction(flowGraph)
-    val init = new ReachingDefInit(transfer.gen)
+    val transfer  = new OptimizedReachingDefTransferFunction(flowGraph)
+    val init      = new ReachingDefInit(transfer.gen)
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
@@ -43,7 +40,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   val entryNode: StoredNode = method
-  val exitNode: StoredNode = method.methodReturn
+  val exitNode: StoredNode  = method.methodReturn
 
   val allNodesReversePostOrder: List[StoredNode] =
     List(entryNode) ++ method.parameter.toList ++ method.reversePostOrder.toList.filter(x =>
@@ -104,8 +101,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
 
 }
 
-/** For each node of the graph, this transfer function defines how it affects
-  * the propagation of definitions.
+/** For each node of the graph, this transfer function defines how it affects the propagation of definitions.
   */
 class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends TransferFunction[mutable.BitSet] {
 
@@ -119,16 +115,14 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
   val kill: Map[StoredNode, Set[Definition]] =
     initKill(method, gen).withDefaultValue(mutable.BitSet())
 
-  /** For a given flow graph node `n` and set of definitions, apply the transfer
-    * function to obtain the updated set of definitions, considering `gen(n)`
-    * and `kill(n)`.
+  /** For a given flow graph node `n` and set of definitions, apply the transfer function to obtain the updated set of
+    * definitions, considering `gen(n)` and `kill(n)`.
     */
   override def apply(n: StoredNode, x: mutable.BitSet): mutable.BitSet = {
     gen(n).union(x.diff(kill(n)))
   }
 
-  /** Initialize the map `gen`, a map that contains generated
-    * definitions for each flow graph node.
+  /** Initialize the map `gen`, a map that contains generated definitions for each flow graph node.
     */
   def initGen(method: Method): Map[StoredNode, mutable.BitSet] = {
 
@@ -170,12 +164,10 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     }
   }
 
-  /** Initialize the map `kill`, a map that contains killed
-    * definitions for each flow graph node.
+  /** Initialize the map `kill`, a map that contains killed definitions for each flow graph node.
     *
-    * All operations in our graph are represented by calls and non-operations
-    * such as identifiers or field-identifiers have empty gen and kill sets,
-    * meaning that they just pass on definitions unaltered.
+    * All operations in our graph are represented by calls and non-operations such as identifiers or field-identifiers
+    * have empty gen and kill sets, meaning that they just pass on definitions unaltered.
     */
   private def initKill(method: Method, gen: Map[StoredNode, Set[Definition]]): Map[StoredNode, Set[Definition]] = {
 
@@ -198,16 +190,14 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
       .toMap
   }
 
-  /** The only way in which a call can kill another definition is by
-    * generating a new definition for the same variable. Given the
-    * set of generated definitions `gens`, we calculate definitions
-    * of the same variable for each, that is, we calculate kill(call)
-    * based on gen(call).
+  /** The only way in which a call can kill another definition is by generating a new definition for the same variable.
+    * Given the set of generated definitions `gens`, we calculate definitions of the same variable for each, that is, we
+    * calculate kill(call) based on gen(call).
     */
   private def killsForGens(
-      genOfCall: Set[Definition],
-      allIdentifiers: Map[String, List[Identifier]],
-      allCalls: Map[String, List[Call]]
+    genOfCall: Set[Definition],
+    allIdentifiers: Map[String, List[Identifier]],
+    allCalls: Map[String, List[Call]]
   ): Set[Definition] = {
 
     def definitionsOfSameVariable(definition: Definition): Set[Definition] = {
@@ -219,9 +209,8 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
           val sameIdentifiers = allIdentifiers(identifier.name)
             .filter(x => x.id != identifier.id)
 
-          /** Killing an identifier should also kill field accesses on that identifier.
-            * For example, a reassignment `x = new Box()` should kill any previous
-            * calls to `x.value`, `x.length()`, etc.
+          /** Killing an identifier should also kill field accesses on that identifier. For example, a reassignment `x =
+            * new Box()` should kill any previous calls to `x.value`, `x.length()`, etc.
             */
           val sameObjects: Iterable[Call] = allCalls.values.flatten
             .filter(_.name == Operators.fieldAccess)
@@ -246,14 +235,11 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
 
 }
 
-/** Lone Identifier Optimization: we first determine and store all identifiers
-  * that neither refer to a local or parameter and that appear only once
-  * as a call argument. For these identifiers, we know that they are
-  * not used in any other location in the code, and so, we remove
-  * them from `gen` sets so that they need not be propagated through
-  * the entire graph only to determine that they reach the exit node. Instead,
-  * when creating reaching definition edges, we simply create edges from the
-  * identifier to the exit node.
+/** Lone Identifier Optimization: we first determine and store all identifiers that neither refer to a local or
+  * parameter and that appear only once as a call argument. For these identifiers, we know that they are not used in any
+  * other location in the code, and so, we remove them from `gen` sets so that they need not be propagated through the
+  * entire graph only to determine that they reach the exit node. Instead, when creating reaching definition edges, we
+  * simply create edges from the identifier to the exit node.
   */
 class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     extends ReachingDefTransferFunction(flowGraph) {

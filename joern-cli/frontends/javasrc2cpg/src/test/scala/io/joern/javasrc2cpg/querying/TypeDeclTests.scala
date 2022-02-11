@@ -88,7 +88,7 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     x.filename.endsWith(".java") shouldBe true
   }

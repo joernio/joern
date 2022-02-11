@@ -18,10 +18,10 @@ class ConsoleConfigTest extends AnyWordSpec with Matchers {
     }
 
     "copy config with params correctly" in {
-      val initialParamList = List("param1", "param2")
+      val initialParamList    = List("param1", "param2")
       val additionalParamList = List("param3", "param4", "param5")
 
-      val config = new FrontendConfig(initialParamList)
+      val config     = new FrontendConfig(initialParamList)
       val copyConfig = config.withArgs(additionalParamList)
 
       withClue("should be able to copy config without mutating original") {

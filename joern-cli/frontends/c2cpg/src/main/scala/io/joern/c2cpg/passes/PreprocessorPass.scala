@@ -15,7 +15,7 @@ import scala.collection.parallel.immutable.ParIterable
 
 class PreprocessorPass(config: Config) {
 
-  private val parserConfig: ParserConfig = ParserConfig.fromConfig(config)
+  private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
   private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
 
   def run(): ParIterable[String] =

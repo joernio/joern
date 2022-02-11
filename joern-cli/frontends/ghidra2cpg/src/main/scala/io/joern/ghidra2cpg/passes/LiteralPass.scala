@@ -11,15 +11,12 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class LiteralPass(
-    cpg: Cpg,
-    address2Literal: Map[Long, String],
-    currentProgram: Program,
-    flatProgramAPI: FlatProgramAPI,
-    keyPool: IntervalKeyPool
-) extends ParallelCpgPass[String](
-      cpg,
-      keyPools = Some(keyPool.split(1))
-    ) {
+  cpg: Cpg,
+  address2Literal: Map[Long, String],
+  currentProgram: Program,
+  flatProgramAPI: FlatProgramAPI,
+  keyPool: IntervalKeyPool
+) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(1))) {
 
   override def partIterator: Iterator[String] = List("").iterator
 

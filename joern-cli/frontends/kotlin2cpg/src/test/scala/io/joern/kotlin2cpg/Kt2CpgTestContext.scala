@@ -70,12 +70,12 @@ class Kt2CpgTestContext private () {
           }
 
       val nameGenerator = new DefaultNameGenerator(environment)
-      val kt2Cpg = new Kt2Cpg()
+      val kt2Cpg        = new Kt2Cpg()
 
       val nonSourceFiles = codeAndFile.map { entry =>
         FileContentAtPath(entry.content, entry.fileName, entry.fileName)
       }
-      val cpg = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, nameGenerator)
+      val cpg     = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, nameGenerator)
       val context = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)

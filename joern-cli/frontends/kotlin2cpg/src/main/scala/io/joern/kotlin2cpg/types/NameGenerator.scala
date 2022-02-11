@@ -50,18 +50,18 @@ trait WithDefaultType {
 }
 
 object Constants {
-  val kotlinAny = "kotlin.Any"
-  val kotlinString = "kotlin.String"
-  val cpgUnresolved = "codepropertygraph.Unresolved"
-  val any = "ANY"
-  val void = "void"
+  val kotlinAny                         = "kotlin.Any"
+  val kotlinString                      = "kotlin.String"
+  val cpgUnresolved                     = "codepropertygraph.Unresolved"
+  val any                               = "ANY"
+  val void                              = "void"
   val classLiteralReplacementMethodName = "getClass"
-  val tType = "T"
-  val javaLangObject = "java.lang.Object"
-  val kotlinFunctionXPrefix = "kotlin.Function"
-  val kotlinSuspendFunctionXPrefix = "kotlin.coroutines.SuspendFunction"
-  val kotlinApplyPrefix = "kotlin.apply"
-  val initPrefix = "<init>"
+  val tType                             = "T"
+  val javaLangObject                    = "java.lang.Object"
+  val kotlinFunctionXPrefix             = "kotlin.Function"
+  val kotlinSuspendFunctionXPrefix      = "kotlin.coroutines.SuspendFunction"
+  val kotlinApplyPrefix                 = "kotlin.apply"
+  val initPrefix                        = "<init>"
 }
 
 object CallKinds extends Enumeration {
@@ -187,7 +187,7 @@ object TypeRenderer {
 
   def renderFqName(desc: DeclarationDescriptor): String = {
     val renderer = descriptorRenderer()
-    val fqName = DescriptorUtils.getFqName(desc)
+    val fqName   = DescriptorUtils.getFqName(desc)
     stripped(renderer.renderFqName(fqName))
   }
 
@@ -202,7 +202,7 @@ object TypeRenderer {
   }
 
   private def isFunctionXType(t: KotlinType): Boolean = {
-    val renderer = descriptorRenderer()
+    val renderer            = descriptorRenderer()
     val renderedConstructor = renderer.renderTypeConstructor(t.getConstructor)
     renderedConstructor.startsWith(Constants.kotlinFunctionXPrefix) ||
     renderedConstructor.startsWith(Constants.kotlinSuspendFunctionXPrefix)
@@ -243,16 +243,14 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   lazy val bindingContext: BindingContext = {
     logger.info("Running Kotlin compiler analysis...")
     try {
-      val t0 = System.currentTimeMillis()
+      val t0  = System.currentTimeMillis()
       val res = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
-      val t1 = System.currentTimeMillis()
+      val t1  = System.currentTimeMillis()
       logger.info("Kotlin compiler analysis finished in `" + (t1 - t0) + "` ms.")
       res.getBindingContext
     } catch {
       case noDesc: NoDescriptorForDeclarationException =>
-        logger.error(
-          "Kotlin compiler analysis failed with _missing declaration_ exception `" + noDesc.toString + "`."
-        )
+        logger.error("Kotlin compiler analysis failed with _missing declaration_ exception `" + noDesc.toString + "`.")
         hasEmptyBindingContext = true
         BindingContext.EMPTY
       case e: Throwable =>
@@ -353,10 +351,10 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
     if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.asScala.nonEmpty) {
       val firstTypeArg = typeInfo.getType.getArguments.get(0)
-      val rendered = TypeRenderer.render(firstTypeArg.getType)
-      val retType = expressionType(expr, Constants.any)
-      val signature = s"$retType()"
-      val fullName = s"$rendered.${Constants.classLiteralReplacementMethodName}:$signature"
+      val rendered     = TypeRenderer.render(firstTypeArg.getType)
+      val retType      = expressionType(expr, Constants.any)
+      val signature    = s"$retType()"
+      val fullName     = s"$rendered.${Constants.classLiteralReplacementMethodName}:$signature"
       (fullName, signature)
     } else {
       defaultValue
@@ -390,7 +388,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   private def resolvedCallDescriptor(expr: KtExpression): Option[FunctionDescriptor] = {
     val relevantSubexpression = subexpressionForResolvedCallInfo(expr)
     val descMaybe = for {
-      callForSubexpression <- Option(bindingContext.get(BindingContext.CALL, relevantSubexpression))
+      callForSubexpression         <- Option(bindingContext.get(BindingContext.CALL, relevantSubexpression))
       resolvedCallForSubexpression <- Option(bindingContext.get(BindingContext.RESOLVED_CALL, callForSubexpression))
       desc = resolvedCallForSubexpression.getResultingDescriptor
     } yield desc
@@ -477,7 +475,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
             }
             .mkString(",")
         val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
-        val signature = renderedReturnType + "(" + renderedParameterTypes + ")"
+        val signature          = renderedReturnType + "(" + renderedParameterTypes + ")"
         val fullName =
           if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
             s"$renderedReturnType.${Constants.initPrefix}:$signature"
@@ -514,7 +512,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     resolvedDesc match {
       case Some(fnDescriptor) =>
         val isExtension = DescriptorUtils.isExtension(fnDescriptor)
-        val isStatic = DescriptorUtils.isStaticDeclaration(fnDescriptor)
+        val isStatic    = DescriptorUtils.isStaticDeclaration(fnDescriptor)
         if (isExtension) CallKinds.ExtensionCall
         else if (isStatic) CallKinds.StaticCall
         else if (callToSuper) CallKinds.StaticCall
@@ -558,7 +556,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
               TypeRenderer.render(bindingInfo.getType)
             }
           val signature = s"$renderedReturnType($renderedParameterTypes)"
-          val fn = (s"$renderedFqName:$signature", signature)
+          val fn        = (s"$renderedFqName:$signature", signature)
           fn
         } else {
           defaultValue
@@ -587,8 +585,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
     val containingFile = expr.getContainingKtFile
-    val fileName = containingFile.getName
-    val lambdaNum = keyPool.next
+    val fileName       = containingFile.getName
+    val lambdaNum      = keyPool.next
     val astDerivedFullName =
       containingFile.getPackageFqName.toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
     val astDerivedSignature = erasedSignature(expr.getValueParameters.asScala.toList)
@@ -597,11 +595,11 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     if (mapForEntity == null || mapForEntity.getKeys == null) {
       return (astDerivedFullName, astDerivedSignature)
     }
-    val typeInfo = mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey)
-    val theType = typeInfo.getType
+    val typeInfo        = mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey)
+    val theType         = typeInfo.getType
     val constructorDesc = theType.getConstructor.getDeclarationDescriptor
     val constructorType = constructorDesc.getDefaultType
-    val args = constructorType.getArguments.asScala.drop(1)
+    val args            = constructorType.getArguments.asScala.drop(1)
     val renderedArgs =
       if (args.isEmpty) {
         ""
@@ -617,8 +615,8 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   }
 
   private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
-    val typeParams = fnDesc.getTypeParameters.asScala.toList
-    val returnT = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
+    val typeParams        = fnDesc.getTypeParameters.asScala.toList
+    val returnT           = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
     val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
     val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
     if (hasReturnTypeFromTypeParams) {
@@ -670,7 +668,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         if (erpType.isInstanceOf[UnresolvedType]) {
           Constants.kotlinAny + "." + expr.getName
         } else {
-          val theType = fnDesc.get.getExtensionReceiverParameter.getType
+          val theType      = fnDesc.get.getExtensionReceiverParameter.getType
           val renderedType = TypeRenderer.render(theType)
           renderedType + "." + expr.getName
         }
@@ -679,7 +677,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       }
 
     val signature = returnTypeFullName + paramListSignature
-    val fullname = s"$methodName:$signature"
+    val fullname  = s"$methodName:$signature"
     (fullname, signature)
   }
 

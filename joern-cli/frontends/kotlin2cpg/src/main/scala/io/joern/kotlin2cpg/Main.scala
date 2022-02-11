@@ -13,8 +13,8 @@ case class InferenceJarPath(path: String, isResource: Boolean)
 /** Command line configuration parameters
   */
 final case class Config(
-    inputPaths: Set[String] = Set.empty, // TODO: make this a singular
-    outputPath: String = X2CpgConfig.defaultOutputPath
+  inputPaths: Set[String] = Set.empty, // TODO: make this a singular
+  outputPath: String = X2CpgConfig.defaultOutputPath
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -54,10 +54,10 @@ object SourceFilesPicker {
 
     val isAndroidLayoutXml =
       fileName.endsWith("xml") && (fileName.contains("drawable") || fileName.contains("layout"))
-    val containsSrcTest = fileName.contains("src/test")
-    val isSettingsXml = fileName.endsWith("strings.xml") // some projects contain many i18n files
+    val containsSrcTest    = fileName.contains("src/test")
+    val isSettingsXml      = fileName.endsWith("strings.xml") // some projects contain many i18n files
     val containsBenchmarks = fileName.contains("benchmarks")
-    val isBuildGradle = fileName.endsWith("build.gradle")
+    val isBuildGradle      = fileName.endsWith("build.gradle")
 
     (containsUnwantedSubstring && !isBuildGradle) ||
     hasUnwantedExt ||
@@ -83,14 +83,14 @@ object SourceFilesPicker {
 
   def configFiles(forDir: String): Seq[String] = {
     val sourceFileExtensions = Set(".xml", ".gradle", ".properties")
-    val sourceFileNames = SourceFiles.determine(Set(forDir), sourceFileExtensions)
+    val sourceFileNames      = SourceFiles.determine(Set(forDir), sourceFileExtensions)
     sourceFileNames
       .filter(isConfigFile)
       .filterNot { fileName =>
         // TODO: add test for this type of filtering
         // TODO: support Windows paths
         val relativized = PathUtils.relativize(forDir, fileName)
-        val willFilter = SourceFilesPicker.shouldFilter(relativized)
+        val willFilter  = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
           logger.debug("Filtered file at `" + fileName + "`.")
         }
@@ -102,7 +102,7 @@ object SourceFilesPicker {
 object PathUtils {
   def relativize(sourceDir: String, filename: String): String = {
     val pathAbsolute = Paths.get(filename).toAbsolutePath
-    val pathBase = Paths.get(sourceDir).toAbsolutePath
+    val pathBase     = Paths.get(sourceDir).toAbsolutePath
     pathBase.relativize(pathAbsolute).toString
   }
 }
@@ -165,24 +165,12 @@ object Main extends App {
           InferenceJarPath("inferencejars/com.google.android.material.material-1.4.0.jar", isResource = true),
           InferenceJarPath("inferencejars/com.google.dagger.dagger-2.38.1.jar", isResource = true),
           InferenceJarPath("inferencejars/com.google.dagger.dagger-android-2.38.1.jar", isResource = true),
-          InferenceJarPath(
-            "inferencejars/com.google.dagger.dagger-android-support-2.38.1.jar",
-            isResource = true
-          ),
-          InferenceJarPath(
-            "inferencejars/com.google.firebase.firebase-crashlytics-17.2.1.jar",
-            isResource = true
-          ),
-          InferenceJarPath(
-            "inferencejars/com.google.guava.guava-27.1-android.jar",
-            isResource = true
-          ),
+          InferenceJarPath("inferencejars/com.google.dagger.dagger-android-support-2.38.1.jar", isResource = true),
+          InferenceJarPath("inferencejars/com.google.firebase.firebase-crashlytics-17.2.1.jar", isResource = true),
+          InferenceJarPath("inferencejars/com.google.guava.guava-27.1-android.jar", isResource = true),
           InferenceJarPath("inferencejars/com.jakewharton.timber.timber-4.5.1.jar", isResource = true),
           InferenceJarPath("inferencejars/commons-io.commons-io-2.6.jar", isResource = true),
-          InferenceJarPath(
-            "inferencejars/com.squareup.okhttp3.logging-interceptor-4.8.0.jar",
-            isResource = true
-          ),
+          InferenceJarPath("inferencejars/com.squareup.okhttp3.logging-interceptor-4.8.0.jar", isResource = true),
           InferenceJarPath("inferencejars/cryptonode.jncryptor-1.2.0.jar", isResource = true),
           InferenceJarPath("inferencejars/dagger-compiler-2.38.1.jar", isResource = true),
           InferenceJarPath("inferencejars/google.zixing.core-3.2.0.jar", isResource = true),
@@ -199,10 +187,7 @@ object Main extends App {
           InferenceJarPath("inferencejars/org.apache.commons.commons-collections4-4.4.jar", isResource = true),
           InferenceJarPath("inferencejars/org.apache.commons.commons-lang3-3.10.jar", isResource = true),
           InferenceJarPath("inferencejars/org.apache.commons.commons-text-1.8.jar", isResource = true),
-          InferenceJarPath(
-            "inferencejars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.0.jar",
-            isResource = true
-          ),
+          InferenceJarPath("inferencejars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.0.jar", isResource = true),
           InferenceJarPath(
             "inferencejars/org.jetbrains.kotlinx.kotlinx-coroutines-android-1.3.9.jar",
             isResource = true
@@ -210,8 +195,8 @@ object Main extends App {
           InferenceJarPath("inferencejars/rxjava-2.1.0.jar", isResource = true)
         )
         val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(sourceDir)
-        val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths)
-        val ktFiles = environment.getSourceFiles.asScala
+        val environment             = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths)
+        val ktFiles                 = environment.getSourceFiles.asScala
         val filesWithMeta =
           ktFiles
             .flatMap { f =>
@@ -223,11 +208,7 @@ object Main extends App {
               }
             }
             .map { fwp =>
-              KtFileWithMeta(
-                fwp._1,
-                fwp._2,
-                fwp._1.getVirtualFilePath
-              )
+              KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
             }
             .filterNot { fwp =>
               // TODO: add test for this type of filtering
@@ -257,20 +238,11 @@ object Main extends App {
                 } catch {
                   case t: Throwable => parsingError + "\n" + t.toString
                 }
-              FileContentAtPath(
-                fileContents,
-                fnm._2,
-                fnm._1
-              )
+              FileContentAtPath(fileContents, fnm._2, fnm._1)
             }
 
         val nameGenerator = new DefaultNameGenerator(environment)
-        val cpg = new Kt2Cpg().createCpg(
-          filesWithMeta,
-          fileContentsAtPath,
-          nameGenerator,
-          Some(config.outputPath)
-        )
+        val cpg = new Kt2Cpg().createCpg(filesWithMeta, fileContentsAtPath, nameGenerator, Some(config.outputPath))
         cpg.close()
       } else {
         println("This frontend requires exactly one input path")

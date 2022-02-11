@@ -231,7 +231,7 @@ class FunctionCallTests extends JavaDataflowFixture {
 
   it should "find a path through a cast expression" in {
     def source = cpg.method.name("test17").parameter.index(1)
-    def sink = cpg.method.name("test17").methodReturn
+    def sink   = cpg.method.name("test17").methodReturn
     sink.reachableBy(source).size shouldBe 1
   }
 }

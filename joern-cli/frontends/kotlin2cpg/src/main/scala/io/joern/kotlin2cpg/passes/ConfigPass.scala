@@ -6,11 +6,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 import org.slf4j.LoggerFactory
 
-class ConfigPass(
-    fileContentsAtPath: Iterable[FileContentAtPath],
-    cpg: Cpg,
-    keyPool: IntervalKeyPool
-) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(fileContentsAtPath.size))) {
+class ConfigPass(fileContentsAtPath: Iterable[FileContentAtPath], cpg: Cpg, keyPool: IntervalKeyPool)
+    extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(fileContentsAtPath.size))) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -27,7 +24,7 @@ class ConfigPass(
       .headOption
     contentsAtPath match {
       case Some(fm) =>
-        val diffGraph = DiffGraph.newBuilder
+        val diffGraph  = DiffGraph.newBuilder
         val configNode = NewConfigFile().name(fm.relativizedPath).content(fm.content)
         diffGraph.addNode(configNode)
         logger.debug(s"Adding file `$fileName` as config.")

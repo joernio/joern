@@ -31,11 +31,11 @@ case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out
 object JoernExport extends App {
 
   object Representations {
-    val ast = "ast"
-    val cfg = "cfg"
-    val ddg = "ddg"
-    val cdg = "cdg"
-    val pdg = "pdg"
+    val ast   = "ast"
+    val cfg   = "cfg"
+    val ddg   = "ddg"
+    val cdg   = "cdg"
+    val pdg   = "pdg"
     val cpg14 = "cpg14"
   }
 
