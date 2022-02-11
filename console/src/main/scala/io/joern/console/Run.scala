@@ -11,31 +11,30 @@ import scala.jdk.CollectionConverters._
 object Run {
 
   def runCustomQuery(console: Console[_], query: HasStoreMethod): Unit = {
-    console._runAnalyzer(
-      new LayerCreator {
-        override val overlayName: String = "custom"
-        override val description: String = "A custom pass"
+    console._runAnalyzer(new LayerCreator {
+      override val overlayName: String = "custom"
+      override val description: String = "A custom pass"
 
-        override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-          val pass: CpgPass = new CpgPass(console.cpg) {
-            override val name = "custom"
-            override def run(): Iterator[DiffGraph] = {
-              implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
-              query.store()
-              Iterator(diffGraph.build())
-            }
+      override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+        val pass: CpgPass = new CpgPass(console.cpg) {
+          override val name = "custom"
+          override def run(): Iterator[DiffGraph] = {
+            implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+            query.store()
+            Iterator(diffGraph.build())
           }
-          runPass(pass, context, storeUndoInfo)
         }
+        runPass(pass, context, storeUndoInfo)
       }
-    )
+    })
   }
 
   /** Generate code for the run command
-    * @param exclude list of analyzers to exclude (by full class name)
+    * @param exclude
+    *   list of analyzers to exclude (by full class name)
     */
   def codeForRunCommand(exclude: List[String] = List()): String = {
-    val ioSlLayerCreators = creatorsFor("io.shiftleft", exclude)
+    val ioSlLayerCreators    = creatorsFor("io.shiftleft", exclude)
     val ioJoernLayerCreators = creatorsFor("io.joern", exclude)
     codeForLayerCreators((ioSlLayerCreators ++ ioJoernLayerCreators).distinct)
   }
@@ -83,8 +82,8 @@ object Run {
          |  val columnNames = List("name", "description")
          |  val rows =
          |   ${layerCreatorTypeNames.map { case (varName, typeName) =>
-        s"""List("$varName",$typeName.description.trim)"""
-      }}
+          s"""List("$varName",$typeName.description.trim)"""
+        }}
          | "\\n" + Table(columnNames, rows).render
          | }
          |""".stripMargin

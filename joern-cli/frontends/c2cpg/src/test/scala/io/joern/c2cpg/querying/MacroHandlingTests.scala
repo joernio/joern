@@ -222,7 +222,7 @@ class CfgMacroTests extends DataFlowCodeToCpgSuite {
     callToMacro.argument.code.l shouldBe List("x")
     callToMacro.cfgNext.code.toSetMutable shouldBe Set("x", "i_read")
     val source = cpg.method("foo").call.name("MP4_GET4BYTES").argument(1).l
-    val sink = cpg.method("foo").call.name("sink").argument(1).l
+    val sink   = cpg.method("foo").call.name("sink").argument(1).l
     sink.reachableByFlows(source).l.foreach(println)
   }
 }

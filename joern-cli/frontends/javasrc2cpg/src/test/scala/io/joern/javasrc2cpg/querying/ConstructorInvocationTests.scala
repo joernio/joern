@@ -172,8 +172,8 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   "it should create `alloc` and `init` calls in a block for constructor invocations not in assignments" in {
     cpg.typeDecl.name("Bar").method.name("bar").l match {
       case List(method) =>
-        val idCall = method.call.name("id").head
-        val consBlock = idCall.argument(1).asInstanceOf[Block]
+        val idCall                                          = method.call.name("id").head
+        val consBlock                                       = idCall.argument(1).asInstanceOf[Block]
         val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l
 
         val List(temp: Identifier, alloc: Call) = assign.argument.l
@@ -215,8 +215,8 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   "it should create `alloc` and `init` calls in a block for complex assignments" in {
     cpg.typeDecl.name("Bar").method.name("test3").l match {
       case List(method) =>
-        val assignCall = method.call.nameExact("<operator>.assignment").head
-        val consBlock = assignCall.argument(2).asInstanceOf[Block]
+        val assignCall                                      = method.call.nameExact("<operator>.assignment").head
+        val consBlock                                       = assignCall.argument(2).asInstanceOf[Block]
         val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l
 
         val List(temp: Identifier, alloc: Call) = assign.argument.l

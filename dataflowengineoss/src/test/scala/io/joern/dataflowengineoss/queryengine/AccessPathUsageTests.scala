@@ -15,17 +15,17 @@ class AccessPathUsageTests extends AnyWordSpec {
     new AccessPath(Elements.normalized(elements), Nil)
   }
 
-  private val V = VariableAccess
-  private val I = IndirectionAccess
-  private val C = ConstantAccess
-  private val A = AddressOf
+  private val V  = VariableAccess
+  private val I  = IndirectionAccess
+  private val C  = ConstantAccess
+  private val A  = AddressOf
   private val VS = VariablePointerShift
-  private val S = PointerShift
+  private val S  = PointerShift
 
   private val g = OverflowDbTestInstance.create
 
   private def genCALL(graph: Graph, op: String, args: Node*): Call = {
-    val ret = graph + NodeTypes.CALL //(NodeTypes.CALL, Properties.NAME -> op)
+    val ret = graph + NodeTypes.CALL // (NodeTypes.CALL, Properties.NAME -> op)
     ret.setProperty(Properties.NAME, op)
     args.reverse.zipWithIndex.foreach { argTup =>
       val arg = argTup._1
@@ -319,7 +319,7 @@ class AccessPathUsageTests extends AnyWordSpec {
   }
 
   "pointerShft" should {
-    //fixme
+    // fixme
     "work with Literal" in {
       val call =
         genCALL(
@@ -370,7 +370,7 @@ class AccessPathUsageTests extends AnyWordSpec {
   }
 
   "getElementPointer" should {
-    //fixme
+    // fixme
     "work with Literal" in {
       val call =
         genCALL(

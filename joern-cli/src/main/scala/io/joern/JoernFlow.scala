@@ -9,13 +9,13 @@ import io.joern.console.JoernWorkspaceLoader
 import overflowdb.traversal.Traversal
 
 case class FlowConfig(
-    cpgFileName: String = "cpg.bin",
-    verbose: Boolean = false,
-    srcRegex: String = ".*",
-    dstRegex: String = ".*",
-    srcParam: Option[Int] = None,
-    dstParam: Option[Int] = None,
-    depth: Int = 1
+  cpgFileName: String = "cpg.bin",
+  verbose: Boolean = false,
+  srcRegex: String = ".*",
+  dstRegex: String = ".*",
+  srcParam: Option[Int] = None,
+  dstParam: Option[Int] = None,
+  depth: Int = 1
 )
 
 object JoernFlow extends App {
@@ -72,14 +72,14 @@ object JoernFlow extends App {
     debugOut("[DONE]\n")
 
     implicit val resolver: ICallResolver = NoResolve
-    val sources = params(cpg, config.srcRegex, config.srcParam)
-    val sinks = params(cpg, config.dstRegex, config.dstParam)
+    val sources                          = params(cpg, config.srcRegex, config.srcParam)
+    val sinks                            = params(cpg, config.dstRegex, config.dstParam)
 
     debugOut(s"Number of sources: ${sources.size}\n")
     debugOut(s"Number of sinks: ${sinks.size}\n")
 
     implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
-    val engineConfig = EngineConfig(config.depth)
+    val engineConfig                  = EngineConfig(config.depth)
     debugOut(s"Analysis depth: ${engineConfig.maxCallDepth}\n")
     implicit val context: EngineContext = EngineContext(semantics, engineConfig)
 

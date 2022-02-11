@@ -41,7 +41,7 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create a synchronized block" in {
-    val List(method: Method) = cpg.method.name("bar").l
+    val List(method: Method)   = cpg.method.name("bar").l
     val List(syncBlock: Block) = method.ast.isBlock.where(_.astChildren.isModifier.modifierType("SYNCHRONIZED")).l
 
     syncBlock.astChildren.size shouldBe 3

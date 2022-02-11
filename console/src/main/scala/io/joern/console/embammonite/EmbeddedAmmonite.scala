@@ -7,8 +7,7 @@ import java.io.{BufferedReader, InputStreamReader, PipedInputStream, PipedOutput
 import java.util.UUID
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
-/** Result of executing a query, containing in particular
-  * output received on standard out and on standard error.
+/** Result of executing a query, containing in particular output received on standard out and on standard error.
   */
 class QueryResult(val out: String, val err: String, val uuid: UUID)
 
@@ -20,12 +19,12 @@ class EmbeddedAmmonite(predef: String = "") {
 
   val jobQueue: BlockingQueue[Job] = new LinkedBlockingQueue[Job]()
 
-  val (inStream, toStdin) = pipePair()
+  val (inStream, toStdin)     = pipePair()
   val (fromStdout, outStream) = pipePair()
   val (fromStderr, errStream) = pipePair()
 
-  val writer = new PrintWriter(toStdin)
-  val reader = new BufferedReader(new InputStreamReader(fromStdout))
+  val writer    = new PrintWriter(toStdin)
+  val reader    = new BufferedReader(new InputStreamReader(fromStdout))
   val errReader = new BufferedReader(new InputStreamReader(fromStderr))
 
   val userThread = new Thread(new UserRunnable(jobQueue, writer, reader, errReader))
@@ -47,7 +46,7 @@ class EmbeddedAmmonite(predef: String = "") {
 
   private def pipePair(): (PipedInputStream, PipedOutputStream) = {
     val out = new PipedOutputStream()
-    val in = new PipedInputStream()
+    val in  = new PipedInputStream()
     in.connect(out)
     (in, out)
   }
@@ -59,8 +58,7 @@ class EmbeddedAmmonite(predef: String = "") {
     userThread.start()
   }
 
-  /** Submit query `q` to shell and call `observer` when
-    * the result is ready.
+  /** Submit query `q` to shell and call `observer` when the result is ready.
     */
   def queryAsync(q: String)(observer: QueryResult => Unit): UUID = {
     val uuid = UUID.randomUUID()
@@ -71,7 +69,7 @@ class EmbeddedAmmonite(predef: String = "") {
   /** Submit query `q` to the shell and return result.
     */
   def query(q: String): QueryResult = {
-    val mutex = new Semaphore(0)
+    val mutex               = new Semaphore(0)
     var result: QueryResult = null
     queryAsync(q) { r =>
       result = r
@@ -81,8 +79,7 @@ class EmbeddedAmmonite(predef: String = "") {
     result
   }
 
-  /** Shutdown the embedded ammonite shell and
-    * associated threads.
+  /** Shutdown the embedded ammonite shell and associated threads.
     */
   def shutdown(): Unit = {
     shutdownShellThread()

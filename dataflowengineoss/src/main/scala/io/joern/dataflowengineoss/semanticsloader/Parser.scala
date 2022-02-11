@@ -45,12 +45,12 @@ class Parser() {
   }
 
   private def parseCharStream(charStream: CharStream): List[FlowSemantic] = {
-    val lexer = new SemanticsLexer(charStream)
+    val lexer       = new SemanticsLexer(charStream)
     val tokenStream = new CommonTokenStream(lexer)
-    val parser = new SemanticsParser(tokenStream)
-    val treeWalker = new ParseTreeWalker();
+    val parser      = new SemanticsParser(tokenStream)
+    val treeWalker  = new ParseTreeWalker();
 
-    val tree = parser.taintSemantics()
+    val tree     = parser.taintSemantics()
     val listener = new Listener()
     treeWalker.walk(listener, tree)
     listener.result.toList

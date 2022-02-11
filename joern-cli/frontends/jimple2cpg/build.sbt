@@ -15,10 +15,10 @@ libraryDependencies ++= Seq(
   "org.slf4j"      % "slf4j-api"         % slf4jVersion,
   "org.slf4j"      % "slf4j-simple"      % slf4jVersion,
   "org.scalatest" %% "scalatest"         % scalatestVersion % Test,
-  "io.shiftleft"  %% "semanticcpg"       % Versions.cpg % Test classifier "tests",
+  "io.shiftleft"  %% "semanticcpg"       % Versions.cpg     % Test classifier "tests"
 )
 
 enablePlugins(JavaAppPackaging)
 
-trapExit := false
+trapExit    := false
 Test / fork := true

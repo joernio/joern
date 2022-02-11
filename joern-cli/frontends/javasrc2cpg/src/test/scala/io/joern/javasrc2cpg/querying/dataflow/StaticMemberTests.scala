@@ -5,10 +5,9 @@ import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
-/** These tests are added as a wishlist for static member accesses. These
-  * results are consistent with static members in C++ using c2cgp, however.
-  * For practical reasons, only handling `final` static members is probably
-  * the way to go, so at least the first 2 tests should pass.
+/** These tests are added as a wishlist for static member accesses. These results are consistent with static members in
+  * C++ using c2cgp, however. For practical reasons, only handling `final` static members is probably the way to go, so
+  * at least the first 2 tests should pass.
   *
   * TODO: Fix dataflow from static members, treating them as final.
   */
@@ -71,49 +70,49 @@ class StaticMemberTests extends JavaDataflowFixture {
 
   it should "find a path for `MALICIOUS` data from different class via a variable" in {
     val source = getSources
-    val sink = cpg.method(".*test1.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test1.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "find a path for `MALICIOUS` data from a different class directly" in {
     val source = getSources
-    val sink = cpg.method(".*test2.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test2.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "not find a path for `SAFE` data directly" in {
     val source = getSources
-    val sink = cpg.method(".*test3.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test3.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "find a path for `MALICIOUS` data from the same class" in {
     val source = getSources
-    val sink = cpg.method(".*test4.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test4.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "not find a path for `SAFE` data in the same class" in {
     val source = getSources
-    val sink = cpg.method(".*test5.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test5.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "not find a path for overwritten `MALICIOUS` data" in {
     val source = getSources
-    val sink = cpg.method(".*test6.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test6.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "find a path for overwritten `SAFE` data" in {
     val source = getSources
-    val sink = cpg.method(".*test7.*").call.name(".*println.*").argument(1)
+    val sink   = cpg.method(".*test7.*").call.name(".*println.*").argument(1)
 
     sink.reachableBy(source).size shouldBe 1
   }

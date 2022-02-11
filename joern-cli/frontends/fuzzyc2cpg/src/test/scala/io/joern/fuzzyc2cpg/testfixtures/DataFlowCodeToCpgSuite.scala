@@ -17,8 +17,8 @@ import scala.util.Try
 
 class DataFlowCodeToCpgSuite extends FuzzyCCodeToCpgSuite {
 
-  var semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics = _
+  var semanticsFilename               = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
@@ -58,9 +58,9 @@ class DataFlowCodeToCpgSuite extends FuzzyCCodeToCpgSuite {
   protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = {
     val pairs = path.elements.map {
       case point: MethodParameterIn => {
-        val method = point.method.head
+        val method      = point.method.head
         val method_name = method.name
-        val code = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
+        val code        = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
         (code, point.lineNumber)
       }
       case point => (point.statement.repr, point.lineNumber)

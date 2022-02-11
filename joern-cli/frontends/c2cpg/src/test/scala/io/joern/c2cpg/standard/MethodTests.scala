@@ -22,7 +22,7 @@ class MethodTests extends CCodeToCpgSuite {
     x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     x.lineNumber shouldBe Some(2)
     x.lineNumberEnd shouldBe Some(3)

@@ -10,8 +10,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import org.slf4j.LoggerFactory
 
-/** Given a list of filenames, this pass creates abstract syntax trees for
-  * each file, including File and NamespaceBlock  Files are processed in parallel.
+/** Given a list of filenames, this pass creates abstract syntax trees for each file, including File and NamespaceBlock
+  * Files are processed in parallel.
   */
 class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
     extends ConcurrentWriterCpgPass[String](cpg, keyPool = Some(keyPool)) {
@@ -33,13 +33,13 @@ class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPoo
 
     diffGraph.addNode(namespaceBlock)
     val localDiff = new DiffGraphBuilder
-    val driver = createDriver(namespaceBlock)
-    //only commit changes from within the file if the entire file succeeds
+    val driver    = createDriver(namespaceBlock)
+    // only commit changes from within the file if the entire file succeeds
     if (tryToParse(driver, filename, localDiff)) diffGraph.absorb(localDiff)
   }
 
   private def createDriver(namespaceBlock: NewNamespaceBlock): AntlrCModuleParserDriver = {
-    val driver = new AntlrCModuleParserDriver()
+    val driver     = new AntlrCModuleParserDriver()
     val astVisitor = new AstVisitor(driver, namespaceBlock, global)
     driver.addObserver(astVisitor)
     driver

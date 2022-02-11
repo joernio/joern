@@ -23,9 +23,12 @@ object Jimple2Cpg {
   /** Formats the file name the way Soot refers to classes within a class path. e.g.
     * /unrelated/paths/class/path/Foo.class => class.path.Foo
     *
-    * @param codePath the parent directory
-    * @param filename the file name to transform.
-    * @return the correctly formatted class path.
+    * @param codePath
+    *   the parent directory
+    * @param filename
+    *   the file name to transform.
+    * @return
+    *   the correctly formatted class path.
     */
   def getQualifiedClassPath(codePath: String, filename: String): String = {
     val pathFile = new JFile(codePath)
@@ -49,18 +52,18 @@ class Jimple2Cpg {
 
   /** Creates a CPG from Jimple.
     *
-    * @param rawSourceCodePath The path to the Jimple code or code that can be transformed into Jimple.
-    * @param outputPath     The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
-    * @return The constructed CPG.
+    * @param rawSourceCodePath
+    *   The path to the Jimple code or code that can be transformed into Jimple.
+    * @param outputPath
+    *   The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
+    * @return
+    *   The constructed CPG.
     */
-  def createCpg(
-      rawSourceCodePath: String,
-      outputPath: Option[String] = None
-  ): Cpg = {
+  def createCpg(rawSourceCodePath: String, outputPath: Option[String] = None): Cpg = {
     try {
       // Determine if the given path is a file or directory and sanitize accordingly
       val rawSourceCodeFile = new JFile(rawSourceCodePath)
-      val sourceTarget = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
+      val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
       val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
         sourceTarget
       } else {
@@ -71,14 +74,14 @@ class Jimple2Cpg {
       }
 
       configureSoot(sourceCodeDir)
-      val cpg = newEmptyCpg(outputPath)
+      val cpg             = newEmptyCpg(outputPath)
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
-      val typesKeyPool = new IntervalKeyPool(100, 1000100)
-      val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+      val typesKeyPool    = new IntervalKeyPool(100, 1000100)
+      val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
 
       new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
-      val sourceFileExtensions = Set(".class", ".jimple")
+      val sourceFileExtensions  = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
       // Load source files and unpack archives if necessary
       val sourceFileNames = if (sourceTarget == sourceCodeDir) {
@@ -126,9 +129,9 @@ class Jimple2Cpg {
   /** Load all source files from archive and/or source file types.
     */
   private def loadSourceFiles(
-      sourceCodePath: String,
-      sourceFileExtensions: Set[String],
-      archiveFileExtensions: Set[String]
+    sourceCodePath: String,
+    sourceFileExtensions: Set[String],
+    archiveFileExtensions: Set[String]
   ): List[String] = {
     (
       extractSourceFilesFromArchive(sourceCodePath, archiveFileExtensions) ++
@@ -168,8 +171,10 @@ class Jimple2Cpg {
 
   /** Unzips a ZIP file into a sequence of files. All files unpacked are deleted at the end of CPG construction.
     *
-    * @param zf The ZIP file to extract.
-    * @param sourceCodePath The project root path to unpack to.
+    * @param zf
+    *   The ZIP file to extract.
+    * @param sourceCodePath
+    *   The project root path to unpack to.
     */
   private def unzipArchive(zf: ZipFile, sourceCodePath: String) = scala.util.Try {
     Using.resource(zf) { zip: ZipFile =>
@@ -184,9 +189,7 @@ class Jimple2Cpg {
           val destFile = if (sourceCodePathFile.isDirectory) {
             new JFile(sourceCodePath + JFile.separator + entry.getName)
           } else {
-            new JFile(
-              sourceCodePathFile.getParentFile.getAbsolutePath + JFile.separator + entry.getName
-            )
+            new JFile(sourceCodePathFile.getParentFile.getAbsolutePath + JFile.separator + entry.getName)
           }
           // dirName accounts for nested directories as a result of JAR package structure
           val dirName = destFile.getAbsolutePath

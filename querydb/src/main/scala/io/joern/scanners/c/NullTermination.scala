@@ -11,7 +11,7 @@ import io.joern.macros.QueryMacros._
 object NullTermination extends QueryBundle {
 
   implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
-  implicit val resolver: ICallResolver = NoResolve
+  implicit val resolver: ICallResolver      = NoResolve
 
   @q
   def strncpyNoNullTerm(): Query =
@@ -38,12 +38,12 @@ object NullTermination extends QueryBundle {
           }
           .filter { case (method, dst, size) =>
             dst.reachableBy(allocations).codeExact(size.code).nonEmpty &&
-              method.assignment
-                .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
-                .source
-                .isLiteral
-                .code(".*0.*")
-                .isEmpty
+            method.assignment
+              .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
+              .source
+              .isLiteral
+              .code(".*0.*")
+              .isEmpty
           }
           .map(_._2)
       }),

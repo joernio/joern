@@ -26,15 +26,13 @@ class FileTests extends JavaSrcCodeToCpgFixture {
     val List(u) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
     u.name should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     u.hash.isDefined shouldBe false
   }
 
   "should allow traversing from file to its namespace blocks" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set(
-      "b"
-    )
+    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set("b")
   }
 
   "should allow traversing from file to its methods via namespace block" in {
@@ -46,9 +44,7 @@ class FileTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set(
-      "Foo"
-    )
+    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set("Foo")
   }
 
 }

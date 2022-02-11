@@ -14,7 +14,7 @@ import scala.util.Try
 
 class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with BeforeAndAfterAll {
 
-  var zipFile: better.files.File = _
+  var zipFile: better.files.File         = _
   protected var DEFAULT_CPG_NAME: String = _
 
   override def beforeAll(): Unit = {
@@ -29,14 +29,12 @@ class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with Befor
   private object TestScriptExecutor extends AmmoniteExecutor {
     override protected def predef: String = ""
 
-    override def runScript(scriptPath: Path, parameters: Map[String, String], cpg: Cpg): IO[Any] = IO.fromTry(
-      Try {
-        val source = Source.fromFile(scriptPath.toFile)
-        val result = source.getLines().mkString(System.lineSeparator())
-        source.close()
-        result
-      }
-    )
+    override def runScript(scriptPath: Path, parameters: Map[String, String], cpg: Cpg): IO[Any] = IO.fromTry(Try {
+      val source = Source.fromFile(scriptPath.toFile)
+      val result = source.getLines().mkString(System.lineSeparator())
+      source.close()
+      result
+    })
   }
 
   private object TestScriptManager extends ScriptManager(TestScriptExecutor)
@@ -65,10 +63,7 @@ class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with Befor
         ),
         ScriptCollections(
           s"general${java.io.File.separator}general_plus",
-          ScriptDescriptions(
-            "Even more general purpose scripts.",
-            List.empty
-          )
+          ScriptDescriptions("Even more general purpose scripts.", List.empty)
         )
       )
 

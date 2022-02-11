@@ -34,7 +34,7 @@ class JimpleCodeToCpgFixture extends CodeToCpgFixture(new JimpleFrontend) {
   /** Compiles the source code with debugging info.
     */
   def compileJava(sourceCodeFile: File): Unit = {
-    val javac = getJavaCompiler
+    val javac       = getJavaCompiler
     val fileManager = javac.getStandardFileManager(null, null, null)
     javac
       .getTask(

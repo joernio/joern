@@ -24,11 +24,7 @@ class CallGraphTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find that main calls add and others" in {
-    cpg.method.name("main").callee.name.toSetMutable shouldBe Set(
-      "add",
-      "println",
-      "<operator>.addition"
-    )
+    cpg.method.name("main").callee.name.toSetMutable shouldBe Set("add", "println", "<operator>.addition")
   }
 
   "should find three outgoing calls for main" in {

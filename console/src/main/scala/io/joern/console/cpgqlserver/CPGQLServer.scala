@@ -12,18 +12,18 @@ object CPGLSError extends Enumeration {
 }
 
 class CPGQLServer(
-    ammonite: EmbeddedAmmonite,
-    serverHost: String,
-    serverPort: Int,
-    serverAuthUsername: String = "",
-    serverAuthPassword: String = ""
+  ammonite: EmbeddedAmmonite,
+  serverHost: String,
+  serverPort: Int,
+  serverAuthUsername: String = "",
+  serverAuthPassword: String = ""
 ) extends cask.MainRoutes {
 
   class basicAuth extends cask.RawDecorator {
     def wrapFunction(ctx: Request, delegate: Delegate) = {
       val authString =
         try {
-          val authHeader = ctx.exchange.getRequestHeaders.get("authorization").getFirst
+          val authHeader     = ctx.exchange.getRequestHeaders.get("authorization").getFirst
           val strippedHeader = authHeader.toString().replaceFirst("Basic ", "")
           new String(Base64.getDecoder.decode(strippedHeader))
         } catch {
@@ -54,8 +54,8 @@ class CPGQLServer(
     serverHost
   }
 
-  var openConnections = Set.empty[cask.WsChannelActor]
-  val resultMap = new ConcurrentHashMap[UUID, (QueryResult, Boolean)]()
+  var openConnections      = Set.empty[cask.WsChannelActor]
+  val resultMap            = new ConcurrentHashMap[UUID, (QueryResult, Boolean)]()
   val unauthorizedResponse = Response(ujson.Obj(), 401, headers = Seq("WWW-Authenticate" -> "Basic"))
 
   @cask.websocket("/connect")
@@ -126,9 +126,9 @@ class CPGQLServer(
         } else {
           ujson.Obj(
             "success" -> resFromMap._2,
-            "uuid" -> resFromMap._1.uuid.toString,
-            "stdout" -> resFromMap._1.out,
-            "stderr" -> resFromMap._1.err
+            "uuid"    -> resFromMap._1.uuid.toString,
+            "stdout"  -> resFromMap._1.out,
+            "stderr"  -> resFromMap._1.err
           )
         }
       }

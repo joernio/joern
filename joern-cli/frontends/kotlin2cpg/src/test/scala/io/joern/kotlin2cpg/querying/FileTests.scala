@@ -33,9 +33,7 @@ class FileTests extends AnyFreeSpec with Matchers {
     }
 
     "should allow traversing from file to its namespace blocks" in {
-      cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSet shouldBe Set(
-        "bar"
-      )
+      cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSet shouldBe Set("bar")
     }
 
     "should allow traversing from file to its methods" in {
@@ -47,9 +45,7 @@ class FileTests extends AnyFreeSpec with Matchers {
     }
 
     "should allow traversing from file to its type declarations" in {
-      cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set(
-        "Foo"
-      )
+      cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set("Foo")
     }
   }
 }

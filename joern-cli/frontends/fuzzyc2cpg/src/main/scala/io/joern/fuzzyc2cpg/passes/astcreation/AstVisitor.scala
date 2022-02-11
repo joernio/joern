@@ -15,7 +15,7 @@ class AstVisitor(driver: AntlrCModuleParserDriver, astParentNode: NewNamespaceBl
     with AntlrParserDriverObserver {
 
   var filenameOption: Option[String] = _
-  var childNum: Int = 0
+  var childNum: Int                  = 0
 
   override def visit(functionDef: FunctionDef): Unit = {
     childNum += 1
@@ -43,8 +43,8 @@ class AstVisitor(driver: AntlrCModuleParserDriver, astParentNode: NewNamespaceBl
   override def endOfUnit(ctx: ParserRuleContext, filename: String): Unit = {}
 
   def processItem[T <: io.joern.fuzzyc2cpg.ast.AstNode](
-      node: T,
-      builderStack: java.util.Stack[io.joern.fuzzyc2cpg.ast.AstNodeBuilder[_ <: io.joern.fuzzyc2cpg.ast.AstNode]]
+    node: T,
+    builderStack: java.util.Stack[io.joern.fuzzyc2cpg.ast.AstNodeBuilder[_ <: io.joern.fuzzyc2cpg.ast.AstNode]]
   ): Unit = {
     node.accept(this)
   }
@@ -55,7 +55,7 @@ class AntlrCModuleParserDriver() extends AntlrParserDriver() {
   setListener(new CModuleParserTreeListener(this))
 
   override def parseTokenStreamImpl(tokens: TokenSubStream): ParseTree = {
-    val parser = new ModuleParser(tokens)
+    val parser                         = new ModuleParser(tokens)
     var tree: ModuleParser.CodeContext = null
     try {
       setSLLMode(parser)

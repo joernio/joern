@@ -20,11 +20,11 @@ object CdtParser {
   private val logger = LoggerFactory.getLogger(classOf[CdtParser])
 
   case class ParseResult(
-      translationUnit: Option[IASTTranslationUnit],
-      preprocessorErrorCount: Int = 0,
-      problems: Int = 0,
-      failure: Option[Throwable] = None,
-      duration: Long = 0
+    translationUnit: Option[IASTTranslationUnit],
+    preprocessorErrorCount: Int = 0,
+    problems: Int = 0,
+    failure: Option[Throwable] = None,
+    duration: Long = 0
   )
 
 }
@@ -36,9 +36,9 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
   import CdtParser._
 
   private val definedSymbols: util.Map[String, String] = parseConfig.definedSymbols.asJava
-  private val includePaths: Set[String] = parseConfig.includePaths.map(_.toString)
-  private val scannerInfo: ScannerInfo = new ScannerInfo(definedSymbols, includePaths.toArray)
-  private val log: DefaultLogService = new DefaultLogService
+  private val includePaths: Set[String]                = parseConfig.includePaths.map(_.toString)
+  private val scannerInfo: ScannerInfo                 = new ScannerInfo(definedSymbols, includePaths.toArray)
+  private val log: DefaultLogService                   = new DefaultLogService
   // enables parsing of code behind disabled preprocessor defines:
   private val opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
 
@@ -54,12 +54,10 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
     val realPath = File(file)
     val (result, duration) = TimeUtils.time {
       if (realPath.isRegularFile) { // handling potentially broken symlinks
-        val fileContent = IOUtils.readFileAsFileContent(realPath.path)
+        val fileContent         = IOUtils.readFileAsFileContent(realPath.path)
         val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-        val lang = createParseLanguage(realPath.path)
-        Try(
-          lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
-        ) match {
+        val lang                = createParseLanguage(realPath.path)
+        Try(lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)) match {
           case Failure(e) =>
             ParseResult(None, failure = Some(e))
           case Success(translationUnit) =>
@@ -88,7 +86,7 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
 
   def parse(file: Path): Option[IASTTranslationUnit] = {
     val parseResult = parseInternal(file)
-    val duration = TimeUtils.pretty(parseResult.duration)
+    val duration    = TimeUtils.pretty(parseResult.duration)
     parseResult match {
       case ParseResult(Some(t), c, p, _, _) =>
         logger.info(s"Parsed '${t.getFilePath}' in $duration ($c preprocessor error(s), $p problems)")

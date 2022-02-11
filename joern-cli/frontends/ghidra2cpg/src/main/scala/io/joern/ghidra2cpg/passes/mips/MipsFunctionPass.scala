@@ -19,13 +19,13 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class MipsFunctionPass(
-    currentProgram: Program,
-    address2Literal: Map[Long, String],
-    filename: String,
-    function: Function,
-    cpg: Cpg,
-    keyPool: IntervalKeyPool,
-    decompiler: Decompiler
+  currentProgram: Program,
+  address2Literal: Map[Long, String],
+  filename: String,
+  function: Function,
+  cpg: Cpg,
+  keyPool: IntervalKeyPool,
+  decompiler: Decompiler
 ) extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, keyPool, decompiler) {
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
 
@@ -96,16 +96,16 @@ class MipsFunctionPass(
   }
 
   def handleTwoArguments(
-      instruction: Instruction,
-      callNode: CfgNodeNew,
-      pcodeOp: PcodeOp,
-      operand: String,
-      name: String
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    operand: String,
+    name: String
   ): Unit = {
-    val firstOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
+    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val code = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+    val code     = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     connectCallToArgument(opNode, firstOp)
     connectCallToArgument(opNode, secondOp)
@@ -125,37 +125,13 @@ class MipsFunctionPass(
       case CALL | CALLIND =>
         handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
       case INT_ADD | FLOAT_ADD =>
-        handleTwoArguments(
-          instruction,
-          callNode,
-          pcodeAst,
-          "+",
-          "<operator>.addition"
-        )
+        handleTwoArguments(instruction, callNode, pcodeAst, "+", "<operator>.addition")
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
-        handleTwoArguments(
-          instruction,
-          callNode,
-          pcodeAst,
-          "/",
-          "<operator>.division"
-        )
+        handleTwoArguments(instruction, callNode, pcodeAst, "/", "<operator>.division")
       case INT_SUB | FLOAT_SUB =>
-        handleTwoArguments(
-          instruction,
-          callNode,
-          pcodeAst,
-          "-",
-          "<operator>.subtraction"
-        )
+        handleTwoArguments(instruction, callNode, pcodeAst, "-", "<operator>.subtraction")
       case INT_MULT | FLOAT_MULT =>
-        handleTwoArguments(
-          instruction,
-          callNode,
-          pcodeAst,
-          "*",
-          "<operator>.multiplication"
-        )
+        handleTwoArguments(instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
       case INT_XOR =>
         handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
@@ -170,8 +146,7 @@ class MipsFunctionPass(
           resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
         }
       case PTRSUB | PTRADD => handlePtrSub(instruction, callNode, pcodeAst.getOutput, index)
-      case _               => //handleDefault(pcodeAst)
-
+      case _               => // handleDefault(pcodeAst)
     }
   }
 
@@ -225,25 +200,20 @@ class MipsFunctionPass(
             )
             connectCallToArgument(instructionNode, node)
           case _ =>
-            println(
-              s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}"""
-            )
+            println(s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}""")
         }
       }
     }
   }
 
   // Iterating over operands and add edges to call
-  override def handleArguments(
-      instruction: Instruction,
-      callNode: CfgNodeNew
-  ): Unit = {
+  override def handleArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
     if (instruction.getPcode.toList.isEmpty) {
       // nop && _nop
       return
     }
     // CALL is the last PcodeOp
-    val opCodes = instruction.getPcode.toList //.last.getOpcode
+    val opCodes = instruction.getPcode.toList // .last.getOpcode
     opCodes.last.getOpcode match {
       case CALLIND | CALL =>
         addCallArguments(instruction, callNode)

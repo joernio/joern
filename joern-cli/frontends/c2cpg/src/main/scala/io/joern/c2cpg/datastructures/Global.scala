@@ -34,12 +34,12 @@ object Global {
   }
 
   def getAstsFromAstCache(
-      diffGraph: DiffGraphBuilder,
-      filename: String,
-      fromFilename: String,
-      linenumber: Option[Integer],
-      columnnumber: Option[Integer],
-      astCreatorFunction: => Seq[Ast]
+    diffGraph: DiffGraphBuilder,
+    filename: String,
+    fromFilename: String,
+    linenumber: Option[Integer],
+    columnnumber: Option[Integer],
+    astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = Global.synchronized {
     if (
       FileDefaults

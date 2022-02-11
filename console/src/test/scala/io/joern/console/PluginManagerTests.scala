@@ -78,7 +78,7 @@ object Fixture {
     val dir = File.newTemporaryDirectory("pluginmantests")
     mkdir(dir / "lib")
     mkdirs(dir / "schema-extender" / "schemas")
-    val extender = dir / "schema-extender.sh"
+    val extender         = dir / "schema-extender.sh"
     val extenderContents = "#!/bin/sh\necho 'foo' > " + (dir / "out.txt")
     extender.write(extenderContents)
     chmod_+(PosixFilePermission.OWNER_EXECUTE, extender)
