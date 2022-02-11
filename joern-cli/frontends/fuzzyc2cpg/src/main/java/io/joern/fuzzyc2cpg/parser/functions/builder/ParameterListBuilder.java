@@ -8,7 +8,6 @@ import io.joern.fuzzyc2cpg.ast.functionDef.ParameterBase;
 import io.joern.fuzzyc2cpg.ast.functionDef.ParameterList;
 import io.joern.fuzzyc2cpg.parser.AstNodeFactory;
 import io.joern.fuzzyc2cpg.parser.ParseTreeUtils;
-import java.util.Stack;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 public class ParameterListBuilder extends AstNodeBuilder<ParameterList> {

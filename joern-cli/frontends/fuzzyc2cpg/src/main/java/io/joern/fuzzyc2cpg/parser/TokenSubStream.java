@@ -1,7 +1,6 @@
 package io.joern.fuzzyc2cpg.parser;
 
 import java.util.Stack;
-import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenSource;
@@ -11,8 +10,8 @@ public class TokenSubStream extends CommonTokenStream {
   private int stopIndex = -1;
   private int startIndex = 0;
 
-  private Stack<Integer> stopIndexStack = new Stack<Integer>();
-  private Stack<Integer> startIndexStack = new Stack<Integer>();
+  private Stack<Integer> stopIndexStack = new Stack<>();
+  private Stack<Integer> startIndexStack = new Stack<>();
 
   public TokenSubStream(TokenSource tokenSource) {
     super(tokenSource);

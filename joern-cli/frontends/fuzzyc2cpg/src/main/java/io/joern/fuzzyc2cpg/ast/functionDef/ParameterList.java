@@ -7,7 +7,7 @@ import java.util.LinkedList;
 
 public class ParameterList extends AstNode implements Iterable<ParameterBase> {
 
-  private LinkedList<ParameterBase> parameters = new LinkedList<ParameterBase>();
+  private LinkedList<ParameterBase> parameters = new LinkedList<>();
 
   public void addChild(AstNode node) {
     if (node instanceof ParameterBase) {

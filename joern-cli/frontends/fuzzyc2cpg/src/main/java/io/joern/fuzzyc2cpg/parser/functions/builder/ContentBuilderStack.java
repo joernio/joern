@@ -8,7 +8,7 @@ import java.util.Stack;
 
 public class ContentBuilderStack {
 
-  private Stack<AstNode> itemStack = new Stack<AstNode>();
+  private Stack<AstNode> itemStack = new Stack<>();
   private ShadowStack shadowStack = new ShadowStack(itemStack);
 
   public void push(AstNode statementItem) {

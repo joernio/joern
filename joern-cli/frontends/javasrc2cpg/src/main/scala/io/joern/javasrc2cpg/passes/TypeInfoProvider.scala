@@ -252,7 +252,7 @@ class TypeInfoProvider(global: Global) {
       case Success(declaration) => resolvedMethodLikeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.debug(s"Failed to resolve type for method-like ${methodLike}. Defaulting to <empty>")
+        logger.debug(s"Failed to resolve type for method-like $methodLike. Defaulting to <empty>")
         "<empty>"
     }
 

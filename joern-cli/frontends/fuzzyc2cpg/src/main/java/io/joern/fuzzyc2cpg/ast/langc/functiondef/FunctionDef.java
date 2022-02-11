@@ -4,7 +4,6 @@ import io.joern.fuzzyc2cpg.ast.AstNode;
 import io.joern.fuzzyc2cpg.ast.expressions.Identifier;
 import io.joern.fuzzyc2cpg.ast.functionDef.FunctionDefBase;
 import io.joern.fuzzyc2cpg.ast.functionDef.ParameterList;
-import io.joern.fuzzyc2cpg.ast.functionDef.Template;
 import io.joern.fuzzyc2cpg.ast.functionDef.TemplateParameterList;
 import io.joern.fuzzyc2cpg.ast.logical.statements.CompoundStatement;
 import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor;

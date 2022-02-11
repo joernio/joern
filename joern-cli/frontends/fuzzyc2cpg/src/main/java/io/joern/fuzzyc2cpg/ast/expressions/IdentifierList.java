@@ -8,7 +8,7 @@ import java.util.LinkedList;
 
 public class IdentifierList extends AstNode implements Iterable<Identifier> {
 
-  private LinkedList<Identifier> identifiers = new LinkedList<Identifier>();
+  private LinkedList<Identifier> identifiers = new LinkedList<>();
 
   public int size() {
     return this.identifiers.size();

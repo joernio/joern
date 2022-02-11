@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
 import org.slf4j.LoggerFactory
 
 import java.io.{File, FileOutputStream}
-import better.files.{File => BFile, _}
+import better.files.{File => BFile}
 
 object InferenceSourcesPicker {
   // In the following directory structure:
@@ -44,11 +44,9 @@ object InferenceSourcesPicker {
           f.list
             .filter(_.isDirectory)
             .filterNot { d =>
-              val hasKtsFile = d.listRecursively
+              d.listRecursively
                 .filter(_.hasExtension)
-                .filter(_.pathAsString.endsWith(".kts"))
-                .nonEmpty
-              hasKtsFile
+                .exists(_.pathAsString.endsWith(".kts"))
             }
             .toList
             .map(_.pathAsString)

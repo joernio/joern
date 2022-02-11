@@ -20,32 +20,19 @@ import com.github.javaparser.ast.expr.{
   ArrayInitializerExpr,
   AssignExpr,
   BinaryExpr,
-  BooleanLiteralExpr,
   CastExpr,
-  CharLiteralExpr,
   ClassExpr,
   ConditionalExpr,
-  DoubleLiteralExpr,
   EnclosedExpr,
   Expression,
   FieldAccessExpr,
   InstanceOfExpr,
-  IntegerLiteralExpr,
   LambdaExpr,
   LiteralExpr,
-  LongLiteralExpr,
   MethodCallExpr,
-  MethodReferenceExpr,
   NameExpr,
-  NullLiteralExpr,
   ObjectCreationExpr,
-  PatternExpr,
-  StringLiteralExpr,
-  SuperExpr,
-  SwitchExpr,
-  TextBlockLiteralExpr,
   ThisExpr,
-  TypeExpr,
   UnaryExpr,
   VariableDeclarationExpr
 }
@@ -63,8 +50,6 @@ import com.github.javaparser.ast.stmt.{
   ForStmt,
   IfStmt,
   LabeledStmt,
-  LocalClassDeclarationStmt,
-  LocalRecordDeclarationStmt,
   ReturnStmt,
   Statement,
   SwitchEntry,
@@ -72,9 +57,7 @@ import com.github.javaparser.ast.stmt.{
   SynchronizedStmt,
   ThrowStmt,
   TryStmt,
-  UnparsableStmt,
-  WhileStmt,
-  YieldStmt
+  WhileStmt
 }
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
@@ -747,7 +730,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val tryAst = astForBlockStatement(stmt.getTryBlock, scopeContext, 1, "try");
+    val tryAst = astForBlockStatement(stmt.getTryBlock, scopeContext, 1, "try")
     // Catch order must be 2 for CFG generation
     val catchAsts = withOrder(stmt.getCatchClauses) { (s, o) =>
       astForCatchClause(s, scopeContext, o)
@@ -1996,7 +1979,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
 
     val callNode = NewCall()
       .name(call.getNameAsString)
-      .code(s"${codePrefix}${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
+      .code(s"$codePrefix${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
       .typeFullName(returnType)
       .order(order)
       .argumentIndex(order)

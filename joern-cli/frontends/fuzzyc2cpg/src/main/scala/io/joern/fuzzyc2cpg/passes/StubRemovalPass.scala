@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class StubRemovalPass(cpg: Cpg) extends ParallelCpgPass[Method](cpg) {
 
-  private val sigToMethodWithDef = cpg.method.isNotStub.map(m => (m.signature -> true)).toMap
+  private val sigToMethodWithDef = cpg.method.isNotStub.map(m => m.signature -> true).toMap
 
   override def partIterator: Iterator[Method] =
     cpg.method.isStub.toList
