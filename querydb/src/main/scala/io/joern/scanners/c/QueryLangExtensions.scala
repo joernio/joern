@@ -17,8 +17,8 @@ object QueryLangExtensions {
       }
       val notInCondition = notDirectlyChecked.filterNot { call =>
         val inConditions = call.method.controlStructure.condition.ast.l;
-        val checkedVars = inConditions.isIdentifier.name.toSet ++ inConditions.isCall.code.toSet;
-        val targets = call.inAssignment.target.code.toSet
+        val checkedVars  = inConditions.isIdentifier.name.toSet ++ inConditions.isCall.code.toSet;
+        val targets      = call.inAssignment.target.code.toSet
         (targets & checkedVars).nonEmpty
       }
       notInCondition.whereNot { call =>

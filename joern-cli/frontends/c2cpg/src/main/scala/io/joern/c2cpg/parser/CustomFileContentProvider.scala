@@ -28,14 +28,11 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
       }
   }
 
-  override def getContentForInclusion(
-      path: String,
-      macroDictionary: IMacroDictionary
-  ): InternalFileContent = loadContent(path)
+  override def getContentForInclusion(path: String, macroDictionary: IMacroDictionary): InternalFileContent =
+    loadContent(path)
 
-  override def getContentForInclusion(
-      ifl: IIndexFileLocation,
-      astPath: String
-  ): InternalFileContent = loadContent(astPath)
+  override def getContentForInclusion(ifl: IIndexFileLocation, astPath: String): InternalFileContent = loadContent(
+    astPath
+  )
 
 }

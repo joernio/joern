@@ -89,12 +89,8 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
   "LanguageHelper.cpgGeneratorForLanguage" should {
 
     "select LLVM frontend for directories containing ll files" in {
-      val frontend = io.joern.console.cpgcreation.cpgGeneratorForLanguage(
-        Languages.LLVM,
-        FrontendConfig(),
-        File(".").path,
-        Nil
-      )
+      val frontend =
+        io.joern.console.cpgcreation.cpgGeneratorForLanguage(Languages.LLVM, FrontendConfig(), File(".").path, Nil)
       frontend.get.isInstanceOf[LlvmCpgGenerator] shouldBe true
     }
   }

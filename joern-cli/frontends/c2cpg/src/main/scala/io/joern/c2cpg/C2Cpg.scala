@@ -16,11 +16,11 @@ import scala.util.control.NonFatal
 class C2Cpg {
 
   def runAndOutput(config: Config): Cpg = {
-    val keyPool = KeyPoolCreator.obtain(4, minValue = 101)
-    val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool = keyPool.head
-    val astKeyPool = keyPool(1)
-    val headerKeyPool = keyPool(2)
+    val keyPool              = KeyPoolCreator.obtain(4, minValue = 101)
+    val metaDataKeyPool      = new IntervalKeyPool(1, 100)
+    val typesKeyPool         = keyPool.head
+    val astKeyPool           = keyPool(1)
+    val headerKeyPool        = keyPool(2)
     val headerContentKeyPool = keyPool(3)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
@@ -51,19 +51,19 @@ object C2Cpg {
   private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 
   final case class Config(
-      inputPaths: Set[String] = Set.empty,
-      outputPath: String = X2CpgConfig.defaultOutputPath,
-      includePaths: Set[String] = Set.empty,
-      defines: Set[String] = Set.empty,
-      includeComments: Boolean = false,
-      logProblems: Boolean = false,
-      logPreprocessor: Boolean = false,
-      printIfDefsOnly: Boolean = false,
-      includePathsAutoDiscovery: Boolean = true
+    inputPaths: Set[String] = Set.empty,
+    outputPath: String = X2CpgConfig.defaultOutputPath,
+    includePaths: Set[String] = Set.empty,
+    defines: Set[String] = Set.empty,
+    includeComments: Boolean = false,
+    logProblems: Boolean = false,
+    logPreprocessor: Boolean = false,
+    printIfDefsOnly: Boolean = false,
+    includePathsAutoDiscovery: Boolean = true
   ) extends X2CpgConfig[Config] {
 
     override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-    override def withOutputPath(x: String): Config = copy(outputPath = x)
+    override def withOutputPath(x: String): Config                  = copy(outputPath = x)
   }
 
   def main(args: Array[String]): Unit = {

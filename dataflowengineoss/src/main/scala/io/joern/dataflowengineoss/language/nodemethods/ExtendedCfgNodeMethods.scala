@@ -20,56 +20,58 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
   def astNode: AstNode = node
 
   def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(implicit
-      context: EngineContext
+    context: EngineContext
   ): Traversal[NodeType] =
     node.start.reachableBy(sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
-    val cache = mutable.HashMap[CfgNode, Vector[PathElement]]()
+    val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = ddgIn(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()
     result
   }
 
   def ddgInPathElem(
-      withInvisible: Boolean,
-      cache: mutable.HashMap[CfgNode, Vector[PathElement]] = mutable.HashMap[CfgNode, Vector[PathElement]]()
+    withInvisible: Boolean,
+    cache: mutable.HashMap[CfgNode, Vector[PathElement]] = mutable.HashMap[CfgNode, Vector[PathElement]]()
   )(implicit semantics: Semantics): Traversal[PathElement] =
     ddgInPathElem(Vector(PathElement(node)), withInvisible, cache)
 
   def ddgInPathElem(implicit semantics: Semantics): Traversal[PathElement] = {
-    val cache = mutable.HashMap[CfgNode, Vector[PathElement]]()
+    val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = ddgInPathElem(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()
     result
   }
 
   /** Traverse back in the data dependence graph by one step, taking into account semantics
-    * @param path optional list of path elements that have been expanded already
+    * @param path
+    *   optional list of path elements that have been expanded already
     */
   def ddgIn(path: Vector[PathElement], withInvisible: Boolean, cache: mutable.HashMap[CfgNode, Vector[PathElement]])(
-      implicit semantics: Semantics
+    implicit semantics: Semantics
   ): Traversal[CfgNode] = {
     ddgInPathElem(path, withInvisible, cache).map(_.node)
   }
 
-  /** Traverse back in the data dependence graph by one step and generate corresponding PathElement,
-    * taking into account semantics
-    * @param path optional list of path elements that have been expanded already
+  /** Traverse back in the data dependence graph by one step and generate corresponding PathElement, taking into account
+    * semantics
+    * @param path
+    *   optional list of path elements that have been expanded already
     */
   def ddgInPathElem(
-      path: Vector[PathElement],
-      withInvisible: Boolean,
-      cache: mutable.HashMap[CfgNode, Vector[PathElement]]
+    path: Vector[PathElement],
+    withInvisible: Boolean,
+    cache: mutable.HashMap[CfgNode, Vector[PathElement]]
   )(implicit semantics: Semantics): Traversal[PathElement] = {
     val result = ddgInPathElemInternal(path, withInvisible, cache).to(Traversal)
     result
   }
 
   private def ddgInPathElemInternal(
-      path: Vector[PathElement],
-      withInvisible: Boolean,
-      cache: mutable.HashMap[CfgNode, Vector[PathElement]]
+    path: Vector[PathElement],
+    withInvisible: Boolean,
+    cache: mutable.HashMap[CfgNode, Vector[PathElement]]
   )(implicit semantics: Semantics): Vector[PathElement] = {
 
     if (cache.contains(node)) {

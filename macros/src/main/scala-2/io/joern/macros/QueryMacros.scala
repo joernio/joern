@@ -14,15 +14,13 @@ object QueryMacros {
 
   def withStrRepImpl(c: whitebox.Context)(traversal: c.Tree): c.Expr[TraversalWithStrRep] = {
     import c.universe._
-    val fileContent = new String(traversal.pos.source.content)
-    val start = traversal.pos.start
-    val end = traversal.pos.end
+    val fileContent               = new String(traversal.pos.source.content)
+    val start                     = traversal.pos.start
+    val end                       = traversal.pos.end
     val traversalAsString: String = fileContent.slice(start, end)
 
-    c.Expr(
-      q"""
+    c.Expr(q"""
         TraversalWithStrRep($traversal, $traversalAsString)
-       """
-    )
+       """)
   }
 }

@@ -11,7 +11,7 @@ import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.iterableToTraversal
 
 class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
-  val argumentProvider = new QDBArgumentProvider(3)
+  val argumentProvider              = new QDBArgumentProvider(3)
   override val binDirectory: String = ProjectRoot.relativise("querydb/src/test/resources/testbinaries")
 
   override def beforeAll(): Unit = {

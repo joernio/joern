@@ -14,32 +14,32 @@ import overflowdb.traversal.Traversal
 
 class JavaDataflowFixture extends AnyFlatSpec with Matchers {
 
-  val semanticsFile: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  val semanticsFile: String            = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
   lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
   implicit val resolver: ICallResolver = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
-  val code: String = ""
+  val code: String  = ""
   lazy val cpg: Cpg = JavaSrc2CpgTestContext.buildCpgWithDataflow(code)
 
   def getConstSourceSink(
-      methodName: String,
-      sourceCode: String = "\"MALICIOUS\"",
-      sinkPattern: String = ".*println.*"
+    methodName: String,
+    sourceCode: String = "\"MALICIOUS\"",
+    sinkPattern: String = ".*println.*"
   ): (Traversal[Literal], Traversal[Expression]) = {
     getMultiFnSourceSink(methodName, methodName, sourceCode, sinkPattern)
   }
 
   def getMultiFnSourceSink(
-      sourceMethodName: String,
-      sinkMethodName: String,
-      sourceCode: String = "\"MALICIOUS\"",
-      sinkPattern: String = ".*println.*"
+    sourceMethodName: String,
+    sinkMethodName: String,
+    sourceCode: String = "\"MALICIOUS\"",
+    sinkPattern: String = ".*println.*"
   ): (Traversal[Literal], Traversal[Expression]) = {
     val sourceMethod = cpg.method(s".*$sourceMethodName.*").head
-    val sinkMethod = cpg.method(s".*$sinkMethodName.*").head
-    def source = sourceMethod.literal.code(sourceCode)
-    def sink = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
+    val sinkMethod   = cpg.method(s".*$sinkMethodName.*").head
+    def source       = sourceMethod.literal.code(sourceCode)
+    def sink         = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
 
     // If either of these fail, then the testcase was written incorrectly or the AST was created incorrectly.
     if (source.size <= 0) {

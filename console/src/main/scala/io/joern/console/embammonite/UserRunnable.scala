@@ -13,7 +13,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
   private val logger: Logger = LoggerFactory.getLogger(classOf[UserRunnable])
 
   private val magicEchoSeq: Seq[Char] = List(27, 91, 57, 57, 57, 57, 68, 27, 91, 48, 74, 64, 32).map(_.toChar)
-  private val endMarker = """.*END: ([0-9a-f\-]+)""".r
+  private val endMarker               = """.*END: ([0-9a-f\-]+)""".r
 
   override def run(): Unit = {
     try {
@@ -25,9 +25,9 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
         } else {
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
-          val stdOutput = stdoutPair.get
-          val errOutput = exhaustStderr()
-          val result = new QueryResult(stdOutput, errOutput, job.uuid)
+          val stdOutput  = stdoutPair.get
+          val errOutput  = exhaustStderr()
+          val result     = new QueryResult(stdOutput, errOutput, job.uuid)
           job.observer(result)
         }
       }
@@ -51,7 +51,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
 
   private def stdOutUpToMarker(): Option[String] = {
     var currentOutput: String = ""
-    var line = reader.readLine()
+    var line                  = reader.readLine()
     while (line != null) {
       if (!line.startsWith(magicEchoSeq) && !line.isEmpty) {
         val uuid = uuidFromLine(line)
@@ -74,7 +74,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
 
   private def exhaustStderr(): String = {
     var currentOutput = ""
-    var line = errReader.readLine()
+    var line          = errReader.readLine()
     while (line != null) {
       val uuid = uuidFromLine(line)
       if (uuid.isEmpty) {

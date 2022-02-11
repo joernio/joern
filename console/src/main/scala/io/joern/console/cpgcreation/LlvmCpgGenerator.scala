@@ -4,20 +4,18 @@ import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
 
-/** Language frontend for LLVM.  Translates LLVM bitcode into Code Property Graphs.
+/** Language frontend for LLVM. Translates LLVM bitcode into Code Property Graphs.
   */
 case class LlvmCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
-  /** Generate a CPG for the given input path.
-    * Returns the output path, or None, if no
-    * CPG was generated.
+  /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(
-      inputPath: String,
-      outputPath: String = "cpg.bin.zip",
-      namespaces: List[String] = List()
+    inputPath: String,
+    outputPath: String = "cpg.bin.zip",
+    namespaces: List[String] = List()
   ): Option[String] = {
-    val command = rootPath.resolve("llvm2cpg.sh").toString
+    val command   = rootPath.resolve("llvm2cpg.sh").toString
     val arguments = Seq("--output", outputPath) ++ config.cmdLineParams ++ List(inputPath)
     runShellCommand(command, arguments).map(_ => outputPath)
   }

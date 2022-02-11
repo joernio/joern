@@ -66,7 +66,7 @@ class DotCfgGeneratorTest2 extends CCodeToCpgSuite {
 
     "not contain the same edge more than once" in {
       inside(cpg.method.name("test").dotCfg.l) { case List(dotStr) =>
-        val rawEdges = dotStr.split("\n").filter(x => x.contains("->"))
+        val rawEdges   = dotStr.split("\n").filter(x => x.contains("->"))
         val dedupEdges = rawEdges.distinct
         rawEdges.length shouldBe dedupEdges.length
       }

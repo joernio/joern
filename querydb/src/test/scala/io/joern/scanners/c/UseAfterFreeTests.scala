@@ -31,7 +31,7 @@ class UseAfterFreeTests extends CQueryTestSuite {
     |""".stripMargin
 
   "should flag `bad` function only" in {
-    val query = queryBundle.freeFieldNoReassign()
+    val query   = queryBundle.freeFieldNoReassign()
     val results = findMatchingCalls(query)
 
     results shouldBe Set("bad")

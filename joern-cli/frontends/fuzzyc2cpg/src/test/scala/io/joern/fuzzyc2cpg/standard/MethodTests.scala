@@ -22,7 +22,7 @@ class MethodTests extends FuzzyCCodeToCpgSuite {
     x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     x.filename.endsWith(".c") shouldBe true
     x.lineNumber shouldBe Some(2)

@@ -45,7 +45,7 @@ class MethodInternalLinkageTests extends AnyWordSpec with TraversalUtils {
 
   "REF edges" should {
     "be correct for local x in method1" in {
-      val method = getMethod("method1")
+      val method       = getMethod("method1")
       val indentifierX = method.expandAst().expandAst().expandAst(NodeTypes.IDENTIFIER)
       indentifierX.checkForSingle(Properties.NAME, "x")
 
@@ -54,7 +54,7 @@ class MethodInternalLinkageTests extends AnyWordSpec with TraversalUtils {
     }
 
     "be correct for parameter x in method2" in {
-      val method = getMethod("method2")
+      val method       = getMethod("method2")
       val indentifierX = method.expandAst().expandAst().expandAst(NodeTypes.IDENTIFIER)
       indentifierX.checkForSingle(Properties.NAME, "x")
 
@@ -63,7 +63,7 @@ class MethodInternalLinkageTests extends AnyWordSpec with TraversalUtils {
     }
 
     "be correct for all identifiers x, y in method3" in {
-      val method = getMethod("method3")
+      val method           = getMethod("method3")
       val outerIdentifierX = method.expandAst().expandAst().filterOrder(3).expandAst(NodeTypes.IDENTIFIER)
       outerIdentifierX.checkForSingle(Properties.NAME, "x")
       val parameterX = outerIdentifierX.expandRef()

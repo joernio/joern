@@ -12,21 +12,21 @@ import scala.collection.mutable
 class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
-    val cache = mutable.HashMap[CfgNode, Vector[PathElement]]()
+    val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgIn(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()
     result
   }
 
   def ddgInPathElem(implicit semantics: Semantics): Traversal[PathElement] = {
-    val cache = mutable.HashMap[CfgNode, Vector[PathElement]]()
+    val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgInPathElem(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()
     result
   }
 
   def reachableBy[NodeType <: CfgNode](
-      sourceTravs: Traversal[NodeType]*
+    sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): Traversal[NodeType] = {
     val reachedSources = reachableByInternal(sourceTravsToList(sourceTravs)).map(_.source)
     Traversal.from(reachedSources).cast[NodeType]
@@ -54,7 +54,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   }
 
   def reachableByDetailed[NodeType <: CfgNode](
-      sourceTravs: Traversal[NodeType]*
+    sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): List[ReachableByResult] = {
     reachableByInternal(sourceTravsToList(sourceTravs))
   }
@@ -64,7 +64,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   }
 
   private def reachableByInternal(sources: List[CfgNode])(implicit context: EngineContext): List[ReachableByResult] = {
-    val sinks = traversal.dedup.toList.sortBy(_.id)
+    val sinks  = traversal.dedup.toList.sortBy(_.id)
     val engine = new Engine(context)
     val result = engine.backwards(sinks, sources)
     engine.shutdown()
