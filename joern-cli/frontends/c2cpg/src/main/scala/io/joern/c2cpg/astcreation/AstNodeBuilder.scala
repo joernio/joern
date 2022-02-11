@@ -2,6 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
+import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstNodeBuilder {
 
@@ -17,10 +18,10 @@ trait AstNodeBuilder {
       .columnNumber(column(node))
 
   protected def newMethodRefNode(
-      code: String,
-      methodFullName: String,
-      typeFullName: String,
-      node: IASTNode
+    code: String,
+    methodFullName: String,
+    typeFullName: String,
+    node: IASTNode
   ): NewMethodRef =
     NewMethodRef()
       .code(code)
@@ -30,11 +31,11 @@ trait AstNodeBuilder {
       .columnNumber(column(node))
 
   protected def newCallNode(
-      astNode: IASTNode,
-      name: String,
-      fullname: String,
-      dispatchType: String,
-      order: Int
+    astNode: IASTNode,
+    name: String,
+    fullname: String,
+    dispatchType: String,
+    order: Int
   ): NewCall = {
     NewCall()
       .name(name)
@@ -49,10 +50,10 @@ trait AstNodeBuilder {
   }
 
   protected def newControlStructureNode(
-      node: IASTNode,
-      controlStructureType: String,
-      code: String,
-      order: Int
+    node: IASTNode,
+    controlStructureType: String,
+    code: String,
+    order: Int
   ): NewControlStructure =
     NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
@@ -66,7 +67,7 @@ trait AstNodeBuilder {
   protected def newJumpTarget(node: IASTNode, order: Int): NewJumpTarget = {
     val code = nodeSignature(node)
     val name = node match {
-      case label: IASTLabelStatement    => label.getName.toString
+      case label: IASTLabelStatement    => ASTStringUtil.getSimpleName(label.getName)
       case _ if code.startsWith("case") => "case"
       case _                            => "default"
     }
@@ -81,17 +82,17 @@ trait AstNodeBuilder {
   }
 
   protected def newTypeDecl(
-      name: String,
-      fullname: String,
-      filename: String,
-      code: String,
-      astParentType: String = "",
-      astParentFullName: String = "",
-      order: Int = -1,
-      inherits: Seq[String] = Seq.empty,
-      alias: Option[String] = None,
-      line: Option[Integer] = None,
-      column: Option[Integer] = None
+    name: String,
+    fullname: String,
+    filename: String,
+    code: String,
+    astParentType: String = "",
+    astParentFullName: String = "",
+    order: Int = -1,
+    inherits: Seq[String] = Seq.empty,
+    alias: Option[String] = None,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewTypeDecl =
     NewTypeDecl()
       .name(name)
@@ -101,8 +102,8 @@ trait AstNodeBuilder {
       .filename(filename)
       .astParentType(astParentType)
       .astParentFullName(astParentFullName)
-      .inheritsFromTypeFullName(inherits.map(registerType))
-      .aliasTypeFullName(alias.map(registerType))
+      .inheritsFromTypeFullName(inherits)
+      .aliasTypeFullName(alias)
       .lineNumber(line)
       .columnNumber(column)
       .order(order)

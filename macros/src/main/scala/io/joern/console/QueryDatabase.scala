@@ -10,8 +10,8 @@ import scala.jdk.CollectionConverters._
 trait QueryBundle
 
 class QueryDatabase(
-    defaultArgumentProvider: DefaultArgumentProvider = new DefaultArgumentProvider,
-    namespace: String = "io.joern.scanners"
+  defaultArgumentProvider: DefaultArgumentProvider = new DefaultArgumentProvider,
+  namespace: String = "io.joern.scanners"
 ) {
 
   /** Determine all bundles on the class path
@@ -37,7 +37,7 @@ class QueryDatabase(
     val instance = bundle.getField("MODULE$").get(null)
     queryCreatorsInBundle(bundle).map {
       case (method, args) => {
-        val query = method.invoke(instance, args: _*).asInstanceOf[Query]
+        val query           = method.invoke(instance, args: _*).asInstanceOf[Query]
         val bundleNamespace = bundle.getPackageName
         // the namespace currently looks like `io.joern.scanners.c.CopyLoops`
         val namespaceParts = bundleNamespace.split('.')
@@ -54,8 +54,8 @@ class QueryDatabase(
     }
   }
 
-  /** Obtain all (method, args) pairs from bundle, making it possible to override
-    * default args before creating the query.
+  /** Obtain all (method, args) pairs from bundle, making it possible to override default args before creating the
+    * query.
     */
   def queryCreatorsInBundle[T <: QueryBundle](bundle: Class[T]): List[(Method, List[Any])] = {
     val methods = bundle.getMethods.filter(_.getAnnotations.exists(_.isInstanceOf[q])).toList
@@ -73,12 +73,10 @@ class QueryDatabase(
 
 }
 
-/** Joern and Ocular require different implicits to be present, and when
-  * we encounter these implicits as parameters in a query that we invoke
-  * via reflection, we need to obtain these implicits from somewhere.
+/** Joern and Ocular require different implicits to be present, and when we encounter these implicits as parameters in a
+  * query that we invoke via reflection, we need to obtain these implicits from somewhere.
   *
-  * We achieve this by implementing a `DefaultArgumentProvider` for Ocular,
-  * and one for Joern.
+  * We achieve this by implementing a `DefaultArgumentProvider` for Ocular, and one for Joern.
   */
 class DefaultArgumentProvider {
 
@@ -87,13 +85,13 @@ class DefaultArgumentProvider {
   }
 
   final def defaultArgument(method: Method, bundle: Class[_], parameter: Parameter, i: Int): Any = {
-    val instance = bundle.getField("MODULE$").get(null)
+    val instance         = bundle.getField("MODULE$").get(null)
     val defaultArgOption = typeSpecificDefaultArg(parameter.getType.getTypeName)
     defaultArgOption.getOrElse {
       val defaultMethodName = s"${method.getName}$$default$$${i + 1}"
       try {
         val defaultMethod = bundle.getDeclaredMethod(defaultMethodName)
-        val defaultValue = defaultMethod.invoke(instance)
+        val defaultValue  = defaultMethod.invoke(instance)
         defaultValue
       } catch {
         case e: NoSuchMethodException =>

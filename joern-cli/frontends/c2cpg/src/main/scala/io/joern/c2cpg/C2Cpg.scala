@@ -1,7 +1,7 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.C2Cpg.Config
-import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentLinkerPass, PreprocessorPass}
+import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass, PreprocessorPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{IntervalKeyPool, KeyPoolCreator}
@@ -16,11 +16,12 @@ import scala.util.control.NonFatal
 class C2Cpg {
 
   def runAndOutput(config: Config): Cpg = {
-    val keyPool = KeyPoolCreator.obtain(3, minValue = 101)
-    val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool = keyPool.head
-    val astKeyPool = keyPool(1)
-    val headerKeyPool = keyPool(2)
+    val keyPool              = KeyPoolCreator.obtain(4, minValue = 101)
+    val metaDataKeyPool      = new IntervalKeyPool(1, 100)
+    val typesKeyPool         = keyPool.head
+    val astKeyPool           = keyPool(1)
+    val headerKeyPool        = keyPool(2)
+    val headerContentKeyPool = keyPool(3)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
 
@@ -31,10 +32,10 @@ class C2Cpg {
     val headerAstCreationPass = new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config)
     headerAstCreationPass.createAndApply()
 
-    new HeaderContentLinkerPass(cpg, config).createAndApply()
-
     val types = astCreationPass.usedTypes() ++ headerAstCreationPass.usedTypes()
     new TypeNodePass(types.distinct, cpg, Some(typesKeyPool)).createAndApply()
+
+    new HeaderContentPass(cpg, Some(headerContentKeyPool), config).createAndApply()
     cpg
   }
 
@@ -50,19 +51,19 @@ object C2Cpg {
   private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 
   final case class Config(
-      inputPaths: Set[String] = Set.empty,
-      outputPath: String = X2CpgConfig.defaultOutputPath,
-      includePaths: Set[String] = Set.empty,
-      defines: Set[String] = Set.empty,
-      includeComments: Boolean = false,
-      logProblems: Boolean = false,
-      logPreprocessor: Boolean = false,
-      printIfDefsOnly: Boolean = false,
-      includePathsAutoDiscovery: Boolean = true
+    inputPaths: Set[String] = Set.empty,
+    outputPath: String = X2CpgConfig.defaultOutputPath,
+    includePaths: Set[String] = Set.empty,
+    defines: Set[String] = Set.empty,
+    includeComments: Boolean = false,
+    logProblems: Boolean = false,
+    logPreprocessor: Boolean = false,
+    printIfDefsOnly: Boolean = false,
+    includePathsAutoDiscovery: Boolean = true
   ) extends X2CpgConfig[Config] {
 
     override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-    override def withOutputPath(x: String): Config = copy(outputPath = x)
+    override def withOutputPath(x: String): Config                  = copy(outputPath = x)
   }
 
   def main(args: Array[String]): Unit = {

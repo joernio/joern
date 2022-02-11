@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.kotlin2cpg.types.NameGenerator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
@@ -25,21 +25,21 @@ class Kt2Cpg {
   import Kt2Cpg._
 
   def createCpg(
-      filesWithMeta: Iterable[KtFileWithMeta],
-      fileContentsAtPath: Iterable[FileContentAtPath],
-      typeInfoProvider: TypeInfoProvider,
-      outputPath: Option[String] = None
+    filesWithMeta: Iterable[KtFileWithMeta],
+    fileContentsAtPath: Iterable[FileContentAtPath],
+    nameGenerator: NameGenerator,
+    outputPath: Option[String] = None
   ): Cpg = {
-    val cpg = newEmptyCpg(outputPath)
+    val cpg             = newEmptyCpg(outputPath)
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool = new IntervalKeyPool(100, 1000100)
-    val configKeyPool = new IntervalKeyPool(1000100, 2000100)
-    val methodKeyPool = new IntervalKeyPool(first = 2000100, last = Long.MaxValue)
+    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
+    val configKeyPool   = new IntervalKeyPool(1000100, 2000100)
+    val methodKeyPool   = new IntervalKeyPool(first = 2000100, last = Long.MaxValue)
 
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
     val astCreator =
-      new AstCreationPass(filesWithMeta, typeInfoProvider, cpg, methodKeyPool)
+      new AstCreationPass(filesWithMeta, nameGenerator, cpg, methodKeyPool)
     astCreator.createAndApply()
 
     new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))

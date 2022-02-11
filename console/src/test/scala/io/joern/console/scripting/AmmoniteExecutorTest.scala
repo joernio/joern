@@ -43,7 +43,7 @@ class AmmoniteExecutorTest extends AnyWordSpec with Matchers {
     }
 
     "execute multiple scripts" in withExecutor { executor =>
-      val script = getScriptPath("scripts/general/list-funcs.sc")
+      val script       = getScriptPath("scripts/general/list-funcs.sc")
       val secondScript = getScriptPath("scripts/java/list-sl-ns.sc")
 
       executor.runScripts(List(script, secondScript), Map.empty, Cpg.emptyCpg).unsafeRunSync() shouldBe

@@ -34,10 +34,7 @@ class SwitchTests extends JimpleCodeToCpgFixture {
       |""".stripMargin
 
   "should identify switch roots" in {
-    cpg.method.name("main").switchBlock.code.toSet shouldBe Set(
-      "tableswitch(l4)",
-      "lookupswitch($stack5)"
-    )
+    cpg.method.name("main").switchBlock.code.toSet shouldBe Set("tableswitch(l4)", "lookupswitch($stack5)")
   }
 
   "should have 3 ordinary cases and a default under the table switch" in {
@@ -64,23 +61,13 @@ class SwitchTests extends JimpleCodeToCpgFixture {
       .astChildren
       .collect { case a: JumpTarget => a }
       .code
-      .toSet shouldBe Set(
-      "case 1:",
-      "case 2:",
-      "case 0:",
-      "default:"
-    )
+      .toSet shouldBe Set("case 1:", "case 2:", "case 0:", "default:")
     cpg.switchBlock
       .filter(_.code == "lookupswitch($stack5)")
       .astChildren
       .collect { case a: JumpTarget => a }
       .code
-      .toSet shouldBe Set(
-      "case 66486:",
-      "case 79820959:",
-      "case 67868:",
-      "default:"
-    )
+      .toSet shouldBe Set("case 66486:", "case 79820959:", "case 67868:", "default:")
   }
 
   "should flow jump conditionals from switches" in {
@@ -88,16 +75,12 @@ class SwitchTests extends JimpleCodeToCpgFixture {
       .filter(_.code == "tableswitch(l4)")
       .condition
       .code
-      .toSet shouldBe Set(
-      "l4"
-    )
+      .toSet shouldBe Set("l4")
     cpg.switchBlock
       .filter(_.code == "lookupswitch($stack5)")
       .condition
       .code
-      .toSet shouldBe Set(
-      "$stack5"
-    )
+      .toSet shouldBe Set("$stack5")
   }
 
 }

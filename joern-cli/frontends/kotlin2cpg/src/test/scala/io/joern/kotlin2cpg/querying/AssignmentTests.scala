@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -50,57 +51,51 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a call node for `assignment` op with correct fields" in {
-      cpg.call(Operators.assignment).size shouldBe 1
-
-      val List(p) = cpg.call(Operators.assignment).l
+      val List(p) = cpg.call.methodFullName(Operators.assignment).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(2)
       p.code shouldBe "val x: Int = 5"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a call node for `assignmentPlus` op with correct fields" in {
-      cpg.call(Operators.assignmentPlus).size shouldBe 1
-
-      val List(p) = cpg.call(Operators.assignmentPlus).l
+      val List(p) = cpg.call.methodFullName(Operators.assignmentPlus).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(3)
       p.code shouldBe "x += 1"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a call node for `assignmentMinus` op with correct fields" in {
-      cpg.call(Operators.assignmentMinus).size shouldBe 1
-
-      val List(p) = cpg.call(Operators.assignmentMinus).l
+      val List(p) = cpg.call.methodFullName(Operators.assignmentMinus).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(4)
       p.code shouldBe "x -= 1"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a call node for `assignmentMultiplication` op with correct fields" in {
-      cpg.call(Operators.assignmentMultiplication).size shouldBe 1
-
-      val List(p) = cpg.call(Operators.assignmentMultiplication).l
+      val List(p) = cpg.call.methodFullName(Operators.assignmentMultiplication).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(5)
       p.code shouldBe "x *= 1"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a call node for `assignmentDivision` op with correct fields" in {
-      cpg.call(Operators.assignmentDivision).size shouldBe 1
-
-      val List(p) = cpg.call(Operators.assignmentDivision).l
+      val List(p) = cpg.call.methodFullName(Operators.assignmentDivision).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(6)
       p.code shouldBe "x /= 1"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a call node for `assignmentModulo` op with correct fields" in {
-      cpg.call(Operators.assignmentModulo).size shouldBe 1
-
-      val List(p) = cpg.call(Operators.assignmentModulo).l
+      val List(p) = cpg.call.methodFullName(Operators.assignmentModulo).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(7)
       p.code shouldBe "x %= 1"
+      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 }

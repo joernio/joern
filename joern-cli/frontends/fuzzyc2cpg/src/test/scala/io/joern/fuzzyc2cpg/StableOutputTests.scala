@@ -9,10 +9,10 @@ class StableOutputTests extends AnyWordSpec with Matchers {
 
   def createNodeStrings(): String = {
     val projectName = "stableid"
-    val dirName = String.format("src/test/resources/testcode/%s", projectName)
-    val fuzzyc2Cpg = new FuzzyC2Cpg()
-    val cpg = fuzzyc2Cpg.runAndOutput(Set(dirName), Set(".c", ".cc", ".cpp", ".h", ".hpp"))
-    val nodes = cpg.graph.V().asScala.toList
+    val dirName     = String.format("src/test/resources/testcode/%s", projectName)
+    val fuzzyc2Cpg  = new FuzzyC2Cpg()
+    val cpg         = fuzzyc2Cpg.runAndOutput(Set(dirName), Set(".c", ".cc", ".cpp", ".h", ".hpp"))
+    val nodes       = cpg.graph.V().asScala.toList
     nodes.sortBy(_.id()).map(x => x.label + ": " + x.propertiesMap().asScala.toString).mkString("\n")
   }
 

@@ -18,8 +18,8 @@ class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
     "create two dot files for a CPG containing two methods" in {
 
       File.usingTemporaryDirectory("dumpast") { tmpDir =>
-        val opts = Cpg14DumpOptions(tmpDir.path.toString)
-        implicit val s = semantics
+        val opts         = Cpg14DumpOptions(tmpDir.path.toString)
+        implicit val s   = semantics
         val layerContext = new LayerCreatorContext(cpg)
         new DumpCpg14(opts).run(layerContext)
         (tmpDir / "0-cpg.dot").exists shouldBe true

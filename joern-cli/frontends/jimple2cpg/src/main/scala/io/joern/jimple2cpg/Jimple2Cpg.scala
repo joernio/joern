@@ -23,9 +23,12 @@ object Jimple2Cpg {
   /** Formats the file name the way Soot refers to classes within a class path. e.g.
     * /unrelated/paths/class/path/Foo.class => class.path.Foo
     *
-    * @param codePath the parent directory
-    * @param filename the file name to transform.
-    * @return the correctly formatted class path.
+    * @param codePath
+    *   the parent directory
+    * @param filename
+    *   the file name to transform.
+    * @return
+    *   the correctly formatted class path.
     */
   def getQualifiedClassPath(codePath: String, filename: String): String = {
     val pathFile = new JFile(codePath)
@@ -49,60 +52,50 @@ class Jimple2Cpg {
 
   /** Creates a CPG from Jimple.
     *
-    * @param rawSourceCodePath The path to the Jimple code or code that can be transformed into Jimple.
-    * @param outputPath     The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
-    * @return The constructed CPG.
+    * @param rawSourceCodePath
+    *   The path to the Jimple code or code that can be transformed into Jimple.
+    * @param outputPath
+    *   The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
+    * @return
+    *   The constructed CPG.
     */
-  def createCpg(
-      rawSourceCodePath: String,
-      outputPath: Option[String] = None
-  ): Cpg = {
+  def createCpg(rawSourceCodePath: String, outputPath: Option[String] = None): Cpg = {
     try {
       // Determine if the given path is a file or directory and sanitize accordingly
       val rawSourceCodeFile = new JFile(rawSourceCodePath)
-      val sourceCodePath = if (rawSourceCodeFile.isDirectory) {
-        rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
+      val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
+      val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
+        sourceTarget
       } else {
-        Paths.get(rawSourceCodeFile.getParentFile.getAbsolutePath).normalize.toString
+        Paths
+          .get(new JFile(sourceTarget).getParentFile.getAbsolutePath)
+          .normalize
+          .toString
       }
 
-      configureSoot(sourceCodePath)
-      val cpg = newEmptyCpg(outputPath)
+      configureSoot(sourceCodeDir)
+      val cpg             = newEmptyCpg(outputPath)
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
-      val typesKeyPool = new IntervalKeyPool(100, 1000100)
-      val methodKeyPool = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+      val typesKeyPool    = new IntervalKeyPool(100, 1000100)
+      val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
 
       new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
-      val sourceFileExtensions = Set(".class", ".jimple")
+      val sourceFileExtensions  = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
-      // Unpack any archives on the path onto the source code path as project root
-      val archives = SourceFiles.determine(Set(sourceCodePath), archiveFileExtensions)
       // Load source files and unpack archives if necessary
-      val sourceFileNames = (archives
-        .map(new ZipFile(_))
-        .flatMap(x => {
-          unzipArchive(x, sourceCodePath) match {
-            case Failure(e) =>
-              logger.error(s"Error extracting files from archive at ${x.getName}", e); null
-            case Success(value) => value
-          }
-        })
-        .map(_.getAbsolutePath) ++ SourceFiles.determine(
-        Set(sourceCodePath),
-        sourceFileExtensions
-      )).distinct
+      val sourceFileNames = if (sourceTarget == sourceCodeDir) {
+        // Load all source files in a directory
+        loadSourceFiles(sourceCodeDir, sourceFileExtensions, archiveFileExtensions)
+      } else {
+        // Load single file that was specified
+        loadSourceFiles(sourceTarget, sourceFileExtensions, archiveFileExtensions)
+      }
 
       // Load classes into Soot
-      sourceFileNames
-        .map(getQualifiedClassPath(sourceCodePath, _))
-        .map { x =>
-          Scene.v().addBasicClass(x, SootClass.BODIES); x
-        }
-        .foreach(Scene.v().loadClassAndSupport(_).setApplicationClass())
-      Scene.v().loadNecessaryClasses()
+      loadClassesIntoSoot(sourceCodeDir, sourceFileNames)
       // Project Soot classes
-      val astCreator = new AstCreationPass(sourceCodePath, sourceFileNames, cpg, methodKeyPool)
+      val astCreator = new AstCreationPass(sourceCodeDir, sourceFileNames, cpg, methodKeyPool)
       astCreator.createAndApply()
       // Clear classes from Soot
       closeSoot()
@@ -114,6 +107,47 @@ class Jimple2Cpg {
     } finally {
       closeSoot()
     }
+  }
+
+  /** Retrieve parseable files from archive types.
+    */
+  private def extractSourceFilesFromArchive(sourceCodeDir: String, archiveFileExtensions: Set[String]): List[String] = {
+    val archives = if (new JFile(sourceCodeDir).isFile) {
+      List(sourceCodeDir)
+    } else {
+      SourceFiles.determine(Set(sourceCodeDir), archiveFileExtensions)
+    }
+    archives.flatMap { x =>
+      unzipArchive(new ZipFile(x), sourceCodeDir) match {
+        case Failure(e) =>
+          throw new RuntimeException(s"Error extracting files from archive at $x", e)
+        case Success(files) => files
+      }
+    }
+  }
+
+  /** Load all source files from archive and/or source file types.
+    */
+  private def loadSourceFiles(
+    sourceCodePath: String,
+    sourceFileExtensions: Set[String],
+    archiveFileExtensions: Set[String]
+  ): List[String] = {
+    (
+      extractSourceFilesFromArchive(sourceCodePath, archiveFileExtensions) ++
+        SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
+    ).distinct
+  }
+
+  private def loadClassesIntoSoot(sourceCodePath: String, sourceFileNames: List[String]): Unit = {
+    sourceFileNames
+      .map { fName =>
+        val cp = getQualifiedClassPath(sourceCodePath, fName)
+        Scene.v().addBasicClass(cp, SootClass.BODIES)
+        cp
+      }
+      .foreach(Scene.v().loadClassAndSupport(_).setApplicationClass())
+    Scene.v().loadNecessaryClasses()
   }
 
   private def configureSoot(sourceCodePath: String): Unit = {
@@ -137,8 +171,10 @@ class Jimple2Cpg {
 
   /** Unzips a ZIP file into a sequence of files. All files unpacked are deleted at the end of CPG construction.
     *
-    * @param zf The ZIP file to extract.
-    * @param sourceCodePath The project root path to unpack to.
+    * @param zf
+    *   The ZIP file to extract.
+    * @param sourceCodePath
+    *   The project root path to unpack to.
     */
   private def unzipArchive(zf: ZipFile, sourceCodePath: String) = scala.util.Try {
     Using.resource(zf) { zip: ZipFile =>
@@ -146,17 +182,14 @@ class Jimple2Cpg {
       zip
         .entries()
         .asScala
-        .filter(!_.isDirectory)
-        .filter(_.getName.contains(".class"))
-        .flatMap(entry => {
+        .filter(f => !f.isDirectory && f.getName.contains(".class"))
+        .flatMap { entry =>
           val sourceCodePathFile = new JFile(sourceCodePath)
           // Handle the case if the input source code path is an archive itself
           val destFile = if (sourceCodePathFile.isDirectory) {
             new JFile(sourceCodePath + JFile.separator + entry.getName)
           } else {
-            new JFile(
-              sourceCodePathFile.getParentFile.getAbsolutePath + JFile.separator + entry.getName
-            )
+            new JFile(sourceCodePathFile.getParentFile.getAbsolutePath + JFile.separator + entry.getName)
           }
           // dirName accounts for nested directories as a result of JAR package structure
           val dirName = destFile.getAbsolutePath
@@ -169,7 +202,7 @@ class Jimple2Cpg {
               Files.copy(input, destFile.toPath)
             }
             destFile.deleteOnExit()
-            Option(destFile)
+            Option(destFile.getAbsolutePath)
           } catch {
             case e: Exception =>
               logger.warn(
@@ -178,7 +211,7 @@ class Jimple2Cpg {
               )
               Option.empty
           }
-        })
+        }
         .toSeq
     }
   }

@@ -16,7 +16,7 @@ object JoernWorkspaceLoader {
   val semanticsFilename = "semantics"
 
   lazy val defaultSemanticsFile: String = {
-    val file = Files.createTempFile("joern-default", ".semantics")
+    val file        = Files.createTempFile("joern-default", ".semantics")
     val defaultFile = this.getClass.getClassLoader.getResource("default.semantics").toURI
 
     // Weird, yes, but necessary when running as a distribution.
@@ -28,15 +28,13 @@ object JoernWorkspaceLoader {
     Files.write(file, fileLines, java.nio.charset.StandardCharsets.UTF_8).toString
   }
 
-  def defaultSemantics: Semantics = Semantics.fromList(
-    new Parser().parseFile(defaultSemanticsFile)
-  )
+  def defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(defaultSemanticsFile))
 
 }
 
 class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
   override def createProject(projectFile: ProjectFile, path: Path): JoernProject = {
-    val project = new JoernProject(projectFile, path)
+    val project               = new JoernProject(projectFile, path)
     val semanticFileInProject = path.resolve(JoernWorkspaceLoader.semanticsFilename)
     cp(File(JoernWorkspaceLoader.defaultSemanticsFile), File(semanticFileInProject))
     project.context = EngineContext(JoernWorkspaceLoader.defaultSemantics)
@@ -90,11 +88,7 @@ object JoernConsole {
   def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
       override def context: EngineContext =
-        EngineContext(
-          Semantics.fromList(
-            new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)
-          )
-        )
+        EngineContext(Semantics.fromList(new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)))
       override def config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
       )

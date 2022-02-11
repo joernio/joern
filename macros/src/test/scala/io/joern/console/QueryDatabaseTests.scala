@@ -48,7 +48,7 @@ class QueryDatabaseTests extends AnyWordSpec with should.Matchers {
       }
       testBundles.size shouldBe 1
       val testBundle = testBundles.head
-      val queries = qdb.queriesInBundle(testBundle)
+      val queries    = qdb.queriesInBundle(testBundle)
       queries.count(_.title == "a-title") shouldBe 1
     }
 

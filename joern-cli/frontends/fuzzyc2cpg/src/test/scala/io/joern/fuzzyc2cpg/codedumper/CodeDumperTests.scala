@@ -46,7 +46,7 @@ class CodeDumperTests extends FuzzyCCodeToCpgSuite {
 
   "should allow dumping callIn" in {
     implicit val resolver: ICallResolver = NoResolve
-    val code = cpg.method.name("foo").callIn.dumpRaw.mkString("\n")
+    val code                             = cpg.method.name("foo").callIn.dumpRaw.mkString("\n")
     code should startWith("int")
   }
 

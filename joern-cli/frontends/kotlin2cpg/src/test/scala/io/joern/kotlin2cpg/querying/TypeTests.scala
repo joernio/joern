@@ -9,8 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class TypeTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package com.test.PackageFoo
         |
         |class Foo {
@@ -21,8 +20,7 @@ class TypeTests extends AnyFreeSpec with Matchers {
         |    return 1
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "should create TYPE node with correct fields for return type" in {
       val List(x) = cpg.typ.name("Int").l
@@ -74,8 +72,7 @@ class TypeTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with Android SDK fn" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import android.util.Log
@@ -83,12 +80,28 @@ class TypeTests extends AnyFreeSpec with Matchers {
         |fun mine() {
         |  Log.d("foo", "bar")
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "should have type for Log" in {
       val List(x) = cpg.typ.typeDeclFullName(".*Log.*").l
       x.typeDeclFullName shouldBe "android.util.Log"
+    }
+  }
+
+  "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import javax.crypto.Cipher
+        |
+        |fun main() {
+        |    println(Cipher.getMaxAllowedParameterSpec("AES"))
+        |}
+        |""".stripMargin)
+
+    "should contain TYPE nodes for both the type of the receiver and the type of the return value" in {
+      cpg.typ.fullName("javax.crypto.Cipher").size shouldBe 1
+      cpg.typ.fullName("java.security.spec.AlgorithmParameterSpec").size shouldBe 1
     }
   }
 }

@@ -7,10 +7,8 @@ import java.io.File
 
 /** Command line configuration parameters
   */
-final case class Config(
-    inputPaths: Set[String] = Set.empty,
-    outputPath: String = X2CpgConfig.defaultOutputPath
-) extends X2CpgConfig[Config] {
+final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String = X2CpgConfig.defaultOutputPath)
+    extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
     copy(inputPaths = inputPaths + inputPath)

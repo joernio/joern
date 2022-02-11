@@ -11,7 +11,8 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal._
+import overflowdb.traversal.NodeOps
+import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests
     extends AnyWordSpec
@@ -185,9 +186,9 @@ class AstCreationPassTests
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      val lambdaName = "anonymous_lambda_0"
+      val lambdaName     = "anonymous_lambda_0"
       val lambdaFullName = "Foo.anonymous_lambda_0"
-      val signature = "int Foo.anonymous_lambda_0 (int,int)"
+      val signature      = "int Foo.anonymous_lambda_0 (int,int)"
 
       cpg.member.name("x").order.l shouldBe List(1)
 
@@ -228,9 +229,9 @@ class AstCreationPassTests
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      val lambdaName = "anonymous_lambda_0"
+      val lambdaName     = "anonymous_lambda_0"
       val lambdaFullName = "A.B.Foo.anonymous_lambda_0"
-      val signature = "int A.B.Foo.anonymous_lambda_0 (int,int)"
+      val signature      = "int A.B.Foo.anonymous_lambda_0 (int,int)"
 
       cpg.member.name("x").order.l shouldBe List(1)
 
@@ -274,7 +275,7 @@ class AstCreationPassTests
       "test.cpp"
     ) { cpg =>
       val lambda1Name = "anonymous_lambda_0"
-      val signature1 = "int anonymous_lambda_0 (int)"
+      val signature1  = "int anonymous_lambda_0 (int)"
       val lambda2Name = "anonymous_lambda_1"
 
       cpg.local.name("x").order.l shouldBe List(1)
@@ -537,7 +538,7 @@ class AstCreationPassTests
           call.argument(2).code shouldBe "value"
           inside(call.argument(1).l) { case List(fa: Call) =>
             fa.code shouldBe "decltype(local)"
-            fa.methodFullName shouldBe "operators.<typeOf>"
+            fa.methodFullName shouldBe "<operator>.typeOf"
             fa.argument(1).code shouldBe "local"
           }
 
@@ -920,14 +921,12 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for sizeof operator on identifier with brackets" in TestAstOnlyFixture(
-      """
+    "be correct for sizeof operator on identifier with brackets" in TestAstOnlyFixture("""
         |void method() {
         |  int a;
         |  sizeof(a);
         |}
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.method
         .name("method")
         .ast
@@ -940,14 +939,12 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for sizeof operator on identifier without brackets" in TestAstOnlyFixture(
-      """
+    "be correct for sizeof operator on identifier without brackets" in TestAstOnlyFixture("""
         |void method() {
         |  int a;
         |  sizeof a ;
         |}
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.method
         .name("method")
         .ast
@@ -1048,17 +1045,14 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for typedef struct" in TestAstOnlyFixture(
-      """
+    "be correct for typedef struct" in TestAstOnlyFixture("""
         |typedef struct foo {
         |} abc;
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
     }
 
-    "be correct for global struct" in TestAstOnlyFixture(
-      """
+    "be correct for global struct" in TestAstOnlyFixture("""
         |struct filesystem {
         |	void (*open)(int a);
         |};
@@ -1082,8 +1076,7 @@ class AstCreationPassTests
         |	real_fs.open = &my_open;
         |	i = 0;
         |}
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       val List(localMyOtherFs) = cpg.method("main").local.name("my_other_fs").l
       localMyOtherFs.order shouldBe 2
       localMyOtherFs.referencingIdentifiers.name.l shouldBe List("my_other_fs")
@@ -1093,12 +1086,10 @@ class AstCreationPassTests
       cpg.typeDecl.fullName.l.distinct shouldBe List("my_open", "main", "filesystem")
     }
 
-    "be correct for typedef enum" in TestAstOnlyFixture(
-      """
+    "be correct for typedef enum" in TestAstOnlyFixture("""
         |typedef enum foo {
         |} abc;
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
     }
 
@@ -1277,13 +1268,11 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for method calls" in TestAstOnlyFixture(
-      """
+    "be correct for method calls" in TestAstOnlyFixture("""
         |void foo(int x) {
         |  bar(x);
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.method
         .name("foo")
         .ast
@@ -1294,13 +1283,11 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for method returns" in TestAstOnlyFixture(
-      """
+    "be correct for method returns" in TestAstOnlyFixture("""
         |int d(int x) {
         |  return x * 2;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       // TODO no step class defined for `Return` nodes
       cpg.method.name("d").ast.isReturn.astChildren.order(1).isCall.code.l shouldBe List("x * 2")
       cpg.method
@@ -1315,35 +1302,29 @@ class AstCreationPassTests
         .code shouldBe "x * 2"
     }
 
-    "be correct for binary method calls" in TestAstOnlyFixture(
-      """
+    "be correct for binary method calls" in TestAstOnlyFixture("""
         |int d(int x) {
         |  return x * 2;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.multiplication).code.l shouldBe List("x * 2")
     }
 
-    "be correct for unary method calls" in TestAstOnlyFixture(
-      """
+    "be correct for unary method calls" in TestAstOnlyFixture("""
         |bool invert(bool b) {
         |  return !b;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.logicalNot).argument(1).code.l shouldBe List("b")
     }
 
-    "be correct for unary expr" in TestAstOnlyFixture(
-      """
+    "be correct for unary expr" in TestAstOnlyFixture("""
         |int strnlen (const char *str, int max)
         |    {
         |      const char *end = memchr(str, 0, max);
         |      return end ? (int)(end - str) : max;
         |    }
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       inside(cpg.call.name(Operators.cast).astChildren.l) { case List(tpe: Unknown, call: Call) =>
         call.code shouldBe "end - str"
         call.argumentIndex shouldBe 2
@@ -1352,36 +1333,30 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for post increment method calls" in TestAstOnlyFixture(
-      """
+    "be correct for post increment method calls" in TestAstOnlyFixture("""
         |int foo(int x) {
         |  int sub = x--;
         |  int pos = x++;
         |  return pos;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.postIncrement).argument(1).code("x").size shouldBe 1
       cpg.call.name(Operators.postDecrement).argument(1).code("x").size shouldBe 1
     }
 
-    "be correct for conditional expressions containing calls" in TestAstOnlyFixture(
-      """
+    "be correct for conditional expressions containing calls" in TestAstOnlyFixture("""
         |int abs(int x) {
         |  return x > 0 ? x : -x;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.conditional).argument.code.l shouldBe List("x > 0", "x", "-x")
     }
 
-    "be correct for sizeof expressions" in TestAstOnlyFixture(
-      """
+    "be correct for sizeof expressions" in TestAstOnlyFixture("""
         |size_t int_size() {
         |  return sizeof(int);
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.sizeOf).argument(1).code.l shouldBe List("int")
     }
 
@@ -1389,23 +1364,19 @@ class AstCreationPassTests
       cpg.jumpTarget.code("label:;").size shouldBe 1
     }
 
-    "be correct for array indexing" in TestAstOnlyFixture(
-      """
+    "be correct for array indexing" in TestAstOnlyFixture("""
         |int head(int x[]) {
         |  return x[0];
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.indirectIndexAccess).argument.code.l shouldBe List("x", "0")
     }
 
-    "be correct for type casts" in TestAstOnlyFixture(
-      """
+    "be correct for type casts" in TestAstOnlyFixture("""
         |int trunc(long x) {
         |  return (int) x;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.cast).argument.code.l shouldBe List("int", "x")
     }
 
@@ -1448,7 +1419,7 @@ class AstCreationPassTests
         call.name shouldBe "<operator>.arrayInitializer"
         call.methodFullName shouldBe "<operator>.arrayInitializer"
         val children = call.astChildren.l
-        val args = call.argument.l
+        val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
           a.order shouldBe 1
           a.code shouldBe "0"
@@ -1475,7 +1446,7 @@ class AstCreationPassTests
         call.name shouldBe "<operator>.arrayInitializer"
         call.methodFullName shouldBe "<operator>.arrayInitializer"
         val children = call.astChildren.l
-        val args = call.argument.l
+        val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
           a.order shouldBe 1
           a.code shouldBe "0"
@@ -1502,7 +1473,7 @@ class AstCreationPassTests
         call.name shouldBe "<operator>.arrayInitializer"
         call.methodFullName shouldBe "<operator>.arrayInitializer"
         val children = call.astChildren.l
-        val args = call.argument.l
+        val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
           a.order shouldBe 1
           a.code shouldBe "0"
@@ -1529,7 +1500,7 @@ class AstCreationPassTests
         call.name shouldBe "<operator>.arrayInitializer"
         call.methodFullName shouldBe "<operator>.arrayInitializer"
         val children = call.astChildren.l
-        val args = call.argument.l
+        val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
           a.order shouldBe 1
           a.code shouldBe "0"
@@ -1586,7 +1557,7 @@ class AstCreationPassTests
           callFoo.name shouldBe "<operator>.arrayInitializer"
           callFoo.methodFullName shouldBe "<operator>.arrayInitializer"
           val childrenFoo = callFoo.astChildren.l
-          val argsFoo = callFoo.argument.l
+          val argsFoo     = callFoo.argument.l
           inside(childrenFoo) { case List(a: Literal) =>
             a.order shouldBe 1
             a.code shouldBe "1"
@@ -1601,7 +1572,7 @@ class AstCreationPassTests
           barCall.name shouldBe "<operator>.arrayInitializer"
           barCall.methodFullName shouldBe "<operator>.arrayInitializer"
           val childrenBar = barCall.astChildren.l
-          val argsBar = barCall.argument.l
+          val argsBar     = barCall.argument.l
           inside(childrenBar) { case List(a: Literal, b: Literal, c: Literal) =>
             a.order shouldBe 1
             a.code shouldBe "0"
@@ -1713,7 +1684,7 @@ class AstCreationPassTests
         call.name shouldBe "<operator>.arrayInitializer"
         call.methodFullName shouldBe "<operator>.arrayInitializer"
         val children = call.astMinusRoot.isCall.l
-        val args = call.argument.astChildren.l
+        val args     = call.argument.astChildren.l
         inside(children) { case List(call1, call2) =>
           call1.code shouldBe "[1] = 5"
           call1.name shouldBe Operators.assignment
@@ -1742,7 +1713,7 @@ class AstCreationPassTests
         call.name shouldBe "<operator>.arrayInitializer"
         call.methodFullName shouldBe "<operator>.arrayInitializer"
         val children = call.astMinusRoot.isCall.l
-        val args = call.argument.astChildren.l
+        val args     = call.argument.astChildren.l
         inside(children) { case List(call1, call2) =>
           call1.code shouldBe ".a = 1"
           call1.name shouldBe Operators.assignment
@@ -1781,7 +1752,7 @@ class AstCreationPassTests
           initCall.name shouldBe "<operator>.arrayInitializer"
           initCall.methodFullName shouldBe "<operator>.arrayInitializer"
           val children = initCall.astMinusRoot.isCall.l
-          val args = initCall.argument.astChildren.l
+          val args     = initCall.argument.astChildren.l
           inside(children) { case List(call1, call2, call3) =>
             call1.code shouldBe ".x = 1"
             call1.name shouldBe Operators.assignment
@@ -1915,8 +1886,8 @@ class AstCreationPassTests
       )
 
       val windowsLineNumbers = windowsFixture.identifier.lineNumber.l
-      val macLineNumbers = macFixture.identifier.lineNumber.l
-      val linuxLineNumbers = linuxFixture.identifier.lineNumber.l
+      val macLineNumbers     = macFixture.identifier.lineNumber.l
+      val linuxLineNumbers   = linuxFixture.identifier.lineNumber.l
 
       windowsLineNumbers should not be empty
       macLineNumbers should not be empty
@@ -1927,8 +1898,8 @@ class AstCreationPassTests
       macLineNumbers shouldBe linuxLineNumbers
 
       val windowsColumnNumbers = windowsFixture.identifier.columnNumber.l
-      val macColumnNumbers = macFixture.identifier.columnNumber.l
-      val linuxColumnNumbers = linuxFixture.identifier.columnNumber.l
+      val macColumnNumbers     = macFixture.identifier.columnNumber.l
+      val linuxColumnNumbers   = linuxFixture.identifier.columnNumber.l
 
       windowsColumnNumbers should not be empty
       macColumnNumbers should not be empty

@@ -51,11 +51,9 @@ object Help {
   // through methods via reflection, and therefore, we are adding
   // it manually.
   def runLongHelp: String =
-    Help.format(
-      """
+    Help.format("""
         |
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
   def codeForHelpCommand(clazz: Class[_]): String = {
     val membersCode = DocFinder

@@ -13,7 +13,7 @@ object ExternalCommand {
     if (IS_WIN) "cmd" :: "/c" :: Nil else "sh" :: "-c" :: Nil
 
   def run(command: String): Try[Seq[String]] = {
-    val result = mutable.ArrayBuffer.empty[String]
+    val result                      = mutable.ArrayBuffer.empty[String]
     val lineHandler: String => Unit = result.addOne
     Process(shellPrefix :+ command).!(ProcessLogger(lineHandler, lineHandler)) match {
       case 0 =>

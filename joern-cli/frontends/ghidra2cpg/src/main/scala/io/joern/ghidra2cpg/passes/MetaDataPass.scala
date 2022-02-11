@@ -5,10 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{Languages, nodes}
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
 
 class MetaDataPass(filename: String, cpg: Cpg, keyPool: IntervalKeyPool)
-    extends ParallelCpgPass[String](
-      cpg,
-      keyPools = Some(keyPool.split(1))
-    ) {
+    extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(1))) {
 
   override def partIterator: Iterator[String] = List("").iterator
 

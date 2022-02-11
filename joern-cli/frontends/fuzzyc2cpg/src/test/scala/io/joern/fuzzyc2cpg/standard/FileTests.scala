@@ -30,7 +30,7 @@ class FileTests extends FuzzyCCodeToCpgSuite {
     val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
     x.name should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     // C-frontend currently does not set hash but should do so
     // in the future

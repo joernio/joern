@@ -6,7 +6,7 @@ import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, ParserConfig}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool}
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.x2cpg.SourceFiles
 
 import java.nio.file.Paths
@@ -21,15 +21,15 @@ object AstCreationPass {
 class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKeyPool], config: C2Cpg.Config)
     extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
-  private val global: Global = new Global()
-  private val parserConfig: ParserConfig = ParserConfig.fromConfig(config)
+  private val global: Global                     = new Global()
+  private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
   private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
   private def headerFiles: Set[String] = {
-    val allHeaderFiles = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
+    val allHeaderFiles         = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
     val alreadySeenHeaderFiles = Global.headerFiles
     allHeaderFiles -- alreadySeenHeaderFiles
   }
@@ -42,13 +42,13 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKe
     case AstCreationPass.SourceFiles => sourceFiles.toArray
   }
 
-  override def runOnPart(diffGraph: DiffGraph.Builder, filename: String): Unit =
+  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit =
     new CdtParser(parserConfig, headerFileFinder)
       .parse(Paths.get(filename))
       .foreach { parserResult =>
-        val localDiff = DiffGraph.newBuilder
+        val localDiff = new DiffGraphBuilder
         new AstCreator(filename, config, global, localDiff, parserResult).createAst()
-        diffGraph.moveFrom(localDiff)
+        diffGraph.absorb(localDiff)
       }
 
 }

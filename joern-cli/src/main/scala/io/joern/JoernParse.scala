@@ -56,7 +56,7 @@ object JoernParse extends App {
   val DEFAULT_CPG_OUT_FILE = "cpg.bin"
 
   val (parserArgs, frontendArgs) = splitArgs()
-  val installConfig = new InstallConfig()
+  val installConfig              = new InstallConfig()
 
   run() match {
     case Right(msg) => println(msg)
@@ -83,10 +83,10 @@ object JoernParse extends App {
           Right(buildLanguageList())
         } else
           for {
-            _ <- checkInputPath(config)
+            _        <- checkInputPath(config)
             language <- getLanguage(config)
-            _ <- generateCpg(config, language)
-            _ <- applyDefaultOverlays(config)
+            _        <- generateCpg(config, language)
+            _        <- applyDefaultOverlays(config)
           } yield newCpgCreatedString(config.outputCpgFile)
 
       case Left(err) => Left(err)
@@ -156,14 +156,14 @@ object JoernParse extends App {
   }
 
   case class ParserConfig(
-      inputPath: String = "",
-      outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
-      namespaces: List[String] = List.empty,
-      enhance: Boolean = true,
-      enhanceOnly: Boolean = false,
-      language: String = "",
-      listLanguages: Boolean = false,
-      maxNumDef: Int = DefaultOverlays.defaultMaxNumberOfDefinitions
+    inputPath: String = "",
+    outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
+    namespaces: List[String] = List.empty,
+    enhance: Boolean = true,
+    enhanceOnly: Boolean = false,
+    language: String = "",
+    listLanguages: Boolean = false,
+    maxNumDef: Int = DefaultOverlays.defaultMaxNumberOfDefinitions
   )
 
   private def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] = {

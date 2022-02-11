@@ -16,8 +16,8 @@ class LoHiPass(cpg: Cpg) extends CpgPass(cpg) {
     val readFromLoHiRegsRegex = "_?(mflo|mfhi).*"
 
     val writeToLoHiRegsRegex = "_?(div|divu|mul|mult).*"
-    def from = cpg.call.code(writeToLoHiRegsRegex).l
-    def to = cpg.call.code(readFromLoHiRegsRegex).l
+    def from                 = cpg.call.code(writeToLoHiRegsRegex).l
+    def to                   = cpg.call.code(readFromLoHiRegsRegex).l
 
     // TODO: improve the pair creation to take into consideration register value overwrites.
     // e.g. in pseudo-assembly: div X Y; nop; nop; mflo Z; nop; nop; div P Q; mflo R

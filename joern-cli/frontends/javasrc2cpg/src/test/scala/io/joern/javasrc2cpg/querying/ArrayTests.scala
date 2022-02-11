@@ -75,8 +75,8 @@ class ArrayTests extends JavaSrcCodeToCpgFixture {
     }
 
     withClue("indexAccess in expr on RHS of assignment") {
-      val List(_, add: Call) = rhsAccess.argument.l
-      val List(access: Call, _: Literal) = add.argument.l
+      val List(_, add: Call)                           = rhsAccess.argument.l
+      val List(access: Call, _: Literal)               = add.argument.l
       val List(identifier: Identifier, index: Literal) = access.argument.l
       identifier.name shouldBe "x"
       identifier.typeFullName shouldBe "int[]"

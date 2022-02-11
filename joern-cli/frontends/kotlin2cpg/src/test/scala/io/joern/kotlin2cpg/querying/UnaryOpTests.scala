@@ -10,8 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class UnaryOpTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with calls to unary operators" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  val y: Boolean = true
@@ -23,8 +22,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
         |  x++
         |  x--
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "should contain correct number of calls" in {
       cpg.call.size should not be 0
@@ -57,6 +55,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(4)
       p.code shouldBe "+x"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `minus` op with correct fields" in {
@@ -66,6 +65,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(5)
       p.code shouldBe "-x"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `logicalNot` op with correct fields" in {
@@ -84,6 +84,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(7)
       p.code shouldBe "++x"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `preDecrement` op with correct fields" in {
@@ -93,6 +94,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(8)
       p.code shouldBe "--x"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `postIncrement` op with correct fields" in {
@@ -102,6 +104,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "x++"
+      p.typeFullName shouldBe "kotlin.Int"
     }
 
     "should contain a call node for `postDecrement` op with correct fields" in {
@@ -111,6 +114,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(10)
       p.code shouldBe "x--"
+      p.typeFullName shouldBe "kotlin.Int"
     }
   }
 }

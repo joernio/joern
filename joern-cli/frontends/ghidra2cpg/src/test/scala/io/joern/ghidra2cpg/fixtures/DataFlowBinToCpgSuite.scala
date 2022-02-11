@@ -19,7 +19,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
   var semanticsFilename =
     ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics = _
+  var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
@@ -53,10 +53,6 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
   protected def getMethodOfType(cpg: Cpg, typeName: String, methodName: String): Traversal[Method] =
     cpg.typeDecl.nameExact(typeName).method.nameExact(methodName)
 
-  protected def getLiteralOfType(
-      cpg: Cpg,
-      typeName: String,
-      literalName: String
-  ): Traversal[Literal] =
+  protected def getLiteralOfType(cpg: Cpg, typeName: String, literalName: String): Traversal[Literal] =
     cpg.typeDecl.nameExact(typeName).method.isLiteral.codeExact(literalName)
 }

@@ -9,7 +9,7 @@ import java.io.FileOutputStream
 object TestProtoCpg {
 
   def createTestProtoCpg: File = {
-    val outDir = better.files.File.newTemporaryDirectory("cpgloadertests")
+    val outDir    = better.files.File.newTemporaryDirectory("cpgloadertests")
     val outStream = new FileOutputStream((outDir / "1.proto").pathAsString)
     CpgStruct
       .newBuilder()

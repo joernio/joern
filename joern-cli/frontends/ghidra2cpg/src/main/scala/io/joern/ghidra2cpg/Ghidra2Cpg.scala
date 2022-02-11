@@ -23,21 +23,17 @@ import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
 
-  /** Create a CPG representing the given input file. The CPG
-    * is stored at the given output file. The caller must close
+  /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
   def createCpg(inputFile: File, outputFile: Option[String]): Cpg = {
 
     if (!inputFile.isDirectory && !inputFile.isFile) {
-      throw new InvalidInputException(
-        s"$inputFile is not a valid directory or file."
-      )
+      throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }
 
     val cpg = X2Cpg.newEmptyCpg(outputFile)
@@ -51,13 +47,7 @@ class Ghidra2Cpg() {
       try {
         val projectManager = new HeadlessGhidraProjectManager
         project = projectManager.createProject(locator, null, false)
-        program = AutoImporter.importByUsingBestGuess(
-          inputFile,
-          null,
-          this,
-          new MessageLog,
-          TaskMonitor.DUMMY
-        )
+        program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
         addProgramToCpg(program, inputFile.getAbsolutePath, cpg)
       } catch {
         case e: Throwable =>
@@ -89,7 +79,7 @@ class Ghidra2Cpg() {
 
   private def addProgramToCpg(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
-    val transactionId: Int = program.startTransaction("Analysis")
+    val transactionId: Int                       = program.startTransaction("Analysis")
     try {
       autoAnalysisManager.initializeOptions()
       autoAnalysisManager.reAnalyzeAll(null)
@@ -112,12 +102,12 @@ class Ghidra2Cpg() {
   def handleProgram(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
 
     val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(program)
-    val decompiler = Decompiler(program).get
+    val decompiler                     = Decompiler(program).get
 
     // Functions
-    val listing = program.getListing
+    val listing          = program.getListing
     val functionIterator = listing.getFunctions(true)
-    val functions = functionIterator.iterator.asScala.toList
+    val functions        = functionIterator.iterator.asScala.toList
 
     val address2Literals: Map[Long, String] = DefinedDataIterator
       .definedStrings(program)
@@ -129,7 +119,7 @@ class Ghidra2Cpg() {
 
     // We touch every function twice, regular ASM and PCode
     // Also we have + 2 for MetaDataPass and Namespacepass
-    val numOfKeypools = functions.size * 3 + 2
+    val numOfKeypools   = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
 
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
@@ -151,25 +141,13 @@ class Ghidra2Cpg() {
         }
       case "AARCH64" | "ARM" =>
         functions.foreach { function =>
-          new ArmFunctionPass(
-            program,
-            fileAbsolutePath,
-            function,
-            cpg,
-            keyPoolIterator.next(),
-            decompiler
-          ).createAndApply()
+          new ArmFunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
+            .createAndApply()
         }
       case _ =>
         functions.foreach { function =>
-          new X86FunctionPass(
-            program,
-            fileAbsolutePath,
-            function,
-            cpg,
-            keyPoolIterator.next(),
-            decompiler
-          ).createAndApply()
+          new X86FunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
+            .createAndApply()
           new ReturnEdgesPass(cpg).createAndApply()
         }
     }
@@ -178,10 +156,8 @@ class Ghidra2Cpg() {
     new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
   }
 
-  private class HeadlessProjectConnection(
-      projectManager: HeadlessGhidraProjectManager,
-      connection: GhidraURLConnection
-  ) extends DefaultProject(projectManager, connection) {}
+  private class HeadlessProjectConnection(projectManager: HeadlessGhidraProjectManager, connection: GhidraURLConnection)
+      extends DefaultProject(projectManager, connection) {}
 
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
 }
@@ -189,12 +165,12 @@ class Ghidra2Cpg() {
 object Types {
   // Types will be added to the CPG as soon as everything
   // else is done
-  var types: mutable.SortedSet[String] = mutable.SortedSet[String]()
+  val types: mutable.SortedSet[String] = mutable.SortedSet[String]()
   def registerType(typeName: String): String = {
     try {
       types += typeName
     } catch {
-      case e: Exception => println(s" Error adding type: $typeName")
+      case _: Exception => println(s" Error adding type: $typeName")
     }
     typeName
   }

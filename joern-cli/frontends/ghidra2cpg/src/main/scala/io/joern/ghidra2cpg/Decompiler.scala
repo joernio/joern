@@ -8,8 +8,7 @@ import scala.collection.mutable
 
 object Decompiler {
 
-  /** Create a new decompiler. Returns Some(decompiler) on
-    * success on None on failure.
+  /** Create a new decompiler. Returns Some(decompiler) on success on None on failure.
     */
   def apply(program: Program): Option[Decompiler] = {
     val decompilerInterface = new DecompInterface()
@@ -26,12 +25,12 @@ object Decompiler {
   }
 }
 
-/** Interface to the ghidra decompiler, which performs caching
-  * to ensure that functions are not decompiled more than once.
+/** Interface to the ghidra decompiler, which performs caching to ensure that functions are not decompiled more than
+  * once.
   */
 class Decompiler(val decompInterface: DecompInterface) {
 
-  val timeoutInSeconds = 60
+  val timeoutInSeconds                             = 60
   val cache: mutable.Map[String, DecompileResults] = mutable.Map()
 
   /** Retrieve HighFunction for given function, using the cache.
@@ -44,8 +43,8 @@ class Decompiler(val decompInterface: DecompInterface) {
   def toDecompiledFunction(function: Function): Option[DecompiledFunction] =
     decompile(function).map(_.getDecompiledFunction)
 
-  /** Decompile the given function, retrieving it from a cache if possible.
-    * Returns Some(highFunction) on success and None on error.
+  /** Decompile the given function, retrieving it from a cache if possible. Returns Some(highFunction) on success and
+    * None on error.
     */
   private def decompile(function: Function): Option[DecompileResults] = {
     val addr = function.getEntryPoint.toString(true)

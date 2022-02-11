@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, NewIdentifier, NewLiteral}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -39,7 +39,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `webview.settings` DQE on with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.codeExact("webview.settings").take(1).l
-      c.methodFullName shouldBe "kotlin.Any.settings:ANY(ANY)"
+      c.methodFullName shouldBe Operators.fieldAccess
     }
   }
 
@@ -167,7 +167,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(".*Log.*").l
       c.methodFullName shouldBe "android.util.Log.d:kotlin.Int(kotlin.String,kotlin.String)"
       c.argument.size shouldBe 2
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(firstArg: Literal, secondArg: Identifier) = cpg.call.methodFullName(".*Log.*").argument.l
       firstArg.code shouldBe "\"PREFIX\""
@@ -189,27 +189,101 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       |import android.app.Activity
       |import android.os.Bundle
       |import android.util.Log
+      |import android.webkit.WebView
       |
       |class MyActivity : Activity() {
       |  override fun onCreate(savedInstanceState: Bundle?) {
       |    super.onCreate(savedInstanceState)
       |
-      |    val webview = findViewById<WebView>(R.id.webview)
+      |    val webview = findViewById<WebView>(R.id.webview) as WebView
       |    webview.settings.javaScriptEnabled = true
       |  }
       |}
       |""".stripMargin)
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
-      val List(c) = cpg.call.code("findViewB.*").l
+      val List(c) = cpg.call.code("findViewB.*").codeNot(".*as.*").l
       c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(kotlin.Int)"
       c.argument.size shouldBe 1
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain an IDENTIFIER node for webview with the correct props set" in {
       val List(i) = cpg.call.code(".*findViewB.*").argument(1).isIdentifier.l
-      i.typeFullName shouldBe "android.view.View"
+      i.typeFullName shouldBe "android.webkit.WebView"
+    }
+
+    "should contain an TYPE_REF node for the `as` CALL lhs with the correct props set" in {
+      val List(tr) = cpg.typeRef.codeExact("WebView").l
+      tr.argumentIndex shouldBe 2
+      tr.typeFullName shouldBe "android.webkit.WebView"
+    }
+  }
+
+  "CPG for code with call to Android's `sendBroadcast`" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |import android.content.Intent
+        |import android.os.Bundle
+        |import android.app.Activity
+        |
+        |class MyCustomActivity : Activity() {
+        |  fun onCreate(savedInstanceState: Bundle?) {
+        |    super.onCreate(savedInstanceState)
+        |    val aSecret = "SECRETSECRETSECRETSECRETSECRETSECRET"
+        |    val intent = Intent("com.insecureshop.action.BROADCAST")
+        |    intent.putExtra("ONE_TIME_PAD", aSecret)
+        |    sendBroadcast(intent)
+        |  }
+        |}
+        | """.stripMargin)
+
+    "should contain a CALL node for `super.onCreate.*` with the correct props set" in {
+      def callQ = cpg.call.code(".*onCreate.*")
+
+      val List(c) = callQ.l
+      c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
+      c.signature shouldBe "kotlin.Unit(android.os.Bundle)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(firstArg: Identifier, secondArg: Identifier) = callQ.argument.l
+      firstArg.code shouldBe "super"
+      firstArg.typeFullName shouldBe "android.app.Activity"
+      secondArg.code shouldBe "savedInstanceState"
+      secondArg.typeFullName shouldBe "android.os.Bundle"
+    }
+
+    "should contain a CALL node for `sendBroadcast.*` with the correct props set" in {
+      def callQ = cpg.call.code(".*sendBroadcast.*")
+
+      val List(c) = callQ.l
+      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:kotlin.Unit(android.content.Intent)"
+      c.signature shouldBe "kotlin.Unit(android.content.Intent)"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(firstArg: Identifier) = callQ.argument.l
+      firstArg.code shouldBe "intent"
+      firstArg.typeFullName shouldBe "android.content.Intent"
+    }
+
+    "should contain a CALL node for `putExtra.*` with the correct props set" in {
+      def callQ = cpg.call.code(".*putExtra.*").take(1)
+
+      val List(c) = callQ.l
+      c.methodFullName shouldBe "android.content.Intent.putExtra:android.content.Intent(kotlin.String,kotlin.String)"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(firstArg: Identifier, secondArg: Literal, thirdArg: Identifier) = callQ.argument.l
+      firstArg.code shouldBe "intent"
+      firstArg.typeFullName shouldBe "android.content.Intent"
+      firstArg.argumentIndex shouldBe 0
+      secondArg.code shouldBe "\"ONE_TIME_PAD\""
+      secondArg.typeFullName shouldBe "kotlin.String"
+      secondArg.argumentIndex shouldBe 1
+      thirdArg.code shouldBe "aSecret"
+      thirdArg.typeFullName shouldBe "kotlin.String"
+      thirdArg.argumentIndex shouldBe 2
     }
   }
 }

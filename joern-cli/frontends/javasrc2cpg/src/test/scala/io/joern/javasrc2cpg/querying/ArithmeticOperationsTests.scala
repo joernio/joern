@@ -25,20 +25,15 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
       | }
       |""".stripMargin
 
-  val vars = Seq(
-    ("a", "int"),
-    ("b", "int"),
-    ("c", "int"),
-    ("d", "int"),
-    ("e", "int"),
-    ("f", "int")
-  )
+  val vars = Seq(("a", "int"), ("b", "int"), ("c", "int"), ("d", "int"), ("e", "int"), ("f", "int"))
 
   "should contain call nodes with <operation>.assignment for all variables" in {
     val assignments = cpg.assignment.map(x => (x.target.code, x.typeFullName)).l
     assignments.size shouldBe 6
     vars.foreach(x => {
-      assignments contains x shouldBe true
+      withClue(s"Assignments should contain $x") {
+        assignments contains x shouldBe true
+      }
     })
     cpg.assignment.foreach { assignment =>
       assignment.name shouldBe Operators.assignment
@@ -47,28 +42,28 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should contain a call node for the addition operator" in {
-    val List(op) = cpg.call.nameExact(Operators.addition).l
+    val List(op)                           = cpg.call.nameExact(Operators.addition).l
     val List(a: Identifier, b: Identifier) = op.astOut.l
     a.name shouldBe "a"
     b.name shouldBe "b"
   }
 
   "should contain a call node for the subtraction operator" in {
-    val List(op) = cpg.call(Operators.subtraction).l
+    val List(op)                           = cpg.call(Operators.subtraction).l
     val List(c: Identifier, a: Identifier) = op.astOut.l
     c.name shouldBe "c"
     a.name shouldBe "a"
   }
 
   "should contain a call node for the multiplication operator" in {
-    val List(op) = cpg.call(Operators.multiplication).l
+    val List(op)                           = cpg.call(Operators.multiplication).l
     val List(a: Identifier, b: Identifier) = op.astOut.l
     a.name shouldBe "a"
     b.name shouldBe "b"
   }
 
   "should contain a call node for the division operator" in {
-    val List(op) = cpg.call(Operators.division).l
+    val List(op)                           = cpg.call(Operators.division).l
     val List(b: Identifier, a: Identifier) = op.astOut.l
     a.name shouldBe "a"
     b.name shouldBe "b"
