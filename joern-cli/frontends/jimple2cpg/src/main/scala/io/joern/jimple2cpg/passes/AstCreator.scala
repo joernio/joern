@@ -11,7 +11,7 @@ import soot.{Local => _, _}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class AstCreator(filename: String, global: Global) {
 
@@ -143,14 +143,22 @@ class AstCreator(filename: String, global: Global) {
     val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
     val lastOrder = 2 + methodDeclaration.getParameterCount
     try {
-      val methodBody = methodDeclaration.retrieveActiveBody()
-      val parameterAsts = withOrder(methodBody.getParameterLocals) { (p, order) =>
-        astForParameter(p, order, methodDeclaration)
+      if (!methodDeclaration.isConcrete) {
+        Ast(methodNode)
+          .withChild(astForMethodReturn(methodDeclaration))
+      } else {
+        val methodBody = Try(methodDeclaration.getActiveBody) match {
+          case Failure(_)    => methodDeclaration.retrieveActiveBody()
+          case Success(body) => body
+        }
+        val parameterAsts = withOrder(methodBody.getParameterLocals) { (p, order) =>
+          astForParameter(p, order, methodDeclaration)
+        }
+        Ast(methodNode)
+          .withChildren(parameterAsts)
+          .withChild(astForMethodBody(methodBody, lastOrder))
+          .withChild(astForMethodReturn(methodDeclaration))
       }
-      Ast(methodNode)
-        .withChildren(parameterAsts)
-        .withChild(astForMethodBody(methodBody, lastOrder))
-        .withChild(astForMethodReturn(methodDeclaration))
     } catch {
       case e: RuntimeException =>
         logger.warn(s"Unable to parse method body. ${e.getMessage}")
@@ -411,7 +419,9 @@ class AstCreator(filename: String, global: Global) {
       .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
-    val valueAsts = withOrder(sizes) { (s, o) => astsForValue(s, o, parentUnit) }.flatten
+    val valueAsts = withOrder(sizes) { (s, o) =>
+      astsForValue(s, o, parentUnit)
+    }.flatten
     Ast(callBlock)
       .withChildren(valueAsts)
       .withArgEdges(callBlock, valueAsts.flatMap(_.root))
