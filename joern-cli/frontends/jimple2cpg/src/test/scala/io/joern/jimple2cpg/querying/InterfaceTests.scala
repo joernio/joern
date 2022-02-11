@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import java.io.{File => JFile}
+import java.io.{File, File => JFile}
 
 class InterfaceTests extends JimpleCodeToCpgFixture {
 
@@ -24,8 +24,10 @@ class InterfaceTests extends JimpleCodeToCpgFixture {
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename.startsWith(JFile.separator) ||
-      x.filename.startsWith("C:\\\\") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+      startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".class") shouldBe true
   }
 

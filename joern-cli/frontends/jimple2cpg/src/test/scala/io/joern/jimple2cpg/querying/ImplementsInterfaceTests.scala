@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.slf4j.LoggerFactory
 
-import java.io.{File => JFile}
+import java.io.{File, File => JFile}
 
 class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
 
@@ -31,8 +31,10 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object", "java.io.Serializable")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename.startsWith(JFile.separator) ||
-      x.filename.startsWith("C:\\\\") shouldBe true
+    x.filename should (
+      startWith(File.separator) or // Unix
+        startWith regex "[A-Z]:" // Windows
+    )
     x.filename.endsWith(".class") shouldBe true
   }
 
