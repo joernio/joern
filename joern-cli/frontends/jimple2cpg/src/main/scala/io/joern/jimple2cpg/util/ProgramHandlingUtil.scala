@@ -25,20 +25,22 @@ object ProgramHandlingUtil {
 
   /** Inspects class files and moves them to the temp directory based on their package path.
     *
-    * @param files the class files to move.
-    * @return the list of class files at their new locations.
+    * @param files
+    *   the class files to move.
+    * @return
+    *   the list of class files at their new locations.
     */
   def moveClassFiles(files: List[String]): List[String] = {
     var destPath: Option[String] = None
 
     sealed class ClassPathVisitor extends ClassVisitor(Opcodes.ASM8) {
       override def visit(
-          version: Int,
-          access: Int,
-          name: String,
-          signature: String,
-          superName: String,
-          interfaces: Array[String]
+        version: Int,
+        access: Int,
+        name: String,
+        signature: String,
+        superName: String,
+        interfaces: Array[String]
       ): Unit = {
         destPath = Some(TEMP_DIR.toAbsolutePath.toString + File.separator + name + ".class")
       }
@@ -46,7 +48,7 @@ object ProgramHandlingUtil {
 
     files.flatMap { f =>
       Using.resource(new FileInputStream(f)) { fis =>
-        val cr = new ClassReader(fis)
+        val cr          = new ClassReader(fis)
         val rootVisitor = new ClassPathVisitor()
         cr.accept(rootVisitor, SKIP_CODE)
       }
@@ -63,8 +65,10 @@ object ProgramHandlingUtil {
 
   /** Unzips a ZIP file into a sequence of files. All files unpacked are deleted at the end of CPG construction.
     *
-    * @param zf             The ZIP file to extract.
-    * @param sourceCodePath The project root path to unpack to.
+    * @param zf
+    *   The ZIP file to extract.
+    * @param sourceCodePath
+    *   The project root path to unpack to.
     */
   def unzipArchive(zf: ZipFile, sourceCodePath: String): Try[Seq[String]] = scala.util.Try {
     Using.resource(zf) { zip: ZipFile =>
@@ -79,9 +83,7 @@ object ProgramHandlingUtil {
           val destFile = if (sourceCodePathFile.isDirectory) {
             new File(TEMP_DIR.toAbsolutePath.toString + File.separator + entry.getName)
           } else {
-            new File(
-              TEMP_DIR.toAbsolutePath.toString + File.separator + entry.getName
-            )
+            new File(TEMP_DIR.toAbsolutePath.toString + File.separator + entry.getName)
           }
           // dirName accounts for nested directories as a result of JAR package structure
           val dirName = destFile.getAbsolutePath
@@ -97,10 +99,8 @@ object ProgramHandlingUtil {
             Option(destFile.getAbsolutePath)
           } catch {
             case e: Exception =>
-              logger.warn(
-                s"Encountered an error while extracting entry ${entry.getName} from archive ${zip.getName}.",
-                e
-              )
+              logger
+                .warn(s"Encountered an error while extracting entry ${entry.getName} from archive ${zip.getName}.", e)
               Option.empty
           }
         })
@@ -110,10 +110,7 @@ object ProgramHandlingUtil {
 
   /** Retrieve parseable files from archive types.
     */
-  def extractSourceFilesFromArchive(
-      sourceCodeDir: String,
-      archiveFileExtensions: Set[String]
-  ): List[String] = {
+  def extractSourceFilesFromArchive(sourceCodeDir: String, archiveFileExtensions: Set[String]): List[String] = {
     val archives = if (new File(sourceCodeDir).isFile) {
       List(sourceCodeDir)
     } else {

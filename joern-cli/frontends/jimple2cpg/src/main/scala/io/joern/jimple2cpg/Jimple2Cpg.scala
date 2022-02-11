@@ -23,8 +23,10 @@ object Jimple2Cpg {
   /** Formats the file name the way Soot refers to classes within a class path. e.g.
     * /unrelated/paths/class/path/Foo.class => class.path.Foo
     *
-    * @param filename the file name to transform.
-    * @return the correctly formatted class path.
+    * @param filename
+    *   the file name to transform.
+    * @return
+    *   the correctly formatted class path.
     */
   def getQualifiedClassPath(filename: String): String = {
     val codePath = ProgramHandlingUtil.TEMP_DIR
@@ -70,7 +72,7 @@ class Jimple2Cpg {
       }
 
       configureSoot()
-      val cpg = newEmptyCpg(outputPath)
+      val cpg             = newEmptyCpg(outputPath)
       val metaDataKeyPool = new IntervalKeyPool(1, 100)
       val typesKeyPool    = new IntervalKeyPool(100, 1000100)
       val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
