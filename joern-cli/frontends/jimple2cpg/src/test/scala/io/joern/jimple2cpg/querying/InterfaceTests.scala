@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import java.io.{File, File => JFile}
+import java.io.File
 
 class InterfaceTests extends JimpleCodeToCpgFixture {
 

@@ -3,9 +3,8 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import org.slf4j.LoggerFactory
 
-import java.io.{File, File => JFile}
+import java.io.File
 
 class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
 
