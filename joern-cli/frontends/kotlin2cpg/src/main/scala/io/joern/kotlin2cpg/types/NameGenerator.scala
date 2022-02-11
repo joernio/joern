@@ -325,7 +325,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(getSuperclassDescriptors)
-      .filter(_.size() > 0)
+      .filter(_.asScala.nonEmpty)
       .map(_.asScala.map { superClassDesc =>
         TypeRenderer.render(superClassDesc.getDefaultType)
       }.toList)
@@ -351,7 +351,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
 
   def fullNameWithSignature(expr: KtClassLiteralExpression, defaultValue: (String, String)): (String, String) = {
     val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
-    if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.size() > 0) {
+    if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.asScala.nonEmpty) {
       val firstTypeArg = typeInfo.getType.getArguments.get(0)
       val rendered = TypeRenderer.render(firstTypeArg.getType)
       val retType = expressionType(expr, Constants.any)
@@ -423,7 +423,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
           case _                                     => false
         }
         val relevantDesc =
-          if (!fnDescriptor.isActual && fnDescriptor.getOverriddenDescriptors.size() > 0) {
+          if (!fnDescriptor.isActual && fnDescriptor.getOverriddenDescriptors.asScala.nonEmpty) {
             fnDescriptor.getOverriddenDescriptors.asScala.toList.head
           } else {
             fnDescriptor
@@ -622,7 +622,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
     val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
     if (hasReturnTypeFromTypeParams) {
-      if (returnT.getConstructor.getSupertypes.size() > 0) {
+      if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
         val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
         TypeRenderer.render(firstSuperType)
       } else {

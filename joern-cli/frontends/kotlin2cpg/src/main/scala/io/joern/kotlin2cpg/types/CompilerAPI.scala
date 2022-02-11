@@ -44,10 +44,9 @@ object InferenceSourcesPicker {
           f.list
             .filter(_.isDirectory)
             .filterNot { d =>
-              val hasKtsFile = d.listRecursively
+              d.listRecursively
                 .filter(_.hasExtension)
                 .exists(_.pathAsString.endsWith(".kts"))
-              hasKtsFile
             }
             .toList
             .map(_.pathAsString)
