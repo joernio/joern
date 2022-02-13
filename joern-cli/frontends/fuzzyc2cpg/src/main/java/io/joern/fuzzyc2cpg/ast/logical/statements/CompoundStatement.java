@@ -8,7 +8,7 @@ import java.util.List;
 
 public class CompoundStatement extends Statement implements Iterable<AstNode> {
 
-  protected static final List<AstNode> emptyList = new LinkedList<AstNode>();
+  protected static final List<AstNode> emptyList = new LinkedList<>();
 
   // TODO would it not be better to expose only the iterator instead?
   public List<AstNode> getStatements() {

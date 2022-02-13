@@ -28,15 +28,15 @@ class AstCreationPass(
     report: Report = new Report()
 ) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
-  private val global: Global = new Global()
-  private val parserConfig: ParserConfig = ParserConfig.fromConfig(config)
+  private val global: Global                     = new Global()
+  private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
   private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
   private def headerFiles: Set[String] = {
-    val allHeaderFiles = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
+    val allHeaderFiles         = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
     val alreadySeenHeaderFiles = Global.headerFiles
     allHeaderFiles -- alreadySeenHeaderFiles
   }

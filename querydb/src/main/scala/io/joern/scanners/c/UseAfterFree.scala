@@ -194,7 +194,7 @@ object UseAfterFree extends QueryBundle {
           .where(_.argument(1).isIdentifier)
           .flatMap(f => {
             val freedIdentifierCode = f.argument(1).code
-            val postDom = f.postDominatedBy.toSetImmutable
+            val postDom             = f.postDominatedBy.toSetImmutable
 
             val assignedPostDom = postDom.isIdentifier
               .where(_.inAssignment)

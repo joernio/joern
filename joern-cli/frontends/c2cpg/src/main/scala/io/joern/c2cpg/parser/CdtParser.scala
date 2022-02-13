@@ -20,10 +20,10 @@ object CdtParser {
   private val logger = LoggerFactory.getLogger(classOf[CdtParser])
 
   case class ParseResult(
-      translationUnit: Option[IASTTranslationUnit],
-      preprocessorErrorCount: Int = 0,
-      problems: Int = 0,
-      failure: Option[Throwable] = None
+    translationUnit: Option[IASTTranslationUnit],
+    preprocessorErrorCount: Int = 0,
+    problems: Int = 0,
+    failure: Option[Throwable] = None
   )
 
 }
@@ -35,9 +35,9 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
   import CdtParser._
 
   private val definedSymbols: util.Map[String, String] = parseConfig.definedSymbols.asJava
-  private val includePaths: Set[String] = parseConfig.includePaths.map(_.toString)
-  private val scannerInfo: ScannerInfo = new ScannerInfo(definedSymbols, includePaths.toArray)
-  private val log: DefaultLogService = new DefaultLogService
+  private val includePaths: Set[String]                = parseConfig.includePaths.map(_.toString)
+  private val scannerInfo: ScannerInfo                 = new ScannerInfo(definedSymbols, includePaths.toArray)
+  private val log: DefaultLogService                   = new DefaultLogService
   // enables parsing of code behind disabled preprocessor defines:
   private val opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
 

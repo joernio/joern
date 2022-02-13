@@ -24,9 +24,9 @@ object TypeNodePassFixture {
       val file1 = (dir / "file1.c")
       file1.write(file1Code)
 
-      val cpg = Cpg.emptyCpg
-      val keyPool = new IntervalKeyPool(1001, 2000)
-      val filenames = List(file1.path.toAbsolutePath.toString)
+      val cpg        = Cpg.emptyCpg
+      val keyPool    = new IntervalKeyPool(1001, 2000)
+      val filenames  = List(file1.path.toAbsolutePath.toString)
       val astCreator = new AstCreationPass(filenames, cpg, keyPool)
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()

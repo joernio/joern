@@ -8,7 +8,7 @@ class DangerousFunctionsTests extends GhidraQueryTestSuite {
   "find insecure strcpy" in {
     buildCpgForBin("dangerous_functions.o")
 
-    val query = queryBundle.strcpyUsed()
+    val query   = queryBundle.strcpyUsed()
     val results = findMatchingCalls(query)
 
     results shouldBe Set("vulnerable_strcpy")

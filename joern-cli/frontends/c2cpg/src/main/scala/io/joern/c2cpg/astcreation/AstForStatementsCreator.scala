@@ -90,14 +90,14 @@ trait AstForStatementsCreator {
     // See: https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html
     // For such GOTOs we cannot statically determine the target label. As a quick
     // hack we simply put edges to all labels found indicated by *. This might be an over-taint.
-    val code = s"goto *;"
+    val code     = s"goto *;"
     val gotoNode = Ast(newControlStructureNode(goto, ControlStructureTypes.GOTO, code, order))
     val exprNode = nullSafeAst(goto.getLabelNameExpression, order + 1)
     Seq(gotoNode, exprNode)
   }
 
   private def astsForLabelStatement(label: IASTLabelStatement, order: Int): Seq[Ast] = {
-    val cpgLabel = newJumpTarget(label, order)
+    val cpgLabel    = newJumpTarget(label, order)
     val nestedStmts = nullSafeAst(label.getNestedStatement, order + 1)
     Ast(cpgLabel) +: nestedStmts
   }
@@ -108,7 +108,7 @@ trait AstForStatementsCreator {
     val doNode = newControlStructureNode(doStmt, ControlStructureTypes.DO, code, order)
 
     val conditionAst = nullSafeAst(doStmt.getCondition, 2)
-    val stmtAsts = nullSafeAst(doStmt.getBody, 1)
+    val stmtAsts     = nullSafeAst(doStmt.getBody, 1)
 
     Ast(doNode)
       .withChild(conditionAst)
@@ -122,7 +122,7 @@ trait AstForStatementsCreator {
     val switchNode = newControlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code, order)
 
     val conditionAst = nullSafeAst(switchStmt.getControllerExpression, 1)
-    val stmtAsts = nullSafeAst(switchStmt.getBody, 2)
+    val stmtAsts     = nullSafeAst(switchStmt.getBody, 2)
 
     Ast(switchNode)
       .withChild(conditionAst)
@@ -132,7 +132,7 @@ trait AstForStatementsCreator {
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement, order: Int): Seq[Ast] = {
     val labelNode = newJumpTarget(caseStmt, order)
-    val stmt = nullSafeAst(caseStmt.getExpression, order)
+    val stmt      = nullSafeAst(caseStmt.getExpression, order)
     Seq(Ast(labelNode), stmt)
   }
 
@@ -142,7 +142,7 @@ trait AstForStatementsCreator {
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement, order: Int): Ast = {
     val cpgTry = newControlStructureNode(tryStmt, ControlStructureTypes.TRY, "try", order)
-    val body = nullSafeAst(tryStmt.getTryBody, 1)
+    val body   = nullSafeAst(tryStmt.getTryBody, 1)
     // All catches must have order 2 for correct control flow generation.
     val catches = tryStmt.getCatchHandlers.flatMap { stmt =>
       astsForStatement(stmt.getCatchBody, 2)
@@ -181,15 +181,15 @@ trait AstForStatementsCreator {
     val codeCond = nullSafeCode(forStmt.getConditionExpression)
     val codeIter = nullSafeCode(forStmt.getIterationExpression)
 
-    val code = s"for ($codeInit$codeCond;$codeIter)"
+    val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, order)
 
     val initAsts = nullSafeAst(forStmt.getInitializerStatement, 1)
 
     val continuedOrder = Math.max(initAsts.size, 1)
-    val compareAst = nullSafeAst(forStmt.getConditionExpression, continuedOrder + 1)
-    val updateAst = nullSafeAst(forStmt.getIterationExpression, continuedOrder + 2)
-    val stmtAst = nullSafeAst(forStmt.getBody, continuedOrder + 3)
+    val compareAst     = nullSafeAst(forStmt.getConditionExpression, continuedOrder + 1)
+    val updateAst      = nullSafeAst(forStmt.getIterationExpression, continuedOrder + 2)
+    val stmtAst        = nullSafeAst(forStmt.getBody, continuedOrder + 3)
 
     Ast(forNode)
       .withChildren(initAsts)
@@ -203,7 +203,7 @@ trait AstForStatementsCreator {
     val codeDecl = nullSafeCode(forStmt.getDeclaration)
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
 
-    val code = s"for ($codeDecl:$codeInit)"
+    val code    = s"for ($codeDecl:$codeInit)"
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, order)
 
     val initAst = astForNode(forStmt.getInitializerClause, 1)
@@ -222,7 +222,7 @@ trait AstForStatementsCreator {
     val whileNode = newControlStructureNode(whileStmt, ControlStructureTypes.WHILE, code, order)
 
     val conditionAst = nullSafeAst(whileStmt.getCondition, 1)
-    val stmtAsts = nullSafeAst(whileStmt.getBody, 2)
+    val stmtAsts     = nullSafeAst(whileStmt.getBody, 2)
 
     Ast(whileNode)
       .withChild(conditionAst)
@@ -231,11 +231,11 @@ trait AstForStatementsCreator {
   }
 
   private def astForIf(ifStmt: IASTIfStatement, order: Int): Ast = {
-    val code = s"if (${nullSafeCode(ifStmt.getConditionExpression)})"
+    val code   = s"if (${nullSafeCode(ifStmt.getConditionExpression)})"
     val ifNode = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code, order)
 
     val conditionAst = nullSafeAst(ifStmt.getConditionExpression, 1)
-    val stmtAsts = nullSafeAst(ifStmt.getThenClause, 2)
+    val stmtAsts     = nullSafeAst(ifStmt.getThenClause, 2)
 
     val elseChild = if (ifStmt.getElseClause != null) {
       val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else", 3)

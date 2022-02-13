@@ -8,14 +8,12 @@ import org.scalatest.matchers.should.Matchers
 
 class VariableReferencingTests extends AnyFreeSpec with Matchers {
   "should find references for simple case" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun foo(x: Int): Int {
         |  val y = x
         |  return y
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "the local variable exists" in {
       val localNode = cpg.method.name("foo").local.name("y").head
@@ -34,14 +32,12 @@ class VariableReferencingTests extends AnyFreeSpec with Matchers {
   }
 
   "should find references inside expressions" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |fun foo(x: Int): Int {
         |  val y = 1 + x
         |  return y
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "the local variable exists" in {
       val localNode = cpg.method.name("foo").local.name("y").head

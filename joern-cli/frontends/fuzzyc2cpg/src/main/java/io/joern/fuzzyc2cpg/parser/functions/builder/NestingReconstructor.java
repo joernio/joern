@@ -1,7 +1,6 @@
 package io.joern.fuzzyc2cpg.parser.functions.builder;
 
 import io.joern.fuzzyc2cpg.ast.AstNode;
-import io.joern.fuzzyc2cpg.ast.expressions.NewExpression;
 import io.joern.fuzzyc2cpg.ast.langc.statements.blockstarters.ElseStatement;
 import io.joern.fuzzyc2cpg.ast.langc.statements.blockstarters.IfStatement;
 import io.joern.fuzzyc2cpg.ast.expressions.Expression;
@@ -94,7 +93,7 @@ public class NestingReconstructor {
 
         } else if (curBlockStarter instanceof ElseStatement) {
           // add else statement to the previous if-statement,
-          // which has already been consolidated so we can return
+          // which has already been consolidated, so we can return
 
           IfStatement lastIf = (IfStatement) stack.getIf();
           if (lastIf != null) {

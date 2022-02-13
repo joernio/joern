@@ -19,10 +19,10 @@ object DefaultLoader extends WorkspaceLoader[Project] {
   }
 }
 
-/** WorkspaceManager: a component, which loads and maintains the
-  * list of projects made accessible via Ocular/Joern.
+/** WorkspaceManager: a component, which loads and maintains the list of projects made accessible via Ocular/Joern.
   *
-  * @param path path to to workspace.
+  * @param path
+  *   path to to workspace.
   */
 class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLoader[ProjectType] = DefaultLoader) {
 
@@ -33,18 +33,15 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   /** The workspace managed by this WorkspaceManager
     */
   private var workspace: Workspace[ProjectType] = loader.load(path)
-  private val dirPath = File(path).path.toAbsolutePath
+  private val dirPath                           = File(path).path.toAbsolutePath
 
   private val LEGACY_BASE_CPG_FILENAME = "cpg.bin.zip"
-  private val OVERLAY_DIR_NAME = "overlays"
+  private val OVERLAY_DIR_NAME         = "overlays"
 
-  /** Create project for code stored at `inputPath` with the project
-    * name `name`. If `name` is empty, the project name is derived
-    * from `inputPath`. If a project for this `name` already exists,
-    * it is deleted from the workspace first. If no file or directory
-    * exists at `inputPath`, then no project is created. Returns the
-    * path to the project directory as an optional String, and None
-    * if there was an error.
+  /** Create project for code stored at `inputPath` with the project name `name`. If `name` is empty, the project name
+    * is derived from `inputPath`. If a project for this `name` already exists, it is deleted from the workspace first.
+    * If no file or directory exists at `inputPath`, then no project is created. Returns the path to the project
+    * directory as an optional String, and None if there was an error.
     */
   def createProject(inputPath: String, projectName: String): Option[Path] = {
     Some(File(inputPath)).filter(_.exists).map { _ =>
@@ -62,7 +59,8 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   }
 
   /** Remove project named `name` from disk
-    * @param name name of the project
+    * @param name
+    *   name of the project
     */
   def removeProject(name: String): Unit = {
     closeProject(name)
@@ -82,8 +80,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     touch(dirPath.toString / "cpg.bin")
   }
 
-  /** Write the project's `project.json`, a JSON file
-    * that holds meta information.
+  /** Write the project's `project.json`, a JSON file that holds meta information.
     */
   private def writeProjectFile(projectFile: ProjectFile, dirPath: Path): File = {
     // TODO proguard and json4s don't play along. We actually want to
@@ -92,7 +89,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     // which point serialization should work.
     // val content = jsonWrite(projectFile)
     implicit val formats: DefaultFormats.type = DefaultFormats
-    val PROJECTFILE_NAME = "project.json"
+    val PROJECTFILE_NAME                      = "project.json"
     val content = jsonWrite(Map("inputPath" -> projectFile.inputPath, "name" -> projectFile.name))
     File(dirPath.resolve(PROJECTFILE_NAME)).write(content)
   }
@@ -163,10 +160,8 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     projectDir(inputPath).resolve(baseFileName).toString
   }
 
-  /** The safe directory name for a given input file
-    * that can be used to store its base CPG, along with all overlays.
-    * This method returns a directory name regardless of whether the
-    * directory exists or not.
+  /** The safe directory name for a given input file that can be used to store its base CPG, along with all overlays.
+    * This method returns a directory name regardless of whether the directory exists or not.
     */
   private def projectDir(inputPath: String): Path = {
     val filename = File(inputPath).path.getFileName
@@ -190,8 +185,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     workspace.projects.find(r => r.name == name)
   }
 
-  /** Workspace record for the CPG, or none,
-    * if the CPG is not in the workspace
+  /** Workspace record for the CPG, or none, if the CPG is not in the workspace
     */
   def projectByCpg(baseCpg: Cpg): Option[ProjectType] =
     workspace.projects.find(_.cpg.contains(baseCpg))
@@ -199,7 +193,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   def projectExistsForCpg(baseCpg: Cpg): Boolean = projectByCpg(baseCpg).isDefined
 
   def getNextOverlayDirName(baseCpg: Cpg, overlayName: String): String = {
-    val project = projectByCpg(baseCpg).get
+    val project          = projectByCpg(baseCpg).get
     val overlayDirectory = File(overlayDirByProjectName(project.name))
 
     val overlayFile = overlayDirectory.path
@@ -209,8 +203,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     overlayFile.getAbsolutePath
   }
 
-  /** Obtain the cpg that was last loaded. Throws
-    * a runtime exception if no CPG has been loaded.
+  /** Obtain the cpg that was last loaded. Throws a runtime exception if no CPG has been loaded.
     */
   def cpg: Cpg = {
     val project = workspace.projects.lastOption
@@ -224,8 +217,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     }
   }
 
-  /** Set active project to project with name `name`.
-    * If a project with this name does not exist, does nothing.
+  /** Set active project to project with name `name`. If a project with this name does not exist, does nothing.
     */
   def setActiveProject(name: String): Option[ProjectType] = {
     val project = projectByName(name)
@@ -240,26 +232,25 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     }
   }
 
-  /** Retrieve the currently active project.
-    * If no project is active, None is returned.
+  /** Retrieve the currently active project. If no project is active, None is returned.
     */
   def getActiveProject: Option[Project] = {
     workspace.projects.lastOption
   }
 
-  /** Open project by name and return it. If a project with this name does not exist,
-    * None is returned. If the CPG of this project is loaded, it is unloaded first
-    * and then reloaded. Returns project or None on error.
+  /** Open project by name and return it. If a project with this name does not exist, None is returned. If the CPG of
+    * this project is loaded, it is unloaded first and then reloaded. Returns project or None on error.
     *
-    * @param name of the project to load
-    * @param loader function to perform CPG loading. This parameter only exists for
-    *               testing purposes.
+    * @param name
+    *   of the project to load
+    * @param loader
+    *   function to perform CPG loading. This parameter only exists for testing purposes.
     */
   def openProject(
-      name: String,
-      loader: String => Option[Cpg] = { x =>
-        loadCpgRaw(x)
-      }
+    name: String,
+    loader: String => Option[Cpg] = { x =>
+      loadCpgRaw(x)
+    }
   ): Option[Project] = {
     if (!projectExists(name)) {
       report(s"Project does not exist in workspace. Try `importCode/importCpg(inputPath)` to create it")
@@ -273,14 +264,14 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     } else {
       val cpgFilename = baseCpgFilename(name)
       report("Creating working copy of CPG to be safe")
-      val cpgFile = File(cpgFilename)
+      val cpgFile         = File(cpgFilename)
       val workingCopyPath = projectDir(name).resolve(Project.workCpgFileName)
       val workingCopyName = workingCopyPath.toAbsolutePath.toString
       cp(cpgFile, workingCopyPath)
       report(s"Loading base CPG from: $workingCopyName")
 
       val result = {
-        val newCpg = loader(workingCopyName)
+        val newCpg      = loader(workingCopyName)
         val projectPath = File(workingCopyName).parent.path
         newCpg.flatMap { c =>
           unloadCpgIfExists(name)
@@ -292,14 +283,12 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     }
   }
 
-  /** Free up resources occupied by this project but
-    * do not remove project from disk.
+  /** Free up resources occupied by this project but do not remove project from disk.
     */
   def closeProject(name: String): Option[Project] =
     projectByName(name).map(_.close)
 
-  /** Set CPG for existing project. It is assumed that the CPG
-    * is loaded.
+  /** Set CPG for existing project. It is assumed that the CPG is loaded.
     */
   private def setCpgForProject(newCpg: Cpg, projectPath: Path): Unit = {
     val project = getProjectByPath(projectPath)
@@ -359,8 +348,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
       }
   }
 
-  /** Remove currently active project from workspace
-    * and delete all associated workspace files from disk.
+  /** Remove currently active project from workspace and delete all associated workspace files from disk.
     */
   def deleteCurrentProject(): Unit = {
     val project = projectByCpg(cpg)
@@ -371,9 +359,9 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     }
   }
 
-  /** Remove project with name `name` from workspace
-    * and delete all associated workspace files from disk.
-    * @param name the name of the project that should be removed
+  /** Remove project with name `name` from workspace and delete all associated workspace files from disk.
+    * @param name
+    *   the name of the project that should be removed
     */
   def deleteProject(name: String): Option[Unit] = {
     val project = projectByName(name)

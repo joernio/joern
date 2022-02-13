@@ -16,9 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 
-case class Global(
-    usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]()
-)
+case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
 class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
     extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(filenames.size))) {
@@ -29,12 +27,12 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
   override def partIterator: Iterator[String] = filenames.iterator
 
   override def runOnPart(filename: String): Iterator[DiffGraph] = {
-    val solver = typeSolver()
-    val symbolResolver = new JavaSymbolSolver(solver);
+    val solver         = typeSolver()
+    val symbolResolver = new JavaSymbolSolver(solver)
 
     val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
-    val parser = new JavaParser(parserConfig)
-    val parseResult = parser.parse(new java.io.File(filename))
+    val parser       = new JavaParser(parserConfig)
+    val parseResult  = parser.parse(new java.io.File(filename))
 
     val typeInfoProvider = TypeInfoProvider(global)
 
@@ -49,7 +47,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
   }
 
   private def typeSolver() = {
-    val combinedTypeSolver = new CombinedTypeSolver()
+    val combinedTypeSolver   = new CombinedTypeSolver()
     val reflectionTypeSolver = new ReflectionTypeSolver()
     val javaParserTypeSolver = new JavaParserTypeSolver(codeDir)
     combinedTypeSolver.add(reflectionTypeSolver)

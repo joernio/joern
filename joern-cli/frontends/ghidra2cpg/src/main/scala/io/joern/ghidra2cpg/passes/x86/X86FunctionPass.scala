@@ -12,12 +12,12 @@ import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.language.implicitConversions
 class X86FunctionPass(
-    currentProgram: Program,
-    filename: String,
-    function: Function,
-    cpg: Cpg,
-    keyPool: IntervalKeyPool,
-    decompiler: Decompiler
+  currentProgram: Program,
+  filename: String,
+  function: Function,
+  cpg: Cpg,
+  keyPool: IntervalKeyPool,
+  decompiler: Decompiler
 ) extends FunctionPass(new X86Processor, currentProgram, function, cpg, keyPool, decompiler) {
 
   override def handleBody(): Unit = {

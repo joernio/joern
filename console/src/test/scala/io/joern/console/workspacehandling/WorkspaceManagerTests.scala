@@ -13,9 +13,9 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
 
     "create project in correct location" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
-        val inputFile = File.newTemporaryFile("workspaceman").touch()
+        val inputFile     = File.newTemporaryFile("workspaceman").touch()
         val workspacePath = workspaceFile.path
-        val manager = new WorkspaceManager(workspacePath.toString)
+        val manager       = new WorkspaceManager(workspacePath.toString)
         val pathToProject = manager.createProject(inputFile.toString, "aprojectname")
         pathToProject shouldBe Some(workspacePath.resolve("aprojectname"))
         inputFile.delete()
@@ -26,12 +26,12 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     "overwrite existing project with same name" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val workspacePath = workspaceFile.path
-        val manager = new WorkspaceManager(workspacePath.toString)
-        val inputFile1 = File.newTemporaryFile("workspaceman").touch()
-        val inputFile2 = File.newTemporaryFile("workspaceman").touch()
+        val manager       = new WorkspaceManager(workspacePath.toString)
+        val inputFile1    = File.newTemporaryFile("workspaceman").touch()
+        val inputFile2    = File.newTemporaryFile("workspaceman").touch()
         manager.createProject(inputFile1.toString, "aprojectname")
         val pathToProject = manager.createProject(inputFile2.toString, "aprojectname")
-        val project = pathToProject.flatMap(TestLoader().loadProject(_)).get
+        val project       = pathToProject.flatMap(TestLoader().loadProject(_)).get
         inputFile1.delete()
         inputFile2.delete()
         File(project.inputPath).name shouldBe inputFile2.name
@@ -42,8 +42,8 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     "not create project if input path is invalid" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val workspacePath = workspaceFile.path
-        val manager = new WorkspaceManager(workspacePath.toString)
-        val project = manager.createProject("idonotexist", "aprojectname")
+        val manager       = new WorkspaceManager(workspacePath.toString)
+        val project       = manager.createProject("idonotexist", "aprojectname")
         project shouldBe None
         manager.numberOfProjects shouldBe 0
       }
@@ -62,7 +62,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     "return None when asking to load non-existing project" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val workspacePath = workspaceFile.path
-        val project = new WorkspaceManager(workspacePath.toString).openProject("foo")
+        val project       = new WorkspaceManager(workspacePath.toString).openProject("foo")
         project shouldBe None
       }
     }
@@ -70,7 +70,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     "open an existing project" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val projectName = "myproject"
-        val manager = createFakeProjectAndOpen(workspaceFile, projectName)
+        val manager     = createFakeProjectAndOpen(workspaceFile, projectName)
         manager.numberOfProjects shouldBe 1
         val project = manager.project(projectName)
 
@@ -109,8 +109,8 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     "allow closing an open project" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val projectName = "myproject"
-        val manager = createFakeProjectAndOpen(workspaceFile, projectName)
-        val project = manager.closeProject(projectName)
+        val manager     = createFakeProjectAndOpen(workspaceFile, projectName)
+        val project     = manager.closeProject(projectName)
         project.get.name shouldBe projectName
         project.get.cpg shouldBe None
         manager.numberOfProjects shouldBe 1
@@ -120,7 +120,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     "gracefully handle closing of a closed project" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val projectName = "myproject"
-        val manager = createFakeProjectAndOpen(workspaceFile, projectName)
+        val manager     = createFakeProjectAndOpen(workspaceFile, projectName)
         manager.closeProject(projectName)
         manager.closeProject(projectName)
       }
@@ -166,7 +166,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
         val manager = new WorkspaceManager(workspaceFile.toString)
         manager.openProject(projectName)
         val cpgBeforeCall = manager.cpg
-        val project = manager.setActiveProject("idontexist")
+        val project       = manager.setActiveProject("idontexist")
         project shouldBe None
         manager.cpg shouldBe cpgBeforeCall
         manager.getActiveProject should not be empty

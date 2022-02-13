@@ -149,9 +149,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
       "should contain CALL nodes for `split` with the correct MFNs set" in {
         cpg.call.methodFullName(".*split.*").methodFullName.toSet shouldBe
-          Set(
-            "kotlin.CharSequence.split:kotlin.collections.List(kotlin.Array,kotlin.Boolean,kotlin.Int)"
-          )
+          Set("kotlin.CharSequence.split:kotlin.collections.List(kotlin.Array,kotlin.Boolean,kotlin.Int)")
       }
     }
 

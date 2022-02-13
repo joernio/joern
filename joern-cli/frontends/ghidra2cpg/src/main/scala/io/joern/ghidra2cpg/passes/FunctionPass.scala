@@ -25,22 +25,19 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 abstract class FunctionPass(
-    processor: Processor,
-    currentProgram: Program,
-    function: Function,
-    cpg: Cpg,
-    keyPool: IntervalKeyPool,
-    decompiler: Decompiler
-) extends ParallelCpgPass[String](
-      cpg,
-      keyPools = Some(keyPool.split(1))
-    ) {
+  processor: Processor,
+  currentProgram: Program,
+  function: Function,
+  cpg: Cpg,
+  keyPool: IntervalKeyPool,
+  decompiler: Decompiler
+) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(1))) {
   implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
 
-  val listing: Listing = currentProgram.getListing
-  val functionIterator: FunctionIterator = listing.getFunctions(true)
-  val functions: List[Function] = functionIterator.iterator.asScala.toList
-  val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
+  val listing: Listing                        = currentProgram.getListing
+  val functionIterator: FunctionIterator      = listing.getFunctions(true)
+  val functions: List[Function]               = functionIterator.iterator.asScala.toList
+  val highFunction: HighFunction              = decompiler.toHighFunction(function).orNull
   protected var methodNode: Option[NewMethod] = None
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
@@ -148,10 +145,7 @@ abstract class FunctionPass(
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(
-      instruction: Instruction,
-      callNode: CfgNodeNew
-  ): Unit = {
+  def handleArguments(instruction: Instruction, callNode: CfgNodeNew): Unit = {
     val mnemonicString = processor.getInstructions(instruction.getMnemonicString)
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
@@ -212,9 +206,7 @@ abstract class FunctionPass(
       for (index <- 0 until instruction.getNumOperands) {
         val opObjects = instruction.getOpObjects(index)
         if (opObjects.length > 1) {
-          val argument = String.valueOf(
-            instruction.getDefaultOperandRepresentation(index)
-          )
+          val argument = String.valueOf(instruction.getDefaultOperandRepresentation(index))
           val node = createIdentifier(
             argument,
             argument,
@@ -261,9 +253,7 @@ abstract class FunctionPass(
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
                 connectCallToArgument(callNode, node)
               case _ =>
-                println(
-                  s"""Unsupported argument: $opObject $className"""
-                )
+                println(s"""Unsupported argument: $opObject $className""")
             }
           }
       }
@@ -282,9 +272,7 @@ abstract class FunctionPass(
       case "RET" =>
         createReturnNode(instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
       case "CALL" | "LEAVE" =>
-        val code = sanitizeMethodName(
-          codeUnitFormat.getOperandRepresentationString(instruction, 0)
-        )
+        val code = sanitizeMethodName(codeUnitFormat.getOperandRepresentationString(instruction, 0))
         createCallNode(code, code, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
       case "UNKNOWN" =>
         createCallNode(instruction.toString, "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue())

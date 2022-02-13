@@ -7,9 +7,9 @@ object TimeUtils {
 
   /** Measures elapsed time for executing a block in nanoseconds */
   def time[R](block: => R): (R, Long) = {
-    val t0 = System.nanoTime()
-    val result = block
-    val t1 = System.nanoTime()
+    val t0      = System.nanoTime()
+    val result  = block
+    val t1      = System.nanoTime()
     val elapsed = t1 - t0
     (result, elapsed)
   }
@@ -21,7 +21,7 @@ object TimeUtils {
     duration match {
       case d: FiniteDuration =>
         val nanos = d.toNanos
-        val unit = chooseUnit(nanos)
+        val unit  = chooseUnit(nanos)
         val value = nanos.toDouble / NANOSECONDS.convert(1, unit)
 
         s"%.4g %s".formatLocal(Locale.ROOT, value, abbreviate(unit))

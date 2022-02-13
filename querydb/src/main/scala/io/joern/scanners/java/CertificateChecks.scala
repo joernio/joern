@@ -38,9 +38,7 @@ object CertificateChecks extends QueryBundle {
           case id: nodes.Identifier =>
             id.refsTo.forall(_.isInstanceOf[nodes.Local])
           case c: nodes.Call =>
-            c.methodFullName == Operators.assignment && c.argument.forall(
-              isPrologue
-            )
+            c.methodFullName == Operators.assignment && c.argument.forall(isPrologue)
           case _ => false
         }
         def skipPrologue(node: nodes.CfgNode): Traversal[nodes.CfgNode] =

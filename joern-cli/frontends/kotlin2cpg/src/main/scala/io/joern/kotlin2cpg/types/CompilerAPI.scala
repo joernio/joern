@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
 import org.slf4j.LoggerFactory
 
 import java.io.{File, FileOutputStream}
-import better.files.{File => BFile, _}
+import better.files.{File => BFile}
 
 object InferenceSourcesPicker {
   // In the following directory structure:
@@ -44,15 +44,13 @@ object InferenceSourcesPicker {
           f.list
             .filter(_.isDirectory)
             .filterNot { d =>
-              val hasKtsFile = d.listRecursively
+              d.listRecursively
                 .filter(_.hasExtension)
-                .filter(_.pathAsString.endsWith(".kts"))
-                .size > 0
-              hasKtsFile
+                .exists(_.pathAsString.endsWith(".kts"))
             }
             .toList
             .map(_.pathAsString)
-        if (dirsPicked.size > 0) {
+        if (dirsPicked.nonEmpty) {
           Some(dirsPicked)
         } else {
           None
@@ -67,8 +65,8 @@ object CompilerAPI {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def makeEnvironment(
-      forDirectories: Seq[String],
-      inferenceJarPaths: Seq[InferenceJarPath] = List()
+    forDirectories: Seq[String],
+    inferenceJarPaths: Seq[InferenceJarPath] = List()
   ): KotlinCoreEnvironment = {
     val configuration = {
       val config = new CompilerConfiguration()
@@ -82,13 +80,9 @@ object CompilerAPI {
           val f = new File(path.path)
           if (f.exists()) {
             config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(f))
-            logger.debug(
-              "Added inference jar from path `" + path.path + "`."
-            )
+            logger.debug("Added inference jar from path `" + path.path + "`.")
           } else {
-            logger.warn(
-              "Path to inference jar does not point to existing file `" + path.path + "`."
-            )
+            logger.warn("Path to inference jar does not point to existing file `" + path.path + "`.")
           }
         } else {
           val resourceStream = getClass.getClassLoader.getResourceAsStream(path.path)
@@ -101,13 +95,9 @@ object CompilerAPI {
               LazyList.continually(resourceStream.read).takeWhile(_ != -1).map(_.toByte).toArray
             outStream.write(bytes)
             config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(tempFile))
-            logger.debug(
-              "Added inference jar from resources `" + path.path + "`."
-            )
+            logger.debug("Added inference jar from resources `" + path.path + "`.")
           } else {
-            logger.warn(
-              "Path to inference jar does not point to existing resource `" + path.path + "`."
-            )
+            logger.warn("Path to inference jar does not point to existing resource `" + path.path + "`.")
           }
         }
       }
@@ -116,11 +106,7 @@ object CompilerAPI {
     }
     val environment =
       KotlinCoreEnvironment
-        .createForProduction(
-          Disposer.newDisposable(),
-          configuration,
-          EnvironmentConfigFiles.JVM_CONFIG_FILES
-        )
+        .createForProduction(Disposer.newDisposable(), configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
     environment
   }
 }

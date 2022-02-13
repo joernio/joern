@@ -46,8 +46,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       firstBlockChild.name shouldBe "tmp_1"
       firstBlockChild.typeFullName shouldBe "java.io.File"
 
-      val List(secondBlockChild: Call) = assignmentRhs.astChildren.drop(1).take(1).l
-      val allocAssignment = secondBlockChild
+      val List(secondBlockChild: Call)                                   = assignmentRhs.astChildren.drop(1).take(1).l
+      val allocAssignment                                                = secondBlockChild
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = allocAssignment.argument.l
       allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "java.io.File"
@@ -61,7 +61,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(thirdBlockChild: Call) = assignmentRhs.astChildren.drop(2).take(1).l
-      val initCall = thirdBlockChild
+      val initCall                    = thirdBlockChild
       initCall.code shouldBe "File(\"/tmp/myfile.txt\")"
       initCall.signature shouldBe "void(kotlin.String)"
       initCall.methodFullName shouldBe "java.io.File.<init>:void(kotlin.String)"
@@ -110,8 +110,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       firstBlockChild.name shouldBe "tmp_1"
       firstBlockChild.typeFullName shouldBe "java.io.File"
 
-      val List(secondBlockChild: Call) = loweredBlock.astChildren.drop(1).take(1).l
-      val allocAssignment = secondBlockChild
+      val List(secondBlockChild: Call)                                   = loweredBlock.astChildren.drop(1).take(1).l
+      val allocAssignment                                                = secondBlockChild
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = allocAssignment.argument.l
       allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "java.io.File"
@@ -125,7 +125,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(thirdBlockChild: Call) = loweredBlock.astChildren.drop(2).take(1).l
-      val initCall = thirdBlockChild
+      val initCall                    = thirdBlockChild
       initCall.code shouldBe "File(\"/tmp/myfile.txt\")"
       initCall.signature shouldBe "void(kotlin.String)"
       initCall.methodFullName shouldBe "java.io.File.<init>:void(kotlin.String)"
@@ -184,8 +184,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       firstBlockChild.name shouldBe "tmp_1"
       firstBlockChild.typeFullName shouldBe "mypkg.AClass"
 
-      val List(secondBlockChild: Call) = assignmentRhs.astChildren.drop(1).take(1).l
-      val allocAssignment = secondBlockChild
+      val List(secondBlockChild: Call)                                   = assignmentRhs.astChildren.drop(1).take(1).l
+      val allocAssignment                                                = secondBlockChild
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = allocAssignment.argument.l
       allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "mypkg.AClass"
@@ -199,7 +199,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(thirdBlockChild: Call) = assignmentRhs.astChildren.drop(2).take(1).l
-      val initCall = thirdBlockChild
+      val initCall                    = thirdBlockChild
       initCall.code shouldBe "AClass(\"AMESSAGE\")"
       initCall.signature shouldBe "void(kotlin.String)"
       initCall.methodFullName shouldBe "mypkg.AClass.<init>:void(kotlin.String)"

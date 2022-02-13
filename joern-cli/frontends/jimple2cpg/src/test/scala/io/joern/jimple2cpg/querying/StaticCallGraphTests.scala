@@ -24,10 +24,7 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
   }
 
   "should find that main calls add and others" in {
-    cpg.method.name("main").callee.name.filterNot(_.startsWith("<operator>")).toSet shouldBe Set(
-      "add",
-      "println"
-    )
+    cpg.method.name("main").callee.name.filterNot(_.startsWith("<operator>")).toSet shouldBe Set("add", "println")
   }
 
   "should find a set of outgoing calls for main" in {

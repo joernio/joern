@@ -3,7 +3,6 @@ package io.joern.fuzzyc2cpg.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
-import scala.Char;
 
 import io.joern.fuzzyc2cpg.FunctionParser.InitDeclWithAssignContext;
 import io.joern.fuzzyc2cpg.FunctionParser.StatementContext;

@@ -42,10 +42,10 @@ object CompilerOptimizations extends QueryBundle {
           .filter {
             case (_: Identifier, ts: List[Type]) =>
               ts.nonEmpty &&
-                ts.head.namespace.l.exists { x =>
-                  x.name.contains("<global>")
-                } &&
-                !ts.head.fullName.contains("[]")
+              ts.head.namespace.l.exists { x =>
+                x.name.contains("<global>")
+              } &&
+              !ts.head.fullName.contains("[]")
             case _ => false
           }
           .flatMap {

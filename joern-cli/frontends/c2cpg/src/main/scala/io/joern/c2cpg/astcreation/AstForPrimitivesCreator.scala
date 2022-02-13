@@ -17,7 +17,7 @@ trait AstForPrimitivesCreator {
     Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression, order: Int): Ast = {
-    val tpe = ASTTypeUtil.getType(lit.getExpressionType)
+    val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
     val litNode = NewLiteral()
       .typeFullName(registerType(tpe))
       .code(nodeSignature(lit))
@@ -31,17 +31,31 @@ trait AstForPrimitivesCreator {
   protected def astForIdentifier(ident: IASTNode, order: Int): Ast = {
     val identifierName = ident match {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
-      case _                    => ident.toString
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
+      case _                                                       => ident.toString
     }
     val variableOption = scope.lookupVariable(identifierName)
     val identifierTypeName = variableOption match {
       case Some((_, variableTypeName)) => variableTypeName
-      case None                        => typeFor(ident)
+      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
+        val id = ident.asInstanceOf[IASTName]
+        id.getBinding match {
+          case v: IVariable =>
+            v.getType match {
+              case f: IFunctionType => f.getReturnType.toString
+              case other            => other.toString
+            }
+          case other => other.getName
+        }
+      case None if ident.isInstanceOf[IASTName] =>
+        typeFor(ident.getParent)
+      case None => typeFor(ident)
     }
 
     val cpgIdentifier = NewIdentifier()
       .name(identifierName)
-      .typeFullName(registerType(identifierTypeName))
+      .typeFullName(registerType(cleanType(identifierTypeName)))
       .code(nodeSignature(ident))
       .order(order)
       .argumentIndex(order)
@@ -56,8 +70,8 @@ trait AstForPrimitivesCreator {
   }
 
   protected def astForFieldReference(fieldRef: IASTFieldReference, order: Int): Ast = {
-    val op = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val op    = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
+    val ma    = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH, order)
     val owner = astForExpression(fieldRef.getFieldOwner, 1)
     val member = NewFieldIdentifier()
       .canonicalName(fieldRef.getFieldName.toString)
@@ -71,11 +85,11 @@ trait AstForPrimitivesCreator {
 
   protected def astForInitializerList(l: IASTInitializerList, order: Int): Ast = {
     // TODO re-use from Operators once it there
-    val op = "<operator>.arrayInitializer"
+    val op           = "<operator>.arrayInitializer"
     val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH, order)
 
     val MAX_INITIALIZERS = 1000
-    val clauses = l.getClauses.slice(0, MAX_INITIALIZERS)
+    val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
 
     val args = withOrder(clauses) { case (c, o) =>
       astForNode(c, o)
@@ -104,7 +118,7 @@ trait AstForPrimitivesCreator {
       case head :: Nil =>
         astForNode(head, order)
       case head :: tail =>
-        val code = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
+        val code     = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
         val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, order)
         callNode.code = code
         val arg1 = astForNode(head, 1)

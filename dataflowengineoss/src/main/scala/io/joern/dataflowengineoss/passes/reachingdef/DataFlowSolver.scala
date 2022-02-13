@@ -6,15 +6,14 @@ import scala.collection.mutable
 
 class DataFlowSolver {
 
-  /** Calculate fix point solution via a standard work list algorithm (Forwards).
-    * The result is given by two maps: `in` and `out`. These maps associate
-    * all CFG nodes with the set of definitions at node entry and node
-    * exit respectively.
+  /** Calculate fix point solution via a standard work list algorithm (Forwards). The result is given by two maps: `in`
+    * and `out`. These maps associate all CFG nodes with the set of definitions at node entry and node exit
+    * respectively.
     */
   def calculateMopSolutionForwards[T <: Iterable[_]](problem: DataFlowProblem[T]): Solution[T] = {
     var out: Map[StoredNode, T] = problem.inOutInit.initOut
-    var in = problem.inOutInit.initIn
-    val workList = mutable.ListBuffer[StoredNode]()
+    var in                      = problem.inOutInit.initIn
+    val workList                = mutable.ListBuffer[StoredNode]()
     workList ++= problem.flowGraph.allNodesReversePostOrder
 
     while (workList.nonEmpty) {
@@ -25,8 +24,8 @@ class DataFlowSolver {
           .reduceOption((x, y) => problem.meet(x, y))
           .getOrElse(problem.empty)
         in += n -> inSet
-        val old = out(n)
-        val newSet = problem.transferFunction(n, inSet)
+        val old     = out(n)
+        val newSet  = problem.transferFunction(n, inSet)
         val changed = !old.equals(newSet)
         out += n -> newSet
         if (changed) {
@@ -40,15 +39,14 @@ class DataFlowSolver {
     Solution(in, out, problem)
   }
 
-  /** Calculate fix point solution via a standard work list algorithm (Backwards).
-    * The result is given by two maps: `in` and `out`. These maps associate
-    * all CFG nodes with the set of definitions at node entry and node
-    * exit respectively.
+  /** Calculate fix point solution via a standard work list algorithm (Backwards). The result is given by two maps: `in`
+    * and `out`. These maps associate all CFG nodes with the set of definitions at node entry and node exit
+    * respectively.
     */
   def calculateMopSolutionBackwards[T <: Iterable[_]](problem: DataFlowProblem[T]): Solution[T] = {
     var out: Map[StoredNode, T] = problem.inOutInit.initOut
-    var in = problem.inOutInit.initIn
-    val workList = mutable.ListBuffer[StoredNode]()
+    var in                      = problem.inOutInit.initIn
+    val workList                = mutable.ListBuffer[StoredNode]()
     workList ++= problem.flowGraph.allNodesPostOrder
 
     while (workList.nonEmpty) {
@@ -59,8 +57,8 @@ class DataFlowSolver {
           .reduceOption((x, y) => problem.meet(x, y))
           .getOrElse(problem.empty)
         out += n -> outSet
-        val old = in(n)
-        val newSet = problem.transferFunction(n, outSet)
+        val old     = in(n)
+        val newSet  = problem.transferFunction(n, outSet)
         val changed = !old.equals(newSet)
         in += n -> newSet
         if (changed)

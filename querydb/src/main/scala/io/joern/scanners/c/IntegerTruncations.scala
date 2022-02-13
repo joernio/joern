@@ -9,9 +9,8 @@ object IntegerTruncations extends QueryBundle {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  /** Identify calls to `strlen` where return values are assigned
-    * to variables of type `int`, potentially causing truncation
-    * on 64 bit platforms.
+  /** Identify calls to `strlen` where return values are assigned to variables of type `int`, potentially causing
+    * truncation on 64 bit platforms.
     */
   @q
   def strlenAssignmentTruncations(): Query =

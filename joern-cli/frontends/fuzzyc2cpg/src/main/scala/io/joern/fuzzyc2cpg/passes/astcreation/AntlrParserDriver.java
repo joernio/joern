@@ -100,10 +100,9 @@ abstract public class AntlrParserDriver {
     }
 
 
-    public ParseTree parseAndWalkString(String input) throws ParserException {
+    public void parseAndWalkString(String input) throws ParserException {
         ParseTree tree = parseString(input);
         walkTree(tree);
-        return tree;
     }
 
     public CompoundStatement getResult() {
@@ -114,8 +113,7 @@ abstract public class AntlrParserDriver {
         CharStream inputStream = CharStreams.fromString(input);
         Lexer lex = createLexer(inputStream);
         TokenSubStream tokens = new TokenSubStream(lex);
-        ParseTree tree = parseTokenStream(tokens);
-        return tree;
+        return parseTokenStream(tokens);
     }
 
     public ParseTree parseTokenStream(TokenSubStream tokens)
@@ -140,8 +138,7 @@ abstract public class AntlrParserDriver {
 
         CharStream input = createInputStreamForFile(filename);
         Lexer lexer = createLexer(input);
-        TokenSubStream tokens = new TokenSubStream(lexer);
-        return tokens;
+        return new TokenSubStream(lexer);
 
     }
 
