@@ -412,4 +412,3 @@ private val linuxSyscalls: Set[String] = Set(
 @main def main(): List[Call] = {
   cpg.call.filter(c => linuxSyscalls.contains(c.name)).l
 }
-
