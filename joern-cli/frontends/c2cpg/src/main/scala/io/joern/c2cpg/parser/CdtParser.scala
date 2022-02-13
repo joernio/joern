@@ -52,12 +52,10 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
   private def parseInternal(file: Path): ParseResult = {
     val realPath = File(file)
     if (realPath.isRegularFile) { // handling potentially broken symlinks
-      val fileContent = IOUtils.readFileAsFileContent(realPath.path)
+      val fileContent         = IOUtils.readFileAsFileContent(realPath.path)
       val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-      val lang = createParseLanguage(realPath.path)
-      Try(
-        lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
-      ) match {
+      val lang                = createParseLanguage(realPath.path)
+      Try(lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)) match {
         case Failure(e) =>
           ParseResult(None, failure = Some(e))
         case Success(translationUnit) =>

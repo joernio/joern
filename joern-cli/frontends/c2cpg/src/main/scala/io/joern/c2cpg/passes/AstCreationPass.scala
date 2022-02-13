@@ -21,11 +21,11 @@ object AstCreationPass {
 }
 
 class AstCreationPass(
-    cpg: Cpg,
-    forFiles: InputFiles,
-    keyPool: Option[IntervalKeyPool],
-    config: C2Cpg.Config,
-    report: Report = new Report()
+  cpg: Cpg,
+  forFiles: InputFiles,
+  keyPool: Option[IntervalKeyPool],
+  config: C2Cpg.Config,
+  report: Report = new Report()
 ) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
   private val global: Global                     = new Global()

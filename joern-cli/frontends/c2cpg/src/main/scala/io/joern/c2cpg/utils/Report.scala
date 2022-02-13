@@ -12,17 +12,12 @@ object Report {
 
   private type Reports = TrieMap[FileName, ReportEntry]
 
-  private case class ReportEntry(
-      loc: Long,
-      parsed: Boolean,
-      cpgGen: Boolean,
-      duration: Long
-  ) {
+  private case class ReportEntry(loc: Long, parsed: Boolean, cpgGen: Boolean, duration: Long) {
     def toSeq: Seq[String] = {
-      val lines = loc.toString
-      val dur = if (duration == 0) "-" else TimeUtils.pretty(duration)
+      val lines     = loc.toString
+      val dur       = if (duration == 0) "-" else TimeUtils.pretty(duration)
       val wasParsed = if (parsed) "yes" else "no"
-      val gotCpg = if (cpgGen) "yes" else "no"
+      val gotCpg    = if (cpgGen) "yes" else "no"
       Seq(lines, wasParsed, gotCpg, dur)
     }
   }
@@ -50,9 +45,9 @@ class Report {
       // Formatted separator row, used to separate the header and draw table borders
       val separator = colWidths.map("-" * _).mkString("+", "+", "+")
       // Put the table together and return
-      val header = rows.head
+      val header  = rows.head
       val content = rows.tail.take(rows.tail.size - 1)
-      val footer = rows.tail.last
+      val footer  = rows.tail.last
       (separator +: header +: separator +: content :+ separator :+ footer :+ separator)
         .mkString("\n")
     }
@@ -68,7 +63,7 @@ class Report {
       }
       .toSeq
     val numOfReports = reports.size
-    val header = Seq(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"))
+    val header       = Seq(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"))
     val footer = Seq(
       Seq(
         "Total",
@@ -84,11 +79,11 @@ class Report {
   }
 
   def addReportInfo(
-      fileName: FileName,
-      loc: Long,
-      parsed: Boolean = false,
-      cpgGen: Boolean = false,
-      duration: Long = 0
+    fileName: FileName,
+    loc: Long,
+    parsed: Boolean = false,
+    cpgGen: Boolean = false,
+    duration: Long = 0
   ): Unit = reports(fileName) = ReportEntry(loc, parsed, cpgGen, duration)
 
   def updateReport(fileName: FileName, cpg: Boolean, duration: Long): Unit =
