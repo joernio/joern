@@ -75,7 +75,7 @@ class Report {
       )
     )
     val table = header ++ rows ++ footer
-    logger.info(s"Report:${System.lineSeparator()}" + formatTable(table))
+    logger.debug(s"Report:${System.lineSeparator()}" + formatTable(table))
   }
 
   def addReportInfo(
