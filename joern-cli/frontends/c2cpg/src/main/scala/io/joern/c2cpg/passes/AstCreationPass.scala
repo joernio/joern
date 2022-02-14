@@ -1,10 +1,12 @@
 package io.joern.c2cpg.passes
 
+import better.files.File
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.astcreation.{AstCreator, Defines}
 import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, ParserConfig}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
+import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.x2cpg.SourceFiles
@@ -18,8 +20,13 @@ object AstCreationPass {
   object SourceFiles extends InputFiles
 }
 
-class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKeyPool], config: C2Cpg.Config)
-    extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
+class AstCreationPass(
+  cpg: Cpg,
+  forFiles: InputFiles,
+  keyPool: Option[IntervalKeyPool],
+  config: C2Cpg.Config,
+  report: Report = new Report()
+) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
   private val global: Global                     = new Global()
   private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
@@ -42,13 +49,23 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKe
     case AstCreationPass.SourceFiles => sourceFiles.toArray
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit =
-    new CdtParser(parserConfig, headerFileFinder)
-      .parse(Paths.get(filename))
-      .foreach { parserResult =>
-        val localDiff = new DiffGraphBuilder
-        new AstCreator(filename, config, global, localDiff, parserResult).createAst()
-        diffGraph.absorb(localDiff)
+  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
+    val parser = new CdtParser(parserConfig, headerFileFinder)
+    val (gotCpg, duration) = TimeUtils.time {
+      val parseResult = parser.parse(Paths.get(filename))
+      parseResult match {
+        case Some(translationUnit) =>
+          report.addReportInfo(filename, File(filename).lineCount, parsed = true)
+          val localDiff = new DiffGraphBuilder
+          new AstCreator(filename, config, global, localDiff, translationUnit).createAst()
+          diffGraph.absorb(localDiff)
+          true
+        case None =>
+          report.addReportInfo(filename, File(filename).lineCount)
+          false
       }
+    }
+    report.updateReport(filename, gotCpg, duration)
+  }
 
 }
