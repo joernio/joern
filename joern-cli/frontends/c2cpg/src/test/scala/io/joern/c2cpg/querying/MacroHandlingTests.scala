@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 class MacroHandlingTests1 extends CCodeToCpgSuite {
   override val code: String =
