@@ -50,11 +50,10 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
   }
 
   private def createScannerInfo(file: Path): ScannerInfo = {
-    if (FileDefaults.isCPPFile(file.toString)) {
-      new ScannerInfo(definedSymbols, (includePaths ++ parseConfig.systemIncludePathsCPP).map(_.toString).toArray)
-    } else {
-      new ScannerInfo(definedSymbols, (includePaths ++ parseConfig.systemIncludePathsC).map(_.toString).toArray)
-    }
+    val additionalIncludes =
+      if (FileDefaults.isCPPFile(file.toString)) parseConfig.systemIncludePathsCPP
+      else parseConfig.systemIncludePathsC
+    new ScannerInfo(definedSymbols, (includePaths ++ additionalIncludes).map(_.toString).toArray)
   }
 
   private def parseInternal(file: Path): ParseResult = {
