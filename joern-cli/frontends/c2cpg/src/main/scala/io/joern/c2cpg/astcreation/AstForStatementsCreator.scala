@@ -6,6 +6,8 @@ import io.shiftleft.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
+import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
@@ -231,11 +233,32 @@ trait AstForStatementsCreator {
   }
 
   private def astForIf(ifStmt: IASTIfStatement, order: Int): Ast = {
-    val code   = s"if (${nullSafeCode(ifStmt.getConditionExpression)})"
-    val ifNode = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code, order)
+    val (code, conditionAst) = ifStmt match {
+      case s: CASTIfStatement =>
+        val c = s"if (${nullSafeCode(s.getConditionExpression)})"
+        val a = nullSafeAst(ifStmt.getConditionExpression, 1)
+        (c, a)
+      case s: CPPASTIfStatement if s.getConditionExpression != null =>
+        val c = s"if (${nullSafeCode(s.getConditionExpression)})"
+        val a = nullSafeAst(ifStmt.getConditionExpression, 1)
+        (c, a)
+      case s: CPPASTIfStatement if s.getConditionExpression == null =>
+        val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"
+        val exprBlock = NewBlock()
+          .order(order)
+          .argumentIndex(order)
+          .typeFullName(registerType(Defines.voidTypeName))
+          .lineNumber(line(s.getConditionDeclaration))
+          .columnNumber(column(s.getConditionDeclaration))
+        scope.pushNewScope(exprBlock)
+        val a        = astsForDeclaration(s.getConditionDeclaration, 1)
+        val blockAst = Ast(exprBlock).withChildren(a)
+        scope.popScope()
+        (c, blockAst)
+    }
 
-    val conditionAst = nullSafeAst(ifStmt.getConditionExpression, 1)
-    val stmtAsts     = nullSafeAst(ifStmt.getThenClause, 2)
+    val ifNode   = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code, order)
+    val stmtAsts = nullSafeAst(ifStmt.getThenClause, 2)
 
     val elseChild = if (ifStmt.getElseClause != null) {
       val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else", 3)
