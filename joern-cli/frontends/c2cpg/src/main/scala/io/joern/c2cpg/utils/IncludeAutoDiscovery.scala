@@ -25,7 +25,8 @@ object IncludeAutoDiscovery {
   private var isGccAvailable: Option[Boolean] = None
 
   // Only discover them once
-  private var systemIncludePaths: Set[Path] = Set.empty
+  private var systemIncludePathsC: Set[Path]   = Set.empty
+  private var systemIncludePathsCPP: Set[Path] = Set.empty
 
   private def checkForGcc(): Boolean = {
     logger.debug("Checking gcc ...")
@@ -70,19 +71,37 @@ object IncludeAutoDiscovery {
     }
   }
 
-  def discoverIncludePaths(config: Config): Set[Path] = {
-    if (config.includePathsAutoDiscovery && systemIncludePaths.nonEmpty) {
-      systemIncludePaths
-    } else if (config.includePathsAutoDiscovery && systemIncludePaths.isEmpty && gccAvailable()) {
-      val includePaths = discoverPaths(C_INCLUDE_COMMAND) ++ discoverPaths(CPP_INCLUDE_COMMAND)
-      if (includePaths.nonEmpty) {
+  def discoverIncludePathsC(config: Config): Set[Path] = {
+    if (config.includePathsAutoDiscovery && systemIncludePathsC.nonEmpty) {
+      systemIncludePathsC
+    } else if (config.includePathsAutoDiscovery && systemIncludePathsC.isEmpty && gccAvailable()) {
+      val includePathsC = discoverPaths(C_INCLUDE_COMMAND)
+      if (includePathsC.nonEmpty) {
         logger.info(
-          "Using the following system include paths:" + includePaths
+          "Using the following C system include paths:" + includePathsC
             .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
         )
       }
-      systemIncludePaths = includePaths
-      includePaths
+      systemIncludePathsC = includePathsC
+      includePathsC
+    } else {
+      Set.empty
+    }
+  }
+
+  def discoverIncludePathsCPP(config: Config): Set[Path] = {
+    if (config.includePathsAutoDiscovery && systemIncludePathsCPP.nonEmpty) {
+      systemIncludePathsCPP
+    } else if (config.includePathsAutoDiscovery && systemIncludePathsCPP.isEmpty && gccAvailable()) {
+      val includePathsCPP = discoverPaths(CPP_INCLUDE_COMMAND)
+      if (includePathsCPP.nonEmpty) {
+        logger.info(
+          "Using the following CPP system include paths:" + includePathsCPP
+            .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
+        )
+      }
+      systemIncludePathsCPP = includePathsCPP
+      includePathsCPP
     } else {
       Set.empty
     }

@@ -16,7 +16,8 @@ import overflowdb.traversal._
 
 class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) extends CpgPass(cpg, keyPool = keyPool) {
 
-  private val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
+  private val systemIncludePaths =
+    IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)
 
   private val absolutePath: String = File(config.inputPaths.head).path.toAbsolutePath.normalize().toString
   private val filename: String     = s"$absolutePath:<includes>"
