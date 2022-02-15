@@ -245,8 +245,8 @@ trait AstForStatementsCreator {
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = NewBlock()
-          .order(order)
-          .argumentIndex(order)
+          .order(1)
+          .argumentIndex(1)
           .typeFullName(registerType(Defines.voidTypeName))
           .lineNumber(line(s.getConditionDeclaration))
           .columnNumber(column(s.getConditionDeclaration))
