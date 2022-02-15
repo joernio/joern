@@ -31,6 +31,7 @@ class AstCreationPass(
   private val global: Global                     = new Global()
   private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
   private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
+  private val parser: CdtParser                  = new CdtParser(parserConfig, headerFileFinder)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
@@ -50,7 +51,6 @@ class AstCreationPass(
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val parser = new CdtParser(parserConfig, headerFileFinder)
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(Paths.get(filename))
       parseResult match {

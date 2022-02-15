@@ -35,9 +35,9 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
   import CdtParser._
 
   private val definedSymbols: util.Map[String, String] = parseConfig.definedSymbols.asJava
-  private val includePaths: Set[String]                = parseConfig.includePaths.map(_.toString)
-  private val scannerInfo: ScannerInfo                 = new ScannerInfo(definedSymbols, includePaths.toArray)
+  private val includePaths: Set[Path]                  = parseConfig.userIncludePaths
   private val log: DefaultLogService                   = new DefaultLogService
+
   // enables parsing of code behind disabled preprocessor defines:
   private val opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
 
@@ -49,12 +49,20 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
     }
   }
 
+  private def createScannerInfo(file: Path): ScannerInfo = {
+    val additionalIncludes =
+      if (FileDefaults.isCPPFile(file.toString)) parseConfig.systemIncludePathsCPP
+      else parseConfig.systemIncludePathsC
+    new ScannerInfo(definedSymbols, (includePaths ++ additionalIncludes).map(_.toString).toArray)
+  }
+
   private def parseInternal(file: Path): ParseResult = {
     val realPath = File(file)
     if (realPath.isRegularFile) { // handling potentially broken symlinks
       val fileContent         = IOUtils.readFileAsFileContent(realPath.path)
       val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
       val lang                = createParseLanguage(realPath.path)
+      val scannerInfo         = createScannerInfo(realPath.path)
       Try(lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)) match {
         case Failure(e) =>
           ParseResult(None, failure = Some(e))
