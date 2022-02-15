@@ -278,7 +278,6 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     } catch {
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
-        t.printStackTrace()
         throw t
     }
   }
