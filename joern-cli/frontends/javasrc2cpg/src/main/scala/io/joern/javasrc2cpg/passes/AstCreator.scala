@@ -7,6 +7,7 @@ import com.github.javaparser.ast.body.{
   ConstructorDeclaration,
   EnumConstantDeclaration,
   FieldDeclaration,
+  InitializerDeclaration,
   MethodDeclaration,
   Parameter,
   TypeDeclaration,
@@ -350,6 +351,11 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
           astForVariableDeclarator(variable, order + idx - 1)
         }
 
+      case unhandled =>
+        // AnnotationMemberDeclarations and InitializerDeclarations as children of typeDecls are the
+        // expected cases.
+        logger.info(s"Found unhandled typeDecl member ${unhandled.getClass} in file ${filename}")
+        AstWithCtx.empty
     }
   }
 

@@ -223,7 +223,10 @@ class TypeInfoProvider(global: Global) {
   def getTypeFullName(nameExpr: NameExpr): String = {
     val typeFullName = Try(nameExpr.resolve()) match {
       case Success(resolvedValueDeclaration) =>
-        resolvedTypeFullName(resolvedValueDeclaration.getType)
+        Try(resolvedTypeFullName(resolvedValueDeclaration.getType)).getOrElse {
+          logger.debug(s"Failed to resolve type of ${resolvedValueDeclaration}. Falling back to name.")
+          nameExpr.getNameAsString
+        }
 
       case Failure(_) =>
         logger.debug(s"Failed to resolved type for nameExpr ${nameExpr.getNameAsString}. Falling back to name.")
