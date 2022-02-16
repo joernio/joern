@@ -5,7 +5,11 @@ import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{CombinedTypeSolver, JavaParserTypeSolver, ReflectionTypeSolver}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.{
+  CombinedTypeSolver,
+  JavaParserTypeSolver,
+  ReflectionTypeSolver
+}
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.ConcurrentHashMap
@@ -20,6 +24,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
+  override def generateParts: Array[String] = filenames.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val solver         = typeSolver()
@@ -27,19 +32,19 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
 
     val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
     val parser       = new JavaParser(parserConfig)
-    val parseResult  = parser.parse(new java.io.File(filename))
+    println(s"Parsing file ${filename}")
+    val parseResult = parser.parse(new java.io.File(filename))
 
     val typeInfoProvider = TypeInfoProvider(global)
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED =>
         val localDiff = new DiffGraphBuilder
-        new AstCreator(filename, typeInfoProvider).createAst(result)
+        new AstCreator(filename, typeInfoProvider, localDiff).createAst(result)
         diffGraph.absorb(localDiff)
       case _ =>
-        logger.warn("Cannot parse: " + filename)
-        logger.warn("Problems: ", parseResult.getProblems.asScala.toList.map(_.toString))
-        Iterator()
+        logger.error("Cannot parse: " + filename)
+        logger.error("Problems: ", parseResult.getProblems.asScala.toList.map(_.toString))
     }
   }
 
