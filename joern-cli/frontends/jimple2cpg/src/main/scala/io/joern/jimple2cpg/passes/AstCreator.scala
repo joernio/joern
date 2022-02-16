@@ -87,10 +87,15 @@ class AstCreator(filename: String, global: Global) {
     val relatedClass = typ.getSootClass
     val inheritsFromTypeFullName =
       if (relatedClass.hasSuperclass) {
-        if (!typ.getSootClass.getSuperclass.isApplicationClass)
-          registerType(typ.getSootClass.getSuperclass.getType.toQuotedString)
-        List(typ.getSootClass.getSuperclass.toString)
+        if (!relatedClass.getSuperclass.isApplicationClass)
+          registerType(relatedClass.getSuperclass.getType.toQuotedString)
+        List(relatedClass.getSuperclass.toString)
       } else List(registerType("java.lang.Object"))
+    val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { i: SootClass =>
+      if (!i.isApplicationClass)
+        registerType(i.getType.toQuotedString)
+      i.getType.toQuotedString
+    }.toList
 
     val typeDecl = NewTypeDecl()
       .name(shortName)
@@ -98,7 +103,7 @@ class AstCreator(filename: String, global: Global) {
       .order(1) // Jimple always has 1 class per file
       .filename(filename)
       .code(shortName)
-      .inheritsFromTypeFullName(inheritsFromTypeFullName)
+      .inheritsFromTypeFullName(inheritsFromTypeFullName ++ implementsTypeFullName)
       .astParentType(NodeTypes.NAMESPACE_BLOCK)
       .astParentFullName(namespaceBlockFullName)
     val methodAsts = withOrder(typ.getSootClass.getMethods.asScala.toList.sortWith((x, y) => x.getName > y.getName)) {
@@ -784,7 +789,7 @@ class AstCreator(filename: String, global: Global) {
       if (!methodDeclaration.isPhantom && Try(methodDeclaration.retrieveActiveBody()).isSuccess)
         methodDeclaration.retrieveActiveBody().getParameterLocals.asScala.map(_.getName)
       else
-        paramTypes.zipWithIndex.map(x => { s"${x._1} param${x._2 + 1}" })
+        paramTypes.zipWithIndex.map(x => { s"param${x._2 + 1}" })
     if (!withParams) {
       "(" + paramTypes.mkString(",") + ")"
     } else {
