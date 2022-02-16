@@ -98,7 +98,9 @@ class LambdaTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a CALL node for `println`" in {
-      cpg.call.code(".*println.*").size shouldBe 1
+      val callsWithPrintln = cpg.call.code(".*println.*").code.toSet
+      callsWithPrintln should contain("println(arg)")
+      callsWithPrintln.exists(_.trim.startsWith("l.forEach")) shouldBe true
     }
 
     "should contain a METHOD node for the lambda the correct props set" in {
