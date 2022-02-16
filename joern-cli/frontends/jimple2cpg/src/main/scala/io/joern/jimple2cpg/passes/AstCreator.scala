@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.x2cpg.Ast
 import org.slf4j.LoggerFactory
@@ -488,15 +488,18 @@ class AstCreator(filename: String, global: Global) {
       case x: FieldRef   => Seq(astForFieldRef(x, 1, assignStmt))
       case x             => astsForValue(x, 1, assignStmt)
     }
+    val initAsts = astsForValue(initializer, 2, assignStmt)
+    val assignmentRhsCode = initAsts
+      .flatMap(_.root)
+      .map(_.properties.getOrElse(PropertyNames.CODE, ""))
+      .mkString(", ")
     val assignment = NewCall()
       .name(Operators.assignment)
-      .code(s"$name = ${initializer.toString()}")
+      .code(s"$name = $assignmentRhsCode")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
       .typeFullName(registerType(assignStmt.getLeftOp.getType.toQuotedString))
-
-    val initAsts       = astsForValue(initializer, 2, assignStmt)
     val initializerAst = Seq(callAst(assignment, identifier ++ initAsts))
     Seq(Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))) ++ initializerAst.toList
   }
