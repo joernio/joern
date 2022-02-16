@@ -348,6 +348,11 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider, diffGraph
           astForVariableDeclarator(variable, order + idx - 1)
         }
 
+      case unhandled =>
+        // AnnotationMemberDeclarations and InitializerDeclarations as children of typeDecls are the
+        // expected cases.
+        logger.info(s"Found unhandled typeDecl member ${unhandled.getClass} in file ${filename}")
+        AstWithCtx.empty
     }
   }
 
@@ -1863,7 +1868,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider, diffGraph
         callNode.methodFullName(s"${resolved.getQualifiedName}:$signature")
         callNode.signature(signature)
       case Failure(_) =>
-        logger.info(s"Could not resolve method for call ${call.getNameAsString}. Type info will be missing.")
+        logger.warn(s"Could not resolve method for call ${call.getNameAsString}. Type info will be missing.")
     }
     if (call.getName.getBegin.isPresent) {
       callNode

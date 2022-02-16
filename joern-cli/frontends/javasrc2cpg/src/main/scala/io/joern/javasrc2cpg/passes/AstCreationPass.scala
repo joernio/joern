@@ -32,7 +32,6 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
 
     val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
     val parser       = new JavaParser(parserConfig)
-    println(s"Parsing file ${filename}")
     val parseResult = parser.parse(new java.io.File(filename))
 
     val typeInfoProvider = TypeInfoProvider(global)
