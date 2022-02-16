@@ -19,7 +19,7 @@ object ProgramHandlingUtil {
 
   /** The temporary directory used to unpack class files to.
     */
-  val TEMP_DIR: Path = Files.createTempDirectory("plume")
+  val TEMP_DIR: Path = Files.createTempDirectory("joern-")
 
   logger.debug(s"Using temporary folder at $TEMP_DIR")
 
