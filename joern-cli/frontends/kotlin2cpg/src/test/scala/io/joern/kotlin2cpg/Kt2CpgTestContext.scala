@@ -1,15 +1,14 @@
 package io.joern.kotlin2cpg
 
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator}
+import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
-import better.files._
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.utils.ProjectRoot
 
+import better.files._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import io.shiftleft.semanticcpg.language._
 
 object Kt2CpgTestContext {
   def newContext: Kt2CpgTestContext = {
@@ -62,7 +61,12 @@ class Kt2CpgTestContext private () {
           }
           .toSeq
 
-      val environment = CompilerAPI.makeEnvironment(Seq(tempDir.pathAsString), inferenceJarsPaths)
+      val environment = CompilerAPI.makeEnvironment(
+        Seq(tempDir.pathAsString),
+        inferenceJarsPaths,
+        Seq(),
+        new ErrorLoggingMessageCollector
+      )
       val filesWithMeta =
         environment.getSourceFiles.asScala
           .map { fm =>

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import scopt.OParser
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.shiftleft.x2cpg.{IOUtils, SourceFiles, X2Cpg, X2CpgConfig}
 
@@ -195,8 +196,10 @@ object Main extends App {
           InferenceJarPath("inferencejars/rxjava-2.1.0.jar", isResource = true)
         )
         val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(sourceDir)
-        val environment             = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths)
-        val ktFiles                 = environment.getSourceFiles.asScala
+        val messageCollector        = new ErrorLoggingMessageCollector
+        val environment =
+          CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths, Seq(), messageCollector)
+        val ktFiles = environment.getSourceFiles.asScala
         val filesWithMeta =
           ktFiles
             .flatMap { f =>
