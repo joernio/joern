@@ -501,11 +501,7 @@ class AstCreator(filename: String, global: Global) {
       .argumentIndex(order)
       .typeFullName(registerType(assignStmt.getLeftOp.getType.toQuotedString))
     val initializerAst = Seq(callAst(assignment, identifier ++ initAsts))
-    Seq(
-      Ast(
-        NewLocal().name(name).code(code).typeFullName(typeFullName).order(order)
-      )
-    ) ++ initializerAst.toList
+    Seq(Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))) ++ initializerAst.toList
   }
 
   private def astsForIfStmt(ifStmt: IfStmt, order: Int): Seq[Ast] = {

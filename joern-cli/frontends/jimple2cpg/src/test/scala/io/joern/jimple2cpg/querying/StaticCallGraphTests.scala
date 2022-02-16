@@ -32,10 +32,10 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
       Set(
         "println($stack3)",
         "add(3, 3)",
-        "$stack2 = <java.lang.System: java.io.PrintStream out>",
-        "argc = @parameter0: int",
-        "$stack3 = staticinvoke <Foo: int add(int,int)>(3, 3)",
-        "argv = @parameter1: char",
+        "argc = @parameter0",
+        "$stack2 = java.lang.System.out",
+        "argv = @parameter1",
+        "$stack3 = add(3, 3)",
         "java.lang.System.out"
       )
   }
