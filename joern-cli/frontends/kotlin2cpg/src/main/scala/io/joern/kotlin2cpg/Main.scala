@@ -1,5 +1,7 @@
 package io.joern.kotlin2cpg
 
+import io.joern.kotlin2cpg.files.SourceFilesPicker
+
 import java.nio.file.{Files, Paths}
 import org.slf4j.LoggerFactory
 import scopt.OParser
@@ -7,7 +9,8 @@ import scopt.OParser
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
-import io.shiftleft.x2cpg.{IOUtils, SourceFiles, X2Cpg, X2CpgConfig}
+import io.joern.kotlin2cpg.utils.PathUtils
+import io.shiftleft.x2cpg.{IOUtils, X2Cpg, X2CpgConfig}
 
 case class InferenceJarPath(path: String, isResource: Boolean)
 
@@ -22,90 +25,6 @@ final case class Config(
     copy(inputPaths = inputPaths + inputPath)
 
   override def withOutputPath(x: String): Config = copy(outputPath = x)
-}
-
-object SourceFilesPicker {
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  def shouldFilter(fileName: String): Boolean = {
-    val substringsToFilterFor =
-      List(
-        ".idea",
-        "target",
-        "build",
-        "integrationTest",
-        "integrationtest",
-        "androidTest",
-        "sharedTest",
-        "fixtures",
-        "commonTest",
-        "jvmTest",
-        "test"
-      )
-    val containsUnwantedSubstring =
-      substringsToFilterFor.exists { str =>
-        fileName.contains(str)
-      }
-    val extensionsToFilterFor = List(".kts")
-    val hasUnwantedExt = {
-      extensionsToFilterFor.exists { ext =>
-        fileName.endsWith(ext)
-      }
-    }
-
-    val isAndroidLayoutXml =
-      fileName.endsWith("xml") && (fileName.contains("drawable") || fileName.contains("layout"))
-    val containsSrcTest    = fileName.contains("src/test")
-    val isSettingsXml      = fileName.endsWith("strings.xml") // some projects contain many i18n files
-    val containsBenchmarks = fileName.contains("benchmarks")
-    val isBuildGradle      = fileName.endsWith("build.gradle")
-
-    (containsUnwantedSubstring && !isBuildGradle) ||
-    hasUnwantedExt ||
-    isSettingsXml ||
-    containsSrcTest ||
-    isAndroidLayoutXml ||
-    containsBenchmarks
-  }
-
-  protected def isConfigFile(fileName: String): Boolean = {
-    isXmlFile(fileName) || isGradleFile(fileName)
-  }
-
-  protected def isXmlFile(fileName: String): Boolean = {
-    val xmlFileExtensions = Seq(".xml")
-    xmlFileExtensions.exists(fileName.endsWith)
-  }
-
-  protected def isGradleFile(fileName: String): Boolean = {
-    val gradleRelatedFiles = Seq("build.gradle", "settings.gradle", "gradle.properties")
-    gradleRelatedFiles.exists(fileName.endsWith)
-  }
-
-  def configFiles(forDir: String): Seq[String] = {
-    val sourceFileExtensions = Set(".xml", ".gradle", ".properties")
-    val sourceFileNames      = SourceFiles.determine(Set(forDir), sourceFileExtensions)
-    sourceFileNames
-      .filter(isConfigFile)
-      .filterNot { fileName =>
-        // TODO: add test for this type of filtering
-        // TODO: support Windows paths
-        val relativized = PathUtils.relativize(forDir, fileName)
-        val willFilter  = SourceFilesPicker.shouldFilter(relativized)
-        if (willFilter) {
-          logger.debug("Filtered file at `" + fileName + "`.")
-        }
-        willFilter
-      }
-  }
-}
-
-object PathUtils {
-  def relativize(sourceDir: String, filename: String): String = {
-    val pathAbsolute = Paths.get(filename).toAbsolutePath
-    val pathBase     = Paths.get(sourceDir).toAbsolutePath
-    pathBase.relativize(pathAbsolute).toString
-  }
 }
 
 /** Entry point for command line CPG creator
