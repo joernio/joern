@@ -104,10 +104,7 @@ object InferenceSourcesPicker {
     InferenceJarPath("inferencejars/org.apache.commons.commons-lang3-3.10.jar", isResource = true),
     InferenceJarPath("inferencejars/org.apache.commons.commons-text-1.8.jar", isResource = true),
     InferenceJarPath("inferencejars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.0.jar", isResource = true),
-    InferenceJarPath(
-      "inferencejars/org.jetbrains.kotlinx.kotlinx-coroutines-android-1.3.9.jar",
-      isResource = true
-    ),
+    InferenceJarPath("inferencejars/org.jetbrains.kotlinx.kotlinx-coroutines-android-1.3.9.jar", isResource = true),
     InferenceJarPath("inferencejars/rxjava-2.1.0.jar", isResource = true)
   )
 }
