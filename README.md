@@ -22,7 +22,7 @@ Specification: https://cpg.joern.io
 ## Requirements
 
 - JDK 11 (newer versions _might_ work, but have not been properly tested)
-- _optional_: gcc and g++ (for auto-discovery of C/C++ system header files to automatically resolve Macros / Defines from there if used in your C/C++ code)
+- _optional_: gcc and g++ (for auto-discovery of C/C++ system header files if included/used in your C/C++ code)
 
 ## Quick Installation
 
