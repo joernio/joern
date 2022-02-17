@@ -1,5 +1,9 @@
 package io.joern.kotlin2cpg.types
 
+import io.shiftleft.passes.KeyPool
+
+import DefaultNameGenerator._
+
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -35,14 +39,11 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
 }
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.resolve.BindingContext
-
-import scala.jdk.CollectionConverters._
-import org.slf4j.LoggerFactory
-import DefaultNameGenerator._
-import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
+import org.slf4j.LoggerFactory
+import scala.jdk.CollectionConverters._
 
 // representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
 trait WithDefaultType {

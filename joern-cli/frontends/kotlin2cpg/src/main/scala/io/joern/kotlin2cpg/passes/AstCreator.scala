@@ -1,5 +1,7 @@
 package io.joern.kotlin2cpg.passes
 
+import io.joern.kotlin2cpg.KtFileWithMeta
+import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, NameReferenceKinds, Constants => TypeConstants}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
@@ -7,14 +9,11 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.x2cpg.Ast
 
 import java.util.UUID.randomUUID
-import scala.jdk.CollectionConverters._
 import org.jetbrains.kotlin.psi._
-import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, NameReferenceKinds, Constants => TypeConstants}
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
-
+import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
 
 object Constants {
