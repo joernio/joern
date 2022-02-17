@@ -1,18 +1,21 @@
 package io.joern.kotlin2cpg.integration
 
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
-import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta, PathUtils, SourceFilesPicker}
+import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta}
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
-
 import better.files.File
+import io.joern.kotlin2cpg.files.SourceFilesPicker
+import io.joern.kotlin2cpg.utils.PathUtils
+
 import java.nio.file.Files
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Ignore
 import overflowdb.traversal.jIteratortoTraversal
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 @Ignore // re-enable with a good setup for cloning and syncing external projects
