@@ -6,6 +6,7 @@ import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSo
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.x2cpg.{IOUtils, X2Cpg, X2CpgConfig}
 
+import better.files._
 import java.nio.file.{Files, Paths}
 import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -17,7 +18,8 @@ case class InferenceJarPath(path: String, isResource: Boolean)
   */
 final case class Config(
   inputPaths: Set[String] = Set.empty, // TODO: make this a singular
-  outputPath: String = X2CpgConfig.defaultOutputPath
+  outputPath: String = X2CpgConfig.defaultOutputPath,
+  classpath: Set[String] = Set.empty
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -36,7 +38,14 @@ object Main extends App {
   private val frontendSpecificOptions = {
     val builder = OParser.builder[Config]
     import builder.programName
-    OParser.sequence(programName("kotlin2cpg"))
+    import builder.opt
+    OParser.sequence(
+      programName("kotlin2cpg"),
+      opt[String]("classpath")
+        .unbounded()
+        .text("directories to be searched for type resolution jars")
+        .action((incl, c) => c.copy(classpath = c.classpath + incl))
+    )
   }
 
   X2Cpg.parseCommandLine(args, frontendSpecificOptions, Config()) match {
@@ -54,10 +63,28 @@ object Main extends App {
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
         val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(sourceDir)
-        val inferenceJars = InferenceSourcesPicker.defaultInferenceJarPaths
-        val messageCollector        = new ErrorLoggingMessageCollector
+        val jarPathsFromClassPath =
+          config.classpath.foldLeft(Seq[String]())((acc, classpathEntry) => {
+            val f = File(classpathEntry)
+            val files =
+              if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == ".jar").map(_.toString)
+              else Seq()
+            acc ++ files
+          })
+        if (config.classpath.nonEmpty) {
+          if (jarPathsFromClassPath.nonEmpty) {
+            logger.info(s"Found ${jarPathsFromClassPath.size} jars in the specified classpath.")
+          } else {
+            logger.warn("No jars found in the specified classpath.")
+          }
+        }
+
+        val inferenceJars =
+          InferenceSourcesPicker.defaultInferenceJarPaths ++
+            jarPathsFromClassPath.map { path => InferenceJarPath(path, false) }
+        val messageCollector = new ErrorLoggingMessageCollector
         val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJars, Seq(), messageCollector)
-        val ktFiles = environment.getSourceFiles.asScala
+        val ktFiles     = environment.getSourceFiles.asScala
         val filesWithMeta =
           ktFiles
             .flatMap { f =>
