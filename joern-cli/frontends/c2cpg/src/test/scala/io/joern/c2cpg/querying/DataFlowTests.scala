@@ -1704,3 +1704,29 @@ class DataFlowTest56 extends DataFlowCodeToCpgSuite {
     )
   }
 }
+
+class DataFlowTest57 extends DataFlowCodeToCpgSuite {
+  override val code: String =
+    """
+      |void outer(char* ptr){
+      |  taint1(ptr);
+      |  inner(ptr);
+      |  return;
+      |}
+      |
+      |void inner(char * ptr)
+      |{
+      |    taint2(ptr);
+      |    ptr = malloc(0x80);
+      |    sink(ptr);
+      |    return;
+      |}
+      |""".stripMargin
+
+  "should not find flow from taint1 to sink" in {
+    val src = cpg.call("taint1").argument
+    val snk = cpg.method("sink").parameter
+    snk.reachableByFlows(src).size shouldBe 0
+  }
+
+}
