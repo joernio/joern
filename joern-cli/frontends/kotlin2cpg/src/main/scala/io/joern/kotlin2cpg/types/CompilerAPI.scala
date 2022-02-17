@@ -1,15 +1,14 @@
 package io.joern.kotlin2cpg.types
 
 import io.joern.kotlin2cpg.InferenceJarPath
+
+import java.io.{File, FileOutputStream}
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
 import org.jetbrains.kotlin.cli.jvm.compiler.{EnvironmentConfigFiles, KotlinCoreEnvironment}
 import org.jetbrains.kotlin.cli.jvm.config.JvmClasspathRoot
 import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration, CompilerConfigurationKey}
 import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
-import org.slf4j.LoggerFactory
-
-import java.io.{File, FileOutputStream}
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -18,7 +17,7 @@ import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSourceLocation,
   MessageCollector
 }
-
+import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 case class CompilerPluginInfo(

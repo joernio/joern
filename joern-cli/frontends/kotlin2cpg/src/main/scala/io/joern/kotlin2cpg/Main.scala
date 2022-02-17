@@ -1,16 +1,15 @@
 package io.joern.kotlin2cpg
 
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-
-import java.nio.file.{Files, Paths}
-import org.slf4j.LoggerFactory
-import scopt.OParser
-
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.x2cpg.{IOUtils, X2Cpg, X2CpgConfig}
+
+import java.nio.file.{Files, Paths}
+import org.slf4j.LoggerFactory
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scopt.OParser
 
 case class InferenceJarPath(path: String, isResource: Boolean)
 

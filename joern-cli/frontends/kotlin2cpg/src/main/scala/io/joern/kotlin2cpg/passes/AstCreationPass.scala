@@ -3,10 +3,10 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.{KtFileWithMeta}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
-import org.slf4j.LoggerFactory
 import io.joern.kotlin2cpg.types.NameGenerator
 
 import java.util.concurrent.ConcurrentHashMap
+import org.slf4j.LoggerFactory
 
 case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
