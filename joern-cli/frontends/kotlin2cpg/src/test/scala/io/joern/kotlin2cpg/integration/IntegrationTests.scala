@@ -1,19 +1,19 @@
 package io.joern.kotlin2cpg.integration
 
-import better.files.File
+import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta, PathUtils, SourceFilesPicker}
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+
+import better.files.File
+import java.nio.file.Files
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Ignore
 import overflowdb.traversal.jIteratortoTraversal
-
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import java.nio.file.Files
 
 @Ignore // re-enable with a good setup for cloning and syncing external projects
 class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
@@ -43,8 +43,9 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
         .toSeq
 
     val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(inPath)
-    val environment             = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths)
-    val ktFiles                 = environment.getSourceFiles.asScala
+    val environment =
+      CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths, Seq(), new ErrorLoggingMessageCollector)
+    val ktFiles = environment.getSourceFiles.asScala
     val filesWithMeta =
       ktFiles
         .flatMap { f =>

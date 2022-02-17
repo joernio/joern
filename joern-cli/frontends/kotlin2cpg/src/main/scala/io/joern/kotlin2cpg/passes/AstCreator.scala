@@ -9,9 +9,9 @@ import io.shiftleft.x2cpg.Ast
 import java.util.UUID.randomUUID
 import scala.jdk.CollectionConverters._
 import org.jetbrains.kotlin.psi._
-import com.intellij.psi.PsiElement
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, NameReferenceKinds, Constants => TypeConstants}
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 

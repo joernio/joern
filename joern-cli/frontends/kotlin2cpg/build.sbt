@@ -12,7 +12,9 @@ libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"          % "1.7.35",
   "org.scalatest"           %% "scalatest"          % "3.2.9"        % Test,
   "org.jetbrains.kotlin"     % "kotlin-stdlib-jdk8" % kotlinVersion,
-  "org.jetbrains.kotlin"     % "kotlin-compiler"    % kotlinVersion,
+  "org.jetbrains.kotlin"     % "kotlin-stdlib"      % kotlinVersion,
+  "org.jetbrains.kotlin"     % "kotlin-compiler-embeddable"    % kotlinVersion,
+  "org.jetbrains.kotlin"     % "kotlin-allopen"       % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-test"        % kotlinVersion  % Test
 )
 

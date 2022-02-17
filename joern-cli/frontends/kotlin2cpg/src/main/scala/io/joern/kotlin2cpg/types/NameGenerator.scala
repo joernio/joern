@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import com.intellij.util.keyFMap.KeyFMap
+import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
@@ -254,7 +254,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         hasEmptyBindingContext = true
         BindingContext.EMPTY
       case e: Throwable =>
-        logger.error("Kotlin compiler analysis failed with exception `" + e.toString + "`.")
+        logger.error("Kotlin compiler analysis failed with exception `" + e.toString + "`:` + " + e.getMessage + " +`.")
         hasEmptyBindingContext = true
         BindingContext.EMPTY
     }
