@@ -98,11 +98,17 @@ object CompilerAPI {
 class CompilerAPI {}
 
 class ErrorLoggingMessageCollector extends MessageCollector {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   override def report(
     compilerMessageSeverity: CompilerMessageSeverity,
     s: String,
     compilerMessageSourceLocation: CompilerMessageSourceLocation
-  ): Unit = {}
+  ): Unit = {
+    if (compilerMessageSeverity.isError) {
+      logger.debug(s"Received error from Kotlin compiler: `$s`.")
+    }
+  }
   override def hasErrors: Boolean = false
   override def clear(): Unit      = {}
 }
