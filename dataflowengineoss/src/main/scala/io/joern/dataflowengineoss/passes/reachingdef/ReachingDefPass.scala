@@ -54,7 +54,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
   }
 
   /** Once reaching definitions have been computed, we create a data dependence graph by seeing which of these reaching
-    * definitions are relevant in the sense that they are used.
+    * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
     */
   private def addReachingDefEdges(
     problem: DataFlowProblem[mutable.BitSet],
@@ -145,11 +145,9 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Para
               if (edgesToAdd.nonEmpty) {
                 addEdge(block, call)
               }
-
             case Some(node: Call) =>
               addEdge(node, call, nodeToEdgeLabel(node))
               addEdge(block, call)
-
             case _ => // Do nothing
           }
         }
