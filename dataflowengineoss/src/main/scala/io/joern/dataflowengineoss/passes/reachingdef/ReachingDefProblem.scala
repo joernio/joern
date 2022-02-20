@@ -133,8 +133,21 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     // We filter out field accesses to ensure that they propagate
     // taint unharmed.
 
+    def isFieldAccess(name: String): Boolean = {
+      (name == Operators.memberAccess) ||
+      (name == Operators.indirectComputedMemberAccess) ||
+      (name == Operators.indirectMemberAccess) ||
+      (name == Operators.computedMemberAccess) ||
+      (name == Operators.indirection) ||
+      (name == Operators.fieldAccess) ||
+      (name == Operators.indirectFieldAccess) ||
+      (name == Operators.indexAccess) ||
+      (name == Operators.indirectIndexAccess) ||
+      (name == Operators.getElementPtr)
+    }
+
     val defsForCalls = method.call
-      .filterNot(x => isGenericMemberAccessName(x.name))
+      .filterNot(x => isFieldAccess(x.name))
       .l
       .map { call =>
         call -> {
