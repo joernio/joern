@@ -1761,7 +1761,7 @@ class DataFlowTest59 extends DataFlowCodeToCpgSuite {
   "should find flow from local to 'doFoo'" in {
     def source = cpg.local.name("foo").referencingIdentifiers
     def sink   = cpg.call.code("doFoo.*").argument
-    sink.reachableByFlows(source).size shouldBe 1 
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
 }
