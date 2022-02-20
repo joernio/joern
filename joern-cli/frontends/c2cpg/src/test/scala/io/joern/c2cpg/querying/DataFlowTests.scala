@@ -1741,3 +1741,27 @@ class DataFlowTest58 extends DataFlowCodeToCpgSuite {
     snk.reachableByFlows(src).size shouldBe 0
   }
 }
+
+class DataFlowTest59 extends DataFlowCodeToCpgSuite {
+  override val code: String =
+    """
+      |typedef struct {
+      | char *buf1;
+      |} FooStruct;
+      |
+      |void doFoo(FooStruct *str) {
+      |}
+      |int main(void) {
+      | FooStruct foo;
+      | doFoo(&foo);
+      | return 0;
+      |}
+      |""".stripMargin
+
+  "should find flow from local to 'doFoo'" in {
+    def source = cpg.local.name("foo").referencingIdentifiers
+    def sink   = cpg.call.code("doFoo.*").argument
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
+}
