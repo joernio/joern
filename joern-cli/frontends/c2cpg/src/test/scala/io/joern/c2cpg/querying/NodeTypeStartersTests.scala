@@ -56,7 +56,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving type declarations" in {
-    cpg.typeDecl.internal.name.toSetMutable shouldBe Set("foo", "main")
+    cpg.typeDecl.nameNot("<global>").internal.name.toSetMutable shouldBe Set("foo")
   }
 
   "should allow retrieving members" in {

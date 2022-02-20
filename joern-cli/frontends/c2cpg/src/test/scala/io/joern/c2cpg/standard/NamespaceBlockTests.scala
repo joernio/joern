@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, Namespa
 
 class NamespaceBlockTests extends CCodeToCpgSuite {
 
-  // The fuzzyC parser currently just ignores namespaces. We place symbols
-  // that can't be associated in a file into the namespace "<global>", and
+  // We place symbols that can't be associated in a file into the namespace "<global>", and
   // those which can in `filename:<global>`
 
   override val code: String =
@@ -40,7 +39,9 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
   }
 
   "should allow traversing from namespace block to type declaration" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isTypeDecl.name.l shouldBe List("my_struct", "foo")
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isTypeDecl.nameNot("<global>").name.l shouldBe List(
+      "my_struct"
+    )
   }
 
   "should allow traversing from namespace block to namespace" in {

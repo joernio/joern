@@ -34,7 +34,7 @@ trait AstForFunctionsCreator {
 
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name(methodName).signature(signature)
+    val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
