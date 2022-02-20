@@ -61,7 +61,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should find exactly 1 internal type" in {
-    cpg.typeDecl.internal.name.toSetMutable shouldBe Set("foo")
+    cpg.typeDecl.nameNot("<global>").internal.name.toSetMutable shouldBe Set("foo")
   }
 
   "should find five external types (`bar`, `char`, `int`, `void`, `ANY`)" in {

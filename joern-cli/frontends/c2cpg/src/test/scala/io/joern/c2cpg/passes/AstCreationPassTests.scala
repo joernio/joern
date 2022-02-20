@@ -163,13 +163,20 @@ class AstCreationPassTests
         l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
       }
 
-      inside(cpg.typeDecl(lambda1FullName).head.bindsOut.l) { case List(binding: Binding) =>
-        binding.name shouldBe lambda1FullName
-        binding.signature shouldBe "int anonymous_lambda_0 (int,int)"
-        inside(binding.refOut.l) { case List(method: Method) =>
+      inside(cpg.typeDecl("<global>").head.bindsOut.l) { case List(bX: Binding, bY: Binding) =>
+        bX.name shouldBe lambda1FullName
+        bX.signature shouldBe "int anonymous_lambda_0 (int,int)"
+        inside(bX.refOut.l) { case List(method: Method) =>
           method.name shouldBe lambda1FullName
           method.fullName shouldBe lambda1FullName
           method.signature shouldBe "int anonymous_lambda_0 (int,int)"
+        }
+        bY.name shouldBe lambda2FullName
+        bY.signature shouldBe "string anonymous_lambda_1 (string,string)"
+        inside(bY.refOut.l) { case List(method: Method) =>
+          method.name shouldBe lambda2FullName
+          method.fullName shouldBe lambda2FullName
+          method.signature shouldBe "string anonymous_lambda_1 (string,string)"
         }
       }
     }
@@ -277,6 +284,7 @@ class AstCreationPassTests
       val lambda1Name = "anonymous_lambda_0"
       val signature1  = "int anonymous_lambda_0 (int)"
       val lambda2Name = "anonymous_lambda_1"
+      val signature2  = "int anonymous_lambda_1 (int)"
 
       cpg.local.name("x").order.l shouldBe List(1)
       cpg.local.name("foo1").order.l shouldBe List(3)
@@ -297,13 +305,20 @@ class AstCreationPassTests
         l1.signature shouldBe signature1
       }
 
-      inside(cpg.typeDecl(lambda1Name).head.bindsOut.l) { case List(binding: Binding) =>
-        binding.name shouldBe lambda1Name
-        binding.signature shouldBe signature1
-        inside(binding.refOut.l) { case List(method: Method) =>
+      inside(cpg.typeDecl("<global>").head.bindsOut.l) { case List(b1: Binding, b2: Binding) =>
+        b1.name shouldBe lambda1Name
+        b1.signature shouldBe signature1
+        inside(b1.refOut.l) { case List(method: Method) =>
           method.name shouldBe lambda1Name
           method.fullName shouldBe lambda1Name
           method.signature shouldBe signature1
+        }
+        b2.name shouldBe lambda2Name
+        b2.signature shouldBe signature2
+        inside(b2.refOut.l) { case List(method: Method) =>
+          method.name shouldBe lambda2Name
+          method.fullName shouldBe lambda2Name
+          method.signature shouldBe signature2
         }
       }
 
@@ -1083,7 +1098,7 @@ class AstCreationPassTests
       val List(localMyFs) = cpg.local.name("my_fs").l
       localMyFs.order shouldBe 4
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.fullName.l.distinct shouldBe List("my_open", "main", "filesystem")
+      cpg.typeDecl.nameNot("<global>").fullName.l.distinct shouldBe List("filesystem")
     }
 
     "be correct for typedef enum" in TestAstOnlyFixture("""

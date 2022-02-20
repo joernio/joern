@@ -62,7 +62,23 @@ class AstCreator(
     path: String,
     iASTTranslationUnit: IASTTranslationUnit
   ): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations
+    val allDecls      = iASTTranslationUnit.getDeclarations
+    val lineNumber    = allDecls.headOption.flatMap(line)
+    val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
+
+    val fakeGlobalTypeDecl = newTypeDecl(
+      name,
+      fullName,
+      filename,
+      name,
+      NodeTypes.NAMESPACE_BLOCK,
+      fullName,
+      1,
+      line = lineNumber,
+      column = lineNumberEnd
+    )
+
+    methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
       NewMethod()
@@ -70,9 +86,9 @@ class AstCreator(
         .code(name)
         .fullName(fullName)
         .filename(path)
-        .lineNumber(allDecls.headOption.flatMap(line))
-        .lineNumberEnd(allDecls.lastOption.flatMap(lineEnd))
-        .astParentType(NodeTypes.NAMESPACE_BLOCK)
+        .lineNumber(lineNumber)
+        .lineNumberEnd(lineNumberEnd)
+        .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullName)
 
     methodAstParentStack.push(fakeGlobalMethod)
@@ -104,9 +120,11 @@ class AstCreator(
       .typeFullName("ANY")
       .order(2)
 
-    Ast(fakeGlobalMethod)
-      .withChild(Ast(blockNode).withChildren(declsAsts))
-      .withChild(Ast(methodReturn))
+    Ast(fakeGlobalTypeDecl).withChild(
+      Ast(fakeGlobalMethod)
+        .withChild(Ast(blockNode).withChildren(declsAsts))
+        .withChild(Ast(methodReturn))
+    )
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {

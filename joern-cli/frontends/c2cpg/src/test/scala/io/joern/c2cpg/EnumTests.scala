@@ -20,7 +20,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |    green = 20,
         |    blue
         |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) { case List(color) =>
+      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(color) =>
         color.name shouldBe "color"
         color.code shouldBe "enum color"
         inside(color.member.l) { case List(red, yellow, green, blue) =>
@@ -48,7 +48,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |    green = 20,
         |    blue
         |} C;""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.filter(x => !x.isExternal).l) { case List(color, c) =>
+      inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(color, c) =>
         color.name shouldBe "color"
         color.code shouldBe "enum color"
         color.aliasTypeFullName shouldBe None
@@ -77,7 +77,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |     high='h',
         |     low='l', // C++11 allows the extra comma
         |}; """.stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) { case List(altitude) =>
+      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(altitude) =>
         altitude.name shouldBe "altitude"
         altitude.code shouldBe "enum altitude"
         inside(altitude.member.l) { case List(high, low) =>
@@ -105,7 +105,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |    b,
         |    c
         |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) { case List(smallenum) =>
+      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(smallenum) =>
         smallenum.name shouldBe "smallenum"
         smallenum.code shouldBe "enum smallenum"
         inside(smallenum.member.l) { case List(a, b, c) =>
@@ -127,7 +127,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
          |    e,
          |    f
          |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) { case List(anon) =>
+      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(anon) =>
         anon.name shouldBe "anonymous_enum_0"
         anon.code shouldBe "enum"
         inside(anon.member.l) { case List(d, e, f) =>
@@ -147,7 +147,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
        |};
        |int x = X::a;
        |""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.internal.l) { case List(x) =>
+      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(x) =>
         x.name shouldBe "X"
         x.code shouldBe "enum X"
         inside(x.member.l) { case List(a, b) =>
