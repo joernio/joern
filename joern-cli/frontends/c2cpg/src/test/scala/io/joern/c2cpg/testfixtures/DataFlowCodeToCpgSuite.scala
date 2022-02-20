@@ -7,8 +7,12 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
 import io.shiftleft.utils.ProjectRoot
+
+import scala.sys.process.Process
+import scala.util.Try
 
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
@@ -16,6 +20,11 @@ class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
     ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
 
   var semantics: Semantics = _
+
+  val viewer: ImageViewer = (pathStr: String) =>
+    Try {
+      Process(Seq("xdg-open", pathStr)).!!
+    }
 
   implicit var context: EngineContext = _
 

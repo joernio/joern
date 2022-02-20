@@ -171,9 +171,15 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     */
   private def initKill(method: Method, gen: Map[StoredNode, Set[Definition]]): Map[StoredNode, Set[Definition]] = {
 
-    val allIdentifiers: Map[String, List[Identifier]] = method.ast.isIdentifier.l
+    val allIdentifiers: Map[String, List[CfgNode]] = method.ast
+      .collect {
+        case x if (x.isInstanceOf[Identifier] || x.isInstanceOf[MethodParameterIn]) =>
+          x.asInstanceOf[HasName]
+      }
+      .l
       .groupBy(_.name)
-      .withDefaultValue(List.empty[Identifier])
+      .withDefaultValue(List.empty[CfgNode])
+      .map { case (k, v) => (k, v.map(_.asInstanceOf[CfgNode])) }
 
     val allCalls: Map[String, List[Call]] = method.call.l
       .groupBy(_.code)
@@ -196,7 +202,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     */
   private def killsForGens(
     genOfCall: Set[Definition],
-    allIdentifiers: Map[String, List[Identifier]],
+    allIdentifiers: Map[String, List[CfgNode]],
     allCalls: Map[String, List[Call]]
   ): Set[Definition] = {
 
@@ -213,7 +219,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
             * new Box()` should kill any previous calls to `x.value`, `x.length()`, etc.
             */
           val sameObjects: Iterable[Call] = allCalls.values.flatten
-            .filter(_.name == Operators.fieldAccess)
+            .filter(_.asInstanceOf[HasName].name == Operators.fieldAccess)
             .filter(_.ast.isIdentifier.name(identifier.name).nonEmpty)
 
           sameIdentifiers ++ sameObjects
@@ -235,7 +241,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
 
 }
 
-/** Lone Identifier Optimization: we first determine and store all identifiers that neither refer to a local or
+/** Lone Identifier Optimization: we first determine and store all identifiers that neither refer to a local nor a
   * parameter and that appear only once as a call argument. For these identifiers, we know that they are not used in any
   * other location in the code, and so, we remove them from `gen` sets so that they need not be propagated through the
   * entire graph only to determine that they reach the exit node. Instead, when creating reaching definition edges, we

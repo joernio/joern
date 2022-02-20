@@ -1704,3 +1704,40 @@ class DataFlowTest56 extends DataFlowCodeToCpgSuite {
     )
   }
 }
+
+class DataFlowTest57 extends DataFlowCodeToCpgSuite {
+  override val code: String =
+    """
+      |void abc()
+      |{
+      |    int a;
+      |    a = foo();
+      |    a = bar(0x80);
+      |    sink(a);
+      |}
+      |""".stripMargin
+
+  "should not find a flow from 'a' at 'foo' to 'sink'" in {
+    def src = cpg.call("foo").inAssignment.target.head
+    def snk = cpg.method("sink").parameter
+    snk.reachableByFlows(src).size shouldBe 0
+  }
+}
+
+class DataFlowTest58 extends DataFlowCodeToCpgSuite {
+  override val code: String =
+    """
+      |void abc(int a)
+      |{
+      |    a = foo();
+      |    a = bar(0x80);
+      |    sink(a);
+      |}
+      |""".stripMargin
+
+  "should not find a flow from parameter 'a' to 'sink'" in {
+    def src = cpg.method("abc").parameter
+    def snk = cpg.method("sink").parameter
+    snk.reachableByFlows(src).size shouldBe 0
+  }
+}
