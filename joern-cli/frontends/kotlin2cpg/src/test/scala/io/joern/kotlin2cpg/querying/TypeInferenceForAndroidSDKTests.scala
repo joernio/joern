@@ -166,6 +166,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `Log.d` with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*Log.*").l
       c.methodFullName shouldBe "android.util.Log.d:kotlin.Int(kotlin.String,kotlin.String)"
+
       c.argument.size shouldBe 2
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 

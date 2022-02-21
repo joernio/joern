@@ -1,9 +1,7 @@
 package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
-
-import DefaultNameGenerator._
-
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns.isBuiltIn
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -12,6 +10,7 @@ import org.jetbrains.kotlin.descriptors.impl.{
   TypeAliasConstructorDescriptorImpl
 }
 import org.jetbrains.kotlin.psi.{
+  KtArrayAccessExpression,
   KtBinaryExpression,
   KtCallExpression,
   KtClassLiteralExpression,
@@ -25,6 +24,7 @@ import org.jetbrains.kotlin.psi.{
   KtProperty,
   KtQualifiedExpression,
   KtSuperExpression,
+  KtThisExpression,
   KtTypeAlias,
   KtTypeReference
 }
@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.slf4j.LoggerFactory
+
 import scala.jdk.CollectionConverters._
 
 // representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
@@ -119,6 +120,8 @@ trait NameGenerator {
   def isConstructorCall(expr: KtCallExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, or: String): String
+
+  def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 }
 
 object DefaultNameGenerator {
@@ -237,6 +240,7 @@ object TypeRenderer {
 
 class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGenerator {
   private val logger = LoggerFactory.getLogger(getClass)
+  import DefaultNameGenerator._
 
   // TODO: remove this state
   var hasEmptyBindingContext = false
@@ -503,20 +507,42 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
-  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
-    val callToSuper = expr.getReceiverExpression match {
-      case _: KtSuperExpression => true
-      case _                    => false
+  def hasStaticDesc(expr: KtQualifiedExpression): Boolean = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        fnDescriptor.getDispatchReceiverParameter == null
+      case _ => true
     }
+  }
+
+  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
+    val isStaticBasedOnStructure = {
+      expr.getReceiverExpression match {
+        case _: KtSuperExpression => true
+        case _                    => false
+      }
+    }
+    if (isStaticBasedOnStructure) return CallKinds.StaticCall
+
+    val isDynamicBasedOnStructure =
+      expr.getReceiverExpression match {
+        case _: KtArrayAccessExpression => true
+        case _: KtThisExpression        => true
+        case _                          => false
+      }
+    if (isDynamicBasedOnStructure) return CallKinds.DynamicCall
 
     val resolvedDesc = resolvedCallDescriptor(expr)
     resolvedDesc match {
       case Some(fnDescriptor) =>
         val isExtension = DescriptorUtils.isExtension(fnDescriptor)
-        val isStatic    = DescriptorUtils.isStaticDeclaration(fnDescriptor)
+        val isBuiltin   = isBuiltIn(fnDescriptor)
+        val isStatic =
+          DescriptorUtils.isStaticDeclaration(fnDescriptor) || hasStaticDesc(expr)
         if (isExtension) CallKinds.ExtensionCall
         else if (isStatic) CallKinds.StaticCall
-        else if (callToSuper) CallKinds.StaticCall
+        else if (isBuiltin) CallKinds.StaticCall
         else CallKinds.DynamicCall
       case None => CallKinds.Unknown
     }

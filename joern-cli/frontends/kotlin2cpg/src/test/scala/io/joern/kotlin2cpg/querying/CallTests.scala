@@ -213,7 +213,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
       c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
     }
@@ -304,7 +304,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
       c.signature shouldBe "kotlin.String()"
       c.typeFullName shouldBe "kotlin.String"
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
@@ -359,6 +359,41 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.lineNumber shouldBe Some(9)
       c.columnNumber shouldBe Some(17)
       c.signature shouldBe "ANY(ANY)"
+    }
+  }
+
+  "CPG for code with call to `100.toFloat`" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+     |package mypkg
+     |
+     |fun main() {
+     |  100.toFloat()
+     |}
+     |""".stripMargin)
+
+    "should contain a CALL node for `.*toFloat()` with the correct props set" in {
+      val List(c) = cpg.call.code(".*toFloat.*").l
+      c.methodFullName shouldBe "kotlin.Int.toFloat:kotlin.Float()"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+  }
+
+  "CPG for code with call which has parenthesized expression as receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |fun main() {
+      |  val x = 100
+      |  val y = 200
+      |  val z = (if (x / 20 < 3) 3 else y / 20).toFloat()
+      |  println(z)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node for `.*toFloat()` with the correct props set" in {
+      val List(c) = cpg.call.code("\\(.*toFloat.*").l
+      c.methodFullName shouldBe "kotlin.Int.toFloat:kotlin.Float()"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 }

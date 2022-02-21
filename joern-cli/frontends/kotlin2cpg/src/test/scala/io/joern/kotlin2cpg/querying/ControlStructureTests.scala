@@ -176,7 +176,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.collections.List.contains:kotlin.Boolean(kotlin.String)"
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(5)
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "kotlin.Boolean(kotlin.String)"
     }
   }
