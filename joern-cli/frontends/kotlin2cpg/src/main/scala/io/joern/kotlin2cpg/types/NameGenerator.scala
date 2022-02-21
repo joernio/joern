@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinToJVMBytecodeCompiler,
   NoScopeRecordCliBindingTrace
 }
+import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
@@ -52,8 +53,8 @@ trait WithDefaultType {
 }
 
 object Constants {
-  val kotlinAny                         = "kotlin.Any"
-  val kotlinString                      = "kotlin.String"
+  val kotlinAny                         = "java.lang.Object"
+  val kotlinString                      = "java.lang.String"
   val cpgUnresolved                     = "codepropertygraph.Unresolved"
   val any                               = "ANY"
   val void                              = "void"
@@ -200,8 +201,14 @@ object TypeRenderer {
     if (isFunctionXType(t)) {
       Constants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
     } else {
-      val rendered = renderer.renderType(t)
-      stripped(rendered)
+      val fqName     = DescriptorUtils.getFqName(t.getConstructor.getDeclarationDescriptor)
+      val mappedType = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName)
+      if (mappedType != null) {
+        stripped(DescriptorRenderer.COMPACT.renderFqName(mappedType.asSingleFqName().toUnsafe))
+      } else {
+        val rendered = renderer.renderType(t)
+        stripped(rendered)
+      }
     }
   }
 
@@ -668,7 +675,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val returnTypeFullName =
       fnDesc match {
         case Some(desc) => renderedReturnType(desc)
-        case None       => Constants.any
+        case None       => Constants.cpgUnresolved
       }
     val paramTypeNames =
       try {
@@ -678,7 +685,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
             val explicitTypeFullName = if (p.getTypeReference != null) {
               p.getTypeReference.getText
             } else {
-              Constants.any
+              Constants.cpgUnresolved
             }
             // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
             val typeFullName = parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
@@ -693,7 +700,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       if (fnDesc.isDefined && fnDesc.get.getExtensionReceiverParameter != null) {
         val erpType = fnDesc.get.getExtensionReceiverParameter.getType
         if (erpType.isInstanceOf[UnresolvedType]) {
-          Constants.kotlinAny + "." + expr.getName
+          Constants.cpgUnresolved + "." + expr.getName
         } else {
           val theType      = fnDesc.get.getExtensionReceiverParameter.getType
           val renderedType = TypeRenderer.render(theType)

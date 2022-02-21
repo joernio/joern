@@ -79,7 +79,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with a placeholder MFN in it" in {
       val List(c) = cpg.call.code("mutableListOf.*").l
-      c.methodFullName shouldBe "kotlin.collections.mutableListOf:kotlin.collections.MutableList()"
+      c.methodFullName shouldBe "kotlin.collections.mutableListOf:java.util.List()"
     }
   }
 
@@ -110,7 +110,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct MFN set when type info is available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("foo")).argument(2).isCall.l
-      c.methodFullName shouldBe "kotlin.collections.Iterable.filter:kotlin.collections.List(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Iterable.filter:java.util.List(kotlin.Function1)"
     }
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
@@ -136,7 +136,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node with a MFN property starting with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName(".*getFileSize.*").l
-      m.fullName shouldBe "kotlin.Any.getFileSize:kotlin.Int(kotlin.Boolean)"
+      m.fullName shouldBe "codepropertygraph.Unresolved.getFileSize:java.lang.Integer(java.lang.Boolean)"
     }
   }
 
@@ -157,8 +157,8 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a METHOD node with a MFN property that replaced the unresolvable types with `kotlin.Any`" in {
-      val List(m) = cpg.method.fullName("kotlin.*clone.*").take(1).l
-      m.fullName shouldBe "kotlin.collections.MutableMap.clone:kotlin.collections.MutableMap()"
+      val List(m) = cpg.method.fullName(".*clone.*").take(1).l
+      m.fullName shouldBe "java.util.Map.clone:java.util.Map()"
     }
   }
 
@@ -184,7 +184,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for `containsKey` with placeholder type as replacement for failing type inference" in {
       val List(m) = cpg.method.fullName(".*containsKey.*").l
-      m.fullName shouldBe "kotlin.collections.Map.containsKey:kotlin.Boolean(codepropertygraph.Unresolved)"
+      m.fullName shouldBe "kotlin.collections.Map.containsKey:java.lang.Boolean(codepropertygraph.Unresolved)"
     }
   }
 }

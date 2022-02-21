@@ -105,8 +105,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(14)
     }
@@ -114,7 +114,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      mr.typeFullName shouldBe "kotlin.Any"
+      mr.typeFullName shouldBe "java.lang.Object"
       mr.lineNumber shouldBe Some(5)
       mr.columnNumber shouldBe Some(14)
     }
@@ -129,12 +129,12 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       p.code shouldBe "arg"
       p.lineNumber shouldBe Some(5)
       p.columnNumber shouldBe Some(16)
-      p.typeFullName shouldBe "kotlin.String"
+      p.typeFullName shouldBe "java.lang.String"
     }
 
     "should contain a CALL node for `forEach` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*forEach.*").l
-      c.methodFullName shouldBe "kotlin.collections.Iterable.forEach:kotlin.Unit(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Iterable.forEach:kotlin.Unit(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(4)
@@ -152,11 +152,11 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
+      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
-      b.signature shouldBe "kotlin.Any(kotlin.Any)"
+      b.signature shouldBe "java.lang.Object(java.lang.Object)"
       b.name shouldBe Constants.lambdaBindingName
     }
 
@@ -182,14 +182,14 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      mr.typeFullName shouldBe "kotlin.Any"
+      mr.typeFullName shouldBe "java.lang.Object"
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
@@ -200,12 +200,12 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "arg"
-      p.typeFullName shouldBe "kotlin.String"
+      p.typeFullName shouldBe "java.lang.String"
     }
 
     "should contain a CALL node for `takeIf` with the correct properties set" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "kotlin.String.takeIf:kotlin.String(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.String.takeIf:java.lang.String(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
@@ -216,11 +216,11 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
+      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
-      b.signature shouldBe "kotlin.Any(kotlin.Any)"
+      b.signature shouldBe "java.lang.Object(java.lang.Object)"
       b.name shouldBe Constants.lambdaBindingName
     }
 
@@ -249,8 +249,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(28)
     }
@@ -258,7 +258,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      mr.typeFullName shouldBe "kotlin.Any"
+      mr.typeFullName shouldBe "java.lang.Object"
       mr.lineNumber shouldBe Some(5)
       mr.columnNumber shouldBe Some(28)
     }
@@ -271,12 +271,12 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "arg"
-      p.typeFullName shouldBe "kotlin.String"
+      p.typeFullName shouldBe "java.lang.String"
     }
 
     "should contain a CALL node for `map` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*map.*").take(1).l
-      c.methodFullName shouldBe "kotlin.collections.Iterable.map:kotlin.collections.List(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Iterable.map:java.util.List(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(20)
@@ -288,11 +288,11 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.code shouldBe ""
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:kotlin.Any(kotlin.Any)"
+      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
-      b.signature shouldBe "kotlin.Any(kotlin.Any)"
+      b.signature shouldBe "java.lang.Object(java.lang.Object)"
       b.name shouldBe Constants.lambdaBindingName
     }
 
@@ -336,7 +336,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -360,7 +360,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the second lambda with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*2.*").l
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 

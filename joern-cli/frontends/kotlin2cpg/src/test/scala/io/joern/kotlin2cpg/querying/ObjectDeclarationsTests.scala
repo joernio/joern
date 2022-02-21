@@ -38,7 +38,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.String"
+      x.typeFullName shouldBe "java.lang.String"
       x.lineNumber shouldBe Some(4)
       x.columnNumber shouldBe Some(8)
     }
@@ -47,7 +47,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("baz").l
       x.name shouldBe "baz"
       x.code shouldBe "baz"
-      x.typeFullName shouldBe "kotlin.String"
+      x.typeFullName shouldBe "java.lang.String"
       x.lineNumber shouldBe Some(5)
       x.columnNumber shouldBe Some(8)
     }

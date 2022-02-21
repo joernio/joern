@@ -39,8 +39,8 @@ class ObjectExpressionTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `apply` with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*apply.*").l
-      c.methodFullName shouldBe "kotlin.Any.apply:kotlin.Any(kotlin.Function1)"
-      c.signature shouldBe "kotlin.Any(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Object.apply:java.lang.Object(kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }

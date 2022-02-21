@@ -63,8 +63,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       val List(thirdBlockChild: Call) = assignmentRhs.astChildren.drop(2).take(1).l
       val initCall                    = thirdBlockChild
       initCall.code shouldBe "File(\"/tmp/myfile.txt\")"
-      initCall.signature shouldBe "void(kotlin.String)"
-      initCall.methodFullName shouldBe "java.io.File.<init>:void(kotlin.String)"
+      initCall.signature shouldBe "void(java.lang.String)"
+      initCall.methodFullName shouldBe "java.io.File.<init>:void(java.lang.String)"
       initCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(initCallLhs: Identifier, initCallRhs: Literal) = initCall.argument.l
@@ -74,7 +74,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       firstBlockChild.referencingIdentifiers.id.l.contains(initCallLhs.id) shouldBe true
 
       initCallRhs.code shouldBe "\"/tmp/myfile.txt\""
-      initCallRhs.typeFullName shouldBe "kotlin.String"
+      initCallRhs.typeFullName shouldBe "java.lang.String"
       initCallRhs.argumentIndex shouldBe 1
 
       val List(fourthBlockChild: Identifier) = assignmentRhs.astChildren.drop(3).take(1).l
@@ -127,8 +127,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       val List(thirdBlockChild: Call) = loweredBlock.astChildren.drop(2).take(1).l
       val initCall                    = thirdBlockChild
       initCall.code shouldBe "File(\"/tmp/myfile.txt\")"
-      initCall.signature shouldBe "void(kotlin.String)"
-      initCall.methodFullName shouldBe "java.io.File.<init>:void(kotlin.String)"
+      initCall.signature shouldBe "void(java.lang.String)"
+      initCall.methodFullName shouldBe "java.io.File.<init>:void(java.lang.String)"
       initCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(initCallLhs: Identifier, initCallRhs: Literal) = initCall.argument.l
@@ -138,7 +138,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       firstBlockChild.referencingIdentifiers.id.l.contains(initCallLhs.id) shouldBe true
 
       initCallRhs.code shouldBe "\"/tmp/myfile.txt\""
-      initCallRhs.typeFullName shouldBe "kotlin.String"
+      initCallRhs.typeFullName shouldBe "java.lang.String"
       initCallRhs.argumentIndex shouldBe 1
 
       val List(fourthBlockChild: Identifier) = loweredBlock.astChildren.drop(3).take(1).l
@@ -201,8 +201,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       val List(thirdBlockChild: Call) = assignmentRhs.astChildren.drop(2).take(1).l
       val initCall                    = thirdBlockChild
       initCall.code shouldBe "AClass(\"AMESSAGE\")"
-      initCall.signature shouldBe "void(kotlin.String)"
-      initCall.methodFullName shouldBe "mypkg.AClass.<init>:void(kotlin.String)"
+      initCall.signature shouldBe "void(java.lang.String)"
+      initCall.methodFullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
       initCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(initCallLhs: Identifier, initCallRhs: Literal) = initCall.argument.l
@@ -212,7 +212,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       firstBlockChild.referencingIdentifiers.id.l.contains(initCallLhs.id) shouldBe true
 
       initCallRhs.code shouldBe "\"AMESSAGE\""
-      initCallRhs.typeFullName shouldBe "kotlin.String"
+      initCallRhs.typeFullName shouldBe "java.lang.String"
       initCallRhs.argumentIndex shouldBe 1
 
       val List(fourthBlockChild: Identifier) = assignmentRhs.astChildren.drop(3).take(1).l

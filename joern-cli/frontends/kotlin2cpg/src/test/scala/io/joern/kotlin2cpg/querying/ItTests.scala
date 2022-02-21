@@ -20,7 +20,7 @@ class ItTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain IDENTIFIER nodes for the `it`s with the correct types inferred" in {
-      cpg.identifier.nameExact("it").typeFullName.toSet shouldBe Set("kotlin.String")
+      cpg.identifier.nameExact("it").typeFullName.toSet shouldBe Set("java.lang.String")
     }
 
     // TODO: test that locals are created for the `it`s

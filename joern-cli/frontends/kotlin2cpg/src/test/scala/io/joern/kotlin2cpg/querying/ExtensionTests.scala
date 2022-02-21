@@ -7,7 +7,6 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class ExtensionTests extends AnyFreeSpec with Matchers {
-
   "CPG for code with simple extension function definitions" - {
     implicit val resolver = NoResolve
 
@@ -76,23 +75,23 @@ class ExtensionTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct props set for the call to the package-level defined extension fn" in {
       val List(c) = cpg.call.code("str.hash.*").where(_.method.fullName(".*main.*")).l
-      c.methodFullName shouldBe "kotlin.String.hash:kotlin.String()"
+      c.methodFullName shouldBe "java.lang.String.hash:java.lang.String()"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "kotlin.String()"
+      c.signature shouldBe "java.lang.String()"
     }
 
     "should contain a CALL node with the correct props set for the call to the extension fn defined in `AClass`" in {
       val List(c) = cpg.typeDecl.fullName(".*AClass.*").method.fullName(".*hashStr.*").call.code("str.hash.*").l
-      c.methodFullName shouldBe "kotlin.String.hash:kotlin.String()"
+      c.methodFullName shouldBe "java.lang.String.hash:java.lang.String()"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "kotlin.String()"
+      c.signature shouldBe "java.lang.String()"
     }
 
     "should contain a CALL node with the correct props set for the call to the extension fn defined in `BClass`" in {
       val List(c) = cpg.typeDecl.fullName(".*BClass.*").method.fullName(".*hashStr.*").call.code("str.hash.*").l
-      c.methodFullName shouldBe "kotlin.String.hash:kotlin.String()"
+      c.methodFullName shouldBe "java.lang.String.hash:java.lang.String()"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "kotlin.String()"
+      c.signature shouldBe "java.lang.String()"
     }
   }
 }
