@@ -180,7 +180,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       }
 
       "should contain a CALL node for `trim` a receiver arg with the correct props set" in {
-        val List(receiverArg) = cpg.call.code("p.trim.*").argument(0).isIdentifier.l
+        val List(receiverArg) = cpg.call.code("p.trim.*").argument.isIdentifier.l
+        receiverArg.argumentIndex shouldBe 0
         receiverArg.name shouldBe "p"
         receiverArg.code shouldBe "p"
         receiverArg.typeFullName shouldBe "kotlin.String"

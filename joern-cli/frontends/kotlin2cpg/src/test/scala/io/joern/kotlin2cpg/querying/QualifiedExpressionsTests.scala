@@ -92,16 +92,17 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
         |
         |fun main() {
         |    val arr = arrayOf(1, 2, 3)
-        |    val i = arr[0].toString()
-        |    print(i)
+        |    val z = arr[0].toString()
+        |    print(z)
         |}
         |""".stripMargin)
 
     "should contain a CALL node with the first argument a CALL with the correct props set" in {
       val List(c) = cpg.call.code("arr.*toString.*").l
       c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-      val List(receiver) = cpg.call.code("arr.*toString.*").argument(0).isCall.l
+      val List(receiver) = cpg.call.code("arr.*toString.*").argument.isCall.l
       receiver.argumentIndex shouldBe 0
       receiver.code shouldBe "arr[0]"
       receiver.methodFullName shouldBe Operators.indexAccess
