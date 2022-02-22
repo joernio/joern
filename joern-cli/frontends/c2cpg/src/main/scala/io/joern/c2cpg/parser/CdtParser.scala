@@ -43,9 +43,9 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
 
   private def createParseLanguage(file: Path): ILanguage = {
     if (FileDefaults.isCPPFile(file.toString)) {
-      new GPPLanguage()
+      GPPLanguage.getDefault
     } else {
-      new GCCLanguage()
+      GCCLanguage.getDefault
     }
   }
 
@@ -95,7 +95,9 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
         logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
         Some(t)
       case ParseResult(_, _, _, maybeThrowable) =>
-        logger.warn(s"Failed to parse '$file' ${maybeThrowable.map(_.getMessage).getOrElse("")}")
+        logger.warn(
+          s"Failed to parse '$file': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
+        )
         None
     }
   }
