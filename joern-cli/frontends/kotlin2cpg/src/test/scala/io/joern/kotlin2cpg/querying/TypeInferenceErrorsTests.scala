@@ -182,9 +182,9 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*ERROR.*").fullName.l shouldBe List()
     }
 
-    "should contain a METHOD node for `containsKey` with placeholder type as replacement for failing type inference" in {
+    "should contain a METHOD node for `containsKey` with `java.lang.Object` in the place of the failed type inference point" in {
       val List(m) = cpg.method.fullName(".*containsKey.*").l
-      m.fullName shouldBe "kotlin.collections.Map.containsKey:java.lang.Boolean(codepropertygraph.Unresolved)"
+      m.fullName shouldBe "kotlin.collections.Map.containsKey:java.lang.Boolean(java.lang.Object)"
     }
   }
 }

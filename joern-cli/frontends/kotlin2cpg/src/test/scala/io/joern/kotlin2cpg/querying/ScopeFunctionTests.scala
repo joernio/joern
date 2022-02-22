@@ -160,8 +160,10 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    // TODO: add test case for CALLs inside the scope function
-    // at the moment, they don't end up in the CPG correctly
+    "should X" in {
+      val List(c) = cpg.call.code("x.takeIf.*").l
+      c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
+    }
   }
 
   "CPG for code with simple `takeUnless` scope function" - {

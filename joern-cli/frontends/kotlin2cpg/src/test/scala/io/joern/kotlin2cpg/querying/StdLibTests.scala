@@ -29,9 +29,10 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME for `takeIf`" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "java.util.UUID.takeIf:java.util.UUID(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.util.UUID(kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(kotlin.Function1)"
+      c.typeFullName shouldBe "java.util.UUID"
     }
   }
 
