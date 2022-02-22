@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, NameReferenceKinds, Constants => TypeConstants}
+import io.joern.kotlin2cpg.types.{CallKinds, NameGenerator, NameReferenceKinds, TypeConstants}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
@@ -1338,7 +1338,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
                   .lineNumber(line(entry.getExpression))
                   .columnNumber(column(entry.getExpression))
                   .order(idx + 1)
-                  .typeFullName(TypeConstants.kotlinString)
+                  .typeFullName(TypeConstants.javaLangString)
               val valueArgs = astsForExpression(entry.getExpression, scopeContext, idx + 1, idx + 1)
               val call      = callAst(valueCallNode, valueArgs.map(_.ast))
               Seq(AstWithCtx(call, Context()))

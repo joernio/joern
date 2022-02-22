@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.types.Constants
+import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.Kt2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
@@ -24,7 +24,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with an MFN starting with a placeholder type" in {
       val List(c) = cpg.call.drop(1).take(1).l
-      c.methodFullName shouldBe Constants.cpgUnresolved + ".flatMap:ANY(ANY)"
+      c.methodFullName shouldBe TypeConstants.cpgUnresolved + ".flatMap:ANY(ANY)"
     }
   }
 
@@ -115,7 +115,7 @@ class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("bar")).argument(2).isCall.l
-      c.methodFullName shouldBe Constants.cpgUnresolved + ".filter:ANY(ANY)"
+      c.methodFullName shouldBe TypeConstants.cpgUnresolved + ".filter:ANY(ANY)"
     }
   }
 
