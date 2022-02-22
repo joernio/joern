@@ -148,9 +148,11 @@ class AstCreator(filename: String, global: Global) {
           case Failure(_)    => methodDeclaration.retrieveActiveBody()
           case Success(body) => body
         }
-        val parameterAsts = withOrder(methodBody.getParameterLocals) { (p, order) =>
-          astForParameter(p, order, methodDeclaration)
-        }
+        val parameterAsts =
+          Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
+            (p, order) =>
+              astForParameter(p, order, methodDeclaration)
+          }
         Ast(methodNode)
           .withChildren(parameterAsts)
           .withChild(astForMethodBody(methodBody, lastOrder))
@@ -176,6 +178,15 @@ class AstCreator(filename: String, global: Global) {
     }
   }
 
+  private def getEvaluationStrategy(typ: soot.Type): String =
+    typ match {
+      case _: PrimType    => EvaluationStrategies.BY_VALUE
+      case _: VoidType    => EvaluationStrategies.BY_VALUE
+      case _: NullType    => EvaluationStrategies.BY_VALUE
+      case _: RefLikeType => EvaluationStrategies.BY_REFERENCE
+      case _              => EvaluationStrategies.BY_SHARING
+    }
+
   private def astForParameter(parameter: soot.Local, childNum: Int, methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(parameter.getType.toQuotedString)
     val parameterNode = NewMethodParameterIn()
@@ -185,6 +196,7 @@ class AstCreator(filename: String, global: Global) {
       .order(childNum)
       .lineNumber(line(methodDeclaration))
       .columnNumber(column(methodDeclaration))
+      .evaluationStrategy(getEvaluationStrategy(parameter.getType))
     Ast(parameterNode)
   }
 
@@ -343,7 +355,7 @@ class AstCreator(filename: String, global: Global) {
     val signature =
       s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterCount)
           yield method.getParameterType(i).toQuotedString).mkString(",")})"
-    val thisAsts = Seq(createThisNode(invokeExpr.getMethod))
+    val thisAsts = Seq(createThisNode(invokeExpr.getMethod, NewIdentifier()))
 
     val callNode = NewCall()
       .name(method.getName)
@@ -448,16 +460,24 @@ class AstCreator(filename: String, global: Global) {
     )
   }
 
-  private def createThisNode(method: SootMethod): Ast = {
+  private def createThisNode(method: SootMethod, builder: NewNode): Ast = {
     if (!method.isStatic) {
-      Ast(
-        NewIdentifier()
-          .name("this")
-          .code("this")
-          .typeFullName(registerType(method.getDeclaringClass.getType.toQuotedString))
-          .order(0)
-          .argumentIndex(0)
-      )
+      Ast(builder match {
+        case x: NewIdentifier =>
+          x.name("this")
+            .code("this")
+            .typeFullName(registerType(method.getDeclaringClass.getType.toQuotedString))
+            .order(0)
+            .argumentIndex(0)
+        case x: NewMethodParameterIn =>
+          x.name("this")
+            .code("this")
+            .lineNumber(line(method))
+            .typeFullName(registerType(method.getDeclaringClass.getType.toQuotedString))
+            .order(0)
+            .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+        case x => x
+      })
     } else {
       Ast()
     }
