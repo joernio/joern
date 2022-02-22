@@ -37,7 +37,7 @@ class MethodTests extends JimpleCodeToCpgFixture {
 //  }
 
   "should allow traversing to parameters" in {
-    cpg.method.name("foo").parameter.name.toSet shouldBe Set("param1", "param2")
+    cpg.method.name("foo").parameter.name.toSet shouldBe Set("this", "param1", "param2")
   }
 
   "should allow traversing to methodReturn" in {
