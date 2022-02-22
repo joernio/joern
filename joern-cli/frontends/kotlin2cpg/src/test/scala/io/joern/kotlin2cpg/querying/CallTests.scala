@@ -61,7 +61,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "println(foo(argc, 1))"
-      p.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(kotlin.Int)"
+      p.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(java.lang.Integer)"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(2)
     }
@@ -104,7 +104,7 @@ class CallTests extends AnyFreeSpec with Matchers {
         |package mypkg
         |
         |class Foo {
-        |    fun add1(x: Int, toPrint: kotlin.String): Int {
+        |    fun add1(x: Int, toPrint: java.lang.String): Int {
         |        println(toPrint)
         |        return x + 1
         |    }
@@ -134,9 +134,9 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.code shouldBe "x.add1(argc, \"AMESSAGE\")"
       p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(12)
-      p.methodFullName shouldBe "mypkg.Foo.add1:kotlin.Int(kotlin.Int,kotlin.String)"
-      p.signature shouldBe "kotlin.Int(kotlin.Int,kotlin.String)"
-      p.typeFullName shouldBe "kotlin.Int"
+      p.methodFullName shouldBe "mypkg.Foo.add1:java.lang.Integer(java.lang.Integer,java.lang.String)"
+      p.signature shouldBe "java.lang.Integer(java.lang.Integer,java.lang.String)"
+      p.typeFullName shouldBe "java.lang.Integer"
 
       val List(firstArg, secondArg, thirdArg) = cpg.call("add1").argument.l
       firstArg.code shouldBe "x"
@@ -171,14 +171,14 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a call node for `println` with a fully-qualified stdlib METHOD_FULL_NAME" in {
       val List(c) = cpg.call(".*println.*").l
-      c.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(kotlin.Any)"
-      c.signature shouldBe "kotlin.Unit(kotlin.Any)"
+      c.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(java.lang.Object)"
+      c.signature shouldBe "kotlin.Unit(java.lang.Object)"
     }
 
     "should contain a call node for `doSome` with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call(".*doSome.*").l
-      c.methodFullName shouldBe "mypkg.doSome:kotlin.Unit(kotlin.String)"
-      c.signature shouldBe "kotlin.Unit(kotlin.String)"
+      c.methodFullName shouldBe "mypkg.doSome:kotlin.Unit(java.lang.String)"
+      c.signature shouldBe "kotlin.Unit(java.lang.String)"
     }
   }
 
@@ -212,10 +212,10 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
-      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "kotlin.String()"
-      c.typeFullName shouldBe "kotlin.String"
+      c.signature shouldBe "java.lang.String()"
+      c.typeFullName shouldBe "java.lang.String"
     }
   }
 
@@ -252,9 +252,9 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct props set" in {
       val List(c) = cpg.call.code("mutableMapOf.*").l
-      c.methodFullName shouldBe "kotlin.collections.mutableMapOf:kotlin.collections.MutableMap(kotlin.Array)"
+      c.methodFullName shouldBe "kotlin.collections.mutableMapOf:java.util.Map(kotlin.Array)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.typeFullName shouldBe "kotlin.collections.MutableMap"
+      c.typeFullName shouldBe "java.util.Map"
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(19)
     }
@@ -275,7 +275,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node with arguments with the correct props set" in {
       val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l
       firstArg.typeFullName shouldBe "java.lang.Runtime"
-      secondArg.typeFullName shouldBe "kotlin.String"
+      secondArg.typeFullName shouldBe "java.lang.String"
     }
   }
 
@@ -295,15 +295,15 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.codeExact("str.length").l
       c.methodFullName shouldBe Operators.fieldAccess
       c.signature shouldBe ""
-      c.typeFullName shouldBe "kotlin.Int"
+      c.typeFullName shouldBe "java.lang.Integer"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "should contain a CALL node for `p.length.toString` with the correct props set" in {
       val List(c) = cpg.call.code("str.length.toString.*").l
-      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
-      c.signature shouldBe "kotlin.String()"
-      c.typeFullName shouldBe "kotlin.String"
+      c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
+      c.signature shouldBe "java.lang.String()"
+      c.typeFullName shouldBe "java.lang.String"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
@@ -324,7 +324,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node `writeText` with the correct props set" in {
       val List(c) = cpg.call.code("f.writeText.*").l
-      c.methodFullName shouldBe "java.io.File.writeText:kotlin.Unit(kotlin.String,java.nio.charset.Charset)"
+      c.methodFullName shouldBe "java.io.File.writeText:kotlin.Unit(java.lang.String,java.nio.charset.Charset)"
     }
   }
 
@@ -373,7 +373,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code(".*toFloat.*").l
-      c.methodFullName shouldBe "kotlin.Int.toFloat:kotlin.Float()"
+      c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
@@ -392,7 +392,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code("\\(.*toFloat.*").l
-      c.methodFullName shouldBe "kotlin.Int.toFloat:kotlin.Float()"
+      c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }

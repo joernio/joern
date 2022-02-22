@@ -165,7 +165,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `Log.d` with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*Log.*").l
-      c.methodFullName shouldBe "android.util.Log.d:kotlin.Int(kotlin.String,kotlin.String)"
+      c.methodFullName shouldBe "android.util.Log.d:java.lang.Integer(java.lang.String,java.lang.String)"
 
       c.argument.size shouldBe 2
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -204,7 +204,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
       val List(c) = cpg.call.code("findViewB.*").codeNot(".*as.*").l
-      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(kotlin.Int)"
+      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(java.lang.Integer)"
       c.argument.size shouldBe 1
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
@@ -272,7 +272,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       def callQ = cpg.call.code(".*putExtra.*").take(1)
 
       val List(c) = callQ.l
-      c.methodFullName shouldBe "android.content.Intent.putExtra:android.content.Intent(kotlin.String,kotlin.String)"
+      c.methodFullName shouldBe "android.content.Intent.putExtra:android.content.Intent(java.lang.String,java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(firstArg: Identifier, secondArg: Literal, thirdArg: Identifier) = callQ.argument.l
@@ -280,10 +280,10 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       firstArg.typeFullName shouldBe "android.content.Intent"
       firstArg.argumentIndex shouldBe 0
       secondArg.code shouldBe "\"ONE_TIME_PAD\""
-      secondArg.typeFullName shouldBe "kotlin.String"
+      secondArg.typeFullName shouldBe "java.lang.String"
       secondArg.argumentIndex shouldBe 1
       thirdArg.code shouldBe "aSecret"
-      thirdArg.typeFullName shouldBe "kotlin.String"
+      thirdArg.typeFullName shouldBe "java.lang.String"
       thirdArg.argumentIndex shouldBe 2
     }
   }

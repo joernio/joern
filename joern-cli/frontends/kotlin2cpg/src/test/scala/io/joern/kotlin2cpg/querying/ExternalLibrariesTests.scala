@@ -22,7 +22,7 @@ class ExternalLibrariesTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `Timber.d.*` with the correct METHOD_FULL_NAME set" in {
       cpg.call.code("Timber.*").methodFullName.l shouldBe List(
-        "timber.log.Timber.d:kotlin.Unit(kotlin.String,kotlin.Array)"
+        "timber.log.Timber.d:kotlin.Unit(java.lang.String,kotlin.Array)"
       )
     }
   }

@@ -27,7 +27,7 @@ class DotQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `Javalin.create.*` with the correct properties set" in {
       val List(c) = cpg.call.code("Javalin.create.*7000.*").l
-      c.methodFullName shouldBe "io.javalin.Javalin.start:io.javalin.Javalin(kotlin.Int)"
+      c.methodFullName shouldBe "io.javalin.Javalin.start:io.javalin.Javalin(java.lang.Integer)"
       c.lineNumber shouldBe Some(8)
       c.columnNumber shouldBe Some(12)
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH

@@ -48,7 +48,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME" in {
       val List(c) = cpg.call.code("println.*").l
-      c.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(kotlin.Any)"
+      c.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(java.lang.Object)"
     }
   }
 
@@ -67,7 +67,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME" in {
       val List(c) = cpg.call.code("println.*").l
-      c.methodFullName shouldBe "mypkg.println:kotlin.Unit(kotlin.String)"
+      c.methodFullName shouldBe "mypkg.println:kotlin.Unit(java.lang.String)"
     }
   }
 
@@ -106,7 +106,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for call to instance method" in {
       val List(c) = cpg.call.code(".*exec.*").l
-      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
+      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(java.lang.String)"
     }
   }
 
@@ -122,16 +122,16 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain CALL nodes for calls to infix fn `to`" in {
       val List(c1) = cpg.call.code("\"key1.*").l
-      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
+      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
 
       val List(c2) = cpg.call.code("\"key2.*").l
-      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
+      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
 
       val List(c3) = cpg.call.code("\"key3.*").l
-      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
+      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
 
       val List(c4) = cpg.call.code("\"key4.*").l
-      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(kotlin.Int)"
+      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
     }
 
     "CPG for code with calls to stdlib's `split`s" - {
@@ -149,7 +149,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
       "should contain CALL nodes for `split` with the correct MFNs set" in {
         cpg.call.methodFullName(".*split.*").methodFullName.toSet shouldBe
-          Set("kotlin.CharSequence.split:kotlin.collections.List(kotlin.Array,kotlin.Boolean,kotlin.Int)")
+          Set("java.lang.CharSequence.split:java.util.List(kotlin.Array,java.lang.Boolean,java.lang.Integer)")
       }
     }
 
@@ -171,9 +171,9 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
       "should contain a CALL node for `trim` with the correct props set" in {
         val List(c) = cpg.call.code("p.trim.*").l
-        c.methodFullName shouldBe "kotlin.String.trim:kotlin.String()"
-        c.signature shouldBe "kotlin.String()"
-        c.typeFullName shouldBe "kotlin.String"
+        c.methodFullName shouldBe "java.lang.String.trim:java.lang.String()"
+        c.signature shouldBe "java.lang.String()"
+        c.typeFullName shouldBe "java.lang.String"
         c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         c.lineNumber shouldBe Some(4)
         c.columnNumber shouldBe Some(12)
@@ -184,7 +184,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
         receiverArg.argumentIndex shouldBe 0
         receiverArg.name shouldBe "p"
         receiverArg.code shouldBe "p"
-        receiverArg.typeFullName shouldBe "kotlin.String"
+        receiverArg.typeFullName shouldBe "java.lang.String"
         receiverArg.lineNumber shouldBe Some(4)
         receiverArg.columnNumber shouldBe Some(12)
       }

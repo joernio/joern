@@ -18,7 +18,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
@@ -41,7 +41,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
@@ -66,7 +66,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
