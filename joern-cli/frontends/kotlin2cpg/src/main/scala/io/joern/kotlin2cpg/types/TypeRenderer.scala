@@ -1,10 +1,11 @@
 package io.joern.kotlin2cpg.types
 
-import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor}
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, UnresolvedType}
+import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
+import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
 
 import scala.jdk.CollectionConverters._
 
@@ -32,7 +33,10 @@ object TypeRenderer {
 
   def render(t: KotlinType): String = {
     val renderer = descriptorRenderer()
-    if (isFunctionXType(t)) {
+
+    if (TypeUtilsKt.isTypeParameter(t)) {
+      TypeConstants.javaLangObject
+    } else if (isFunctionXType(t)) {
       TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
     } else {
       val fqName     = DescriptorUtils.getFqName(t.getConstructor.getDeclarationDescriptor)

@@ -205,8 +205,10 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `takeIf` with the correct properties set" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "java.lang.String.takeIf:java.lang.String(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.typeFullName shouldBe "java.lang.String"
+      c.signature shouldBe "java.lang.Object(kotlin.Function1)"
     }
 
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
