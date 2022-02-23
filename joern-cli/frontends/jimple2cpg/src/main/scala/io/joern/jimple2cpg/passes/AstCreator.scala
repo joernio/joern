@@ -142,6 +142,7 @@ class AstCreator(filename: String, global: Global) {
     try {
       if (!methodDeclaration.isConcrete) {
         Ast(methodNode)
+          .withChildren(astsForModifiers(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
         val methodBody = Try(methodDeclaration.getActiveBody) match {
@@ -153,7 +154,9 @@ class AstCreator(filename: String, global: Global) {
             (p, order) =>
               astForParameter(p, order, methodDeclaration)
           }
+
         Ast(methodNode)
+          .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
           .withChild(astForMethodBody(methodBody, lastOrder))
           .withChild(astForMethodReturn(methodDeclaration))
@@ -162,6 +165,7 @@ class AstCreator(filename: String, global: Global) {
       case e: RuntimeException =>
         logger.warn(s"Unexpected exception while parsing method body! Will stub the method ${methodNode.fullName}", e)
         Ast(methodNode)
+          .withChildren(astsForModifiers(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
@@ -347,9 +351,10 @@ class AstCreator(filename: String, global: Global) {
 
   private def astForInvokeExpr(invokeExpr: InvokeExpr, order: Int, parentUnit: soot.Unit): Ast = {
     val dispatchType = invokeExpr match {
-      case _: DynamicInvokeExpr  => DispatchTypes.DYNAMIC_DISPATCH
-      case _: InstanceInvokeExpr => DispatchTypes.DYNAMIC_DISPATCH
-      case _                     => DispatchTypes.STATIC_DISPATCH
+      case x if x.getMethod.isConstructor => DispatchTypes.STATIC_DISPATCH
+      case _: DynamicInvokeExpr           => DispatchTypes.DYNAMIC_DISPATCH
+      case _: InstanceInvokeExpr          => DispatchTypes.DYNAMIC_DISPATCH
+      case _                              => DispatchTypes.STATIC_DISPATCH
     }
     val method = invokeExpr.getMethod
     val signature =
@@ -357,15 +362,25 @@ class AstCreator(filename: String, global: Global) {
           yield method.getParameterType(i).toQuotedString).mkString(",")})"
     val thisAsts = Seq(createThisNode(invokeExpr.getMethod, NewIdentifier()))
 
+    val methodName =
+      if (method.isConstructor)
+        registerType(method.getDeclaringClass.getType.getClassName)
+      else
+        method.getName
+
+    val callType =
+      if (invokeExpr.getMethod.isConstructor) "void"
+      else registerType(method.getDeclaringClass.getType.toQuotedString)
+
     val callNode = NewCall()
       .name(method.getName)
-      .code(s"${method.getName}(${invokeExpr.getArgs.asScala.mkString(", ")})")
+      .code(s"$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})")
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
       .methodFullName(s"${method.getDeclaringClass.toString}.${method.getName}:$signature")
       .signature(signature)
-      .typeFullName(registerType(method.getDeclaringClass.getType.toQuotedString))
+      .typeFullName(callType)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
 
@@ -390,10 +405,14 @@ class AstCreator(filename: String, global: Global) {
       case u: NewMultiArrayExpr =>
         astForArrayInitializeExpr(x, u.getSizes.asScala, order, parentUnit)
       case _ =>
+        val parentType = registerType(x.getType.toQuotedString)
         Ast(
-          NewUnknown()
-            .typeFullName(registerType(x.getType.toQuotedString))
-            .code("new")
+          NewCall()
+            .name("<operator>.alloc")
+            .methodFullName("<operator>.alloc")
+            .typeFullName(parentType)
+            .code(s"new ${x.getType}")
+            .dispatchType(DispatchTypes.STATIC_DISPATCH)
             .order(order)
             .argumentIndex(order)
             .lineNumber(line(parentUnit))
@@ -455,27 +474,31 @@ class AstCreator(filename: String, global: Global) {
         .name("this")
         .code("this")
         .typeFullName(registerType(method.getType.toQuotedString))
+        .dynamicTypeHintFullName(Seq(method.getType.toQuotedString))
         .order(0)
         .argumentIndex(0)
     )
   }
 
   private def createThisNode(method: SootMethod, builder: NewNode): Ast = {
-    if (!method.isStatic) {
+    if (!method.isStatic || method.isConstructor) {
+      val parentType = registerType(method.getDeclaringClass.getType.toQuotedString)
       Ast(builder match {
         case x: NewIdentifier =>
           x.name("this")
             .code("this")
-            .typeFullName(registerType(method.getDeclaringClass.getType.toQuotedString))
+            .typeFullName(parentType)
             .order(0)
             .argumentIndex(0)
+            .dynamicTypeHintFullName(Seq(parentType))
         case x: NewMethodParameterIn =>
           x.name("this")
             .code("this")
             .lineNumber(line(method))
-            .typeFullName(registerType(method.getDeclaringClass.getType.toQuotedString))
+            .typeFullName(parentType)
             .order(0)
             .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+            .dynamicTypeHintFullName(Seq(parentType))
         case x => x
       })
     } else {
@@ -771,6 +794,23 @@ class AstCreator(filename: String, global: Global) {
       .withArgEdges(rootNode, args.flatMap(_.root))
   }
 
+  private def astsForModifiers(methodDeclaration: SootMethod): Seq[Ast] = {
+    Seq(
+      if (methodDeclaration.isStatic) Some(ModifierTypes.STATIC) else None,
+      if (methodDeclaration.isPublic) Some(ModifierTypes.PUBLIC) else None,
+      if (methodDeclaration.isProtected) Some(ModifierTypes.PROTECTED) else None,
+      if (methodDeclaration.isPrivate) Some(ModifierTypes.PRIVATE) else None,
+      if (methodDeclaration.isAbstract) Some(ModifierTypes.ABSTRACT) else None,
+      if (methodDeclaration.isConstructor) Some(ModifierTypes.CONSTRUCTOR) else None,
+      if (!methodDeclaration.isFinal && !methodDeclaration.isStatic && methodDeclaration.isPublic)
+        Some(ModifierTypes.VIRTUAL)
+      else None,
+      if (methodDeclaration.isSynchronized) Some("SYNCHRONIZED") else None
+    ).flatten.map { modifier =>
+      Ast(NewModifier().modifierType(modifier).code(modifier.toLowerCase))
+    }
+  }
+
   private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
     val methodReturnNode =
@@ -784,8 +824,11 @@ class AstCreator(filename: String, global: Global) {
 
   private def createMethodNode(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int) = {
     val fullName = methodFullName(typeDecl, methodDeclaration)
-    val code =
+    val code = if (!methodDeclaration.isConstructor) {
       s"${methodDeclaration.getReturnType.toQuotedString} ${methodDeclaration.getName}${paramListSignature(methodDeclaration, withParams = true)}"
+    } else {
+      s"${typeDecl.getClassName}${paramListSignature(methodDeclaration, withParams = true)}"
+    }
     NewMethod()
       .name(methodDeclaration.getName)
       .fullName(fullName)
