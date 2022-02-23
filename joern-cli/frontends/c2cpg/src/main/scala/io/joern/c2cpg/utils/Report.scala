@@ -12,7 +12,7 @@ object Report {
 
   private type Reports = TrieMap[FileName, ReportEntry]
 
-  private case class ReportEntry(loc: Long, parsed: Boolean, cpgGen: Boolean, duration: Long) {
+  private case class ReportEntry(loc: Int, parsed: Boolean, cpgGen: Boolean, duration: Long) {
     def toSeq: Seq[String] = {
       val lines     = loc.toString
       val dur       = if (duration == 0) "-" else TimeUtils.pretty(duration)
@@ -80,7 +80,7 @@ class Report {
 
   def addReportInfo(
     fileName: FileName,
-    loc: Long,
+    loc: Int,
     parsed: Boolean = false,
     cpgGen: Boolean = false,
     duration: Long = 0
