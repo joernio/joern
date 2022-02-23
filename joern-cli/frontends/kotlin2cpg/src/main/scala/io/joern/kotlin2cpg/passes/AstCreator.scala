@@ -2004,6 +2004,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .argumentIndex(2)
         .methodFullName(fullNameWithSig._1)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(TypeConstants.void)
         .signature(fullNameWithSig._2)
         .lineNumber(line(expr))
         .columnNumber(column(expr))

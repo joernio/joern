@@ -66,6 +66,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       initCall.signature shouldBe "void(java.lang.String)"
       initCall.methodFullName shouldBe "java.io.File.<init>:void(java.lang.String)"
       initCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      initCall.typeFullName shouldBe "void"
 
       val List(initCallLhs: Identifier, initCallRhs: Literal) = initCall.argument.l
       initCallLhs.code shouldBe "tmp_1"
