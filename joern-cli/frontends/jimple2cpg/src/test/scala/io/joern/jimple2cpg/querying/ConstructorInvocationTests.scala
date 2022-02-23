@@ -57,7 +57,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
       case List(cons: Method) =>
         cons.fullName shouldBe "Foo.<init>:void(int)"
         cons.signature shouldBe "void(int)"
-        cons.code shouldBe "public Foo(int x)"
+        cons.code shouldBe "Foo(int x)"
         cons.parameter.size shouldBe 2
         val objParam = cons.parameter.index(0).head
         objParam.name shouldBe "this"
