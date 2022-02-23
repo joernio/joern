@@ -76,14 +76,14 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
       case List(cons1: Method, cons2: Method) =>
         cons1.fullName shouldBe "Bar.<init>:void(int)"
         cons1.signature shouldBe "void(int)"
-        cons1.code shouldBe "public Bar(int x)"
+        cons1.code shouldBe "Bar(int x)"
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "x"
 
         cons2.fullName shouldBe "Bar.<init>:void(int,int)"
         cons2.signature shouldBe "void(int,int)"
-        cons2.code shouldBe "public Bar(int x, int y)"
+        cons2.code shouldBe "Bar(int x, int y)"
         cons2.parameter.size shouldBe 3
         cons2.parameter.index(0).head.name shouldBe "this"
         cons2.parameter.index(1).head.name shouldBe "x"
