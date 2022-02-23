@@ -248,7 +248,10 @@ trait AstForTypesCreator {
               case d =>
                 astForDeclarator(declaration, d, order)
             }
-          case _ if nodeSignature(declaration) == ";"  => Seq.empty
+          case _ if nodeSignature(declaration) == ";" =>
+            Seq.empty // dangling decls from unresolved macros; we ignore them
+          case _ if declaration.getDeclarators.isEmpty && declaration.getParent.isInstanceOf[IASTTranslationUnit] =>
+            Seq.empty // dangling decls from unresolved macros; we ignore them
           case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
         }
       case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias, order))

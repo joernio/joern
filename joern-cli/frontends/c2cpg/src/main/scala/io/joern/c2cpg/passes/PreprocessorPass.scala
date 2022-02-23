@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.C2Cpg.Config
-import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, ParserConfig}
+import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.shiftleft.x2cpg.SourceFiles
 import org.eclipse.cdt.core.dom.ast.{
   IASTPreprocessorIfStatement,
@@ -15,8 +15,7 @@ import scala.collection.parallel.immutable.ParIterable
 
 class PreprocessorPass(config: Config) {
 
-  private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
-  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
+  private val parser = new CdtParser(config)
 
   def run(): ParIterable[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).par.flatMap(runOnPart)
@@ -30,9 +29,6 @@ class PreprocessorPass(config: Config) {
   }
 
   private def runOnPart(filename: String): Iterable[String] =
-    new CdtParser(parserConfig, headerFileFinder)
-      .preprocessorStatements(Paths.get(filename))
-      .flatMap(preprocessorStatement2String)
-      .toSet
+    parser.preprocessorStatements(Paths.get(filename)).flatMap(preprocessorStatement2String).toSet
 
 }

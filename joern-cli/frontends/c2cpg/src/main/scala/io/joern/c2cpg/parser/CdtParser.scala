@@ -2,6 +2,7 @@ package io.joern.c2cpg.parser
 
 import better.files.File
 import io.joern.c2cpg.utils.IOUtils
+import io.joern.c2cpg.C2Cpg
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
 import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
@@ -11,7 +12,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{NoSuchFileException, Path}
-import java.util
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -28,15 +28,15 @@ object CdtParser {
 
 }
 
-class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
-    extends ParseProblemsLogger
-    with PreprocessorStatementsLogger {
+class CdtParser(config: C2Cpg.Config) extends ParseProblemsLogger with PreprocessorStatementsLogger {
 
   import CdtParser._
 
-  private val definedSymbols: util.Map[String, String] = parseConfig.definedSymbols.asJava
-  private val includePaths: Set[Path]                  = parseConfig.userIncludePaths
-  private val log: DefaultLogService                   = new DefaultLogService
+  private val headerFileFinder = new HeaderFileFinder(config.inputPaths)
+  private val parserConfig     = ParserConfig.fromConfig(config)
+  private val definedSymbols   = parserConfig.definedSymbols.asJava
+  private val includePaths     = parserConfig.userIncludePaths
+  private val log              = new DefaultLogService
 
   // enables parsing of code behind disabled preprocessor defines:
   private val opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
@@ -51,8 +51,8 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
 
   private def createScannerInfo(file: Path): ScannerInfo = {
     val additionalIncludes =
-      if (FileDefaults.isCPPFile(file.toString)) parseConfig.systemIncludePathsCPP
-      else parseConfig.systemIncludePathsC
+      if (FileDefaults.isCPPFile(file.toString)) parserConfig.systemIncludePathsCPP
+      else parserConfig.systemIncludePathsC
     new ScannerInfo(definedSymbols, (includePaths ++ additionalIncludes).map(_.toString).toArray)
   }
 
@@ -68,8 +68,8 @@ class CdtParser(parseConfig: ParserConfig, headerFileFinder: HeaderFileFinder)
           ParseResult(None, failure = Some(e))
         case Success(translationUnit) =>
           val problems = CPPVisitor.getProblems(translationUnit)
-          if (parseConfig.logProblems) logProblems(problems.toList)
-          if (parseConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
+          if (parserConfig.logProblems) logProblems(problems.toList)
+          if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
           ParseResult(
             Some(translationUnit),
             preprocessorErrorCount = translationUnit.getPreprocessorProblemsCount,
