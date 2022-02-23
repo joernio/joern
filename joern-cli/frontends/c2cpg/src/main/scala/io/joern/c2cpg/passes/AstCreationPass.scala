@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.astcreation.{AstCreator, Defines}
 import io.joern.c2cpg.datastructures.Global
-import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, ParserConfig}
+import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
@@ -28,10 +28,8 @@ class AstCreationPass(
   report: Report = new Report()
 ) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
-  private val global: Global                     = new Global()
-  private val parserConfig: ParserConfig         = ParserConfig.fromConfig(config)
-  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
-  private val parser: CdtParser                  = new CdtParser(parserConfig, headerFileFinder)
+  private val global: Global    = new Global()
+  private val parser: CdtParser = new CdtParser(config)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet

@@ -424,6 +424,7 @@ trait AstCreatorHelper {
       case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d, order)
       case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d, order)
       case d: ICASTArrayDesignator          => nullSafeAst(d.getSubscriptExpression, order)
+      case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression, order)
       case d: ICPPASTFieldDesignator        => astForNode(d.getName, order)
       case d: ICASTFieldDesignator          => astForNode(d.getName, order)
       case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl, order)
