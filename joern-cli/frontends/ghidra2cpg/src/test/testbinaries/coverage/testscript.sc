@@ -11,7 +11,7 @@ import overflowdb.traversal._
   val parameters = cpg.parameter.size
   val locals = cpg.local.size
   println(s"""
-fucntions ${functions}
+functions ${functions}
 calls ${calls}
 parameters ${parameters}
 locals ${locals}
