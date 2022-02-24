@@ -1,14 +1,14 @@
-package io.joern
+package io.joern.joerncli
 
 import better.files.Dsl.mkdir
 import better.files.File
 import io.joern.console.cpgcreation.ImportCode
-import io.joern.console.{Console, ConsoleConfig, InstallConfig}
 import io.joern.console.testing.TestCpgGeneratorFactory
 import io.joern.console.workspacehandling.Project
-import io.joern.console.JoernConsole
-import org.scalatest.wordspec.AnyWordSpec
+import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import io.joern.joerncli.console.JoernConsole
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class MyImportCode[T <: Project](console: Console[T]) extends ImportCode(console) {
   override val generatorFactory = new TestCpgGeneratorFactory(console.config)

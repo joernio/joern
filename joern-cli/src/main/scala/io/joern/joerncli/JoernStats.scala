@@ -1,4 +1,4 @@
-package io.joern
+package io.joern.joerncli
 
 import io.shiftleft.semanticcpg.language._
 

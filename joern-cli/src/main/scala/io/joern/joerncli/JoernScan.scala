@@ -1,19 +1,18 @@
-package io.joern
+package io.joern.joerncli
 
-import io.joern.console.scan.{ScanPass, outputFindings}
-import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, QueryDatabase}
-import io.joern.console.Query
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.console.AmmoniteBridge
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import org.json4s.{Formats, NoTypeHints}
-import org.json4s.native.Serialization
 import better.files._
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.joern.console.scan.{ScanPass, outputFindings}
+import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.JoernScan.getQueriesFromQueryDb
-import io.joern.Scan.{allTag, defaultTag}
+import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
+import io.joern.joerncli.Scan.{allTag, defaultTag}
+import io.joern.joerncli.console.AmmoniteBridge
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import org.json4s.native.Serialization
+import org.json4s.{Formats, NoTypeHints}
 
 import scala.jdk.CollectionConverters._
 

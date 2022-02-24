@@ -1,4 +1,6 @@
-package io.joern.console
+package io.joern.joerncli.console
+
+import io.joern.console.{BridgeBase, JoernProduct}
 
 object AmmoniteBridge extends App with BridgeBase {
 
