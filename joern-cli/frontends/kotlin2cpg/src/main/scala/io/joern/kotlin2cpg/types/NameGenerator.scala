@@ -227,7 +227,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   def typeFullName(expr: KtTypeReference, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE.getKey))
-      .map(TypeRenderer.render)
+      .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
   }
@@ -236,7 +236,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
       .map(_.getUnderlyingType)
-      .map(TypeRenderer.render)
+      .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
   }
@@ -244,7 +244,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   def returnType(expr: KtNamedFunction, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.FUNCTION, expr))
       .map(_.getReturnType)
-      .map(TypeRenderer.render)
+      .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
   }
@@ -253,7 +253,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
       .map(_.getType)
-      .map(TypeRenderer.render)
+      .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
   }
@@ -273,7 +273,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(_.getDefaultType)
-      .map(TypeRenderer.render)
+      .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
   }
@@ -281,7 +281,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   def expressionType(expr: KtExpression, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
       .flatMap(tpeInfo => Option(tpeInfo.getType))
-      .map(TypeRenderer.render)
+      .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
   }
@@ -495,7 +495,7 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
               if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) {
                 TypeConstants.javaLangObject
               } else {
-                TypeRenderer.render(extType)
+                TypeRenderer.render(extType, false)
               }
             s"$rendered.$extName"
           } else {

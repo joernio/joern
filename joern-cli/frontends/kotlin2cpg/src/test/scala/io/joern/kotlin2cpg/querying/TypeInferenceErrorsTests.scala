@@ -8,7 +8,6 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class TypeInferenceErrorsTests extends AnyFreeSpec with Matchers {
-
   "CPG for code with QE of receiver for which the type cannot be inferred" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg

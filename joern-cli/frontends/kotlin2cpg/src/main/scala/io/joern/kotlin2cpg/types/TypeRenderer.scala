@@ -13,6 +13,17 @@ object TypeRenderer {
 
   private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(TypeConstants.cpgUnresolved, List().asJava)
 
+  val primitiveArrayMappings = Map[String, String](
+    "kotlin.BooleanArray" -> "boolean[]",
+    "kotlin.ByteArray"    -> "byte[]",
+    "kotlin.CharArray"    -> "char[]",
+    "kotlin.DoubleArray"  -> "double[]",
+    "kotlin.FloatArray"   -> "float[]",
+    "kotlin.IntArray"     -> "int[]",
+    "kotlin.LongArray"    -> "long[]",
+    "kotlin.ShortArray"   -> "short[]"
+  )
+
   def descriptorRenderer(): DescriptorRenderer = {
     val opts = new DescriptorRendererOptionsImpl
     opts.setParameterNamesInFunctionalTypes(false)
@@ -31,22 +42,28 @@ object TypeRenderer {
     stripped(renderer.renderFqName(fqName))
   }
 
-  def render(t: KotlinType): String = {
+  def render(t: KotlinType, shouldMapPrimitiveArrayTypes: Boolean = true): String = {
     val renderer = descriptorRenderer()
-
-    if (TypeUtilsKt.isTypeParameter(t)) {
-      TypeConstants.javaLangObject
-    } else if (isFunctionXType(t)) {
-      TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
-    } else {
-      val fqName     = DescriptorUtils.getFqName(t.getConstructor.getDeclarationDescriptor)
-      val mappedType = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName)
-      if (mappedType != null) {
-        stripped(DescriptorRenderer.COMPACT.renderFqName(mappedType.asSingleFqName().toUnsafe))
+    val rendered = {
+      if (TypeUtilsKt.isTypeParameter(t)) {
+        TypeConstants.javaLangObject
+      } else if (isFunctionXType(t)) {
+        TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
       } else {
-        val rendered = renderer.renderType(t)
-        stripped(rendered)
+        val fqName     = DescriptorUtils.getFqName(t.getConstructor.getDeclarationDescriptor)
+        val mappedType = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName)
+        if (mappedType != null) {
+          stripped(renderer.renderFqName(mappedType.asSingleFqName().toUnsafe))
+        } else {
+          val rendered = renderer.renderType(t)
+          stripped(rendered)
+        }
       }
+    }
+    if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) {
+      primitiveArrayMappings.get(rendered).get
+    } else {
+      rendered
     }
   }
 
