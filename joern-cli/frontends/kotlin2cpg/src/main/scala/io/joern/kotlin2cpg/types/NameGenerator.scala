@@ -355,16 +355,18 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val resolvedDesc = resolvedCallDescriptor(expr)
     resolvedDesc match {
       case Some(fnDescriptor) =>
-        val isCtor = fnDescriptor match {
+        val originalDesc = fnDescriptor.getOriginal
+
+        val isCtor = originalDesc match {
           case _: ClassConstructorDescriptorImpl     => true
           case _: TypeAliasConstructorDescriptorImpl => true
           case _                                     => false
         }
         val relevantDesc =
-          if (!fnDescriptor.isActual && fnDescriptor.getOverriddenDescriptors.asScala.nonEmpty) {
-            fnDescriptor.getOverriddenDescriptors.asScala.toList.head
+          if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+            originalDesc.getOverriddenDescriptors.asScala.toList.head
           } else {
-            fnDescriptor
+            originalDesc
           }
 
         // TODO: write descriptor renderer instead of working with the existing ones
@@ -379,9 +381,9 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         }
 
         val renderedParameterTypes =
-          fnDescriptor.getValueParameters.asScala.toSeq
+          relevantDesc.getValueParameters.asScala.toSeq
             .map { valueParam =>
-              TypeRenderer.render(valueParam.getType)
+              TypeRenderer.render(valueParam.getOriginal.getType)
             }
             .mkString(",")
         val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
@@ -406,21 +408,23 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     val resolvedDesc = resolvedCallDescriptor(expr)
     resolvedDesc match {
       case Some(fnDescriptor) =>
+        val originalDesc = fnDescriptor.getOriginal
         // TODO: write descriptor renderer instead of working with the existing ones
         // that render comments in fqnames
         val renderedParameterTypes =
-          fnDescriptor.getValueParameters.asScala.toSeq
+          originalDesc.getValueParameters.asScala.toSeq
             .map { valueParam =>
-              TypeRenderer.render(valueParam.getType)
+              val t = valueParam.getType
+              TypeRenderer.render(t)
             }
             .mkString(",")
-        val renderedReturnType = TypeRenderer.render(fnDescriptor.getReturnType)
+        val renderedReturnType = TypeRenderer.render(originalDesc.getReturnType)
         val signature          = renderedReturnType + "(" + renderedParameterTypes + ")"
         val fullName =
-          if (fnDescriptor.isInstanceOf[ClassConstructorDescriptorImpl]) {
+          if (originalDesc.isInstanceOf[ClassConstructorDescriptorImpl]) {
             s"$renderedReturnType.${TypeConstants.initPrefix}:$signature"
           } else {
-            val renderedFqName = TypeRenderer.renderFqName(fnDescriptor)
+            val renderedFqName = TypeRenderer.renderFqName(originalDesc)
             s"$renderedFqName:$signature"
           }
         if (!isValidRender(fullName) || !isValidRender(signature)) {
