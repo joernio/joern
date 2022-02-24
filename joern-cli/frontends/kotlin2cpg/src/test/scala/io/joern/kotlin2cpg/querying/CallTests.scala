@@ -396,4 +396,40 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
+
+  "CPG for code with usage of stdlib's `to` on stdlib objects" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun main() {
+        |  val map = mapOf(1 to "x", 2 to "y", -1 to "zz")
+        |  println(map) // {1=x, 2=y, -1=zz}
+        |}
+        |
+        |""".stripMargin)
+
+    "should contain a CALL node with METHOD_FULLNAME with `java.lang.Object` in its parameters" in {
+      val List(c) = cpg.call.code("1 to.*").l
+      c.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
+    }
+  }
+
+  "CPG for code with usage of stdlib's `to` on user-defined objects" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package mypkg
+        |
+        |class AClass(val msg: String)
+        |
+        |fun main() {
+        |    val map = mapOf(1 to AClass("one"), 2 to AClass("two"), -1 to AClass("three"))
+        |    println(map) // {1=mypkg.AClass@5ebec15, 2=mypkg.AClass@21bcffb5, -1=mypkg.AClass@380fb434}
+        |}
+        |
+        |""".stripMargin)
+
+    "should contain a CALL node with METHOD_FULLNAME with `java.lang.Object` in its parameters" in {
+      val List(c) = cpg.call.code("1 to.*").l
+      c.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
+    }
+  }
 }

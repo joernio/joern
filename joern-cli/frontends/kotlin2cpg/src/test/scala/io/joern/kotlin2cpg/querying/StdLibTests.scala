@@ -123,16 +123,16 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain CALL nodes for calls to infix fn `to`" in {
       val List(c1) = cpg.call.code("\"key1.*").l
-      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
+      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
 
       val List(c2) = cpg.call.code("\"key2.*").l
-      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
+      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
 
       val List(c3) = cpg.call.code("\"key3.*").l
-      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
+      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
 
       val List(c4) = cpg.call.code("\"key4.*").l
-      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Integer)"
+      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
     }
 
     "CPG for code with calls to stdlib's `split`s" - {
