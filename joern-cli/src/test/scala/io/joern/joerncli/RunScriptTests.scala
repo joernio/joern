@@ -1,13 +1,13 @@
-package io.joern
+package io.joern.joerncli
 
 import better.files.File
-
+import io.joern.{console, joerncli}
+import io.joern.joerncli.console.JoernConsole
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.language._
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.semanticcpg.language._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
 
@@ -16,7 +16,7 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'pointer-to-int.sc'" in {
       val calls =
-        console.JoernConsole.runScriptTest("c/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        joerncli.console.JoernConsole.runScriptTest("c/pointer-to-int.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.code) should contain theSameElementsAs List(
         "simple_subtraction = p - q",
@@ -39,14 +39,16 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'syscalls.sc'" in {
       val calls =
-        console.JoernConsole.runScriptTest("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        joerncli.console.JoernConsole.runScriptTest("c/syscalls.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.name) should contain theSameElementsAs List("gettimeofday", "exit")
     }
 
     "work correctly for 'userspace-memory-access.sc'" in {
       val calls =
-        console.JoernConsole.runScriptTest("c/userspace-memory-access.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        joerncli.console.JoernConsole
+          .runScriptTest("c/userspace-memory-access.sc", Map.empty, cpg)
+          .asInstanceOf[List[Call]]
 
       calls.map(_.name) should contain theSameElementsAs List("get_user")
     }
@@ -57,7 +59,7 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'malloc-overflow.sc'" in {
       val calls =
-        console.JoernConsole.runScriptTest("c/malloc-overflow.sc", Map.empty, cpg).asInstanceOf[List[Call]]
+        joerncli.console.JoernConsole.runScriptTest("c/malloc-overflow.sc", Map.empty, cpg).asInstanceOf[List[Call]]
 
       calls.map(_.code) should contain theSameElementsAs List(
         "malloc(sizeof(int) * 42)",
@@ -72,7 +74,7 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'malloc-leak.sc'" in {
       val calls =
-        console.JoernConsole.runScriptTest("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[String]]
+        joerncli.console.JoernConsole.runScriptTest("c/malloc-leak.sc", Map.empty, cpg).asInstanceOf[Set[String]]
 
       calls should contain theSameElementsAs Set("leak")
     }
@@ -83,7 +85,7 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'const-ish.sc'" in {
       val methods =
-        console.JoernConsole.runScriptTest("c/const-ish.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
+        JoernConsole.runScriptTest("c/const-ish.sc", Map.empty, cpg).asInstanceOf[Set[Method]]
 
       // "side_effect_number" is included here as we are simply trying to emulate a side effect.
       methods.map(_.name) should contain theSameElementsAs
@@ -101,7 +103,7 @@ class RunScriptTests extends AnyWordSpec with Matchers with AbstractJoernCliTest
   ) { case (cpg: Cpg, _) =>
     "work correctly for 'list-funcs'" in {
       val expected = cpg.method.name.l
-      val actual   = console.JoernConsole.runScriptTest("general/list-funcs.sc", Map.empty, cpg)
+      val actual   = joerncli.console.JoernConsole.runScriptTest("general/list-funcs.sc", Map.empty, cpg)
       actual shouldBe expected
     }
 

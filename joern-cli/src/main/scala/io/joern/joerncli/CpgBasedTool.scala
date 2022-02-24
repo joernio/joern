@@ -1,15 +1,16 @@
-package io.joern
+package io.joern.joerncli
 
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.language._
 
 object CpgBasedTool {
 
   /** Load code property graph from overflowDB
+    *
     * @param filename
     *   name of the file that stores the CPG
     */

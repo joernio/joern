@@ -1,8 +1,8 @@
-package io.joern
+package io.joern.joerncli
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.layers._
 
 object DefaultOverlays {
 
@@ -10,6 +10,7 @@ object DefaultOverlays {
   val defaultMaxNumberOfDefinitions = 4000
 
   /** Load the CPG at `storeFilename` and add enhancements, turning the CPG into an SCPG.
+    *
     * @param storeFilename
     *   the filename of the cpg
     */

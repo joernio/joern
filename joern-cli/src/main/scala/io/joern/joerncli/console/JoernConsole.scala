@@ -1,16 +1,15 @@
-package io.joern.console
+package io.joern.joerncli.console
 
-import java.nio.file.{FileSystems, Files, Path, Paths}
-
-import better.files._
 import better.files.Dsl._
-
-import scala.jdk.CollectionConverters._
-import io.shiftleft.codepropertygraph.Cpg
-import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import better.files._
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
+import io.joern.console.{Console, ConsoleConfig, InstallConfig}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.shiftleft.codepropertygraph.Cpg
+
+import java.nio.file.{FileSystems, Files, Path, Paths}
+import scala.jdk.CollectionConverters._
 
 object JoernWorkspaceLoader {
   val semanticsFilename = "semantics"

@@ -1,11 +1,11 @@
-package io.joern.console
+package io.joern.joerncli.console
 
-import java.nio.file.Path
-
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.console.workspacehandling.{Project, ProjectFile}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.Cpg
+
+import java.nio.file.Path
 
 class JoernProject(
   projectFile: ProjectFile,

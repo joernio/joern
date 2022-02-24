@@ -1,4 +1,4 @@
-package io.joern
+package io.joern.joerncli
 
 import better.files.File
 import io.joern.c2cpg.C2Cpg
