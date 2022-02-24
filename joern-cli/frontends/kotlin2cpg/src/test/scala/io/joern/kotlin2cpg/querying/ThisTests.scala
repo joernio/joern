@@ -31,13 +31,13 @@ class ThisTests extends AnyFreeSpec with Matchers {
     "the CALL referencing the top-level function has the correct properties" in {
       val List(x) = cpg.call.code("bar.*").l
       x.code shouldBe "bar()"
-      x.methodFullName shouldBe "mypkg.Foo.bar:kotlin.Unit()"
+      x.methodFullName shouldBe "mypkg.Foo.bar:void()"
     }
 
     "the CALL referencing the member function has the correct properties" in {
       val List(x) = cpg.call.code("this.bar.*").l
       x.code shouldBe "this.bar()"
-      x.methodFullName shouldBe "mypkg.Foo.bar:kotlin.Unit()"
+      x.methodFullName shouldBe "mypkg.Foo.bar:void()"
     }
   }
 

@@ -54,8 +54,8 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the call to `moo` with the correct properties set" in {
       val List(c) = cpg.call.code("Foo.moo.*").l
-      c.methodFullName shouldBe "mypkg.Foo.moo:kotlin.Unit()"
-      c.typeFullName shouldBe "kotlin.Unit"
+      c.methodFullName shouldBe "mypkg.Foo.moo:void()"
+      c.typeFullName shouldBe "void"
     }
   }
 

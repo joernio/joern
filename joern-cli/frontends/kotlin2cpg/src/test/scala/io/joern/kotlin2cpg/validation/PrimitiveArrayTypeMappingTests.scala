@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
-class PrimitiveTypeMappingTests extends AnyFreeSpec with Matchers {
+class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   "CPG for code with usage of `kotlin.BooleanArray`" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg

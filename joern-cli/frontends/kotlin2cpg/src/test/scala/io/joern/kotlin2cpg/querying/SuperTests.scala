@@ -35,8 +35,8 @@ class SuperTests extends AnyFreeSpec with Matchers {
     "should have a CALL node for the call using _super_ with the correct props set" in {
       val List(c) = cpg.call.code("super.*").l
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.methodFullName shouldBe "mypkg.BClass.myfun:kotlin.Unit()"
-      c.signature shouldBe "kotlin.Unit()"
+      c.methodFullName shouldBe "mypkg.BClass.myfun:void()"
+      c.signature shouldBe "void()"
       c.lineNumber shouldBe Some(11)
       c.columnNumber shouldBe Some(8)
     }

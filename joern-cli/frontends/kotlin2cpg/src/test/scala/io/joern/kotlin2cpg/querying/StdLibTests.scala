@@ -49,7 +49,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME" in {
       val List(c) = cpg.call.code("println.*").l
-      c.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(java.lang.Object)"
+      c.methodFullName shouldBe "kotlin.io.println:void(java.lang.Object)"
     }
   }
 
@@ -68,7 +68,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME" in {
       val List(c) = cpg.call.code("println.*").l
-      c.methodFullName shouldBe "mypkg.println:kotlin.Unit(java.lang.String)"
+      c.methodFullName shouldBe "mypkg.println:void(java.lang.String)"
     }
   }
 

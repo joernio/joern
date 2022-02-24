@@ -26,12 +26,12 @@ class ExtensionTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the calls to the extension fns with the correct MFN set" in {
       val List(c) = cpg.call.code(".*printBaz.*").l
-      c.methodFullName shouldBe "mypkg.Example.printBaz:kotlin.Unit()"
+      c.methodFullName shouldBe "mypkg.Example.printBaz:void()"
     }
 
     "should contain a METHOD node for the extension fn with the correct MFN set" in {
       val List(m) = cpg.method.fullName(".*printBaz.*").l
-      m.fullName shouldBe "mypkg.Example.printBaz:kotlin.Unit()"
+      m.fullName shouldBe "mypkg.Example.printBaz:void()"
     }
   }
 

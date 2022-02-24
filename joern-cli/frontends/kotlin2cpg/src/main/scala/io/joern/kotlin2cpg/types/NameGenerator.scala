@@ -58,6 +58,7 @@ object TypeConstants {
   val kotlinFunctionXPrefix             = "kotlin.Function"
   val kotlinSuspendFunctionXPrefix      = "kotlin.coroutines.SuspendFunction"
   val kotlinApplyPrefix                 = "kotlin.apply"
+  val kotlinUnit                        = "kotlin.Unit"
   val javaLangObject                    = "java.lang.Object"
   val javaLangString                    = "java.lang.String"
   val tType                             = "T"

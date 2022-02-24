@@ -134,7 +134,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `forEach` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*forEach.*").l
-      c.methodFullName shouldBe "java.lang.Iterable.forEach:kotlin.Unit(kotlin.Function1)"
+      c.methodFullName shouldBe "java.lang.Iterable.forEach:void(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(4)

@@ -61,7 +61,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "println(foo(argc, 1))"
-      p.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(java.lang.Integer)"
+      p.methodFullName shouldBe "kotlin.io.println:void(java.lang.Integer)"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(2)
     }
@@ -171,14 +171,14 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a call node for `println` with a fully-qualified stdlib METHOD_FULL_NAME" in {
       val List(c) = cpg.call(".*println.*").l
-      c.methodFullName shouldBe "kotlin.io.println:kotlin.Unit(java.lang.Object)"
-      c.signature shouldBe "kotlin.Unit(java.lang.Object)"
+      c.methodFullName shouldBe "kotlin.io.println:void(java.lang.Object)"
+      c.signature shouldBe "void(java.lang.Object)"
     }
 
     "should contain a call node for `doSome` with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call(".*doSome.*").l
-      c.methodFullName shouldBe "mypkg.doSome:kotlin.Unit(java.lang.String)"
-      c.signature shouldBe "kotlin.Unit(java.lang.String)"
+      c.methodFullName shouldBe "mypkg.doSome:void(java.lang.String)"
+      c.signature shouldBe "void(java.lang.String)"
     }
   }
 
@@ -324,7 +324,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node `writeText` with the correct props set" in {
       val List(c) = cpg.call.code("f.writeText.*").l
-      c.methodFullName shouldBe "java.io.File.writeText:kotlin.Unit(java.lang.String,java.nio.charset.Charset)"
+      c.methodFullName shouldBe "java.io.File.writeText:void(java.lang.String,java.nio.charset.Charset)"
     }
   }
 
