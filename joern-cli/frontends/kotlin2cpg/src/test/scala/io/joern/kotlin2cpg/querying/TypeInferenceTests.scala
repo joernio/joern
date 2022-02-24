@@ -252,7 +252,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
       val List(c) = createCall.l
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
+      c.methodFullName shouldBe "android.app.Activity.onCreate:void(android.os.Bundle)"
       c.argument.size shouldBe 2
 
       val List(firstArg, secondArg) = createCall.argument.l

@@ -30,7 +30,7 @@ class InheritanceTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a CALL node for `super.doX()` with the correct MFN set" in {
-      cpg.call.code("super.doX.*").methodFullName.l shouldBe List("mypkg.Bar.doX:kotlin.Unit()")
+      cpg.call.code("super.doX.*").methodFullName.l shouldBe List("mypkg.Bar.doX:void()")
     }
 
     // TODO: add more tests

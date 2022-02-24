@@ -62,6 +62,8 @@ object TypeRenderer {
     }
     if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) {
       primitiveArrayMappings.get(rendered).get
+    } else if (rendered == TypeConstants.kotlinUnit) {
+      TypeConstants.void
     } else {
       rendered
     }

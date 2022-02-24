@@ -70,7 +70,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `sendBroadcast` with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code("sendBroadcast.*").l
-      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:kotlin.Unit(android.content.Intent)"
+      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:void(android.content.Intent)"
     }
   }
 
@@ -244,8 +244,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       def callQ = cpg.call.code(".*onCreate.*")
 
       val List(c) = callQ.l
-      c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
-      c.signature shouldBe "kotlin.Unit(android.os.Bundle)"
+      c.methodFullName shouldBe "android.app.Activity.onCreate:void(android.os.Bundle)"
+      c.signature shouldBe "void(android.os.Bundle)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(firstArg: Identifier, secondArg: Identifier) = callQ.argument.l
@@ -259,8 +259,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       def callQ = cpg.call.code(".*sendBroadcast.*")
 
       val List(c) = callQ.l
-      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:kotlin.Unit(android.content.Intent)"
-      c.signature shouldBe "kotlin.Unit(android.content.Intent)"
+      c.methodFullName shouldBe "android.app.Activity.sendBroadcast:void(android.content.Intent)"
+      c.signature shouldBe "void(android.content.Intent)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(firstArg: Identifier) = callQ.argument.l
