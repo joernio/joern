@@ -7,10 +7,10 @@ import java.nio.file.Path
 object IOUtils {
 
   def readLineLengthsInFile(path: Path): Seq[Int] =
-    io.shiftleft.x2cpg.IOUtils.readLinesInFile(path).map(_.length + System.lineSeparator().toCharArray.length - 1)
+    io.shiftleft.utils.IOUtils.readLinesInFile(path).map(_.length + System.lineSeparator().toCharArray.length - 1)
 
   def readFileAsFileContent(path: Path): FileContent = {
-    val lines = io.shiftleft.x2cpg.IOUtils
+    val lines = io.shiftleft.utils.IOUtils
       .readLinesInFile(path)
       .flatMap(_.toCharArray.appendedAll(System.lineSeparator().toCharArray))
       .toArray

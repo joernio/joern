@@ -4,7 +4,8 @@ import io.joern.kotlin2cpg.files.SourceFilesPicker
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.joern.kotlin2cpg.utils.PathUtils
-import io.shiftleft.x2cpg.{IOUtils, X2Cpg, X2CpgConfig}
+import io.shiftleft.utils.IOUtils
+import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
 
 import better.files._
 import java.nio.file.{Files, Paths}
