@@ -13,6 +13,7 @@ lazy val macros            = Projects.macros
 lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
+lazy val x2cpg             = Projects.x2cpg
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols

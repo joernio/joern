@@ -12,4 +12,5 @@ object Projects {
   lazy val c2cpg      = project.in(frontendsRoot / "c2cpg")
   lazy val ghidra2cpg = project.in(frontendsRoot / "ghidra2cpg")
   lazy val fuzzyc2cpg = project.in(frontendsRoot / "fuzzyc2cpg")
+  lazy val x2cpg      = project.in(frontendsRoot / "x2cpg")
 }
