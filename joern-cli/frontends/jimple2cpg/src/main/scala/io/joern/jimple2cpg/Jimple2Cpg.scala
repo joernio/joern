@@ -130,7 +130,9 @@ class Jimple2Cpg {
         Scene.v().addBasicClass(cp, SootClass.BODIES)
         Scene.v().loadClassAndSupport(cp).setApplicationClass()
       }
+    Scene.v().loadDynamicClasses()
     Scene.v().loadNecessaryClasses()
+    Scene.v().addBasicClass("soot.dummy.InvokeDynamic", SootClass.SIGNATURES)
   }
 
   private def configureSoot(): Unit = {
