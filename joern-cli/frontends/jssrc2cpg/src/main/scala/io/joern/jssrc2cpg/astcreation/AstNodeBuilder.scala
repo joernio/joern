@@ -1,10 +1,20 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes._
+import ujson.Value
 
 trait AstNodeBuilder {
 
   this: AstCreator =>
+
+  protected def newUnknown(node: Value, order: Int): NewUnknown =
+    NewUnknown()
+      .parserTypeName(nodeType(node))
+      .code(code(node))
+      .order(order)
+      .argumentIndex(order)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
 
   protected def newTypeDecl(
     name: String,

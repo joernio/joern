@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.parsetests
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class ParseTest extends JsSrc2CpgSuite {
+class ParseTests extends JsSrc2CpgSuite {
 
   override val code: String =
     """
@@ -11,6 +11,6 @@ class ParseTest extends JsSrc2CpgSuite {
       |""".stripMargin
 
   "should contain the parsed file" in {
-    cpg.file.name.l shouldBe List("test.js")
+    cpg.file.name.l.exists(_.endsWith(".js")) shouldBe true
   }
 }

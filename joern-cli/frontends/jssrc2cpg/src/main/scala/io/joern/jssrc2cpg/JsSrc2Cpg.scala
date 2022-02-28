@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg
 
 import better.files.File
 import io.joern.jssrc2cpg.JsSrc2Cpg.Config
+import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.utils.Environment
 import io.joern.jssrc2cpg.utils.Report
@@ -22,14 +23,13 @@ class JsSrc2Cpg {
   def runAndOutput(config: Config): Cpg = {
     val keyPool         = KeyPoolCreator.obtain(2)
     val metaDataKeyPool = keyPool.head
-    // val astKeyPool      = keyPool(1)
+    val astKeyPool      = keyPool(1)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
 
     val files: Set[String] = config.inputPaths.flatMap(i => AstGenRunner.execute(File(i)))
-    println(files)
-    new MetaDataPass(cpg, "newjs", Some(metaDataKeyPool)).createAndApply()
-    // new AstCreationPass(cpg, files, Some(astKeyPool), config, report).createAndApply()
+    new MetaDataPass(cpg, "NEWJS", Some(metaDataKeyPool)).createAndApply()
+    new AstCreationPass(cpg, files, Some(astKeyPool), config, report).createAndApply()
     report.print()
     config.inputPaths.foreach(i => File(i, "ast_out").delete(swallowIOExceptions = false))
     cpg

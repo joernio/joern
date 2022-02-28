@@ -9,6 +9,8 @@ import scala.util.Success
 
 object AstGenRunner {
 
+  val ASTGEN_OUT: String = "ast_out"
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   private val astGenExecutable =
@@ -20,7 +22,7 @@ object AstGenRunner {
       case Success(result) =>
         val astGenOut = result.mkString("; ")
         logger.debug("\t+ " + astGenOut)
-        SourceFiles.determine(Set((in / "ast_out").toString()), Set(".json")).toSet
+        SourceFiles.determine(Set((in / ASTGEN_OUT).toString()), Set(".json")).toSet
       case Failure(f) =>
         logger.error("\t- astgen failed!", f)
         Set.empty

@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.datastructures.Scope
+import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -10,13 +11,10 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.x2cpg.Ast
 import org.slf4j.{Logger, LoggerFactory}
+import ujson.Value
 
-class AstCreator(
-  val filename: String,
-  val config: JsSrc2Cpg.Config,
-  val diffGraph: DiffGraphBuilder,
-  val parserResult: String
-) extends AstNodeBuilder
+class AstCreator(val config: JsSrc2Cpg.Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
+    extends AstNodeBuilder
     with AstCreatorHelper {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
@@ -29,24 +27,27 @@ class AstCreator(
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
   def createAst(): Unit =
-    Ast.storeInDiffGraph(astForFile(parserResult), diffGraph)
+    Ast.storeInDiffGraph(astForFile(), diffGraph)
 
-  private def astForFile(parserResult: String): Ast = {
-    println(parserResult)
-    val cpgFile            = Ast(NewFile().name(filename).order(0))
-    val translationUnitAst = astForTranslationUnit( /*parserResult*/ )
-    cpgFile.withChild(translationUnitAst)
+  private def astForFile(): Ast = {
+    val name    = parserResult.json("relativeName").str
+    val cpgFile = Ast(NewFile().name(name).order(0))
+    cpgFile.withChild(astForParseResult())
   }
 
-  private def createFakeMethod(name: String, fullName: String, path: String /*, iASTTranslationUnit: String*/ ): Ast = {
-    val allDecls      = Seq.empty[String]     // TODO iASTTranslationUnit.getDeclarations
-    val lineNumber    = Option.empty[Integer] // TODO allDecls.headOption.flatMap(line)
-    val lineNumberEnd = Option.empty[Integer] // TODO allDecls.lastOption.flatMap(lineEnd)
+  protected def astsForNode(node: Value, order: Int): Seq[Ast] = nodeType(node) match {
+    case _ => Seq(notHandledYet(node, order))
+  }
+
+  private def createFakeMethod(name: String, fullName: String, path: String): Ast = {
+    val allDecls      = Seq(parserResult.json("ast"))
+    val lineNumber    = allDecls.headOption.flatMap(line)
+    val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
 
     val fakeGlobalTypeDecl = newTypeDecl(
       name,
       fullName,
-      filename,
+      parserResult.filename,
       name,
       NodeTypes.NAMESPACE_BLOCK,
       fullName,
@@ -77,8 +78,8 @@ class AstCreator(
       .typeFullName("ANY")
 
     var currOrder = 1
-    val declsAsts = allDecls.flatMap { _ =>
-      val r = Seq.empty[Ast] // TODO
+    val declsAsts = allDecls.flatMap { node =>
+      val r = astsForNode(node, currOrder)
       currOrder = currOrder + r.length
       r
     }.toIndexedSeq
@@ -96,18 +97,17 @@ class AstCreator(
     )
   }
 
-  private def astForTranslationUnit( /*iASTTranslationUnit: String*/ ): Ast = {
-    val absolutePath =
-      "" // TODO better.files.File(iASTTranslationUnit.getFilePath).path.toAbsolutePath.normalize().toString
-    val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
+  private def astForParseResult(): Ast = {
+    val absolutePath = parserResult.filename
+    val name         = NamespaceTraversal.globalNamespaceName
+    val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(fullName)
       .filename(absolutePath)
       .order(1)
     methodAstParentStack.push(namespaceBlock)
-    Ast(namespaceBlock).withChild(createFakeMethod(name, fullName, absolutePath /*, iASTTranslationUnit*/ ))
+    Ast(namespaceBlock).withChild(createFakeMethod(name, fullName, absolutePath))
   }
 
 }
