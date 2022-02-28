@@ -7,7 +7,7 @@ import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.utils.IOUtils
 import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 
-import better.files._
+import better.files.File
 import java.nio.file.{Files, Paths}
 import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -59,6 +59,12 @@ object Main extends App {
         }
         if (!Files.isDirectory(Paths.get(sourceDir))) {
           println("The input path provided is not a directory `" + sourceDir + "`. Exiting.")
+          System.exit(1)
+        }
+
+        val filesWithKtExtension = File(sourceDir).listRecursively.filter(f => f.extension == Some(".kt"))
+        if (filesWithKtExtension.isEmpty) {
+          println("The provided input directory does not contain files ending in '.kt' `" + sourceDir + "`. Exiting.")
           System.exit(1)
         }
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
