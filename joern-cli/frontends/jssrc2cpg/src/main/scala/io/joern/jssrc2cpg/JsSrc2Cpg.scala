@@ -9,8 +9,8 @@ import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
-import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 

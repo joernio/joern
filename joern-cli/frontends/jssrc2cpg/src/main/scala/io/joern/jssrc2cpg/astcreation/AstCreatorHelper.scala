@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import ujson.Value
 
 object AstCreatorHelper {
@@ -56,7 +56,7 @@ trait AstCreatorHelper {
   protected def code(node: Value): String = {
     val start = node("start").num.toInt
     val end   = node("end").num.toInt - 1
-    parserResult.fileContent.substring(start, end)
+    parserResult.fileContent.substring(start, end - 1)
   }
 
   protected def columnEnd(node: Value): Option[Integer] =
