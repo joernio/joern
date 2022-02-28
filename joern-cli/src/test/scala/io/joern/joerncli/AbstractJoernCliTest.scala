@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.c2cpg.C2Cpg
+import io.joern.c2cpg.{C2Cpg, Main}
 import io.shiftleft.codepropertygraph.Cpg
 
 trait AbstractJoernCliTest {
@@ -18,8 +18,8 @@ trait AbstractJoernCliTest {
 
     // Create a CPG using the C/C++ parser
     val c2cpg  = new C2Cpg()
-    val config = C2Cpg.Config(inputPaths = inputFilenames, outputPath = c2cpgOutFilename)
-    c2cpg.runAndOutput(config).close()
+    val config = Main.Config(inputPaths = inputFilenames, outputPath = c2cpgOutFilename)
+    c2cpg.createCpg(config).close()
     // Link CPG fragments and enhance to create semantic CPG
     val cpg = DefaultOverlays.create(c2cpgOutFilename)
     (cpg, c2cpgOutFilename)

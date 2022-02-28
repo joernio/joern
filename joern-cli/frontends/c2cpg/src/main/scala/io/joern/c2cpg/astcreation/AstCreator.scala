@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.C2Cpg
+import io.joern.c2cpg.Main
 import io.joern.c2cpg.datastructures.Stack._
 import io.joern.c2cpg.datastructures.{Global, Scope}
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -16,7 +16,7 @@ import scala.collection.mutable
 
 class AstCreator(
   val filename: String,
-  val config: C2Cpg.Config,
+  val config: Main.Config,
   val global: Global,
   val diffGraph: DiffGraphBuilder,
   val parserResult: IASTTranslationUnit

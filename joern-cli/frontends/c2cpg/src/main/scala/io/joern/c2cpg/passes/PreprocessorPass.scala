@@ -1,6 +1,6 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Main.Config
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.x2cpg.SourceFiles
 import org.eclipse.cdt.core.dom.ast.{

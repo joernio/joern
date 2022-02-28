@@ -2,7 +2,7 @@ package io.joern.console.testing
 
 import better.files.Dsl.mkdir
 import better.files.File
-import io.joern.c2cpg.C2Cpg
+import io.joern.c2cpg.{C2Cpg, Main}
 import io.joern.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, FrontendConfig, InstallConfig}
@@ -92,7 +92,7 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
           case List(h, t) if h == "--define" => t
         }
       val cpg =
-        c2cpg.runAndOutput(C2Cpg.Config(Set(inputPath), outputPath, defines = defines.toSet))
+        c2cpg.createCpg(Main.Config(Set(inputPath), outputPath, defines = defines.toSet))
       cpg.close()
       Some(outputPath)
     }

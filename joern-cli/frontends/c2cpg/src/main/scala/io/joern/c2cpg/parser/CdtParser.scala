@@ -2,7 +2,7 @@ package io.joern.c2cpg.parser
 
 import better.files.File
 import io.joern.c2cpg.utils.IOUtils
-import io.joern.c2cpg.C2Cpg
+import io.joern.c2cpg.Main
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
 import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
@@ -28,7 +28,7 @@ object CdtParser {
 
 }
 
-class CdtParser(config: C2Cpg.Config) extends ParseProblemsLogger with PreprocessorStatementsLogger {
+class CdtParser(config: Main.Config) extends ParseProblemsLogger with PreprocessorStatementsLogger {
 
   import CdtParser._
 
