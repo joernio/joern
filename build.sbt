@@ -12,6 +12,7 @@ lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
+lazy val jssrc2cpg         = Projects.jssrc2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 
 ThisBuild / compile / javacOptions ++= Seq(
