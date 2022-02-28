@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.kotlin2cpg.types.NameGenerator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
 
 object Kt2Cpg {
   val language = "KOTLIN"

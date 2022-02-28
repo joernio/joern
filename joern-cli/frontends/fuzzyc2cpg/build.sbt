@@ -1,6 +1,6 @@
 name := "fuzzyc2cpg"
 
-dependsOn(Projects.dataflowengineoss % Test)
+dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "semanticcpg"                % Versions.cpg,

@@ -3,7 +3,7 @@ package io.joern.jimple2cpg.passes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
 import soot.jimple._
 import soot.tagkit.Host

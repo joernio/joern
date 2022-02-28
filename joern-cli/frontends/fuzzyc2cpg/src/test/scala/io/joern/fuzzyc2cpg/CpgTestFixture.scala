@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.passes.base.FileCreationPass
 import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.shiftleft.utils.ProjectRoot
-import io.shiftleft.x2cpg.SourceFiles
+import io.joern.x2cpg.SourceFiles
 import overflowdb.traversal.TraversalSource
 
 case class CpgTestFixture(projectName: String) {

@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._

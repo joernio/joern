@@ -2,7 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier, NewMethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTCompoundStatementExpression
