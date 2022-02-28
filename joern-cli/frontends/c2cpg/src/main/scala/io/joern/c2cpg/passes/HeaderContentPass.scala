@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies
 import io.shiftleft.passes.{CpgPass, DiffGraph, KeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import overflowdb.traversal._
 
 class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) extends CpgPass(cpg, keyPool = keyPool) {

@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.util
 
-import io.shiftleft.x2cpg.SourceFiles
+import io.joern.x2cpg.SourceFiles
 import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import org.slf4j.LoggerFactory

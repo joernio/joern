@@ -6,7 +6,7 @@ val sootVersion      = "4.2.1"
 val slf4jVersion     = "1.7.36"
 val scalatestVersion = "3.2.11"
 
-dependsOn(Projects.dataflowengineoss)
+dependsOn(Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
