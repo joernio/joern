@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
+import io.joern.jssrc2cpg.parser.BabelAst
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.joern.x2cpg.Ast
 import ujson.Value
@@ -37,26 +38,27 @@ trait AstCreatorHelper {
       f(x, i + 1)
     }
 
-  private def notHandledText(node: Value): String =
+  private def notHandledText(node: Value, order: Int): String =
     s"""Node type '${nodeType(node)}' not handled yet!
        |  Code: '${code(node)}'
        |  File: '${parserResult.filename}'
        |  Line: ${line(node).getOrElse(-1)}
+       |  Order: $order
        |  """.stripMargin
 
   protected def notHandledYet(node: Value, order: Int): Ast = {
-    val text = notHandledText(node)
+    val text = notHandledText(node, order)
     logger.info(text)
     Ast(newUnknown(node, order))
   }
 
-  protected def nodeType(node: Value): String =
-    node("type").str
+  protected def nodeType(node: Value): BabelAst.Node =
+    BabelAst.fromString(node("type").str)
 
   protected def code(node: Value): String = {
     val start = node("start").num.toInt
-    val end   = node("end").num.toInt - 1
-    parserResult.fileContent.substring(start, end - 1)
+    val end   = node("end").num.toInt
+    parserResult.fileContent.substring(start, end).trim
   }
 
   protected def columnEnd(node: Value): Option[Integer] =

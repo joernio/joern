@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.datastructures.Scope
+import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
@@ -36,8 +37,14 @@ class AstCreator(val config: JsSrc2Cpg.Config, val diffGraph: DiffGraphBuilder, 
   }
 
   protected def astsForNode(node: Value, order: Int): Seq[Ast] = nodeType(node) match {
-    case _ => Seq(notHandledYet(node, order))
+    case BabelAst.File    => astsForNode(node("program"), order)
+    case BabelAst.Program => astsForNodes(node("body").arr.toSeq)
+    case _                => Seq(notHandledYet(node, order))
   }
+
+  protected def astsForNodes(nodes: Seq[Value]): Seq[Ast] = withOrder(nodes) { (n, o) =>
+    astsForNode(n, o)
+  }.flatten
 
   private def createFakeMethod(name: String, fullName: String, path: String): Ast = {
     val allDecls      = Seq(parserResult.json("ast"))

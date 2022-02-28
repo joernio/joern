@@ -7,7 +7,8 @@ class ParseTests extends JsSrc2CpgSuite {
 
   override val code: String =
     """
-      |console.log("Hello World!")
+      |console.log("Hello World!");
+      |console.log("Hello Again!!!");
       |""".stripMargin
 
   "should contain the parsed file" in {

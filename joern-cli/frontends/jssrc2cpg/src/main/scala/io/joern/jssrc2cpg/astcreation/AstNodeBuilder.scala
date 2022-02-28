@@ -9,7 +9,7 @@ trait AstNodeBuilder {
 
   protected def newUnknown(node: Value, order: Int): NewUnknown =
     NewUnknown()
-      .parserTypeName(nodeType(node))
+      .parserTypeName(nodeType(node).toString)
       .code(code(node))
       .order(order)
       .argumentIndex(order)
