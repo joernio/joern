@@ -5,7 +5,7 @@ object Versions {
   val antlr     = "4.9.3"
   val scalatest = "3.2.11"
   val cats      = "3.3.5"
-  val log4j     = "2.17.1"
+  val log4j     = "2.17.2"
 
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
