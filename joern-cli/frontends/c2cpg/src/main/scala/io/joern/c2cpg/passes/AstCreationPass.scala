@@ -9,7 +9,7 @@ import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.utils.IOUtils
-import io.shiftleft.x2cpg.SourceFiles
+import io.joern.x2cpg.SourceFiles
 
 import java.nio.file.Paths
 import scala.jdk.CollectionConverters._

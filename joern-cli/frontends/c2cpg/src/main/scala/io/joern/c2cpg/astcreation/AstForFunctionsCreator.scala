@@ -3,7 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator

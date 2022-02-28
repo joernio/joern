@@ -18,7 +18,7 @@ import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
-import io.shiftleft.x2cpg.X2Cpg
+import io.joern.x2cpg.X2Cpg
 import utilities.util.FileUtilities
 
 import java.io.File

@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.files
 
 import io.joern.kotlin2cpg.utils.PathUtils
-import io.shiftleft.x2cpg.SourceFiles
+import io.joern.x2cpg.SourceFiles
 
 import org.slf4j.LoggerFactory
 

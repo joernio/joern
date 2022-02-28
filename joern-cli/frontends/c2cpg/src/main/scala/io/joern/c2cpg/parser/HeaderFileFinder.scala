@@ -1,7 +1,7 @@
 package io.joern.c2cpg.parser
 
 import better.files._
-import io.shiftleft.x2cpg.SourceFiles
+import io.joern.x2cpg.SourceFiles
 import org.jline.utils.Levenshtein
 
 import java.nio.file.Path

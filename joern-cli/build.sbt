@@ -30,6 +30,7 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
   }
 }
 
+lazy val x2cpg       = project.in(file("frontends/x2cpg"))
 lazy val kotlin2cpg  = project.in(file("frontends/kotlin2cpg"))
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))

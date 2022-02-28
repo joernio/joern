@@ -2,7 +2,7 @@ package io.joern.c2cpg.datastructures
 
 import io.joern.c2cpg.parser.FileDefaults
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
