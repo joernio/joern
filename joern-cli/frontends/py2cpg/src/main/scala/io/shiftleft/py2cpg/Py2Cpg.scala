@@ -3,7 +3,6 @@ package io.shiftleft.py2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
-import io.shiftleft.semanticcpg.passes.CfgCreationPass
 
 import scala.collection.parallel
 

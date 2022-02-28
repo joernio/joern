@@ -1,4 +1,10 @@
-#!/bin/sh
-dir=`dirname $0`
+#!/usr/bin/env bash
 
-java -Dlog4j.configurationFile=$dir/log4j2.xml -jar $dir/out/py2cpg/assembly/dest/out.jar $@
+# Script starts here
+
+readonly SCRIPT_DIR=$(dirname "$(realpath "$0")")
+readonly BIN="${SCRIPT_DIR}/target/universal/stage/bin/py2cpg"
+readonly LOG4J2_CONFIG="${SCRIPT_DIR}/src/main/resources/log4j2.xml"
+
+"${BIN}" -Dlog4j2.formatMsgNoLookups=true -Dlog4j.configurationFile="${LOG4J2_CONFIG}" \
+  "$@"
