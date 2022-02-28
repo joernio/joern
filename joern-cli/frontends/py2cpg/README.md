@@ -7,5 +7,3 @@ Shortcomings of Python CPG representation:
   - Incorrect instance argument for call like x.func.
     See source code comment.
   - No handling of __getattr__, __setattr__, etc.   
-    
-    
