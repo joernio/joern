@@ -4,8 +4,9 @@ import io.joern.kotlin2cpg.files.SourceFilesPicker
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.joern.kotlin2cpg.utils.PathUtils
+
+import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
 import io.shiftleft.utils.IOUtils
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 
 import better.files.File
 import java.nio.file.{Files, Paths}
@@ -62,7 +63,7 @@ object Main extends App {
           System.exit(1)
         }
 
-        val filesWithKtExtension = File(sourceDir).listRecursively.filter(f => f.extension == Some(".kt"))
+        val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
         if (filesWithKtExtension.isEmpty) {
           println("The provided input directory does not contain files ending in '.kt' `" + sourceDir + "`. Exiting.")
           System.exit(1)
