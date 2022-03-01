@@ -32,3 +32,8 @@ Run the following to see a complete list of available options:
 
 jssrc2cpg uses _astgen_ to generate the Babel AST from your JS/TS code.
 Make sure you have it installed. See: https://github.com/joernio/astgen
+
+## Warning
+
+This is work in progress. So really there's not much CPG content generation there yet.
+Use https://github.com/ShiftLeftSecurity/js2cpg for CPG generation for JS/TS code.
