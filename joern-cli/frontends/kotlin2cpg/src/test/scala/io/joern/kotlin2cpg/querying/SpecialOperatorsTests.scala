@@ -157,8 +157,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _elvis_ operator usage and subexpression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package main
         |
         |fun main() {
