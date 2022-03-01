@@ -14,7 +14,7 @@ class RaiseCpgTests extends AnyFreeSpec with Matchers {
     )
 
     "test raise node properties" in {
-      val raiseNode = cpg.call.methodFullName("<operator>.raise").next
+      val raiseNode = cpg.call.methodFullName("<operator>.raise").next()
       raiseNode.code shouldBe "raise x from y"
       raiseNode.lineNumber shouldBe Some(1)
     }

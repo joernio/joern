@@ -1,7 +1,8 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers.{LayerCreatorContext, Scpg}
+import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
+
 import scala.collection.mutable
 
 object Py2CpgTestContext {
@@ -43,7 +44,10 @@ class Py2CpgTestContext private () {
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)
-      new Scpg().run(context)
+      new Base().run(context)
+      new TypeRelations().run(context)
+      new ControlFlow().run(context)
+      new CallGraph().run(context)
       buildResult = Some(cpg)
     }
     buildResult.get

@@ -26,7 +26,7 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
 
     nodeBuilder.metaNode(Languages.FUZZY_TEST_LANG, version = "")
 
-    DiffGraph.Applier.applyDiff(diffGraph.build, outputCpg, keyPool = Some(auxKeyPool))
+    DiffGraph.Applier.applyDiff(diffGraph.build(), outputCpg, keyPool = Some(auxKeyPool))
 
     new CodeToCpg(outputCpg, inputProviders, keyPool).createAndApply()
   }

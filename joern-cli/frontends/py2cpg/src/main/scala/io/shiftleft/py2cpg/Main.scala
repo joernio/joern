@@ -27,7 +27,7 @@ class ParsedArguments(arguments: Seq[String]) extends ScallopConf(arguments) {
 }
 
 object Main extends App {
-  val parsedArguments = new ParsedArguments(args)
+  val parsedArguments = new ParsedArguments(args.toSeq)
 
   val ignoreVenvDir =
     if (parsedArguments.ignoreVenvDir.toOption.get) {

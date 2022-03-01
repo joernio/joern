@@ -250,7 +250,7 @@ class ContextStack {
     var contextHasVariable = false
     val startContext = contextStack.head
     while (stackIt.hasNext && !contextHasVariable) {
-      val context = stackIt.next
+      val context = stackIt.next()
 
       context match {
         case methodContext: MethodContext =>
@@ -319,7 +319,7 @@ class ContextStack {
     val stackIt = stack.iterator
     var lastContextWasMethod = false
     while (stackIt.hasNext && variableNode.isEmpty && !lastContextWasMethod) {
-      val context = stackIt.next
+      val context = stackIt.next()
       variableNode = context.variables.get(name)
       lastContextWasMethod = context.isInstanceOf[MethodContext]
     }
