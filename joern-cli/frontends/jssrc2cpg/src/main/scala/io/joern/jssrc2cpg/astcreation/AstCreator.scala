@@ -31,7 +31,7 @@ class AstCreator(val config: JsSrc2Cpg.Config, val diffGraph: DiffGraphBuilder, 
     Ast.storeInDiffGraph(astForFile(), diffGraph)
 
   private def astForFile(): Ast = {
-    val name    = parserResult.json("relativeName").str
+    val name    = parserResult.filename
     val cpgFile = Ast(NewFile().name(name).order(0))
     cpgFile.withChild(astForParseResult())
   }
@@ -105,7 +105,7 @@ class AstCreator(val config: JsSrc2Cpg.Config, val diffGraph: DiffGraphBuilder, 
   }
 
   private def astForParseResult(): Ast = {
-    val absolutePath = parserResult.filename
+    val absolutePath = parserResult.fullPath
     val name         = NamespaceTraversal.globalNamespaceName
     val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
     val namespaceBlock = NewNamespaceBlock()

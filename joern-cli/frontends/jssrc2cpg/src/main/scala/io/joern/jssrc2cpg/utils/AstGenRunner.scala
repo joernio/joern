@@ -15,8 +15,8 @@ object AstGenRunner {
     logger.debug(s"\t+ Running astgen in '$in' ...")
     ExternalCommand.run(s"astgen -o $out", in.toString()) match {
       case Success(result) =>
-        val astGenOut = result.mkString("; ")
-        logger.debug("\t+ " + astGenOut)
+        val astGenOut = result.mkString(s"${System.lineSeparator()}\t- ", s"${System.lineSeparator()}\t- ", "")
+        logger.debug(s"\t+ astgen output: $astGenOut")
         SourceFiles.determine(Set(out.toString()), Set(".json")).toSet.map { f: String => (in.toString(), f) }
       case Failure(f) =>
         logger.error("\t- astgen failed!", f)
