@@ -96,6 +96,8 @@ trait NameGenerator {
 
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
 
+  def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
+
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
 
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
@@ -401,6 +403,16 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
         }
       case None =>
         defaultValue
+    }
+  }
+
+  def typeFullName(expr: KtBinaryExpression, defaultValue: String): String = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val originalDesc = fnDescriptor.getOriginal
+        TypeRenderer.render(originalDesc.getReturnType)
+      case None => defaultValue
     }
   }
 
