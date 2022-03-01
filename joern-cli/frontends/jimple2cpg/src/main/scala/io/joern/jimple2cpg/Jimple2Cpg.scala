@@ -50,17 +50,17 @@ class Jimple2Cpg {
 
   /** Creates a CPG from Jimple.
     *
-    * @param rawSourceCodePath
+    * @param inputPath
     *   The path to the Jimple code or code that can be transformed into Jimple.
     * @param outputPath
     *   The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
     * @return
     *   The constructed CPG.
     */
-  def createCpg(rawSourceCodePath: String, outputPath: Option[String] = None): Cpg = {
+  def createCpg(inputPath: String, outputPath: Option[String] = None): Cpg = {
     try {
       // Determine if the given path is a file or directory and sanitize accordingly
-      val rawSourceCodeFile = new JFile(rawSourceCodePath)
+      val rawSourceCodeFile = new JFile(inputPath)
       val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
       val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
         sourceTarget

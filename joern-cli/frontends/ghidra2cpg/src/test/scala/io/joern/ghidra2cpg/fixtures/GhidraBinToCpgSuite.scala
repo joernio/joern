@@ -26,7 +26,7 @@ class GhidraFrontend extends LanguageFrontend {
     Runtime.getRuntime.addShutdownHook(new Thread(() => FileUtils.deleteQuietly(tempDir)))
 
     val cpgBin = dir.getAbsolutePath
-    new Ghidra2Cpg().createCpg(inputFile, Some(cpgBin))
+    new Ghidra2Cpg().createCpg(inputFile.getAbsolutePath, Some(cpgBin))
   }
 
 }

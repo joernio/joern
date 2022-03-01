@@ -25,13 +25,14 @@ import java.io.File
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
-class Ghidra2Cpg() {
+class Ghidra2Cpg {
 
   /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
-  def createCpg(inputFile: File, outputFile: Option[String]): Cpg = {
+  def createCpg(inputPath: String, outputFile: Option[String]): Cpg = {
 
+    val inputFile = new File(inputPath)
     if (!inputFile.isDirectory && !inputFile.isFile) {
       throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }

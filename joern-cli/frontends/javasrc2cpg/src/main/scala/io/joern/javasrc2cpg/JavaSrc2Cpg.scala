@@ -24,10 +24,10 @@ class JavaSrc2Cpg {
 
   val sourceFileExtensions = Set(".java")
 
-  /** Create CPG for Java source code at `sourceCodePath` and store the CPG at `outputPath`. If `outputPath` is `None`,
-    * the CPG is created in-memory.
+  /** Create CPG for Java source code at `inputPath` and store the CPG at `outputPath`. If `outputPath` is `None`, the
+    * CPG is created in-memory.
     */
-  def createCpg(sourceCodePath: String, outputPath: Option[String] = None): Cpg = {
+  def createCpg(inputPath: String, outputPath: Option[String] = None): Cpg = {
     val cpg             = newEmptyCpg(outputPath)
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
     val typesKeyPool    = new IntervalKeyPool(100, 1000100)
@@ -35,7 +35,7 @@ class JavaSrc2Cpg {
 
     new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
 
-    val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
+    val (sourcesDir, sourceFileNames) = getSourcesFromDir(inputPath)
     val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg, methodKeyPool)
     astCreator.createAndApply()
 
