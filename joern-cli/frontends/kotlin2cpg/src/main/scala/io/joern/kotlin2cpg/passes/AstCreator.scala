@@ -2221,7 +2221,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
       } else {
         fullNameWithSignature._2
       }
-    val expressionType = nameGenerator.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
     val name = if (operatorOption.isDefined) {
       operatorOption.get
     } else if (expr.getChildren.toList.size >= 2) {
@@ -2241,7 +2241,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .order(order)
-        .typeFullName(expressionType)
+        .typeFullName(typeFullName)
 
     val args =
       astsForExpression(expr.getLeft, scopeContext, 1, 1) ++ astsForExpression(expr.getRight, scopeContext, 2, 2)
