@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.parsetests
 
 import better.files.File
-import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.Cpg
@@ -31,7 +30,7 @@ class ProjectParseTests extends AnyWordSpec with Matchers {
 
     "generate correct filenames" in ProjectParseTestsFixture("rec") { tmpDir =>
       val cpgPath = (tmpDir / "cpg.bin").path.toString
-      JsSrc2Cpg.main(Array(tmpDir.pathAsString, "--output", cpgPath))
+      io.joern.jssrc2cpg.Main.main(Array(tmpDir.pathAsString, "--output", cpgPath))
 
       val cpg =
         CpgLoader

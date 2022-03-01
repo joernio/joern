@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.datastructures.Scope
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
+import io.joern.jssrc2cpg.Config
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -14,7 +14,7 @@ import io.joern.x2cpg.Ast
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Value
 
-class AstCreator(val config: JsSrc2Cpg.Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
+class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
     extends AstNodeBuilder
     with AstCreatorHelper {
 

@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.astcreation.AstCreator
 import io.joern.jssrc2cpg.parser.BabelJsonParser
 import io.joern.jssrc2cpg.utils.Report
 import io.joern.jssrc2cpg.utils.TimeUtils
+import io.joern.jssrc2cpg.Config
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.utils.IOUtils
@@ -15,7 +15,7 @@ class AstCreationPass(
   cpg: Cpg,
   files: Set[(String, String)],
   keyPool: Option[IntervalKeyPool],
-  config: JsSrc2Cpg.Config,
+  config: Config,
   report: Report = new Report()
 ) extends ConcurrentWriterCpgPass[(String, String)](cpg, keyPool = keyPool) {
 
