@@ -1,6 +1,5 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.Main.Config
 import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass, PreprocessorPass}
 import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg

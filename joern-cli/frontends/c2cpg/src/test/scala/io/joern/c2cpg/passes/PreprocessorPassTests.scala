@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import better.files.File
-import io.joern.c2cpg.Main.Config
+import io.joern.c2cpg.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 
-import java.nio.file.Files
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 object JavaSrc2Cpg {

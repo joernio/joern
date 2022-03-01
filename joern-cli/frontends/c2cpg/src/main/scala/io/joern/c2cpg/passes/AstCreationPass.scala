@@ -1,6 +1,6 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.Main
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.{AstCreator, Defines}
 import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
@@ -24,7 +24,7 @@ class AstCreationPass(
   cpg: Cpg,
   forFiles: InputFiles,
   keyPool: Option[IntervalKeyPool],
-  config: Main.Config,
+  config: Config,
   report: Report = new Report()
 ) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 

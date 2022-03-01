@@ -1,6 +1,6 @@
 package io.joern.c2cpg.fixtures
 
-import io.joern.c2cpg.Main.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages

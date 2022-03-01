@@ -1,6 +1,6 @@
 package io.joern.c2cpg.utils
 
-import io.joern.c2cpg.Main.Config
+import io.joern.c2cpg.Config
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Path, Paths}
