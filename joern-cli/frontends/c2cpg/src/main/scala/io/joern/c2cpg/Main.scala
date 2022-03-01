@@ -1,7 +1,6 @@
 package io.joern.c2cpg
 
 import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
-import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -62,10 +61,7 @@ object Main extends App {
     case Some(config) if config.printIfDefsOnly =>
       printIfDefsOnly(config)
     case Some(config) =>
-      val cpg = createCpg(config)
-      if (cpg != null) {
-        cpg.close()
-      }
+      createCpg(config)
     case None =>
       System.exit(1)
   }
@@ -80,13 +76,14 @@ object Main extends App {
     }
   }
 
-  private def createCpg(config: Config): Cpg = {
+  private def createCpg(config: Config): Unit = {
     try {
-      new C2Cpg().createCpg(config)
+      val cpg = new C2Cpg().createCpg(config)
+      cpg.close()
     } catch {
       case NonFatal(ex) =>
         logger.error("Failed to generate CPG.", ex)
-        null
+        System.exit(1)
     }
   }
 

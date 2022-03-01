@@ -20,7 +20,8 @@ class C2Cpg {
     val headerKeyPool        = keyPool(2)
     val headerContentKeyPool = keyPool(3)
 
-    val cpg = newEmptyCpg(Some(config.outputPath))
+    val outputPath = Some(config.outputPath)
+    val cpg        = newEmptyCpg(outputPath)
 
     new MetaDataPass(cpg, Languages.NEWC, Some(metaDataKeyPool)).createAndApply()
 
