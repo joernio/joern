@@ -9,20 +9,15 @@ import scala.util.Success
 
 object AstGenRunner {
 
-  val ASTGEN_OUT: String = "ast_out"
-
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val astGenExecutable =
-    File(new java.io.File(getClass.getResource("/astgen").getPath).toString, "bin", "astgen.js").toString
-
-  def execute(in: File): Set[String] = {
+  def execute(in: File, out: File): Set[(String, String)] = {
     logger.debug(s"\t+ Running astgen in '$in' ...")
-    ExternalCommand.run(s"node $astGenExecutable", in.toString()) match {
+    ExternalCommand.run(s"astgen -o $out", in.toString()) match {
       case Success(result) =>
         val astGenOut = result.mkString("; ")
         logger.debug("\t+ " + astGenOut)
-        SourceFiles.determine(Set((in / ASTGEN_OUT).toString()), Set(".json")).toSet
+        SourceFiles.determine(Set(out.toString()), Set(".json")).toSet.map { f: String => (in.toString(), f) }
       case Failure(f) =>
         logger.error("\t- astgen failed!", f)
         Set.empty

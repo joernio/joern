@@ -1,7 +1,5 @@
 package io.joern.jssrc2cpg.parser
 
-import better.files.File
-import io.joern.jssrc2cpg.utils.AstGenRunner.ASTGEN_OUT
 import io.shiftleft.utils.IOUtils
 import ujson.Value.Value
 
@@ -18,14 +16,14 @@ object BabelJsonParser {
     .flatMap(_.toCharArray.appendedAll(System.lineSeparator().toCharArray))
     .mkString
 
-  def readFile(file: Path): Option[ParseResult] = {
+  def readFile(rootPath: Path, file: Path): Option[ParseResult] = {
     Try {
       val jsonContent       = IOUtils.readLinesInFile(file).mkString
       val json              = ujson.read(jsonContent)
-      val fullPath          = File(file.toString.replace(ASTGEN_OUT, "").replace(".json", "")).canonicalPath
       val filename          = json("relativeName").str
-      val sourceFileContent = readSourceFile(Paths.get(fullPath))
-      ParseResult(filename, fullPath, json, sourceFileContent)
+      val fullPath          = Paths.get(rootPath.toString, filename)
+      val sourceFileContent = readSourceFile(fullPath)
+      ParseResult(filename, fullPath.toString, json, sourceFileContent)
     }.toOption
   }
 

@@ -13,17 +13,18 @@ import java.nio.file.Paths
 
 class AstCreationPass(
   cpg: Cpg,
-  files: Set[String],
+  files: Set[(String, String)],
   keyPool: Option[IntervalKeyPool],
   config: JsSrc2Cpg.Config,
   report: Report = new Report()
-) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
+) extends ConcurrentWriterCpgPass[(String, String)](cpg, keyPool = keyPool) {
 
-  override def generateParts(): Array[String] = files.toArray
+  override def generateParts(): Array[(String, String)] = files.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, jsonFilename: String): Unit = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, input: (String, String)): Unit = {
+    val (rootPath, jsonFilename) = input
     val (gotCpg, duration) = TimeUtils.time {
-      val maybeResult = BabelJsonParser.readFile(Paths.get(jsonFilename))
+      val maybeResult = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
       maybeResult match {
         case Some(parseResult) =>
           val fileLOC = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size

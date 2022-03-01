@@ -11,6 +11,8 @@ import io.shiftleft.passes.KeyPoolCreator
 import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.semanticcpg.passes.frontend.TypeNodePass
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -21,17 +23,21 @@ class JsSrc2Cpg {
   private val report: Report = new Report()
 
   def runAndOutput(config: Config): Cpg = {
-    val keyPool         = KeyPoolCreator.obtain(2)
-    val metaDataKeyPool = keyPool.head
+    val keyPool         = KeyPoolCreator.obtain(2, minValue = 101)
+    val metaDataKeyPool = new IntervalKeyPool(1, 100)
+    val typesKeyPool    = keyPool.head
     val astKeyPool      = keyPool(1)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
 
-    val files: Set[String] = config.inputPaths.flatMap(i => AstGenRunner.execute(File(i)))
-    new MetaDataPass(cpg, "NEWJS", Some(metaDataKeyPool)).createAndApply()
-    new AstCreationPass(cpg, files, Some(astKeyPool), config, report).createAndApply()
-    report.print()
-    config.inputPaths.foreach(i => File(i, "ast_out").delete(swallowIOExceptions = false))
+    File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
+      val files: Set[(String, String)] = config.inputPaths.flatMap(i => AstGenRunner.execute(File(i), tmpDir))
+      new MetaDataPass(cpg, "NEWJS", Some(metaDataKeyPool)).createAndApply()
+      new AstCreationPass(cpg, files, Some(astKeyPool), config, report).createAndApply()
+      new TypeNodePass(List.empty, cpg, Some(typesKeyPool)).createAndApply() // TODO: provide types
+      report.print()
+    }
+
     cpg
   }
 

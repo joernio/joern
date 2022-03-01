@@ -14,18 +14,18 @@ object Environment {
     case Some(value) =>
       value
     case None =>
-      isValid = Some(nodeAvailable())
+      isValid = Some(astgenAvailable())
       isValid.get
   }
 
-  private def nodeAvailable(): Boolean = {
-    logger.debug(s"\t+ Checking node ...")
-    ExternalCommand.run("node -v", ".") match {
+  private def astgenAvailable(): Boolean = {
+    logger.debug(s"\t+ Checking astgen ...")
+    ExternalCommand.run("astgen --version", ".") match {
       case Success(result) =>
-        logger.debug(s"\t+ node is available (version: ${result.headOption.getOrElse("unknown")})")
+        logger.debug(s"\t+ astgen is available (version: ${result.headOption.getOrElse("unknown")})")
         true
       case Failure(_) =>
-        logger.error("\t- node is not installed.")
+        logger.error("\t- astgen is not installed.")
         false
     }
   }
