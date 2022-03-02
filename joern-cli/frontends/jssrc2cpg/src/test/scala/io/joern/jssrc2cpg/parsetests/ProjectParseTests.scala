@@ -47,6 +47,20 @@ class ProjectParseTests extends AnyWordSpec with Matchers {
       )
     }
 
+    "recover from broken input file" in ProjectParseTestsFixture("broken") { tmpDir =>
+      val cpgPath = (tmpDir / "cpg.bin").path.toString
+      io.joern.jssrc2cpg.Main.main(Array(tmpDir.pathAsString, "--output", cpgPath))
+
+      val cpg =
+        CpgLoader
+          .loadFromOverflowDb(
+            CpgLoaderConfig.withDefaults
+              .withOverflowConfig(Config.withDefaults.withStorageLocation(cpgPath))
+          )
+
+      fileNames(cpg) shouldBe List("good.js")
+    }
+
   }
 
 }

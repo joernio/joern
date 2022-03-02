@@ -11,16 +11,38 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def execute(in: File, out: File): Set[(String, String)] = {
+  case class AstGenRunnerResult(
+    parsedFiles: Set[(String, String)] = Set.empty,
+    skippedFiles: Set[(String, String)] = Set.empty
+  )
+
+  private def skippedFiles(in: File, astgenOut: Set[String]): Set[String] = {
+    val skipped = astgenOut.collect {
+      case out if !out.startsWith("Converted") =>
+        val filename = out.substring(0, out.indexOf(" "))
+        val reason   = out.substring(out.indexOf(" ") + 1)
+        logger.warn(s"\t- Failed to parse '${in / filename}': '$reason'")
+        Some(filename)
+      case out =>
+        logger.info(s"\t+ $out")
+        None
+    }
+    skipped.flatten
+  }
+
+  def execute(in: File, out: File): AstGenRunnerResult = {
     logger.debug(s"\t+ Running astgen in '$in' ...")
     ExternalCommand.run(s"astgen -o $out", in.toString()) match {
       case Success(result) =>
-        val astGenOut = result.mkString(s"${System.lineSeparator()}\t- ", s"${System.lineSeparator()}\t- ", "")
-        logger.debug(s"\t+ astgen output: $astGenOut")
-        SourceFiles.determine(Set(out.toString()), Set(".json")).toSet.map { f: String => (in.toString(), f) }
+        val parsed  = SourceFiles.determine(Set(out.toString()), Set(".json")).toSet
+        val skipped = skippedFiles(in, result.toSet)
+        AstGenRunnerResult(
+          parsed.map { f: String => (in.toString(), f) },
+          skipped.map { f: String => (in.toString(), f) }
+        )
       case Failure(f) =>
         logger.error("\t- astgen failed!", f)
-        Set.empty
+        AstGenRunnerResult()
     }
   }
 

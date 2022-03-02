@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg
 import better.files.File
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
+import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
@@ -25,9 +26,16 @@ class JsSrc2Cpg {
     val cpg        = newEmptyCpg(outputPath)
 
     File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
-      val files: Set[(String, String)] = config.inputPaths.flatMap(i => AstGenRunner.execute(File(i), tmpDir))
+      val astgenResult =
+        config.inputPaths.foldLeft(AstGenRunnerResult()) { (result, input) =>
+          val partialResult = AstGenRunner.execute(File(input), tmpDir)
+          result.copy(
+            parsedFiles = result.parsedFiles ++ partialResult.parsedFiles,
+            skippedFiles = result.skippedFiles ++ partialResult.skippedFiles
+          )
+        }
       new MetaDataPass(cpg, "NEWJS", Some(metaDataKeyPool)).createAndApply()
-      val astCreationPass = new AstCreationPass(cpg, files, Some(astKeyPool), config, report)
+      val astCreationPass = new AstCreationPass(cpg, astgenResult, Some(astKeyPool), config, report)
       astCreationPass.createAndApply()
       new TypeNodePass(astCreationPass.usedTypes(), cpg, Some(typesKeyPool)).createAndApply()
       report.print()
