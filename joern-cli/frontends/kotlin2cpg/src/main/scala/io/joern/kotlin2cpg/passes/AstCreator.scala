@@ -401,13 +401,22 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
             .signature(methodNode.signature)
         BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF)))
       }
-
-    val ctorOrder         = 1
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
+    val defaultSignature =
+      if (ktClass.getPrimaryConstructor == null) {
+        "void()"
+      } else {
+        nameGenerator.erasedSignature(constructorParams)
+      }
+    val defaultFullName = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+    val ctorFnWithSig =
+      nameGenerator.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
+    val ctorOrder = 1
     val constructorMethod =
       NewMethod()
         .name(className)
-        .fullName(fullName + ":" + nameGenerator.erasedSignature(constructorParams))
+        .fullName(ctorFnWithSig._1)
+        .signature(ctorFnWithSig._2)
         .isExternal(false)
         .order(ctorOrder)
         .filename(relativizedPath)
@@ -418,11 +427,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         astForParameter(p, order)
       }
 
+    val typeFullName = nameGenerator.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn =
       NewMethodReturn()
         .order(1)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .typeFullName(TypeConstants.any)
+        .typeFullName(typeFullName)
         .dynamicTypeHintFullName(Some(fullName))
         .code(Constants.retCode)
         .lineNumber(line(ktClass.getPrimaryConstructor))
@@ -435,20 +445,26 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     val secondaryConstructorAsts =
       withOrder(ktClass.getSecondaryConstructors) { (secondaryCtor, order) =>
         val constructorParams = secondaryCtor.getValueParameters.asScala.toList
+        val defaultSignature  = nameGenerator.erasedSignature(constructorParams)
+        val defaultFullName   = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+        val ctorFnWithSig     = nameGenerator.fullNameWithSignature(secondaryCtor, (defaultFullName, defaultSignature))
         val constructorMethod =
           NewMethod()
             .name(className)
-            .fullName(fullName + ":" + nameGenerator.erasedSignature(constructorParams))
+            .fullName(ctorFnWithSig._1)
+            .signature(ctorFnWithSig._2)
             .isExternal(false)
             .order(ctorOrder + order)
             .filename(relativizedPath)
             .lineNumber(line(secondaryCtor))
             .columnNumber(column(secondaryCtor))
+
+        val typeFullName = nameGenerator.typeFullName(secondaryCtor, TypeConstants.any)
         val constructorMethodReturn =
           NewMethodReturn()
             .order(1)
             .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-            .typeFullName(TypeConstants.any)
+            .typeFullName(typeFullName)
             .dynamicTypeHintFullName(Some(fullName))
             .code(Constants.retCode)
             .lineNumber(line(secondaryCtor))
