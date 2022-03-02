@@ -356,11 +356,11 @@ class AstCreator(filename: String, global: Global) {
       case _: InstanceInvokeExpr          => DispatchTypes.DYNAMIC_DISPATCH
       case _                              => DispatchTypes.STATIC_DISPATCH
     }
-    val method = invokeExpr.getMethod
+    val method = invokeExpr.getMethodRef
     val signature =
-      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterCount)
+      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterTypes.size())
           yield method.getParameterType(i).toQuotedString).mkString(",")})"
-    val thisAsts = Seq(createThisNode(invokeExpr.getMethod, NewIdentifier()))
+    val thisAsts = Seq(createThisNode(method, NewIdentifier()))
 
     val methodName =
       if (method.isConstructor)
@@ -480,7 +480,9 @@ class AstCreator(filename: String, global: Global) {
     )
   }
 
-  private def createThisNode(method: SootMethod, builder: NewNode): Ast = {
+  private def createThisNode(method: SootMethod, builder: NewNode): Ast = createThisNode(method.makeRef(), builder)
+
+  private def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
       val parentType = registerType(method.getDeclaringClass.getType.toQuotedString)
       Ast(builder match {
@@ -494,7 +496,7 @@ class AstCreator(filename: String, global: Global) {
         case x: NewMethodParameterIn =>
           x.name("this")
             .code("this")
-            .lineNumber(line(method))
+            .lineNumber(line(method.tryResolve()))
             .typeFullName(parentType)
             .order(0)
             .evaluationStrategy(EvaluationStrategies.BY_SHARING)
@@ -866,11 +868,15 @@ class AstCreator(filename: String, global: Global) {
 
 object AstCreator {
   def line(node: Host): Option[Integer] = {
-    Option(node.getJavaSourceStartLineNumber)
+    if (node == null) None
+    else if (node.getJavaSourceStartLineNumber == -1) None
+    else Option(node.getJavaSourceStartLineNumber)
   }
 
   def column(node: Host): Option[Integer] = {
-    Option(node.getJavaSourceStartColumnNumber)
+    if (node == null) None
+    else if (node.getJavaSourceStartColumnNumber == -1) None
+    else Option(node.getJavaSourceStartColumnNumber)
   }
 
   def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
