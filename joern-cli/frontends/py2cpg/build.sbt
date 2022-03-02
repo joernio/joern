@@ -5,7 +5,6 @@ scalaVersion       := "2.13.8"
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph"             % Versions.cpg,
   "io.shiftleft"            %% "semanticcpg"                   % Versions.cpg,
-  "io.shiftleft"            %% "pythonparser"                  % "0.9.0",
   "org.rogach"              %% "scallop"                       % "4.0.1",
   "org.scala-lang.modules"  %% "scala-parallel-collections"    % "1.0.4",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"              % Versions.log4j     % Runtime,
