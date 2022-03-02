@@ -751,4 +751,55 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with call to qualified expression with parenthesized elvis expression as receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |import java.time.Duration
+      |
+      |fun main() {
+      |  val timeout = Duration.ofSeconds(1)
+      |  val sleep = Duration.ofSeconds(2)
+      |  val millis = (timeout ?: sleep).toMillis()
+      |  println("milliseconds: " + millis)
+      |}
+      |""".stripMargin)
+
+    "should not contain CALL nodes with DYNAMIC_DISPATCH prop set, but without an argument with ARGUMENT_INDEX 0" in {
+      cpg.call
+        .dispatchTypeExact(DispatchTypes.DYNAMIC_DISPATCH)
+        .filter(_.argument.argumentIndex(0).size == 0)
+        .code
+        .l shouldBe List()
+    }
+  }
+
+  "CPG for code with call to qualified expression with parenthesized if-else-expression as receiver" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+       |package mypkg
+       |
+       |import kotlin.random.Random
+       |
+       |fun main() {
+       |    val x = Random.nextBoolean()
+       |    val y = 41414141
+       |    val z = 42424242
+       |    val p =
+       |        (if (x) {
+       |            y
+       |        } else {
+       |            z
+       |        }).toString()
+       |    println("p: " + p)
+       |}
+       |""".stripMargin)
+
+    "should not contain CALL nodes with DYNAMIC_DISPATCH prop set, but without an argument with ARGUMENT_INDEX 0" in {
+      cpg.call
+        .dispatchTypeExact(DispatchTypes.DYNAMIC_DISPATCH)
+        .filter(_.argument.argumentIndex(0).size == 0)
+        .code
+        .l shouldBe List()
+    }
+  }
 }
