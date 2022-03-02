@@ -55,8 +55,8 @@ class EnumTests extends AnyFreeSpec with Matchers {
 
     "`Color` enum should contain the correct members" in {
       val members = cpg.typeDecl.fullNameExact("mypkg.Color").member.l
-      members.size shouldBe 3
-      members.map(_.name).toSet shouldBe Set("RED", "GREEN", "BLUE")
+      members.size shouldBe 4
+      members.map(_.name).toSet shouldBe Set("RED", "GREEN", "BLUE", "rgb")
     }
   }
 }

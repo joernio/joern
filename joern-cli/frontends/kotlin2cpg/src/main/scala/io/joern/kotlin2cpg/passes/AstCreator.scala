@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
 
@@ -404,21 +405,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature =
       if (ktClass.getPrimaryConstructor == null) {
-        "void()"
+        TypeConstants.void + "()"
       } else {
         nameGenerator.erasedSignature(constructorParams)
       }
     val defaultFullName = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
     val ctorFnWithSig =
       nameGenerator.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
-    val ctorOrder = 1
+    val primaryCtorOrder = 1
     val constructorMethod =
       NewMethod()
         .name(className)
         .fullName(ctorFnWithSig._1)
         .signature(ctorFnWithSig._2)
         .isExternal(false)
-        .order(ctorOrder)
+        .order(primaryCtorOrder)
         .filename(relativizedPath)
         .lineNumber(line(ktClass.getPrimaryConstructor))
         .columnNumber(column(ktClass.getPrimaryConstructor))
@@ -442,6 +443,24 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .withChildren(constructorParamsWithCtx.map(_.ast))
         .withChild(Ast(constructorMethodReturn))
 
+    val membersFromPrimaryCtorAsts =
+      ktClass.getPrimaryConstructorParameters.asScala.toList
+        .filter(_.hasValOrVar)
+        .zipWithIndex
+        .collect { case (param, idx) =>
+          val typeFullName = nameGenerator.parameterType(param, TypeConstants.any)
+          val node =
+            NewMember()
+              .name(param.getName)
+              .code(param.getText)
+              .typeFullName(typeFullName)
+              .lineNumber(line(param))
+              .columnNumber(column(param))
+              .order(idx + primaryCtorOrder)
+          Ast(node)
+        }
+
+    val orderAfterPrimaryCtorAndItsMemberDefs = membersFromPrimaryCtorAsts.size + primaryCtorOrder
     val secondaryConstructorAsts =
       withOrder(ktClass.getSecondaryConstructors) { (secondaryCtor, order) =>
         val constructorParams = secondaryCtor.getValueParameters.asScala.toList
@@ -454,7 +473,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
             .fullName(ctorFnWithSig._1)
             .signature(ctorFnWithSig._2)
             .isExternal(false)
-            .order(ctorOrder + order)
+            .order(orderAfterPrimaryCtorAndItsMemberDefs + order)
             .filename(relativizedPath)
             .lineNumber(line(secondaryCtor))
             .columnNumber(column(secondaryCtor))
@@ -481,11 +500,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         constructorAst
       }
 
-    val orderAfterCtors = ctorOrder + secondaryConstructorAsts.size
+    val orderAfterCtors = orderAfterPrimaryCtorAndItsMemberDefs + secondaryConstructorAsts.size
     val ast =
       Ast(typeDecl)
         .withChildren(methodAstsWithCtx.map(_.ast))
         .withChild(constructorAst)
+        .withChildren(membersFromPrimaryCtorAsts)
         .withChildren(secondaryConstructorAsts)
         // TODO: reenable initializer block parsing when methodReturn nodes have been added
         // otherwise the CfgCreator throws
