@@ -837,7 +837,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         Seq()
       case typedExpr: KtProperty if typedExpr.isLocal =>
         astsForProperty(typedExpr, scopeContext, order)
-      case typedExpr: KtIfExpression       => Seq(astForIf(typedExpr, scopeContext, order))
+      case typedExpr: KtIfExpression       => Seq(astForIf(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtWhenExpression     => Seq(astForWhen(typedExpr, scopeContext, order))
       case typedExpr: KtForExpression      => Seq(astForFor(typedExpr, scopeContext, order))
       case typedExpr: KtWhileExpression    => Seq(astForWhile(typedExpr, scopeContext, order))
@@ -1416,7 +1416,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         case typedExpr: KtStringTemplateExpression =>
           astForStringTemplate(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtParenthesizedExpression =>
-          val astsWithCtx = astsForExpression(typedExpr, scopeContext, order, argIdxForReceiver)
+          val astsWithCtx = astsForExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
           // TODO: get to the root cause of why the asts here are empty; write unit tests
           // e.g. for when this is the case in https://github.com/detekt/detekt
           val astForExpr = {
@@ -1833,12 +1833,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     Seq(jumpNodeAstsWithCtx) ++ Seq(exprNode)
   }
 
-  def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     nameGenerator: NameGenerator
   ): AstWithCtx = {
     if (expr.getParent.isInstanceOf[KtProperty]) {
-      astForIfAsExpression(expr, scopeContext, order)
+      astForIfAsExpression(expr, scopeContext, order, argIdx)
     } else {
       astForIfAsControlStructure(expr, scopeContext, order)
     }
@@ -1874,7 +1874,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     AstWithCtx(withCondition, finalCtx)
   }
 
-  def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     nameGenerator: NameGenerator
   ): AstWithCtx = {
@@ -1887,7 +1887,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(expr.getText)
         .order(order)
-        .argumentIndex(order)
+        .argumentIndex(argIdx)
         .typeFullName(retType)
         .methodFullName(Operators.conditional)
         .lineNumber(line(expr))
@@ -2229,7 +2229,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     } else {
       expr.getName
     }
-    // TODO: DYNAMIC_DISPATCH check
     val callNode =
       NewCall()
         .name(name)
@@ -2237,7 +2236,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .signature(signature)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(expr.getText)
-        .argumentIndex(order)
+        .argumentIndex(argIdx)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .order(order)
