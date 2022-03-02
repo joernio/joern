@@ -7,9 +7,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class BinOpCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """1 + 2""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""1 + 2""".stripMargin)
 
   "test binOp 'add' call node properties" in {
     val additionCall = cpg.call.methodFullName(Operators.addition).head

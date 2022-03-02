@@ -9,9 +9,7 @@ import overflowdb.traversal.NodeOps
 
 class CallCpgTests extends AnyFreeSpec with Matchers {
   "call on identifier" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """func(a, b)""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""func(a, b)""".stripMargin)
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("func(a, b)").head
@@ -22,7 +20,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test call receiver" in {
-      val callNode = cpg.call.codeExact("func(a, b)").head
+      val callNode     = cpg.call.codeExact("func(a, b)").head
       val callReceiver = callNode.receiver.isIdentifier.head
       callReceiver.code shouldBe "func"
 
@@ -37,7 +35,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call arguments" in {
       val callNode = cpg.call.codeExact("func(a, b)").head
-      val arg1 = callNode.argument(1)
+      val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
       callNode.astChildren.order(1).head shouldBe arg1
@@ -50,9 +48,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "call on identifier with named argument" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """func(a, b, namedPar = c)""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""func(a, b, namedPar = c)""".stripMargin)
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").head
@@ -64,7 +60,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call arguments" in {
       val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").head
-      val arg1 = callNode.argument(1)
+      val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
       callNode.astChildren.order(1).head shouldBe arg1
@@ -82,9 +78,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "call on member" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """x.func(a, b)""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""x.func(a, b)""".stripMargin)
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("x.func(a, b)").head
@@ -95,7 +89,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test call receiver" in {
-      val callNode = cpg.call.codeExact("x.func(a, b)").head
+      val callNode     = cpg.call.codeExact("x.func(a, b)").head
       val callReceiver = callNode.receiver.head
       callReceiver.code shouldBe "x.func"
 
@@ -104,7 +98,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test call instance param" in {
-      val callNode = cpg.call.codeExact("x.func(a, b)").head
+      val callNode    = cpg.call.codeExact("x.func(a, b)").head
       val instanceArg = callNode.argument(0)
       instanceArg.code shouldBe "x"
 
@@ -113,7 +107,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call arguments" in {
       val callNode = cpg.call.codeExact("x.func(a, b)").head
-      val arg1 = callNode.argument(1)
+      val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
       callNode.astChildren.order(2).head shouldBe arg1
@@ -126,9 +120,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "call on member with named argument" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """x.func(a, b, namedPar = c)""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""x.func(a, b, namedPar = c)""".stripMargin)
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").head
@@ -140,7 +132,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call arguments" in {
       val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").head
-      val arg1 = callNode.argument(1)
+      val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
       callNode.astChildren.order(2).head shouldBe arg1

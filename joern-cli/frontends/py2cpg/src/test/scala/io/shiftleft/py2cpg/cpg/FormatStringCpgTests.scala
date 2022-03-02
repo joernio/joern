@@ -8,9 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class FormatStringCpgTests extends AnyFreeSpec with Matchers {
   "format string" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """f"pre{x}post"""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""f"pre{x}post"""".stripMargin)
 
     "test formatString operator node" in {
       val callNode = cpg.call.methodFullName("<operator>.formatString").head

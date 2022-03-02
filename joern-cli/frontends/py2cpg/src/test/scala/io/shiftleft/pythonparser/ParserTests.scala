@@ -8,7 +8,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
   // expected is optional and if present the printed AST is compare against it
   // instead of code.
   def test(code: String, expected: String, indentStr: String): Unit = {
-    val ast = new PyParser().parse(code)
+    val ast       = new PyParser().parse(code)
     val compareTo = if (expected != null) expected else code
 
     val astPrinter = new AstPrinter(indentStr)
@@ -171,35 +171,29 @@ class ParserTests extends AnyFreeSpec with Matchers {
     }
 
     "try statement tests" in {
-      testS(
-        """try:
+      testS("""try:
           |  x
           |except:
           |  y""".stripMargin)
-      testS(
-        """try:
+      testS("""try:
           |  x
           |except e:
           |  y""".stripMargin)
-      testS(
-        """try:
+      testS("""try:
           |  x
           |except e as f:
           |  y""".stripMargin)
-      testS(
-        """try:
+      testS("""try:
           |  x
           |except e as f:
           |  y
           |except g as h:
           |  z""".stripMargin)
-      testS(
-        """try:
+      testS("""try:
           |  x
           |finally:
           |  y""".stripMargin)
-      testS(
-        """try:
+      testS("""try:
           |  x
           |except e as f:
           |  y
@@ -216,7 +210,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         """try:
           |  x
           |except e as f:
-          |  y""".stripMargin,
+          |  y""".stripMargin
       )
     }
 
@@ -337,8 +331,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
   }
 
   "indentation tests" in {
-    testS(
-      """if True:
+    testS("""if True:
         |  x
         |  if True:
         |    y
@@ -351,7 +344,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |a""".stripMargin,
       """if True:
         |  z = (x,y)
-        |a""".stripMargin,
+        |a""".stripMargin
     )
   }
 
@@ -363,7 +356,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  a""".stripMargin,
       """if True:
         |  z = x + y
-        |  a""".stripMargin,
+        |  a""".stripMargin
     )
   }
 
@@ -375,7 +368,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  a""".stripMargin,
       """if True:
         |  z = (x,y)
-        |  a""".stripMargin,
+        |  a""".stripMargin
     )
     testS(
       """if True:
@@ -384,7 +377,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  a""".stripMargin,
       """if True:
         |  z = {x, y}
-        |  a""".stripMargin,
+        |  a""".stripMargin
     )
     testS(
       """if True:
@@ -393,7 +386,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  a""".stripMargin,
       """if True:
         |  z = [x, y]
-        |  a""".stripMargin,
+        |  a""".stripMargin
     )
     testS(
       """if True:
@@ -403,7 +396,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  a""".stripMargin,
       """if True:
         |  z = [(x,y)]
-        |  a""".stripMargin,
+        |  a""".stripMargin
     )
   }
 
@@ -415,7 +408,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  a""".stripMargin,
       """if True:
         |  z = x + y
-        |  a""".stripMargin,
+        |  a""".stripMargin
     )
   }
 
@@ -691,9 +684,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
   }
 
   "format string tests with context" in {
-    testS(
-      """func(f"x: {y}")""".stripMargin
-    )
+    testS("""func(f"x: {y}")""".stripMargin)
   }
 
   // Check that an escaped string terminal character does not break
@@ -783,6 +774,5 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("exec x;\npass", "exec(x)\npass")
   }
 
-  "extra" in {
-  }
+  "extra" in {}
 }

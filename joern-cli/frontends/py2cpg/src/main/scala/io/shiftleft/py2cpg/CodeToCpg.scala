@@ -7,10 +7,7 @@ import io.shiftleft.pythonparser.PyParser
 import org.slf4j.LoggerFactory
 
 class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], keyPool: IntervalKeyPool)
-    extends ParallelCpgPass[InputProvider](
-      cpg,
-      keyPools = Some(keyPool.split(inputProvider.size))
-    ) {
+    extends ParallelCpgPass[InputProvider](cpg, keyPools = Some(keyPool.split(inputProvider.size))) {
   import CodeToCpg.logger
 
   override def partIterator: Iterator[InputProvider] = inputProvider.iterator
@@ -18,8 +15,8 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], keyPool: Inter
   override def runOnPart(inputProvider: InputProvider): Iterator[DiffGraph] = {
     val inputPair = inputProvider()
     try {
-      val parser = new PyParser()
-      val astRoot = parser.parse(inputPair.content)
+      val parser     = new PyParser()
+      val astRoot    = parser.parse(inputPair.content)
       val astVisitor = new PythonAstVisitor(inputPair.file, PythonV2AndV3)
       astVisitor.convert(astRoot)
 

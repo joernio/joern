@@ -7,16 +7,14 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class BoolOpCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """x or y or z""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""x or y or z""".stripMargin)
 
   "test boolOp 'or' call node properties" in {
     val orCall = cpg.call.methodFullName(Operators.logicalOr).head
     orCall.code shouldBe "x or y or z"
     orCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     orCall.lineNumber shouldBe Some(1)
-    //TODO orCall.columnNumber shouldBe Some(3)
+    // TODO orCall.columnNumber shouldBe Some(3)
   }
 
   "test boolOp 'or' ast children" in {

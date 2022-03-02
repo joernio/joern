@@ -7,16 +7,14 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class UnaryOpCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """~1""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""~1""".stripMargin)
 
   "test unaryOp 'invert' call node properties" in {
     val plusCall = cpg.call.methodFullName(Operators.not).head
     plusCall.code shouldBe "~1"
     plusCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     plusCall.lineNumber shouldBe Some(1)
-    //TODO plusCall.columnNumber shouldBe Some(1)
+    // TODO plusCall.columnNumber shouldBe Some(1)
   }
 
   "test unaryOp 'invert' ast children" in {

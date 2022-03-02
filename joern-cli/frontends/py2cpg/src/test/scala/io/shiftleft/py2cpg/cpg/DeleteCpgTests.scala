@@ -8,9 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class DeleteCpgTests extends AnyFreeSpec with Matchers {
   "delete statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """del x, y""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""del x, y""".stripMargin)
 
     "test call node properties" in {
       val callNode = cpg.call.methodFullNameExact("<operator>.delete").head

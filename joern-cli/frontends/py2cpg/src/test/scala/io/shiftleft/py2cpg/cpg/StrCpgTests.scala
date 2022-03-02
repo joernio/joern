@@ -6,9 +6,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class StrCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """"abc"""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg(""""abc"""".stripMargin)
 
   "test string literal node properties" in {
     val literal = cpg.literal.head

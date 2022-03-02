@@ -5,19 +5,12 @@ import org.rogach.scallop._
 import java.nio.file.Paths
 
 class ParsedArguments(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val output = opt[String](
-    default = Some("out.cpg"),
-    short = 'o',
-    descr = "Output file name. Defaults to out.cpg"
-  )
+  val output = opt[String](default = Some("out.cpg"), short = 'o', descr = "Output file name. Defaults to out.cpg")
 
   val input = trailArg[String](descr = "Input directory name")
 
-  val venvDir = opt[String](
-    default = Some(".venv"),
-    noshort = true,
-    descr = "Virtual environment directory. Defaults to .venv."
-  )
+  val venvDir =
+    opt[String](default = Some(".venv"), noshort = true, descr = "Virtual environment directory. Defaults to .venv.")
   val ignoreVenvDir = opt[Boolean](
     default = Some(true),
     noshort = true,

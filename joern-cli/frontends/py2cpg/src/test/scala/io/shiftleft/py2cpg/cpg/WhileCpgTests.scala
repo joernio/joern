@@ -7,10 +7,8 @@ import org.scalatest.matchers.should.Matchers
 
 class WhileCpgTests extends AnyFreeSpec with Matchers {
   "while statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """while x :
-        |  y""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""while x :
+        |  y""".stripMargin)
 
     "test control structure node properties" in {
       val controlStructureNode = cpg.controlStructure.head
@@ -34,12 +32,10 @@ class WhileCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "while else statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """while x :
+    lazy val cpg = Py2CpgTestContext.buildCpg("""while x :
         |  y
         |else:
-        |  z""".stripMargin
-    )
+        |  z""".stripMargin)
 
     "test control structure node properties" in {
       val controlStructureNode = cpg.controlStructure.head

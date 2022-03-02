@@ -7,10 +7,8 @@ import org.scalatest.matchers.should.Matchers
 
 class BuiltinIdentifierTests extends AnyFreeSpec with Matchers {
   "builtin identifier" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def f():
-        |  x = list()""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def f():
+        |  x = list()""".stripMargin)
 
     "test assignment to list exists" in {
       cpg.call.code("list = __builtins__.list").size shouldBe 1

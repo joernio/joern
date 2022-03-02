@@ -8,10 +8,8 @@ import org.scalatest.matchers.should.Matchers
 
 class RaiseCpgTests extends AnyFreeSpec with Matchers {
   "python3 raise" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """raise x from y
-        |""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""raise x from y
+        |""".stripMargin)
 
     "test raise node properties" in {
       val raiseNode = cpg.call.methodFullName("<operator>.raise").next()

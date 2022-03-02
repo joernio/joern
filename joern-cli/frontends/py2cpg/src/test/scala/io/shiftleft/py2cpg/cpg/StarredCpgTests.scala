@@ -8,9 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class StarredCpgTests extends AnyFreeSpec with Matchers {
   "starred unpack" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """func(*x)""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""func(*x)""".stripMargin)
 
     "test starred unpack node properties" in {
       val starredUnrollCall = cpg.call.methodFullName("<operator>.starredUnpack").head

@@ -7,9 +7,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class SubscriptCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """x[1]""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""x[1]""".stripMargin)
 
   "test index access node properties" in {
     val assignCall = cpg.call.methodFullName(Operators.indexAccess).head

@@ -7,9 +7,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class AttributeCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """x.y""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""x.y""".stripMargin)
 
   "test field access call node properties" in {
     val callNode = cpg.call.methodFullName(Operators.fieldAccess).head

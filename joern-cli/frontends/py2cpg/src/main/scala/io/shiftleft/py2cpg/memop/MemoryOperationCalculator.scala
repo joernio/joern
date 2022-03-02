@@ -6,9 +6,9 @@ import io.shiftleft.pythonparser.{AstVisitor, ast}
 import scala.collection.mutable
 
 class MemoryOperationCalculator extends AstVisitor[Unit] {
-  private val stack = mutable.Stack.empty[MemoryOperation]
+  private val stack  = mutable.Stack.empty[MemoryOperation]
   val astNodeToMemOp = new AstNodeToMemoryOperationMap()
-  val names = mutable.Set.empty[String]
+  val names          = mutable.Set.empty[String]
 
   private def accept(astNode: ast.iast): Unit = {
     astNode.accept(this)

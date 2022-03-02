@@ -9,17 +9,14 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import scala.collection.mutable
 
-case class Py2CpgOnFileSystemConfig(
-    outputFile: Path,
-    inputDir: Path,
-    ignoreVenvDir: Option[Path]
-)
+case class Py2CpgOnFileSystemConfig(outputFile: Path, inputDir: Path, ignoreVenvDir: Option[Path])
 
 object Py2CpgOnFileSystem {
   private val logger = LoggerFactory.getLogger(getClass)
 
   /** Entry point for files system based cpg generation from python code.
-    * @param config Configuration for cpg generation.
+    * @param config
+    *   Configuration for cpg generation.
     */
   def buildCpg(config: Py2CpgOnFileSystemConfig): Unit = {
     logConfiguration(config)
@@ -29,7 +26,7 @@ object Py2CpgOnFileSystem {
     val inputFiles = collectInputFiles(config.inputDir, config.ignoreVenvDir.to(Iterable))
     val inputProviders = inputFiles.map { inputFile => () =>
       {
-        val content = Files.readAllBytes(inputFile)
+        val content    = Files.readAllBytes(inputFile)
         val contentStr = new String(content, StandardCharsets.UTF_8)
         Py2Cpg.InputPair(contentStr, config.inputDir.relativize(inputFile).toString)
       }
@@ -54,10 +51,7 @@ object Py2CpgOnFileSystem {
     new Cpg(graph)
   }
 
-  private def collectInputFiles(
-      inputDir: Path,
-      ignorePrefixes: Iterable[Path]
-  ): Iterable[Path] = {
+  private def collectInputFiles(inputDir: Path, ignorePrefixes: Iterable[Path]): Iterable[Path] = {
     if (!Files.exists(inputDir)) {
       logger.error(s"Cannot find $inputDir")
       return Iterable.empty
@@ -69,7 +63,7 @@ object Py2CpgOnFileSystem {
       inputDir,
       new SimpleFileVisitor[Path] {
         override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val relativeFile = inputDir.relativize(file)
+          val relativeFile    = inputDir.relativize(file)
           val relativeFileStr = relativeFile.toString
           if (
             relativeFileStr.endsWith(".py") &&

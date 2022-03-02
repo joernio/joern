@@ -1,11 +1,6 @@
 package io.shiftleft.py2cpg
 
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  Operators,
-  nodes
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, nodes}
 import io.shiftleft.py2cpg.memop.{Load, MemoryOperation, Store}
 import io.shiftleft.pythonparser.ast
 
@@ -24,7 +19,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   private var tmpCounter = 0
 
   protected def getUnusedName(prefix: String = null): String = {
-    //TODO check that result name does not collide with existing variables.
+    // TODO check that result name does not collide with existing variables.
     val result = if (prefix != null) {
       prefix + "_tmp" + tmpCounter
     } else {
@@ -35,36 +30,29 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createTry(
-      body: Iterable[nodes.NewNode],
-      handlers: Iterable[nodes.NewNode],
-      finalBlock: Iterable[nodes.NewNode],
-      orElseBlock: Iterable[nodes.NewNode],
-      lineAndColumn: LineAndColumn
+    body: Iterable[nodes.NewNode],
+    handlers: Iterable[nodes.NewNode],
+    finalBlock: Iterable[nodes.NewNode],
+    orElseBlock: Iterable[nodes.NewNode],
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     val controlStructureNode =
       nodeBuilder.controlStructureNode("try: ...", ControlStructureTypes.TRY, lineAndColumn)
 
-    val bodyBlockNode = createBlock(body, lineAndColumn)
+    val bodyBlockNode     = createBlock(body, lineAndColumn)
     val handlersBlockNode = createBlock(handlers, lineAndColumn)
-    val finalBlockNode = createBlock(finalBlock, lineAndColumn)
-    val orElseBlockNode = createBlock(orElseBlock, lineAndColumn)
+    val finalBlockNode    = createBlock(finalBlock, lineAndColumn)
+    val orElseBlockNode   = createBlock(orElseBlock, lineAndColumn)
 
-    addAstChildNodes(
-      controlStructureNode,
-      1,
-      bodyBlockNode,
-      handlersBlockNode,
-      finalBlockNode,
-      orElseBlockNode
-    )
+    addAstChildNodes(controlStructureNode, 1, bodyBlockNode, handlersBlockNode, finalBlockNode, orElseBlockNode)
 
     controlStructureNode
   }
 
   protected def createTransformedImport(
-      from: String,
-      names: Iterable[ast.Alias],
-      lineAndCol: LineAndColumn
+    from: String,
+    names: Iterable[ast.Alias],
+    lineAndCol: LineAndColumn
   ): nodes.NewNode = {
     val importAssignNodes =
       names.map { alias =>
@@ -96,9 +84,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   // for comprehension target assignment.
   // TODO handle Starred target
   protected def createValueToTargetsDecomposition(
-      targets: Iterable[ast.iexpr],
-      valueNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn
+    targets: Iterable[ast.iexpr],
+    valueNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn
   ): Iterable[nodes.NewNode] = {
     if (
       targets.size == 1 &&
@@ -138,17 +126,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
           val targetNode = convert(target)
           val tmpIdentifierNode =
             createIdentifierNode(tmpVariableName, Load, lineAndColumn)
-          val indexTmpIdentifierNode = createIndexAccessChain(
-            tmpIdentifierNode,
-            accessChain,
-            lineAndColumn
-          )
+          val indexTmpIdentifierNode = createIndexAccessChain(tmpIdentifierNode, accessChain, lineAndColumn)
 
-          val targetAssignNode = createAssignment(
-            targetNode,
-            indexTmpIdentifierNode,
-            lineAndColumn
-          )
+          val targetAssignNode = createAssignment(targetNode, indexTmpIdentifierNode, lineAndColumn)
           loweredAssignNodes.append(targetAssignNode)
         }
       }
@@ -183,11 +163,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createComprehensionLowering(
-      tmpVariableName: String,
-      containerInitAssignNode: nodes.NewNode,
-      innerMostLoopNode: nodes.NewNode,
-      comprehensions: Iterable[ast.Comprehension],
-      lineAndColumn: LineAndColumn
+    tmpVariableName: String,
+    containerInitAssignNode: nodes.NewNode,
+    innerMostLoopNode: nodes.NewNode,
+    comprehensions: Iterable[ast.Comprehension],
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
 
@@ -215,10 +195,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
     val returnIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
 
-    val blockNode = createBlock(
-      containerInitAssignNode :: nestedLoopBlockNode :: returnIdentifierNode :: Nil,
-      lineAndColumn
-    )
+    val blockNode =
+      createBlock(containerInitAssignNode :: nestedLoopBlockNode :: returnIdentifierNode :: Nil, lineAndColumn)
 
     addAstChildNodes(blockNode, 1, specialTargetLocals)
 
@@ -241,10 +219,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     }
   }
 
-  protected def createBlock(
-      blockElements: Iterable[nodes.NewNode],
-      lineAndColumn: LineAndColumn
-  ): nodes.NewNode = {
+  protected def createBlock(blockElements: Iterable[nodes.NewNode], lineAndColumn: LineAndColumn): nodes.NewNode = {
     val blockCode = blockElements.map(codeOf).mkString("\n")
     val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
 
@@ -255,10 +230,10 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createCall(
-      receiverNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn,
-      argumentNodes: Iterable[nodes.NewNode],
-      keywordArguments: Iterable[(String, nodes.NewNode)]
+    receiverNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn,
+    argumentNodes: Iterable[nodes.NewNode],
+    keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewCall = {
     val code = codeOf(receiverNode) +
       "(" +
@@ -268,12 +243,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(
-      code,
-      "",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      lineAndColumn
-    )
+    val callNode = nodeBuilder.callNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
@@ -295,11 +265,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createInstanceCall(
-      receiverNode: nodes.NewNode,
-      instanceNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn,
-      argumentNodes: Iterable[nodes.NewNode],
-      keywordArguments: Iterable[(String, nodes.NewNode)]
+    receiverNode: nodes.NewNode,
+    instanceNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn,
+    argumentNodes: Iterable[nodes.NewNode],
+    keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewCall = {
     val code = codeOf(receiverNode) +
       "(" +
@@ -309,12 +279,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(
-      code,
-      "",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      lineAndColumn
-    )
+    val callNode = nodeBuilder.callNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
@@ -349,27 +314,21 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   //   CALL(recv = tmp.y, inst = tmp, args=<args>)
   // }
   protected def createXDotYCall(
-      x: () => nodes.NewNode,
-      y: String,
-      xMayHaveSideEffects: Boolean,
-      lineAndColumn: LineAndColumn,
-      argumentNodes: Iterable[nodes.NewNode],
-      keywordArguments: Iterable[(String, nodes.NewNode)]
+    x: () => nodes.NewNode,
+    y: String,
+    xMayHaveSideEffects: Boolean,
+    lineAndColumn: LineAndColumn,
+    argumentNodes: Iterable[nodes.NewNode],
+    keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewNode = {
     if (xMayHaveSideEffects) {
-      val tmpVarName = getUnusedName()
+      val tmpVarName    = getUnusedName()
       val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x(), lineAndColumn)
       val receiverNode =
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
-        createInstanceCall(
-          receiverNode,
-          instanceNode,
-          lineAndColumn,
-          argumentNodes,
-          keywordArguments
-        )
+        createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes, keywordArguments)
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
@@ -379,11 +338,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
   // NOTE: The argument indicies start from 0!
   protected def createStaticCall(
-      name: String,
-      methodFullName: String,
-      lineAndColumn: LineAndColumn,
-      argumentNodes: Iterable[nodes.NewNode],
-      keywordArguments: Iterable[(String, nodes.NewNode)]
+    name: String,
+    methodFullName: String,
+    lineAndColumn: LineAndColumn,
+    argumentNodes: Iterable[nodes.NewNode],
+    keywordArguments: Iterable[(String, nodes.NewNode)]
   ): nodes.NewNode = {
     val code = name +
       "(" +
@@ -393,12 +352,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(
-      code,
-      methodFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val callNode = nodeBuilder.callNode(code, methodFullName, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     var argIndex = 0
     argumentNodes.foreach { argumentNode =>
@@ -417,19 +371,14 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createNAryOperatorCall(
-      opCodeAndFullName: () => (String, String),
-      operands: Iterable[nodes.NewNode],
-      lineAndColumn: LineAndColumn
+    opCodeAndFullName: () => (String, String),
+    operands: Iterable[nodes.NewNode],
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
 
     val (operatorCode, methodFullName) = opCodeAndFullName()
-    val code = operands.map(operandNode => codeOf(operandNode)).mkString(" " + operatorCode + " ")
-    val callNode = nodeBuilder.callNode(
-      code,
-      methodFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = operands.map(operandNode => codeOf(operandNode)).mkString(" " + operatorCode + " ")
+    val callNode = nodeBuilder.callNode(code, methodFullName, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, operands)
 
@@ -437,39 +386,29 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createBinaryOperatorCall(
-      lhsNode: nodes.NewNode,
-      opCodeAndFullName: () => (String, String),
-      rhsNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn
+    lhsNode: nodes.NewNode,
+    opCodeAndFullName: () => (String, String),
+    rhsNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn
   ): nodes.NewCall = {
     val (opCode, opFullName) = opCodeAndFullName()
 
-    val code = codeOf(lhsNode) + " " + opCode + " " + codeOf(rhsNode)
-    val callNode = nodeBuilder.callNode(
-      code,
-      opFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = codeOf(lhsNode) + " " + opCode + " " + codeOf(rhsNode)
+    val callNode = nodeBuilder.callNode(code, opFullName, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
     callNode
   }
 
   protected def createLiteralOperatorCall(
-      codeStart: String,
-      codeEnd: String,
-      opFullName: String,
-      lineAndColumn: LineAndColumn,
-      operands: nodes.NewNode*
+    codeStart: String,
+    codeEnd: String,
+    opFullName: String,
+    lineAndColumn: LineAndColumn,
+    operands: nodes.NewNode*
   ): nodes.NewCall = {
-    val code = operands.map(codeOf).mkString(codeStart, ", ", codeEnd)
-    val callNode = nodeBuilder.callNode(
-      code,
-      opFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = operands.map(codeOf).mkString(codeStart, ", ", codeEnd)
+    val callNode = nodeBuilder.callNode(code, opFullName, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, operands)
 
@@ -477,33 +416,23 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createStarredUnpackOperatorCall(
-      unpackOperand: nodes.NewNode,
-      lineAndColumn: LineAndColumn
+    unpackOperand: nodes.NewNode,
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
-    val code = "*" + codeOf(unpackOperand)
-    val callNode = nodeBuilder.callNode(
-      code,
-      "<operator>.starredUnpack",
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = "*" + codeOf(unpackOperand)
+    val callNode = nodeBuilder.callNode(code, "<operator>.starredUnpack", DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, unpackOperand)
     callNode
   }
 
   protected def createAssignment(
-      lhsNode: nodes.NewNode,
-      rhsNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn
+    lhsNode: nodes.NewNode,
+    rhsNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
-    val code = codeOf(lhsNode) + " = " + codeOf(rhsNode)
-    val callNode = nodeBuilder.callNode(
-      code,
-      Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = codeOf(lhsNode) + " = " + codeOf(rhsNode)
+    val callNode = nodeBuilder.callNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
 
@@ -511,28 +440,23 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createAssignmentToIdentifier(
-      identifierName: String,
-      rhsNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn
+    identifierName: String,
+    rhsNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     val identifierNode = createIdentifierNode(identifierName, Store, lineAndColumn)
     createAssignment(identifierNode, rhsNode, lineAndColumn)
   }
 
   protected def createAugAssignment(
-      lhsNode: nodes.NewNode,
-      operatorCode: String,
-      rhsNode: nodes.NewNode,
-      operatorFullName: String,
-      lineAndColumn: LineAndColumn
+    lhsNode: nodes.NewNode,
+    operatorCode: String,
+    rhsNode: nodes.NewNode,
+    operatorFullName: String,
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
-    val code = codeOf(lhsNode) + " " + operatorCode + " " + codeOf(rhsNode)
-    val callNode = nodeBuilder.callNode(
-      code,
-      operatorFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = codeOf(lhsNode) + " " + operatorCode + " " + codeOf(rhsNode)
+    val callNode = nodeBuilder.callNode(code, operatorFullName, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
 
@@ -543,9 +467,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   // nodeBuilder.identifierNode() directly to avoid missing to add
   // the variable reference.
   protected def createIdentifierNode(
-      name: String,
-      memOp: MemoryOperation,
-      lineAndColumn: LineAndColumn
+    name: String,
+    memOp: MemoryOperation,
+    lineAndColumn: LineAndColumn
   ): nodes.NewIdentifier = {
     val identifierNode = nodeBuilder.identifierNode(name, lineAndColumn)
     contextStack.addVariableReference(identifierNode, memOp)
@@ -553,17 +477,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createIndexAccess(
-      baseNode: nodes.NewNode,
-      indexNode: nodes.NewNode,
-      lineAndColumn: LineAndColumn
+    baseNode: nodes.NewNode,
+    indexNode: nodes.NewNode,
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     val code = codeOf(baseNode) + "[" + codeOf(indexNode) + "]"
-    val indexAccessNode = nodeBuilder.callNode(
-      code,
-      Operators.indexAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val indexAccessNode =
+      nodeBuilder.callNode(code, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(indexAccessNode, 1, baseNode, indexNode)
 
@@ -571,13 +491,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createIndexAccessChain(
-      rootNode: nodes.NewNode,
-      accessChain: List[Int],
-      lineAndColumn: LineAndColumn
+    rootNode: nodes.NewNode,
+    accessChain: List[Int],
+    lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
     accessChain match {
       case accessIndex :: tail =>
-        val baseNode = createIndexAccessChain(rootNode, tail, lineAndColumn)
+        val baseNode  = createIndexAccessChain(rootNode, tail, lineAndColumn)
         val indexNode = nodeBuilder.numberLiteralNode(accessIndex, lineAndColumn)
 
         createIndexAccess(baseNode, indexNode, lineAndColumn)
@@ -587,36 +507,28 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def createFieldAccess(
-      baseNode: nodes.NewNode,
-      fieldName: String,
-      lineAndColumn: LineAndColumn
+    baseNode: nodes.NewNode,
+    fieldName: String,
+    lineAndColumn: LineAndColumn
   ): nodes.NewCall = {
     val fieldIdNode = nodeBuilder.fieldIdentifierNode(fieldName, lineAndColumn)
 
-    val code = codeOf(baseNode) + "." + codeOf(fieldIdNode)
-    val callNode = nodeBuilder.callNode(
-      code,
-      Operators.fieldAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      lineAndColumn
-    )
+    val code     = codeOf(baseNode) + "." + codeOf(fieldIdNode)
+    val callNode = nodeBuilder.callNode(code, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, baseNode, fieldIdNode)
     callNode
   }
 
   protected def createTypeRef(
-      typeName: String,
-      typeFullName: String,
-      lineAndColumn: LineAndColumn
+    typeName: String,
+    typeFullName: String,
+    lineAndColumn: LineAndColumn
   ): nodes.NewTypeRef = {
     nodeBuilder.typeRefNode("class " + typeName + "(...)", typeFullName, lineAndColumn)
   }
 
-  protected def createBinding(
-      methodNode: nodes.NewMethod,
-      typeDeclNode: nodes.NewTypeDecl
-  ): nodes.NewBinding = {
+  protected def createBinding(methodNode: nodes.NewMethod, typeDeclNode: nodes.NewTypeDecl): nodes.NewBinding = {
     val bindingNode = nodeBuilder.bindingNode()
     edgeBuilder.bindsEdge(bindingNode, typeDeclNode)
     edgeBuilder.refEdge(methodNode, bindingNode)
@@ -624,10 +536,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     bindingNode
   }
 
-  protected def createReturn(
-      returnExprOption: Option[nodes.NewNode],
-      lineAndColumn: LineAndColumn
-  ): nodes.NewReturn = {
+  protected def createReturn(returnExprOption: Option[nodes.NewNode], lineAndColumn: LineAndColumn): nodes.NewReturn = {
     val code =
       returnExprOption match {
         case Some(returnExpr) =>
@@ -642,9 +551,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def addAstChildNodes(
-      parentNode: nodes.NewNode,
-      startIndex: AutoIncIndex,
-      childNodes: Iterable[nodes.NewNode]
+    parentNode: nodes.NewNode,
+    startIndex: AutoIncIndex,
+    childNodes: Iterable[nodes.NewNode]
   ): Unit = {
     childNodes.foreach { childNode =>
       val orderIndex = startIndex.getAndInc
@@ -653,33 +562,29 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def addAstChildNodes(
-      parentNode: nodes.NewNode,
-      startIndex: Int,
-      childNodes: Iterable[nodes.NewNode]
+    parentNode: nodes.NewNode,
+    startIndex: Int,
+    childNodes: Iterable[nodes.NewNode]
   ): Unit = {
     addAstChildNodes(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
   protected def addAstChildNodes(
-      parentNode: nodes.NewNode,
-      startIndex: AutoIncIndex,
-      childNodes: nodes.NewNode*
+    parentNode: nodes.NewNode,
+    startIndex: AutoIncIndex,
+    childNodes: nodes.NewNode*
   ): Unit = {
     addAstChildNodes(parentNode, startIndex, childNodes)
   }
 
-  protected def addAstChildNodes(
-      parentNode: nodes.NewNode,
-      startIndex: Int,
-      childNodes: nodes.NewNode*
-  ): Unit = {
+  protected def addAstChildNodes(parentNode: nodes.NewNode, startIndex: Int, childNodes: nodes.NewNode*): Unit = {
     addAstChildNodes(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
   protected def addAstChildrenAsArguments(
-      parentNode: nodes.NewNode,
-      startIndex: AutoIncIndex,
-      childNodes: Iterable[nodes.NewNode]
+    parentNode: nodes.NewNode,
+    startIndex: AutoIncIndex,
+    childNodes: Iterable[nodes.NewNode]
   ): Unit = {
     childNodes.foreach { childNode =>
       val orderAndArgIndex = startIndex.getAndInc
@@ -689,25 +594,25 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def addAstChildrenAsArguments(
-      parentNode: nodes.NewNode,
-      startIndex: Int,
-      childNodes: Iterable[nodes.NewNode]
+    parentNode: nodes.NewNode,
+    startIndex: Int,
+    childNodes: Iterable[nodes.NewNode]
   ): Unit = {
     addAstChildrenAsArguments(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
   protected def addAstChildrenAsArguments(
-      parentNode: nodes.NewNode,
-      startIndex: AutoIncIndex,
-      childNodes: nodes.NewNode*
+    parentNode: nodes.NewNode,
+    startIndex: AutoIncIndex,
+    childNodes: nodes.NewNode*
   ): Unit = {
     addAstChildrenAsArguments(parentNode, startIndex, childNodes)
   }
 
   protected def addAstChildrenAsArguments(
-      parentNode: nodes.NewNode,
-      startIndex: Int,
-      childNodes: nodes.NewNode*
+    parentNode: nodes.NewNode,
+    startIndex: Int,
+    childNodes: nodes.NewNode*
   ): Unit = {
     addAstChildrenAsArguments(parentNode, new AutoIncIndex(startIndex), childNodes)
   }

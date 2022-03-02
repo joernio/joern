@@ -8,9 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class StringExpressionListCpgTests extends AnyFreeSpec with Matchers {
   "string expression list" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """"one" "two" "three"""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg(""""one" "two" "three"""".stripMargin)
 
     "test stringExpressionList operator node" in {
       val callNode = cpg.call.methodFullName("<operator>.stringExpressionList").head

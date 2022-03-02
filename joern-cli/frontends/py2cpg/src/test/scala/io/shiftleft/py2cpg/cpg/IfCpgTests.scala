@@ -8,10 +8,8 @@ import org.scalatest.matchers.should.Matchers
 
 class IfCpgTests extends AnyFreeSpec with Matchers {
   "if statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """if x :
-        |  y""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""if x :
+        |  y""".stripMargin)
 
     "test control structure node properties" in {
       val controlStructureNode = cpg.controlStructure.head
@@ -35,12 +33,10 @@ class IfCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "if else statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """if x :
+    lazy val cpg = Py2CpgTestContext.buildCpg("""if x :
         |  y
         |else:
-        |  z""".stripMargin
-    )
+        |  z""".stripMargin)
 
     "test control structure node properties" in {
       val controlStructureNode = cpg.controlStructure.head

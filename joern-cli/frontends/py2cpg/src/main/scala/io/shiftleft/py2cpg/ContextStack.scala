@@ -1,13 +1,7 @@
 package io.shiftleft.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewClosureBinding,
-  NewIdentifier,
-  NewLocal,
-  NewMethod,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewIdentifier, NewLocal, NewMethod, NewNode}
 import io.shiftleft.py2cpg.memop._
 import org.slf4j.LoggerFactory
 
@@ -28,24 +22,24 @@ class ContextStack {
   }
 
   private class MethodContext(
-      val name: String,
-      val astParent: nodes.NewNode,
-      val order: AutoIncIndex,
-      val isClassBodyMethod: Boolean = false,
-      val methodBlockNode: Option[nodes.NewBlock] = None,
-      val methodRefNode: Option[nodes.NewMethodRef] = None,
-      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-      val globalVariables: mutable.Set[String] = mutable.Set.empty,
-      val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
-      var lambdaCounter: Int = 0
+    val name: String,
+    val astParent: nodes.NewNode,
+    val order: AutoIncIndex,
+    val isClassBodyMethod: Boolean = false,
+    val methodBlockNode: Option[nodes.NewBlock] = None,
+    val methodRefNode: Option[nodes.NewMethodRef] = None,
+    val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val globalVariables: mutable.Set[String] = mutable.Set.empty,
+    val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
+    var lambdaCounter: Int = 0
   ) extends Context {}
 
   private class ClassContext(
-      val name: String,
-      val astParent: nodes.NewNode,
-      val order: AutoIncIndex,
-      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-      var lambdaCounter: Int = 0
+    val name: String,
+    val astParent: nodes.NewNode,
+    val order: AutoIncIndex,
+    val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    var lambdaCounter: Int = 0
   ) extends Context {}
 
   // Used to represent comprehension variable and exception
@@ -59,27 +53,27 @@ class ContextStack {
   // except e as x:
   //   pass
   private class SpecialBlockContext(
-      val astParent: nodes.NewNode,
-      val order: AutoIncIndex,
-      val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-      var lambdaCounter: Int = 0
+    val astParent: nodes.NewNode,
+    val order: AutoIncIndex,
+    val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    var lambdaCounter: Int = 0
   ) extends Context {}
 
   private case class VariableReference(
-      identifier: nodes.NewIdentifier,
-      memOp: MemoryOperation,
-      // Context stack as it was when VariableReference
-      // was created. Context objects are and need to
-      // shared between different VariableReference
-      // instances because the changes in the variable
-      // maps need to be in sync.
-      stack: List[Context]
+    identifier: nodes.NewIdentifier,
+    memOp: MemoryOperation,
+    // Context stack as it was when VariableReference
+    // was created. Context objects are and need to
+    // shared between different VariableReference
+    // instances because the changes in the variable
+    // maps need to be in sync.
+    stack: List[Context]
   )
 
-  private var stack = List[Context]()
-  private val variableReferences = mutable.ArrayBuffer.empty[VariableReference]
-  private var moduleMethodContext = Option.empty[MethodContext]
-  private var fileNamespaceBlock = Option.empty[nodes.NewNamespaceBlock]
+  private var stack                   = List[Context]()
+  private val variableReferences      = mutable.ArrayBuffer.empty[VariableReference]
+  private var moduleMethodContext     = Option.empty[MethodContext]
+  private var fileNamespaceBlock      = Option.empty[nodes.NewNamespaceBlock]
   private var fileNamespaceBlockOrder = new AutoIncIndex(1)
 
   private def push(context: Context): Unit = {
@@ -87,21 +81,15 @@ class ContextStack {
   }
 
   def pushMethod(
-      name: String,
-      methodNode: nodes.NewMethod,
-      methodBlockNode: nodes.NewBlock,
-      methodRefNode: Option[nodes.NewMethodRef]
+    name: String,
+    methodNode: nodes.NewMethod,
+    methodBlockNode: nodes.NewBlock,
+    methodRefNode: Option[nodes.NewMethodRef]
   ): Unit = {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
-    val methodContext = new MethodContext(
-      name,
-      methodNode,
-      new AutoIncIndex(1),
-      isClassBodyMethod,
-      Some(methodBlockNode),
-      methodRefNode
-    )
+    val methodContext =
+      new MethodContext(name, methodNode, new AutoIncIndex(1), isClassBodyMethod, Some(methodBlockNode), methodRefNode)
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
@@ -140,11 +128,11 @@ class ContextStack {
   }
 
   def createIdentifierLinks(
-      createLocal: (String, Option[String]) => nodes.NewLocal,
-      createClosureBinding: (String, String) => nodes.NewClosureBinding,
-      createAstEdge: (nodes.NewNode, nodes.NewNode, Int) => Unit,
-      createRefEdge: (nodes.NewNode, nodes.NewNode) => Unit,
-      createCaptureEdge: (nodes.NewNode, nodes.NewNode) => Unit
+    createLocal: (String, Option[String]) => nodes.NewLocal,
+    createClosureBinding: (String, String) => nodes.NewClosureBinding,
+    createAstEdge: (nodes.NewNode, nodes.NewNode, Int) => Unit,
+    createRefEdge: (nodes.NewNode, nodes.NewNode) => Unit,
+    createCaptureEdge: (nodes.NewNode, nodes.NewNode) => Unit
   ): Unit = {
     // Before we do any linking, we iterate over all variable references and
     // create a variable in the module method context for each global variable
@@ -160,11 +148,7 @@ class ContextStack {
         !moduleMethodContext.get.variables.contains(name)
       ) {
         val localNode = createLocal(name, None)
-        createAstEdge(
-          localNode,
-          moduleMethodContext.get.methodBlockNode.get,
-          moduleMethodContext.get.order.getAndInc
-        )
+        createAstEdge(localNode, moduleMethodContext.get.methodBlockNode.get, moduleMethodContext.get.order.getAndInc)
         moduleMethodContext.get.variables.put(name, localNode)
       }
     }
@@ -210,13 +194,9 @@ class ContextStack {
         } else if (memOp == Store) {
           var variableNode = lookupVariableInMethod(name, contextStack)
           if (variableNode.isEmpty) {
-            val localNode = createLocal(name, None)
+            val localNode              = createLocal(name, None)
             val enclosingMethodContext = findEnclosingMethodContext(contextStack)
-            createAstEdge(
-              localNode,
-              enclosingMethodContext.methodBlockNode.get,
-              enclosingMethodContext.order.getAndInc
-            )
+            createAstEdge(localNode, enclosingMethodContext.methodBlockNode.get, enclosingMethodContext.order.getAndInc)
             enclosingMethodContext.variables.put(name, localNode)
             variableNode = Some(localNode)
           }
@@ -236,19 +216,19 @@ class ContextStack {
   }
 
   private def linkLocalOrCapturing(
-      createLocal: (String, Option[String]) => NewLocal,
-      createClosureBinding: (String, String) => NewClosureBinding,
-      createAstEdge: (NewNode, NewNode, Int) => Unit,
-      createRefEdge: (NewNode, NewNode) => Unit,
-      createCaptureEdge: (NewNode, NewNode) => Unit,
-      identifier: NewIdentifier,
-      name: String,
-      contextStack: List[Context]
+    createLocal: (String, Option[String]) => NewLocal,
+    createClosureBinding: (String, String) => NewClosureBinding,
+    createAstEdge: (NewNode, NewNode, Int) => Unit,
+    createRefEdge: (NewNode, NewNode) => Unit,
+    createCaptureEdge: (NewNode, NewNode) => Unit,
+    identifier: NewIdentifier,
+    name: String,
+    contextStack: List[Context]
   ): Unit = {
     var identifierOrClosureBindingToLink: nodes.NewNode = identifier
-    val stackIt = contextStack.iterator
-    var contextHasVariable = false
-    val startContext = contextStack.head
+    val stackIt                                         = contextStack.iterator
+    var contextHasVariable                              = false
+    val startContext                                    = contextStack.head
     while (stackIt.hasNext && !contextHasVariable) {
       val context = stackIt.next()
 
@@ -265,11 +245,7 @@ class ContextStack {
             if (!contextHasVariable) {
               if (context != moduleMethodContext.get) {
                 val localNode = createLocal(name, Some(closureBindingId))
-                createAstEdge(
-                  localNode,
-                  methodContext.methodBlockNode.get,
-                  methodContext.order.getAndInc
-                )
+                createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
                 methodContext.variables.put(name, localNode)
               } else {
                 // When we could not even find a matching variable in the module context we get
@@ -278,11 +254,7 @@ class ContextStack {
                 // For example this happens when there are wildcard imports directly into the
                 // modules namespace.
                 val localNode = createLocal(name, None)
-                createAstEdge(
-                  localNode,
-                  methodContext.methodBlockNode.get,
-                  methodContext.order.getAndInc
-                )
+                createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
                 methodContext.variables.put(name, localNode)
               }
             }
@@ -310,13 +282,10 @@ class ContextStack {
     }
   }
 
-  private def lookupVariableInMethod(
-      name: String,
-      stack: List[Context]
-  ): Option[nodes.NewNode] = {
+  private def lookupVariableInMethod(name: String, stack: List[Context]): Option[nodes.NewNode] = {
     var variableNode = Option.empty[nodes.NewNode]
 
-    val stackIt = stack.iterator
+    val stackIt              = stack.iterator
     var lastContextWasMethod = false
     while (stackIt.hasNext && variableNode.isEmpty && !lastContextWasMethod) {
       val context = stackIt.next()

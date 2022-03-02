@@ -13,13 +13,13 @@ object Main extends App {
   val files = Files.walk(Paths.get(inputDirOrFile)).collect(Collectors.toList[Path]).asScala
 
   var filesProcessed = 0
-  var timeAccu = 0L
+  var timeAccu       = 0L
   files.foreach { file =>
     if (!Files.isDirectory(file) && file.toString.endsWith(".py")) {
       println(s"Processing: $file")
-      val start = System.currentTimeMillis()
+      val start  = System.currentTimeMillis()
       val module = parser.parse(new FileInputStream(file.toString))
-      val stop = System.currentTimeMillis()
+      val stop   = System.currentTimeMillis()
       filesProcessed += 1
       timeAccu += (stop - start)
       val errors = parser.errors

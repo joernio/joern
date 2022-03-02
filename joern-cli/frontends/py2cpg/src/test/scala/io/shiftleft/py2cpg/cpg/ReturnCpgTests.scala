@@ -7,11 +7,9 @@ import org.scalatest.matchers.should.Matchers
 
 class ReturnCpgTests extends AnyFreeSpec with Matchers {
   "void return" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
         |  return
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test return node properties" in {
       val returnNode = cpg.ret.head
@@ -21,11 +19,9 @@ class ReturnCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "value return" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
         |  return a
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test return node properties" in {
       val returnNode = cpg.ret.head

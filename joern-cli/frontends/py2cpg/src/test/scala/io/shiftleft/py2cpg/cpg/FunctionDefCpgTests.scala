@@ -8,11 +8,9 @@ import org.scalatest.matchers.should.Matchers
 
 class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   "normal argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
         |  pass
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test method node properties" in {
       val methodNode = cpg.method.fullName("test.py:<module>.func").head
@@ -29,15 +27,15 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
     "test method parameter nodes" in {
       cpg.method.fullName("test.py:<module>.func").parameter.order(1).name.head shouldBe "a"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(1)
         .typeFullName
         .head shouldBe Constants.ANY
       cpg.method.fullName("test.py:<module>.func").parameter.order(2).name.head shouldBe "b"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(2)
         .typeFullName
@@ -84,23 +82,21 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "positional argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b, /):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b, /):
         |  pass
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test method parameter nodes" in {
       cpg.method.fullName("test.py:<module>.func").parameter.order(1).name.head shouldBe "a"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(1)
         .typeFullName
         .head shouldBe Constants.ANY
       cpg.method.fullName("test.py:<module>.func").parameter.order(2).name.head shouldBe "b"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(2)
         .typeFullName
@@ -109,30 +105,28 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "mixed argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b, /, c):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b, /, c):
         |  pass
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test method parameter nodes" in {
       cpg.method.fullName("test.py:<module>.func").parameter.order(1).name.head shouldBe "a"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(1)
         .typeFullName
         .head shouldBe Constants.ANY
       cpg.method.fullName("test.py:<module>.func").parameter.order(2).name.head shouldBe "b"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(2)
         .typeFullName
         .head shouldBe Constants.ANY
       cpg.method.fullName("test.py:<module>.func").parameter.order(3).name.head shouldBe "c"
-      cpg
-        .method.fullName("test.py:<module>.func")
+      cpg.method
+        .fullName("test.py:<module>.func")
         .parameter
         .order(3)
         .typeFullName
@@ -141,13 +135,11 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "decorated function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """@abc(arg)
+    lazy val cpg = Py2CpgTestContext.buildCpg("""@abc(arg)
         |@staticmethod
         |def func():
         |  pass
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test decorator wrapping of method reference" in {
       cpg.methodRef("func").astParent.astParent.astParent.isCall.head.code shouldBe

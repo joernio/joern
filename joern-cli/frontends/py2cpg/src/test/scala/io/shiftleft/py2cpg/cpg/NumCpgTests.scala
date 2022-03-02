@@ -6,9 +6,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class NumCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """1""".stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""1""".stripMargin)
 
   "test num literal node properties" in {
     val literal = cpg.literal.head

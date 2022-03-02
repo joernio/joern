@@ -12,17 +12,18 @@ object Py2Cpg {
 }
 
 /** Entry point for general cpg generation from python code.
-  * @param inputProviders Set of functions which provide InputPairs.
-  *                       The functions must be safe to call from different threads.
-  * @param outputCpg Empty target cpg which will be populated.
+  * @param inputProviders
+  *   Set of functions which provide InputPairs. The functions must be safe to call from different threads.
+  * @param outputCpg
+  *   Empty target cpg which will be populated.
   */
 class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
-  private val diffGraph = new DiffGraph.Builder()
+  private val diffGraph   = new DiffGraph.Builder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
     val auxKeyPool = new IntervalKeyPool(1, 100000)
-    val keyPool = new IntervalKeyPool(100000, Long.MaxValue)
+    val keyPool    = new IntervalKeyPool(100000, Long.MaxValue)
 
     nodeBuilder.metaNode(Languages.FUZZY_TEST_LANG, version = "")
 

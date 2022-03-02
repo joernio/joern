@@ -8,9 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class AssertCpgTests extends AnyFreeSpec with Matchers {
 
-  lazy val cpg = Py2CpgTestContext.buildCpg(
-    """assert x, y """.stripMargin
-  )
+  lazy val cpg = Py2CpgTestContext.buildCpg("""assert x, y """.stripMargin)
 
   "test assert operator call node properties" in {
     val assignCall = cpg.call.methodFullName("<operator>.assert").head

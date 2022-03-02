@@ -10,9 +10,7 @@ import org.scalatest.matchers.should.Matchers
 
 class CompareCpgTests extends AnyFreeSpec with Matchers {
   "single operation comparison" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """x < y""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""x < y""".stripMargin)
 
     "test compare node" in {
       val callNode = cpg.call.code("x < y").head
@@ -34,13 +32,11 @@ class CompareCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "multi operation comparison" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """x < y < z""".stripMargin
-    )
+    lazy val cpg = Py2CpgTestContext.buildCpg("""x < y < z""".stripMargin)
 
     "test compare node" in {
       val assign1Node = cpg.call.code("tmp0 = y").head
-      val andNode = assign1Node.astParent.astChildren.order(assign1Node.order + 1).isCall.head
+      val andNode     = assign1Node.astParent.astChildren.order(assign1Node.order + 1).isCall.head
       andNode.code shouldBe "x < tmp0 and tmp0 < z"
       val x = andNode.astChildren.l
       andNode.astChildren.order(1).isCall.code.head shouldBe "x < tmp0"
