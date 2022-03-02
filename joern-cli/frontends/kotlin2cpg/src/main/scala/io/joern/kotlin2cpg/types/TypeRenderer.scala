@@ -50,12 +50,19 @@ object TypeRenderer {
       } else if (isFunctionXType(t)) {
         TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
       } else {
-        val fqName     = DescriptorUtils.getFqName(t.getConstructor.getDeclarationDescriptor)
-        val mappedType = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName)
-        if (mappedType != null) {
-          stripped(renderer.renderFqName(mappedType.asSingleFqName().toUnsafe))
+        val descriptor = TypeUtils.getClassDescriptor(t)
+        if (descriptor != null) {
+          val fqName     = DescriptorUtils.getFqName(descriptor)
+          val mappedType = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName)
+          if (mappedType != null) {
+            stripped(renderer.renderFqName(mappedType.asSingleFqName().toUnsafe))
+          } else {
+            val rendered = renderer.renderType(t)
+            stripped(rendered)
+          }
         } else {
-          val rendered = renderer.renderType(t)
+          val sc       = TypeUtilsKt.getImmediateSuperclassNotAny(t)
+          val rendered = renderer.renderType(sc)
           stripped(rendered)
         }
       }
