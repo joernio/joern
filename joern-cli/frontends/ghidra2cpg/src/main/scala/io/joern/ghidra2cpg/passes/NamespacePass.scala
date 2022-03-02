@@ -11,12 +11,6 @@ class NamespacePass(cpg: Cpg, filename: String, keyPool: IntervalKeyPool)
   override def runOnPart(part: String): Iterator[DiffGraph] = {
     implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
 
-    val dummyNamespaceBlock = nodes
-      .NewNamespaceBlock()
-      .filename("<unknown>")
-      .fullName("<global>")
-      .name("<global>")
-      .order(1)
     val namespaceNodeNode =
       nodes
         .NewNamespaceBlock()
@@ -25,7 +19,6 @@ class NamespacePass(cpg: Cpg, filename: String, keyPool: IntervalKeyPool)
         .name("<global>")
         .order(1)
 
-    diffGraph.addNode(dummyNamespaceBlock)
     diffGraph.addNode(namespaceNodeNode)
     Iterator(diffGraph.build())
   }
