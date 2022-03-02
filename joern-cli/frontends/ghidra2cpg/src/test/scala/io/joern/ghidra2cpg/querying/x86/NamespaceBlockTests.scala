@@ -19,13 +19,6 @@ class NamespaceBlockTests extends GhidraBinToCpgSuite {
     cpg.namespaceBlock.size shouldBe 1
   }
 
-  // "should contain a correct global namespace block for the `<unknown>` file" in {
-  //  val List(x) = cpg.namespaceBlock.filename(FileTraversal.UNKNOWN).l
-  //  x.name shouldBe "<global>"
-  //  x.fullName shouldBe "<global>"
-  //  x.order shouldBe 1
-  // }
-
   "should contain correct namespace block for known file" in {
     val List(x) = cpg.namespaceBlock.l
     x.name shouldBe "<global>"
