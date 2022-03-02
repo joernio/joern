@@ -21,8 +21,10 @@ import org.jetbrains.kotlin.psi.{
   KtNameReferenceExpression,
   KtNamedFunction,
   KtParameter,
+  KtPrimaryConstructor,
   KtProperty,
   KtQualifiedExpression,
+  KtSecondaryConstructor,
   KtSuperExpression,
   KtThisExpression,
   KtTypeAlias,
@@ -31,7 +33,7 @@ import org.jetbrains.kotlin.psi.{
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
-import org.jetbrains.kotlin.types.{SimpleType, UnresolvedType}
+import org.jetbrains.kotlin.types.{SimpleType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -104,6 +106,10 @@ trait NameGenerator {
 
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
 
+  def fullNameWithSignature(expr: KtPrimaryConstructor, or: (String, String)): (String, String)
+
+  def fullNameWithSignature(expr: KtSecondaryConstructor, or: (String, String)): (String, String)
+
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
@@ -121,6 +127,10 @@ trait NameGenerator {
   def isConstructorCall(expr: KtCallExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, or: String): String
+
+  def typeFullName(expr: KtPrimaryConstructor, or: String): String
+
+  def typeFullName(expr: KtSecondaryConstructor, or: String): String
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 }
@@ -610,6 +620,74 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
     }
   }
 
+  def fullNameWithSignature(expr: KtSecondaryConstructor, or: (String, String)): (String, String) = {
+    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+    val paramTypeNames =
+      try {
+        val nodeParams = expr.getValueParameters
+        nodeParams.asScala
+          .map { p =>
+            val explicitTypeFullName = if (p.getTypeReference != null) {
+              p.getTypeReference.getText
+            } else {
+              TypeConstants.cpgUnresolved
+            }
+            // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+            val typeFullName = parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
+            typeFullName
+          }
+      } catch {
+        case _: Throwable => List()
+      }
+    val paramListSignature = s"(${paramTypeNames.mkString(",")})"
+
+    val methodName =
+      if (fnDesc.isEmpty) {
+        TypeConstants.cpgUnresolved + "." + TypeConstants.initPrefix
+      } else {
+        TypeRenderer.renderFqName(fnDesc.get) + TypeConstants.initPrefix
+      }
+    val signature = TypeConstants.void + paramListSignature
+    val fullname  = s"$methodName:$signature"
+    (fullname, signature)
+  }
+
+  def fullNameWithSignature(expr: KtPrimaryConstructor, or: (String, String)): (String, String) = {
+    // if not explicitly defined, the primary ctor will be `null`
+    if (expr == null) {
+      return or
+    }
+    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+    val paramTypeNames =
+      try {
+        val nodeParams = expr.getValueParameters
+        nodeParams.asScala
+          .map { p =>
+            val explicitTypeFullName = if (p.getTypeReference != null) {
+              p.getTypeReference.getText
+            } else {
+              TypeConstants.cpgUnresolved
+            }
+            // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+            val typeFullName = parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
+            typeFullName
+          }
+      } catch {
+        case _: Throwable => List()
+      }
+    val paramListSignature = s"(${paramTypeNames.mkString(",")})"
+
+    val methodName =
+      if (fnDesc.isEmpty) {
+        TypeConstants.cpgUnresolved + "." + TypeConstants.initPrefix
+      } else {
+        TypeRenderer.renderFqName(fnDesc.get) + TypeConstants.initPrefix
+      }
+    val signature = TypeConstants.void + paramListSignature
+    val fullname  = s"$methodName:$signature"
+    (fullname, signature)
+  }
+
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.FUNCTION, expr))
     val returnTypeFullName =
@@ -680,6 +758,22 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
           NameReferenceKinds.Unknown
       }
       .getOrElse(NameReferenceKinds.Unknown)
+  }
+
+  def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String = {
+    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+    fnDesc match {
+      case Some(desc) => TypeRenderer.render(desc.getReturnType)
+      case _          => defaultValue
+    }
+  }
+
+  def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String = {
+    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+    fnDesc match {
+      case Some(desc) => TypeRenderer.render(desc.getReturnType)
+      case _          => defaultValue
+    }
   }
 
   def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
