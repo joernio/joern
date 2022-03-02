@@ -16,7 +16,7 @@ class FileTests extends GhidraBinToCpgSuite {
   "should contain one file nodes in total, both with order=0" in {
     cpg.file.order.l shouldBe List(0)
     cpg.file.name.size shouldBe 1
-    cpg.file.name.head.split(File.pathSeparator).last shouldBe "x86_64.bin"
+    cpg.file.name.head.split(File.separator).last shouldBe "x86_64.bin"
   }
 
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
