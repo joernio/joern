@@ -27,9 +27,9 @@ class JsSrc2Cpg {
     File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
       val files: Set[(String, String)] = config.inputPaths.flatMap(i => AstGenRunner.execute(File(i), tmpDir))
       new MetaDataPass(cpg, "NEWJS", Some(metaDataKeyPool)).createAndApply()
-      new AstCreationPass(cpg, files, Some(astKeyPool), config, report).createAndApply()
-      val types = List.empty[String] // // TODO: provide actual types
-      new TypeNodePass(types, cpg, Some(typesKeyPool)).createAndApply()
+      val astCreationPass = new AstCreationPass(cpg, files, Some(astKeyPool), config, report)
+      astCreationPass.createAndApply()
+      new TypeNodePass(astCreationPass.usedTypes(), cpg, Some(typesKeyPool)).createAndApply()
       report.print()
     }
 

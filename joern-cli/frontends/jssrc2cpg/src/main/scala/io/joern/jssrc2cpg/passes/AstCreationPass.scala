@@ -5,11 +5,13 @@ import io.joern.jssrc2cpg.parser.BabelJsonParser
 import io.joern.jssrc2cpg.utils.Report
 import io.joern.jssrc2cpg.utils.TimeUtils
 import io.joern.jssrc2cpg.Config
+import io.joern.jssrc2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.utils.IOUtils
 
 import java.nio.file.Paths
+import scala.jdk.CollectionConverters._
 
 class AstCreationPass(
   cpg: Cpg,
@@ -19,25 +21,25 @@ class AstCreationPass(
   report: Report = new Report()
 ) extends ConcurrentWriterCpgPass[(String, String)](cpg, keyPool = keyPool) {
 
+  private val global: Global = new Global()
+
+  def usedTypes(): List[String] =
+    global.usedTypes.keys().asScala.filterNot(_ == "ANY").toList
+
   override def generateParts(): Array[(String, String)] = files.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, input: (String, String)): Unit = {
     val (rootPath, jsonFilename) = input
-    val (gotCpg, duration) = TimeUtils.time {
-      val maybeResult = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
-      maybeResult match {
-        case Some(parseResult) =>
-          val fileLOC = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
-          report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
-          val localDiff = new DiffGraphBuilder
-          new AstCreator(config, localDiff, parseResult).createAst()
-          diffGraph.absorb(localDiff)
-          true
-        case None =>
-          false
-      }
+    val (filename, duration) = TimeUtils.time {
+      val parseResult = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
+      val fileLOC     = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
+      report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
+      val localDiff = new DiffGraphBuilder
+      new AstCreator(config, global, localDiff, parseResult).createAst()
+      diffGraph.absorb(localDiff)
+      parseResult.filename
     }
-    report.updateReport(jsonFilename, gotCpg, duration)
+    report.updateReport(filename, cpg = true, duration)
 
   }
 
