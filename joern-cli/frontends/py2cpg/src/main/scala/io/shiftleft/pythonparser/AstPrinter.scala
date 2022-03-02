@@ -3,6 +3,8 @@ import io.shiftleft.pythonparser.ast._
 import scala.collection.immutable
 
 class AstPrinter(indentStr: String) extends AstVisitor[String] {
+  private val ls = System.lineSeparator()
+
   def print(astNode: iast): String = {
     astNode.accept(this)
   }
@@ -10,7 +12,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   def printIndented(astNode: iast): String = {
     val printStr = astNode.accept(this)
 
-    indentStr + printStr.replaceAll("\n", "\n" + indentStr)
+    indentStr + printStr.replaceAll(ls, ls + indentStr)
   }
 
   override def visit(ast: iast): String = ???
@@ -18,38 +20,38 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   override def visit(mod: imod): String = ???
 
   override def visit(module: Module): String = {
-    module.stmts.map(print).mkString("\n")
+    module.stmts.map(print).mkString(ls)
   }
 
   override def visit(stmt: istmt): String = ???
 
   override def visit(functionDef: FunctionDef): String = {
-    functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
+    functionDef.decorator_list.map(d => "@" + print(d) + ls).mkString("") +
       "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
-      ":" + functionDef.body.map(printIndented).mkString("\n", "\n", "")
+      ":" + functionDef.body.map(printIndented).mkString(ls, ls, "")
 
   }
 
   override def visit(functionDef: AsyncFunctionDef): String = {
-    functionDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
+    functionDef.decorator_list.map(d => "@" + print(d) + ls).mkString("") +
       "async def " + functionDef.name + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
-      ":" + functionDef.body.map(printIndented).mkString("\n", "\n", "")
+      ":" + functionDef.body.map(printIndented).mkString(ls, ls, "")
 
   }
 
   override def visit(classDef: ClassDef): String = {
     val optionArgEndComma = if (classDef.bases.nonEmpty && classDef.keywords.nonEmpty) ", " else ""
 
-    classDef.decorator_list.map(d => "@" + print(d) + "\n").mkString("") +
+    classDef.decorator_list.map(d => "@" + print(d) + ls).mkString("") +
       "class " + classDef.name +
       "(" +
       classDef.bases.map(print).mkString(", ") +
       optionArgEndComma +
       classDef.keywords.map(print).mkString(", ") +
       ")" + ":" +
-      classDef.body.map(printIndented).mkString("\n", "\n", "")
+      classDef.body.map(printIndented).mkString(ls, ls, "")
   }
 
   override def visit(ret: Return): String = {
@@ -78,28 +80,28 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(forStmt: For): String = {
     "for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
-      forStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      forStmt.body.map(printIndented).mkString(ls, ls, "") +
       (if (forStmt.orelse.nonEmpty)
-         "\nelse:" +
-           forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+         s"${ls}else:" +
+           forStmt.orelse.map(printIndented).mkString(ls, ls, "")
        else "")
   }
 
   override def visit(forStmt: AsyncFor): String = {
     "async for " + print(forStmt.target) + " in " + print(forStmt.iter) + ":" +
-      forStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      forStmt.body.map(printIndented).mkString(ls, ls, "") +
       (if (forStmt.orelse.nonEmpty)
-         "\nelse:" +
-           forStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+         s"${ls}else:" +
+           forStmt.orelse.map(printIndented).mkString(ls, ls, "")
        else "")
   }
 
   override def visit(whileStmt: While): String = {
     "while " + print(whileStmt.test) + ":" +
-      whileStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      whileStmt.body.map(printIndented).mkString(ls, ls, "") +
       (if (whileStmt.orelse.nonEmpty)
-         "\nelse:" +
-           whileStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+         s"${ls}else:" +
+           whileStmt.orelse.map(printIndented).mkString(ls, ls, "")
        else "")
   }
 
@@ -108,25 +110,25 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       ifStmt.orelse.size match {
         case 0 => ""
         case 1 if ifStmt.orelse.head.isInstanceOf[If] =>
-          "\nel" + print(ifStmt.orelse.head)
+          s"${ls}el" + print(ifStmt.orelse.head)
         case _ =>
-          "\nelse:" +
-            ifStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+          s"${ls}else:" +
+            ifStmt.orelse.map(printIndented).mkString(ls, ls, "")
       }
 
     "if " + print(ifStmt.test) + ":" +
-      ifStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      ifStmt.body.map(printIndented).mkString(ls, ls, "") +
       elseString
   }
 
   override def visit(withStmt: With): String = {
     "with " + withStmt.items.map(print).mkString(", ") + ":" +
-      withStmt.body.map(printIndented).mkString("\n", "\n", "")
+      withStmt.body.map(printIndented).mkString(ls, ls, "")
   }
 
   override def visit(withStmt: AsyncWith): String = {
     "async with " + withStmt.items.map(print).mkString(", ") + ":" +
-      withStmt.body.map(printIndented).mkString("\n", "\n", "")
+      withStmt.body.map(printIndented).mkString(ls, ls, "")
   }
 
   override def visit(raise: Raise): String = {
@@ -137,30 +139,30 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   override def visit(tryStmt: Try): String = {
     val elseString =
       if (tryStmt.orelse.nonEmpty) {
-        "\nelse:" +
-          tryStmt.orelse.map(printIndented).mkString("\n", "\n", "")
+        s"${ls}else:" +
+          tryStmt.orelse.map(printIndented).mkString(ls, ls, "")
       } else {
         ""
       }
 
     val finallyString =
       if (tryStmt.finalbody.nonEmpty) {
-        "\nfinally:" +
-          tryStmt.finalbody.map(printIndented).mkString("\n", "\n", "")
+        s"${ls}finally:" +
+          tryStmt.finalbody.map(printIndented).mkString(ls, ls, "")
       } else {
         ""
       }
 
     val handlersString = {
       if (tryStmt.handlers.nonEmpty) {
-        tryStmt.handlers.map(print).mkString("\n", "\n", "")
+        tryStmt.handlers.map(print).mkString(ls, ls, "")
       } else {
         ""
       }
     }
 
     "try:" +
-      tryStmt.body.map(printIndented).mkString("\n", "\n", "") +
+      tryStmt.body.map(printIndented).mkString(ls, ls, "") +
       handlersString +
       elseString +
       finallyString
@@ -492,7 +494,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       exceptHandler.typ.map(t => " " + print(t)).getOrElse("") +
       exceptHandler.name.map(n => " as " + n).getOrElse("") +
       ":" +
-      exceptHandler.body.map(printIndented).mkString("\n", "\n", "")
+      exceptHandler.body.map(printIndented).mkString(ls, ls, "")
   }
 
   override def visit(keyword: Keyword): String = {

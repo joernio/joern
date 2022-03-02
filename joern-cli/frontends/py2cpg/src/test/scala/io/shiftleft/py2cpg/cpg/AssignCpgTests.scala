@@ -74,7 +74,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         """tmp0 = list
           |x = tmp0[0]
           |y = tmp0[1][0]
-          |z = tmp0[1][1]""".stripMargin
+          |z = tmp0[1][1]""".stripMargin.replace(System.lineSeparator(), "\n")
       block.lineNumber shouldBe Some(1)
     }
 
@@ -122,7 +122,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
       block.code shouldBe
         """tmp0 = list
           |x = tmp0
-          |y = tmp0""".stripMargin
+          |y = tmp0""".stripMargin.replace(System.lineSeparator(), "\n")
       block.lineNumber shouldBe Some(1)
     }
 

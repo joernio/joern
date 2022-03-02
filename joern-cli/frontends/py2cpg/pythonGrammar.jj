@@ -307,7 +307,7 @@ SKIP: {
       SwitchTo(NEWLINE_EMIT);
     }
   }
-| <LINE_JOIN: "\\" ("\n" | "\r")>
+| <LINE_JOIN: "\\" ("\n" | "\r" | "\r\n")>
 }
 
 SPECIAL_TOKEN: {
