@@ -114,7 +114,7 @@ class Ghidra2Cpg() {
       .toMap
 
     // We touch every function twice, regular ASM and PCode
-    // Also we have + 2 for MetaDataPass and Namespacepass
+    // Also we have + 2 for MetaDataPass and NamespacePass
     val numOfKeypools   = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
 
