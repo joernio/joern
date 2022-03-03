@@ -13,8 +13,8 @@ case class FuzzyTestLangCpgGenerator(config: FrontendConfig, rootPath: Path) ext
     outputPath: String = "cpg.bin.zip",
     namespaces: List[String] = List()
   ): Option[String] = {
-    val pysrc2cpgsh  = rootPath.resolve("pysrc2cpg").toString
-    val arguments = Seq(inputPath, "-o", outputPath) ++ config.cmdLineParams
+    val pysrc2cpgsh = rootPath.resolve("pysrc2cpg").toString
+    val arguments   = Seq(inputPath, "-o", outputPath) ++ config.cmdLineParams
     runShellCommand(pysrc2cpgsh, arguments).map(_ => outputPath)
   }
 
