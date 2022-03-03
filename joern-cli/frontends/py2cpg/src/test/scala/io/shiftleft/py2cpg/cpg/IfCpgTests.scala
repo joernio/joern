@@ -1,6 +1,6 @@
-package io.shiftleft.py2cpg.cpg
+package io.joern.py2cpg.cpg
 
-import io.shiftleft.py2cpg.Py2CpgTestContext
+import io.joern.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, nodes}
 import org.scalatest.freespec.AnyFreeSpec

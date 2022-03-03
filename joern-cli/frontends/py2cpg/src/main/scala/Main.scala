@@ -1,4 +1,4 @@
-import io.shiftleft.pythonparser.PyParser
+import io.joern.pythonparser.PyParser
 
 import java.io.FileInputStream
 import java.nio.file.{Files, Path, Paths}

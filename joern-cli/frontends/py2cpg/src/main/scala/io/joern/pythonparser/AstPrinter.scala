@@ -1,5 +1,5 @@
-package io.shiftleft.pythonparser
-import io.shiftleft.pythonparser.ast._
+package io.joern.pythonparser
+import io.joern.pythonparser.ast._
 import scala.collection.immutable
 
 class AstPrinter(indentStr: String) extends AstVisitor[String] {

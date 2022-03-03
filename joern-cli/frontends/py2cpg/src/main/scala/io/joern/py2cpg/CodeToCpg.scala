@@ -1,9 +1,9 @@
-package io.shiftleft.py2cpg
+package io.joern.py2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
-import io.shiftleft.py2cpg.Py2Cpg.InputProvider
-import io.shiftleft.pythonparser.PyParser
+import io.joern.py2cpg.Py2Cpg.InputProvider
+import io.joern.pythonparser.PyParser
 import org.slf4j.LoggerFactory
 
 class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], keyPool: IntervalKeyPool)

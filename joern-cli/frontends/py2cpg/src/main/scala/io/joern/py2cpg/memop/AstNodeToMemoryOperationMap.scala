@@ -1,6 +1,6 @@
-package io.shiftleft.py2cpg.memop
+package io.joern.py2cpg.memop
 
-import io.shiftleft.pythonparser.ast
+import io.joern.pythonparser.ast
 
 import scala.collection.mutable
 

@@ -1,8 +1,8 @@
-package io.shiftleft.py2cpg
+package io.joern.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewIdentifier, NewLocal, NewMethod, NewNode}
-import io.shiftleft.py2cpg.memop._
+import io.joern.py2cpg.memop._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

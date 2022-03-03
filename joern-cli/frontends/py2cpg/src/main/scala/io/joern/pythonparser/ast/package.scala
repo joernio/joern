@@ -1,4 +1,4 @@
-package io.shiftleft.pythonparser
+package io.joern.pythonparser
 
 import scala.collection.mutable
 

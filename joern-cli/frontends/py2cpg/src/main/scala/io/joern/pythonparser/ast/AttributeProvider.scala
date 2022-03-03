@@ -1,6 +1,6 @@
-package io.shiftleft.pythonparser.ast
+package io.joern.pythonparser.ast
 
-import io.shiftleft.pythonparser.Token
+import io.joern.pythonparser.Token
 
 trait AttributeProvider {
   def lineno: Int

@@ -1,7 +1,7 @@
-package io.shiftleft.py2cpg.memop
+package io.joern.py2cpg.memop
 
-import io.shiftleft.pythonparser.ast.{FormattedValue, JoinedString, JoinedStringConstant}
-import io.shiftleft.pythonparser.{AstVisitor, ast}
+import io.joern.pythonparser.ast.{FormattedValue, JoinedString, JoinedStringConstant}
+import io.joern.pythonparser.{AstVisitor, ast}
 
 import scala.collection.mutable
 

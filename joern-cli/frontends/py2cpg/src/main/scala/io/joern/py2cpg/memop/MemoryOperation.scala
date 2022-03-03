@@ -1,4 +1,4 @@
-package io.shiftleft.py2cpg.memop
+package io.joern.py2cpg.memop
 
 sealed trait MemoryOperation
 object Store extends MemoryOperation

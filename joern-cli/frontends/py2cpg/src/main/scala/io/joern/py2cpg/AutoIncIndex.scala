@@ -1,4 +1,4 @@
-package io.shiftleft.py2cpg
+package io.joern.py2cpg
 
 class AutoIncIndex(private var index: Int) {
   def getAndInc: Int = {

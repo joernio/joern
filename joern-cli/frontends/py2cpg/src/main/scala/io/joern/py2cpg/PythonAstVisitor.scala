@@ -1,12 +1,12 @@
-package io.shiftleft.py2cpg
+package io.joern.py2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.py2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
+import io.joern.py2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
 import io.shiftleft.passes.DiffGraph
-import io.shiftleft.py2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperationCalculator, Store}
-import io.shiftleft.pythonparser.ast
+import io.joern.py2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperationCalculator, Store}
+import io.joern.pythonparser.ast
 
 import scala.collection.mutable
 

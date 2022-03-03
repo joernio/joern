@@ -1,8 +1,8 @@
-package io.shiftleft.pythonparser
+package io.joern.pythonparser
 
-import io.shiftleft.pythonparser.PythonParser
-import io.shiftleft.pythonparser.PythonParserConstants
-import io.shiftleft.pythonparser.ast.{ErrorStatement, iast}
+import io.joern.pythonparser.PythonParser
+import io.joern.pythonparser.PythonParserConstants
+import io.joern.pythonparser.ast.{ErrorStatement, iast}
 
 import java.io.{BufferedReader, ByteArrayInputStream, InputStream, Reader}
 import java.nio.charset.StandardCharsets

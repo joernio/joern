@@ -1,7 +1,7 @@
-package io.shiftleft.py2cpg.cpg
+package io.joern.py2cpg.cpg
 
-import io.shiftleft.py2cpg.Constants
-import io.shiftleft.py2cpg.Py2CpgTestContext
+import io.joern.py2cpg.Constants
+import io.joern.py2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

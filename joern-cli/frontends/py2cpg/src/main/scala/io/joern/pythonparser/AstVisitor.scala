@@ -1,6 +1,6 @@
-package io.shiftleft.pythonparser
+package io.joern.pythonparser
 
-import io.shiftleft.pythonparser.ast._
+import io.joern.pythonparser.ast._
 
 trait AstVisitor[T] {
   def visit(ast: iast): T

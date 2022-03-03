@@ -1,6 +1,6 @@
-package io.shiftleft.pythonparser.ast
+package io.joern.pythonparser.ast
 
-import io.shiftleft.pythonparser.AstVisitor
+import io.joern.pythonparser.AstVisitor
 
 import java.util
 import scala.jdk.CollectionConverters._

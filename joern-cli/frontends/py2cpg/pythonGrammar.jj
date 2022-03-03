@@ -5,12 +5,12 @@ options {
     STATIC = false;
 }
 PARSER_BEGIN(PythonParser)
-package io.shiftleft.pythonparser;
+package io.joern.pythonparser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
-import io.shiftleft.pythonparser.ast.Module;
-import io.shiftleft.pythonparser.ast.*;
+import io.joern.pythonparser.ast.Module;
+import io.joern.pythonparser.ast.*;
 public class PythonParser {
   static class BoxedObject<T> {
     T object;

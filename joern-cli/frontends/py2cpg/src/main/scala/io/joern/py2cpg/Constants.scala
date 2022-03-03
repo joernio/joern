@@ -1,4 +1,4 @@
-package io.shiftleft.py2cpg
+package io.joern.py2cpg
 
 object Constants {
   val ANY = "ANY"
