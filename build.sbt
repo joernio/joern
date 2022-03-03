@@ -14,7 +14,7 @@ lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
-lazy val py2cpg            = Projects.py2cpg
+lazy val pysrc2cpg         = Projects.pysrc2cpg
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
