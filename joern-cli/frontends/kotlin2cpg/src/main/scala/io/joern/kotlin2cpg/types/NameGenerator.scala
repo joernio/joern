@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescript
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
   EnumEntrySyntheticClassDescriptor,
+  PropertyDescriptorImpl,
   TypeAliasConstructorDescriptorImpl
 }
 import org.jetbrains.kotlin.psi.{
@@ -30,16 +31,15 @@ import org.jetbrains.kotlin.psi.{
   KtTypeAlias,
   KtTypeReference
 }
-import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, DescriptorUtils}
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
-import org.jetbrains.kotlin.types.{SimpleType, TypeUtils, UnresolvedType}
+import org.jetbrains.kotlin.types.{SimpleType, UnresolvedType}
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
   NoScopeRecordCliBindingTrace
 }
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
@@ -98,9 +98,13 @@ trait NameGenerator {
 
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
 
+  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, or: String): String
+
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
+
+  def isReferencingMember(expr: KtNameReferenceExpression): Boolean
 
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
 
@@ -736,6 +740,29 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
   private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {
     Option(bindingsForEntity(bindingContext, expr))
       .map(_ => bindingContext.get(BindingContext.REFERENCE_TARGET, expr))
+  }
+
+  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
+    descriptorForNameReference(expr)
+      .collect { case desc: ValueDescriptor =>
+        desc match {
+          case typedDesc: PropertyDescriptorImpl =>
+            TypeRenderer.renderFqName(typedDesc.getContainingDeclaration)
+          case _ => defaultValue
+        }
+      }
+      .getOrElse(defaultValue)
+  }
+
+  def isReferencingMember(expr: KtNameReferenceExpression): Boolean = {
+    descriptorForNameReference(expr)
+      .collect { case desc: ValueDescriptor =>
+        desc match {
+          case _: PropertyDescriptorImpl => true
+          case _                         => false
+        }
+      }
+      .getOrElse(false)
   }
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
