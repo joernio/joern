@@ -14,7 +14,8 @@ import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
 import overflowdb.traversal._
 
-class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) extends SimpleCpgPass(cpg, keyPool = keyPool) {
+class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config)
+    extends SimpleCpgPass(cpg, keyPool = keyPool) {
 
   private val systemIncludePaths =
     IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)

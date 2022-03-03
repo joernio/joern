@@ -17,7 +17,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
 
   override def generateParts(): Array[Method] = cpg.method.toArray
 
-  override def runOnPart(dstGraph: DiffGraphBuilder, method: Method): Unit= {
+  override def runOnPart(dstGraph: DiffGraphBuilder, method: Method): Unit = {
     logger.info("Calculating reaching definitions for: {} in {}", method.fullName, method.filename)
     val problem = ReachingDefProblem.create(method)
 
@@ -54,14 +54,14 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
     */
   private def addReachingDefEdges(
-      dstGraph: DiffGraphBuilder,
+    dstGraph: DiffGraphBuilder,
     problem: DataFlowProblem[mutable.BitSet],
     method: Method,
     solution: Solution[mutable.BitSet]
   ): Unit = {
     implicit val implicitDst = dstGraph
-    val numberToNode                         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in                                   = solution.in
+    val numberToNode         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val in                   = solution.in
     val gen = solution.problem.transferFunction
       .asInstanceOf[ReachingDefTransferFunction]
       .gen
@@ -188,9 +188,9 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     method: Method,
     solution: Solution[mutable.BitSet]
   ): Unit = {
-    val numberToNode                         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val numberToNode                        = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
     implicit val dstGraph: DiffGraphBuilder = builder
-    val exitNode                             = method.methodReturn
+    val exitNode                            = method.methodReturn
     val transferFunction = solution.problem.transferFunction.asInstanceOf[OptimizedReachingDefTransferFunction]
     val genOnce          = transferFunction.loneIdentifiers
     genOnce.foreach { case (_, defs) =>
