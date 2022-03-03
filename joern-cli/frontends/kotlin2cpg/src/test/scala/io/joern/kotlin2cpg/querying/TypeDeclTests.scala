@@ -42,7 +42,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
         .name("Foo")
         .method
         .fullName
-        .toSet shouldBe Set("mypkg.Foo:ANY()", "mypkg.Foo.add1:java.lang.Integer(java.lang.Integer)")
+        .toSet shouldBe Set("mypkg.Foo.<init>:void()", "mypkg.Foo.add1:java.lang.Integer(java.lang.Integer)")
     }
 
     "should contain a TYPE_DECL node for `Foo` with a correct member node" in {

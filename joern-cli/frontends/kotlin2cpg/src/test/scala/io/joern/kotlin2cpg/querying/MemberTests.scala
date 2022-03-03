@@ -30,6 +30,29 @@ class MemberTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with member defined in primary constructor" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |class AClass(private val x: String) {
+      |    fun printX() {
+      |        println(x)
+      |    }
+      |}
+      |
+      |fun main() {
+      |    val a = AClass("A_MESSAGE")
+      |    a.printX()
+      |}
+      |""".stripMargin)
+
+    "should contain MEMBER node with correct properties" in {
+      val List(x) = cpg.member("x").l
+      x.code shouldBe "private val x: String"
+      x.typeFullName shouldBe "java.lang.String"
+    }
+  }
+
   "CPG for code with member which gets its init from constructor arg" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |class Foo(p: String) {
