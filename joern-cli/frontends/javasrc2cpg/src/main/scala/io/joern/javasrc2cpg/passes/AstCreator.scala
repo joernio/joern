@@ -97,7 +97,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.passes.DiffGraph
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
 
 import java.util.UUID.randomUUID

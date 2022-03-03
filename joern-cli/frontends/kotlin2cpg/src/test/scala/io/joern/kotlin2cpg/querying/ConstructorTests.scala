@@ -24,7 +24,8 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a METHOD node for the constructor with the correct fullname set" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo:ANY()")
+      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe
+        List("mypkg.Foo.<init>:void()")
     }
 
     "should contain a METHOD node for the constructor with the correct number of parameters" in {
@@ -45,7 +46,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a METHOD node for the constructor with the correct fullname set" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo:ANY(ANY)")
+      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo.<init>:void(java.lang.String)")
     }
 
     "should contain a METHOD node for the constructor with the correct number of parameters" in {
@@ -66,7 +67,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a METHOD node for the constructor with the correct fullname set" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo:ANY(ANY)")
+      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo.<init>:void(java.lang.String)")
     }
 
     "should contain a METHOD node for the constructor with the correct number of parameters" in {
@@ -92,21 +93,21 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
 
     "should contain METHOD nodes for the primary and secondary constructors with the correct fullnames set" in {
       cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List(
-        "mypkg.Foo:ANY(ANY)",
-        "mypkg.Foo:ANY(ANY,ANY)"
+        "mypkg.Foo.<init>:void(java.lang.String)",
+        "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
       )
     }
 
     "should contain a METHOD node for the primary constructor with the correct number of parameters" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName(".*\\(ANY\\)").parameter.size shouldBe 1
+      cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).parameter.size shouldBe 1
     }
 
     "should contain a METHOD node for the secondary constructor with the correct number of parameters" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName(".*ANY,ANY.*").parameter.size shouldBe 2
+      cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).parameter.size shouldBe 2
     }
 
     "should contain a METHOD node for the primary constructor with properties set correctly" in {
-      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName(".*\\(ANY\\)").l
+      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
       td.lineNumber shouldBe Some(3)
       td.columnNumber shouldBe Some(9)
       td.methodReturn.code shouldBe "RET"
@@ -115,7 +116,8 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
-      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName(".*ANY,ANY.*").l
+      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
+      td.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
       td.lineNumber shouldBe Some(5)
       td.columnNumber shouldBe Some(4)
       td.methodReturn.code shouldBe "RET"

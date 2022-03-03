@@ -7,8 +7,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{IntervalKeyPool, KeyPoolCreator}
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 

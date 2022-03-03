@@ -2,7 +2,7 @@ name := "kotlin2cpg"
 
 val kotlinVersion = "1.6.10"
 
-dependsOn(Projects.dataflowengineoss)
+dependsOn(Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "com.github.pathikrit"    %% "better-files"       % "3.9.1",

@@ -6,13 +6,14 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
 
@@ -401,15 +402,24 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
             .signature(methodNode.signature)
         BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF)))
       }
-
-    val ctorOrder         = 1
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
+    val defaultSignature =
+      if (ktClass.getPrimaryConstructor == null) {
+        TypeConstants.void + "()"
+      } else {
+        nameGenerator.erasedSignature(constructorParams)
+      }
+    val defaultFullName = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+    val ctorFnWithSig =
+      nameGenerator.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
+    val primaryCtorOrder = 1
     val constructorMethod =
       NewMethod()
         .name(className)
-        .fullName(fullName + ":" + nameGenerator.erasedSignature(constructorParams))
+        .fullName(ctorFnWithSig._1)
+        .signature(ctorFnWithSig._2)
         .isExternal(false)
-        .order(ctorOrder)
+        .order(primaryCtorOrder)
         .filename(relativizedPath)
         .lineNumber(line(ktClass.getPrimaryConstructor))
         .columnNumber(column(ktClass.getPrimaryConstructor))
@@ -418,11 +428,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         astForParameter(p, order)
       }
 
+    val typeFullName = nameGenerator.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn =
       NewMethodReturn()
         .order(1)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .typeFullName(TypeConstants.any)
+        .typeFullName(typeFullName)
         .dynamicTypeHintFullName(Some(fullName))
         .code(Constants.retCode)
         .lineNumber(line(ktClass.getPrimaryConstructor))
@@ -432,23 +443,47 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .withChildren(constructorParamsWithCtx.map(_.ast))
         .withChild(Ast(constructorMethodReturn))
 
+    val membersFromPrimaryCtorAsts =
+      ktClass.getPrimaryConstructorParameters.asScala.toList
+        .filter(_.hasValOrVar)
+        .zipWithIndex
+        .collect { case (param, idx) =>
+          val typeFullName = nameGenerator.parameterType(param, TypeConstants.any)
+          val node =
+            NewMember()
+              .name(param.getName)
+              .code(param.getText)
+              .typeFullName(typeFullName)
+              .lineNumber(line(param))
+              .columnNumber(column(param))
+              .order(idx + primaryCtorOrder)
+          Ast(node)
+        }
+
+    val orderAfterPrimaryCtorAndItsMemberDefs = membersFromPrimaryCtorAsts.size + primaryCtorOrder
     val secondaryConstructorAsts =
       withOrder(ktClass.getSecondaryConstructors) { (secondaryCtor, order) =>
         val constructorParams = secondaryCtor.getValueParameters.asScala.toList
+        val defaultSignature  = nameGenerator.erasedSignature(constructorParams)
+        val defaultFullName   = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+        val ctorFnWithSig     = nameGenerator.fullNameWithSignature(secondaryCtor, (defaultFullName, defaultSignature))
         val constructorMethod =
           NewMethod()
             .name(className)
-            .fullName(fullName + ":" + nameGenerator.erasedSignature(constructorParams))
+            .fullName(ctorFnWithSig._1)
+            .signature(ctorFnWithSig._2)
             .isExternal(false)
-            .order(ctorOrder + order)
+            .order(orderAfterPrimaryCtorAndItsMemberDefs + order)
             .filename(relativizedPath)
             .lineNumber(line(secondaryCtor))
             .columnNumber(column(secondaryCtor))
+
+        val typeFullName = nameGenerator.typeFullName(secondaryCtor, TypeConstants.any)
         val constructorMethodReturn =
           NewMethodReturn()
             .order(1)
             .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-            .typeFullName(TypeConstants.any)
+            .typeFullName(typeFullName)
             .dynamicTypeHintFullName(Some(fullName))
             .code(Constants.retCode)
             .lineNumber(line(secondaryCtor))
@@ -465,11 +500,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         constructorAst
       }
 
-    val orderAfterCtors = ctorOrder + secondaryConstructorAsts.size
+    val orderAfterCtors = orderAfterPrimaryCtorAndItsMemberDefs + secondaryConstructorAsts.size
     val ast =
       Ast(typeDecl)
         .withChildren(methodAstsWithCtx.map(_.ast))
         .withChild(constructorAst)
+        .withChildren(membersFromPrimaryCtorAsts)
         .withChildren(secondaryConstructorAsts)
         // TODO: reenable initializer block parsing when methodReturn nodes have been added
         // otherwise the CfgCreator throws
@@ -837,7 +873,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         Seq()
       case typedExpr: KtProperty if typedExpr.isLocal =>
         astsForProperty(typedExpr, scopeContext, order)
-      case typedExpr: KtIfExpression       => Seq(astForIf(typedExpr, scopeContext, order))
+      case typedExpr: KtIfExpression       => Seq(astForIf(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtWhenExpression     => Seq(astForWhen(typedExpr, scopeContext, order))
       case typedExpr: KtForExpression      => Seq(astForFor(typedExpr, scopeContext, order))
       case typedExpr: KtWhileExpression    => Seq(astForWhile(typedExpr, scopeContext, order))
@@ -1416,7 +1452,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         case typedExpr: KtStringTemplateExpression =>
           astForStringTemplate(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtParenthesizedExpression =>
-          val astsWithCtx = astsForExpression(typedExpr, scopeContext, order, argIdxForReceiver)
+          val astsWithCtx = astsForExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
           // TODO: get to the root cause of why the asts here are empty; write unit tests
           // e.g. for when this is the case in https://github.com/detekt/detekt
           val astForExpr = {
@@ -1833,12 +1869,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     Seq(jumpNodeAstsWithCtx) ++ Seq(exprNode)
   }
 
-  def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     nameGenerator: NameGenerator
   ): AstWithCtx = {
     if (expr.getParent.isInstanceOf[KtProperty]) {
-      astForIfAsExpression(expr, scopeContext, order)
+      astForIfAsExpression(expr, scopeContext, order, argIdx)
     } else {
       astForIfAsControlStructure(expr, scopeContext, order)
     }
@@ -1874,7 +1910,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     AstWithCtx(withCondition, finalCtx)
   }
 
-  def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     nameGenerator: NameGenerator
   ): AstWithCtx = {
@@ -1887,7 +1923,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(expr.getText)
         .order(order)
-        .argumentIndex(order)
+        .argumentIndex(argIdx)
         .typeFullName(retType)
         .methodFullName(Operators.conditional)
         .lineNumber(line(expr))
@@ -2221,7 +2257,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
       } else {
         fullNameWithSignature._2
       }
-    val expressionType = nameGenerator.expressionType(expr, TypeConstants.any)
+    val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
     val name = if (operatorOption.isDefined) {
       operatorOption.get
     } else if (expr.getChildren.toList.size >= 2) {
@@ -2229,7 +2265,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
     } else {
       expr.getName
     }
-    // TODO: DYNAMIC_DISPATCH check
     val callNode =
       NewCall()
         .name(name)
@@ -2237,11 +2272,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         .signature(signature)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(expr.getText)
-        .argumentIndex(order)
+        .argumentIndex(argIdx)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .order(order)
-        .typeFullName(expressionType)
+        .typeFullName(typeFullName)
 
     val args =
       astsForExpression(expr.getLeft, scopeContext, 1, 1) ++ astsForExpression(expr.getRight, scopeContext, 2, 2)

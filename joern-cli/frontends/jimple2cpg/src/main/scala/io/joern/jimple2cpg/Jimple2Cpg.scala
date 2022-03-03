@@ -6,8 +6,8 @@ import io.joern.jimple2cpg.util.ProgramHandlingUtil.{extractSourceFilesFromArchi
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.shiftleft.x2cpg.SourceFiles
-import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import org.slf4j.LoggerFactory
 import soot.options.Options
 import soot.{G, PhaseOptions, Scene, SootClass}
