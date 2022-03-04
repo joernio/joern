@@ -13,10 +13,10 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     outputPath: String = "cpg.bin.zip",
     namespaces: List[String] = List()
   ): Option[String] = {
-    val pysrc2cpgsh = rootPath.resolve("pysrc2cpg.sh").toString
-    val arguments   = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
+    val pysrc2cpgsh = rootPath.resolve("pysrc2cpg").toString
+    val arguments   = Seq(inputPath, "-o", outputPath) ++ config.cmdLineParams
     runShellCommand(pysrc2cpgsh, arguments).map(_ => outputPath)
   }
 
-  override def isAvailable: Boolean = rootPath.resolve("pysrc2cpg.sh").toFile.exists()
+  override def isAvailable: Boolean = rootPath.resolve("pysrc2cpg").toFile.exists()
 }
