@@ -33,6 +33,7 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
 lazy val x2cpg       = project.in(file("frontends/x2cpg"))
 lazy val kotlin2cpg  = project.in(file("frontends/kotlin2cpg"))
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
+lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
 lazy val fuzzyc2cpg  = project.in(file("frontends/fuzzyc2cpg"))
 lazy val js2cpg = project
@@ -50,6 +51,7 @@ Universal / mappings ++= frontendMappings("fuzzyc2cpg", (fuzzyc2cpg / stage).val
 Universal / mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg / stage).value)
 Universal / mappings ++= frontendMappings("js2cpg", (js2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).value)
+Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
