@@ -40,6 +40,8 @@ object Jimple2Cpg {
       .replace(".class", "")
       .replace(JFile.separator, ".")
   }
+
+  def apply(): Jimple2Cpg = new Jimple2Cpg()
 }
 
 class Jimple2Cpg {
