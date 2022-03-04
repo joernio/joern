@@ -3,7 +3,7 @@ package io.joern.ghidra2cpg.fixtures
 import io.joern.ghidra2cpg.Ghidra2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
-import io.shiftleft.semanticcpg.testfixtures.{BinToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{BinToCpgFixture, LanguageFrontend}
 import io.shiftleft.utils.ProjectRoot
 import org.apache.commons.io.FileUtils
 import io.shiftleft.codepropertygraph.generated.nodes

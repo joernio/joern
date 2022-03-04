@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, Properties, PropertyNames}
 import io.shiftleft.passes.{SimpleCpgPass, KeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
 import overflowdb.traversal._
 

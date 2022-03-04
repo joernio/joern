@@ -1,7 +1,8 @@
 package io.joern.pysrc2cpg
 
+import io.joern.x2cpg.layers.{Base, CallGraph, TypeRelations, ControlFlow}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.collection.mutable
 

@@ -6,9 +6,10 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.Traversal
 
