@@ -19,20 +19,19 @@ package object cpgcreation {
     lazy val cCpgGenerator      = CCpgGenerator(config.withArgs(args), rootPath)
     lazy val fuzzycCpgGenerator = FuzzyCCpgGenerator(config.withArgs(args), rootPath)
     language match {
-      case Languages.CSHARP          => Some(CSharpCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.C               => Seq(fuzzycCpgGenerator, cCpgGenerator).find(_.isAvailable)
-      case Languages.LLVM            => Some(LlvmCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.GOLANG          => Some(GoCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JAVA            => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JAVASRC         => Some(JavaSrcCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JAVASCRIPT      => Some(JsCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.FUZZY_TEST_LANG => Some(FuzzyTestLangCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.PYTHON          => Some(PythonCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.PHP             => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.GHIDRA          => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.NEWC            => Seq(cCpgGenerator, fuzzycCpgGenerator).find(_.isAvailable)
-      case Languages.KOTLIN          => Some(KotlinCpgGenerator(config.withArgs(args), rootPath))
-      case _                         => None
+      case Languages.CSHARP     => Some(CSharpCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.C          => Seq(fuzzycCpgGenerator, cCpgGenerator).find(_.isAvailable)
+      case Languages.LLVM       => Some(LlvmCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.GOLANG     => Some(GoCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.JAVA       => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.JAVASRC    => Some(JavaSrcCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.JAVASCRIPT => Some(JsCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.PYTHONSRC  => Some(PythonSrcCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.PHP        => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.GHIDRA     => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.NEWC       => Seq(cCpgGenerator, fuzzycCpgGenerator).find(_.isAvailable)
+      case Languages.KOTLIN     => Some(KotlinCpgGenerator(config.withArgs(args), rootPath))
+      case _                    => None
     }
   }
 
@@ -79,7 +78,7 @@ package object cpgcreation {
       case f if f.endsWith(".class")                     => Some(Languages.JAVA)
       case f if f.endsWith(".kt")                        => Some(Languages.KOTLIN)
       case f if f.endsWith(".php")                       => Some(Languages.PHP)
-      case f if f.endsWith(".py")                        => Some(Languages.FUZZY_TEST_LANG)
+      case f if f.endsWith(".py")                        => Some(Languages.PYTHONSRC)
       case f if f.endsWith(".bc") || f.endsWith(".ll")   => Some(Languages.LLVM)
       case f if isCFile(f)                               => Some(Languages.NEWC)
       case _                                             => None

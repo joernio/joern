@@ -19,7 +19,7 @@ object CpgGeneratorFactory {
     Languages.JAVA,
     Languages.JAVASCRIPT,
     Languages.PYTHON,
-    Languages.FUZZY_TEST_LANG,
+    Languages.PYTHONSRC,
     Languages.LLVM,
     Languages.PHP,
     Languages.KOTLIN,

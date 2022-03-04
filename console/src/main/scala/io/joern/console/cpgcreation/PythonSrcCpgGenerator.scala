@@ -4,7 +4,7 @@ import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
 
-case class PythonCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
+case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
