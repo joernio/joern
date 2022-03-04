@@ -3,10 +3,11 @@ package io.joern.kotlin2cpg
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator}
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
-
 import better.files._
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 

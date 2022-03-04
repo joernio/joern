@@ -5,9 +5,9 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.fuzzyc2cpg.passes.{AstCreationPass, StubRemovalPass}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.passes.base.FileCreationPass
-import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
-import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.base.FileCreationPass
+import io.joern.x2cpg.passes.controlflow.CfgCreationPass
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.utils.ProjectRoot
 import io.joern.x2cpg.SourceFiles
 import overflowdb.traversal.TraversalSource

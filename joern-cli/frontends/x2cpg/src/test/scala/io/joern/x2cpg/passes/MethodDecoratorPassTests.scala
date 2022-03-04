@@ -3,8 +3,8 @@ package io.joern.x2cpg.passes
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
-import io.shiftleft.semanticcpg.passes.base.MethodDecoratorPass
-import io.shiftleft.semanticcpg.testfixtures.EmptyGraphFixture
+import io.joern.x2cpg.passes.base.MethodDecoratorPass
+import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._

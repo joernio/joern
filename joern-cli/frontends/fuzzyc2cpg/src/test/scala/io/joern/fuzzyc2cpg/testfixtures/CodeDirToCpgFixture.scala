@@ -1,8 +1,9 @@
 package io.joern.fuzzyc2cpg.testfixtures
 
+import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers.{Base, LayerCreatorContext}
-import io.shiftleft.semanticcpg.testfixtures.LanguageFrontend
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.joern.x2cpg.testfixtures.LanguageFrontend
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

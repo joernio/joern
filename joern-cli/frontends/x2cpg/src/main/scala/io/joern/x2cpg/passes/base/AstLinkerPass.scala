@@ -5,8 +5,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{HasAstParentFullName, Has
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Properties}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.passes.callgraph.MethodRefLinker
-import io.shiftleft.semanticcpg.passes.callgraph.MethodRefLinker.{
+import io.joern.x2cpg.passes.callgraph.MethodRefLinker
+import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{
   methodFullNameToNode,
   namespaceBlockFullNameToNode,
   typeDeclFullNameToNode

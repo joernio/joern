@@ -2,7 +2,7 @@ package io.joern.fuzzyc2cpg.testfixtures
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.fuzzyc2cpg.FuzzyC2Cpg
-import io.shiftleft.semanticcpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
 
 import java.io.File
 

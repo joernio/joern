@@ -7,7 +7,7 @@ import io.joern.fuzzyc2cpg.Global
 import io.joern.fuzzyc2cpg.passes.astcreation.{AntlrCModuleParserDriver, AstVisitor}
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.slf4j.LoggerFactory
 
 /** Given a list of filenames, this pass creates abstract syntax trees for each file, including File and NamespaceBlock

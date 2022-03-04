@@ -3,7 +3,7 @@ package io.joern.x2cpg.layers
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import io.shiftleft.semanticcpg.passes.typerelations.{AliasLinkerPass, TypeHierarchyPass}
+import io.joern.x2cpg.passes.typerelations.{AliasLinkerPass, TypeHierarchyPass}
 
 object TypeRelations {
   val overlayName: String = "typerel"

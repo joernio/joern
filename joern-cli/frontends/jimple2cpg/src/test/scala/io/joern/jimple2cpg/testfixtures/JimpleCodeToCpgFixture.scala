@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.testfixtures
 
 import io.joern.jimple2cpg.Jimple2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files

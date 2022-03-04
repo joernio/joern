@@ -3,8 +3,9 @@ package io.joern.console
 import better.files.Dsl._
 import better.files._
 import io.joern.console.testing._
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Ignore

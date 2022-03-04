@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes
 import io.shiftleft.OverflowDbTestInstance
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
-import io.shiftleft.semanticcpg.passes.base.ContainsEdgePass
+import io.joern.x2cpg.passes.base.ContainsEdgePass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._

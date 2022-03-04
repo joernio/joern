@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyN
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import io.shiftleft.semanticcpg.passes.callgraph.MethodRefLinker
+import io.joern.x2cpg.passes.callgraph.MethodRefLinker
 
 import scala.collection.mutable
 

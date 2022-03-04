@@ -14,7 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.passes.controlflow.cfgdominator.{CfgDominatorFrontier, ReverseCpgCfgAdapter}
+import io.joern.x2cpg.passes.controlflow.cfgdominator.{CfgDominatorFrontier, ReverseCpgCfgAdapter}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.jdk.CollectionConverters._

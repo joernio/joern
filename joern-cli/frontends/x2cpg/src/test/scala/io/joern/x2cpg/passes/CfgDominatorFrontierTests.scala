@@ -1,12 +1,7 @@
 package io.joern.x2cpg.passes
 
 import io.shiftleft.OverflowDbTestInstance
-import io.shiftleft.semanticcpg.passes.controlflow.cfgdominator.{
-  CfgAdapter,
-  CfgDominator,
-  CfgDominatorFrontier,
-  DomTreeAdapter
-}
+import io.joern.x2cpg.passes.controlflow.cfgdominator.{CfgAdapter, CfgDominator, CfgDominatorFrontier, DomTreeAdapter}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._

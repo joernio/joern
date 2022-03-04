@@ -5,9 +5,9 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
-import io.shiftleft.semanticcpg.passes.controlflow.cfgdominator.CfgDominatorPass
-import io.shiftleft.semanticcpg.passes.controlflow.codepencegraph.CdgPass
+import io.joern.x2cpg.passes.controlflow.CfgCreationPass
+import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
+import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 
 object ControlFlow {
   val overlayName: String = "controlflow"

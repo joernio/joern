@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.SimpleCpgPass
-import io.shiftleft.semanticcpg.passes.callgraph.MethodRefLinker._
+import io.joern.x2cpg.passes.callgraph.MethodRefLinker._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb._
 import overflowdb.traversal._
