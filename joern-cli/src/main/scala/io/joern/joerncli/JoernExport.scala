@@ -5,6 +5,7 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.console.JoernWorkspaceLoader
+import io.joern.x2cpg.layers.{AstDumpOptions, CdgDumpOptions, CfgDumpOptions, DumpAst, DumpCdg, DumpCfg}
 import io.shiftleft.semanticcpg.layers._
 
 case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out", repr: String = "cpg14")

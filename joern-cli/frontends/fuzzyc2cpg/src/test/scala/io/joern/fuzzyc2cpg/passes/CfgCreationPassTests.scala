@@ -5,8 +5,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
-import io.shiftleft.semanticcpg.passes.controlflow.cfgcreation.Cfg._
+import io.joern.x2cpg.passes.controlflow.CfgCreationPass
+import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

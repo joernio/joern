@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 SCRIPT_ABS_PATH=$(readlink -f "$0")
@@ -6,13 +7,14 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 JOERN="$SCRIPT_ABS_DIR"/../joern
 
-frontends=(c javascript javasrc java ghidra)
+frontends=(c javascript javasrc java ghidra pythonsrc)
 declare -A minMethodCount=(
   [c]=2
   [javascript]=3
   [javasrc]=7
   [java]=7
   [ghidra]=100
+  [pythonsrc]=2
 )
 declare -A expectedMethod=(
   [c]=print_number
@@ -20,6 +22,7 @@ declare -A expectedMethod=(
   [javasrc]=callsExternalMethod
   [java]=callsExternalMethod
   [ghidra]=reallocarray
+  [pythonsrc]=my_fun
 )
 
 for frontend in "${frontends[@]}"; do

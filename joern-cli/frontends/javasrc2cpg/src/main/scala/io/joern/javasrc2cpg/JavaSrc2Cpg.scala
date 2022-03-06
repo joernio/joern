@@ -5,7 +5,7 @@ import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 

@@ -33,6 +33,7 @@ object Constants {
   val wildcardImportName             = "*"
   val lambdaBindingName              = "invoke" // the underlying _invoke_ fn for Kotlin FunctionX types
   val lambdaTypeDeclName             = "LAMBDA_TYPE_DECL"
+  val this_                          = "this"
 }
 
 case class ImportEntry(
@@ -867,7 +868,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
-        Seq(astForIdentifier(typedExpr, order, argIdx))
+        Seq(astForNameReference(typedExpr, order, argIdx))
       case _: KtNameReferenceExpression =>
         // TODO: handle this
         Seq()
@@ -1427,7 +1428,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
         case typedExpr: KtConstantExpression =>
           astForLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtNameReferenceExpression =>
-          astForIdentifier(typedExpr, orderForReceiver, argIdxForReceiver)
+          astForNameReference(typedExpr, orderForReceiver, argIdxForReceiver)
         case thisExpr: KtThisExpression =>
           astForThisExpression(thisExpr, scopeContext, orderForReceiver, 0)
         case superExpr: KtSuperExpression =>
@@ -2144,7 +2145,64 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
       Seq(AstWithCtx(Ast(localNode).withRefEdge(identifier, localNode), finalCtx))
   }
 
-  def astForIdentifier(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
+  def astForNameReference(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
+    nameGenerator: NameGenerator
+  ): AstWithCtx = {
+    nameGenerator.isReferencingMember(expr) match {
+      case true  => astForNameReferenceToMember(expr, order, argIdx)
+      case false => astForNonSpecialNameReference(expr, order, argIdx)
+    }
+  }
+
+  private def astForNameReferenceToMember(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
+    nameGenerator: NameGenerator
+  ): AstWithCtx = {
+    val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
+    registerType(typeFullName)
+
+    val callNode =
+      NewCall()
+        .name(expr.getReferencedName)
+        .code(Constants.this_ + "." + expr.getReferencedName)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .methodFullName(Operators.fieldAccess)
+        .signature("")
+        .typeFullName(typeFullName)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+        .order(order)
+        .argumentIndex(argIdx)
+
+    val referenceTargetTypeFullName = nameGenerator.referenceTargetTypeFullName(expr, TypeConstants.any)
+    registerType(referenceTargetTypeFullName)
+    val thisNode =
+      NewIdentifier()
+        .code(Constants.this_)
+        .name(Constants.this_)
+        .typeFullName(referenceTargetTypeFullName)
+        .order(1)
+        .argumentIndex(0)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val fieldIdentifierNode =
+      NewFieldIdentifier()
+        .code(expr.getReferencedName)
+        .canonicalName(expr.getReferencedName)
+        .order(2)
+        .argumentIndex(1)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    val ast =
+      Ast(callNode)
+        .withChild(Ast(thisNode))
+        .withChild(Ast(fieldIdentifierNode))
+        .withArgEdge(callNode, thisNode)
+        .withArgEdge(callNode, fieldIdentifierNode)
+        .withReceiverEdge(callNode, thisNode)
+    AstWithCtx(ast, Context())
+  }
+
+  private def astForNonSpecialNameReference(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
     nameGenerator: NameGenerator
   ): AstWithCtx = {
     val typeFullName = nameGenerator.typeFullName(expr, TypeConstants.any)
