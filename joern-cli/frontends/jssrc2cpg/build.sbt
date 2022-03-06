@@ -2,7 +2,7 @@ name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.1")
 
-dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg)
+dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "semanticcpg"      % Versions.cpg,

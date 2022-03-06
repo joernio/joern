@@ -7,10 +7,10 @@ import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
-import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.semanticcpg.passes.frontend.TypeNodePass
+import io.joern.x2cpg.passes.frontend.TypeNodePass
 
 class JsSrc2Cpg {
 

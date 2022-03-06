@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.Config
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
 import org.scalatest.Inside
 
 class JsSrc2CpgFrontend(override val fileSuffix: String = ".js") extends LanguageFrontend {
