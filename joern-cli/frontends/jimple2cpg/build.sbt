@@ -1,24 +1,24 @@
 name := "jimple2cpg"
 
-scalaVersion := "2.13.8"
-
-val sootVersion      = "4.2.1"
-val slf4jVersion     = "1.7.36"
-val scalatestVersion = "3.2.11"
+scalaVersion       := "2.13.8"
+crossScalaVersions := Seq("2.13.8", "3.1.1")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg  % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "io.shiftleft"  %% "semanticcpg"       % Versions.cpg,
-  "org.soot-oss"   % "soot"              % sootVersion,
-  "org.slf4j"      % "slf4j-api"         % slf4jVersion,
-  "org.slf4j"      % "slf4j-simple"      % slf4jVersion,
-  "org.scalatest" %% "scalatest"         % scalatestVersion % Test,
-  "io.shiftleft"  %% "semanticcpg"       % Versions.cpg     % Test classifier "tests"
+  "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft"            %% "semanticcpg"       % Versions.cpg,
+  "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
+  "io.shiftleft"            %% "semanticcpg"       % Versions.cpg       % Test classifier "tests",
+  "org.soot-oss"             % "soot"              % "4.2.1",
+  "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
+)
+
+scalacOptions ++= Seq(
+  "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
 enablePlugins(JavaAppPackaging)
-
-trapExit    := false
-Test / fork := true
+trapExit                      := false
+Test / fork                   := true
+Global / onChangedBuildSource := ReloadOnSourceChanges
