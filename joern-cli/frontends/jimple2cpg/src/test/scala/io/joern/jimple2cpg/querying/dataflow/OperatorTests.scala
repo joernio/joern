@@ -101,7 +101,8 @@ class OperatorTests extends JimpleDataflowFixture {
   }
 
   it should "track dataflow through += where malicious input is added" in {
-    val (source, sink) = getConstSourceSink("test7")
+    // Due to String concats being handled by Soot dummy methods we need to add wildcards to the source
+    val (source, sink) = getConstSourceSink("test7", ".*MALICIOUS.*")
     sink.reachableBy(source).size shouldBe 1
   }
 
