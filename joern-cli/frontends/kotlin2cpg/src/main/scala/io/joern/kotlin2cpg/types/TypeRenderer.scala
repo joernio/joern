@@ -61,8 +61,10 @@ object TypeRenderer {
             stripped(rendered)
           }
         } else {
-          val sc       = TypeUtilsKt.getImmediateSuperclassNotAny(t)
-          val rendered = renderer.renderType(sc)
+          val relevantT =
+            Option(TypeUtilsKt.getImmediateSuperclassNotAny(t))
+              .getOrElse(t)
+          val rendered = renderer.renderType(relevantT)
           stripped(rendered)
         }
       }
