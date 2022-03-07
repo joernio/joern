@@ -4,12 +4,12 @@ import io.joern.jimple2cpg.Jimple2Cpg
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.utils.ProjectRoot
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.net.URL
 import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Try}
 
@@ -28,23 +28,19 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "should extract files and clean up temp directory" in {
-    Try(getClass.getResource("/unpacking")) match {
-      case Success(x: URL) =>
-        Files
-          .walk(Path.of(x.getFile))
-          .map(_.toFile)
-          .filter(f => f.isFile && f.getName.contains(".jar"))
-          .map(_.getName)
-          .toArray shouldBe Array("HelloWorld.jar")
-        Files
-          .walk(Path.of(ProgramHandlingUtil.TEMP_DIR.toString))
-          .map(_.toFile)
-          .filter(f => f.isFile && f.getName.contains(".class"))
-          .toArray
-          .length shouldBe 0
-      case Failure(x: Throwable) =>
-        fail("Unable to view test repository", x)
-    }
+    val targetDir = ProjectRoot.relativise("joern-cli/frontends/jimple2cpg/src/test/resources/unpacking")
+    Files
+      .walk(Path.of(targetDir))
+      .map(_.toFile)
+      .filter(f => f.isFile && f.getName.contains(".jar"))
+      .map(_.getName)
+      .toArray shouldBe Array("HelloWorld.jar")
+    Files
+      .walk(Path.of(ProgramHandlingUtil.TEMP_DIR.toString))
+      .map(_.toFile)
+      .filter(f => f.isFile && f.getName.contains(".class"))
+      .toArray
+      .length shouldBe 0
   }
 
   "should reflect the correct package order" in {
