@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
@@ -80,18 +81,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: NameGenerator,
   // only here to help in paying back technical debt. Remove after
   private val continueParsingOnAstNodesWithoutRoot = false
 
-  private val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+  private val diffGraph: DiffGraphBuilder = new DiffGraphBuilder()
 
   private val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   private val tmpKeyPool    = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 
   private val relativizedPath = fileWithMeta.relativizedPath
 
-  def createAst(): Iterator[DiffGraph] = {
+  def createAst(): DiffGraphBuilder = {
     implicit val nameGenerator: NameGenerator = xTypeInfoProvider
     logger.debug("Started parsing of file `" + fileWithMeta.filename + "`")
     storeInDiffGraph(astForFile(fileWithMeta))
-    Iterator(diffGraph.build())
+    diffGraph
   }
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])

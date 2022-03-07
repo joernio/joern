@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.passes
 
-import io.joern.kotlin2cpg.{KtFileWithMeta}
+import io.joern.kotlin2cpg.KtFileWithMeta
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
 import io.joern.kotlin2cpg.types.NameGenerator
 
 import java.util.concurrent.ConcurrentHashMap
@@ -10,20 +10,15 @@ import org.slf4j.LoggerFactory
 
 case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
-class AstCreationPass(
-  filesWithMeta: Iterable[KtFileWithMeta],
-  nameGenerator: NameGenerator,
-  cpg: Cpg,
-  keyPool: IntervalKeyPool
-) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(filesWithMeta.size))) {
+class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], nameGenerator: NameGenerator, cpg: Cpg)
+    extends ConcurrentWriterCpgPass[String](cpg) {
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def partIterator: Iterator[String] = {
-    filesWithMeta.map { ktFileWithMeta => ktFileWithMeta.f.getVirtualFilePath }.iterator
-  }
+  override def generateParts(): Array[String] =
+    filesWithMeta.map { ktFileWithMeta => ktFileWithMeta.f.getVirtualFilePath }.toArray
 
-  override def runOnPart(filename: String): Iterator[DiffGraph] = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val fileWithMeta = filesWithMeta
       .filter { ktFileWithMeta =>
         ktFileWithMeta.f.getVirtualFilePath == filename
@@ -32,13 +27,11 @@ class AstCreationPass(
       .headOption
     fileWithMeta match {
       case Some(fm) =>
-        val diffGraph =
-          new AstCreator(fm, nameGenerator, global).createAst()
+        diffGraph.absorb(new AstCreator(fm, nameGenerator, global).createAst())
         logger.debug("AST created for file at `" + filename + "`.")
-        diffGraph
       case None =>
         logger.info("Could not find file at `" + filename + "`.")
-        Iterator[DiffGraph]()
     }
   }
+
 }

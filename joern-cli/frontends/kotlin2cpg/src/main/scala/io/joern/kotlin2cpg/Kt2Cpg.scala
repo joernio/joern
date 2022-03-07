@@ -30,22 +30,18 @@ class Kt2Cpg {
     nameGenerator: NameGenerator,
     outputPath: Option[String] = None
   ): Cpg = {
-    val cpg             = newEmptyCpg(outputPath)
-    val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-    val configKeyPool   = new IntervalKeyPool(1000100, 2000100)
-    val methodKeyPool   = new IntervalKeyPool(first = 2000100, last = Long.MaxValue)
+    val cpg = newEmptyCpg(outputPath)
 
-    new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
+    new MetaDataPass(cpg, language).createAndApply()
 
     val astCreator =
-      new AstCreationPass(filesWithMeta, nameGenerator, cpg, methodKeyPool)
+      new AstCreationPass(filesWithMeta, nameGenerator, cpg)
     astCreator.createAndApply()
 
-    new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool))
+    new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
       .createAndApply()
 
-    val configCreator = new ConfigPass(fileContentsAtPath, cpg, configKeyPool)
+    val configCreator = new ConfigPass(fileContentsAtPath, cpg)
     configCreator.createAndApply()
 
     cpg
