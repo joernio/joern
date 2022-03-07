@@ -3,6 +3,8 @@ package io.joern.pysrc2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
+import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.parallel
 
@@ -18,17 +20,12 @@ object Py2Cpg {
   *   Empty target cpg which will be populated.
   */
 class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
-  private val diffGraph   = new DiffGraph.Builder()
+  private val diffGraph   = new DiffGraphBuilder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
-    val auxKeyPool = new IntervalKeyPool(1, 100000)
-    val keyPool    = new IntervalKeyPool(100000, Long.MaxValue)
-
     nodeBuilder.metaNode(Languages.PYTHONSRC, version = "")
-
-    DiffGraph.Applier.applyDiff(diffGraph.build(), outputCpg, keyPool = Some(auxKeyPool))
-
-    new CodeToCpg(outputCpg, inputProviders, keyPool).createAndApply()
+    BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
+    new CodeToCpg(outputCpg, inputProviders).createAndApply()
   }
 }

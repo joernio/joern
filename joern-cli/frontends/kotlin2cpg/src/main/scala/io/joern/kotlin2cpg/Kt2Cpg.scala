@@ -7,7 +7,6 @@ import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.kotlin2cpg.types.NameGenerator
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 
 object Kt2Cpg {
