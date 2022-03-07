@@ -206,9 +206,17 @@ class AstCreator(filename: String, global: Global) {
 
   private def astForMethodBody(body: Body, order: Int): Ast = {
     val block = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
-    Ast(block).withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
-      astsForStatement(x, order)
-    }.flatten)
+    val locals = withOrder(body.getLocals.asScala) { case (l, order) =>
+      val name         = l.getName
+      val typeFullName = registerType(l.getType.toQuotedString)
+      val code         = s"$typeFullName $name"
+      Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))
+    }
+    Ast(block)
+      .withChildren(locals)
+      .withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
+        astsForStatement(x, order + locals.size)
+      }.flatten)
   }
 
   private def astsForStatement(statement: soot.Unit, order: Int): Seq[Ast] = {
@@ -529,8 +537,6 @@ class AstCreator(filename: String, global: Global) {
       case x: ArrayRef   => x.toString()
       case x             => logger.warn(s"Unhandled LHS type in definition ${x.getClass}"); x.toString()
     }
-    val typeFullName = registerType(leftOp.getType.toQuotedString)
-    val code         = s"$typeFullName $name"
     val identifier = leftOp match {
       case x: soot.Local => Seq(astForLocal(x, 1, assignStmt))
       case x: FieldRef   => Seq(astForFieldRef(x, 1, assignStmt))
@@ -543,13 +549,14 @@ class AstCreator(filename: String, global: Global) {
       .mkString(", ")
     val assignment = NewCall()
       .name(Operators.assignment)
+      .methodFullName(Operators.assignment)
       .code(s"$name = $assignmentRhsCode")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
       .typeFullName(registerType(assignStmt.getLeftOp.getType.toQuotedString))
     val initializerAst = Seq(callAst(assignment, identifier ++ initAsts))
-    Seq(Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))) ++ initializerAst.toList
+    initializerAst.toList
   }
 
   private def astsForIfStmt(ifStmt: IfStmt, order: Int): Seq[Ast] = {
