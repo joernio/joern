@@ -27,7 +27,7 @@ object SourceFilesPicker {
       substringsToFilterFor.exists { str =>
         fileName.contains(str)
       }
-    val extensionsToFilterFor = List(".kts")
+    val extensionsToFilterFor = List()
     val hasUnwantedExt = {
       extensionsToFilterFor.exists { ext =>
         fileName.endsWith(ext)
@@ -50,7 +50,7 @@ object SourceFilesPicker {
   }
 
   protected def isConfigFile(fileName: String): Boolean = {
-    isXmlFile(fileName) || isGradleFile(fileName)
+    isXmlFile(fileName) || isGradleFile(fileName) || isKotlinScript(fileName)
   }
 
   protected def isXmlFile(fileName: String): Boolean = {
@@ -63,8 +63,13 @@ object SourceFilesPicker {
     gradleRelatedFiles.exists(fileName.endsWith)
   }
 
+  protected def isKotlinScript(fileName: String): Boolean = {
+    val ktsExtensions = Seq(".kts")
+    ktsExtensions.exists(fileName.endsWith)
+  }
+
   def configFiles(forDir: String): Seq[String] = {
-    val sourceFileExtensions = Set(".xml", ".gradle", ".properties")
+    val sourceFileExtensions = Set(".xml", ".gradle", ".properties", ".kts")
     val sourceFileNames      = SourceFiles.determine(Set(forDir), sourceFileExtensions)
     sourceFileNames
       .filter(isConfigFile)
