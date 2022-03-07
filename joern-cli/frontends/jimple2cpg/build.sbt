@@ -19,6 +19,5 @@ scalacOptions ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
-trapExit                      := false
-Test / fork                   := true
-Global / onChangedBuildSource := ReloadOnSourceChanges
+trapExit    := false
+Test / fork := true
