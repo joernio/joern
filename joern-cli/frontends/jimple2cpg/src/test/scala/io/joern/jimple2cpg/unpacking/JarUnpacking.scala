@@ -1,6 +1,5 @@
 package io.joern.jimple2cpg.unpacking
 
-import better.files.File
 import io.joern.jimple2cpg.Jimple2Cpg
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.shiftleft.codepropertygraph.Cpg
@@ -10,6 +9,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Try}
 
 class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
@@ -29,10 +29,18 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   "should extract files and clean up temp directory" in {
     Try(getClass.getResource("/unpacking")) match {
       case Success(x) =>
-        val fs = File(x.getPath).walk().toSeq
-        val cs = File(ProgramHandlingUtil.TEMP_DIR.toString).walk().toSeq
-        fs.filter(_.name.contains(".jar")).map(_.name).toList shouldBe List("HelloWorld.jar")
-        cs.count(_.name.contains(".class")) shouldBe 0
+        Files
+          .walk(Path.of(x.getPath))
+          .map(_.toFile)
+          .filter(f => f.isFile && f.getName.contains(".jar"))
+          .map(_.getName)
+          .toArray shouldBe Array("HelloWorld.jar")
+        Files
+          .walk(Path.of(ProgramHandlingUtil.TEMP_DIR.toString))
+          .map(_.toFile)
+          .filter(f => f.isFile && f.getName.contains(".class"))
+          .toArray
+          .length shouldBe 0
       case Failure(x: Throwable) =>
         fail("Unable to view test repository", x)
     }
