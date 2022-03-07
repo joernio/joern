@@ -28,7 +28,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
     x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
   }
@@ -44,7 +44,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
     x.order shouldBe 2
     x.filename should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
   }
@@ -61,7 +61,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should find exactly 1 internal type" in {
-    cpg.typeDecl.internal.name.toSetMutable shouldBe Set("foo")
+    cpg.typeDecl.nameNot("<global>").internal.name.toSetMutable shouldBe Set("foo")
   }
 
   "should find five external types (`bar`, `char`, `int`, `void`, `ANY`)" in {

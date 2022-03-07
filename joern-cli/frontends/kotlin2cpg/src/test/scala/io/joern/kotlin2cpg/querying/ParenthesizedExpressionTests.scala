@@ -25,7 +25,7 @@ class ParenthesizedExpressionTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(19)
       c.code shouldBe "\"a\" + \"b\""
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.typeFullName shouldBe "kotlin.String"
+      c.typeFullName shouldBe "java.lang.String"
     }
   }
 
@@ -45,7 +45,7 @@ class ParenthesizedExpressionTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(19)
       c.code shouldBe "\"a\" + \"b\""
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.typeFullName shouldBe "kotlin.String"
+      c.typeFullName shouldBe "java.lang.String"
     }
   }
 }

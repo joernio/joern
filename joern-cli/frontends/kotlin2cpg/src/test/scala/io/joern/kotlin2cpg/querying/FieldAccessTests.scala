@@ -30,7 +30,7 @@ class FieldAccessTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullNameExact(Operators.assignment).code("a.m.*").argument(1).isCall.l
       c.methodFullName shouldBe Operators.fieldAccess
       c.code shouldBe "a.m"
-      c.typeFullName shouldBe "kotlin.String"
+      c.typeFullName shouldBe "java.lang.String"
       c.lineNumber shouldBe Some(10)
       c.columnNumber shouldBe Some(4)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH

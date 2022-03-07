@@ -6,6 +6,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.utils.ProjectRoot
@@ -30,7 +31,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   "The data flow should contain " in {
     implicit val resolver: ICallResolver = NoResolve
-    val semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+    val semanticsFilename    = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
     val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
     implicit var context: EngineContext = EngineContext(semantics)
 

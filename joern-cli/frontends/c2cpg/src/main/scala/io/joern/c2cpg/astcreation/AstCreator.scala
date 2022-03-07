@@ -5,21 +5,21 @@ import io.joern.c2cpg.datastructures.Stack._
 import io.joern.c2cpg.datastructures.{Global, Scope}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
-import io.shiftleft.passes.DiffGraph
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
 class AstCreator(
-    val filename: String,
-    val config: C2Cpg.Config,
-    val global: Global,
-    val diffGraph: DiffGraph.Builder,
-    val parserResult: IASTTranslationUnit
+  val filename: String,
+  val config: C2Cpg.Config,
+  val global: Global,
+  val diffGraph: DiffGraphBuilder,
+  val parserResult: IASTTranslationUnit
 ) extends AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -44,7 +44,7 @@ class AstCreator(
     Ast.storeInDiffGraph(astForFile(parserResult), diffGraph)
 
   private def astForFile(parserResult: IASTTranslationUnit): Ast = {
-    val cpgFile = Ast(NewFile().name(filename).order(0))
+    val cpgFile            = Ast(NewFile().name(filename).order(0))
     val translationUnitAst = astForTranslationUnit(parserResult)
 
     val ast = cpgFile.withChild(translationUnitAst)
@@ -57,12 +57,28 @@ class AstCreator(
   }
 
   private def createFakeMethod(
-      name: String,
-      fullName: String,
-      path: String,
-      iASTTranslationUnit: IASTTranslationUnit
+    name: String,
+    fullName: String,
+    path: String,
+    iASTTranslationUnit: IASTTranslationUnit
   ): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations
+    val allDecls      = iASTTranslationUnit.getDeclarations
+    val lineNumber    = allDecls.headOption.flatMap(line)
+    val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
+
+    val fakeGlobalTypeDecl = newTypeDecl(
+      name,
+      fullName,
+      filename,
+      name,
+      NodeTypes.NAMESPACE_BLOCK,
+      fullName,
+      1,
+      line = lineNumber,
+      column = lineNumberEnd
+    )
+
+    methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
       NewMethod()
@@ -70,9 +86,9 @@ class AstCreator(
         .code(name)
         .fullName(fullName)
         .filename(path)
-        .lineNumber(allDecls.headOption.flatMap(line))
-        .lineNumberEnd(allDecls.lastOption.flatMap(lineEnd))
-        .astParentType(NodeTypes.NAMESPACE_BLOCK)
+        .lineNumber(lineNumber)
+        .lineNumberEnd(lineNumberEnd)
+        .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullName)
 
     methodAstParentStack.push(fakeGlobalMethod)
@@ -104,15 +120,17 @@ class AstCreator(
       .typeFullName("ANY")
       .order(2)
 
-    Ast(fakeGlobalMethod)
-      .withChild(Ast(blockNode).withChildren(declsAsts))
-      .withChild(Ast(methodReturn))
+    Ast(fakeGlobalTypeDecl).withChild(
+      Ast(fakeGlobalMethod)
+        .withChild(Ast(blockNode).withChildren(declsAsts))
+        .withChild(Ast(methodReturn))
+    )
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
     val absolutePath = better.files.File(iASTTranslationUnit.getFilePath).path.toAbsolutePath.normalize().toString
-    val name = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
+    val name         = NamespaceTraversal.globalNamespaceName
+    val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(fullName)

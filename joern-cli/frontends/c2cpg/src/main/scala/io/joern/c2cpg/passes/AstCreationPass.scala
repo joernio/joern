@@ -3,11 +3,13 @@ package io.joern.c2cpg.passes
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.astcreation.{AstCreator, Defines}
 import io.joern.c2cpg.datastructures.Global
-import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, ParserConfig}
+import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
+import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool}
-import io.shiftleft.x2cpg.SourceFiles
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.utils.IOUtils
+import io.joern.x2cpg.SourceFiles
 
 import java.nio.file.Paths
 import scala.jdk.CollectionConverters._
@@ -18,18 +20,22 @@ object AstCreationPass {
   object SourceFiles extends InputFiles
 }
 
-class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKeyPool], config: C2Cpg.Config)
-    extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
+class AstCreationPass(
+  cpg: Cpg,
+  forFiles: InputFiles,
+  keyPool: Option[IntervalKeyPool],
+  config: C2Cpg.Config,
+  report: Report = new Report()
+) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
 
-  private val global: Global = new Global()
-  private val parserConfig: ParserConfig = ParserConfig.fromConfig(config)
-  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config.inputPaths)
+  private val global: Global    = new Global()
+  private val parser: CdtParser = new CdtParser(config)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
   private def headerFiles: Set[String] = {
-    val allHeaderFiles = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
+    val allHeaderFiles         = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
     val alreadySeenHeaderFiles = Global.headerFiles
     allHeaderFiles -- alreadySeenHeaderFiles
   }
@@ -42,13 +48,24 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, keyPool: Option[IntervalKe
     case AstCreationPass.SourceFiles => sourceFiles.toArray
   }
 
-  override def runOnPart(diffGraph: DiffGraph.Builder, filename: String): Unit =
-    new CdtParser(parserConfig, headerFileFinder)
-      .parse(Paths.get(filename))
-      .foreach { parserResult =>
-        val localDiff = DiffGraph.newBuilder
-        new AstCreator(filename, config, global, localDiff, parserResult).createAst()
-        diffGraph.moveFrom(localDiff)
+  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
+    val path    = Paths.get(filename)
+    val fileLOC = IOUtils.readLinesInFile(path).size
+    val (gotCpg, duration) = TimeUtils.time {
+      val parseResult = parser.parse(path)
+      parseResult match {
+        case Some(translationUnit) =>
+          report.addReportInfo(filename, fileLOC, parsed = true)
+          val localDiff = new DiffGraphBuilder
+          new AstCreator(filename, config, global, localDiff, translationUnit).createAst()
+          diffGraph.absorb(localDiff)
+          true
+        case None =>
+          report.addReportInfo(filename, fileLOC)
+          false
       }
+    }
+    report.updateReport(filename, gotCpg, duration)
+  }
 
 }

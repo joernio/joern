@@ -18,7 +18,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
@@ -27,6 +27,29 @@ class MemberTests extends AnyFreeSpec with Matchers {
     "should allow traversing from MEMBER to TYPE_DECL" in {
       val List(x) = cpg.member.typeDecl.l
       x.name shouldBe "Foo"
+    }
+  }
+
+  "CPG for code with member defined in primary constructor" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+      |package mypkg
+      |
+      |class AClass(private val x: String) {
+      |    fun printX() {
+      |        println(x)
+      |    }
+      |}
+      |
+      |fun main() {
+      |    val a = AClass("A_MESSAGE")
+      |    a.printX()
+      |}
+      |""".stripMargin)
+
+    "should contain MEMBER node with correct properties" in {
+      val List(x) = cpg.member("x").l
+      x.code shouldBe "private val x: String"
+      x.typeFullName shouldBe "java.lang.String"
     }
   }
 
@@ -41,7 +64,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
@@ -66,7 +89,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.member("bar").l
       x.name shouldBe "bar"
       x.code shouldBe "bar"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2

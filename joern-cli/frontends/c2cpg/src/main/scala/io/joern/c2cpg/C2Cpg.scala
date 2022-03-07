@@ -2,12 +2,13 @@ package io.joern.c2cpg
 
 import io.joern.c2cpg.C2Cpg.Config
 import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass, PreprocessorPass}
+import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.{IntervalKeyPool, KeyPoolCreator}
-import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -15,27 +16,33 @@ import scala.util.control.NonFatal
 
 class C2Cpg {
 
+  private val report: Report = new Report()
+
   def runAndOutput(config: Config): Cpg = {
-    val keyPool = KeyPoolCreator.obtain(4, minValue = 101)
-    val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool = keyPool.head
-    val astKeyPool = keyPool(1)
-    val headerKeyPool = keyPool(2)
+    val keyPool              = KeyPoolCreator.obtain(4, minValue = 101)
+    val metaDataKeyPool      = new IntervalKeyPool(1, 100)
+    val typesKeyPool         = keyPool.head
+    val astKeyPool           = keyPool(1)
+    val headerKeyPool        = keyPool(2)
     val headerContentKeyPool = keyPool(3)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
 
     new MetaDataPass(cpg, Languages.NEWC, Some(metaDataKeyPool)).createAndApply()
 
-    val astCreationPass = new AstCreationPass(cpg, AstCreationPass.SourceFiles, Some(astKeyPool), config)
+    val astCreationPass =
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, Some(astKeyPool), config, report)
     astCreationPass.createAndApply()
-    val headerAstCreationPass = new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config)
+    val headerAstCreationPass =
+      new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config, report)
     headerAstCreationPass.createAndApply()
 
     val types = astCreationPass.usedTypes() ++ headerAstCreationPass.usedTypes()
     new TypeNodePass(types.distinct, cpg, Some(typesKeyPool)).createAndApply()
 
     new HeaderContentPass(cpg, Some(headerContentKeyPool), config).createAndApply()
+
+    report.print()
     cpg
   }
 
@@ -51,19 +58,19 @@ object C2Cpg {
   private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 
   final case class Config(
-      inputPaths: Set[String] = Set.empty,
-      outputPath: String = X2CpgConfig.defaultOutputPath,
-      includePaths: Set[String] = Set.empty,
-      defines: Set[String] = Set.empty,
-      includeComments: Boolean = false,
-      logProblems: Boolean = false,
-      logPreprocessor: Boolean = false,
-      printIfDefsOnly: Boolean = false,
-      includePathsAutoDiscovery: Boolean = true
+    inputPaths: Set[String] = Set.empty,
+    outputPath: String = X2CpgConfig.defaultOutputPath,
+    includePaths: Set[String] = Set.empty,
+    defines: Set[String] = Set.empty,
+    includeComments: Boolean = false,
+    logProblems: Boolean = false,
+    logPreprocessor: Boolean = false,
+    printIfDefsOnly: Boolean = false,
+    includePathsAutoDiscovery: Boolean = true
   ) extends X2CpgConfig[Config] {
 
     override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-    override def withOutputPath(x: String): Config = copy(outputPath = x)
+    override def withOutputPath(x: String): Config                  = copy(outputPath = x)
   }
 
   def main(args: Array[String]): Unit = {

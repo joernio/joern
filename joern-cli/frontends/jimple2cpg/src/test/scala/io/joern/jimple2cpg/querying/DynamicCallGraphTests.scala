@@ -54,11 +54,11 @@ class Foo {
     """
 
   "should find that add is called by main" in {
-    cpg.method.name("print").caller.name.toSet shouldBe Set("main")
+    cpg.method.name("print").caller.name.toSetMutable shouldBe Set("main")
   }
 
   "should account for print calls from all subclasses due to using CHA" in {
-    cpg.call.name("print").callee.definingTypeDecl.fullName.toSet shouldBe Set(
+    cpg.call.name("print").callee.definingTypeDecl.fullName.toSetMutable shouldBe Set(
       "Foo$D",
       "Foo$B",
       "Foo$C",

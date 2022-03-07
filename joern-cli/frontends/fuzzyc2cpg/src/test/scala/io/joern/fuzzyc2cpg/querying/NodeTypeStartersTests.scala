@@ -4,10 +4,9 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.joern.fuzzyc2cpg.testfixtures.FuzzyCCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
-/** The following tests show in detail how queries can be started. For
-  * all node types, for which it seems reasonable, all nodes of that type
-  * can be used as a starting point, e.g., `cpg.method` starts at all methods
-  * while `cpg.local` starts at all locals.
+/** The following tests show in detail how queries can be started. For all node types, for which it seems reasonable,
+  * all nodes of that type can be used as a starting point, e.g., `cpg.method` starts at all methods while `cpg.local`
+  * starts at all locals.
   */
 class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
 
@@ -22,9 +21,9 @@ class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
     atLeast(1, cpg.file.name.l) should endWith(".c")
   }
 
-  /** All methods - whether defined (e.g., "main") or only referenced, e.g., "libfunc"
-    * are represented by METHOD nodes in the CPG. Any method for which a definition
-    * exists is in `cpg.method.internal`. All other methods are in `cpg.method.external`.
+  /** All methods - whether defined (e.g., "main") or only referenced, e.g., "libfunc" are represented by METHOD nodes
+    * in the CPG. Any method for which a definition exists is in `cpg.method.internal`. All other methods are in
+    * `cpg.method.external`.
     */
   "should allow retrieving methods" in {
     cpg.method.internal.name.l shouldBe List("main")

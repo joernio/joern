@@ -1,15 +1,15 @@
 package io.joern.kotlin2cpg
 
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator}
+import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
-import better.files._
-import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
+import better.files._
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import io.shiftleft.semanticcpg.language._
 
 object Kt2CpgTestContext {
   def newContext: Kt2CpgTestContext = {
@@ -62,7 +62,12 @@ class Kt2CpgTestContext private () {
           }
           .toSeq
 
-      val environment = CompilerAPI.makeEnvironment(Seq(tempDir.pathAsString), inferenceJarsPaths)
+      val environment = CompilerAPI.makeEnvironment(
+        Seq(tempDir.pathAsString),
+        inferenceJarsPaths,
+        Seq(),
+        new ErrorLoggingMessageCollector
+      )
       val filesWithMeta =
         environment.getSourceFiles.asScala
           .map { fm =>
@@ -70,12 +75,12 @@ class Kt2CpgTestContext private () {
           }
 
       val nameGenerator = new DefaultNameGenerator(environment)
-      val kt2Cpg = new Kt2Cpg()
+      val kt2Cpg        = new Kt2Cpg()
 
       val nonSourceFiles = codeAndFile.map { entry =>
         FileContentAtPath(entry.content, entry.fileName, entry.fileName)
       }
-      val cpg = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, nameGenerator)
+      val cpg     = kt2Cpg.createCpg(filesWithMeta, nonSourceFiles, nameGenerator)
       val context = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)

@@ -7,10 +7,11 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreator, LayerCreatorContext, TypeRelations}
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import overflowdb.traversal.help.Doc
 
 import scala.sys.process.Process
@@ -18,16 +19,16 @@ import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
 class Console[T <: Project](
-    executor: AmmoniteExecutor,
-    loader: WorkspaceLoader[T],
-    baseDir: File = File.currentWorkingDirectory
+  executor: AmmoniteExecutor,
+  loader: WorkspaceLoader[T],
+  baseDir: File = File.currentWorkingDirectory
 ) extends ScriptManager(executor) {
 
   import Console._
 
-  private val _config = new ConsoleConfig()
+  private val _config       = new ConsoleConfig()
   def config: ConsoleConfig = _config
-  def console: Console[T] = this
+  def console: Console[T]   = this
 
   protected var workspaceManager: WorkspaceManager[T] = _
   switchWorkspace(baseDir.path.resolve("workspace").toString)
@@ -209,10 +210,9 @@ class Console[T <: Project](
     }
   }
 
-  /** Delete project from disk and remove it from
-    * the workspace manager. Returns the (now invalid)
-    * project.
-    * @param name the name of the project
+  /** Delete project from disk and remove it from the workspace manager. Returns the (now invalid) project.
+    * @param name
+    *   the name of the project
     */
   @Doc(info = "Close and remove project from disk", example = "delete(projectName)")
   def delete(name: String): Option[Unit] = {
@@ -361,7 +361,7 @@ class Console[T <: Project](
     }
 
     System.err.println(s"Creating project `$name` for CPG at `$inputPath`")
-    val pathToProject = workspace.createProject(inputPath, name)
+    val pathToProject         = workspace.createProject(inputPath, name)
     val cpgDestinationPathOpt = pathToProject.map(_.resolve(nameOfCpgInProject))
 
     if (cpgDestinationPathOpt.isEmpty) {
@@ -413,7 +413,8 @@ class Console[T <: Project](
 
   /** Close the project and open it again.
     *
-    * @param name the name of the project
+    * @param name
+    *   the name of the project
     */
   def reload(name: String): Option[Project] = {
     close(name).flatMap(p => open(p.name))
@@ -478,10 +479,10 @@ class Console[T <: Project](
 
 object Console {
   def report(string: String): Unit = System.err.println(string)
-  val nameOfLegacyCpgInProject = "cpg.bin.zip"
+  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
-    val name = File(inputPath).name
+    val name    = File(inputPath).name
     val project = workspace.project(name)
     if (project.isDefined && project.exists(_.inputPath != inputPath)) {
       var i = 1

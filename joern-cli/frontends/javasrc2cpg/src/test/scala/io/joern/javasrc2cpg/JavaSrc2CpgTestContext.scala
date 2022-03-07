@@ -2,20 +2,21 @@ package io.joern.javasrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
 
 class JavaSrc2CpgTestContext {
   private var code: String = ""
-  private var buildResult = Option.empty[Cpg]
+  private var buildResult  = Option.empty[Cpg]
 
   def buildCpg(runDataflow: Boolean): Cpg = {
     if (buildResult.isEmpty) {
       val javaSrc2Cpg = JavaSrc2Cpg()
-      val cpg = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
-      val context = new LayerCreatorContext(cpg)
+      val cpg         = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
+      val context     = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)
       new ControlFlow().run(context)

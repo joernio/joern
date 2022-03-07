@@ -6,9 +6,10 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
-import io.shiftleft.semanticcpg.layers.{Base, CallGraph, ControlFlow, LayerCreatorContext, TypeRelations}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.Traversal
 
@@ -17,8 +18,8 @@ import scala.util.Try
 
 class DataFlowCodeToCpgSuite extends FuzzyCCodeToCpgSuite {
 
-  var semanticsFilename = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics = _
+  var semanticsFilename               = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
@@ -58,9 +59,9 @@ class DataFlowCodeToCpgSuite extends FuzzyCCodeToCpgSuite {
   protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = {
     val pairs = path.elements.map {
       case point: MethodParameterIn => {
-        val method = point.method.head
+        val method      = point.method.head
         val method_name = method.name
-        val code = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
+        val code        = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
         (code, point.lineNumber)
       }
       case point => (point.statement.repr, point.lineNumber)

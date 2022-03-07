@@ -19,9 +19,7 @@ object Main extends App {
     val outFileName = "/tmp/querydb.json"
     better.files
       .File(outFileName)
-      .write(
-        Serialization.write(queryDb.allQueries)
-      )
+      .write(Serialization.write(queryDb.allQueries))
     println(s"Queries written to: $outFileName")
   }
 

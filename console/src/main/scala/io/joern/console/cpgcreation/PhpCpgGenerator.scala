@@ -7,7 +7,7 @@ import java.nio.file.Path
 case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
   override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
-    val command = rootPath.resolve("php2cpg").toString
+    val command   = rootPath.resolve("php2cpg").toString
     val arguments = Seq("create") ++ List(inputPath) ++ Seq("-o", outputPath) ++ config.cmdLineParams
     runShellCommand(command, arguments).map(_ => outputPath)
   }

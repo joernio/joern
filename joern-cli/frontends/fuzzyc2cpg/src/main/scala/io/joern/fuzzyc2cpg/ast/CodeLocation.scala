@@ -5,12 +5,12 @@ object CodeLocation {
 }
 
 case class CodeLocation(
-    startLine: Option[Int] = None,
-    startPos: Option[Int] = None,
-    startIndex: Option[Int] = None,
-    endIndex: Option[Int] = None,
-    endLine: Option[Int] = None,
-    endPos: Option[Int] = None
+  startLine: Option[Int] = None,
+  startPos: Option[Int] = None,
+  startIndex: Option[Int] = None,
+  endIndex: Option[Int] = None,
+  endLine: Option[Int] = None,
+  endPos: Option[Int] = None
 ) {
 
   override def toString: String =

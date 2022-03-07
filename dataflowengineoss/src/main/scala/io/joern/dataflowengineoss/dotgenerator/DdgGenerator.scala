@@ -14,16 +14,16 @@ import scala.collection.mutable
 
 class DdgGenerator {
 
-  val edgeType = "DDG"
+  val edgeType          = "DDG"
   private val edgeCache = mutable.Map[StoredNode, List[Edge]]()
 
   def generate(methodNode: Method)(implicit semantics: Semantics): Graph = {
-    val entryNode = methodNode
-    val paramNodes = methodNode.parameter.l
-    val allOtherNodes = methodNode.cfgNode.l
-    val exitNode = methodNode.methodReturn
+    val entryNode                  = methodNode
+    val paramNodes                 = methodNode.parameter.l
+    val allOtherNodes              = methodNode.cfgNode.l
+    val exitNode                   = methodNode.methodReturn
     val allNodes: List[StoredNode] = List(entryNode, exitNode) ++ paramNodes ++ allOtherNodes
-    val visibleNodes = allNodes.filter(shouldBeDisplayed)
+    val visibleNodes               = allNodes.filter(shouldBeDisplayed)
 
     val edges = visibleNodes.map { dstNode =>
       inEdgesToDisplay(dstNode)
@@ -65,7 +65,7 @@ class DdgGenerator {
   )
 
   private def inEdgesToDisplay(dstNode: StoredNode, visited: List[StoredNode] = List())(implicit
-      semantics: Semantics
+    semantics: Semantics
   ): List[Edge] = {
 
     if (edgeCache.contains(dstNode)) {
@@ -75,7 +75,7 @@ class DdgGenerator {
     if (visited.contains(dstNode)) {
       List()
     } else {
-      val parents = expand(dstNode)
+      val parents              = expand(dstNode)
       val (visible, invisible) = parents.partition(x => shouldBeDisplayed(x.src) && x.srcVisible)
       val result = visible.toList ++ invisible.toList.flatMap { n =>
         val parentInEdgesToDisplay = inEdgesToDisplay(n.src, visited ++ List(dstNode))

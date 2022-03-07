@@ -7,7 +7,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
+import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp._
@@ -48,7 +49,7 @@ trait AstCreatorHelper {
 
   protected def uniqueName(target: String, name: String, fullName: String): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val newName = s"anonymous_${target}_$usedNames"
+      val newName     = s"anonymous_${target}_$usedNames"
       val newFullName = s"${fullName}anonymous_${target}_$usedNames"
       usedNames = usedNames + 1
       (newName, newFullName)
@@ -83,14 +84,14 @@ trait AstCreatorHelper {
   protected def column(node: IASTNode): Option[Integer] = {
     if (line(node).isEmpty) None
     else {
-      val l = line(node).get - 1
+      val l   = line(node).get - 1
       val loc = nullSafeFileLocation(node)
       if (l == 0) {
         loc.map(_.getNodeOffset)
       } else if (loc.map(_.getNodeOffset).contains(0)) {
         Some(0)
       } else {
-        val slice = fileLines(node).slice(0, l)
+        val slice  = fileLines(node).slice(0, l)
         val length = slice.size - 1
         loc.map(_.getNodeOffset - 1 - slice.sum - length)
       }
@@ -100,14 +101,14 @@ trait AstCreatorHelper {
   protected def columnEnd(node: IASTNode): Option[Integer] = {
     if (lineEnd(node).isEmpty) None
     else {
-      val l = lineEnd(node).get - 1
+      val l   = lineEnd(node).get - 1
       val loc = nullSafeFileLocation(node)
       if (l == 0) {
         loc.map(l => l.getNodeOffset + l.getNodeLength)
       } else if (loc.map(l => l.getNodeOffset + l.getNodeLength).contains(0)) {
         Some(0)
       } else {
-        val slice = fileLines(node).slice(0, l)
+        val slice  = fileLines(node).slice(0, l)
         val length = slice.size - 1
         loc.map(l => l.getNodeOffset + l.getNodeLength - 1 - slice.sum - length)
       }
@@ -125,7 +126,7 @@ trait AstCreatorHelper {
     }
 
   protected def registerType(typeName: String): String = {
-    val fixedTypeName = fixQualifiedName(typeName)
+    val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
     global.usedTypes.putIfAbsent(fixedTypeName, true)
     fixedTypeName
   }
@@ -134,13 +135,15 @@ trait AstCreatorHelper {
   private val reservedTypeKeywords =
     List("const", "static", "volatile", "restrict", "extern", "typedef", "inline", "constexpr", "auto", "virtual")
 
-  private def cleanType(t: String): String = {
-    val tpe = reservedTypeKeywords.foldLeft(t)((cur, repl) => cur.replace(s"$repl ", ""))
-    tpe match {
-      case ""                                        => Defines.anyTypeName
-      case t if t.contains("?")                      => Defines.anyTypeName
-      case t if t.contains("#")                      => Defines.anyTypeName
-      case t if t.startsWith("{") && t.endsWith("}") => Defines.anyTypeName
+  protected def cleanType(rawType: String): String = {
+    val tpe = reservedTypeKeywords.foldLeft(rawType)((cur, repl) => cur.replace(s"$repl ", ""))
+    StringUtils.normalizeSpace(tpe) match {
+      case ""                   => Defines.anyTypeName
+      case t if t.contains("?") => Defines.anyTypeName
+      case t if t.contains("#") => Defines.anyTypeName
+      case t if t.contains("{") && t.contains("}") =>
+        val anonType = uniqueName("type", "", "")._1 + t.substring(0, t.indexOf("{")) + t.substring(t.indexOf("}") + 1)
+        anonType.replace(" ", "")
       case t if t.startsWith("[") && t.endsWith("]") => "[]"
       case t if t.contains(Defines.qualifiedNameSeparator) =>
         fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
@@ -159,9 +162,9 @@ trait AstCreatorHelper {
         val arr = ASTTypeUtil.getNodeType(a).replace("? ", "")
         s"$tpe$arr"
       case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).contains("} ") =>
-        val tpe = getNodeSignature(a).replace("[]", "").strip()
+        val tpe      = getNodeSignature(a).replace("[]", "").strip()
         val nodeType = ASTTypeUtil.getNodeType(node)
-        val arr = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
+        val arr      = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
         s"$tpe$arr"
       case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node))
@@ -303,7 +306,7 @@ trait AstCreatorHelper {
   }
 
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
-    val tpe = typeFor(spec)
+    val tpe      = typeFor(spec)
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
       case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
@@ -316,9 +319,9 @@ trait AstCreatorHelper {
   }
 
   private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, order: Int): Ast = {
-    val op = "<operator>.typeOf"
+    val op       = "<operator>.typeOf"
     val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, order)
-    val operand = nullSafeAst(decl.getDecltypeExpression, 1)
+    val operand  = nullSafeAst(decl.getDecltypeExpression, 1)
     Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
   }
 
@@ -333,8 +336,8 @@ trait AstCreatorHelper {
     val op = Operators.assignment
     val calls = withOrder(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
-      val left = astForNode(des, 1)
-      val right = astForNode(d.getOperand, 2)
+      val left     = astForNode(des, 1)
+      val right    = astForNode(d.getOperand, 2)
       Ast(callNode)
         .withChild(left)
         .withChild(right)
@@ -356,8 +359,8 @@ trait AstCreatorHelper {
     val op = Operators.assignment
     val calls = withOrder(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
-      val left = astForNode(des, 1)
-      val right = astForNode(d.getOperand, 2)
+      val left     = astForNode(des, 1)
+      val right    = astForNode(d.getOperand, 2)
       Ast(callNode)
         .withChild(left)
         .withChild(right)
@@ -369,19 +372,19 @@ trait AstCreatorHelper {
   }
 
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer, order: Int): Ast = {
-    val name = "<operator>.constructorInitializer"
+    val name     = "<operator>.constructorInitializer"
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val args = withOrder(c.getArguments) { case (a, o) => astForNode(a, o) }
+    val args     = withOrder(c.getArguments) { case (a, o) => astForNode(a, o) }
     Ast(callNode).withChildren(args).withArgEdges(callNode, args)
   }
 
   protected def astForFakeStaticInitMethod(
-      name: String,
-      lineNumber: Option[Integer],
-      astParentType: String,
-      astParentFullName: String,
-      order: Int,
-      childrenAsts: Seq[Ast]
+    name: String,
+    lineNumber: Option[Integer],
+    astParentType: String,
+    astParentFullName: String,
+    order: Int,
+    childrenAsts: Seq[Ast]
   ): Ast = {
     val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
     val fakeStaticInitMethod =
@@ -412,6 +415,7 @@ trait AstCreatorHelper {
     node match {
       case id: IASTIdExpression if id.getName.isInstanceOf[CPPASTQualifiedName] =>
         astForQualifiedName(id.getName.asInstanceOf[CPPASTQualifiedName], order)
+      case id: IASTIdExpression             => astForIdentifier(id, order)
       case name: IASTName                   => astForIdentifier(name, order)
       case decl: IASTDeclSpecifier          => astForIdentifier(decl, order)
       case expr: IASTExpression             => astForExpression(expr, order)
@@ -420,6 +424,7 @@ trait AstCreatorHelper {
       case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d, order)
       case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d, order)
       case d: ICASTArrayDesignator          => nullSafeAst(d.getSubscriptExpression, order)
+      case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression, order)
       case d: ICPPASTFieldDesignator        => astForNode(d.getName, order)
       case d: ICASTFieldDesignator          => astForNode(d.getName, order)
       case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl, order)

@@ -10,7 +10,7 @@ import io.joern.fuzzyc2cpg.parser.AntlrParserDriverObserver;
 import io.joern.fuzzyc2cpg.parser.CommonParserContext;
 import io.joern.fuzzyc2cpg.parser.ParserException;
 import io.joern.fuzzyc2cpg.parser.TokenSubStream;
-import io.shiftleft.passes.DiffGraph;
+import overflowdb.BatchedUpdate.DiffGraphBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +48,7 @@ abstract public class AntlrParserDriver {
 
     private ParseTreeListener listener;
     private CommonParserContext context = null;
-    public DiffGraph.Builder cpg;
+    public DiffGraphBuilder cpg;
     private final List<AntlrParserDriverObserver> observers = new ArrayList<>();
 
     private Parser antlrParser;
@@ -61,7 +61,7 @@ abstract public class AntlrParserDriver {
 
     public abstract Lexer createLexer(CharStream input);
 
-    public DiffGraph.Builder parseAndWalkFile(String filename, DiffGraph.Builder diffGraph) throws ParserException {
+    public DiffGraphBuilder parseAndWalkFile(String filename, DiffGraphBuilder diffGraph) throws ParserException {
         cpg  = diffGraph;
         handleHiddenTokens(filename);
         TokenSubStream stream = createTokenStreamFromFile(filename);
@@ -100,10 +100,9 @@ abstract public class AntlrParserDriver {
     }
 
 
-    public ParseTree parseAndWalkString(String input) throws ParserException {
+    public void parseAndWalkString(String input) throws ParserException {
         ParseTree tree = parseString(input);
         walkTree(tree);
-        return tree;
     }
 
     public CompoundStatement getResult() {
@@ -114,8 +113,7 @@ abstract public class AntlrParserDriver {
         CharStream inputStream = CharStreams.fromString(input);
         Lexer lex = createLexer(inputStream);
         TokenSubStream tokens = new TokenSubStream(lex);
-        ParseTree tree = parseTokenStream(tokens);
-        return tree;
+        return parseTokenStream(tokens);
     }
 
     public ParseTree parseTokenStream(TokenSubStream tokens)
@@ -140,8 +138,7 @@ abstract public class AntlrParserDriver {
 
         CharStream input = createInputStreamForFile(filename);
         Lexer lexer = createLexer(input);
-        TokenSubStream tokens = new TokenSubStream(lexer);
-        return tokens;
+        return new TokenSubStream(lexer);
 
     }
 

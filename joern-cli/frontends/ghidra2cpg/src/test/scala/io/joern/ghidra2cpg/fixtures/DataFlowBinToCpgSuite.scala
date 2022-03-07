@@ -6,6 +6,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers._
@@ -19,7 +20,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
   var semanticsFilename =
     ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-  var semantics: Semantics = _
+  var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
@@ -53,10 +54,6 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
   protected def getMethodOfType(cpg: Cpg, typeName: String, methodName: String): Traversal[Method] =
     cpg.typeDecl.nameExact(typeName).method.nameExact(methodName)
 
-  protected def getLiteralOfType(
-      cpg: Cpg,
-      typeName: String,
-      literalName: String
-  ): Traversal[Literal] =
+  protected def getLiteralOfType(cpg: Cpg, typeName: String, literalName: String): Traversal[Literal] =
     cpg.typeDecl.nameExact(typeName).method.isLiteral.codeExact(literalName)
 }

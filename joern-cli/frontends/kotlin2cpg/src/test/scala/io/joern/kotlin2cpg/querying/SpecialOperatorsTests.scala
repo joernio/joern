@@ -40,7 +40,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "\"PLACEHOLDER\" as String"
       c.columnNumber shouldBe Some(12)
       c.lineNumber shouldBe Some(2)
-      c.typeFullName shouldBe "kotlin.String"
+      c.typeFullName shouldBe "java.lang.String"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
@@ -99,7 +99,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(12)
       c.methodFullName shouldBe Operators.is
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.typeFullName shouldBe "kotlin.Boolean"
+      c.typeFullName shouldBe "java.lang.Boolean"
     }
   }
 
@@ -129,7 +129,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with _elvis_ operator" - {
+  "CPG for code with simple usage of _elvis_ operator" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
@@ -139,7 +139,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a CALL nod for elvis operator with the correct properties set" in {
+    "should contain a CALL node for elvis operator with the correct properties set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.elvis).l
       c.code shouldBe "args[1]?.length ?: -1"
       c.lineNumber shouldBe Some(4)
@@ -147,7 +147,29 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe Operators.elvis
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
-      c.typeFullName shouldBe "kotlin.Int"
+      c.typeFullName shouldBe "java.lang.Object"
+    }
+
+    "should contain an IDENTIFIER node for  " in {
+      val List(i) = cpg.identifier.nameExact("foo").head.l
+      i.typeFullName shouldBe "java.lang.Integer"
+    }
+  }
+
+  "CPG for code with _elvis_ operator usage and subexpression" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |fun main() {
+        |    val valueStr = "41414141"
+        |    val isValid = valueStr?.toIntOrNull() ?: valueStr?.toLongOrNull() != null
+        |    println("isValid: " + isValid)
+        |}
+        |""".stripMargin)
+
+    "should contain an IDENTIFIER node for the result of the elvis operator call with the correct TYPE_FULL_NAME set" in {
+      val List(i) = cpg.identifier.nameExact("isValid").head.l
+      i.typeFullName shouldBe "java.lang.Boolean"
     }
   }
 
@@ -168,7 +190,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(14)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
-      c.typeFullName shouldBe "kotlin.Boolean"
+      c.typeFullName shouldBe "java.lang.Boolean"
     }
   }
 
@@ -189,7 +211,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(14)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
-      c.typeFullName shouldBe "kotlin.Boolean"
+      c.typeFullName shouldBe "java.lang.Boolean"
     }
   }
 }

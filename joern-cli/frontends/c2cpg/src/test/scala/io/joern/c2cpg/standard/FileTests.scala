@@ -30,7 +30,7 @@ class FileTests extends CCodeToCpgSuite {
     val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
     x.name should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     // C-frontend currently does not set hash but should do so
     // in the future
@@ -46,7 +46,7 @@ class FileTests extends CCodeToCpgSuite {
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set("foo", "bar", "my_struct")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.nameNot("<global>").name.toSetMutable shouldBe Set("my_struct")
   }
 
   "should allow traversing to namespaces" in {

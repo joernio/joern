@@ -57,7 +57,7 @@ RAM 32,0 GB (24 GB for the JVM)
 Samsung SSD 970 EVO Plus 1TB
 ```
 
-Includes for the linux kernel are partly unresolvable. These are files actually not contained in the linux Github repository, e.g., stuff in:
+Includes for the linux kernel are partly unresolvable. These are files actually not contained in the linux GitHub repository, e.g., stuff in:
   - `drivers/` for `gpu/` and/or `drm/`
   - `fs/` for specific filesystems like `xfs/`
 

@@ -9,13 +9,13 @@ import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-/** This component loads a workspace from disk and creates
-  * a corresponding `Workspace` object.
+/** This component loads a workspace from disk and creates a corresponding `Workspace` object.
   */
 abstract class WorkspaceLoader[ProjectType <: Project] {
 
   /** Initialize workspace from a directory
-    * @param path path to the directory
+    * @param path
+    *   path to the directory
     */
   def load(path: String): Workspace[ProjectType] = {
     val dirFile = File(path)
@@ -50,13 +50,13 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
 
   def createProject(projectFile: ProjectFile, path: Path): ProjectType
 
-  private val PROJECTFILE_NAME = "project.json"
+  private val PROJECTFILE_NAME              = "project.json"
   implicit val formats: DefaultFormats.type = DefaultFormats
 
   private def readProjectFile(projectDirName: Path): ProjectFile = {
     // TODO see `writeProjectFile`
     val content = File(projectDirName.resolve(PROJECTFILE_NAME)).contentAsString
-    val map = jsonRead[Map[String, String]](content)
+    val map     = jsonRead[Map[String, String]](content)
     ProjectFile(map("inputPath"), map("name"))
   }
 

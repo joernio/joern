@@ -1,6 +1,5 @@
 package io.joern.ghidra2cpg.passes.x86
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
 import io.joern.ghidra2cpg.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass
@@ -12,12 +11,12 @@ import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 import scala.language.implicitConversions
 class X86FunctionPass(
-    currentProgram: Program,
-    filename: String,
-    function: Function,
-    cpg: Cpg,
-    keyPool: IntervalKeyPool,
-    decompiler: Decompiler
+  currentProgram: Program,
+  filename: String,
+  function: Function,
+  cpg: Cpg,
+  keyPool: IntervalKeyPool,
+  decompiler: Decompiler
 ) extends FunctionPass(new X86Processor, currentProgram, function, cpg, keyPool, decompiler) {
 
   override def handleBody(): Unit = {
@@ -31,7 +30,8 @@ class X86FunctionPass(
         diffGraph.addNode(instructionNode)
         handleArguments(instruction, instructionNode)
         diffGraph.addEdge(blockNode, instructionNode, EdgeTypes.AST)
-        // Not connecting previous instruction if it is an unconditional jump
+        // Not connecting the previous instruction,
+        // if it is an unconditional jump
         // JMP is x86 specific
         if (!prevInstructionNode.code.startsWith("JMP")) {
           diffGraph.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)

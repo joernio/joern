@@ -8,31 +8,33 @@ import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, Properties, PropertyNames}
-import io.shiftleft.passes.{CpgPass, DiffGraph, KeyPool}
+import io.shiftleft.passes.{SimpleCpgPass, KeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.passes.frontend.MetaDataPass
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.Ast
 import overflowdb.traversal._
 
-class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) extends CpgPass(cpg, keyPool = keyPool) {
+class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config)
+    extends SimpleCpgPass(cpg, keyPool = keyPool) {
 
-  private val systemIncludePaths = IncludeAutoDiscovery.discoverIncludePaths(config)
+  private val systemIncludePaths =
+    IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)
 
   private val absolutePath: String = File(config.inputPaths.head).path.toAbsolutePath.normalize().toString
-  private val filename: String = s"$absolutePath:<includes>"
-  private val globalName: String = NamespaceTraversal.globalNamespaceName
-  private val fullName: String = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+  private val filename: String     = s"$absolutePath:<includes>"
+  private val globalName: String   = NamespaceTraversal.globalNamespaceName
+  private val fullName: String     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
 
   private val typeDeclFullNames: Set[String] =
     cpg.graph.nodes(NodeTypes.TYPE_DECL).map(_.property(Properties.FULL_NAME)).toSetImmutable
 
-  private def setExternal(node: HasFilename, diffGraph: DiffGraph.Builder): Unit = {
+  private def setExternal(node: HasFilename, diffGraph: DiffGraphBuilder): Unit = {
     if (node.isInstanceOf[HasIsExternal] && systemIncludePaths.exists(p => node.filename.startsWith(p.toString))) {
-      diffGraph.addNodeProperty(node.asInstanceOf[StoredNode], PropertyNames.IS_EXTERNAL, Boolean.box(true))
+      diffGraph.setNodeProperty(node.asInstanceOf[StoredNode], PropertyNames.IS_EXTERNAL, Boolean.box(true))
     }
   }
 
-  private def createGlobalBlock(dstGraph: DiffGraph.Builder): NewBlock = {
+  private def createGlobalBlock(dstGraph: DiffGraphBuilder): NewBlock = {
     val includesFile = NewFile().name(filename).order(0)
 
     val namespaceBlock = NewNamespaceBlock()
@@ -63,23 +65,22 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
       .order(2)
 
     val ast = Ast(includesFile).withChild(
-      Ast(namespaceBlock).withChild(
-        Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn))
-      )
+      Ast(namespaceBlock)
+        .withChild(Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn)))
     )
 
     Ast.storeInDiffGraph(ast, dstGraph)
     blockNode
   }
 
-  private def createMissingAstEdges(dstGraph: DiffGraph.Builder): Unit = {
+  private def createMissingAstEdges(dstGraph: DiffGraphBuilder): Unit = {
     val globalBlock = createGlobalBlock(dstGraph)
     Traversal(cpg.graph.nodes()).whereNot(_.inE(EdgeTypes.AST)).foreach {
       case srcNode: HasFilename if FileDefaults.isHeaderFile(srcNode.filename) =>
-        dstGraph.addEdgeToOriginal(globalBlock, srcNode.asInstanceOf[StoredNode], EdgeTypes.AST)
+        dstGraph.addEdge(globalBlock, srcNode.asInstanceOf[StoredNode], EdgeTypes.AST)
         setExternal(srcNode, dstGraph)
       case srcNode: Local =>
-        dstGraph.addEdgeToOriginal(globalBlock, srcNode.asInstanceOf[StoredNode], EdgeTypes.AST)
+        dstGraph.addEdge(globalBlock, srcNode.asInstanceOf[StoredNode], EdgeTypes.AST)
       case _ =>
     }
   }
@@ -87,7 +88,7 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
   private def typeNeedsTypeDeclStub(t: Type): Boolean =
     !typeDeclFullNames.contains(t.typeDeclFullName)
 
-  private def createMissingTypeDecls(dstGraph: DiffGraph.Builder): Unit = {
+  private def createMissingTypeDecls(dstGraph: DiffGraphBuilder): Unit = {
     Traversal(cpg.graph.nodes(NodeTypes.TYPE))
       .foreach {
         case t: Type if typeNeedsTypeDeclStub(t) =>
@@ -104,16 +105,12 @@ class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config) exte
       }
   }
 
-  override def run(): Iterator[DiffGraph] = {
+  override def run(dstGraph: DiffGraphBuilder): Unit = {
     if (!Global.shouldBeCleared()) {
-      Iterator.empty
+      ;
     } else {
-      val dstGraph = DiffGraph.newBuilder
-
       createMissingAstEdges(dstGraph)
       createMissingTypeDecls(dstGraph)
-
-      Iterator(dstGraph.build())
     }
   }
 

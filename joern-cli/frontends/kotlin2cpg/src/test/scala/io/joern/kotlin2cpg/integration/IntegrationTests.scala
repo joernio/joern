@@ -1,11 +1,15 @@
 package io.joern.kotlin2cpg.integration
 
-import better.files.File
-import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta, PathUtils, SourceFilesPicker}
+import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
+import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta}
 import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+import better.files.File
+import io.joern.kotlin2cpg.files.SourceFilesPicker
+import io.joern.kotlin2cpg.utils.PathUtils
+
+import java.nio.file.Files
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
@@ -13,11 +17,10 @@ import org.scalatest.Ignore
 import overflowdb.traversal.jIteratortoTraversal
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import java.nio.file.Files
 
 @Ignore // re-enable with a good setup for cloning and syncing external projects
 class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
-  var cpg: Cpg = null
+  var cpg: Cpg    = null
   val outFilePath = Files.createTempFile("kt2cpg-integration-test-artifact", ".bin.zip")
 
   override def beforeAll() = {
@@ -43,7 +46,8 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
         .toSeq
 
     val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(inPath)
-    val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths)
+    val environment =
+      CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths, Seq(), new ErrorLoggingMessageCollector)
     val ktFiles = environment.getSourceFiles.asScala
     val filesWithMeta =
       ktFiles
@@ -56,11 +60,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
           }
         }
         .map { fwp =>
-          KtFileWithMeta(
-            fwp._1,
-            fwp._2,
-            fwp._1.getVirtualFilePath
-          )
+          KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
         }
         .filterNot { fwp =>
           // TODO: add test for this type of filtering
@@ -73,12 +73,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
         }
 
     val nameGenerator = new DefaultNameGenerator(environment)
-    new Kt2Cpg().createCpg(
-      filesWithMeta,
-      Seq(),
-      nameGenerator,
-      Some(outPath)
-    )
+    new Kt2Cpg().createCpg(filesWithMeta, Seq(), nameGenerator, Some(outPath))
   }
 
   "CPG generated from large sample project" - {

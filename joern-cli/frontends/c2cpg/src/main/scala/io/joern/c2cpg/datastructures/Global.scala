@@ -1,8 +1,8 @@
 package io.joern.c2cpg.datastructures
 
 import io.joern.c2cpg.parser.FileDefaults
-import io.shiftleft.passes.DiffGraph
-import io.shiftleft.x2cpg.Ast
+import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.x2cpg.Ast
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
@@ -34,12 +34,12 @@ object Global {
   }
 
   def getAstsFromAstCache(
-      diffGraph: DiffGraph.Builder,
-      filename: String,
-      fromFilename: String,
-      linenumber: Option[Integer],
-      columnnumber: Option[Integer],
-      astCreatorFunction: => Seq[Ast]
+    diffGraph: DiffGraphBuilder,
+    filename: String,
+    fromFilename: String,
+    linenumber: Option[Integer],
+    columnnumber: Option[Integer],
+    astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = Global.synchronized {
     if (
       FileDefaults

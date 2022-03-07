@@ -187,7 +187,7 @@ class ObjectTests extends JavaDataflowFixture {
 
   it should "find a inter-procedural path from object variable" in {
     def source = cpg.method.name("test11").literal.code("\"MALICIOUS\"")
-    def sink = cpg.method.name("sink").call.name("println").argument
+    def sink   = cpg.method.name("sink").call.name("println").argument
 
     sink.reachableBy(source).size shouldBe 1
     sink.reachableByFlows(source).size shouldBe 1
@@ -195,7 +195,7 @@ class ObjectTests extends JavaDataflowFixture {
 
   it should "find a inter-procedural path from object instantiation in call argument" in {
     def source = cpg.method.name("test12").literal.code("\"MALICIOUS\"")
-    def sink = cpg.method.name("sink").call.name("println").argument
+    def sink   = cpg.method.name("sink").call.name("println").argument
 
     sink.reachableBy(source).size shouldBe 1
     sink.reachableByFlows(source).size shouldBe 1

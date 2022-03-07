@@ -64,21 +64,17 @@ public class IdentifierDeclBuilder extends TemplateAstBuilder<IdentifierDecl> {
 
   public List<IdentifierDecl> getDeclarations(ParserRuleContext decl_list,
       ParserRuleContext typeName) {
-    List<IdentifierDecl> declarations = new LinkedList<IdentifierDecl>();
+    List<IdentifierDecl> declarations = new LinkedList<>();
     InitDeclContextWrapper decl_ctx;
-    for (Iterator<ParseTree> i = decl_list.children.iterator(); i
-        .hasNext(); ) {
-
-      decl_ctx = new InitDeclContextWrapper(i.next());
+    for (ParseTree parseTree : decl_list.children) {
+      decl_ctx = new InitDeclContextWrapper(parseTree);
       // for ','s
       if (decl_ctx.getWrappedObject() == null) {
         continue;
       }
-
       createNew(decl_ctx.getWrappedObject());
       setType(decl_ctx, typeName);
       setName(decl_ctx);
-
       declarations.add(getItem());
     }
     return declarations;

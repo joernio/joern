@@ -4,9 +4,9 @@ import overflowdb.traversal.help.Table
 
 import scala.collection.mutable.ListBuffer
 
-/** Create a workspace from a list of projects. Workspace is
-  * a passive object that is managed by WorkspaceManager
-  * @param projects list of projects present in this workspace
+/** Create a workspace from a list of projects. Workspace is a passive object that is managed by WorkspaceManager
+  * @param projects
+  *   list of projects present in this workspace
   */
 class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType]) {
 

@@ -53,49 +53,49 @@ import io.joern.fuzzyc2cpg.ast.statements.jump.{
 import io.joern.fuzzyc2cpg.ast.statements.{ExpressionStatement, IdentifierDeclStatement}
 import io.joern.fuzzyc2cpg.ast.walking.ASTNodeVisitor
 import io.joern.fuzzyc2cpg.{Defines, Global}
-import io.shiftleft.passes.DiffGraph
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.proto.cpg.Cpg.{DispatchTypes, EvaluationStrategies}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 
 private[astcreation] class AstCreator(
-    diffGraph: DiffGraph.Builder,
-    namespaceBlock: NewNamespaceBlock,
-    global: Global,
-    childNum: Int
+  diffGraph: DiffGraphBuilder,
+  namespaceBlock: NewNamespaceBlock,
+  global: Global,
+  childNum: Int
 ) extends ASTNodeVisitor {
 
   implicit def int2IntegerOpt(x: Option[Int]): Option[Integer] = x.map(java.lang.Integer.valueOf)
-  implicit def int2Integer(x: Int): Integer = java.lang.Integer.valueOf(x)
+  implicit def int2Integer(x: Int): Integer                    = java.lang.Integer.valueOf(x)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   private var contextStack = List[Context]()
-  private val scope = new Scope[String, (AbstractNode, String), AbstractNode]()
+  private val scope        = new Scope[String, (NewNode, String), NewNode]()
 
   pushContext(namespaceBlock, childNum)
 
   private class Context(
-      val cpgParent: AbstractNode,
-      var childNum: Int,
-      val parentIsClassDef: Boolean,
-      val parentIsMemberAccess: Boolean = false,
-      var addConditionEdgeOnNextAstEdge: Boolean = false,
-      var addArgumentEdgeOnNextAstEdge: Boolean = false
+    val cpgParent: NewNode,
+    var childNum: Int,
+    val parentIsClassDef: Boolean,
+    val parentIsMemberAccess: Boolean = false,
+    var addConditionEdgeOnNextAstEdge: Boolean = false,
+    var addArgumentEdgeOnNextAstEdge: Boolean = false
   ) {}
 
   private def pushContext(
-      cpgParent: AbstractNode,
-      startChildNum: Int,
-      parentIsClassDef: Boolean = false,
-      parentIsMemberAccess: Boolean = false
+    cpgParent: NewNode,
+    startChildNum: Int,
+    parentIsClassDef: Boolean = false,
+    parentIsMemberAccess: Boolean = false
   ): Unit = {
     contextStack = new Context(cpgParent, startChildNum, parentIsClassDef, parentIsMemberAccess) :: contextStack
   }
 
   private def popContext(): Unit = contextStack = contextStack.tail
-  private def context: Context = contextStack.head
+  private def context: Context   = contextStack.head
 
   /** Entry point for AST construction
     */
@@ -109,7 +109,7 @@ private[astcreation] class AstCreator(
     }
 
     val signature = returnType + " " + astFunction.getFunctionSignature(false)
-    val code = returnType + " " + astFunction.getFunctionSignature(true)
+    val code      = returnType + " " + astFunction.getFunctionSignature(true)
 
     val location = astFunction.getLocation
     val method = NewMethod()
@@ -358,12 +358,12 @@ private[astcreation] class AstCreator(
   }
 
   override def visit(astDelete: DeleteExpression): Unit = {
-    val call = newCallNode(astDelete, Operators.delete);
+    val call = newCallNode(astDelete, Operators.delete)
 
     diffGraph.addNode(call)
     connectAstChild(call)
     pushContext(call, 1)
-    context.addArgumentEdgeOnNextAstEdge = true;
+    context.addArgumentEdgeOnNextAstEdge = true
     astDelete.getTarget.accept(this)
     popContext()
   }
@@ -444,18 +444,18 @@ private[astcreation] class AstCreator(
   }
 
   override def visit(condition: Condition): Unit = {
-    //not called for ConditionalExpression, cf joern#91
+    // not called for ConditionalExpression, cf joern#91
     context.addConditionEdgeOnNextAstEdge = true
     condition.getExpression.accept(this)
   }
 
   override def visit(astConditionalExpr: ConditionalExpression): Unit = {
-    //this ought to be a ControlStructureNode, but we currently cannot handle that in the dataflow tracker
+    // this ought to be a ControlStructureNode, but we currently cannot handle that in the dataflow tracker
     val cpgConditionalExpr = newCallNode(astConditionalExpr, Operators.conditional)
     diffGraph.addNode(cpgConditionalExpr)
     connectAstChild(cpgConditionalExpr)
-    val condition = astConditionalExpr.getChild(0).asInstanceOf[Condition]
-    val trueExpression = astConditionalExpr.getChild(1)
+    val condition       = astConditionalExpr.getChild(0).asInstanceOf[Condition]
+    val trueExpression  = astConditionalExpr.getChild(1)
     val falseExpression = astConditionalExpr.getChild(2)
     // avoid setting context.addConditionEdgeOnNextAstEdge in this.visit(condition), cf joern#91
     pushContext(cpgConditionalExpr, 1)
@@ -838,7 +838,7 @@ private[astcreation] class AstCreator(
   // quick hack to have some implementation at all.
   private def deriveConstantTypeFromCode(code: String): String = {
     val firstChar = code.charAt(0)
-    val lastChar = code.charAt(code.length - 1)
+    val lastChar  = code.charAt(code.length - 1)
     if (firstChar == '"') {
       Defines.charPointerTypeName
     } else if (firstChar == '\'') {

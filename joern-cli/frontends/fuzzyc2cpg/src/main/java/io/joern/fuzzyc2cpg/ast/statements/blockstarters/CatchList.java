@@ -8,7 +8,7 @@ import java.util.LinkedList;
 
 public class CatchList extends AstNode implements Iterable<CatchStatement> {
 
-  private LinkedList<CatchStatement> catchStatements = new LinkedList<CatchStatement>();
+  private LinkedList<CatchStatement> catchStatements = new LinkedList<>();
 
   public String getEscapedCodeStr() {
     return "";

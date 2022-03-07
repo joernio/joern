@@ -7,7 +7,7 @@ import java.util.LinkedList;
 
 public class ExpressionList extends Expression implements Iterable<Expression> {
 
-  private LinkedList<Expression> expressions = new LinkedList<Expression>();
+  private LinkedList<Expression> expressions = new LinkedList<>();
 
   public int size() {
     return this.expressions.size();

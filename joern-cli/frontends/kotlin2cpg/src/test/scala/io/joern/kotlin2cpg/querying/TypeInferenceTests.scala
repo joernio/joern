@@ -23,11 +23,11 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
       val List(x) = params.name("x").l
       x.code shouldBe "x: Int"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
 
       val List(y) = params.name("y").l
       y.code shouldBe "y: Int"
-      y.typeFullName shouldBe "kotlin.Int"
+      y.typeFullName shouldBe "java.lang.Integer"
     }
   }
 
@@ -48,11 +48,11 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
       val List(x) = params.name("x").l
       x.code shouldBe "x: Int"
-      x.typeFullName shouldBe "kotlin.Int"
+      x.typeFullName shouldBe "java.lang.Integer"
 
       val List(y) = params.name("y").l
       y.code shouldBe "y: Int"
-      y.typeFullName shouldBe "kotlin.Int"
+      y.typeFullName shouldBe "java.lang.Integer"
     }
   }
 
@@ -68,7 +68,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain type decl for alias `FooList` of `List<Int>` with the correct aliasTypeFullName set" in {
       val List(x) = cpg.typeDecl("FooList").l
-      x.aliasTypeFullName shouldBe Some("kotlin.collections.List")
+      x.aliasTypeFullName shouldBe Some("java.util.List")
     }
   }
 
@@ -82,17 +82,17 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain IDENTIFIER nodes for `x` with the correct typeFullNames set" in {
       val List(i) = cpg.identifier.codeExact("x").where(_.inCall.methodFullNameExact(Operators.assignment)).l
-      i.typeFullName shouldBe "kotlin.collections.List"
+      i.typeFullName shouldBe "java.util.List"
     }
 
     "should contain a CALL node for `x[0]` with the correct typeFullNames set" in {
       val List(c) = cpg.call.codeExact("x[0]").l
-      c.typeFullName shouldBe "kotlin.Int"
+      c.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a CALL node for `listOf(1, 2, 3)` with the correct typeFullName set" in {
       val List(c) = cpg.call.codeExact("listOf(1, 2, 3)").l
-      c.typeFullName shouldBe "kotlin.collections.List"
+      c.typeFullName shouldBe "java.util.List"
     }
   }
 
@@ -129,7 +129,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a MEMBER node for `z` with the correct typeFullName set" in {
       val List(m) = cpg.typeDecl.fullName(".*Foo.*").member.name("z").l
-      m.typeFullName shouldBe "kotlin.Int"
+      m.typeFullName shouldBe "java.lang.Integer"
     }
   }
 
@@ -155,7 +155,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `r.execute` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("r.exec.*").l
-      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
+      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(java.lang.String)"
     }
   }
 
@@ -189,13 +189,13 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullNames set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
-      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
+      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
     "should contain IDENTIFIER nodes for `prog` with the correct typeFullNames set" in {
       val typeFullNames = cpg.identifier.codeExact("prog").typeFullName.toSet
-      typeFullNames shouldBe Set("kotlin.String")
+      typeFullNames shouldBe Set("java.lang.String")
     }
 
     "should contain IDENTIFIER nodes for `proc` with the correct typeFullNames set" in {
@@ -209,13 +209,13 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `cpx.pathParam` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("ctx.pathParam.*").l
-      c.methodFullName shouldBe "io.javalin.http.Context.pathParam:kotlin.String(kotlin.String)"
+      c.methodFullName shouldBe "io.javalin.http.Context.pathParam:java.lang.String(java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
     "should contain a CALL node for `ctx.body` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("ctx.header.*").l
-      c.methodFullName shouldBe "io.javalin.http.Context.header:kotlin.String(kotlin.String)"
+      c.methodFullName shouldBe "io.javalin.http.Context.header:java.lang.String(java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
 
@@ -226,7 +226,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain IDENTIFIER nodes for `invocation` with the correct typeFullNames set" in {
       val typeFullNames = cpg.identifier.codeExact("invocation").typeFullName.toSet
-      typeFullNames shouldBe Set("kotlin.String")
+      typeFullNames shouldBe Set("java.lang.String")
     }
   }
 
@@ -252,7 +252,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
       val List(c) = createCall.l
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.methodFullName shouldBe "android.app.Activity.onCreate:kotlin.Unit(android.os.Bundle)"
+      c.methodFullName shouldBe "android.app.Activity.onCreate:void(android.os.Bundle)"
       c.argument.size shouldBe 2
 
       val List(firstArg, secondArg) = createCall.argument.l
@@ -307,7 +307,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `port.toString()` with the correct methodFullName set" in {
       val List(c) = cpg.call.codeExact("port.toString()").l
-      c.methodFullName shouldBe "kotlin.Int.toString:kotlin.String()"
+      c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
     }
 
     "should contain a CALL node for `routes` with the correct methodFullName set" in {
@@ -318,12 +318,12 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `req.query` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("req.query.*").l
-      c.methodFullName shouldBe "org.http4k.core.Request.query:kotlin.String(kotlin.String)"
+      c.methodFullName shouldBe "org.http4k.core.Request.query:java.lang.String(java.lang.String)"
     }
 
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullName set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
-      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(kotlin.String)"
+      c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(java.lang.String)"
     }
   }
 
@@ -343,14 +343,13 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
     "should have the correct types inferred" in {
       val List(identifierForAliasedType) = cpg.identifier.codeExact("x").take(1).l
-      // TODO: erase this type
-      identifierForAliasedType.typeFullName shouldBe "mypkg.MyInt"
+      identifierForAliasedType.typeFullName shouldBe "java.lang.Integer"
 
       val List(identifierForOriginalType) = cpg.identifier.codeExact("y").take(1).l
-      identifierForOriginalType.typeFullName shouldBe "kotlin.Int"
+      identifierForOriginalType.typeFullName shouldBe "java.lang.Integer"
 
       val List(identifierForOpResult) = cpg.identifier.codeExact("bar").take(1).l
-      identifierForOpResult.typeFullName shouldBe "kotlin.Int"
+      identifierForOpResult.typeFullName shouldBe "java.lang.Integer"
     }
   }
 }

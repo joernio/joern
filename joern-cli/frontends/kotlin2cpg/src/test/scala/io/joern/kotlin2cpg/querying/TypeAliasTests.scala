@@ -28,7 +28,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.MyInt"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some("kotlin.Int")
+      x.aliasTypeFullName shouldBe Some("java.lang.Integer")
     }
   }
 
@@ -53,7 +53,23 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.Foo"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some("kotlin.collections.List")
+      x.aliasTypeFullName shouldBe Some("java.util.List")
+    }
+  }
+
+  "CPG for code with typealias of type from external library" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+        |package org.http4k.core.body
+        |
+        |import org.http4k.core.Parameters
+        |import org.http4k.core.Request
+        |
+        |typealias Form = Parameters
+        |fun Request.form(): Form = bodyString().toParameters()
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL with the correct ALIAS_TYPE_FULL_NAME set" in {
+      cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "org.http4k.core.Parameters"
     }
   }
 }

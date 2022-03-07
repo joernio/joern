@@ -19,7 +19,7 @@ object CpgGeneratorFactory {
     Languages.JAVA,
     Languages.JAVASCRIPT,
     Languages.PYTHON,
-    Languages.FUZZY_TEST_LANG,
+    Languages.PYTHONSRC,
     Languages.LLVM,
     Languages.PHP,
     Languages.KOTLIN,
@@ -34,7 +34,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     */
   def forCodeAt(inputPath: String): Option[CpgGenerator] =
     for {
-      language <- guessLanguage(inputPath)
+      language     <- guessLanguage(inputPath)
       cpgGenerator <- cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil)
     } yield {
       report(s"Using generator for language: $language: ${cpgGenerator.getClass.getSimpleName}")
@@ -54,10 +54,10 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
   def languageIsKnown(language: String): Boolean = CpgGeneratorFactory.KNOWN_LANGUAGES.contains(language)
 
   def runGenerator(
-      frontend: CpgGenerator,
-      inputPath: String,
-      outputPath: String,
-      namespaces: List[String] = List()
+    frontend: CpgGenerator,
+    inputPath: String,
+    outputPath: String,
+    namespaces: List[String] = List()
   ): Option[Path] = {
     val outputFileOpt: Option[File] =
       frontend.generate(inputPath, outputPath, namespaces).map(File(_))
@@ -82,7 +82,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
 
   def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit = {
     val odbConfig = Config.withDefaults.withStorageLocation(dstFilename)
-    val config = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
+    val config    = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
     CpgLoader.load(srcFilename, config).close
     File(srcFilename).delete()
   }

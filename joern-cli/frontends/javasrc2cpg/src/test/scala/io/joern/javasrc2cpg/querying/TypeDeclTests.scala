@@ -1,11 +1,14 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 import java.io.File
+import scala.jdk.CollectionConverters._
 
 class TypeDeclTests extends JavaSrcCodeToCpgFixture {
 
@@ -47,6 +50,33 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
       | }
       | """.stripMargin
 
+  "should create a default constructor if no constructor is defined" in {
+    val typeFullName = "a.b.c.d.OuterClass$InnerClass$InnerClass2"
+
+    val List(x) = cpg.typeDecl.name(".*InnerClass2").l
+    x.method.size shouldBe 1
+    val constructor = x.method.head
+
+    constructor.name shouldBe "<init>"
+    constructor.fullName shouldBe s"$typeFullName.<init>:void()"
+    constructor.signature shouldBe "void()"
+    constructor.modifier.map(_.modifierType).toList should contain theSameElementsAs List(
+      ModifierTypes.CONSTRUCTOR,
+      ModifierTypes.PUBLIC
+    )
+
+    constructor.parameter.size shouldBe 1
+    val thisParam = constructor.parameter.head
+    thisParam.name shouldBe "this"
+    thisParam.typeFullName shouldBe typeFullName
+    thisParam.order shouldBe 0
+    thisParam.dynamicTypeHintFullName shouldBe List(typeFullName)
+
+    val constructorReturn = constructor.methodReturn
+    constructorReturn.typeFullName shouldBe "void"
+    constructorReturn.order shouldBe 2
+  }
+
   "should contain a type decl for `foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Bar").l
     x.name shouldBe "Bar"
@@ -58,7 +88,7 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:" // Windows
+        startWith regex "[A-Z]:"   // Windows
     )
     x.filename.endsWith(".java") shouldBe true
   }
@@ -78,11 +108,10 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     cpg.typeDecl.nameExact("OuterClass$InnerInterface").l match {
       case List(interface) =>
         interface.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface"
-        interface.inheritsFromTypeFullName.toList shouldBe List()
+        interface.inheritsFromTypeFullName.toList shouldBe List("java.lang.Object")
         interface.isExternal shouldBe false
-        interface.method.toList match {
+        interface.method.name("id").toList match {
           case List(method) =>
-            method.name shouldBe "id"
             method.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface.id:int(int)"
             method.signature shouldBe "int(int)"
             method.parameter.size shouldBe 2
@@ -99,7 +128,10 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     cpg.typeDecl.nameExact("OuterClass$InnerClass").l match {
       case List(innerClass) =>
         innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
-        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List("a.b.c.d.OuterClass$InnerInterface")
+        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List(
+          "java.lang.Object",
+          "a.b.c.d.OuterClass$InnerInterface"
+        )
         innerClass.isExternal shouldBe false
 
         innerClass.method.nameExact("id").l match {

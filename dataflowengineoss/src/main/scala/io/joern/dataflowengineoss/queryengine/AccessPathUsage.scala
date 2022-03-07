@@ -30,14 +30,14 @@ object AccessPathUsage {
         case call: Call if !MemberAccess.isGenericMemberAccessName(call.name) => (TrackedReturnValue(call), Nil)
 
         case memberAccess: Call =>
-          //assume: MemberAccess.isGenericMemberAccessName(call.name)
+          // assume: MemberAccess.isGenericMemberAccessName(call.name)
           val argOne = memberAccess.argumentOption(1)
           if (argOne.isEmpty) {
             logger.warn(s"Missing first argument on call ${memberAccess.code}.")
             return (TrackedUnknown, Nil)
           }
           val (base, tail) = toTrackedBaseAndAccessPathInternal(argOne.get)
-          val path = AccessPathHandling.memberAccessToPath(memberAccess, tail)
+          val path         = AccessPathHandling.memberAccessToPath(memberAccess, tail)
           (base, path)
       }
     }

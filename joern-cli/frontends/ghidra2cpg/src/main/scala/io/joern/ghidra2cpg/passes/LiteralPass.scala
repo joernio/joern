@@ -2,7 +2,6 @@ package io.joern.ghidra2cpg.passes
 
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
-import ghidra.program.util.DefinedDataIterator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
@@ -11,15 +10,12 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class LiteralPass(
-    cpg: Cpg,
-    address2Literal: Map[Long, String],
-    currentProgram: Program,
-    flatProgramAPI: FlatProgramAPI,
-    keyPool: IntervalKeyPool
-) extends ParallelCpgPass[String](
-      cpg,
-      keyPools = Some(keyPool.split(1))
-    ) {
+  cpg: Cpg,
+  address2Literal: Map[Long, String],
+  currentProgram: Program,
+  flatProgramAPI: FlatProgramAPI,
+  keyPool: IntervalKeyPool
+) extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(1))) {
 
   override def partIterator: Iterator[String] = List("").iterator
 

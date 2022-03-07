@@ -4,7 +4,7 @@ import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.passes.frontend.TypeNodePass
+import io.joern.x2cpg.passes.frontend.TypeNodePass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -24,9 +24,9 @@ object TypeNodePassFixture {
       val file1 = (dir / "file1.c")
       file1.write(file1Code)
 
-      val cpg = Cpg.emptyCpg
-      val keyPool = new IntervalKeyPool(1001, 2000)
-      val filenames = List(file1.path.toAbsolutePath.toString)
+      val cpg        = Cpg.emptyCpg
+      val keyPool    = new IntervalKeyPool(1001, 2000)
+      val filenames  = List(file1.path.toAbsolutePath.toString)
       val astCreator = new AstCreationPass(filenames, cpg, keyPool)
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()

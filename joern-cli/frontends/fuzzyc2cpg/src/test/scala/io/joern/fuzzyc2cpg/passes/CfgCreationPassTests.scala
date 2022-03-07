@@ -5,8 +5,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.passes.controlflow.CfgCreationPass
-import io.shiftleft.semanticcpg.passes.controlflow.cfgcreation.Cfg._
+import io.joern.x2cpg.passes.controlflow.CfgCreationPass
+import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -467,7 +467,7 @@ class CfgFixture(file1Code: String) {
     val file1 = dir / "file1.c"
     file1.write(s"RET func() { $file1Code }")
     val keyPoolFile1 = new IntervalKeyPool(1001, 2000)
-    val filenames = List(file1.path.toAbsolutePath.toString)
+    val filenames    = List(file1.path.toAbsolutePath.toString)
     new AstCreationPass(filenames, cpg, keyPoolFile1).createAndApply()
     new CfgCreationPass(cpg).createAndApply()
   }

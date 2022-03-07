@@ -8,17 +8,15 @@ import java.nio.file.Path
   */
 case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
 
-  /** Generate a CPG for the given input path.
-    * Returns the output path, or None, if no
-    * CPG was generated.
+  /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(
-      inputPath: String,
-      outputPath: String = "cpg.bin.zip",
-      namespaces: List[String] = List()
+    inputPath: String,
+    outputPath: String = "cpg.bin.zip",
+    namespaces: List[String] = List()
   ): Option[String] = {
     var arguments = Seq("-i", inputPath, "-o", outputPath) ++ config.cmdLineParams
-    var command = rootPath.resolve("csharp2cpg.sh").toString
+    var command   = rootPath.resolve("csharp2cpg.sh").toString
 
     if (System.getProperty("os.name").startsWith("Windows")) {
       command = "powershell"

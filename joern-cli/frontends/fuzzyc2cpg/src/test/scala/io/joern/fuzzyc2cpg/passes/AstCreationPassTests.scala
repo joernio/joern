@@ -16,7 +16,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
   "AstCreationPass" should {
     val cpg = Cpg.emptyCpg
     File.usingTemporaryDirectory("astCreationTests") { dir =>
-      val filenames = List("foo.c", "woo.c")
+      val filenames              = List("foo.c", "woo.c")
       val expectedFilenameFields = filenames.map(f => File(f).path.toAbsolutePath.toString)
       expectedFilenameFields.foreach { filename =>
         (dir / filename).write("//foo")
@@ -376,14 +376,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "be correct for sizeof operator on identifier with brackets" in Fixture(
-      """
+    "be correct for sizeof operator on identifier with brackets" in Fixture("""
         |void method() {
         |  int a;
         |  sizeof(a);
         |}
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.method
         .name("method")
         .ast
@@ -396,14 +394,12 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
         .size shouldBe 1
     }
 
-    "be correct for sizeof operator on identifier without brackets" in Fixture(
-      """
+    "be correct for sizeof operator on identifier without brackets" in Fixture("""
         |void method() {
         |  int a;
         |  sizeof a ;
         |}
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.method
         .name("method")
         .ast
@@ -416,13 +412,11 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
         .size shouldBe 1
     }
 
-    "be correct for sizeof operator on type" in Fixture(
-      """
+    "be correct for sizeof operator on type" in Fixture("""
         |void method() {
         |  sizeof(int);
         |}
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.method
         .name("method")
         .ast
@@ -506,12 +500,10 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "be correct for typedef" in Fixture(
-      """
+    "be correct for typedef" in Fixture("""
         |typedef struct foo {
         |} abc;
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       // TODO requires .aliasTypeFullName accessor missing
       cpg.typeDecl
         .name("abc")
@@ -519,29 +511,25 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
         .size shouldBe 1
     }
 
-    "be correct for single inheritance" in Fixture(
-      """
+    "be correct for single inheritance" in Fixture("""
         |class Base {public: int i;};
         |class Derived : public Base{
         |public:
         | char x;
         | int method(){return i;};
         |};
-      """.stripMargin
-    ) { cpg =>
+      """.stripMargin) { cpg =>
       cpg.typeDecl
         .name("Derived")
         .filter(_.inheritsFromTypeFullName == List("Base"))
         .size shouldBe 1
     }
 
-    "be correct for method calls" in Fixture(
-      """
+    "be correct for method calls" in Fixture("""
         |void foo(int x) {
         |  bar(x);
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.method
         .name("foo")
         .ast
@@ -552,67 +540,55 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
         .size shouldBe 1
     }
 
-    "be correct for method returns" in Fixture(
-      """
+    "be correct for method returns" in Fixture("""
         |void double(int x) {
         |  return x * 2;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       // TODO no step class defined for `Return` nodes
       cpg.method.name("double").ast.isReturn.astChildren.order(1).isCall.code.l shouldBe List("x * 2")
     }
 
-    "be correct for binary method calls" in Fixture(
-      """
+    "be correct for binary method calls" in Fixture("""
         |void double(int x) {
         |  return x * 2;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.multiplication).code.l shouldBe List("x * 2")
     }
 
-    "be correct for unary method calls" in Fixture(
-      """
+    "be correct for unary method calls" in Fixture("""
         |bool invert(bool b) {
         |  return !b;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.logicalNot).argument(1).code.l shouldBe List("b")
     }
 
-    "be correct for post increment method calls" in Fixture(
-      """
+    "be correct for post increment method calls" in Fixture("""
         |int foo(int x) {
         |  int sub = x--;
         |  int pos = x++;
         |  return pos;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.postIncrement).argument(1).code("x").size shouldBe 1
       cpg.call.name(Operators.postDecrement).argument(1).code("x").size shouldBe 1
     }
 
-    "be correct for conditional expressions containing calls" in Fixture(
-      """
+    "be correct for conditional expressions containing calls" in Fixture("""
         |int abs(int x) {
         |  return x > 0 ? x : -x;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.conditional).argument.code.l shouldBe List("x > 0", "x", "-x")
     }
 
-    "be correct for sizeof expressions" in Fixture(
-      """
+    "be correct for sizeof expressions" in Fixture("""
         |size_t int_size() {
         |  return sizeof(int);
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.sizeOf).argument(1).code.l shouldBe List("int")
     }
 
@@ -620,110 +596,90 @@ class AstCreationPassTests extends AnyWordSpec with Matchers {
       cpg.jumpTarget.code("label:").size shouldBe 1
     }
 
-    "be correct for array indexing" in Fixture(
-      """
+    "be correct for array indexing" in Fixture("""
         |int head(int x[]) {
         |  return x[0];
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.indirectIndexAccess).argument.code.l shouldBe List("x", "0")
     }
 
-    "be correct for type casts" in Fixture(
-      """
+    "be correct for type casts" in Fixture("""
         |int trunc(long x) {
         |  return (int) x;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.cast).argument.code.l shouldBe List("int", "x")
     }
 
-    "be correct for 'new' array" in Fixture(
-      """
+    "be correct for 'new' array" in Fixture("""
         |int[] alloc(int n) {
         |   int[] arr = new int[n];
         |   return arr;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       // TODO: "<operator>.new" is not part of Operators
       cpg.call.name("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
     }
 
-    "be correct for 'new' object" in Fixture(
-      """
+    "be correct for 'new' object" in Fixture("""
         |Foo* alloc(int n) {
         |   Foo* foo = new Foo(n, 42);
         |   return foo;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name("<operator>.new").codeExact("new Foo(n, 42)").argument.code("Foo").size shouldBe 1
     }
 
-    "be correct for simple 'delete'" in Fixture(
-      """
+    "be correct for simple 'delete'" in Fixture("""
         |int delete_number(int* n) {
         |  delete n;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.delete).code("delete n").argument.code("n").size shouldBe 1
     }
 
-    "be correct for array 'delete'" in Fixture(
-      """
+    "be correct for array 'delete'" in Fixture("""
         |void delete_number(int n[]) {
         |  delete[] n;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.delete).codeExact("delete[] n").argument.code("n").size shouldBe 1
     }
 
-    "be correct for const_cast" in Fixture(
-      """
+    "be correct for const_cast" in Fixture("""
         |void foo() {
         |  int y = const_cast<int>(n);
         |  return;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.cast).codeExact("const_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for static_cast" in Fixture(
-      """
+    "be correct for static_cast" in Fixture("""
         |void foo() {
         |  int y = static_cast<int>(n);
         |  return;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.cast).codeExact("static_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for dynamic_cast" in Fixture(
-      """
+    "be correct for dynamic_cast" in Fixture("""
         |void foo() {
         |  int y = dynamic_cast<int>(n);
         |  return;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.cast).codeExact("dynamic_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for reinterpret_cast" in Fixture(
-      """
+    "be correct for reinterpret_cast" in Fixture("""
         |void foo() {
         |  int y = reinterpret_cast<int>(n);
         |  return;
         |}
-        |""".stripMargin
-    ) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.call.name(Operators.cast).codeExact("reinterpret_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
   }
@@ -754,8 +710,8 @@ object Fixture {
       file1.write(file1Code)
       file2.write(file2Code)
 
-      val cpg = Cpg.emptyCpg
-      val keyPool = new IntervalKeyPool(1001, 2000)
+      val cpg       = Cpg.emptyCpg
+      val keyPool   = new IntervalKeyPool(1001, 2000)
       val filenames = List(file1.path.toAbsolutePath.toString, file2.path.toAbsolutePath.toString)
       new AstCreationPass(filenames, cpg, keyPool).createAndApply()
 

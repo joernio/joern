@@ -3,7 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.x2cpg.Ast
+import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
@@ -18,13 +18,13 @@ trait AstForFunctionsCreator {
   this: AstCreator =>
 
   private def createFunctionTypeAndTypeDecl(
-      method: NewMethod,
-      methodName: String,
-      methodFullName: String,
-      signature: String
+    method: NewMethod,
+    methodName: String,
+    methodFullName: String,
+    signature: String
   ): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      val astParentType = methodAstParentStack.head.label
+      val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
       val newTypeDeclNode =
         newTypeDecl(methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
@@ -34,7 +34,7 @@ trait AstForFunctionsCreator {
 
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name(methodName).signature(signature)
+    val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
@@ -72,9 +72,9 @@ trait AstForFunctionsCreator {
   }
 
   protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
-    val linenumber = line(lambdaExpression)
+    val linenumber   = line(lambdaExpression)
     val columnnumber = column(lambdaExpression)
-    val filename = fileName(lambdaExpression)
+    val filename     = fileName(lambdaExpression)
 
     val returnType = lambdaExpression.getDeclarator match {
       case declarator: IASTDeclarator =>
@@ -127,13 +127,13 @@ trait AstForFunctionsCreator {
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator, order: Int): Ast = {
-    val linenumber = line(funcDecl)
+    val linenumber   = line(funcDecl)
     val columnnumber = column(funcDecl)
-    val filename = fileName(funcDecl)
+    val filename     = fileName(funcDecl)
 
-    val returnType = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
-    val name = shortName(funcDecl)
-    val fullname = fullName(funcDecl)
+    val returnType     = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
+    val name           = shortName(funcDecl)
+    val fullname       = fullName(funcDecl)
     val templateParams = templateParameters(funcDecl).getOrElse("")
     val signature =
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl, includeParamNames = false)
@@ -177,13 +177,13 @@ trait AstForFunctionsCreator {
   }
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition, order: Int): Ast = {
-    val linenumber = line(funcDef)
+    val linenumber   = line(funcDef)
     val columnnumber = column(funcDef)
-    val filename = fileName(funcDef)
+    val filename     = fileName(funcDef)
 
-    val returnType = typeForDeclSpecifier(funcDef.getDeclSpecifier)
-    val name = shortName(funcDef)
-    val fullname = fullName(funcDef)
+    val returnType     = typeForDeclSpecifier(funcDef.getDeclSpecifier)
+    val name           = shortName(funcDef)
+    val fullname       = fullName(funcDef)
     val templateParams = templateParameters(funcDef).getOrElse("")
     val signature =
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef, includeParamNames = false)

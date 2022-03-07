@@ -10,12 +10,12 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 class ArmFunctionPass(
-    currentProgram: Program,
-    filename: String,
-    function: Function,
-    cpg: Cpg,
-    keyPool: IntervalKeyPool,
-    decompiler: Decompiler
+  currentProgram: Program,
+  filename: String,
+  function: Function,
+  cpg: Cpg,
+  keyPool: IntervalKeyPool,
+  decompiler: Decompiler
 ) extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, keyPool, decompiler) {
 
   override def runOnPart(part: String): Iterator[DiffGraph] = {

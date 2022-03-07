@@ -48,14 +48,14 @@ class GenericsTests extends AnyFreeSpec with Matchers {
 
     "should contain CALL nodes with the correct METHOD_FULL_NAME props set" in {
       val List(c1) = cpg.call.code("getAnInstance.*").take(1).l
-      c1.methodFullName shouldBe "mypkg.getAnInstance:kotlin.Any(kotlin.String)"
+      c1.methodFullName shouldBe "mypkg.getAnInstance:java.lang.Object(java.lang.String)"
       val List(c2) = cpg.call.code("getAnInstance.*").drop(1).take(1).l
-      c2.methodFullName shouldBe "mypkg.getAnInstance:kotlin.Any(kotlin.String)"
+      c2.methodFullName shouldBe "mypkg.getAnInstance:java.lang.Object(java.lang.String)"
     }
 
     "should contain a METHOD node for the fn using generics with the correct METHOD_FULL_NAME set" in {
       val List(m) = cpg.method.fullName(".*getAnInstance.*").take(1).l
-      m.fullName shouldBe "mypkg.getAnInstance:kotlin.Any(kotlin.String)"
+      m.fullName shouldBe "mypkg.getAnInstance:java.lang.Object(java.lang.String)"
     }
   }
 
@@ -94,14 +94,14 @@ class GenericsTests extends AnyFreeSpec with Matchers {
 
     "should contain CALL nodes with the correct METHOD_FULL_NAME props set" in {
       val List(c1) = cpg.call.code("getAnInstance.*").take(1).l
-      c1.methodFullName shouldBe "mypkg.getAnInstance:mypkg.AClass(kotlin.String)"
+      c1.methodFullName shouldBe "mypkg.getAnInstance:mypkg.AClass(java.lang.String)"
       val List(c2) = cpg.call.code("getAnInstance.*").drop(1).take(1).l
-      c2.methodFullName shouldBe "mypkg.getAnInstance:mypkg.AClass(kotlin.String)"
+      c2.methodFullName shouldBe "mypkg.getAnInstance:mypkg.AClass(java.lang.String)"
     }
 
     "should contain a METHOD node for the fn using generics with the correct METHOD_FULL_NAME set" in {
       val List(m) = cpg.method.fullName(".*getAnInstance.*").take(1).l
-      m.fullName shouldBe "mypkg.getAnInstance:mypkg.AClass(kotlin.String)"
+      m.fullName shouldBe "mypkg.getAnInstance:mypkg.AClass(java.lang.String)"
     }
   }
 }

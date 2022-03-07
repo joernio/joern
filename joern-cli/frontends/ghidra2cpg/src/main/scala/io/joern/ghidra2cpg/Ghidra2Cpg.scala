@@ -16,28 +16,24 @@ import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
-import io.shiftleft.x2cpg.X2Cpg
 import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 class Ghidra2Cpg() {
 
-  /** Create a CPG representing the given input file. The CPG
-    * is stored at the given output file. The caller must close
+  /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
   def createCpg(inputFile: File, outputFile: Option[String]): Cpg = {
 
     if (!inputFile.isDirectory && !inputFile.isFile) {
-      throw new InvalidInputException(
-        s"$inputFile is not a valid directory or file."
-      )
+      throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }
 
     val cpg = X2Cpg.newEmptyCpg(outputFile)
@@ -51,16 +47,10 @@ class Ghidra2Cpg() {
       try {
         val projectManager = new HeadlessGhidraProjectManager
         project = projectManager.createProject(locator, null, false)
-        program = AutoImporter.importByUsingBestGuess(
-          inputFile,
-          null,
-          this,
-          new MessageLog,
-          TaskMonitor.DUMMY
-        )
+        program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
         addProgramToCpg(program, inputFile.getAbsolutePath, cpg)
       } catch {
-        case e: Throwable =>
+        case e: Exception =>
           e.printStackTrace()
       } finally {
         if (program != null) {
@@ -89,35 +79,31 @@ class Ghidra2Cpg() {
 
   private def addProgramToCpg(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
-    val transactionId: Int = program.startTransaction("Analysis")
+    val transactionId: Int                       = program.startTransaction("Analysis")
     try {
       autoAnalysisManager.initializeOptions()
       autoAnalysisManager.reAnalyzeAll(null)
       autoAnalysisManager.startAnalysis(TaskMonitor.DUMMY)
       GhidraProgramUtilities.setAnalyzedFlag(program, true)
+      handleProgram(program, fileAbsolutePath, cpg)
     } catch {
-      case e: Throwable =>
+      case e: Exception =>
         e.printStackTrace()
     } finally {
       program.endTransaction(transactionId, true)
     }
-    try {
-      handleProgram(program, fileAbsolutePath, cpg)
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-    }
+
   }
 
   def handleProgram(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
 
     val flatProgramAPI: FlatProgramAPI = new FlatProgramAPI(program)
-    val decompiler = Decompiler(program).get
+    val decompiler                     = Decompiler(program).get
 
     // Functions
-    val listing = program.getListing
+    val listing          = program.getListing
     val functionIterator = listing.getFunctions(true)
-    val functions = functionIterator.iterator.asScala.toList
+    val functions        = functionIterator.iterator.asScala.toList
 
     val address2Literals: Map[Long, String] = DefinedDataIterator
       .definedStrings(program)
@@ -128,8 +114,8 @@ class Ghidra2Cpg() {
       .toMap
 
     // We touch every function twice, regular ASM and PCode
-    // Also we have + 2 for MetaDataPass and Namespacepass
-    val numOfKeypools = functions.size * 3 + 2
+    // Also we have + 2 for MetaDataPass and NamespacePass
+    val numOfKeypools   = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
 
     new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
@@ -151,25 +137,13 @@ class Ghidra2Cpg() {
         }
       case "AARCH64" | "ARM" =>
         functions.foreach { function =>
-          new ArmFunctionPass(
-            program,
-            fileAbsolutePath,
-            function,
-            cpg,
-            keyPoolIterator.next(),
-            decompiler
-          ).createAndApply()
+          new ArmFunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
+            .createAndApply()
         }
       case _ =>
         functions.foreach { function =>
-          new X86FunctionPass(
-            program,
-            fileAbsolutePath,
-            function,
-            cpg,
-            keyPoolIterator.next(),
-            decompiler
-          ).createAndApply()
+          new X86FunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
+            .createAndApply()
           new ReturnEdgesPass(cpg).createAndApply()
         }
     }
@@ -178,10 +152,8 @@ class Ghidra2Cpg() {
     new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
   }
 
-  private class HeadlessProjectConnection(
-      projectManager: HeadlessGhidraProjectManager,
-      connection: GhidraURLConnection
-  ) extends DefaultProject(projectManager, connection) {}
+  private class HeadlessProjectConnection(projectManager: HeadlessGhidraProjectManager, connection: GhidraURLConnection)
+      extends DefaultProject(projectManager, connection) {}
 
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
 }
@@ -189,12 +161,12 @@ class Ghidra2Cpg() {
 object Types {
   // Types will be added to the CPG as soon as everything
   // else is done
-  var types: mutable.SortedSet[String] = mutable.SortedSet[String]()
+  val types: mutable.SortedSet[String] = mutable.SortedSet[String]()
   def registerType(typeName: String): String = {
     try {
       types += typeName
     } catch {
-      case e: Exception => println(s" Error adding type: $typeName")
+      case _: Exception => println(s" Error adding type: $typeName")
     }
     typeName
   }

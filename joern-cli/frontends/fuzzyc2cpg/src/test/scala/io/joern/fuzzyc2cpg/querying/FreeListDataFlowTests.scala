@@ -36,26 +36,26 @@ class FreeListDataFlowTests extends DataFlowCodeToCpgSuite {
 
   "should find flows to arguments of `free`" in {
     implicit val callResolver = NoResolve
-    val source = cpg.identifier
-    val sink = cpg.method.name("free").parameter.argument
+    val source                = cpg.identifier
+    val sink                  = cpg.method.name("free").parameter.argument
     sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
   }
 
   "should find flows to `free`" in {
     val source = cpg.identifier
-    val sink = cpg.call.name("free")
+    val sink   = cpg.call.name("free")
     sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
   }
 
   "should find flows from identifiers to return values of `flow`" in {
     val source = cpg.identifier
-    val sink = cpg.method.name("flow").methodReturn
+    val sink   = cpg.method.name("flow").methodReturn
     sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 9
   }
 
   "find flows from z to method returns of flow" in {
     val source = cpg.identifier.name("z")
-    val sink = cpg.method.name("flow").methodReturn
+    val sink   = cpg.method.name("flow").methodReturn
     sink.reachableByFlows(source).l.size shouldBe 3
   }
 

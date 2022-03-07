@@ -5,23 +5,24 @@ import scala.collection.mutable
 
 /** Installation configuration of Console
   *
-  * @param environment A map of system environment variables.
+  * @param environment
+  *   A map of system environment variables.
   */
 class InstallConfig(environment: Map[String, String] = sys.env) {
 
-  /** determining the root path of the joern/ocular installation is rather complex unfortunately,
-    * because we support a variety of use cases:
-    * - running the installed distribution from the install dir
-    * - running the installed distribution anywhere else on the system
-    * - running a locally staged ocular/joern build (via `sbt stage` and then
-    *   either `./joern` or `cd joern-cli/target/universal/stage; ./joern`)
-    * - running a unit/integration test (note: the jars would be in the local cache, e.g. in ~/.coursier/cache)
+  /** determining the root path of the joern/ocular installation is rather complex unfortunately, because we support a
+    * variety of use cases:
+    *   - running the installed distribution from the install dir
+    *   - running the installed distribution anywhere else on the system
+    *   - running a locally staged ocular/joern build (via `sbt stage` and then either `./joern` or `cd
+    *     joern-cli/target/universal/stage; ./joern`)
+    *   - running a unit/integration test (note: the jars would be in the local cache, e.g. in ~/.coursier/cache)
     */
   lazy val rootPath: File = {
     if (environment.contains("SHIFTLEFT_OCULAR_INSTALL_DIR")) {
       environment("SHIFTLEFT_OCULAR_INSTALL_DIR").toFile
     } else {
-      val uriToLibDir = classOf[io.joern.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
+      val uriToLibDir  = classOf[io.joern.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
       val pathToLibDir = File(uriToLibDir).parent
       findRootDirectory(pathToLibDir).getOrElse {
         val cwd = File.currentWorkingDirectory
@@ -34,7 +35,7 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
   }
 
   private val rootDirectoryMarkerFilename = ".installation_root"
-  private val maxSearchDepth = 10
+  private val maxSearchDepth              = 10
   private def findRootDirectory(currentSearchDir: File, currentSearchDepth: Int = 0): Option[File] = {
     if (currentSearchDir.list.map(_.name).contains(rootDirectoryMarkerFilename))
       Some(currentSearchDir)
@@ -50,9 +51,9 @@ object InstallConfig {
 }
 
 class ConsoleConfig(
-    val install: InstallConfig = InstallConfig(),
-    val frontend: FrontendConfig = FrontendConfig(),
-    val tools: ToolsConfig = ToolsConfig()
+  val install: InstallConfig = InstallConfig(),
+  val frontend: FrontendConfig = FrontendConfig(),
+  val tools: ToolsConfig = ToolsConfig()
 ) {}
 
 object ToolsConfig {

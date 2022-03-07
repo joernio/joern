@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.testfixtures
 
 import io.joern.jimple2cpg.Jimple2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
@@ -27,14 +27,18 @@ class JimpleCodeToCpgFixture extends CodeToCpgFixture(new JimpleFrontend) {
     val codeFile = File.createTempFile("Test", frontend.fileSuffix, tmpDir)
     codeFile.deleteOnExit()
     new PrintWriter(codeFile) { write(sourceCode); close() }
-    compileJava(codeFile)
+    JimpleCodeToCpgFixture.compileJava(codeFile)
     tmpDir
   }
+
+}
+
+object JimpleCodeToCpgFixture {
 
   /** Compiles the source code with debugging info.
     */
   def compileJava(sourceCodeFile: File): Unit = {
-    val javac = getJavaCompiler
+    val javac       = getJavaCompiler
     val fileManager = javac.getStandardFileManager(null, null, null)
     javac
       .getTask(
@@ -60,5 +64,4 @@ class JimpleCodeToCpgFixture extends CodeToCpgFixture(new JimpleFrontend) {
       case None        => throw new RuntimeException("Unable to find a Java compiler on the system!")
     }
   }
-
 }

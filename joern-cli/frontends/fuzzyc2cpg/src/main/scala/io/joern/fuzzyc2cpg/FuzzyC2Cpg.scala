@@ -4,9 +4,9 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.fuzzyc2cpg.passes.{AstCreationPass, StubRemovalPass}
 import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.semanticcpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.shiftleft.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -19,15 +19,15 @@ case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new Concurrent
 class FuzzyC2Cpg() {
 
   def runAndOutput(
-      sourcePaths: Set[String],
-      sourceFileExtensions: Set[String],
-      optionalOutputPath: Option[String] = None
+    sourcePaths: Set[String],
+    sourceFileExtensions: Set[String],
+    optionalOutputPath: Option[String] = None
   ): Cpg = {
     val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool = new IntervalKeyPool(100, 1000100)
+    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
     val functionKeyPool = new IntervalKeyPool(1000100, Long.MaxValue)
 
-    val cpg = newEmptyCpg(optionalOutputPath)
+    val cpg             = newEmptyCpg(optionalOutputPath)
     val sourceFileNames = SourceFiles.determine(sourcePaths, sourceFileExtensions)
 
     new MetaDataPass(cpg, Languages.C, Some(metaDataKeyPool)).createAndApply()
@@ -45,13 +45,13 @@ object FuzzyC2Cpg {
   private val logger = LoggerFactory.getLogger(classOf[FuzzyC2Cpg])
 
   final case class Config(
-      inputPaths: Set[String] = Set.empty,
-      outputPath: String = X2CpgConfig.defaultOutputPath,
-      sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp")
+    inputPaths: Set[String] = Set.empty,
+    outputPath: String = X2CpgConfig.defaultOutputPath,
+    sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp")
   ) extends X2CpgConfig[Config] {
 
     override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-    override def withOutputPath(x: String): Config = copy(outputPath = x)
+    override def withOutputPath(x: String): Config                  = copy(outputPath = x)
   }
 
   def main(args: Array[String]): Unit = {
@@ -80,7 +80,7 @@ object FuzzyC2Cpg {
       case Some(config) =>
         try {
           val fuzzyc = new FuzzyC2Cpg()
-          val cpg = fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions, Some(config.outputPath))
+          val cpg    = fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions, Some(config.outputPath))
           cpg.close()
         } catch {
           case NonFatal(ex) =>

@@ -38,7 +38,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add the implicit _it_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -73,7 +73,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -108,7 +108,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "kotlin.Any(kotlin.Any)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -160,8 +160,10 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    // TODO: add test case for CALLs inside the scope function
-    // at the moment, they don't end up in the CPG correctly
+    "should X" in {
+      val List(c) = cpg.call.code("x.takeIf.*").l
+      c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
+    }
   }
 
   "CPG for code with simple `takeUnless` scope function" - {
