@@ -7,9 +7,14 @@ val BetterFilesVersion    = "3.9.1"
 val CaskVersion           = "0.8.0"
 val CirceVersion          = "0.14.1"
 val AmmoniteVersion       = "2.5.2"
-val ZeroturnaroundVersion = "1.14"
+val ZeroturnaroundVersion = "1.15"
 
-dependsOn(Projects.fuzzyc2cpg % Test, Projects.c2cpg % Test, Projects.macros, Projects.x2cpg  % "compile->compile;test->test")
+dependsOn(
+  Projects.fuzzyc2cpg % Test,
+  Projects.c2cpg      % Test,
+  Projects.macros,
+  Projects.x2cpg % "compile->compile;test->test"
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
