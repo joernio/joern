@@ -91,7 +91,7 @@ class AstCreator(filename: String, global: Global) {
           registerType(relatedClass.getSuperclass.getType.toQuotedString)
         List(relatedClass.getSuperclass.toString)
       } else List(registerType("java.lang.Object"))
-    val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { i: SootClass =>
+    val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { (i: SootClass) =>
       if (!i.isApplicationClass)
         registerType(i.getType.toQuotedString)
       i.getType.toQuotedString
