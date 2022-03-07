@@ -99,6 +99,7 @@ import io.shiftleft.passes.DiffGraph
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util.UUID.randomUUID
 import scala.jdk.CollectionConverters._
@@ -199,14 +200,14 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
   import AstCreator._
 
   val stack: mutable.Stack[NewNode] = mutable.Stack()
-  val diffGraph: DiffGraph.Builder  = DiffGraph.newBuilder
+  val diffGraph: DiffGraphBuilder   = new DiffGraphBuilder
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
     */
-  def createAst(parserResult: CompilationUnit): Iterator[DiffGraph] = {
+  def createAst(parserResult: CompilationUnit): DiffGraphBuilder = {
     storeInDiffGraph(astForCompilationUnit(parserResult))
-    Iterator(diffGraph.build())
+    diffGraph
   }
 
   /** Copy nodes/edges of given `AST` into the diff graph
