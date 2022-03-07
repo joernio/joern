@@ -13,10 +13,10 @@ class FileTests extends GhidraBinToCpgSuite {
     buildCpgForBin("linux/x86/64/x86_64.bin")
   }
 
-  "should contain two file nodes in total, both with order=0" in {
-    cpg.file.order.l shouldBe List(0, 0)
-    cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
-    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
+  "should contain one file nodes in total, both with order=0" in {
+    cpg.file.order.l shouldBe List(0)
+    cpg.file.name.size shouldBe 1
+    cpg.file.name.head should endWith("x86_64.bin")
   }
 
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
@@ -74,6 +74,6 @@ class FileTests extends GhidraBinToCpgSuite {
 //  }
 
   "should allow traversing to namespaces" in {
-    cpg.file.namespace.name("<global>").l.size shouldBe 2
+    cpg.file.namespace.name("<global>").l.size shouldBe 1
   }
 }
