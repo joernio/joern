@@ -9,6 +9,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.net.URL
 import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Try}
 
@@ -28,9 +29,9 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "should extract files and clean up temp directory" in {
     Try(getClass.getResource("/unpacking")) match {
-      case Success(x) =>
+      case Success(x: URL) =>
         Files
-          .walk(Path.of(x.getPath))
+          .walk(Path.of(x.getFile))
           .map(_.toFile)
           .filter(f => f.isFile && f.getName.contains(".jar"))
           .map(_.getName)
