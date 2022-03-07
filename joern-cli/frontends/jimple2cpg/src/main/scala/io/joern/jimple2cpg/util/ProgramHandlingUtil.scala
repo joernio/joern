@@ -71,7 +71,7 @@ object ProgramHandlingUtil {
     *   The project root path to unpack to.
     */
   def unzipArchive(zf: ZipFile, sourceCodePath: String): Try[Seq[String]] = scala.util.Try {
-    Using.resource(zf) { zip: ZipFile =>
+    Using.resource(zf) { (zip: ZipFile) =>
       // Copy zipped files across
       zip
         .entries()

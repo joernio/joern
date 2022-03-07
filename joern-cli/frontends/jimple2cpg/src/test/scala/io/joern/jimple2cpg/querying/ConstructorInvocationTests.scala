@@ -97,7 +97,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
     cpg.typeDecl.name("Bar").method.name("test1").l match {
       case List(method) =>
-        val List(_: Local, assign: Call, init: Call, _: Local, _: Call, _: Return) =
+        val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
           method.astChildren.isBlock.astChildren.l
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -135,7 +135,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in an assignment" in {
     cpg.typeDecl.name("Bar").method.name("test2").l match {
       case List(method) =>
-        val List(_: Local, paramAssign: Call, _: Local, assign: Call, init: Call, _: Local, _: Call, _: Return) =
+        val List(_: Local, _: Local, _: Local, paramAssign: Call, assign: Call, init: Call, _: Call, _: Return) =
           method.astChildren.isBlock.astChildren.l
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString

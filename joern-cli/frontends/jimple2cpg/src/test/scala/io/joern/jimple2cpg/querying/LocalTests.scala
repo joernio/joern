@@ -27,11 +27,11 @@ class LocalTests extends JimpleCodeToCpgFixture {
     x.name shouldBe "$stack3"
     x.code shouldBe "java.lang.Integer $stack3"
     x.typeFullName shouldBe "java.lang.Integer"
-    x.order shouldBe 2
+    x.order shouldBe 1
 
     y.name shouldBe "y"
     y.code shouldBe "java.lang.Integer y"
     y.typeFullName shouldBe "java.lang.Integer"
-    y.order shouldBe 4
+    y.order shouldBe 3
   }
 }

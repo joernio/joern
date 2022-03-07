@@ -31,7 +31,7 @@ class FileTests extends JimpleCodeToCpgFixture {
   }
 
   "should allow traversing from file to its namespace blocks" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSet shouldBe Set("b")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set("b")
   }
 
   "should allow traversing from file to its methods via namespace block" in {
@@ -39,11 +39,11 @@ class FileTests extends JimpleCodeToCpgFixture {
       .name(".*.class".replace("/", s"\\${JFile.separator}"))
       .method
       .name
-      .toSet shouldBe Set("bar", "<init>")
+      .toSetMutable shouldBe Set("bar", "<init>")
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set("Foo")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set("Foo")
   }
 
 }
