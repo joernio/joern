@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.kotlin2cpg.types.NameGenerator
 
 import java.util.concurrent.ConcurrentHashMap

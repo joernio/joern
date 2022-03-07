@@ -2,8 +2,9 @@ package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, nodes}
 import io.shiftleft.passes.DiffGraph
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class NodeBuilder(diffGraph: DiffGraph.Builder) {
+class NodeBuilder(diffGraph: DiffGraphBuilder) {
 
   private def addNodeToDiff[T <: nodes.NewNode](node: T): T = {
     diffGraph.addNode(node)
