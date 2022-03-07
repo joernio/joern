@@ -1,11 +1,13 @@
 package io.joern.ghidra2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.{Languages, nodes}
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass, SimpleCpgPass}
-import overflowdb.BatchedUpdate
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 
-class MetaDataPass(filename: String, cpg: Cpg) extends SimpleCpgPass(cpg) {
+class MetaDataPass(cpg: Cpg, filename: String) extends ConcurrentWriterCpgPass[Method](cpg) {
+
+  override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     diffGraph.addNode(

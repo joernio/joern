@@ -18,7 +18,6 @@ import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.KeyPoolCreator
 import utilities.util.FileUtilities
 
 import java.io.File
@@ -54,6 +53,7 @@ class Ghidra2Cpg() {
           e.printStackTrace()
       } finally {
         if (program != null) {
+
           AutoAnalysisManager.getAnalysisManager(program).dispose()
           program.release(this)
         }
@@ -113,43 +113,31 @@ class Ghidra2Cpg() {
       .map(x => x.getAddress().getOffset -> x.getValue.toString)
       .toMap
 
-    // We touch every function twice, regular ASM and PCode
-    // Also we have + 2 for MetaDataPass and NamespacePass
-    val numOfKeypools   = functions.size * 3 + 2
-    val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
-
-    new MetaDataPass(fileAbsolutePath, cpg).createAndApply()
-    new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
+    new MetaDataPass(cpg, fileAbsolutePath).createAndApply()
+    new NamespacePass(cpg, fileAbsolutePath).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         functions.foreach { function =>
-          new MipsFunctionPass(
-            program,
-            address2Literals,
-            fileAbsolutePath,
-            function,
-            cpg,
-            keyPoolIterator.next(),
-            decompiler
-          ).createAndApply()
+          new MipsFunctionPass(program, address2Literals, fileAbsolutePath, function, cpg, decompiler)
+            .createAndApply()
           new LoHiPass(cpg).createAndApply()
         }
       case "AARCH64" | "ARM" =>
         functions.foreach { function =>
-          new ArmFunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
+          new ArmFunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
             .createAndApply()
         }
       case _ =>
         functions.foreach { function =>
-          new X86FunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
+          new X86FunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
             .createAndApply()
           new ReturnEdgesPass(cpg).createAndApply()
         }
     }
     new TypesPass(cpg).createAndApply()
-    new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-    new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
+    new JumpPass(cpg).createAndApply()
+    new LiteralPass(cpg, address2Literals, program, flatProgramAPI).createAndApply()
   }
 
   private class HeadlessProjectConnection(projectManager: HeadlessGhidraProjectManager, connection: GhidraURLConnection)
@@ -162,6 +150,7 @@ object Types {
   // Types will be added to the CPG as soon as everything
   // else is done
   val types: mutable.SortedSet[String] = mutable.SortedSet[String]()
+
   def registerType(typeName: String): String = {
     try {
       types += typeName
