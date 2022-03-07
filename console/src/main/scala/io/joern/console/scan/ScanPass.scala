@@ -2,19 +2,16 @@ package io.joern.console.scan
 
 import io.joern.console.Query
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{DiffGraph, KeyPoolCreator, ParallelCpgPass}
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, KeyPoolCreator, ParallelCpgPass}
 
 class ScanPass(cpg: Cpg, queries: List[Query])
-    extends ParallelCpgPass[Query](
-      cpg,
-      keyPools = Some(KeyPoolCreator.obtain(queries.size.toLong, 42949672950L).iterator)
-    ) {
+    extends ConcurrentWriterCpgPass[Query](cpg) {
 
-  override def partIterator: Iterator[Query] = queries.iterator
+  override def generateParts(): Array[Query] = queries.toArray
 
-  override def runOnPart(query: Query): Iterator[DiffGraph] = {
-    val diffGraph = DiffGraph.newBuilder
+  override def runOnPart(diffGraph: DiffGraphBuilder, query: Query): Unit = {
     query(cpg).foreach(diffGraph.addNode)
-    Iterator(diffGraph.build())
   }
+
 }
