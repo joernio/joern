@@ -2,6 +2,7 @@ package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.toNodeTraversalViaAdditionalImplicit
 
 class MetaDataTests extends JimpleCodeToCpgFixture {
 
@@ -19,8 +20,8 @@ class MetaDataTests extends JimpleCodeToCpgFixture {
 
   "should not have any incoming or outgoing edges" in {
     cpg.metaData.size shouldBe 1
-    cpg.metaData.in.l shouldBe List()
-    cpg.metaData.out.l shouldBe List()
+    cpg.metaData.in().l shouldBe List()
+    cpg.metaData.out().l shouldBe List()
   }
 
 }

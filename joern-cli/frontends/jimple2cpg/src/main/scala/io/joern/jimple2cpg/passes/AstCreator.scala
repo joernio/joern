@@ -2,9 +2,9 @@ package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.passes.DiffGraph
 import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
 import soot.tagkit.Host
 import soot.{Local => _, _}
@@ -13,14 +13,13 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
-class AstCreator(filename: String, global: Global) {
+class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) {
 
   import AstCreator._
 
-  private val logger               = LoggerFactory.getLogger(classOf[AstCreationPass])
-  private val unitToAsts           = mutable.HashMap[soot.Unit, Seq[Ast]]()
-  private val controlTargets       = mutable.HashMap[Seq[Ast], soot.Unit]()
-  val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+  private val logger         = LoggerFactory.getLogger(classOf[AstCreationPass])
+  private val unitToAsts     = mutable.HashMap[soot.Unit, Seq[Ast]]()
+  private val controlTargets = mutable.HashMap[Seq[Ast], soot.Unit]()
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -33,10 +32,9 @@ class AstCreator(filename: String, global: Global) {
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
     */
-  def createAst(cls: SootClass): Iterator[DiffGraph] = {
+  def createAst(cls: SootClass): scala.Unit = {
     val astRoot = astForCompilationUnit(cls)
     storeInDiffGraph(astRoot)
-    Iterator(diffGraph.build())
   }
 
   /** Copy nodes/edges of given `AST` into the diff graph
