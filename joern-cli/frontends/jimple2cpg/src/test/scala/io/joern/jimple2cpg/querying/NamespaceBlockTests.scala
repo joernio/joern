@@ -26,7 +26,7 @@ class NamespaceBlockTests extends JimpleCodeToCpgFixture {
   }
 
   "should allow traversing from namespace block to method" in {
-    cpg.namespaceBlock.filename(".*.class").typeDecl.method.name.toSet shouldBe Set("foo", "<init>")
+    cpg.namespaceBlock.filename(".*.class").typeDecl.method.name.toSetMutable shouldBe Set("foo", "<init>")
   }
 
   "should allow traversing from namespace block to type declaration" in {

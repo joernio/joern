@@ -20,15 +20,15 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
     """
 
   "should find that add is called by main" in {
-    cpg.method.name("add").caller.name.toSet shouldBe Set("main")
+    cpg.method.name("add").caller.name.toSetMutable shouldBe Set("main")
   }
 
   "should find that main calls add and others" in {
-    cpg.method.name("main").callee.name.filterNot(_.startsWith("<operator>")).toSet shouldBe Set("add", "println")
+    cpg.method.name("main").callee.name.filterNot(_.startsWith("<operator>")).toSetMutable shouldBe Set("add", "println")
   }
 
   "should find a set of outgoing calls for main" in {
-    cpg.method.name("main").call.code.toSet shouldBe
+    cpg.method.name("main").call.code.toSetMutable shouldBe
       Set(
         "println($stack3)",
         "add(3, 3)",
@@ -41,19 +41,19 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
   }
 
   "should find one callsite for add" in {
-    cpg.method.name("add").callIn.code.toSet shouldBe Set("add(3, 3)")
+    cpg.method.name("add").callIn.code.toSetMutable shouldBe Set("add(3, 3)")
   }
 
   "should find that argument '1+2' is passed to parameter 'x'" in {
-    cpg.parameter.name("x").argument.code.toSet shouldBe Set("3")
+    cpg.parameter.name("x").argument.code.toSetMutable shouldBe Set("3")
   }
 
   "should allow traversing from argument to formal parameter" in {
-    cpg.argument.parameter.name.toSet should not be empty
+    cpg.argument.parameter.name.toSetMutable should not be empty
   }
 
   "should allow traversing from argument to call" in {
-    cpg.method.name("add").callIn.argument.inCall.name.toSet shouldBe Set("add")
+    cpg.method.name("add").callIn.argument.inCall.name.toSetMutable shouldBe Set("add")
   }
 
 }
