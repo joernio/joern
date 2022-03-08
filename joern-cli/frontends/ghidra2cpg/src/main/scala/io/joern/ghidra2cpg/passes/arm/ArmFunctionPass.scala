@@ -45,6 +45,7 @@ class ArmFunctionPass(currentProgram: Program, filename: String, function: Funct
     )
   )
   protected var methodNode: Option[NewMethod] = None
+  override def generateParts(): Array[Function] =  functions.toArray
 
   // override def partIterator: Iterator[Method] = cpg.method.l.iterator
 

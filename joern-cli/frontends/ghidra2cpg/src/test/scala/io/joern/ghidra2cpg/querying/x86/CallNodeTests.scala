@@ -11,7 +11,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   }
 
   "A call should contain exactly one node with all mandatory fields set" in {
-    cpg.call
+    def d = cpg.call
       .name("<operator>.assignment")
       .where(_.method.name("main"))
       .where(
@@ -19,7 +19,10 @@ class CallNodeTests extends GhidraBinToCpgSuite {
           .order(2)
           .code("a")
       )
-      .l match {
+      .l
+    println(d.map(_.code))
+    println(cpg.call.name("<operator>.assignment").where(_.method.name("main")).code.l)
+    d match {
       case List(x) =>
         x.name shouldBe "<operator>.assignment"
       case _ => fail()

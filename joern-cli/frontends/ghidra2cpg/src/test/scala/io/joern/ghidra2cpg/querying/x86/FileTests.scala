@@ -14,9 +14,9 @@ class FileTests extends GhidraBinToCpgSuite {
   }
 
   "should contain one file nodes in total, both with order=0" in {
-    cpg.file.order.l shouldBe List(0)
-    cpg.file.name.size shouldBe 1
-    cpg.file.name.head should endWith("x86_64.bin")
+    cpg.file.order.l shouldBe List(0, 0)
+    cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
+    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
   }
 
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
@@ -41,39 +41,15 @@ class FileTests extends GhidraBinToCpgSuite {
 
   "should allow traversing from file to its methods via namespace block" in {
     cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSet shouldBe Set(
-      "__cxa_finalize",
-      "_fini",
-      "main",
-      "level1",
-      "deregister_tm_clones",
-      "__gmon_start__",
-      "level2",
-      "__libc_start_main",
-      "FUN_00101020",
-      "_ITM_deregisterTMCloneTable",
-      "level3",
-      "_init",
-      "literalNodeTest",
-      "__do_global_dtors_aux",
-      "__stack_chk_fail",
-      "register_tm_clones",
-      "frame_dummy",
-      "_ITM_registerTMCloneTable",
-      "printf",
-      "dataflow",
-      "refNodeTests",
-      "localNodeTests",
-      "__libc_csu_init",
-      "__libc_csu_fini"
-    )
+      "refNodeTests", "__libc_csu_init", "_init", "_start", "__stack_chk_fail", "main", "printf", "deregister_tm_clones", "literalNodeTest", "__libc_start_main", "FUN_00101020", "_ITM_deregisterTMCloneTable", "frame_dummy", "_ITM_registerTMCloneTable", "localNodeTests", "__cxa_finalize", "register_tm_clones", "__gmon_start__", "__libc_csu_fini", "dataflow", "__do_global_dtors_aux", "_fini", "level1", "level3", "level2"  )
   }
 
   // TODO type decl handling needs to work first
-//  "should allow traversing from file to its type declarations via namespace block" in {
-//    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set("my_struct")
-//  }
+  //  "should allow traversing from file to its type declarations via namespace block" in {
+  //    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set("my_struct")
+  //  }
 
   "should allow traversing to namespaces" in {
-    cpg.file.namespace.name("<global>").l.size shouldBe 1
+    cpg.file.namespace.name("<global>").l.size shouldBe 2
   }
 }

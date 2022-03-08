@@ -10,6 +10,7 @@ import scala.util.Try
 
 class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
 
+  override def generateParts(): Array[Method] =  cpg.method.toArray//.map { ktFileWithMeta => bbb.f.getVirtualFilePath }.toArray
   override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
     method.ast
       .filter(_.isInstanceOf[Call])

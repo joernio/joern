@@ -20,7 +20,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   }
 
   "An assignment in the function 'main' should have 14 as second argument" in {
-    cpg.call
+    val y = cpg.call
       .name("<operator>.assignment")
       .where(_.method.name("main"))
       .where(
@@ -28,7 +28,9 @@ class CallNodeTests extends GhidraBinToCpgSuite {
           .order(2)
           .code("14")
       )
-      .l match {
+      .l
+    println(y)
+    y match {
       case List(x) =>
         x.name shouldBe "<operator>.assignment"
       case _ => fail()

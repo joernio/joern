@@ -6,6 +6,7 @@ import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Func
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import ghidra.program.model.scalar.Scalar
+import ghidra.program.util.DefinedDataIterator
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.joern.ghidra2cpg.{Decompiler, Types}
@@ -20,13 +21,18 @@ import scala.language.implicitConversions
 
 class MipsFunctionPass(
                         currentProgram: Program,
-                        address2Literal: Map[Long, String],
                         filename: String,
                         function: Function,
                         cpg: Cpg,
                         decompiler: Decompiler
                       ) extends ConcurrentWriterCpgPass[Method](cpg) {
-
+  val address2Literals: Map[Long, String] = DefinedDataIterator
+    .definedStrings(currentProgram)
+    .iterator()
+    .asScala
+    .toList
+    .map(x => x.getAddress().getOffset -> x.getValue.toString)
+    .toMap
   val processor = new MipsProcessor()
   // val diffGraph: DiffGraphBuilder
   val listing: Listing = currentProgram.getListing
@@ -96,7 +102,7 @@ class MipsFunctionPass(
         valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
       }
 
-      val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
+      val value = address2Literals.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
 
       createLiteral(
         value,
@@ -199,6 +205,7 @@ class MipsFunctionPass(
       case _ => // handleDefault(pcodeAst)
     }
   }
+  override def generateParts(): Array[Function] =  functions.toArray
 
   def addCallArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
     val opCodes = highFunction

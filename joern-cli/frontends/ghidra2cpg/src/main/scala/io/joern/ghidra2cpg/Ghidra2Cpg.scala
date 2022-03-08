@@ -9,15 +9,17 @@ import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
-import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
+import ghidra.program.util.GhidraProgramUtilities
 import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
-import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg._
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
 import utilities.util.FileUtilities
 
 import java.io.File
@@ -105,21 +107,15 @@ class Ghidra2Cpg() {
     val functionIterator = listing.getFunctions(true)
     val functions        = functionIterator.iterator.asScala.toList
 
-    val address2Literals: Map[Long, String] = DefinedDataIterator
-      .definedStrings(program)
-      .iterator()
-      .asScala
-      .toList
-      .map(x => x.getAddress().getOffset -> x.getValue.toString)
-      .toMap
 
-    new MetaDataPass(cpg, fileAbsolutePath).createAndApply()
+
+    new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         functions.foreach { function =>
-          new MipsFunctionPass(program, address2Literals, fileAbsolutePath, function, cpg, decompiler)
+          new MipsFunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
             .createAndApply()
           new LoHiPass(cpg).createAndApply()
         }
@@ -129,15 +125,14 @@ class Ghidra2Cpg() {
             .createAndApply()
         }
       case _ =>
-        functions.foreach { function =>
-          new X86FunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
-            .createAndApply()
+          new X86FunctionPass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
           new ReturnEdgesPass(cpg).createAndApply()
-        }
+
     }
-    new TypesPass(cpg).createAndApply()
+
+    new TypeNodePass(Types.types.toList, cpg)
     new JumpPass(cpg).createAndApply()
-    new LiteralPass(cpg, address2Literals, program, flatProgramAPI).createAndApply()
+    new LiteralPass(cpg, flatProgramAPI).createAndApply()
   }
 
   private class HeadlessProjectConnection(projectManager: HeadlessGhidraProjectManager, connection: GhidraURLConnection)

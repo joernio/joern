@@ -2,7 +2,7 @@ package io.joern.ghidra2cpg.processors
 
 import scala.collection.immutable._
 
-class X86Processor extends Processor {
+object X86Processor extends Processor {
   override def getInstructions: HashMap[String, String] =
     HashMap(
       "ADD"       -> "<operator>.incBy",
@@ -94,6 +94,7 @@ class X86Processor extends Processor {
       "SUBSS"     -> "<operator>.subtraction",
       "TEST"      -> "<operator>.compare",
       "XADD"      -> "<operator>.incBy",
-      "XOR"       -> "<operator>.assignmentXor"
-    )
+      "XOR"       -> "<operator>.assignmentXor",
+      "HLT"       -> "<operator>.NOP"
+  )
 }

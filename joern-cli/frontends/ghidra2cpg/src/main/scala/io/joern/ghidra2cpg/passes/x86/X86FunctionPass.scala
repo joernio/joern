@@ -1,8 +1,8 @@
 package io.joern.ghidra2cpg.passes.x86
 
 import ghidra.program.model.address.GenericAddress
-import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, FunctionIterator, Instruction, Listing, Program}
+import ghidra.program.model.lang._
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Listing, Program}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.processors.X86Processor
@@ -16,19 +16,10 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.language.implicitConversions
 
-class X86FunctionPass(currentProgram: Program, filename: String, function: Function, cpg: Cpg, decompiler: Decompiler)
-  extends ConcurrentWriterCpgPass[Function](cpg) {
-  val processor = new X86Processor()
-  val listing: Listing = currentProgram.getListing
-  val functionIterator: FunctionIterator = listing.getFunctions(true)
-  val functions: List[Function] = functionIterator.iterator.asScala.toList
-  val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
-  // we need it just once with default settings
-  protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
-  protected val instructions: Seq[Instruction] =
-    currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
+class X86FunctionPass(currentProgram: Program, filename: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler) extends ConcurrentWriterCpgPass[Function](cpg) {
+  val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
   // needed by ghidra for decompiling reasons
-  protected val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
+  val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
       CodeUnitFormatOptions.ShowNamespace.NEVER,
@@ -42,8 +33,8 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
       true
     )
   )
-  protected var methodNode: Option[NewMethod] = None
-
+  var methodNode: Option[NewMethod] = None
+  override def generateParts(): Array[Function] =  functions.toArray
   // override def partIterator: Iterator[Method] = cpg.method.l.iterator
 
   implicit def intToIntegerOption(intOption: Option[Int]): Option[Integer] = {
@@ -54,6 +45,8 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
+    val listing: Listing = currentProgram.getListing
+    // we need it just once with default settings
     methodNode = Some(
       createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
     )
@@ -63,12 +56,12 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
     val methodReturn = createReturnNode()
     diffGraphBuilder.addNode(methodReturn)
     diffGraphBuilder.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
-    handleParameters(diffGraphBuilder)
-    handleLocals(diffGraphBuilder)
-    handleBody(diffGraphBuilder)
+    handleParameters(diffGraphBuilder, function)
+    handleLocals(diffGraphBuilder, function)
+    handleBody(diffGraphBuilder, function)
   }
 
-  def handleParameters(diffGraphBuilder: DiffGraphBuilder): Unit = {
+  def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     if (function.isThunk) {
       function
         .getThunkedFunction(true)
@@ -86,6 +79,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
           diffGraphBuilder.addEdge(methodNode.get, node, EdgeTypes.AST)
         }
     } else {
+      val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
       highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq
         .filter(_.isParameter)
         .foreach { parameter =>
@@ -107,7 +101,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
     }
   }
 
-  def handleLocals(diffGraphBuilder: DiffGraphBuilder): Unit = {
+  def handleLocals(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     function.getLocalVariables.foreach { local =>
       val localNode = nodes
         .NewLocal()
@@ -125,16 +119,18 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
     }
   }
 
-  def handleBody(diffGraphBuilder: DiffGraphBuilder): Unit = {
+  def handleBody(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
+    val instructions: Seq[Instruction] =
+      currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
-      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode)
+      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode, function)
       diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
       diffGraphBuilder.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
         val instructionNode = addCallOrReturnNode(instruction)
         diffGraphBuilder.addNode(instructionNode)
-        handleArguments(diffGraphBuilder, instruction, instructionNode)
+        handleArguments(diffGraphBuilder, instruction, instructionNode, function)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         // Not connecting the previous instruction,
         // if it is an unconditional jump
@@ -148,8 +144,8 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
-    val mnemonicString = processor.getInstructions(instruction.getMnemonicString)
+  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, function: Function): Unit = {
+    val mnemonicString = X86Processor.getInstructions(instruction.getMnemonicString)
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
         codeUnitFormat.getOperandRepresentationString(instruction, 0)
@@ -270,7 +266,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, function: Funct
   }
 
   def addCallOrReturnNode(instruction: Instruction): CfgNodeNew =
-    processor.getInstructions
+    X86Processor.getInstructions
       .getOrElse(instruction.getMnemonicString, "UNKNOWN") match {
       case "RET" =>
         createReturnNode(instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue())
