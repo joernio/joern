@@ -23,7 +23,7 @@ object SuryaObject {
   case class VariableDeclaration(typeName: SuryaObject, name: String, identifier: SuryaObject, storageLocation: String,
                                  isStateVar: Boolean, isIndexed: Boolean, expression: SuryaObject) extends SuryaObject
 
-  case class ElementaryTypeName(name: String) extends SuryaObject
+  case class ElementaryTypeName(name: String, stateMutability: String) extends SuryaObject
 
   case class Identifier(name: String) extends SuryaObject
 
@@ -43,10 +43,11 @@ object SuryaObject {
 
   case class EventDefinition(name: String, paramaters: [SuryaObject], isAnonymous: Boolean) extends SuryaObject
 
+  //TODO: Check on FunctionDefinition (OVERRIDE)
   case class FunctionDefinition(name: String, paramaters: [SuryaObject], returnParameters: SuryaObject,
                                 body: SuryaObject, visibility: String, modifiers: [SuryaObject], 
-                                override: Boolean, isConstructor: Boolean, isReceiveEther: Boolean,
-                                isFallback: Boolean, isVirtual: Boolean, stateMutability: Boolean) extends SuryaObject
+                                parse_override: [SuryaObject], isConstructor: Boolean, isReceiveEther: Boolean,
+                                isFallback: Boolean, isVirtual: Boolean, stateMutability: String) extends SuryaObject
 
   case class ModifierInvocation(name: String, arguments: [SuryaObject]) extends SuryaObject
 
@@ -66,6 +67,14 @@ object SuryaObject {
   case class ArrayTypeName(baseTypeName: SuryaObject, length: Int) extends SuryaObject 
 
   case class NumberLiteral(number: Int, subdenomination: Int) extends SuryaObject
+
+  case class StateVariableDeclaration(variables: [SuryaObject]) extends SuryaObject
+
+  case class Mapping(keyType: SuryaObject, valueType: SuryaObject) extends SuryaObject
+
+  case class StructDefinition(name: String, members: [SuryaObject] ) extends SuryaObject
+
+  case class UsingForDeclaration(typeName: SuryaObject, libraryName: String) extends SuryaObject
 
 
 
