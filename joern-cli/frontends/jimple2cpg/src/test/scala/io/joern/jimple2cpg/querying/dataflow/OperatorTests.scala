@@ -4,7 +4,9 @@ import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.jimple2cpg.testfixtures.JimpleDataflowFixture
 
 class OperatorTests extends JimpleDataflowFixture {
+
   behavior of "Dataflow through operators"
+
   override val code: String = """
     |class Foo {
     |
