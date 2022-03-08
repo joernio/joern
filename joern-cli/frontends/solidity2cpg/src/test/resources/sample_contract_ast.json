@@ -1,0 +1,646 @@
+{
+  "type": "SourceUnit",
+  "children": {
+    "0": {
+      "type": "PragmaDirective",
+      "name": "solidity",
+      "value": "^0.8.0"
+    },
+    "1": {
+      "type": "ImportDirective",
+      "path": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+      "unitAlias": {},
+      "unitAliasIdentifier": {},
+      "symbolAliases": {},
+      "symbolAliasesIdentifiers": {}
+    },
+    "2": {
+      "type": "ImportDirective",
+      "path": "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol",
+      "unitAlias": {},
+      "unitAliasIdentifier": {},
+      "symbolAliases": {},
+      "symbolAliasesIdentifiers": {}
+    },
+    "3": {
+      "type": "ImportDirective",
+      "path": "@openzeppelin/contracts/security/Pausable.sol",
+      "unitAlias": {},
+      "unitAliasIdentifier": {},
+      "symbolAliases": {},
+      "symbolAliasesIdentifiers": {}
+    },
+    "4": {
+      "type": "ImportDirective",
+      "path": "@openzeppelin/contracts/access/AccessControl.sol",
+      "unitAlias": {},
+      "unitAliasIdentifier": {},
+      "symbolAliases": {},
+      "symbolAliasesIdentifiers": {}
+    },
+    "5": {
+      "type": "ImportDirective",
+      "path": "./Roles.sol",
+      "unitAlias": {},
+      "unitAliasIdentifier": {},
+      "symbolAliases": {},
+      "symbolAliasesIdentifiers": {}
+    },
+    "6": {
+      "type": "ContractDefinition",
+      "name": "SCOUTCOIN",
+      "kind": "contract",
+      "baseContracts": {
+        "0": {
+          "type": "InheritanceSpecifier",
+          "baseName": {
+            "type": "UserDefinedTypeName",
+            "namePath": "ERC20"
+          },
+          "arguments": {}
+        },
+        "1": {
+          "type": "InheritanceSpecifier",
+          "baseName": {
+            "type": "UserDefinedTypeName",
+            "namePath": "ERC20Burnable"
+          },
+          "arguments": {}
+        },
+        "2": {
+          "type": "InheritanceSpecifier",
+          "baseName": {
+            "type": "UserDefinedTypeName",
+            "namePath": "Pausable"
+          },
+          "arguments": {}
+        }
+      },
+      "subNodes": {
+        "0": {
+          "type": "StateVariableDeclaration",
+          "variables": {
+            "0": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "UserDefinedTypeName",
+                "namePath": "Roles"
+              },
+              "name": "role",
+              "identifier": {
+                "type": "Identifier",
+                "name": "role"
+              },
+              "expression": {},
+              "visibility": "default",
+              "isStateVar": true,
+              "isDeclaredConst": false,
+              "isIndexed": false,
+              "isImmutable": false,
+              "override": {},
+              "storageLocation": {}
+            }
+          },
+          "initialValue": {}
+        },
+        "1": {
+          "type": "StateVariableDeclaration",
+          "variables": {
+            "0": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": {}
+              }
+            },
+            "name": "org",
+            "identifier": {
+              "type": "Identifier",
+              "name": "org"
+            },
+            "expression": {},
+            "visibility": "default",
+            "isStateVar": true,
+            "isDeclaredConst": false,
+            "isIndexed": false,
+            "isImmutable": false,
+            "override": {},
+            "storageLocation": {}
+          },
+          "initialValue": {}
+        },
+        "2": {
+          "type": "ModifierDefinition",
+          "name": "onlyRole",
+          "parameters": {
+            "0": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": {}
+              },
+              "name": "roleTicker",
+              "identifier": {
+                "type": "Identifier",
+                "name": "roleTicker"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            },
+            "1": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": {}
+              },
+              "name": "account",
+              "identifier": {
+                "type": "Identifier",
+                "name": "account"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            }
+          },
+          "body": {
+            "type": "Block",
+            "statements": {
+              "0": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "checkRole"
+                  },
+                  "arguments": {
+                    "0": {
+                      "type": "Identifier",
+                      "name": "roleTicker"
+                    },
+                    "1": {
+                      "type": "Identifier",
+                      "name": "account"
+                    }
+                  },
+                  "names": {},
+                  "identifiers": {}
+                }
+              },
+              "1": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "Identifier",
+                  "name": "_"
+                }
+              }
+            }
+          },
+          "isVirtual": false,
+          "override": {}
+        },
+        "3": {
+          "type": "FunctionDefinition",
+          "name": {},
+          "parameters": {
+            "0": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": {}
+              },
+              "name": "_role",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_role"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            }
+          },
+          "returnParameters": {},
+          "body": {
+            "type": "Block",
+            "statements": {
+              "0": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "Identifier",
+                    "name": "role"
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "Roles"
+                    },
+                    "arguments": {
+                      "0": {
+                        "type": "Identifier",
+                        "name": "_role"
+                      }
+                    },
+                    "names": {},
+                    "identifiers": {}
+                  }
+                }
+              }
+            }
+          },
+          "visibility": "default",
+          "modifiers": {
+            "0": {
+              "type": "ModifierInvocation",
+              "name": "ERC20",
+              "arguments": {
+                "0": {
+                  "type": "StringLiteral",
+                  "value": "ScoutCoin",
+                  "parts": {
+                    "0": "ScoutCoin"
+                  },
+                  "isUnicode": {
+                    "0": false
+                  }
+                },
+                "1": {
+                  "type": "StringLiteral",
+                  "value": "SCTCN",
+                  "parts": {
+                    "0": "SCTCN"
+                  },
+                  "isUnicode": {
+                    "0": false
+                  }
+                }
+              }
+            }
+          },
+          "override": {},
+          "isConstructor": true,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": {}
+        },
+        "4": {
+          "type": "FunctionDefinition",
+          "name": "pause",
+          "parameters": {},
+          "returnParameters": {},
+          "body": {
+            "type": "Block",
+            "statements": {
+              "0": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_pause"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "visibility": "public",
+          "modifiers": {
+            "0": {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": {
+                "0": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "CFO"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                },
+                "1": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "override": {},
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": {}
+        },
+        "5": {
+          "type": "FunctionDefinition",
+          "name": "unpause",
+          "parameters": {},
+          "returnParameters": {},
+          "body": {
+            "type": "Block",
+            "statements": {
+              "0": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_unpause"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "visibility": "public",
+          "modifiers": {
+            "0": {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": {
+                "0": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "CFO"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                },
+                "1": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "override": {},
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": {}
+        },
+        "6": {
+          "type": "FunctionDefinition",
+          "name": "mint",
+          "parameters": {
+            "0": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": {}
+              },
+              "name": "to",
+              "identifier": {
+                "type": "Identifier",
+                "name": "to"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            },
+            "1": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "uint256",
+                "stateMutability": {}
+              },
+              "name": "amount",
+              "identifier": {
+                "type": "Identifier",
+                "name": "amount"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            }
+          },
+          "returnParameters": {},
+          "body": {
+            "type": "Block",
+            "statements": {
+              "0": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_mint"
+                  },
+                  "arguments": {
+                    "0": {
+                      "type": "Identifier",
+                      "name": "to"
+                    },
+                    "1": {
+                      "type": "Identifier",
+                      "name": "amount"
+                    }
+                  },
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "visibility": "public",
+          "modifiers": {
+            "0": {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": {
+                "0": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "CFO"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                },
+                "1": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": {},
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "override": {},
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": {}
+        },
+        "7": {
+          "type": "FunctionDefinition",
+          "name": "_beforeTokenTransfer",
+          "parameters": {
+            "0": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": {}
+              },
+              "name": "from",
+              "identifier": {
+                "type": "Identifier",
+                "name": "from"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            },
+            "1": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": {}
+              },
+              "name": "to",
+              "identifier": {
+                "type": "Identifier",
+                "name": "to"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            },
+            "2": {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "uint256",
+                "stateMutability": {}
+              },
+              "name": "amount",
+              "identifier": {
+                "type": "Identifier",
+                "name": "amount"
+              },
+              "storageLocation": {},
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": {}
+            }
+          },
+          "returnParameters": {},
+          "body": {
+            "type": "Block",
+            "statements": {
+              "0": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "super"
+                    },
+                    "memberName": "_beforeTokenTransfer"
+                  },
+                  "arguments": {
+                    "0": {
+                      "type": "Identifier",
+                      "name": "from"
+                    },
+                    "1": {
+                      "type": "Identifier",
+                      "name": "to"
+                    },
+                    "2": {
+                      "type": "Identifier",
+                      "name": "amount"
+                    }
+                  },
+                  "names": {},
+                  "identifiers": {}
+                }
+              }
+            }
+          },
+          "visibility": "internal",
+          "modifiers": {
+            "0": {
+              "type": "ModifierInvocation",
+              "name": "whenNotPaused",
+              "arguments": {}
+            }
+          },
+          "override": {},
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": {}
+        }
+      }
+    }
+  }
+}

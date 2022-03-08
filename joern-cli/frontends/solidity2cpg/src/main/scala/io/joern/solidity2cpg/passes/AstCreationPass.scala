@@ -1,14 +1,13 @@
 package io.joern.solidity2cpg.passes
 
-import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
-import io.circe.parser._
 import io.joern.solidity2cpg.domain.SuryaObject.SourceUnit
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
 import org.slf4j.LoggerFactory
+import spray.json._
 
 import java.util.concurrent.ConcurrentSkipListSet
-import scala.util.Using
+import scala.util.{Failure, Success, Try, Using}
 
 case class Global(usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String]())
 
@@ -28,18 +27,13 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg, keyPoo
     *   a list of changes generated from this pass.
     */
   override def runOnPart(builder: DiffGraphBuilder, part: String): Unit = {
-    Using.resource(scala.io.Source.fromFile(part)) { source =>
-      val lines = source.getLines mkString "\n"
+    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
 
-      val maybeSourceUnit = parse(lines) match {
-        case Left(e) =>
-          logger.error(s"Unable to parse $part", e)
-        case Right(json) => json.as[SourceUnit]
-      }
-      maybeSourceUnit match {
-        case Right(sourceUnit: SourceUnit) => new AstCreator(part, builder, global).createAst(sourceUnit)
-        case Left(e) => logger.error(s"Unable to convert JSON to SourceUnit $part due to an exception", e)
-        case _ => logger.error(s"Unable to convert JSON to SourceUnit $part")
+    Using.resource(scala.io.Source.fromFile(part)) { source =>
+      val lines = source.getLines() mkString "\n"
+      Try(lines.parseJson.convertTo[SourceUnit]) match {
+        case Failure(e)          => logger.error(s"Unable to convert JSON to SourceUnit $part due to an exception", e)
+        case Success(sourceUnit) => new AstCreator(part, builder, global).createAst(sourceUnit)
       }
     }
   }

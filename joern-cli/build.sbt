@@ -35,13 +35,13 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
   }
 }
 
-lazy val x2cpg       = project.in(file("frontends/x2cpg"))
-lazy val kotlin2cpg  = project.in(file("frontends/kotlin2cpg"))
-lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
-lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
-lazy val php2cpg     = project.in(file("frontends/php2cpg"))
-lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
-lazy val fuzzyc2cpg  = project.in(file("frontends/fuzzyc2cpg"))
+lazy val x2cpg        = project.in(file("frontends/x2cpg"))
+lazy val kotlin2cpg   = project.in(file("frontends/kotlin2cpg"))
+lazy val javasrc2cpg  = project.in(file("frontends/javasrc2cpg"))
+lazy val pysrc2cpg    = project.in(file("frontends/pysrc2cpg"))
+lazy val jimple2cpg   = project.in(file("frontends/jimple2cpg"))
+lazy val fuzzyc2cpg   = project.in(file("frontends/fuzzyc2cpg"))
+lazy val solidity2cpg = project.in(file("frontends/solidity2cpg"))
 lazy val js2cpg = project
   .in(file("frontends/js2cpg"))
   .enablePlugins(JavaAppPackaging)
@@ -59,6 +59,7 @@ Universal / mappings ++= frontendMappings("js2cpg", (js2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).value)
 Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("phpcpg", (php2cpg / stage).value)
+Universal / mappings ++= frontendMappings("solidity2cpg", (solidity2cpg / stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {

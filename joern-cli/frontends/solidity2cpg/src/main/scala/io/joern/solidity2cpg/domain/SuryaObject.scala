@@ -4,27 +4,62 @@ package io.joern.solidity2cpg.domain
   */
 sealed trait SuryaObject
 
+/** Contains the case classes for expected objects parseable from Surya JSON files. The BaseASTNode is the default class
+  * if an unhandled type occurred. It contains the type name so that it can be added at a later stage.
+  */
 object SuryaObject {
-  case class SourceUnit(children: List[SuryaObject]) extends SuryaObject
 
-  case class PragmaDirective(name: String, value: String) extends SuryaObject
+  /** If the type is not supported, it will at least hold it's type name so that it can be added in later.
+    * @param `type`
+    *   the AST node type this represents.
+    */
+  class BaseASTNode(private val `type`: String = "Unknown") extends SuryaObject {
 
-  // TODO: Extend for unit and symbol aliases
-  case class ImportDirective(path: String) extends SuryaObject
+    /** Overrides the default toString which will look something like the class name followed by a memory address. This
+      * happens to override the rest of the case class toString methods which is why they have been overridden by
+      * scala.runtime.ScalaRunTime._toString calls.
+      * @return
+      *   a "case class"-like toString representation that includes the type of the node.
+      */
+    override def toString: String = s"BaseASTNode(${`type`})"
+
+    def getType: String = `type`
+  }
+
+  case class SourceUnit(children: Map[String, SuryaObject]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  case class PragmaDirective(name: String, value: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  // TODO: Add missing unit and symbol aliases properties
+  case class ImportDirective(path: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
   case class ContractDefinition(
     name: String,
-    baseContracts: List[SuryaObject],
-    subNodes: List[SuryaObject],
+    baseContracts: Map[String, BaseASTNode],
+    subNodes: Map[String, BaseASTNode],
     kind: String
-  ) extends SuryaObject
+  ) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class InheritanceSpecifier(baseName: List[SuryaObject]) extends SuryaObject
+  case class InheritanceSpecifier(baseName: List[BaseASTNode]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class UserDefinedTypeName(namePath: String) extends SuryaObject
+  case class UserDefinedTypeName(namePath: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class ModifierDefinition(name: String, paramaters: List[SuryaObject], body: SuryaObject, isVirtual: Boolean)
-      extends SuryaObject
+  case class ModifierDefinition(name: String, parameters: List[SuryaObject], body: SuryaObject, isVirtual: Boolean)
+      extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
   case class VariableDeclaration(
     typeName: SuryaObject,
@@ -34,74 +69,120 @@ object SuryaObject {
     isStateVar: Boolean,
     isIndexed: Boolean,
     expression: SuryaObject
-  ) extends SuryaObject
+  ) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class ElementaryTypeName(name: String, stateMutability: String) extends SuryaObject
+  case class ElementaryTypeName(name: String, stateMutability: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class Identifier(name: String) extends SuryaObject
+  case class Identifier(name: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class Block(statements: List[SuryaObject]) extends SuryaObject
+  case class Block(statements: List[BaseASTNode]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class ExpressionStatement(expression: SuryaObject) extends SuryaObject
+  case class ExpressionStatement(expression: BaseASTNode) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class FunctionCall(expression: SuryaObject, arguments: List[SuryaObject]) extends SuryaObject
+  case class FunctionCall(expression: BaseASTNode, arguments: List[BaseASTNode]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class MemberAccess(expression: List[SuryaObject], memberName: String) extends SuryaObject
+  case class MemberAccess(expression: List[BaseASTNode], memberName: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class IndexAccess(base: SuryaObject, index: SuryaObject) extends SuryaObject
+  case class IndexAccess(base: BaseASTNode, index: BaseASTNode) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class BinaryOperation(operator: String, left: SuryaObject, right: SuryaObject) extends SuryaObject
+  case class BinaryOperation(operator: String, left: BaseASTNode, right: BaseASTNode) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class StringLiteral(value: String, parts: List[String], isUnicode: Boolean) extends SuryaObject
+  case class StringLiteral(value: String, parts: List[String], isUnicode: Boolean) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class EventDefinition(name: String, parameters: List[SuryaObject], isAnonymous: Boolean) extends SuryaObject
+  case class EventDefinition(name: String, parameters: List[BaseASTNode], isAnonymous: Boolean) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  // TODO: Check on FunctionDefinition (OVERRIDE)
   case class FunctionDefinition(
     name: String,
-    paramaters: List[SuryaObject],
-    returnParameters: SuryaObject,
-    body: SuryaObject,
+    parameters: List[BaseASTNode],
+    returnParameters: BaseASTNode,
+    body: BaseASTNode,
     visibility: String,
-    modifiers: List[SuryaObject],
-    parse_override: List[SuryaObject],
+    modifiers: List[BaseASTNode],
+    `override`: List[BaseASTNode],
     isConstructor: Boolean,
     isReceiveEther: Boolean,
     isFallback: Boolean,
     isVirtual: Boolean,
     stateMutability: String
-  ) extends SuryaObject
+  ) extends BaseASTNode
 
-  case class ModifierInvocation(name: String, arguments: List[SuryaObject]) extends SuryaObject
+  case class ModifierInvocation(name: String, arguments: List[BaseASTNode]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class EmitStatement(eventCall: SuryaObject) extends SuryaObject
+  case class EmitStatement(eventCall: BaseASTNode) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
   case class ForeStatement(
-    initExpression: SuryaObject,
-    conditionExpression: SuryaObject,
-    loopExpression: SuryaObject,
-    body: SuryaObject
-  ) extends SuryaObject
+    initExpression: BaseASTNode,
+    conditionExpression: BaseASTNode,
+    loopExpression: BaseASTNode,
+    body: BaseASTNode
+  ) extends BaseASTNode
 
-  case class VariableDeclarationStatement(variables: List[SuryaObject], initialValue: SuryaObject) extends SuryaObject
+  case class VariableDeclarationStatement(variables: List[BaseASTNode], initialValue: BaseASTNode)
+      extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class UnaryOperation(operator: String, subExpression: SuryaObject, isPrefix: Boolean) extends SuryaObject
+  case class UnaryOperation(operator: String, subExpression: BaseASTNode, isPrefix: Boolean) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class IfStatement(condition: SuryaObject, trueBody: SuryaObject, falseBody: SuryaObject) extends SuryaObject
+  case class IfStatement(condition: BaseASTNode, trueBody: BaseASTNode, falseBody: BaseASTNode) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class BooleanLiteral(value: Boolean) extends SuryaObject
+  case class BooleanLiteral(value: Boolean) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class ArrayTypeName(baseTypeName: SuryaObject, length: Int) extends SuryaObject
+  case class ArrayTypeName(baseTypeName: BaseASTNode, length: Int) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class NumberLiteral(number: Int, subdenomination: Int) extends SuryaObject
+  case class NumberLiteral(number: Int, subdenomination: Int) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class StateVariableDeclaration(variables: List[SuryaObject]) extends SuryaObject
+  case class StateVariableDeclaration(variables: List[BaseASTNode]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class Mapping(keyType: SuryaObject, valueType: SuryaObject) extends SuryaObject
+  case class Mapping(keyType: BaseASTNode, valueType: BaseASTNode) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class StructDefinition(name: String, members: List[SuryaObject]) extends SuryaObject
+  case class StructDefinition(name: String, members: List[BaseASTNode]) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
-  case class UsingForDeclaration(typeName: SuryaObject, libraryName: String) extends SuryaObject
+  case class UsingForDeclaration(typeName: BaseASTNode, libraryName: String) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 
   // TODO: Create the rest of these
 }

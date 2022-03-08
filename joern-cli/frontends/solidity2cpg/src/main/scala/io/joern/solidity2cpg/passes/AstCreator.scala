@@ -49,8 +49,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   }
 
   def astForCompilationUnit(value: Any): Ast = {
-
+    Ast()
   }
-
 
 }
