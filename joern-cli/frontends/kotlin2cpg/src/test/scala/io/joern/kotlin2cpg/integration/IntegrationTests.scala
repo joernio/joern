@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.integration
 
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta}
-import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
+import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultTypeInfoProvider, InferenceSourcesPicker}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import better.files.File
@@ -72,7 +72,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
           willFilter
         }
 
-    val nameGenerator = new DefaultNameGenerator(environment)
+    val nameGenerator = new DefaultTypeInfoProvider(environment)
     new Kt2Cpg().createCpg(filesWithMeta, Seq(), nameGenerator, Some(outPath))
   }
 

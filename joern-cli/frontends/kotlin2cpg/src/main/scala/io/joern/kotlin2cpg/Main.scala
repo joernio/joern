@@ -1,16 +1,20 @@
 package io.joern.kotlin2cpg
 
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
-import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator, InferenceSourcesPicker}
+import io.joern.kotlin2cpg.types.{
+  CompilerAPI,
+  DefaultTypeInfoProvider,
+  ErrorLoggingMessageCollector,
+  InferenceSourcesPicker
+}
 import io.joern.kotlin2cpg.utils.PathUtils
-
 import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
 import io.shiftleft.utils.IOUtils
-
 import better.files.File
+
 import java.nio.file.{Files, Paths}
 import org.slf4j.LoggerFactory
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scopt.OParser
 
@@ -87,12 +91,14 @@ object Main extends App {
           }
         }
 
+        val plugins = Seq()
         val inferenceJars =
           InferenceSourcesPicker.defaultInferenceJarPaths ++
             jarPathsFromClassPath.map { path => InferenceJarPath(path, false) }
         val messageCollector = new ErrorLoggingMessageCollector
-        val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJars, Seq(), messageCollector)
-        val ktFiles     = environment.getSourceFiles.asScala
+        val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJars, plugins, messageCollector)
+
+        val ktFiles = environment.getSourceFiles.asScala
         val filesWithMeta =
           ktFiles
             .flatMap { f =>
@@ -137,8 +143,8 @@ object Main extends App {
               FileContentAtPath(fileContents, fnm._2, fnm._1)
             }
 
-        val nameGenerator = new DefaultNameGenerator(environment)
-        val cpg = new Kt2Cpg().createCpg(filesWithMeta, fileContentsAtPath, nameGenerator, Some(config.outputPath))
+        val typeInfoProvider = new DefaultTypeInfoProvider(environment)
+        val cpg = new Kt2Cpg().createCpg(filesWithMeta, fileContentsAtPath, typeInfoProvider, Some(config.outputPath))
         cpg.close()
       } else {
         println("This frontend requires exactly one input path")
