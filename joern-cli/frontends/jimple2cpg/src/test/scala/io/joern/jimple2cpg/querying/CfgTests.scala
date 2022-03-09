@@ -41,10 +41,7 @@ class CfgTests extends JimpleCodeToCpgFixture {
   //  }
 
   "should find sink(x) is dominated by `x < 5` and `y < 10`" in {
-    cpg.call("sink").dominatedBy.isCall.code.toSetMutable shouldBe Set(
-      "x >= 5",
-      "y >= 10",
-    )
+    cpg.call("sink").dominatedBy.isCall.code.toSetMutable shouldBe Set("x >= 5", "y >= 10")
   }
 
   //  "should find that println post dominates correct nodes" in {

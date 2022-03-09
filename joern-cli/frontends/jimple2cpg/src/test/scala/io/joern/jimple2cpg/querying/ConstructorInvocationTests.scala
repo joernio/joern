@@ -215,11 +215,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create only `init` call for direct invocation using `this`" in {
     cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int,int)").l match {
       case List(method) =>
-        val List(
-          assignAddition: Call,
-          init: Call,
-          addition: Call
-        ) = method.call.l
+        val List(assignAddition: Call, init: Call, addition: Call) = method.call.l
 
         init.name shouldBe "<init>"
         init.methodFullName shouldBe "Bar.<init>:void(int)"
