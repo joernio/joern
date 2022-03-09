@@ -33,11 +33,9 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
   "should find a set of outgoing calls for main" in {
     cpg.method.name("main").call.code.toSetMutable shouldBe
       Set(
-        "println($stack3)",
         "add(3, 3)",
-        "argc = @parameter0",
+        "$stack2.println($stack3)",
         "$stack2 = java.lang.System.out",
-        "argv = @parameter1",
         "$stack3 = add(3, 3)",
         "java.lang.System.out"
       )
