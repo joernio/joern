@@ -19,7 +19,7 @@ object CompleteCpgFixture {
       val cpg = Cpg.emptyCpg
       new MetaDataPass(cpg, Languages.NEWC).createAndApply()
       val astCreationPass =
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, Config(inputPaths = Set(dir.path.toString)))
+        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPaths = Set(dir.path.toString)))
       astCreationPass.createAndApply()
       new CfgCreationPass(cpg).createAndApply()
       new TypeNodePass(astCreationPass.usedTypes(), cpg).createAndApply()

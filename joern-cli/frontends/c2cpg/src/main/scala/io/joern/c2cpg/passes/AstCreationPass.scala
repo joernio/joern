@@ -7,7 +7,7 @@ import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.utils.IOUtils
 import io.joern.x2cpg.SourceFiles
 
@@ -20,13 +20,8 @@ object AstCreationPass {
   object SourceFiles extends InputFiles
 }
 
-class AstCreationPass(
-  cpg: Cpg,
-  forFiles: InputFiles,
-  keyPool: Option[IntervalKeyPool],
-  config: C2Cpg.Config,
-  report: Report = new Report()
-) extends ConcurrentWriterCpgPass[String](cpg, keyPool = keyPool) {
+class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: C2Cpg.Config, report: Report = new Report())
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val global: Global    = new Global()
   private val parser: CdtParser = new CdtParser(config)

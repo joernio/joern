@@ -4,7 +4,7 @@ import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   CombinedTypeSolver,
   JavaParserTypeSolver,
