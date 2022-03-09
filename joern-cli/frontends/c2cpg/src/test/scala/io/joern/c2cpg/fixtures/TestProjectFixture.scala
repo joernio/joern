@@ -22,7 +22,7 @@ case class TestProjectFixture(projectName: String) {
   new MetaDataPass(cpg, Languages.C).createAndApply()
   new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
   new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config).createAndApply()
-  new HeaderContentPass(cpg, None, config).createAndApply()
+  new HeaderContentPass(cpg, config).createAndApply()
   new CfgCreationPass(cpg).createAndApply()
   new FileCreationPass(cpg).createAndApply()
 
