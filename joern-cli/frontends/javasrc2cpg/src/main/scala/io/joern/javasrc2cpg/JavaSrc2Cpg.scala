@@ -4,12 +4,10 @@ import better.files.File
 import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 
-import java.nio.file.Files
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 object JavaSrc2Cpg {
