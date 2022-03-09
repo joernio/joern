@@ -3,7 +3,6 @@ package io.joern.c2cpg.astcreation
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewReturn}
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -187,22 +186,15 @@ trait AstForStatementsCreator {
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, order)
 
-    val initAsts = nullSafeAst(forStmt.getInitializerStatement, 1)
-
-    val initAst = if (initAsts.count(_.nodes.exists(!_.isInstanceOf[NewLocal])) > 1) {
-      val initAstBlock = NewBlock()
-        .order(1)
-        .argumentIndex(1)
-        .typeFullName(registerType(Defines.voidTypeName))
-        .lineNumber(line(forStmt))
-        .columnNumber(column(forStmt))
-      scope.pushNewScope(initAstBlock)
-      val blockAst = Ast(initAstBlock).withChildren(initAsts)
-      scope.popScope()
-      blockAst
-    } else {
-      initAsts.headOption.getOrElse(Ast())
-    }
+    val initAstBlock = NewBlock()
+      .order(1)
+      .argumentIndex(1)
+      .typeFullName(registerType(Defines.voidTypeName))
+      .lineNumber(line(forStmt))
+      .columnNumber(column(forStmt))
+    scope.pushNewScope(initAstBlock)
+    val initAst = Ast(initAstBlock).withChildren(nullSafeAst(forStmt.getInitializerStatement, 1))
+    scope.popScope()
 
     val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
     val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
