@@ -35,8 +35,8 @@ class JimpleDataflowFixture extends AnyFlatSpec with Matchers {
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
   ): (Traversal[Literal], Traversal[Expression]) = {
-    val sourceMethod = cpg.method(s".*$sourceMethodName.*").head
-    val sinkMethod   = cpg.method(s".*$sinkMethodName.*").head
+    val sourceMethod = cpg.method(s".*$sourceMethodName").head
+    val sinkMethod   = cpg.method(s".*$sinkMethodName").head
     def source       = sourceMethod.literal.code(sourceCode)
     def sink         = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
 

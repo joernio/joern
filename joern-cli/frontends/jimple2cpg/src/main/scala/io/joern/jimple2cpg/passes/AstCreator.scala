@@ -3,6 +3,7 @@ package io.joern.jimple2cpg.passes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Ast.storeInDiffGraph
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
@@ -34,24 +35,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     */
   def createAst(cls: SootClass): scala.Unit = {
     val astRoot = astForCompilationUnit(cls)
-    storeInDiffGraph(astRoot)
-  }
-
-  /** Copy nodes/edges of given `AST` into the diff graph
-    */
-  private def storeInDiffGraph(ast: Ast): scala.Unit = {
-    ast.nodes.foreach { node =>
-      diffGraph.addNode(node)
-    }
-    ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
-    }
-    ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
-    }
-    ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
-    }
+    storeInDiffGraph(astRoot, diffGraph)
   }
 
   /** Translate compilation unit into AST
@@ -203,8 +187,11 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   }
 
   private def astForMethodBody(body: Body, order: Int): Ast = {
-    val block = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
-    val locals = withOrder(body.getLocals.asScala) { case (l, order) =>
+    val block        = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
+    val jimpleParams = body.getParameterLocals.asScala.toList
+    // Don't let parameters also become locals (avoiding duplication)
+    val jimpleLocals = body.getLocals.asScala.filterNot(jimpleParams.contains).toList
+    val locals = withOrder(jimpleLocals) { case (l, order) =>
       val name         = l.getName
       val typeFullName = registerType(l.getType.toQuotedString)
       val code         = s"$typeFullName $name"
@@ -220,7 +207,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   private def astsForStatement(statement: soot.Unit, order: Int): Seq[Ast] = {
     val stmt = statement match {
       case x: AssignStmt       => astsForDefinition(x, order)
-      case x: IdentityStmt     => astsForDefinition(x, order)
+      case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
       case x: InvokeStmt       => astsForExpression(x.getInvokeExpr, order, statement)
       case x: ReturnStmt       => astsForReturnNode(x, order)
       case x: ReturnVoidStmt   => astsForReturnVoidNode(x, order)
@@ -366,7 +353,10 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     val signature =
       s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterTypes.size())
           yield method.getParameterType(i).toQuotedString).mkString(",")})"
-    val thisAsts = Seq(createThisNode(method, NewIdentifier()))
+    val thisAsts = invokeExpr match {
+      case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
+      case _                        => Seq(createThisNode(method, NewIdentifier()))
+    }
 
     val methodName =
       if (method.isConstructor)
@@ -378,13 +368,19 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       if (invokeExpr.getMethod.isConstructor) "void"
       else registerType(method.getDeclaringClass.getType.toQuotedString)
 
+    val code = invokeExpr match {
+      case expr: InstanceInvokeExpr =>
+        s"${expr.getBase}.$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})"
+      case _ => s"$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})"
+    }
+
     val callNode = NewCall()
       .name(method.getName)
-      .code(s"$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})")
+      .code(code)
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
-      .methodFullName(s"${method.getDeclaringClass.toString}.${method.getName}:$signature")
+      .methodFullName(s"${method.getDeclaringClass.getType.toQuotedString}.${method.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))
@@ -397,11 +393,16 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       astsForValue(arg, order, parentUnit)
     }.flatten
 
-    Ast(callNode)
+    val callAst = Ast(callNode)
       .withChildren(thisAsts)
       .withChildren(argAsts)
       .withArgEdges(callNode, thisAsts.flatMap(_.root))
       .withArgEdges(callNode, argAsts.flatMap(_.root))
+
+    thisAsts.flatMap(_.root).headOption match {
+      case Some(thisAst) => callAst.withReceiverEdge(callNode, thisAst)
+      case None          => callAst
+    }
   }
 
   private def astForNewExpr(x: AnyNewExpr, order: Int, parentUnit: soot.Unit): Ast = {
