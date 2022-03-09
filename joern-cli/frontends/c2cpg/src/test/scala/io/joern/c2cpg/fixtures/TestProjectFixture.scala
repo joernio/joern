@@ -20,8 +20,8 @@ case class TestProjectFixture(projectName: String) {
   private val config = Config(inputPaths = Set(dirName))
 
   new MetaDataPass(cpg, Languages.C).createAndApply()
-  new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, config).createAndApply()
-  new AstCreationPass(cpg, AstCreationPass.HeaderFiles, None, config).createAndApply()
+  new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+  new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config).createAndApply()
   new HeaderContentPass(cpg, None, config).createAndApply()
   new CfgCreationPass(cpg).createAndApply()
   new FileCreationPass(cpg).createAndApply()

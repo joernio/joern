@@ -22,8 +22,6 @@ class C2Cpg {
     val keyPool              = KeyPoolCreator.obtain(4, minValue = 101)
     val metaDataKeyPool      = new IntervalKeyPool(1, 100)
     val typesKeyPool         = keyPool.head
-    val astKeyPool           = keyPool(1)
-    val headerKeyPool        = keyPool(2)
     val headerContentKeyPool = keyPool(3)
 
     val cpg = newEmptyCpg(Some(config.outputPath))
@@ -31,10 +29,10 @@ class C2Cpg {
     new MetaDataPass(cpg, Languages.NEWC, Some(metaDataKeyPool)).createAndApply()
 
     val astCreationPass =
-      new AstCreationPass(cpg, AstCreationPass.SourceFiles, Some(astKeyPool), config, report)
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, config, report)
     astCreationPass.createAndApply()
     val headerAstCreationPass =
-      new AstCreationPass(cpg, AstCreationPass.HeaderFiles, Some(headerKeyPool), config, report)
+      new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config, report)
     headerAstCreationPass.createAndApply()
 
     val types = astCreationPass.usedTypes() ++ headerAstCreationPass.usedTypes()
