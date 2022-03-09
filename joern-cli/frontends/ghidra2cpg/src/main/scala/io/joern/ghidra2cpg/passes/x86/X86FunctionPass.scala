@@ -16,7 +16,13 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.language.implicitConversions
 
-class X86FunctionPass(currentProgram: Program, filename: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler) extends ConcurrentWriterCpgPass[Function](cpg) {
+class X86FunctionPass(
+  currentProgram: Program,
+  filename: String,
+  functions: List[Function],
+  cpg: Cpg,
+  decompiler: Decompiler
+) extends ConcurrentWriterCpgPass[Function](cpg) {
   val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
   // needed by ghidra for decompiling reasons
   val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
@@ -33,8 +39,8 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
       true
     )
   )
-  var methodNode: Option[NewMethod] = None
-  override def generateParts(): Array[Function] =  functions.toArray
+  var methodNode: Option[NewMethod]             = None
+  override def generateParts(): Array[Function] = functions.toArray
   // override def partIterator: Iterator[Method] = cpg.method.l.iterator
 
   implicit def intToIntegerOption(intOption: Option[Int]): Option[Integer] = {
@@ -45,10 +51,15 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    val listing: Listing = currentProgram.getListing
     // we need it just once with default settings
+    val code = decompiler.toDecompiledFunction(function).get.getC
+    val lineNumberEnd = Option(function.getReturn)
+      .flatMap(x => Option(x.getMinAddress))
+      .flatMap(x => Option(x.getOffsetAsBigInteger))
+      .flatMap(x => Option(x.intValue()))
+      .getOrElse(-1)
     methodNode = Some(
-      createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+      createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName, lineNumberEnd))
     )
     diffGraphBuilder.addNode(methodNode.get)
     diffGraphBuilder.addNode(blockNode)
@@ -107,7 +118,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
         .NewLocal()
         .name(local.getName)
         .code(local.toString)
-        .typeFullName(Types.registerType(local.getDataType.toString))
+        .typeFullName(local.getDataType.toString) // Types.registerType(local.getDataType.toString))
       val identifier =
         createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, -1)
 
@@ -144,7 +155,12 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, function: Function): Unit = {
+  def handleArguments(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    function: Function
+  ): Unit = {
     val mnemonicString = X86Processor.getInstructions(instruction.getMnemonicString)
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
@@ -195,7 +211,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
             checkedParameter,
             checkedParameter,
             index,
-            Types.registerType(dataType),
+            dataType, // Types.registerType(dataType),
             instruction.getMinAddress.getOffsetAsBigInteger.intValue
           )
           connectCallToArgument(diffGraphBuilder, callNode, node)
@@ -210,7 +226,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
             argument,
             argument,
             index + 1,
-            Types.registerType(argument),
+            argument, // Types.registerType(argument),
             instruction.getMinAddress.getOffsetAsBigInteger.intValue
           )
           connectCallToArgument(diffGraphBuilder, callNode, node)
@@ -224,7 +240,7 @@ class X86FunctionPass(currentProgram: Program, filename: String, functions: List
                   register.getName,
                   register.getName,
                   index + 1,
-                  Types.registerType(register.getName),
+                  register.getName, // Types.registerType(register.getName),
                   instruction.getMinAddress.getOffsetAsBigInteger.intValue
                 )
                 connectCallToArgument(diffGraphBuilder, callNode, node)

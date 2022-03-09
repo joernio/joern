@@ -96,5 +96,5 @@ object X86Processor extends Processor {
       "XADD"      -> "<operator>.incBy",
       "XOR"       -> "<operator>.assignmentXor",
       "HLT"       -> "<operator>.NOP"
-  )
+    )
 }

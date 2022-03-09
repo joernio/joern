@@ -2,7 +2,9 @@ package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{Function, Program}
 import io.joern.ghidra2cpg.{Decompiler, Types}
+import io.shiftleft.codepropertygraph.generated.nodes.MethodReturn.Properties
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 
@@ -66,16 +68,17 @@ object Nodes {
       .lineNumber(lineNumber)
   }
   def createReturnNode(): NewMethodReturn = {
-    nodes.NewMethodReturn().order(1)
+    nodes.NewMethodReturn().code("RET").typeFullName("ANY").evaluationStrategy(EvaluationStrategies.BY_VALUE).order(1)
 
   }
-  def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
-    val code = decompiler.toDecompiledFunction(function).get.getC
-    val lineNumberEnd = Option(function.getReturn)
-      .flatMap(x => Option(x.getMinAddress))
-      .flatMap(x => Option(x.getOffsetAsBigInteger))
-      .flatMap(x => Option(x.intValue()))
-      .getOrElse(-1)
+  def createMethodNode(
+    code: String,
+    function: Function,
+    fileName: String,
+    isExternal: Boolean,
+    lineNumberEnd: Int
+  ): NewMethod = {
+
     nodes
       .NewMethod()
       .code(code)

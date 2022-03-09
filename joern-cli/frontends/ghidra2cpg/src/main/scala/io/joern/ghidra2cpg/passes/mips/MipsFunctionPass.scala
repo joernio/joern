@@ -2,7 +2,15 @@ package io.joern.ghidra2cpg.passes.mips
 
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, FunctionIterator, Instruction, Listing, Program}
+import ghidra.program.model.listing.{
+  CodeUnitFormat,
+  CodeUnitFormatOptions,
+  Function,
+  FunctionIterator,
+  Instruction,
+  Listing,
+  Program
+}
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import ghidra.program.model.scalar.Scalar
@@ -19,13 +27,8 @@ import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-class MipsFunctionPass(
-                        currentProgram: Program,
-                        filename: String,
-                        function: Function,
-                        cpg: Cpg,
-                        decompiler: Decompiler
-                      ) extends ConcurrentWriterCpgPass[Method](cpg) {
+class MipsFunctionPass(currentProgram: Program, filename: String, function: Function, cpg: Cpg, decompiler: Decompiler)
+    extends ConcurrentWriterCpgPass[Method](cpg) {
   val address2Literals: Map[Long, String] = DefinedDataIterator
     .definedStrings(currentProgram)
     .iterator()
@@ -35,10 +38,10 @@ class MipsFunctionPass(
     .toMap
   val processor = new MipsProcessor()
   // val diffGraph: DiffGraphBuilder
-  val listing: Listing = currentProgram.getListing
+  val listing: Listing                   = currentProgram.getListing
   val functionIterator: FunctionIterator = listing.getFunctions(true)
-  val functions: List[Function] = functionIterator.iterator.asScala.toList
-  val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
+  val functions: List[Function]          = functionIterator.iterator.asScala.toList
+  val highFunction: HighFunction         = decompiler.toHighFunction(function).orNull
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
   protected val instructions: Seq[Instruction] =
@@ -58,8 +61,8 @@ class MipsFunctionPass(
       true
     )
   )
-  //extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, decompiler) {
-  private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
+  // extends FunctionPass(new MipsProcessor, currentProgram, function, cpg, decompiler) {
+  private val logger                          = LoggerFactory.getLogger(classOf[MipsFunctionPass])
   protected var methodNode: Option[NewMethod] = None
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
@@ -125,28 +128,28 @@ class MipsFunctionPass(
   }
 
   def handleAssignment(
-                        diffGraphBuilder: DiffGraphBuilder,
-                        instruction: Instruction,
-                        callNode: CfgNodeNew,
-                        to: Varnode,
-                        index: Int
-                      ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    to: Varnode,
+    index: Int
+  ): Unit = {
     val node = resolveVarNode(instruction, to, index)
     connectCallToArgument(diffGraphBuilder, callNode, node)
   }
 
   def handleTwoArguments(
-                          diffGraphBuilder: DiffGraphBuilder,
-                          instruction: Instruction,
-                          callNode: CfgNodeNew,
-                          pcodeOp: PcodeOp,
-                          operand: String,
-                          name: String
-                        ): Unit = {
-    val firstOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    operand: String,
+    name: String
+  ): Unit = {
+    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val code = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+    val code     = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     connectCallToArgument(diffGraphBuilder, opNode, firstOp)
     connectCallToArgument(diffGraphBuilder, opNode, secondOp)
@@ -154,12 +157,12 @@ class MipsFunctionPass(
   }
 
   def handlePtrSub(
-                    diffGraphBuilder: DiffGraphBuilder,
-                    instruction: Instruction,
-                    callNode: CfgNodeNew,
-                    varNode: Varnode,
-                    index: Int
-                  ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    varNode: Varnode,
+    index: Int
+  ): Unit = {
     val arg = resolveVarNode(instruction, varNode, index)
     connectCallToArgument(diffGraphBuilder, callNode, arg)
   }
@@ -169,12 +172,12 @@ class MipsFunctionPass(
   }
 
   def resolveArgument(
-                       diffGraphBuilder: DiffGraphBuilder,
-                       instruction: Instruction,
-                       callNode: CfgNodeNew,
-                       pcodeAst: PcodeOp,
-                       index: Int
-                     ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeAst: PcodeOp,
+    index: Int
+  ): Unit = {
     pcodeAst.getOpcode match {
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
@@ -202,10 +205,10 @@ class MipsFunctionPass(
           resolveArgument(diffGraphBuilder, instruction, callNode, pcodeAst.getInput(0).getDef, index)
         }
       case PTRSUB | PTRADD => handlePtrSub(diffGraphBuilder, instruction, callNode, pcodeAst.getOutput, index)
-      case _ => // handleDefault(pcodeAst)
+      case _               => // handleDefault(pcodeAst)
     }
   }
-  override def generateParts(): Array[Function] =  functions.toArray
+  override def generateParts(): Array[Function] = functions.toArray
 
   def addCallArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
     val opCodes = highFunction
@@ -225,10 +228,10 @@ class MipsFunctionPass(
   }
 
   def addInstructionArguments(
-                               diffGraphBuilder: DiffGraphBuilder,
-                               instruction: Instruction,
-                               instructionNode: CfgNodeNew
-                             ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    instructionNode: CfgNodeNew
+  ): Unit = {
     for (index <- 0 until instruction.getNumOperands) {
       val opObjects = instruction.getOpObjects(index)
       for (opObject <- opObjects) {
@@ -268,11 +271,7 @@ class MipsFunctionPass(
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(
-                       diffGraphBuilder: DiffGraphBuilder,
-                       instruction: Instruction,
-                       callNode: CfgNodeNew
-                     ): Unit = {
+  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
     if (instruction.getPcode.toList.isEmpty) {
       // nop && _nop
       return
@@ -391,7 +390,6 @@ class MipsFunctionPass(
       }
     }
   }
-
 
   def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
     diffGraphBuilder.addNode(argument)

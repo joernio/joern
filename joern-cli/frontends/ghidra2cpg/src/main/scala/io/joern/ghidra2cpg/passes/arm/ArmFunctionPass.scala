@@ -2,7 +2,15 @@ package io.joern.ghidra2cpg.passes.arm
 
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, FunctionIterator, Instruction, Listing, Program}
+import ghidra.program.model.listing.{
+  CodeUnitFormat,
+  CodeUnitFormatOptions,
+  Function,
+  FunctionIterator,
+  Instruction,
+  Listing,
+  Program
+}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.processors.ArmProcessor
@@ -17,14 +25,14 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.language.implicitConversions
 
 class ArmFunctionPass(currentProgram: Program, filename: String, function: Function, cpg: Cpg, decompiler: Decompiler)
-  extends ConcurrentWriterCpgPass[Function](cpg) {
-  //extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, decompiler) {
+    extends ConcurrentWriterCpgPass[Function](cpg) {
+  // extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, decompiler) {
 
-  val processor = new ArmProcessor()
-  val listing: Listing = currentProgram.getListing
+  val processor                          = new ArmProcessor()
+  val listing: Listing                   = currentProgram.getListing
   val functionIterator: FunctionIterator = listing.getFunctions(true)
-  val functions: List[Function] = functionIterator.iterator.asScala.toList
-  val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
+  val functions: List[Function]          = functionIterator.iterator.asScala.toList
+  val highFunction: HighFunction         = decompiler.toHighFunction(function).orNull
   // we need it just once with default settings
   protected val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
   protected val instructions: Seq[Instruction] =
@@ -44,8 +52,8 @@ class ArmFunctionPass(currentProgram: Program, filename: String, function: Funct
       true
     )
   )
-  protected var methodNode: Option[NewMethod] = None
-  override def generateParts(): Array[Function] =  functions.toArray
+  protected var methodNode: Option[NewMethod]   = None
+  override def generateParts(): Array[Function] = functions.toArray
 
   // override def partIterator: Iterator[Method] = cpg.method.l.iterator
 
@@ -64,6 +72,7 @@ class ArmFunctionPass(currentProgram: Program, filename: String, function: Funct
       diffGraphBuilder.addNode(methodNode.get)
       diffGraphBuilder.addNode(blockNode)
       diffGraphBuilder.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
+      println("AAAAAAAAAaaa")
       val methodReturn = createReturnNode()
       diffGraphBuilder.addNode(methodReturn)
       diffGraphBuilder.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)

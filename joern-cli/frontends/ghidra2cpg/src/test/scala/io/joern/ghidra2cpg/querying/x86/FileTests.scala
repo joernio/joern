@@ -41,7 +41,32 @@ class FileTests extends GhidraBinToCpgSuite {
 
   "should allow traversing from file to its methods via namespace block" in {
     cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSet shouldBe Set(
-      "refNodeTests", "__libc_csu_init", "_init", "_start", "__stack_chk_fail", "main", "printf", "deregister_tm_clones", "literalNodeTest", "__libc_start_main", "FUN_00101020", "_ITM_deregisterTMCloneTable", "frame_dummy", "_ITM_registerTMCloneTable", "localNodeTests", "__cxa_finalize", "register_tm_clones", "__gmon_start__", "__libc_csu_fini", "dataflow", "__do_global_dtors_aux", "_fini", "level1", "level3", "level2"  )
+      "refNodeTests",
+      "__libc_csu_init",
+      "_init",
+      "_start",
+      "__stack_chk_fail",
+      "main",
+      "printf",
+      "deregister_tm_clones",
+      "literalNodeTest",
+      "__libc_start_main",
+      "FUN_00101020",
+      "_ITM_deregisterTMCloneTable",
+      "frame_dummy",
+      "_ITM_registerTMCloneTable",
+      "localNodeTests",
+      "__cxa_finalize",
+      "register_tm_clones",
+      "__gmon_start__",
+      "__libc_csu_fini",
+      "dataflow",
+      "__do_global_dtors_aux",
+      "_fini",
+      "level1",
+      "level3",
+      "level2"
+    )
   }
 
   // TODO type decl handling needs to work first
