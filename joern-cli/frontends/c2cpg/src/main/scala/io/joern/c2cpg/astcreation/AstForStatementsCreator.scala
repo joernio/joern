@@ -3,6 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewReturn}
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -188,13 +189,27 @@ trait AstForStatementsCreator {
 
     val initAsts = nullSafeAst(forStmt.getInitializerStatement, 1)
 
-    val continuedOrder = Math.max(initAsts.size, 1)
-    val compareAst     = nullSafeAst(forStmt.getConditionExpression, continuedOrder + 1)
-    val updateAst      = nullSafeAst(forStmt.getIterationExpression, continuedOrder + 2)
-    val stmtAst        = nullSafeAst(forStmt.getBody, continuedOrder + 3)
+    val initAst = if (initAsts.count(_.nodes.exists(!_.isInstanceOf[NewLocal])) > 1) {
+      val initAstBlock = NewBlock()
+        .order(1)
+        .argumentIndex(1)
+        .typeFullName(registerType(Defines.voidTypeName))
+        .lineNumber(line(forStmt))
+        .columnNumber(column(forStmt))
+      scope.pushNewScope(initAstBlock)
+      val blockAst = Ast(initAstBlock).withChildren(initAsts)
+      scope.popScope()
+      blockAst
+    } else {
+      initAsts.headOption.getOrElse(Ast())
+    }
+
+    val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
+    val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
+    val stmtAst    = nullSafeAst(forStmt.getBody, 4)
 
     Ast(forNode)
-      .withChildren(initAsts)
+      .withChild(initAst)
       .withChild(compareAst)
       .withChild(updateAst)
       .withChildren(stmtAst)
