@@ -1,7 +1,6 @@
 package io.joern.c2cpg.testfixtures
 
-import io.joern.c2cpg.C2Cpg
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.{C2Cpg, Config}
 import io.joern.c2cpg.parser.FileDefaults
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}

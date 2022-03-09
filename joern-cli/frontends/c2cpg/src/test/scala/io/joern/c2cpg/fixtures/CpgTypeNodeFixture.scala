@@ -1,7 +1,7 @@
 package io.joern.c2cpg.fixtures
 
 import better.files.File
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.Cpg

@@ -1,6 +1,6 @@
 package io.joern.c2cpg.parser
 
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 
 import java.nio.file.{Path, Paths}

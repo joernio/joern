@@ -1,6 +1,6 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.C2Cpg
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.{AstCreator, Defines}
 import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
@@ -20,7 +20,7 @@ object AstCreationPass {
   object SourceFiles extends InputFiles
 }
 
-class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: C2Cpg.Config, report: Report = new Report())
+class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Report = new Report())
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val global: Global    = new Global()
