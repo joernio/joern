@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.joern.fuzzyc2cpg.Global
 import io.joern.fuzzyc2cpg.passes.astcreation.{AntlrCModuleParserDriver, AstVisitor}
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.slf4j.LoggerFactory

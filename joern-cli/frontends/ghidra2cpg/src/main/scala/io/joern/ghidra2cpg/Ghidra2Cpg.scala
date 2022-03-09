@@ -118,7 +118,7 @@ class Ghidra2Cpg() {
     val numOfKeypools   = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
 
-    new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
+    new MetaDataPass(fileAbsolutePath, cpg).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
