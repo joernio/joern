@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.dataflowengineoss.language.toExtendedCfgNode
+import io.joern.dataflowengineoss.language.{toDdgNodeDot, toExtendedCfgNode}
 import io.joern.jimple2cpg.testfixtures.JimpleDataflowFixture
 import io.shiftleft.semanticcpg.language._
 
@@ -164,13 +164,13 @@ class ObjectTests extends JimpleDataflowFixture {
 
   ignore should "not find a path to a void printer via a safe field" in {
     val (source, sink) = getMultiFnSourceSink("test7", "printT")
-    // TODO: Data flow is field insensitive and if the object is tainted so are all of the fields"
+    // TODO: The data flow appears to be object-field insensitive and taints the whole object instance
     sink.reachableBy(source).size shouldBe 0
   }
 
   ignore should "not find a path if `MALICIOUS` is overwritten via a setter" in {
     val (source, sink) = getConstSourceSink("test8")
-    // TODO: Data flow is field insensitive and if the object is tainted so are all of the fields"
+    // TODO: The data flow appears to be object-field insensitive and taints the whole object instance
     sink.reachableBy(source).size shouldBe 0
   }
 
