@@ -13,7 +13,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
       val environment = CompilerAPI.makeEnvironment(Seq(sourceDir), Seq(), Seq(), new ErrorLoggingMessageCollector)
       environment.getSourceFiles should not be List()
 
-      val nameGenerator = new DefaultNameGenerator(environment)
+      val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       nameGenerator.hasEmptyBindingContext shouldBe true
     }
@@ -25,7 +25,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
         CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq(), Seq(), new ErrorLoggingMessageCollector)
       environment.getSourceFiles should not be List()
 
-      val nameGenerator = new DefaultNameGenerator(environment)
+      val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       nameGenerator.hasEmptyBindingContext shouldBe false
     }

@@ -3,14 +3,14 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.joern.kotlin2cpg.types.NameGenerator
+import io.joern.kotlin2cpg.types.TypeInfoProvider
 
 import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 
 case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
-class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], nameGenerator: NameGenerator, cpg: Cpg)
+class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], typeInfoProvider: TypeInfoProvider, cpg: Cpg)
     extends ConcurrentWriterCpgPass[String](cpg) {
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(getClass)
@@ -27,7 +27,7 @@ class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], nameGenerator: Na
       .headOption
     fileWithMeta match {
       case Some(fm) =>
-        diffGraph.absorb(new AstCreator(fm, nameGenerator, global).createAst())
+        diffGraph.absorb(new AstCreator(fm, typeInfoProvider, global).createAst())
         logger.debug("AST created for file at `" + filename + "`.")
       case None =>
         logger.info("Could not find file at `" + filename + "`.")

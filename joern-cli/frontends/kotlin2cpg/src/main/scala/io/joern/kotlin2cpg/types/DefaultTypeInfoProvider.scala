@@ -1,7 +1,13 @@
 package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
+
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns.isBuiltIn
+import org.jetbrains.kotlin.cli.jvm.compiler.{
+  KotlinCoreEnvironment,
+  KotlinToJVMBytecodeCompiler,
+  NoScopeRecordCliBindingTrace
+}
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -10,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.impl.{
   PropertyDescriptorImpl,
   TypeAliasConstructorDescriptorImpl
 }
+import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.psi.{
   KtArrayAccessExpression,
   KtBinaryExpression,
@@ -31,167 +38,20 @@ import org.jetbrains.kotlin.psi.{
   KtTypeAlias,
   KtTypeReference
 }
-import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, DescriptorUtils}
+import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorUtils}
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
-import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
-import org.jetbrains.kotlin.types.{SimpleType, UnresolvedType}
-import org.jetbrains.kotlin.cli.jvm.compiler.{
-  KotlinCoreEnvironment,
-  KotlinToJVMBytecodeCompiler,
-  NoScopeRecordCliBindingTrace
-}
-import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
+import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
+import org.jetbrains.kotlin.types.UnresolvedType
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-// representative of `LazyJavaClassDescriptor`, `DeserializedClassDescriptor`, `TypeAliasConstructorDescriptor`, etc.
-trait WithDefaultType {
-  def getDefaultType: SimpleType
-}
-
-object TypeConstants {
-  val any                               = "ANY"
-  val cpgUnresolved                     = "codepropertygraph.Unresolved"
-  val classLiteralReplacementMethodName = "getClass"
-  val initPrefix                        = "<init>"
-  val kotlinFunctionXPrefix             = "kotlin.Function"
-  val kotlinSuspendFunctionXPrefix      = "kotlin.coroutines.SuspendFunction"
-  val kotlinApplyPrefix                 = "kotlin.apply"
-  val kotlinUnit                        = "kotlin.Unit"
-  val javaLangObject                    = "java.lang.Object"
-  val javaLangString                    = "java.lang.String"
-  val tType                             = "T"
-  val void                              = "void"
-}
-
-object CallKinds extends Enumeration {
-  type CallKind = Value
-  val Unknown, StaticCall, DynamicCall, ExtensionCall = Value
-}
-
-object NameReferenceKinds extends Enumeration {
-  type NameReferenceKind = Value
-  val Unknown, ClassName, EnumEntry, LocalVariable, Property = Value
-}
-
-trait NameGenerator {
-  def returnType(elem: KtNamedFunction, or: String): String
-
-  def containingDeclType(expr: KtQualifiedExpression, or: String): String
-
-  def expressionType(expr: KtExpression, or: String): String
-
-  def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]
-
-  def parameterType(expr: KtParameter, or: String): String
-
-  def propertyType(expr: KtProperty, or: String): String
-
-  def fullName(expr: KtClassOrObject, or: String): String
-
-  def fullName(expr: KtTypeAlias, or: String): String
-
-  def aliasTypeFullName(expr: KtTypeAlias, or: String): String
-
-  def typeFullName(expr: KtNameReferenceExpression, or: String): String
-
-  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, or: String): String
-
-  def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
-
-  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
-
-  def isReferencingMember(expr: KtNameReferenceExpression): Boolean
-
-  def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtPrimaryConstructor, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtSecondaryConstructor, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
-
-  def erasedSignature(args: Seq[Any]): String
-
-  def returnTypeFullName(expr: KtLambdaExpression): String
-
-  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
-
-  def isConstructorCall(expr: KtCallExpression): Option[Boolean]
-
-  def typeFullName(expr: KtTypeReference, or: String): String
-
-  def typeFullName(expr: KtPrimaryConstructor, or: String): String
-
-  def typeFullName(expr: KtSecondaryConstructor, or: String): String
-
-  def hasStaticDesc(expr: KtQualifiedExpression): Boolean
-}
-
-object DefaultNameGenerator {
+class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInfoProvider {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
-    try {
-
-      val thisField = bindings.getClass.getDeclaredField("this$0")
-      thisField.setAccessible(true)
-      val bindingTrace = thisField.get(bindings).asInstanceOf[NoScopeRecordCliBindingTrace]
-
-      val mapField = bindingTrace.getClass.getSuperclass.getSuperclass.getDeclaredField("map")
-      mapField.setAccessible(true)
-      val map = mapField.get(bindingTrace)
-
-      val mapMapField = map.getClass.getDeclaredField("map")
-      mapMapField.setAccessible(true)
-      val mapMap = mapMapField.get(map).asInstanceOf[java.util.Map[Object, KeyFMap]]
-
-      val mapForEntity = mapMap.get(entity)
-      mapForEntity
-    } catch {
-      case noSuchField: NoSuchFieldException =>
-        logger.debug(
-          "Encountered _no such field_ exception while retrieving type info for `" + entity.getName + "`: `" + noSuchField + "`."
-        )
-        KeyFMap.EMPTY_MAP
-      case e: Throwable =>
-        logger.debug(
-          "Encountered general exception while retrieving type info for `" + entity.getName + "`: `" + e + "`."
-        )
-        KeyFMap.EMPTY_MAP
-    }
-  }
-
-  def bindingsForEntityAsString(bindings: BindingContext, entity: KtElement): String = {
-    val mapForEntity = bindingsForEntity(bindings, entity)
-    if (mapForEntity != null) {
-      val keys = mapForEntity.getKeys
-      entity.toString + ": " + entity.getText + "\n" +
-        keys.map(key => s"$key: ${mapForEntity.get(key)}").mkString("  ", "\n  ", "")
-    } else {
-      "No entries"
-    }
-  }
-
-  def printBindingsForEntity(bindings: BindingContext, entity: KtElement): Unit = {
-    println(bindingsForEntityAsString(bindings, entity))
-  }
-}
-
-class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGenerator {
-  private val logger = LoggerFactory.getLogger(getClass)
-  import DefaultNameGenerator._
+  import DefaultTypeInfoProvider._
 
   // TODO: remove this state
   var hasEmptyBindingContext = false
@@ -808,8 +668,6 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       .flatMap {
         case typedDesc: ValueDescriptor =>
           Some(TypeRenderer.render(typedDesc.getType))
-        case typedDesc: WithDefaultType =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType))
         // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
         case typedDesc: LazyClassDescriptor =>
           Some(TypeRenderer.render(typedDesc.getDefaultType))
@@ -829,4 +687,54 @@ class DefaultNameGenerator(environment: KotlinCoreEnvironment) extends NameGener
       .getOrElse(defaultValue)
   }
 
+}
+
+object DefaultTypeInfoProvider {
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
+    try {
+
+      val thisField = bindings.getClass.getDeclaredField("this$0")
+      thisField.setAccessible(true)
+      val bindingTrace = thisField.get(bindings).asInstanceOf[NoScopeRecordCliBindingTrace]
+
+      val mapField = bindingTrace.getClass.getSuperclass.getSuperclass.getDeclaredField("map")
+      mapField.setAccessible(true)
+      val map = mapField.get(bindingTrace)
+
+      val mapMapField = map.getClass.getDeclaredField("map")
+      mapMapField.setAccessible(true)
+      val mapMap = mapMapField.get(map).asInstanceOf[java.util.Map[Object, KeyFMap]]
+
+      val mapForEntity = mapMap.get(entity)
+      mapForEntity
+    } catch {
+      case noSuchField: NoSuchFieldException =>
+        logger.debug(
+          "Encountered _no such field_ exception while retrieving type info for `" + entity.getName + "`: `" + noSuchField + "`."
+        )
+        KeyFMap.EMPTY_MAP
+      case e: Throwable =>
+        logger.debug(
+          "Encountered general exception while retrieving type info for `" + entity.getName + "`: `" + e + "`."
+        )
+        KeyFMap.EMPTY_MAP
+    }
+  }
+
+  def bindingsForEntityAsString(bindings: BindingContext, entity: KtElement): String = {
+    val mapForEntity = bindingsForEntity(bindings, entity)
+    if (mapForEntity != null) {
+      val keys = mapForEntity.getKeys
+      entity.toString + ": " + entity.getText + "\n" +
+        keys.map(key => s"$key: ${mapForEntity.get(key)}").mkString("  ", "\n  ", "")
+    } else {
+      "No entries"
+    }
+  }
+
+  def printBindingsForEntity(bindings: BindingContext, entity: KtElement): Unit = {
+    println(bindingsForEntityAsString(bindings, entity))
+  }
 }

@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.plugins
 
 import better.files.File
 import io.joern.kotlin2cpg.InferenceJarPath
-import io.joern.kotlin2cpg.types.{CompilerAPI, CompilerPluginInfo, DefaultNameGenerator, InferenceSourcesPicker}
+import io.joern.kotlin2cpg.types.{CompilerAPI, CompilerPluginInfo, DefaultTypeInfoProvider, InferenceSourcesPicker}
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.allopen.{AllOpenComponentRegistrar, AllOpenConfigurationKeys}
 import org.jetbrains.kotlin.cli.common.messages.{
@@ -49,7 +49,7 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
       val plugins          = Seq()
       val messageCollector = new ErrorCountMessageCollector()
       val environment      = CompilerAPI.makeEnvironment(Seq(sourceDir), inferenceJarsPaths, plugins, messageCollector)
-      val nameGenerator    = new DefaultNameGenerator(environment)
+      val nameGenerator    = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       messageCollector.hasErrors() shouldBe true
     }
@@ -64,7 +64,7 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
       val plugins          = Seq(allOpenPluginInfo)
       val messageCollector = new ErrorCountMessageCollector()
       val environment      = CompilerAPI.makeEnvironment(Seq(sourceDir), inferenceJarsPaths, plugins, messageCollector)
-      val nameGenerator    = new DefaultNameGenerator(environment)
+      val nameGenerator    = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       messageCollector.hasErrors() shouldBe false
     }
