@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory
 /** Given a list of filenames, this pass creates abstract syntax trees for each file, including File and NamespaceBlock
   * Files are processed in parallel.
   */
-class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
-    extends ConcurrentWriterCpgPass[String](cpg, keyPool = Some(keyPool)) {
+class AstCreationPass(filenames: List[String], cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   val global: Global = Global()

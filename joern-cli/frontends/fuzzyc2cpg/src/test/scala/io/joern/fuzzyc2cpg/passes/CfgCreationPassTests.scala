@@ -3,7 +3,6 @@ package io.joern.fuzzyc2cpg.passes
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
@@ -466,9 +465,8 @@ class CfgFixture(file1Code: String) {
   File.usingTemporaryDirectory("fuzzyctest") { dir =>
     val file1 = dir / "file1.c"
     file1.write(s"RET func() { $file1Code }")
-    val keyPoolFile1 = new IntervalKeyPool(1001, 2000)
-    val filenames    = List(file1.path.toAbsolutePath.toString)
-    new AstCreationPass(filenames, cpg, keyPoolFile1).createAndApply()
+    val filenames = List(file1.path.toAbsolutePath.toString)
+    new AstCreationPass(filenames, cpg).createAndApply()
     new CfgCreationPass(cpg).createAndApply()
   }
 
