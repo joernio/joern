@@ -1,19 +1,21 @@
 package io.joern.ghidra2cpg.passes
 
+import ghidra.program.model.listing.Program
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
-class NamespacePass(cpg: Cpg, filename: String) extends ConcurrentWriterCpgPass[Method](cpg) {
+import java.io.File
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
-
+class NamespacePass(cpg: Cpg, programFile: File) extends ConcurrentWriterCpgPass[String](cpg) {
+  override def generateParts(): Array[String] = List(programFile.getName).toArray
+  override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
     val namespaceNodeNode =
       nodes
         .NewNamespaceBlock()
-        .filename(filename)
-        .fullName(s"$filename:<global>")
+        .filename(fileName)
+        .fullName(s"$fileName:<global>")
         .name("<global>")
         .order(1)
 

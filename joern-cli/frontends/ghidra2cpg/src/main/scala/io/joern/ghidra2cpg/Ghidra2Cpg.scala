@@ -108,7 +108,7 @@ class Ghidra2Cpg() {
     val functions        = functionIterator.iterator.asScala.toList
 
     new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
-    new NamespacePass(cpg, fileAbsolutePath).createAndApply()
+    new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
@@ -123,7 +123,7 @@ class Ghidra2Cpg() {
             .createAndApply()
         }
       case _ =>
-        new X86FunctionPass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
+        new X86FunctionPass(program, flatProgramAPI.getProgramFile.getName, functions, cpg, decompiler).createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }
 
