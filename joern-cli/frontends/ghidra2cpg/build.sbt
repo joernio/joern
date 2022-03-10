@@ -13,6 +13,10 @@ libraryDependencies ++= Seq(
   "io.shiftleft"     %% "semanticcpg"              % Versions.cpg       % Test classifier "tests"
 )
 
+/* ghidra ships log4j-slf4j-impl in it's fat jar, so exclude it for the remainder 
+ * of the project to avoid two slf4j bindings */
+excludeDependencies += ExclusionRule(organization="org.apache.logging.log4j", name="log4j-slf4j-impl")
+
 enablePlugins(JavaAppPackaging)
 
 fork        := true
