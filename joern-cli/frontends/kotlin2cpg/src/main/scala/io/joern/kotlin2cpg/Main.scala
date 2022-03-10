@@ -10,6 +10,7 @@ import io.joern.kotlin2cpg.types.{
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
 import io.shiftleft.utils.IOUtils
+import io.shiftleft.semanticcpg.language._
 import better.files.File
 
 import java.nio.file.{Files, Paths}
@@ -145,7 +146,11 @@ object Main extends App {
 
         val typeInfoProvider = new DefaultTypeInfoProvider(environment)
         val cpg = new Kt2Cpg().createCpg(filesWithMeta, fileContentsAtPath, typeInfoProvider, Some(config.outputPath))
+        val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
         cpg.close()
+        if (!hasAtLeastOneMethodNode) {
+          logger.warn("Resulting CPG does not contain any METHOD nodes.")
+        }
       } else {
         println("This frontend requires exactly one input path")
         System.exit(1)
