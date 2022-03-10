@@ -26,7 +26,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   override def createCpg(config: Config): Try[Cpg] = {
     if (config.inputPaths.size == 1) {
       val sourceCodePath = config.inputPaths.head
-      val outputPath     = Some(config.outputPath)
+      val outputPath     = if (config.outputPath != "") Some(config.outputPath) else None
       Try {
         val cpg = newEmptyCpg(outputPath)
         new MetaDataPass(cpg, language).createAndApply()
