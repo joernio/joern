@@ -2,7 +2,7 @@ package io.joern.fuzzyc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Method
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, ParallelCpgPass}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 
 /** A pass that ensures that for any method m for which a body exists, there are no more method stubs for corresponding
