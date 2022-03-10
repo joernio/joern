@@ -146,7 +146,7 @@ object Main extends App {
 
         val typeInfoProvider = new DefaultTypeInfoProvider(environment)
         val cpg = new Kt2Cpg().createCpg(filesWithMeta, fileContentsAtPath, typeInfoProvider, Some(config.outputPath))
-        val hasAtLeastOneMethodNode = cpg.method.take(1).size > 0
+        val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
         cpg.close()
         if (!hasAtLeastOneMethodNode) {
           logger.warn("Resulting CPG does not contain any METHOD nodes.")
