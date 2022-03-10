@@ -149,8 +149,7 @@ object Main extends App {
         val hasAtLeastOneMethodNode = cpg.method.take(1).size > 0
         cpg.close()
         if (!hasAtLeastOneMethodNode) {
-          println("Error: resulting CPG does not contain any METHOD nodes.")
-          System.exit(1)
+          logger.warn("Resulting CPG does not contain any METHOD nodes.")
         }
       } else {
         println("This frontend requires exactly one input path")
