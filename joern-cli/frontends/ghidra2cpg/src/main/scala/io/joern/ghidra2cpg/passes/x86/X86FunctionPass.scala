@@ -39,7 +39,6 @@ class X86FunctionPass(
       true
     )
   )
-  var methodNode: Option[NewMethod]             = None
   override def generateParts(): Array[Function] = functions.toArray
   // override def partIterator: Iterator[Method] = cpg.method.l.iterator
 
@@ -59,18 +58,16 @@ class X86FunctionPass(
         .flatMap(x => Option(x.getOffsetAsBigInteger))
         .flatMap(x => Option(x.intValue()))
         .getOrElse(-1)
-      methodNode = Some(
-        createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
-      )
-      diffGraphBuilder.addNode(methodNode.get)
+      val methodNode = createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
+      diffGraphBuilder.addNode(methodNode)
       diffGraphBuilder.addNode(blockNode)
-      diffGraphBuilder.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(methodNode, blockNode, EdgeTypes.AST)
       val methodReturn = createReturnNode()
       diffGraphBuilder.addNode(methodReturn)
-      diffGraphBuilder.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
-      handleParameters(diffGraphBuilder, function)
+      diffGraphBuilder.addEdge(methodNode, methodReturn, EdgeTypes.AST)
+      handleParameters(diffGraphBuilder, function, methodNode)
       handleLocals(diffGraphBuilder, function)
-      handleBody(diffGraphBuilder, function)
+      handleBody(diffGraphBuilder, function, methodNode)
     } catch {
       case e: Exception =>
         e.printStackTrace()
@@ -78,7 +75,7 @@ class X86FunctionPass(
     }
   }
 
-  def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
+  def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function, methodNode: NewMethod): Unit = {
     if (function.isThunk) {
       function
         .getThunkedFunction(true)
@@ -93,7 +90,7 @@ class X86FunctionPass(
             function.getEntryPoint.getOffsetAsBigInteger.intValue()
           )
           diffGraphBuilder.addNode(node)
-          diffGraphBuilder.addEdge(methodNode.get, node, EdgeTypes.AST)
+          diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
         }
     } else {
       val highFunction: HighFunction = decompiler.toHighFunction(function).orNull
@@ -113,7 +110,7 @@ class X86FunctionPass(
               function.getEntryPoint.getOffsetAsBigInteger.intValue()
             )
           diffGraphBuilder.addNode(node)
-          diffGraphBuilder.addEdge(methodNode.get, node, EdgeTypes.AST)
+          diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
         }
     }
   }
@@ -136,14 +133,14 @@ class X86FunctionPass(
     }
   }
 
-  def handleBody(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
+  def handleBody(diffGraphBuilder: DiffGraphBuilder, function: Function, methodNode: NewMethod): Unit = {
     val instructions: Seq[Instruction] =
       currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
       handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode, function)
       diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
-      diffGraphBuilder.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
+      diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
         val instructionNode = addCallOrReturnNode(instruction)
         diffGraphBuilder.addNode(instructionNode)

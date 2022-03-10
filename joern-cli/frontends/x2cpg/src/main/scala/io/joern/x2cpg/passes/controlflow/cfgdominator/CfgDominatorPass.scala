@@ -25,7 +25,6 @@ class CfgDominatorPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
     val cfgNodeToPostImmediateDominator = postDominatorCalculator.calculate(method.methodReturn)
     addPostDomTreeEdges(dstGraph, cfgNodeToPostImmediateDominator)
-
   }
 
   private def addDomTreeEdges(
