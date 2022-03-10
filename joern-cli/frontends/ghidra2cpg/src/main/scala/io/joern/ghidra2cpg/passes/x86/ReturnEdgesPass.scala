@@ -16,7 +16,7 @@ class ReturnEdgesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       // We expect RAX/EAX as return
       val to = from.cfgNext.isCall.argument.code("(R|E)AX").headOption
       if (to.nonEmpty) {
-        diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, Seq((PropertyNames.VARIABLE, from.code)))
+        diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, from.code)
       }
     }
   }
