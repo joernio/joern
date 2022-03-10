@@ -16,7 +16,7 @@ class JavaSrc2CpgTestContext {
     if (buildResult.isEmpty) {
       val javaSrc2Cpg                    = JavaSrc2Cpg()
       implicit val defaultConfig: Config = Config()
-      val cpg                            = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
+      val cpg                            = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath, None)
       val context                        = new LayerCreatorContext(cpg.get)
       new Base().run(context)
       new TypeRelations().run(context)

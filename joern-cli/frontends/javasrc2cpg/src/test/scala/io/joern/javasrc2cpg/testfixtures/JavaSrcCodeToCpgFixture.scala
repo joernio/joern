@@ -12,7 +12,7 @@ class JavaSrcFrontend extends LanguageFrontend {
 
   override def execute(sourceCodeFile: File): Cpg = {
     implicit val defaultConfig: Config = Config()
-    new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath, None).get
   }
 }
 
