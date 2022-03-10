@@ -20,6 +20,11 @@ trait X2CpgConfig[R] {
 
 trait X2CpgFrontend[T <: X2CpgConfig[_]] {
 
+  /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
+    * inspect exceptions in CPG generation.
+    */
+  def createCpg(config: T): Try[Cpg]
+
   /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is not
     * returned.
     */
@@ -28,11 +33,6 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
       createCpg(config)
     }
   }
-
-  /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
-    * inspect exceptions in CPG generation.
-    */
-  def createCpg(config: T): Try[Cpg]
 
   /** Create a CPG for code at `inputNames` with default frontend configuration. If `outputName` exists, it is the file
     * name of the resulting CPG. Otherwise, the CPG is held in memory.
