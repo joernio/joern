@@ -2,15 +2,7 @@ package io.joern.ghidra2cpg.passes.arm
 
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{
-  CodeUnitFormat,
-  CodeUnitFormatOptions,
-  Function,
-  FunctionIterator,
-  Instruction,
-  Listing,
-  Program
-}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, FunctionIterator, Instruction, Listing, Program}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.processors.ArmProcessor
@@ -21,7 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, New
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
 class ArmFunctionPass(currentProgram: Program, filename: String, function: Function, cpg: Cpg, decompiler: Decompiler)

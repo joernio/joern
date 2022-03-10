@@ -125,7 +125,6 @@ class Ghidra2Cpg() {
       case _ =>
         new X86FunctionPass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
-
     }
 
     new TypeNodePass(Types.types.toList, cpg)

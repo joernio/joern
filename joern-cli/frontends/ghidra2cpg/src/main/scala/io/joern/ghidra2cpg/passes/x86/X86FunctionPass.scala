@@ -13,7 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, New
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
 class X86FunctionPass(

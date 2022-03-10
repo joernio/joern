@@ -2,16 +2,15 @@ package io.joern.ghidra2cpg.passes.x86
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.{CpgPass, DiffGraph}
+import io.shiftleft.passes.{CpgPass, DiffGraph, SimpleCpgPass}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
-class ReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
+class ReturnEdgesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def run(): Iterator[DiffGraph] = {
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
     logger.info("Running ReturnEdgesPass")
-    implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
 
     cpg.call.nameNot("<operator>.*").foreach { from =>
       // We expect RAX/EAX as return
@@ -20,6 +19,6 @@ class ReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
         diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, Seq((PropertyNames.VARIABLE, from.code)))
       }
     }
-    Iterator(diffGraph.build())
   }
+
 }
