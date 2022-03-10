@@ -11,7 +11,7 @@ class C2Cpg {
 
   private val report: Report = new Report()
 
-  def runAndOutput(config: Config): Cpg = {
+  def createCpg(config: Config): Cpg = {
     val cpg = newEmptyCpg(Some(config.outputPath))
 
     new MetaDataPass(cpg, Languages.NEWC).createAndApply()

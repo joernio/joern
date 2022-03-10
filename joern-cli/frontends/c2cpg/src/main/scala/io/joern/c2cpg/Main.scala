@@ -68,7 +68,7 @@ object Main extends App {
       }
     case Some(config) =>
       try {
-        val cpg = new C2Cpg().runAndOutput(config)
+        val cpg = new C2Cpg().createCpg(config)
         cpg.close()
       } catch {
         case NonFatal(ex) =>

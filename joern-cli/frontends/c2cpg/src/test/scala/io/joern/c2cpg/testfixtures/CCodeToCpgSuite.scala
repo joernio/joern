@@ -18,7 +18,7 @@ class C2CpgFrontend(override val fileSuffix: String = FileDefaults.C_EXT) extend
       outputPath = cpgFile.getAbsolutePath,
       includeComments = true
     )
-    c2cpg.runAndOutput(config)
+    c2cpg.createCpg(config)
   }
 }
 

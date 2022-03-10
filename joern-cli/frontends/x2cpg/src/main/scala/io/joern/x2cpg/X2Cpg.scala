@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory
 import overflowdb.Config
 import scopt.OParser
 
+import scala.util.{Failure, Try}
+
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
 }
@@ -71,6 +73,18 @@ object X2Cpg {
         Config.withDefaults()
       }
     Cpg.withConfig(odbConfig)
+  }
+
+  def withErrorsToConsole[T <: X2CpgConfig[_]](config: T)(f: T => Try[_]): Try[_] = {
+    Try {
+      Some(f(config))
+    } match {
+      case Failure(exception) =>
+        println(exception.getMessage)
+        exception.printStackTrace()
+        System.exit(1)
+        Failure(exception)
+    }
   }
 
 }
