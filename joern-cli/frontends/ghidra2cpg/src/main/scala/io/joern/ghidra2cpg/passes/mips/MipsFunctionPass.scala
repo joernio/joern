@@ -289,8 +289,15 @@ class MipsFunctionPass(currentProgram: Program, filename: String, function: Func
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, method: Method): Unit = {
     try {
+      // we need it just once with default settings
+      val code = decompiler.toDecompiledFunction(function).get.getC
+      val lineNumberEnd = Option(function.getReturn)
+        .flatMap(x => Option(x.getMinAddress))
+        .flatMap(x => Option(x.getOffsetAsBigInteger))
+        .flatMap(x => Option(x.intValue()))
+        .getOrElse(-1)
       methodNode = Some(
-        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+        createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
       )
       diffGraphBuilder.addNode(methodNode.get)
       diffGraphBuilder.addNode(blockNode)

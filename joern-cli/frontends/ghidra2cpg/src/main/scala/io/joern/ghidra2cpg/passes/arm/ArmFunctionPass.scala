@@ -66,13 +66,19 @@ class ArmFunctionPass(currentProgram: Program, filename: String, function: Funct
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     try {
+      // we need it just once with default settings
+      val code = decompiler.toDecompiledFunction(function).get.getC
+      val lineNumberEnd = Option(function.getReturn)
+        .flatMap(x => Option(x.getMinAddress))
+        .flatMap(x => Option(x.getOffsetAsBigInteger))
+        .flatMap(x => Option(x.intValue()))
+        .getOrElse(-1)
       methodNode = Some(
-        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+        createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
       )
       diffGraphBuilder.addNode(methodNode.get)
       diffGraphBuilder.addNode(blockNode)
       diffGraphBuilder.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
-      println("AAAAAAAAAaaa")
       val methodReturn = createReturnNode()
       diffGraphBuilder.addNode(methodReturn)
       diffGraphBuilder.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
@@ -80,8 +86,9 @@ class ArmFunctionPass(currentProgram: Program, filename: String, function: Funct
       handleLocals(diffGraphBuilder)
       handleBody(diffGraphBuilder)
     } catch {
-      case exception: Exception =>
-        exception.printStackTrace()
+      case e: Exception =>
+        e.printStackTrace()
+        println(e.getMessage)
     }
   }
 

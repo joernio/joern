@@ -2,12 +2,12 @@ package io.joern.ghidra2cpg.passes.x86
 
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang._
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Listing, Program}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
+import io.joern.ghidra2cpg.Decompiler
 import io.joern.ghidra2cpg.processors.X86Processor
 import io.joern.ghidra2cpg.utils.Nodes._
-import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
@@ -51,25 +51,31 @@ class X86FunctionPass(
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    // we need it just once with default settings
-    val code = decompiler.toDecompiledFunction(function).get.getC
-    val lineNumberEnd = Option(function.getReturn)
-      .flatMap(x => Option(x.getMinAddress))
-      .flatMap(x => Option(x.getOffsetAsBigInteger))
-      .flatMap(x => Option(x.intValue()))
-      .getOrElse(-1)
-    methodNode = Some(
-      createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName, lineNumberEnd))
-    )
-    diffGraphBuilder.addNode(methodNode.get)
-    diffGraphBuilder.addNode(blockNode)
-    diffGraphBuilder.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
-    val methodReturn = createReturnNode()
-    diffGraphBuilder.addNode(methodReturn)
-    diffGraphBuilder.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
-    handleParameters(diffGraphBuilder, function)
-    handleLocals(diffGraphBuilder, function)
-    handleBody(diffGraphBuilder, function)
+    try {
+      // we need it just once with default settings
+      val code = decompiler.toDecompiledFunction(function).get.getC
+      val lineNumberEnd = Option(function.getReturn)
+        .flatMap(x => Option(x.getMinAddress))
+        .flatMap(x => Option(x.getOffsetAsBigInteger))
+        .flatMap(x => Option(x.intValue()))
+        .getOrElse(-1)
+      methodNode = Some(
+        createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
+      )
+      diffGraphBuilder.addNode(methodNode.get)
+      diffGraphBuilder.addNode(blockNode)
+      diffGraphBuilder.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
+      val methodReturn = createReturnNode()
+      diffGraphBuilder.addNode(methodReturn)
+      diffGraphBuilder.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
+      handleParameters(diffGraphBuilder, function)
+      handleLocals(diffGraphBuilder, function)
+      handleBody(diffGraphBuilder, function)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        println(e.getMessage)
+    }
   }
 
   def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
