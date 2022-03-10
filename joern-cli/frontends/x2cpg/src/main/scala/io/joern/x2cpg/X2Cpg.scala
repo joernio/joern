@@ -1,12 +1,13 @@
 package io.joern.x2cpg
 
 import better.files.File
+import io.joern.x2cpg.X2Cpg.withErrorsToConsole
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 import overflowdb.Config
 import scopt.OParser
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
@@ -15,6 +16,48 @@ object X2CpgConfig {
 trait X2CpgConfig[R] {
   def withAdditionalInputPath(inputPath: String): R
   def withOutputPath(x: String): R
+}
+
+trait X2CpgFrontend[T <: X2CpgConfig[_]] {
+
+  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is not
+    * returned.
+    */
+  def run(config: T): Unit = {
+    withErrorsToConsole(config) { _ =>
+      createCpg(config)
+    }
+  }
+
+  /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
+    * inspect exceptions in CPG generation.
+    */
+  def createCpg(config: T): Try[Cpg]
+
+  /** Create a CPG for code at `inputNames` with default frontend configuration. If `outputName` exists, it is the file
+    * name of the resulting CPG. Otherwise, the CPG is held in memory.
+    */
+  def createCpg(inputNames: List[String], outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
+    val defaultWithInputPaths = inputNames
+      .foldLeft(defaultConfig) { (c, x) => c.withAdditionalInputPath(x).asInstanceOf[T] }
+    val config = if (outputName.isDefined) {
+      defaultWithInputPaths.withOutputPath(outputName.get).asInstanceOf[T]
+    } else {
+      defaultWithInputPaths
+    }
+    createCpg(config)
+  }
+
+  /** Create a CPG for code at `inputName` (a single location) with default frontend configuration. If `outputName`
+    * exists, it is the file name of the resulting CPG. Otherwise, the CPG is held in memory.
+    */
+  def createCpg(inputName: String, outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
+    createCpg(List(inputName), outputName)(defaultConfig)
+  }
+
+  def createCpg(inputName: String)(implicit defaultConfig: T): Try[Cpg] = createCpg(inputName, None)(defaultConfig)
+  def createCpg(inputNames: List[String])(implicit defaultConfig: T): Try[Cpg] =
+    createCpg(inputNames, None)(defaultConfig)
 }
 
 object X2Cpg {
@@ -75,15 +118,18 @@ object X2Cpg {
     Cpg.withConfig(odbConfig)
   }
 
+  /** Given a function that receives a configuration and returns an arbitrary result type wrapped in a `Try`, evaluate
+    * the function, printing errors to the console.
+    */
   def withErrorsToConsole[T <: X2CpgConfig[_]](config: T)(f: T => Try[_]): Try[_] = {
     Try {
-      Some(f(config))
+      f(config)
     } match {
       case Failure(exception) =>
         println(exception.getMessage)
         exception.printStackTrace()
-        System.exit(1)
         Failure(exception)
+      case Success(v) => v
     }
   }
 

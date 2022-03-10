@@ -3,8 +3,6 @@ package io.joern.javasrc2cpg
 import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import scopt.OParser
 
-import scala.util.{Failure, Success}
-
 /** Command line configuration parameters
   */
 final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String = X2CpgConfig.defaultOutputPath)

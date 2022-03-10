@@ -5,20 +5,16 @@ import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
-import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withErrorsToConsole}
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 object JavaSrc2Cpg {
   val language: String = Languages.JAVASRC
 
   def apply(): JavaSrc2Cpg = new JavaSrc2Cpg()
-}
-
-trait X2CpgFrontend[T <: X2CpgConfig[_]] {
-  def run(config: T): Unit
 }
 
 class JavaSrc2Cpg extends X2CpgFrontend[Config] {
@@ -27,35 +23,24 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
   val sourceFileExtensions = Set(".java")
 
-  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is not
-    * returned.
-    */
-  def run(config: Config): Unit = {
-    withErrorsToConsole(config) { _ =>
-      if (config.inputPaths.size == 1) {
-        createCpg(config.inputPaths.head, Some(config.outputPath))
-      } else {
-        throw new RuntimeException("This frontend requires exactly one input path")
+  override def createCpg(config: Config): Try[Cpg] = {
+    if (config.inputPaths.size == 1) {
+      val sourceCodePath = config.inputPaths.head
+      val outputPath     = Some(config.outputPath)
+      Try {
+        val cpg = newEmptyCpg(outputPath)
+        new MetaDataPass(cpg, language).createAndApply()
+
+        val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
+        val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
+        astCreator.createAndApply()
+
+        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
+          .createAndApply()
+        cpg
       }
-    }
-  }
-
-  /** Create CPG for Java source code at `sourceCodePath` and store the CPG at `outputPath`. If `outputPath` is `None`,
-    * the CPG is created in-memory.
-    */
-  def createCpg(sourceCodePath: String, outputPath: Option[String] = None): Try[Cpg] = {
-    Try {
-      val cpg = newEmptyCpg(outputPath)
-      new MetaDataPass(cpg, language).createAndApply()
-
-      val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
-      val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
-      astCreator.createAndApply()
-
-      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
-        .createAndApply()
-
-      cpg
+    } else {
+      Failure(new RuntimeException("This frontend requires exactly one input path"))
     }
   }
 
