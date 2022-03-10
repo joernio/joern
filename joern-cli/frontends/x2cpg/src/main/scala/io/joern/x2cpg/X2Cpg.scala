@@ -40,8 +40,12 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
   def createCpg(inputNames: List[String], outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
     val defaultWithInputPaths = inputNames
       .foldLeft(defaultConfig) { (c, x) => c.withAdditionalInputPath(x).asInstanceOf[T] }
-    val config = if (outputName.isDefined) {
-      defaultWithInputPaths.withOutputPath(outputName.get).asInstanceOf[T]
+    val config = if (!outputName.contains(X2CpgConfig.defaultOutputPath)) {
+      if (outputName.isEmpty) {
+        defaultWithInputPaths.withOutputPath("").asInstanceOf[T]
+      } else {
+        defaultWithInputPaths.withOutputPath(outputName.get).asInstanceOf[T]
+      }
     } else {
       defaultWithInputPaths
     }
