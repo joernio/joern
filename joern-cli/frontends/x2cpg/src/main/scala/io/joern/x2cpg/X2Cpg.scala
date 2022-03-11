@@ -128,6 +128,21 @@ object X2Cpg {
     Cpg.withConfig(odbConfig)
   }
 
+  def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
+    val outputPath = if (outPath != "") Some(outPath) else None
+    Try {
+      val cpg = newEmptyCpg(outputPath)
+      Try {
+        applyPasses(cpg, config)
+      } match {
+        case Success(_) => cpg
+        case Failure(exception) =>
+          cpg.close()
+          throw exception
+      }
+    }
+  }
+
   /** Given a function that receives a configuration and returns an arbitrary result type wrapped in a `Try`, evaluate
     * the function, printing errors to the console.
     */

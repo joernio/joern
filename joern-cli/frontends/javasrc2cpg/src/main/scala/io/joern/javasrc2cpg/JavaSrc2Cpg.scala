@@ -6,10 +6,10 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 object JavaSrc2Cpg {
   val language: String = Languages.JAVASRC
@@ -23,24 +23,18 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
   val sourceFileExtensions = Set(".java")
 
-  override def createCpg(config: Config): Try[Cpg] = {
-    if (config.inputPaths.size == 1) {
-      val sourceCodePath = config.inputPaths.head
-      val outputPath     = if (config.outputPath != "") Some(config.outputPath) else None
-      Try {
-        val cpg = newEmptyCpg(outputPath)
-        new MetaDataPass(cpg, language).createAndApply()
-
-        val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
-        val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
-        astCreator.createAndApply()
-
-        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
-          .createAndApply()
-        cpg
+  def createCpg(config: Config): Try[Cpg] = {
+    withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
+      if (config.inputPaths.size != 1) {
+        throw new RuntimeException("This frontend requires exactly one input path")
       }
-    } else {
-      Failure(new RuntimeException("This frontend requires exactly one input path"))
+      val sourceCodePath = config.inputPaths.head
+      new MetaDataPass(cpg, language).createAndApply()
+      val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
+      val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
+      astCreator.createAndApply()
+      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
+        .createAndApply()
     }
   }
 
