@@ -83,6 +83,8 @@ trait TypeInfoProvider {
 
   def typeFullName(expr: KtCallExpression, defaultValue: String): String
 
+  def typeFullName(expr: KtParameter, defaultValue: String): String
+
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean

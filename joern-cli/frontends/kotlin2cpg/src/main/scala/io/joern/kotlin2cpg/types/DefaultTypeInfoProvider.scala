@@ -225,6 +225,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def typeFullName(expr: KtParameter, defaultValue: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
+      .map(_.getType)
+      .map(TypeRenderer.render(_))
+      .filter(isValidRender)
+      .getOrElse(defaultValue)
+  }
+
   def expressionType(expr: KtExpression, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
       .flatMap(tpeInfo => Option(tpeInfo.getType))

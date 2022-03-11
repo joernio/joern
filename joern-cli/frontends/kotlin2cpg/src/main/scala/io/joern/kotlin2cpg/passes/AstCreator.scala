@@ -4,14 +4,14 @@ import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.types.{CallKinds, NameReferenceKinds, TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.passes.{IntervalKeyPool}
+import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.Ast
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.lexer.{KtTokens}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -338,11 +338,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .filename(relativizedPath)
     AstWithCtx(Ast(typeDecl), Context())
   }
-
   def astForClassOrObject(ktClass: KtClassOrObject, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
+
     val className = ktClass.getName
     val explicitFullName = {
       val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
@@ -357,6 +357,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .filterNot(_ == null) // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
         .map(_.getText)
         .toList
+
     val baseTypeFullNames = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
     val typeDecl =
       NewTypeDecl()
@@ -398,12 +399,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val bindingsInfo =
       methodAstsWithCtx.map(_.ast).map { ast =>
         // TODO: add a try catch here
-        val methodNode = ast.root.get.asInstanceOf[NewMethod]
+        val method = ast.root.get.asInstanceOf[NewMethod]
         val node =
           NewBinding()
-            .name(methodNode.name)
-            .signature(methodNode.signature)
-        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, ast.root.get, EdgeTypes.REF)))
+            .name(method.name)
+            .signature(method.signature)
+        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, method, EdgeTypes.REF)))
       }
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature =
@@ -504,12 +505,93 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
 
     val orderAfterCtors = orderAfterPrimaryCtorAndItsMemberDefs + secondaryConstructorAsts.size
+
+    val isDataClass =
+      ktClass match {
+        case typedExpr: KtClass =>
+          typedExpr.isData
+        case _ => false
+      }
+
+    val componentNMethodAsts =
+      if (isDataClass) {
+        ktClass.getPrimaryConstructor.getValueParameters.asScala.zipWithIndex.map { valueParamWithIdx =>
+          val valueParam   = valueParamWithIdx._1
+          val order        = valueParamWithIdx._2
+          val componentIdx = valueParamWithIdx._2 + 1
+
+          val typeFullName = typeInfoProvider.typeFullName(valueParam, TypeConstants.any)
+          registerType(typeFullName)
+
+          val componentName = Constants.componentNSuffix + componentIdx
+          val signature     = typeFullName + "()"
+          val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
+          val methodNode =
+            NewMethod()
+              .name(componentName)
+              .fullName(fullName)
+              .signature(signature)
+              .order(order)
+          val thisIdentifier =
+            NewIdentifier()
+              .typeFullName(typeDecl.fullName)
+              .code(Constants.this_)
+              .argumentIndex(0)
+              .order(1)
+          val fieldIdentifier =
+            NewFieldIdentifier()
+              .code(valueParam.getName)
+              .canonicalName(valueParam.getName)
+              .argumentIndex(1)
+              .order(2)
+
+          val fieldAccessCall =
+            NewCall()
+              .methodFullName(Operators.fieldAccess)
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+              .signature("")
+              .typeFullName(typeFullName)
+          val fieldAccessCallAst =
+            Ast(fieldAccessCall)
+              .withChild(Ast(thisIdentifier))
+              .withArgEdge(fieldAccessCall, thisIdentifier)
+              .withChild(Ast(fieldAccessCall))
+              .withArgEdge(fieldAccessCall, fieldIdentifier)
+
+          val methodReturn =
+            NewMethodReturn()
+              .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+              .typeFullName(typeFullName)
+              .order(1)
+          val methodReturnAst =
+            Ast(methodNode)
+              .withChild(Ast(fieldAccessCall))
+          Ast(methodNode)
+            .withChild(Ast(methodReturn))
+        }
+      } else {
+        Seq()
+      }
+
+    val componentNBindingsInfo =
+      componentNMethodAsts.map { methodAst =>
+        val method = methodAst.root.get.asInstanceOf[NewMethod]
+        val node =
+          NewBinding()
+            .name(method.name)
+            .signature(method.signature)
+        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, method, EdgeTypes.REF)))
+      }
+
+    val orderAfterComponentN = orderAfterCtors + componentNMethodAsts.size
+
     val ast =
       Ast(typeDecl)
         .withChildren(methodAstsWithCtx.map(_.ast))
         .withChild(constructorAst)
         .withChildren(membersFromPrimaryCtorAsts)
         .withChildren(secondaryConstructorAsts)
+        .withChildren(componentNMethodAsts.toList)
         // TODO: reenable initializer block parsing when methodReturn nodes have been added
         // otherwise the CfgCreator throws
         /*
@@ -520,10 +602,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         )
          */
         .withChildren(withOrder(classDeclarations) { (method, order) =>
-          astForMember(method, orderAfterCtors + order)
+          astForMember(method, orderAfterComponentN + order)
         })
 
-    val finalCtx = mergedCtx(methodAstsWithCtx.map(_.ctx) ++ List(Context(bindingsInfo = bindingsInfo)))
+    val finalCtx = mergedCtx(
+      methodAstsWithCtx.map(_.ctx) ++
+        List(Context(bindingsInfo = bindingsInfo ++ componentNBindingsInfo))
+    )
     AstWithCtx(ast, finalCtx)
   }
 
