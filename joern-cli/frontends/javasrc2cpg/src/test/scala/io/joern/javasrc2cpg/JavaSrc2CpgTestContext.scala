@@ -14,9 +14,10 @@ class JavaSrc2CpgTestContext {
 
   def buildCpg(runDataflow: Boolean): Cpg = {
     if (buildResult.isEmpty) {
-      val javaSrc2Cpg = JavaSrc2Cpg()
-      val cpg         = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
-      val context     = new LayerCreatorContext(cpg)
+      val javaSrc2Cpg                    = JavaSrc2Cpg()
+      implicit val defaultConfig: Config = Config()
+      val cpg                            = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
+      val context                        = new LayerCreatorContext(cpg.get)
       new Base().run(context)
       new TypeRelations().run(context)
       new ControlFlow().run(context)
@@ -25,7 +26,7 @@ class JavaSrc2CpgTestContext {
         val options = new OssDataFlowOptions()
         new OssDataFlow(options).run(context)
       }
-      buildResult = Some(cpg)
+      buildResult = Some(cpg.get)
     }
     buildResult.get
   }

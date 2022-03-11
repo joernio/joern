@@ -92,7 +92,7 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
           case List(h, t) if h == "--define" => t
         }
       val cpg =
-        c2cpg.runAndOutput(Config(Set(inputPath), outputPath, defines = defines.toSet))
+        c2cpg.createCpg(Config(Set(inputPath), outputPath, defines = defines.toSet))
       cpg.close()
       Some(outputPath)
     }
