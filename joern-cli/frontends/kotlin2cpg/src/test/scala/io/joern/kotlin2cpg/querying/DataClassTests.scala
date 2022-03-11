@@ -7,33 +7,28 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class DataClassTests extends AnyFreeSpec with Matchers {
-
   "CPG for code with simple data class" - {
-
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
         |package mypkg
         |
-        |data class Result(val p: Int, val q: Int)
-        |
-        |data class Account(val username: String, val password: String) {
-        |    var permission: Int = -1
-        |
-        |    constructor(perm: Int) : this("username", "password"){
-        |        permission = perm
-        |    }
-        |}
-        |
-        |fun main(args : Array<String>) {
-        |  val x = Result(1, 0)
+        |data class Result(val p: Int, val q: String)
+        |fun main() {
+        |  val x = Result(41414141, "AMESSAGE")
         |  println(x.p)
         |  println(x.q)
         |}
         |""".stripMargin)
 
-    "should contain correct number of calls" in {
-      cpg.call.size should not be 0
-    }
+    "should contain METHOD nodes for the implicit componentX-methods of the data class" in {
+      val List(firstMethod, secondMethod) = cpg.typeDecl.nameExact("Result").method.name("component.*").l
 
-    // TODO: fill out the actual test cases
+      firstMethod.name shouldBe "component1"
+      firstMethod.fullName shouldBe "mypkg.Result.component1:java.lang.Integer()"
+      firstMethod.signature shouldBe "java.lang.Integer()"
+
+      secondMethod.name shouldBe "component2"
+      secondMethod.fullName shouldBe "mypkg.Result.component2:java.lang.String()"
+      secondMethod.signature shouldBe "java.lang.String()"
+    }
   }
 }

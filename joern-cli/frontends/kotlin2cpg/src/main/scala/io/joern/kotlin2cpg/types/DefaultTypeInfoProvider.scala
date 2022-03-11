@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.psi.{
   KtCallExpression,
   KtClassLiteralExpression,
   KtClassOrObject,
+  KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
   KtLambdaExpression,
@@ -101,12 +102,81 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String) = {
+    val resolvedCall = bindingContext.get(BindingContext.COMPONENT_RESOLVED_CALL, expr)
+    if (resolvedCall != null) {
+      val fnDesc = resolvedCall.getResultingDescriptor
+      val relevantDesc =
+        if (!fnDesc.isActual && fnDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+          fnDesc.getOverriddenDescriptors.asScala.toList.head
+        } else {
+          fnDesc
+        }
+      val renderedFqName     = TypeRenderer.renderFqName(relevantDesc)
+      val returnTypeFullName = renderedReturnType(relevantDesc.getOriginal)
+
+      val renderedParameterTypes =
+        relevantDesc.getValueParameters.asScala.toSeq
+          .map { valueParam =>
+            TypeRenderer.render(valueParam.getOriginal.getType)
+          }
+          .mkString(",")
+      val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+      val fullName  = s"$renderedFqName:$signature"
+
+      if (!isValidRender(fullName) || !isValidRender(signature)) {
+        defaultValue
+      } else {
+        (fullName, signature)
+      }
+    } else {
+      defaultValue
+    }
+  }
+
+  def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      .map { desc => TypeRenderer.render(desc.getType) }
+      .filter(isValidRender)
+      .getOrElse(defaultValue)
+  }
+
   def typeFullName(expr: KtTypeReference, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE.getKey))
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
+  }
+
+  def typeFullName(expr: KtCallExpression, defaultValue: String): String = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val originalDesc = fnDescriptor.getOriginal
+
+        val isCtor = originalDesc match {
+          case _: ClassConstructorDescriptorImpl     => true
+          case _: TypeAliasConstructorDescriptorImpl => true
+          case _                                     => false
+        }
+        val relevantDesc =
+          if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+            originalDesc.getOverriddenDescriptors.asScala.toList.head
+          } else {
+            originalDesc
+          }
+        val returnTypeFullName = {
+          if (isCtor) {
+            TypeConstants.void
+          } else {
+            renderedReturnType(relevantDesc.getOriginal)
+          }
+        }
+        returnTypeFullName
+      case None => defaultValue
+    }
   }
 
   def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String = {
@@ -150,6 +220,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(_.getDefaultType)
+      .map(TypeRenderer.render(_))
+      .filter(isValidRender)
+      .getOrElse(defaultValue)
+  }
+
+  def typeFullName(expr: KtParameter, defaultValue: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
+      .map(_.getType)
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
@@ -484,7 +563,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
-  def fullNameWithSignature(expr: KtSecondaryConstructor, or: (String, String)): (String, String) = {
+  def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames =
       try {
@@ -516,10 +595,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     (fullname, signature)
   }
 
-  def fullNameWithSignature(expr: KtPrimaryConstructor, or: (String, String)): (String, String) = {
+  def fullNameWithSignature(expr: KtPrimaryConstructor, defaultValue: (String, String)): (String, String) = {
     // if not explicitly defined, the primary ctor will be `null`
     if (expr == null) {
-      return or
+      return defaultValue
     }
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames =
@@ -552,7 +631,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     (fullname, signature)
   }
 
-  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
+  def fullNameWithSignature(expr: KtNamedFunction, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.FUNCTION, expr))
     val returnTypeFullName =
       fnDesc match {
