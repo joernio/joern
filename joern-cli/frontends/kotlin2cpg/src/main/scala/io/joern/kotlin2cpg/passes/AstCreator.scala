@@ -1352,12 +1352,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     scopeContext: ScopeContext,
     order: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
-    val typedInit = {
-      expr.getInitializer match {
-        case typed: KtNameReferenceExpression => Some(typed)
-        case _                                => None
-      }
-    }
+    val typedInit =
+      Option(expr.getInitializer)
+        .collect { case e: KtNameReferenceExpression => e }
     if (typedInit.isEmpty) {
       logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}`.")
       return Seq()
@@ -1403,7 +1400,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Ast(assignmentLHSNode)
             .withRefEdge(assignmentLHSNode, relevantLocal)
 
-        val componentNIdentifierTFN = typeInfoProvider.typeFullName(destructuringRHS, TypeConstants.any)
+        val componentNIdentifierTFN = typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any)
         registerType(componentNIdentifierTFN)
 
         val componentNIdentifierNode =
@@ -1443,7 +1440,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           scopeContext.methodParameters.filter { l =>
             l.name == destructuringRHS.getText
           }.headOption
-
 
         val matchingRefOption = matchingLocal.orElse(matchingMethodParam)
         val componentNIdentifierAst =
