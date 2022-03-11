@@ -102,6 +102,38 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String) = {
+    val resolvedCall = bindingContext.get(BindingContext.COMPONENT_RESOLVED_CALL, expr)
+    if (resolvedCall != null) {
+      val fnDesc = resolvedCall.getResultingDescriptor
+      val relevantDesc =
+        if (!fnDesc.isActual && fnDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+          fnDesc.getOverriddenDescriptors.asScala.toList.head
+        } else {
+          fnDesc
+        }
+      val renderedFqName     = TypeRenderer.renderFqName(relevantDesc)
+      val returnTypeFullName = renderedReturnType(relevantDesc.getOriginal)
+
+      val renderedParameterTypes =
+        relevantDesc.getValueParameters.asScala.toSeq
+          .map { valueParam =>
+            TypeRenderer.render(valueParam.getOriginal.getType)
+          }
+          .mkString(",")
+      val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+      val fullName  = s"$renderedFqName:$signature"
+
+      if (!isValidRender(fullName) || !isValidRender(signature)) {
+        defaultValue
+      } else {
+        (fullName, signature)
+      }
+    } else {
+      defaultValue
+    }
+  }
+
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.VARIABLE.getKey))

@@ -1,10 +1,10 @@
 package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{CallKinds, TypeInfoProvider, NameReferenceKinds, TypeConstants}
+import io.joern.kotlin2cpg.types.{CallKinds, NameReferenceKinds, TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
+import io.shiftleft.passes.{IntervalKeyPool}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.Ast
 
@@ -35,6 +35,7 @@ object Constants {
   val lambdaBindingName              = "invoke" // the underlying _invoke_ fn for Kotlin FunctionX types
   val lambdaTypeDeclName             = "LAMBDA_TYPE_DECL"
   val this_                          = "this"
+  val componentNSuffix               = "component"
 }
 
 case class ImportEntry(
@@ -916,6 +917,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForUnknown(typedExpr, order, argIdx))
       case typedExpr: KtThrowExpression =>
         Seq(astForUnknown(typedExpr, order, argIdx))
+      case typedExpr: KtDestructuringDeclaration =>
+        astsForDestructuringDeclaration(typedExpr, scopeContext, order)
       case null =>
         logger.debug("Received null expression! Skipping...")
         Seq()
@@ -1324,6 +1327,184 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     ).filterNot(_.ast.root == null)
     val ast = callAst(callNode, args.map(_.ast))
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
+  }
+
+  def astsForDestructuringDeclarationWithCtorRHS(
+    expr: KtDestructuringDeclaration,
+    scopeContext: ScopeContext,
+    order: Int
+  )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
+    Seq(AstWithCtx(Ast(), Context()))
+  }
+
+  /*
+   _______ example lowering _________
+  | val (one, two) = person
+  |
+  | -> LOCAL one
+  | -> LOCAL two
+  | -> CALL one = person.component1()
+  | -> CALL two = person.component1()
+  |__________________________________
+   */
+  def astsForDestructuringDeclarationWithVarRHS(
+    expr: KtDestructuringDeclaration,
+    scopeContext: ScopeContext,
+    order: Int
+  )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
+    val typedInit = {
+      expr.getInitializer match {
+        case typed: KtNameReferenceExpression => Some(typed)
+        case _                                => None
+      }
+    }
+    if (typedInit.isEmpty) {
+      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}`.")
+      return Seq()
+    }
+    val destructuringRHS = typedInit.get
+    val localsForEntries =
+      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
+        val entry        = entryWithIdx._1
+        val orderForNode = entryWithIdx._2 + order
+
+        val typeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
+        registerType(typeFullName)
+
+        val node =
+          NewLocal()
+            .code(entry.getText)
+            .name(entry.getName)
+            .typeFullName(typeFullName)
+            .order(orderForNode)
+            .lineNumber(line(entry))
+            .columnNumber(column(entry))
+        Ast(node)
+      }.toSeq
+
+    val orderAfterLocals = localsForEntries.size + order
+    val assignmentsForEntries =
+      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
+        val entry             = entryWithIdx._1
+        val entryTypeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
+        registerType(entryTypeFullName)
+
+        val assignmentLHSNode =
+          NewIdentifier()
+            .name(entry.getName)
+            .code(entry.getText)
+            .typeFullName(entryTypeFullName)
+            .order(1)
+            .argumentIndex(1)
+            .lineNumber(line(entry))
+            .columnNumber(column(entry))
+        val relevantLocal = localsForEntries(entryWithIdx._2).root.get
+        val assignmentLHSAst =
+          Ast(assignmentLHSNode)
+            .withRefEdge(assignmentLHSNode, relevantLocal)
+
+        val componentNIdentifierTFN = typeInfoProvider.typeFullName(destructuringRHS, TypeConstants.any)
+        registerType(componentNIdentifierTFN)
+
+        val componentNIdentifierNode =
+          NewIdentifier()
+            .code(destructuringRHS.getText)
+            .name(destructuringRHS.getName)
+            .order(1)
+            .argumentIndex(0)
+            .typeFullName(componentNIdentifierTFN)
+            .lineNumber(line(entry))
+            .columnNumber(column(entry))
+
+        val componentIdx      = entryWithIdx._2 + 1
+        val fallbackSignature = TypeConstants.cpgUnresolved + "()"
+        val fallbackFullName =
+          TypeConstants.cpgUnresolved + Constants.componentNSuffix + componentIdx + ":" + fallbackSignature
+        val componentNFullNameWithSignature =
+          typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
+        val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNSuffix + componentIdx + "()"
+        val componentNCallNode =
+          NewCall()
+            .code(componentNCallCode)
+            .methodFullName(componentNFullNameWithSignature._1)
+            .signature(componentNFullNameWithSignature._2)
+            .typeFullName(entryTypeFullName)
+            .order(2)
+            .argumentIndex(2)
+            .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+            .lineNumber(line(entry))
+            .columnNumber(column(entry))
+
+        val matchingLocal =
+          scopeContext.locals.filter { l =>
+            l.name == destructuringRHS.getText
+          }.headOption
+        val matchingMethodParam =
+          scopeContext.methodParameters.filter { l =>
+            l.name == destructuringRHS.getText
+          }.headOption
+
+        val matchingRefOption =
+          if (matchingLocal.isDefined) {
+            Some(matchingLocal.get)
+          } else if (matchingMethodParam.isDefined) {
+            Some(matchingMethodParam.get)
+          } else {
+            None
+          }
+        val componentNIdentifierAst =
+          if (matchingRefOption.isDefined) {
+            Ast(componentNIdentifierNode)
+              .withRefEdge(componentNIdentifierNode, matchingRefOption.get)
+          } else {
+            Ast(componentNIdentifierNode)
+          }
+        val componentNAst =
+          Ast(componentNCallNode)
+            .withChild(componentNIdentifierAst)
+            .withArgEdge(componentNCallNode, componentNIdentifierNode)
+            .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
+
+        val orderForNode = orderAfterLocals + entryWithIdx._2
+        val assignmentCallNode =
+          NewCall()
+            .code(entry.getText + " = " + componentNCallCode)
+            .methodFullName(Operators.assignment)
+            .signature("")
+            .dispatchType(DispatchTypes.STATIC_DISPATCH)
+            .order(orderForNode)
+            .lineNumber(line(entry))
+            .columnNumber(column(entry))
+
+        val assignmentAst =
+          Ast(assignmentCallNode)
+            .withChild(assignmentLHSAst)
+            .withArgEdge(assignmentCallNode, assignmentLHSNode)
+            .withChild(componentNAst)
+            .withArgEdge(assignmentCallNode, componentNCallNode)
+        assignmentAst
+      }.toSeq
+
+    localsForEntries.map(AstWithCtx(_, Context())) ++
+      assignmentsForEntries.map(AstWithCtx(_, Context()))
+  }
+
+  def astsForDestructuringDeclaration(expr: KtDestructuringDeclaration, scopeContext: ScopeContext, order: Int)(implicit
+    fileInfo: FileInfo,
+    typeInfoProvider: TypeInfoProvider
+  ): Seq[AstWithCtx] = {
+    val isCtor = expr.getInitializer match {
+      case typedExpr: KtCallExpression =>
+        typeInfoProvider
+          .isConstructorCall(typedExpr)
+          .getOrElse(false)
+      case _ => false
+    }
+    if (isCtor) {
+      astsForDestructuringDeclarationWithCtorRHS(expr, scopeContext, order)
+    } else {
+      astsForDestructuringDeclarationWithVarRHS(expr, scopeContext, order)
+    }
   }
 
   def astForUnknown(expr: KtExpression, order: Int, argIdx: Int): AstWithCtx = {

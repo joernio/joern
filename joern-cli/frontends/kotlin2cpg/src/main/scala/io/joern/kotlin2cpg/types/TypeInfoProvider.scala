@@ -37,6 +37,8 @@ trait TypeInfoProvider {
 
   def fullName(expr: KtTypeAlias, or: String): String
 
+  def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String)
+
   def aliasTypeFullName(expr: KtTypeAlias, or: String): String
 
   def typeFullName(expr: KtNameReferenceExpression, or: String): String
