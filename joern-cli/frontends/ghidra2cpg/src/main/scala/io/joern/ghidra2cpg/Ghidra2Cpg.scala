@@ -19,7 +19,8 @@ import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
 import io.joern.x2cpg._
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages}
+import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import utilities.util.FileUtilities
 
 import java.io.File
@@ -123,7 +124,7 @@ class Ghidra2Cpg() {
             .createAndApply()
         }
       case _ =>
-        new X86FunctionPass(program, flatProgramAPI.getProgramFile.getName, functions, cpg, decompiler).createAndApply()
+        new X86FunctionPass(program, flatProgramAPI.getProgramFile.getCanonicalPath, functions, cpg, decompiler).createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }
 
