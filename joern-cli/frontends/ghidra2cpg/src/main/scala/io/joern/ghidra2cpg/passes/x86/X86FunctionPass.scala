@@ -58,7 +58,8 @@ class X86FunctionPass(
         .flatMap(x => Option(x.getOffsetAsBigInteger))
         .flatMap(x => Option(x.intValue()))
         .getOrElse(-1)
-      val methodNode = createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
+      val methodNode =
+        createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
       diffGraphBuilder.addNode(methodNode)
       diffGraphBuilder.addNode(blockNode)
       diffGraphBuilder.addEdge(methodNode, blockNode, EdgeTypes.AST)

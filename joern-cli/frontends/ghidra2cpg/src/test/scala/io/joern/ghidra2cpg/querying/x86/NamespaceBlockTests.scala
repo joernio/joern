@@ -28,8 +28,36 @@ class NamespaceBlockTests extends GhidraBinToCpgSuite {
   }
 
   "should allow traversing from namespace block to method" in {
-    println( cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).method.name.l)
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).method.name.l shouldBe List ("_init", "FUN_00101020", "__stack_chk_fail", "printf", "_start", "deregister_tm_clones", "register_tm_clones", "__do_global_dtors_aux", "frame_dummy", "refNodeTests", "dataflow", "level3", "level2", "level1", "literalNodeTest", "localNodeTests", "main", "__libc_csu_init", "__libc_csu_fini", "_fini", "_ITM_deregisterTMCloneTable", "__stack_chk_fail", "printf", "__libc_start_main", "__gmon_start__", "_ITM_registerTMCloneTable", "__cxa_finalize")
+    println(cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).method.name.l)
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).method.name.l shouldBe List(
+      "_init",
+      "FUN_00101020",
+      "__stack_chk_fail",
+      "printf",
+      "_start",
+      "deregister_tm_clones",
+      "register_tm_clones",
+      "__do_global_dtors_aux",
+      "frame_dummy",
+      "refNodeTests",
+      "dataflow",
+      "level3",
+      "level2",
+      "level1",
+      "literalNodeTest",
+      "localNodeTests",
+      "main",
+      "__libc_csu_init",
+      "__libc_csu_fini",
+      "_fini",
+      "_ITM_deregisterTMCloneTable",
+      "__stack_chk_fail",
+      "printf",
+      "__libc_start_main",
+      "__gmon_start__",
+      "_ITM_registerTMCloneTable",
+      "__cxa_finalize"
+    )
 
   }
 

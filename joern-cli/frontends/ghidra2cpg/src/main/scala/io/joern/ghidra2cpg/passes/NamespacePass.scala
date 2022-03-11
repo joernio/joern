@@ -10,8 +10,9 @@ import java.io.File
 
 class NamespacePass(cpg: Cpg, programFile: File) extends ConcurrentWriterCpgPass[String](cpg) {
   override def generateParts(): Array[String] = {
-    println(  Array(programFile.getCanonicalFile.toString).length )
-    Array(programFile.getCanonicalFile.toString) }
+    println(Array(programFile.getCanonicalFile.toString).length)
+    Array(programFile.getCanonicalFile.toString)
+  }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
     val namespaceNodeNode =

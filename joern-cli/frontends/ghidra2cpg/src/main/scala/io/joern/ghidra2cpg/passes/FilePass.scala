@@ -19,13 +19,13 @@ class FilePass(cpg: Cpg, flatProgramAPI: FlatProgramAPI) extends ConcurrentWrite
       NewFile()
         .name(filePath)
         .order(0)
-    diffGraph.addNode(fileNode)//diffGraph.addEdge(srcNode, newFile, EdgeTypes.SOURCE_FILE)
-    //val node = nodes
+    diffGraph.addNode(fileNode) // diffGraph.addEdge(srcNode, newFile, EdgeTypes.SOURCE_FILE)
+    // val node = nodes
     //  .NewLiteral()
     //  .code(literal)
     //  .order(-1)
     //  .argumentIndex(-1)
     //  .typeFullName(literal)
-    //diffGraph.addNode(node)
+    // diffGraph.addNode(node)
   }
 }
