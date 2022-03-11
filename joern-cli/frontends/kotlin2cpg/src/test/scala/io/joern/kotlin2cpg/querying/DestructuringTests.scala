@@ -10,23 +10,43 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with simple destructuring expressions" - {
-
+  "CPG for code with destructuring declaration and identifier RHS" - {
     lazy val cpg = Kt2CpgTestContext.buildCpg("""
-        |data class Bar(val p: Int, val q: Int)
+        |package main
         |
-        |fun foo(): Int {
-        |    val myList = listOf(Foo(1, 2), Foo(3, 4))
-        |    var sum = 0
-        |    for ((x, y) in myList) {
-        |        sum += x
-        |        sum += y
-        |    }
-        |
-        |    val (x, y) = Bar(1, 2)
-        |    return sum + x + y
+        |data class AClass(val a: String, val b: Int)
+        |fun main() {
+        |    val aClass = AClass("AMESSAGE", 41414141)
+        |    val (myA, myB) = aClass
+        |    println(myA)
+        |    println(myB)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//41414141
+        |//```
         |}
+        |""".stripMargin)
+
+    // TODO: add the test cases
+  }
+
+  "CPG for code with destructuring expression with a ctor-invocation RHS" - {
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
+        |package main
         |
+        |data class AClass(val a: String, val b: Int)
+        |fun main() {
+        |    val (myA, myB) = AClass("AMESSAGE", 41414141)
+        |    println(myA)
+        |    println(myB)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//41414141
+        |//```
+        |}
         |""".stripMargin)
 
     // TODO: add the test cases
