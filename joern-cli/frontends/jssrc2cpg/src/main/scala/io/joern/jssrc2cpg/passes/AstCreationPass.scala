@@ -8,7 +8,7 @@ import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.Global
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -19,13 +19,8 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-class AstCreationPass(
-  cpg: Cpg,
-  astGenRunnerResult: AstGenRunnerResult,
-  keyPool: Option[IntervalKeyPool],
-  config: Config,
-  report: Report = new Report()
-) extends ConcurrentWriterCpgPass[(String, String)](cpg, keyPool = keyPool) {
+class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())
+    extends ConcurrentWriterCpgPass[(String, String)](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val global: Global = new Global()

@@ -57,7 +57,7 @@ trait AstCreatorHelper {
     Ast(newUnknown(node, order))
   }
 
-  protected def nodeType(node: Value): BabelAst.Node =
+  protected def nodeType(node: Value): BabelAst.BabelNode =
     BabelAst.fromString(node("type").str)
 
   protected def code(node: Value): String = {

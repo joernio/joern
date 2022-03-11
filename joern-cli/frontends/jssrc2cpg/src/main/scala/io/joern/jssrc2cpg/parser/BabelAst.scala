@@ -4,7 +4,7 @@ object BabelAst {
   // extracted from:
   // https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts
 
-  def fromString(nodeName: String): Node = nodeName match {
+  def fromString(nodeName: String): BabelNode = nodeName match {
     case "AnyTypeAnnotation"               => AnyTypeAnnotation
     case "ArgumentPlaceholder"             => ArgumentPlaceholder
     case "ArrayExpression"                 => ArrayExpression
@@ -258,260 +258,331 @@ object BabelAst {
     case "YieldExpression"                 => YieldExpression
   }
 
-  abstract sealed class Node {
+  sealed trait BabelNode {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
 
-  case object AnyTypeAnnotation               extends Node
-  case object ArgumentPlaceholder             extends Node
-  case object ArrayExpression                 extends Node
-  case object ArrayPattern                    extends Node
-  case object ArrayTypeAnnotation             extends Node
-  case object ArrowFunctionExpression         extends Node
-  case object AssignmentExpression            extends Node
-  case object AssignmentPattern               extends Node
-  case object AwaitExpression                 extends Node
-  case object BigIntLiteral                   extends Node
-  case object BinaryExpression                extends Node
-  case object BindExpression                  extends Node
-  case object BlockStatement                  extends Node
-  case object BooleanLiteral                  extends Node
-  case object BooleanLiteralTypeAnnotation    extends Node
-  case object BooleanTypeAnnotation           extends Node
-  case object BreakStatement                  extends Node
-  case object CallExpression                  extends Node
-  case object CatchClause                     extends Node
-  case object ClassAccessorProperty           extends Node
-  case object ClassBody                       extends Node
-  case object ClassDeclaration                extends Node
-  case object ClassExpression                 extends Node
-  case object ClassImplements                 extends Node
-  case object ClassMethod                     extends Node
-  case object ClassPrivateMethod              extends Node
-  case object ClassPrivateProperty            extends Node
-  case object ClassProperty                   extends Node
-  case object ConditionalExpression           extends Node
-  case object ContinueStatement               extends Node
-  case object DebuggerStatement               extends Node
-  case object DecimalLiteral                  extends Node
-  case object DeclareClass                    extends Node
-  case object DeclareExportAllDeclaration     extends Node
-  case object DeclareExportDeclaration        extends Node
-  case object DeclareFunction                 extends Node
-  case object DeclareInterface                extends Node
-  case object DeclareModule                   extends Node
-  case object DeclareModuleExports            extends Node
-  case object DeclareOpaqueType               extends Node
-  case object DeclareTypeAlias                extends Node
-  case object DeclareVariable                 extends Node
-  case object DeclaredPredicate               extends Node
-  case object Decorator                       extends Node
-  case object Directive                       extends Node
-  case object DirectiveLiteral                extends Node
-  case object DoExpression                    extends Node
-  case object DoWhileStatement                extends Node
-  case object EmptyStatement                  extends Node
-  case object EmptyTypeAnnotation             extends Node
-  case object EnumBooleanBody                 extends Node
-  case object EnumBooleanMember               extends Node
-  case object EnumDeclaration                 extends Node
-  case object EnumDefaultedMember             extends Node
-  case object EnumNumberBody                  extends Node
-  case object EnumNumberMember                extends Node
-  case object EnumStringBody                  extends Node
-  case object EnumStringMember                extends Node
-  case object EnumSymbolBody                  extends Node
-  case object ExistsTypeAnnotation            extends Node
-  case object ExportAllDeclaration            extends Node
-  case object ExportDefaultDeclaration        extends Node
-  case object ExportDefaultSpecifier          extends Node
-  case object ExportNamedDeclaration          extends Node
-  case object ExportNamespaceSpecifier        extends Node
-  case object ExportSpecifier                 extends Node
-  case object ExpressionStatement             extends Node
-  case object File                            extends Node
-  case object ForInStatement                  extends Node
-  case object ForOfStatement                  extends Node
-  case object ForStatement                    extends Node
-  case object FunctionDeclaration             extends Node
-  case object FunctionExpression              extends Node
-  case object FunctionTypeAnnotation          extends Node
-  case object FunctionTypeParam               extends Node
-  case object GenericTypeAnnotation           extends Node
-  case object Identifier                      extends Node
-  case object IfStatement                     extends Node
-  case object Import                          extends Node
-  case object ImportAttribute                 extends Node
-  case object ImportDeclaration               extends Node
-  case object ImportDefaultSpecifier          extends Node
-  case object ImportNamespaceSpecifier        extends Node
-  case object ImportSpecifier                 extends Node
-  case object IndexedAccessType               extends Node
-  case object InferredPredicate               extends Node
-  case object InterfaceDeclaration            extends Node
-  case object InterfaceExtends                extends Node
-  case object InterfaceTypeAnnotation         extends Node
-  case object InterpreterDirective            extends Node
-  case object IntersectionTypeAnnotation      extends Node
-  case object JSXAttribute                    extends Node
-  case object JSXClosingElement               extends Node
-  case object JSXClosingFragment              extends Node
-  case object JSXElement                      extends Node
-  case object JSXEmptyExpression              extends Node
-  case object JSXExpressionContainer          extends Node
-  case object JSXFragment                     extends Node
-  case object JSXIdentifier                   extends Node
-  case object JSXMemberExpression             extends Node
-  case object JSXNamespacedName               extends Node
-  case object JSXOpeningElement               extends Node
-  case object JSXOpeningFragment              extends Node
-  case object JSXSpreadAttribute              extends Node
-  case object JSXSpreadChild                  extends Node
-  case object JSXText                         extends Node
-  case object LabeledStatement                extends Node
-  case object LogicalExpression               extends Node
-  case object MemberExpression                extends Node
-  case object MetaProperty                    extends Node
-  case object MixedTypeAnnotation             extends Node
-  case object ModuleExpression                extends Node
-  case object NewExpression                   extends Node
-  case object Noop                            extends Node
-  case object NullLiteral                     extends Node
-  case object NullLiteralTypeAnnotation       extends Node
-  case object NullableTypeAnnotation          extends Node
-  case object NumberLiteral                   extends Node
-  case object NumberLiteralTypeAnnotation     extends Node
-  case object NumberTypeAnnotation            extends Node
-  case object NumericLiteral                  extends Node
-  case object ObjectExpression                extends Node
-  case object ObjectMethod                    extends Node
-  case object ObjectPattern                   extends Node
-  case object ObjectProperty                  extends Node
-  case object ObjectTypeAnnotation            extends Node
-  case object ObjectTypeCallProperty          extends Node
-  case object ObjectTypeIndexer               extends Node
-  case object ObjectTypeInternalSlot          extends Node
-  case object ObjectTypeProperty              extends Node
-  case object ObjectTypeSpreadProperty        extends Node
-  case object OpaqueType                      extends Node
-  case object OptionalCallExpression          extends Node
-  case object OptionalIndexedAccessType       extends Node
-  case object OptionalMemberExpression        extends Node
-  case object ParenthesizedExpression         extends Node
-  case object PipelineBareFunction            extends Node
-  case object PipelinePrimaryTopicReference   extends Node
-  case object PipelineTopicExpression         extends Node
-  case object Placeholder                     extends Node
-  case object PrivateName                     extends Node
-  case object Program                         extends Node
-  case object QualifiedTypeIdentifier         extends Node
-  case object RecordExpression                extends Node
-  case object RegExpLiteral                   extends Node
-  case object RegexLiteral                    extends Node
-  case object RestElement                     extends Node
-  case object RestProperty                    extends Node
-  case object ReturnStatement                 extends Node
-  case object SequenceExpression              extends Node
-  case object SpreadElement                   extends Node
-  case object SpreadProperty                  extends Node
-  case object StaticBlock                     extends Node
-  case object StringLiteral                   extends Node
-  case object StringLiteralTypeAnnotation     extends Node
-  case object StringTypeAnnotation            extends Node
-  case object Super                           extends Node
-  case object SwitchCase                      extends Node
-  case object SwitchStatement                 extends Node
-  case object SymbolTypeAnnotation            extends Node
-  case object TSAnyKeyword                    extends Node
-  case object TSArrayType                     extends Node
-  case object TSAsExpression                  extends Node
-  case object TSBigIntKeyword                 extends Node
-  case object TSBooleanKeyword                extends Node
-  case object TSCallSignatureDeclaration      extends Node
-  case object TSConditionalType               extends Node
-  case object TSConstructSignatureDeclaration extends Node
-  case object TSConstructorType               extends Node
-  case object TSDeclareFunction               extends Node
-  case object TSDeclareMethod                 extends Node
-  case object TSEnumDeclaration               extends Node
-  case object TSEnumMember                    extends Node
-  case object TSExportAssignment              extends Node
-  case object TSExpressionWithTypeArguments   extends Node
-  case object TSExternalModuleReference       extends Node
-  case object TSFunctionType                  extends Node
-  case object TSImportEqualsDeclaration       extends Node
-  case object TSImportType                    extends Node
-  case object TSIndexSignature                extends Node
-  case object TSIndexedAccessType             extends Node
-  case object TSInferType                     extends Node
-  case object TSInterfaceBody                 extends Node
-  case object TSInterfaceDeclaration          extends Node
-  case object TSIntersectionType              extends Node
-  case object TSIntrinsicKeyword              extends Node
-  case object TSLiteralType                   extends Node
-  case object TSMappedType                    extends Node
-  case object TSMethodSignature               extends Node
-  case object TSModuleBlock                   extends Node
-  case object TSModuleDeclaration             extends Node
-  case object TSNamedTupleMember              extends Node
-  case object TSNamespaceExportDeclaration    extends Node
-  case object TSNeverKeyword                  extends Node
-  case object TSNonNullExpression             extends Node
-  case object TSNullKeyword                   extends Node
-  case object TSNumberKeyword                 extends Node
-  case object TSObjectKeyword                 extends Node
-  case object TSOptionalType                  extends Node
-  case object TSParameterProperty             extends Node
-  case object TSParenthesizedType             extends Node
-  case object TSPropertySignature             extends Node
-  case object TSQualifiedName                 extends Node
-  case object TSRestType                      extends Node
-  case object TSStringKeyword                 extends Node
-  case object TSSymbolKeyword                 extends Node
-  case object TSThisType                      extends Node
-  case object TSTupleType                     extends Node
-  case object TSTypeAliasDeclaration          extends Node
-  case object TSTypeAnnotation                extends Node
-  case object TSTypeAssertion                 extends Node
-  case object TSTypeLiteral                   extends Node
-  case object TSTypeOperator                  extends Node
-  case object TSTypeParameter                 extends Node
-  case object TSTypeParameterDeclaration      extends Node
-  case object TSTypeParameterInstantiation    extends Node
-  case object TSTypePredicate                 extends Node
-  case object TSTypeQuery                     extends Node
-  case object TSTypeReference                 extends Node
-  case object TSUndefinedKeyword              extends Node
-  case object TSUnionType                     extends Node
-  case object TSUnknownKeyword                extends Node
-  case object TSVoidKeyword                   extends Node
-  case object TaggedTemplateExpression        extends Node
-  case object TemplateElement                 extends Node
-  case object TemplateLiteral                 extends Node
-  case object ThisExpression                  extends Node
-  case object ThisTypeAnnotation              extends Node
-  case object ThrowStatement                  extends Node
-  case object TopicReference                  extends Node
-  case object TryStatement                    extends Node
-  case object TupleExpression                 extends Node
-  case object TupleTypeAnnotation             extends Node
-  case object TypeAlias                       extends Node
-  case object TypeAnnotation                  extends Node
-  case object TypeCastExpression              extends Node
-  case object TypeParameter                   extends Node
-  case object TypeParameterDeclaration        extends Node
-  case object TypeParameterInstantiation      extends Node
-  case object TypeofTypeAnnotation            extends Node
-  case object UnaryExpression                 extends Node
-  case object UnionTypeAnnotation             extends Node
-  case object UpdateExpression                extends Node
-  case object V8IntrinsicIdentifier           extends Node
-  case object VariableDeclaration             extends Node
-  case object VariableDeclarator              extends Node
-  case object Variance                        extends Node
-  case object VoidTypeAnnotation              extends Node
-  case object WhileStatement                  extends Node
-  case object WithStatement                   extends Node
-  case object YieldExpression                 extends Node
+  sealed trait Expression extends BabelNode
+
+  sealed trait Binary extends BabelNode
+
+  sealed trait Scopable extends BabelNode
+
+  sealed trait BlockParent extends BabelNode
+
+  sealed trait Block extends BabelNode
+
+  sealed trait Statement extends BabelNode
+
+  sealed trait Conditional extends BabelNode
+
+  sealed trait Loop extends BabelNode
+
+  sealed trait While extends BabelNode
+
+  sealed trait For extends BabelNode
+
+  sealed trait Function extends BabelNode
+
+  sealed trait Declaration extends BabelNode
+
+  sealed trait PatternLike extends BabelNode
+
+  sealed trait LVal extends BabelNode
+
+  sealed trait TSEntityName extends BabelNode
+
+  sealed trait Method extends BabelNode
+
+  sealed trait ObjectMember extends BabelNode
+
+  sealed trait Pattern extends BabelNode
+
+  sealed trait Class extends BabelNode
+
+  sealed trait ModuleDeclaration extends BabelNode
+
+  sealed trait ExportDeclaration extends BabelNode
+
+  sealed trait Flow extends BabelNode
+
+  sealed trait FlowType extends BabelNode
+
+  sealed trait TSTypeElement extends BabelNode
+
+  sealed trait TSType extends BabelNode
+
+  case object AnyTypeAnnotation            extends BabelNode with Flow with FlowType
+  case object ArgumentPlaceholder          extends BabelNode
+  case object ArrayExpression              extends Expression
+  case object ArrayPattern                 extends BabelNode with PatternLike with LVal with Pattern
+  case object ArrayTypeAnnotation          extends BabelNode with Flow with FlowType
+  case object ArrowFunctionExpression      extends Expression with Scopable with BlockParent with Function
+  case object AssignmentExpression         extends Expression
+  case object AssignmentPattern            extends BabelNode with PatternLike with LVal with Pattern
+  case object AwaitExpression              extends Expression
+  case object BigIntLiteral                extends Expression
+  case object BinaryExpression             extends Expression with Binary
+  case object BindExpression               extends Expression
+  case object BlockStatement               extends BabelNode with Scopable with BlockParent with Block with Statement
+  case object BooleanLiteral               extends Expression
+  case object BooleanLiteralTypeAnnotation extends BabelNode with Flow with FlowType
+  case object BooleanTypeAnnotation        extends BabelNode with Flow with FlowType
+  case object BreakStatement               extends BabelNode with Statement
+  case object CallExpression               extends Expression
+  case object CatchClause                  extends BabelNode with Scopable with BlockParent
+  case object ClassAccessorProperty        extends BabelNode
+  case object ClassBody                    extends BabelNode
+  case object ClassDeclaration             extends BabelNode with Scopable with Statement with Declaration with Class
+  case object ClassExpression              extends Expression with Scopable with Class
+  case object ClassImplements              extends BabelNode with Flow
+  case object ClassMethod                  extends BabelNode with Scopable with BlockParent with Function with Method
+  case object ClassPrivateMethod           extends BabelNode with Scopable with BlockParent with Function with Method
+  case object ClassPrivateProperty         extends BabelNode
+  case object ClassProperty                extends BabelNode
+  case object ConditionalExpression        extends Expression with Conditional
+  case object ContinueStatement            extends BabelNode with Statement
+  case object DebuggerStatement            extends BabelNode with Statement
+  case object DecimalLiteral               extends Expression
+  case object DeclareClass                 extends BabelNode with Statement with Declaration with Flow
+  case object DeclareExportAllDeclaration  extends BabelNode with Statement with Declaration with Flow
+  case object DeclareExportDeclaration     extends BabelNode with Statement with Declaration with Flow
+  case object DeclareFunction              extends BabelNode with Statement with Declaration with Flow
+  case object DeclareInterface             extends BabelNode with Statement with Declaration with Flow
+  case object DeclareModule                extends BabelNode with Statement with Declaration with Flow
+  case object DeclareModuleExports         extends BabelNode with Statement with Declaration with Flow
+  case object DeclareOpaqueType            extends BabelNode with Statement with Declaration with Flow
+  case object DeclareTypeAlias             extends BabelNode with Statement with Declaration with Flow
+  case object DeclareVariable              extends BabelNode with Statement with Declaration with Flow
+  case object DeclaredPredicate            extends BabelNode with Flow
+  case object Decorator                    extends BabelNode
+  case object Directive                    extends BabelNode
+  case object DirectiveLiteral             extends BabelNode
+  case object DoExpression                 extends Expression
+  case object DoWhileStatement     extends BabelNode with Scopable with BlockParent with Statement with Loop with While
+  case object EmptyStatement       extends BabelNode with Statement
+  case object EmptyTypeAnnotation  extends BabelNode with Flow with FlowType
+  case object EnumBooleanBody      extends BabelNode with Flow
+  case object EnumBooleanMember    extends BabelNode with Flow
+  case object EnumDeclaration      extends BabelNode with Statement with Declaration with Flow
+  case object EnumDefaultedMember  extends BabelNode with Flow
+  case object EnumNumberBody       extends BabelNode with Flow
+  case object EnumNumberMember     extends BabelNode with Flow
+  case object EnumStringBody       extends BabelNode with Flow
+  case object EnumStringMember     extends BabelNode with Flow
+  case object EnumSymbolBody       extends BabelNode with Flow
+  case object ExistsTypeAnnotation extends BabelNode with FlowType
+  case object ExportAllDeclaration
+      extends BabelNode
+      with Statement
+      with Declaration
+      with ModuleDeclaration
+      with ExportDeclaration
+  case object ExportDefaultDeclaration
+      extends BabelNode
+      with Statement
+      with Declaration
+      with ModuleDeclaration
+      with ExportDeclaration
+  case object ExportDefaultSpecifier extends BabelNode
+  case object ExportNamedDeclaration
+      extends BabelNode
+      with Statement
+      with Declaration
+      with ModuleDeclaration
+      with ExportDeclaration
+  case object ExportNamespaceSpecifier extends BabelNode
+  case object ExportSpecifier          extends BabelNode
+  case object ExpressionStatement      extends BabelNode with Statement
+  case object File                     extends BabelNode
+  case object ForInStatement extends BabelNode with Scopable with BlockParent with Statement with Loop with For
+  case object ForOfStatement extends BabelNode with Scopable with BlockParent with Statement with Loop with For
+  case object ForStatement   extends BabelNode with Scopable with BlockParent with Statement with Loop with For
+  case object FunctionDeclaration
+      extends BabelNode
+      with Scopable
+      with BlockParent
+      with Statement
+      with Function
+      with Declaration
+  case object FunctionExpression          extends Expression with Scopable with BlockParent with Function
+  case object FunctionTypeAnnotation      extends BabelNode with FlowType
+  case object FunctionTypeParam           extends BabelNode
+  case object GenericTypeAnnotation       extends BabelNode with FlowType
+  case object Identifier                  extends Expression with PatternLike with LVal with TSEntityName
+  case object IfStatement                 extends BabelNode with Statement with Conditional
+  case object Import                      extends Expression
+  case object ImportAttribute             extends BabelNode
+  case object ImportDeclaration           extends BabelNode with Statement with Declaration with ModuleDeclaration
+  case object ImportDefaultSpecifier      extends BabelNode
+  case object ImportNamespaceSpecifier    extends BabelNode
+  case object ImportSpecifier             extends BabelNode
+  case object IndexedAccessType           extends BabelNode with Flow with FlowType
+  case object InferredPredicate           extends BabelNode
+  case object InterfaceDeclaration        extends BabelNode with Statement with Declaration with Flow
+  case object InterfaceExtends            extends BabelNode with Flow
+  case object InterfaceTypeAnnotation     extends BabelNode with Flow with FlowType
+  case object InterpreterDirective        extends BabelNode
+  case object IntersectionTypeAnnotation  extends BabelNode with Flow with FlowType
+  case object JSXAttribute                extends BabelNode
+  case object JSXClosingElement           extends BabelNode
+  case object JSXClosingFragment          extends BabelNode
+  case object JSXElement                  extends Expression
+  case object JSXEmptyExpression          extends Expression
+  case object JSXExpressionContainer      extends BabelNode
+  case object JSXFragment                 extends Expression
+  case object JSXIdentifier               extends BabelNode
+  case object JSXMemberExpression         extends Expression
+  case object JSXNamespacedName           extends BabelNode
+  case object JSXOpeningElement           extends BabelNode
+  case object JSXOpeningFragment          extends BabelNode
+  case object JSXSpreadAttribute          extends BabelNode
+  case object JSXSpreadChild              extends BabelNode
+  case object JSXText                     extends BabelNode
+  case object LabeledStatement            extends BabelNode with Statement
+  case object LogicalExpression           extends Expression with Binary
+  case object MemberExpression            extends Expression with LVal
+  case object MetaProperty                extends Expression
+  case object MixedTypeAnnotation         extends BabelNode with Flow with FlowType
+  case object ModuleExpression            extends Expression
+  case object NewExpression               extends Expression
+  case object Noop                        extends BabelNode
+  case object NullLiteral                 extends Expression
+  case object NullLiteralTypeAnnotation   extends BabelNode with Flow with FlowType
+  case object NullableTypeAnnotation      extends BabelNode with Flow with FlowType
+  case object NumberLiteral               extends BabelNode
+  case object NumberLiteralTypeAnnotation extends BabelNode with Flow with FlowType
+  case object NumberTypeAnnotation        extends BabelNode with Flow with FlowType
+  case object NumericLiteral              extends Expression
+  case object ObjectExpression            extends Expression
+  case object ObjectMethod  extends BabelNode with Scopable with BlockParent with Function with Method with ObjectMember
+  case object ObjectPattern extends BabelNode with PatternLike with LVal with Pattern
+  case object ObjectProperty                  extends BabelNode with ObjectMember
+  case object ObjectTypeAnnotation            extends BabelNode with Flow with FlowType
+  case object ObjectTypeCallProperty          extends BabelNode with Flow
+  case object ObjectTypeIndexer               extends BabelNode with Flow
+  case object ObjectTypeInternalSlot          extends BabelNode with Flow
+  case object ObjectTypeProperty              extends BabelNode with Flow
+  case object ObjectTypeSpreadProperty        extends BabelNode with Flow
+  case object OpaqueType                      extends BabelNode with Statement with Declaration with Flow
+  case object OptionalCallExpression          extends Expression
+  case object OptionalIndexedAccessType       extends BabelNode with Flow with FlowType
+  case object OptionalMemberExpression        extends Expression
+  case object ParenthesizedExpression         extends Expression
+  case object PipelineBareFunction            extends Expression
+  case object PipelinePrimaryTopicReference   extends Expression
+  case object PipelineTopicExpression         extends Expression
+  case object Placeholder                     extends BabelNode
+  case object PrivateName                     extends BabelNode
+  case object Program                         extends BabelNode with Scopable with BlockParent with Block
+  case object QualifiedTypeIdentifier         extends BabelNode with Flow
+  case object RecordExpression                extends Expression
+  case object RegExpLiteral                   extends Expression
+  case object RegexLiteral                    extends BabelNode
+  case object RestElement                     extends BabelNode with PatternLike with LVal
+  case object RestProperty                    extends BabelNode
+  case object ReturnStatement                 extends BabelNode with Statement
+  case object SequenceExpression              extends Expression
+  case object SpreadElement                   extends BabelNode
+  case object SpreadProperty                  extends BabelNode
+  case object StaticBlock                     extends BabelNode with Scopable with BlockParent
+  case object StringLiteral                   extends Expression
+  case object StringLiteralTypeAnnotation     extends BabelNode with Flow with FlowType
+  case object StringTypeAnnotation            extends BabelNode with Flow with FlowType
+  case object Super                           extends Expression
+  case object SwitchCase                      extends BabelNode
+  case object SwitchStatement                 extends BabelNode with Scopable with BlockParent with Statement
+  case object SymbolTypeAnnotation            extends BabelNode with Flow with FlowType
+  case object TSAnyKeyword                    extends BabelNode with TSType
+  case object TSArrayType                     extends BabelNode with TSType
+  case object TSAsExpression                  extends Expression
+  case object TSBigIntKeyword                 extends BabelNode with TSType
+  case object TSBooleanKeyword                extends BabelNode with TSType
+  case object TSCallSignatureDeclaration      extends BabelNode with Declaration with TSTypeElement
+  case object TSConditionalType               extends BabelNode with TSType
+  case object TSConstructSignatureDeclaration extends BabelNode with Declaration
+  case object TSConstructorType               extends BabelNode with TSType
+  case object TSDeclareFunction               extends BabelNode with Statement
+  case object TSDeclareMethod                 extends BabelNode
+  case object TSEnumDeclaration               extends BabelNode with Statement with Declaration
+  case object TSEnumMember                    extends BabelNode
+  case object TSExportAssignment              extends BabelNode with Statement
+  case object TSExpressionWithTypeArguments   extends BabelNode with TSType
+  case object TSExternalModuleReference       extends BabelNode
+  case object TSFunctionType                  extends BabelNode with TSType
+  case object TSImportEqualsDeclaration       extends BabelNode with Statement with Declaration
+  case object TSImportType                    extends BabelNode with TSType
+  case object TSIndexSignature                extends BabelNode with TSTypeElement
+  case object TSIndexedAccessType             extends BabelNode with TSType
+  case object TSInferType                     extends BabelNode with TSType
+  case object TSInterfaceBody                 extends BabelNode
+  case object TSInterfaceDeclaration          extends BabelNode with Statement with Declaration
+  case object TSIntersectionType              extends BabelNode with TSType
+  case object TSIntrinsicKeyword              extends BabelNode with TSType
+  case object TSLiteralType                   extends BabelNode with TSType
+  case object TSMappedType                    extends BabelNode with TSType
+  case object TSMethodSignature               extends BabelNode with TSTypeElement
+  case object TSModuleBlock                   extends BabelNode with Scopable with BlockParent with Block
+  case object TSModuleDeclaration             extends BabelNode with Statement with Declaration
+  case object TSNamedTupleMember              extends BabelNode
+  case object TSNamespaceExportDeclaration    extends BabelNode with Statement with Declaration
+  case object TSNeverKeyword                  extends BabelNode with TSType
+  case object TSNonNullExpression             extends Expression
+  case object TSNullKeyword                   extends BabelNode with TSType
+  case object TSNumberKeyword                 extends BabelNode with TSType
+  case object TSObjectKeyword                 extends BabelNode with TSType
+  case object TSOptionalType                  extends BabelNode with TSType
+  case object TSParameterProperty             extends BabelNode with LVal
+  case object TSParenthesizedType             extends BabelNode with TSType
+  case object TSPropertySignature             extends BabelNode with TSTypeElement
+  case object TSQualifiedName                 extends BabelNode with TSEntityName
+  case object TSRestType                      extends BabelNode with TSType
+  case object TSStringKeyword                 extends BabelNode with TSType
+  case object TSSymbolKeyword                 extends BabelNode with TSType
+  case object TSThisType                      extends BabelNode with TSType
+  case object TSTupleType                     extends BabelNode with TSType
+  case object TSTypeAliasDeclaration          extends BabelNode with Statement with Declaration
+  case object TSTypeAnnotation                extends BabelNode with FlowType
+  case object TSTypeAssertion                 extends Expression
+  case object TSTypeLiteral                   extends BabelNode with TSType
+  case object TSTypeOperator                  extends BabelNode with TSType
+  case object TSTypeParameter                 extends BabelNode with TSType
+  case object TSTypeParameterDeclaration      extends BabelNode with Declaration
+  case object TSTypeParameterInstantiation    extends BabelNode
+  case object TSTypePredicate                 extends BabelNode with TSType
+  case object TSTypeQuery                     extends BabelNode with TSType
+  case object TSTypeReference                 extends BabelNode with TSType
+  case object TSUndefinedKeyword              extends BabelNode with TSType
+  case object TSUnionType                     extends BabelNode with TSType
+  case object TSUnknownKeyword                extends BabelNode with TSType
+  case object TSVoidKeyword                   extends BabelNode with TSType
+  case object TaggedTemplateExpression        extends Expression
+  case object TemplateElement                 extends BabelNode
+  case object TemplateLiteral                 extends Expression
+  case object ThisExpression                  extends Expression
+  case object ThisTypeAnnotation              extends BabelNode with Flow with FlowType
+  case object ThrowStatement                  extends BabelNode with Statement
+  case object TopicReference                  extends Expression
+  case object TryStatement                    extends BabelNode with Statement
+  case object TupleExpression                 extends Expression
+  case object TupleTypeAnnotation             extends BabelNode with Flow with FlowType
+  case object TypeAlias                       extends BabelNode with Statement with Declaration with Flow
+  case object TypeAnnotation                  extends BabelNode with Flow with FlowType
+  case object TypeCastExpression              extends Expression with Flow
+  case object TypeParameter                   extends BabelNode with Flow
+  case object TypeParameterDeclaration        extends BabelNode with Declaration with Flow
+  case object TypeParameterInstantiation      extends BabelNode with Flow
+  case object TypeofTypeAnnotation            extends BabelNode with Flow with FlowType
+  case object UnaryExpression                 extends Expression
+  case object UnionTypeAnnotation             extends BabelNode with Flow with FlowType
+  case object UpdateExpression                extends Expression
+  case object V8IntrinsicIdentifier           extends BabelNode
+  case object VariableDeclaration             extends BabelNode with Statement with Declaration
+  case object VariableDeclarator              extends BabelNode
+  case object Variance                        extends BabelNode with Flow
+  case object VoidTypeAnnotation              extends BabelNode with Flow with FlowType
+  case object WhileStatement  extends BabelNode with Scopable with BlockParent with Statement with Loop with While
+  case object WithStatement   extends BabelNode with Statement
+  case object YieldExpression extends Expression
 
 }
