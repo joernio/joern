@@ -25,15 +25,6 @@ class FileTests extends GhidraBinToCpgSuite {
   }
 
   "should contain exactly one non-placeholder file with absolute path in `name`" in {
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
-    println(cpg.file.nameNot(FileTraversal.UNKNOWN).name.l)
     val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
     x.name should (
       startWith(File.separator) or // Unix

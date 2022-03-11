@@ -11,9 +11,9 @@ class LocalNodeTests extends GhidraBinToCpgSuite {
   }
 
   "should contain exactly one node with all mandatory fields set" in {
-    val x = cpg.method.name("localNodeTests").local.l.head
-    x.name shouldBe "local_10"
-    x.code shouldBe "[undefined[8 local_10@Stack[-0x10]:8]]"
-    x.typeFullName shouldBe "undefined4"
+    val local = cpg.method.name("localNodeTests").local.l.head
+    local.name shouldBe "local_10"
+    local.code shouldBe "[undefined8 local_10@Stack[-0x10]:8]"
+    local.typeFullName shouldBe "undefined8"
   }
 }

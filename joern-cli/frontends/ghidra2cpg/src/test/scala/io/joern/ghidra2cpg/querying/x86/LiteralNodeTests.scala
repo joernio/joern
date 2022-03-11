@@ -11,8 +11,6 @@ class LiteralNodeTests extends GhidraBinToCpgSuite {
   }
 
   "should contain exactly one literal node containing \"TEST\" with all mandatory fields set" in {
-    println(s"""ABC ${cpg.literal.code("TEST").code.l}""")
-
     cpg.literal.code("TEST").l match {
       case List(x) =>
         x.code shouldBe "TEST"
