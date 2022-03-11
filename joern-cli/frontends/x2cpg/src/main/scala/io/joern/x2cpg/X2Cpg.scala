@@ -30,7 +30,13 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     */
   def run(config: T): Unit = {
     withErrorsToConsole(config) { _ =>
-      createCpg(config)
+      createCpg(config) match {
+        case Success(cpg) =>
+          cpg.close()
+          Success(cpg)
+        case Failure(exception) =>
+          Failure(exception)
+      }
     }
   }
 
