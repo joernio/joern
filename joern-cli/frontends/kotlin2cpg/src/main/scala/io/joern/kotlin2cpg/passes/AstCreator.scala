@@ -1444,14 +1444,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             l.name == destructuringRHS.getText
           }.headOption
 
-        val matchingRefOption =
-          if (matchingLocal.isDefined) {
-            Some(matchingLocal.get)
-          } else if (matchingMethodParam.isDefined) {
-            Some(matchingMethodParam.get)
-          } else {
-            None
-          }
+
+        val matchingRefOption = matchingLocal.orElse(matchingMethodParam)
         val componentNIdentifierAst =
           if (matchingRefOption.isDefined) {
             Ast(componentNIdentifierNode)
