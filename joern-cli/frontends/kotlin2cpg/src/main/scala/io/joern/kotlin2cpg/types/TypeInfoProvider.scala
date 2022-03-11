@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.psi.{
   KtCallExpression,
   KtClassLiteralExpression,
   KtClassOrObject,
+  KtDestructuringDeclarationEntry,
   KtExpression,
   KtLambdaExpression,
   KtNameReferenceExpression,
@@ -77,6 +78,10 @@ trait TypeInfoProvider {
   def typeFullName(expr: KtPrimaryConstructor, or: String): String
 
   def typeFullName(expr: KtSecondaryConstructor, or: String): String
+
+  def typeFullName(expr: KtCallExpression, or: String): String
+
+  def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 }

@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.psi.{
   KtCallExpression,
   KtClassLiteralExpression,
   KtClassOrObject,
+  KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
   KtLambdaExpression,
@@ -101,12 +102,49 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      .map { desc => TypeRenderer.render(desc.getType) }
+      .filter(isValidRender)
+      .getOrElse(defaultValue)
+  }
+
   def typeFullName(expr: KtTypeReference, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE.getKey))
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
+  }
+
+  def typeFullName(expr: KtCallExpression, defaultValue: String): String = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc match {
+      case Some(fnDescriptor) =>
+        val originalDesc = fnDescriptor.getOriginal
+
+        val isCtor = originalDesc match {
+          case _: ClassConstructorDescriptorImpl     => true
+          case _: TypeAliasConstructorDescriptorImpl => true
+          case _                                     => false
+        }
+        val relevantDesc =
+          if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+            originalDesc.getOverriddenDescriptors.asScala.toList.head
+          } else {
+            originalDesc
+          }
+        val returnTypeFullName = {
+          if (isCtor) {
+            TypeConstants.void
+          } else {
+            renderedReturnType(relevantDesc.getOriginal)
+          }
+        }
+        returnTypeFullName
+      case None => defaultValue
+    }
   }
 
   def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String = {
