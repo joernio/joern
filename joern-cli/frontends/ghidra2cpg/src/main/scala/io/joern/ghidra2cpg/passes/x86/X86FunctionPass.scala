@@ -3,12 +3,12 @@ package io.joern.ghidra2cpg.passes.x86
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang._
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
-import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.joern.ghidra2cpg.processors.X86Processor
 import io.joern.ghidra2cpg.utils.Nodes._
+import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
@@ -17,9 +17,16 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
-class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg, decompiler: Decompiler)
-    extends ConcurrentWriterCpgPass[Function](cpg) {
-  val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
+class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg) extends ConcurrentWriterCpgPass[Function](cpg) {
+
+  implicit def intToIntegerOption(intOption: Option[Int]): Option[Integer] = {
+    intOption.map(intValue => {
+      val integerValue: Integer = intValue
+      integerValue
+    })
+  }
+  val decompiler: Decompiler = Decompiler(flatProgramAPI.getCurrentProgram).get
+  val blockNode: NewBlock    = nodes.NewBlock().code("").order(0)
   // needed by ghidra for decompiling reasons
   val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
@@ -38,13 +45,6 @@ class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg, decompiler: Deco
   override def generateParts(): Array[Function] =
     flatProgramAPI.getCurrentProgram.getListing.getFunctions(true).asScala.toArray
 
-  implicit def intToIntegerOption(intOption: Option[Int]): Option[Integer] = {
-    intOption.map(intValue => {
-      val integerValue: Integer = intValue
-      integerValue
-    })
-  }
-
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     try {
       // we need it just once with default settings
@@ -62,16 +62,17 @@ class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg, decompiler: Deco
           checkIfExternal(flatProgramAPI.getCurrentProgram, function.getName),
           lineNumberEnd
         )
-
-      diffGraphBuilder.addNode(methodNode)
-      diffGraphBuilder.addNode(blockNode)
-      diffGraphBuilder.addEdge(methodNode, blockNode, EdgeTypes.AST)
       val methodReturn = createReturnNode()
-      diffGraphBuilder.addNode(methodReturn)
-      diffGraphBuilder.addEdge(methodNode, methodReturn, EdgeTypes.AST)
-      handleParameters(diffGraphBuilder, function, methodNode)
-      handleLocals(diffGraphBuilder, function)
-      handleBody(diffGraphBuilder, function, methodNode)
+      val x            = new DiffGraphBuilder
+      x.addNode(methodNode)
+      x.addNode(blockNode)
+      x.addEdge(methodNode, blockNode, EdgeTypes.AST)
+      x.addNode(methodReturn)
+      x.addEdge(methodNode, methodReturn, EdgeTypes.AST)
+      handleParameters(x, function, methodNode)
+      handleLocals(x, function)
+      handleBody(x, function, methodNode)
+      diffGraphBuilder.absorb(x)
     } catch {
       case e: Exception =>
         e.printStackTrace()
@@ -142,13 +143,13 @@ class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg, decompiler: Deco
       flatProgramAPI.getCurrentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
-      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode, function)
+      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode)
       diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
       diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
         val instructionNode = addCallOrReturnNode(instruction)
         diffGraphBuilder.addNode(instructionNode)
-        handleArguments(diffGraphBuilder, instruction, instructionNode, function)
+        handleArguments(diffGraphBuilder, instruction, instructionNode)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         // Not connecting the previous instruction,
         // if it is an unconditional jump
@@ -162,12 +163,7 @@ class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg, decompiler: Deco
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    function: Function
-  ): Unit = {
+  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
     val mnemonicString = X86Processor.getInstructions(instruction.getMnemonicString)
     if (mnemonicString.equals("CALL")) {
       val calledFunction =

@@ -112,19 +112,19 @@ class Ghidra2Cpg() {
     new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
-      case "MIPS" =>
-        functions.foreach { function =>
-          new MipsFunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
-            .createAndApply()
-          new LoHiPass(cpg).createAndApply()
-        }
-      case "AARCH64" | "ARM" =>
-        functions.foreach { function =>
-          new ArmFunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
-            .createAndApply()
-        }
+      // case "MIPS" =>
+      //  functions.foreach { function =>
+      //    new MipsFunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
+      //      .createAndApply()
+      //    new LoHiPass(cpg).createAndApply()
+      //  }
+      // case "AARCH64" | "ARM" =>
+      //  functions.foreach { function =>
+      //    new ArmFunctionPass(program, fileAbsolutePath, function, cpg, decompiler)
+      //      .createAndApply()
+      //  }
       case _ =>
-        new X86FunctionPass(flatProgramAPI, cpg, decompiler)
+        new X86FunctionPass(flatProgramAPI, cpg)
           .createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }
