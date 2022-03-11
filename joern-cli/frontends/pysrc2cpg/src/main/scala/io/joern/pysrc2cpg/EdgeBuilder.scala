@@ -23,9 +23,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewUnknown
 }
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.passes.DiffGraph
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class EdgeBuilder(diffGraph: DiffGraph.Builder) {
+class EdgeBuilder(diffGraph: DiffGraphBuilder) {
   def astEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode, order: Int): Unit = {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.AST)
     addOrder(dstNode, order)

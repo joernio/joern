@@ -1,12 +1,12 @@
 package io.joern.c2cpg.fixtures
 
 import better.files.File
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.layers.{Base, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.layers.{LayerCreatorContext}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 
@@ -19,7 +19,7 @@ object CompleteCpgFixture {
       val cpg = Cpg.emptyCpg
       new MetaDataPass(cpg, Languages.NEWC).createAndApply()
       val astCreationPass =
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, Config(inputPaths = Set(dir.path.toString)))
+        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPaths = Set(dir.path.toString)))
       astCreationPass.createAndApply()
       new CfgCreationPass(cpg).createAndApply()
       new TypeNodePass(astCreationPass.usedTypes(), cpg).createAndApply()

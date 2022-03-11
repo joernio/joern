@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg
 
-import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultNameGenerator}
+import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -74,7 +74,7 @@ class Kt2CpgTestContext private () {
             KtFileWithMeta(fm, "GENERATED_PLACEHOLDER_FILE.kt", fm.getVirtualFilePath)
           }
 
-      val nameGenerator = new DefaultNameGenerator(environment)
+      val nameGenerator = new DefaultTypeInfoProvider(environment)
       val kt2Cpg        = new Kt2Cpg()
 
       val nonSourceFiles = codeAndFile.map { entry =>

@@ -1,16 +1,14 @@
 package io.joern.ghidra2cpg.utils
 
-import ghidra.app.decompiler.DecompInterface
 import ghidra.program.model.listing.{Function, Program}
-import ghidra.util.task.ConsoleTaskMonitor
 import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
-import io.shiftleft.passes.DiffGraph
-import io.shiftleft.proto.cpg.Cpg.{DiffGraph, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
+
 object Nodes {
   def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
     nodes

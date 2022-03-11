@@ -186,15 +186,22 @@ trait AstForStatementsCreator {
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, order)
 
-    val initAsts = nullSafeAst(forStmt.getInitializerStatement, 1)
+    val initAstBlock = NewBlock()
+      .order(1)
+      .argumentIndex(1)
+      .typeFullName(registerType(Defines.voidTypeName))
+      .lineNumber(line(forStmt))
+      .columnNumber(column(forStmt))
+    scope.pushNewScope(initAstBlock)
+    val initAst = Ast(initAstBlock).withChildren(nullSafeAst(forStmt.getInitializerStatement, 1))
+    scope.popScope()
 
-    val continuedOrder = Math.max(initAsts.size, 1)
-    val compareAst     = nullSafeAst(forStmt.getConditionExpression, continuedOrder + 1)
-    val updateAst      = nullSafeAst(forStmt.getIterationExpression, continuedOrder + 2)
-    val stmtAst        = nullSafeAst(forStmt.getBody, continuedOrder + 3)
+    val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
+    val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
+    val stmtAst    = nullSafeAst(forStmt.getBody, 4)
 
     Ast(forNode)
-      .withChildren(initAsts)
+      .withChild(initAst)
       .withChild(compareAst)
       .withChild(updateAst)
       .withChildren(stmtAst)

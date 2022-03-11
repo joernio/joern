@@ -40,6 +40,8 @@ object Jimple2Cpg {
       .replace(".class", "")
       .replace(JFile.separator, ".")
   }
+
+  def apply(): Jimple2Cpg = new Jimple2Cpg()
 }
 
 class Jimple2Cpg {
@@ -96,7 +98,7 @@ class Jimple2Cpg {
       // Load classes into Soot
       loadClassesIntoSoot(sourceFileNames)
       // Project Soot classes
-      val astCreator = new AstCreationPass(sourceCodeDir, sourceFileNames, cpg, methodKeyPool)
+      val astCreator = new AstCreationPass(sourceFileNames, cpg, methodKeyPool)
       astCreator.createAndApply()
       // Clear classes from Soot
       G.reset()

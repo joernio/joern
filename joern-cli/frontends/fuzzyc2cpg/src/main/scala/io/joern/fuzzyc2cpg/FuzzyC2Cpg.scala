@@ -3,7 +3,6 @@ package io.joern.fuzzyc2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.fuzzyc2cpg.passes.{AstCreationPass, StubRemovalPass}
-import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
@@ -23,18 +22,15 @@ class FuzzyC2Cpg() {
     sourceFileExtensions: Set[String],
     optionalOutputPath: Option[String] = None
   ): Cpg = {
-    val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-    val functionKeyPool = new IntervalKeyPool(1000100, Long.MaxValue)
 
     val cpg             = newEmptyCpg(optionalOutputPath)
     val sourceFileNames = SourceFiles.determine(sourcePaths, sourceFileExtensions)
 
-    new MetaDataPass(cpg, Languages.C, Some(metaDataKeyPool)).createAndApply()
-    val astCreator = new AstCreationPass(sourceFileNames, cpg, functionKeyPool)
+    new MetaDataPass(cpg, Languages.C).createAndApply()
+    val astCreator = new AstCreationPass(sourceFileNames, cpg)
     astCreator.createAndApply()
     new StubRemovalPass(cpg).createAndApply()
-    new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg, Some(typesKeyPool)).createAndApply()
+    new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
     cpg
   }
 

@@ -97,7 +97,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
     cpg.typeDecl.name("Bar").method.name("test1").l match {
       case List(method) =>
-        val List(_: Local, assign: Call, init: Call, _: Local, _: Call, _: Return) =
+        val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
           method.astChildren.isBlock.astChildren.l
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -116,15 +116,15 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
-        init.code shouldBe "Bar(4, 2)"
+        init.code shouldBe "$stack1.Bar(4, 2)"
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
         obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
-        obj.name shouldBe "this"
+        obj.name shouldBe "$stack1"
         obj.typeFullName shouldBe "Bar"
-        obj.code shouldBe "this"
+        obj.code shouldBe "$stack1"
         initArg1.code shouldBe "4"
         initArg2.code shouldBe "2"
 
@@ -135,7 +135,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in an assignment" in {
     cpg.typeDecl.name("Bar").method.name("test2").l match {
       case List(method) =>
-        val List(_: Local, paramAssign: Call, _: Local, assign: Call, init: Call, _: Local, _: Call, _: Return) =
+        val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
           method.astChildren.isBlock.astChildren.l
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -154,15 +154,15 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
-        init.code shouldBe "Bar(4, 2)"
+        init.code shouldBe "$stack1.Bar(4, 2)"
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
         obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
-        obj.name shouldBe "this"
+        obj.name shouldBe "$stack1"
         obj.typeFullName shouldBe "Bar"
-        obj.code shouldBe "this"
+        obj.code shouldBe "$stack1"
         initArg1.code shouldBe "4"
         initArg2.code shouldBe "2"
 
@@ -173,7 +173,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create `alloc` and `init` calls in a block for complex assignments" in {
     cpg.typeDecl.name("Bar").method.name("test3").l match {
       case List(method) =>
-        val List(assignParam: Call, allocAssign: Call, init: Call, assign: Call, _: Call, indexAccess: Call) =
+        val List(allocAssign: Call, init: Call, assign: Call, _: Call, indexAccess: Call) =
           method.call.l
         val List(arrayAccess: Call, temp: Identifier) = assign.argument.l
         temp.name shouldBe "$stack1"
@@ -196,14 +196,14 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         init.methodFullName shouldBe "Bar.<init>:void(int)"
         init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
         init.signature shouldBe "void(int)"
-        init.code shouldBe "Bar(42)"
+        init.code shouldBe "$stack1.Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
         init.argument.size shouldBe 2
         val List(receiver: Identifier, initArg1: Literal) = init.argument.l
         receiver.order shouldBe 0
         receiver.argumentIndex shouldBe 0
-        receiver.name shouldBe "this"
+        receiver.name shouldBe "$stack1"
         receiver.typeFullName shouldBe "Bar"
 
         initArg1.code shouldBe "42"
@@ -215,14 +215,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create only `init` call for direct invocation using `this`" in {
     cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int,int)").l match {
       case List(method) =>
-        val List(
-          assignThis: Call,
-          assignParam1: Call,
-          assignParam2: Call,
-          assignAddition: Call,
-          init: Call,
-          addition: Call
-        ) = method.call.l
+        val List(assignAddition: Call, init: Call, addition: Call) = method.call.l
 
         init.name shouldBe "<init>"
         init.methodFullName shouldBe "Bar.<init>:void(int)"
@@ -253,20 +246,12 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
   "it should create only `init` call for direct invocation using `super`" in {
     cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int)").l match {
       case List(method) =>
-        val List(assignThis: Call, paramAssign: Call, alloc: Call) = method.call.l
+        val List(alloc: Call) = method.call.l
         alloc.name shouldBe "<init>"
         alloc.methodFullName shouldBe "Foo.<init>:void(int)"
         alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         alloc.typeFullName shouldBe "void"
         alloc.signature shouldBe "void(int)"
-
-        val List(thisNode: Identifier, thisParam: Identifier) = assignThis.astChildren.l
-        thisNode.name shouldBe "this"
-        thisNode.typeFullName shouldBe "Bar"
-        thisNode.argumentIndex shouldBe 0
-        thisNode.order shouldBe 0
-        thisNode.code shouldBe "this"
-
         alloc.argument(1).code shouldBe "x"
 
       case res => fail(s"Expected Bar constructor but found $res")

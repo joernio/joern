@@ -29,7 +29,7 @@ class MethodTests extends JimpleCodeToCpgFixture {
     )
     x.filename.endsWith(".class") shouldBe true
     x.lineNumber shouldBe Some(2)
-    x.columnNumber shouldBe Some(-1)
+    x.columnNumber shouldBe None
   }
 
 //  "should return correct number of lines" in {
@@ -37,7 +37,7 @@ class MethodTests extends JimpleCodeToCpgFixture {
 //  }
 
   "should allow traversing to parameters" in {
-    cpg.method.name("foo").parameter.name.toSet shouldBe Set("this", "param1", "param2")
+    cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("this", "param1", "param2")
   }
 
   "should allow traversing to methodReturn" in {

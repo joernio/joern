@@ -1,18 +1,17 @@
 package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
 import io.joern.pysrc2cpg.Py2Cpg.InputProvider
 import io.joern.pythonparser.PyParser
 import org.slf4j.LoggerFactory
 
-class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], keyPool: IntervalKeyPool)
-    extends ParallelCpgPass[InputProvider](cpg, keyPools = Some(keyPool.split(inputProvider.size))) {
+class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider]) extends ConcurrentWriterCpgPass[InputProvider](cpg) {
   import CodeToCpg.logger
 
-  override def partIterator: Iterator[InputProvider] = inputProvider.iterator
+  override def generateParts(): Array[InputProvider] = inputProvider.toArray
 
-  override def runOnPart(inputProvider: InputProvider): Iterator[DiffGraph] = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, inputProvider: InputProvider): Unit = {
     val inputPair = inputProvider()
     try {
       val parser     = new PyParser()
@@ -20,13 +19,14 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], keyPool: Inter
       val astVisitor = new PythonAstVisitor(inputPair.file, PythonV2AndV3)
       astVisitor.convert(astRoot)
 
-      Iterator.single(astVisitor.getDiffGraph)
+      diffGraph.absorb(astVisitor.getDiffGraph)
     } catch {
       case exception: Throwable =>
         logger.warn(s"Failed to convert file ${inputPair.file}", exception)
         Iterator.empty
     }
   }
+
 }
 
 object CodeToCpg {

@@ -16,9 +16,9 @@ import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.KeyPoolCreator
-import io.joern.x2cpg.X2Cpg
 import utilities.util.FileUtilities
 
 import java.io.File
@@ -50,7 +50,7 @@ class Ghidra2Cpg() {
         program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
         addProgramToCpg(program, inputFile.getAbsolutePath, cpg)
       } catch {
-        case e: Throwable =>
+        case e: Exception =>
           e.printStackTrace()
       } finally {
         if (program != null) {
@@ -85,18 +85,14 @@ class Ghidra2Cpg() {
       autoAnalysisManager.reAnalyzeAll(null)
       autoAnalysisManager.startAnalysis(TaskMonitor.DUMMY)
       GhidraProgramUtilities.setAnalyzedFlag(program, true)
+      handleProgram(program, fileAbsolutePath, cpg)
     } catch {
-      case e: Throwable =>
+      case e: Exception =>
         e.printStackTrace()
     } finally {
       program.endTransaction(transactionId, true)
     }
-    try {
-      handleProgram(program, fileAbsolutePath, cpg)
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-    }
+
   }
 
   def handleProgram(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
@@ -118,11 +114,11 @@ class Ghidra2Cpg() {
       .toMap
 
     // We touch every function twice, regular ASM and PCode
-    // Also we have + 2 for MetaDataPass and Namespacepass
+    // Also we have + 2 for MetaDataPass and NamespacePass
     val numOfKeypools   = functions.size * 3 + 2
     val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
 
-    new MetaDataPass(fileAbsolutePath, cpg, keyPoolIterator.next()).createAndApply()
+    new MetaDataPass(fileAbsolutePath, cpg).createAndApply()
     new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {

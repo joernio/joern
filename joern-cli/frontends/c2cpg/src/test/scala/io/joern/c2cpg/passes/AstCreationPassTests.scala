@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import better.files.File
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.fixtures.{CpgAstOnlyFixture, CpgTypeNodeFixture, TestAstOnlyFixture}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -32,7 +32,7 @@ class AstCreationPassTests
           file.write("//foo")
           file.path.toAbsolutePath.toString
         }
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, Config(inputPaths = Set(dir.path.toString)))
+        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPaths = Set(dir.path.toString)))
           .createAndApply()
         val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:<global>")
         cpg.namespaceBlock.fullName.l shouldBe expectedNamespaceFullNames

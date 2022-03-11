@@ -1,6 +1,6 @@
 package io.joern.c2cpg.fixtures
 
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -20,9 +20,9 @@ case class TestProjectFixture(projectName: String) {
   private val config = Config(inputPaths = Set(dirName))
 
   new MetaDataPass(cpg, Languages.C).createAndApply()
-  new AstCreationPass(cpg, AstCreationPass.SourceFiles, None, config).createAndApply()
-  new AstCreationPass(cpg, AstCreationPass.HeaderFiles, None, config).createAndApply()
-  new HeaderContentPass(cpg, None, config).createAndApply()
+  new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+  new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config).createAndApply()
+  new HeaderContentPass(cpg, config).createAndApply()
   new CfgCreationPass(cpg).createAndApply()
   new FileCreationPass(cpg).createAndApply()
 

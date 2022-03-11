@@ -26,7 +26,7 @@ class CfgTests extends JimpleCodeToCpgFixture {
     """.stripMargin
 
   "should find that sink is control dependent on condition" in {
-    val controllers = cpg.call("sink").controlledBy.isCall.toSet
+    val controllers = cpg.call("sink").controlledBy.isCall.toSetMutable
     controllers.map(_.code) should contain("y >= 10")
     controllers.map(_.code) should contain("x >= 5")
   }
@@ -41,13 +41,7 @@ class CfgTests extends JimpleCodeToCpgFixture {
   //  }
 
   "should find sink(x) is dominated by `x < 5` and `y < 10`" in {
-    cpg.call("sink").dominatedBy.isCall.code.toSet shouldBe Set(
-      "x >= 5",
-      "this = this",
-      "x = @parameter0",
-      "y >= 10",
-      "y = @parameter1"
-    )
+    cpg.call("sink").dominatedBy.isCall.code.toSetMutable shouldBe Set("x >= 5", "y >= 10")
   }
 
   //  "should find that println post dominates correct nodes" in {

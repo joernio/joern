@@ -16,7 +16,7 @@ class MethodParameterTests extends JimpleCodeToCpgFixture {
       """.stripMargin
 
   "should return exactly three parameters with correct fields" in {
-    cpg.parameter.filter(_.method.name == "foo").name.toSet shouldBe Set("this", "param1", "param2")
+    cpg.parameter.filter(_.method.name == "foo").name.toSetMutable shouldBe Set("this", "param1", "param2")
 
     val List(t) = cpg.parameter.filter(_.method.name == "foo").name("this").l
     t.code shouldBe "this"
@@ -30,7 +30,7 @@ class MethodParameterTests extends JimpleCodeToCpgFixture {
     x.code shouldBe "int param1"
     x.typeFullName shouldBe "int"
     x.lineNumber shouldBe Some(3)
-    x.columnNumber shouldBe Some(-1)
+    x.columnNumber shouldBe None
     x.order shouldBe 1
     x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
@@ -38,7 +38,7 @@ class MethodParameterTests extends JimpleCodeToCpgFixture {
     y.code shouldBe "java.lang.Object param2"
     y.typeFullName shouldBe "java.lang.Object"
     y.lineNumber shouldBe Some(3)
-    y.columnNumber shouldBe Some(-1)
+    y.columnNumber shouldBe None
     y.order shouldBe 2
     y.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
   }

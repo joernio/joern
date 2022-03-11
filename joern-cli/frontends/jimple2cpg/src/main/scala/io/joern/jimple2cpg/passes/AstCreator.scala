@@ -2,9 +2,10 @@ package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.passes.DiffGraph
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Ast.storeInDiffGraph
 import org.slf4j.LoggerFactory
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
 import soot.tagkit.Host
 import soot.{Local => _, _}
@@ -13,14 +14,13 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
-class AstCreator(filename: String, global: Global) {
+class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) {
 
   import AstCreator._
 
-  private val logger               = LoggerFactory.getLogger(classOf[AstCreationPass])
-  private val unitToAsts           = mutable.HashMap[soot.Unit, Seq[Ast]]()
-  private val controlTargets       = mutable.HashMap[Seq[Ast], soot.Unit]()
-  val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+  private val logger         = LoggerFactory.getLogger(classOf[AstCreationPass])
+  private val unitToAsts     = mutable.HashMap[soot.Unit, Seq[Ast]]()
+  private val controlTargets = mutable.HashMap[Seq[Ast], soot.Unit]()
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -33,27 +33,9 @@ class AstCreator(filename: String, global: Global) {
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
     */
-  def createAst(cls: SootClass): Iterator[DiffGraph] = {
+  def createAst(cls: SootClass): scala.Unit = {
     val astRoot = astForCompilationUnit(cls)
-    storeInDiffGraph(astRoot)
-    Iterator(diffGraph.build())
-  }
-
-  /** Copy nodes/edges of given `AST` into the diff graph
-    */
-  private def storeInDiffGraph(ast: Ast): scala.Unit = {
-    ast.nodes.foreach { node =>
-      diffGraph.addNode(node)
-    }
-    ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
-    }
-    ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
-    }
-    ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
-    }
+    storeInDiffGraph(astRoot, diffGraph)
   }
 
   /** Translate compilation unit into AST
@@ -91,7 +73,7 @@ class AstCreator(filename: String, global: Global) {
           registerType(relatedClass.getSuperclass.getType.toQuotedString)
         List(relatedClass.getSuperclass.toString)
       } else List(registerType("java.lang.Object"))
-    val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { i: SootClass =>
+    val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { (i: SootClass) =>
       if (!i.isApplicationClass)
         registerType(i.getType.toQuotedString)
       i.getType.toQuotedString
@@ -205,16 +187,27 @@ class AstCreator(filename: String, global: Global) {
   }
 
   private def astForMethodBody(body: Body, order: Int): Ast = {
-    val block = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
-    Ast(block).withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
-      astsForStatement(x, order)
-    }.flatten)
+    val block        = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
+    val jimpleParams = body.getParameterLocals.asScala.toList
+    // Don't let parameters also become locals (avoiding duplication)
+    val jimpleLocals = body.getLocals.asScala.filterNot(jimpleParams.contains).toList
+    val locals = withOrder(jimpleLocals) { case (l, order) =>
+      val name         = l.getName
+      val typeFullName = registerType(l.getType.toQuotedString)
+      val code         = s"$typeFullName $name"
+      Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))
+    }
+    Ast(block)
+      .withChildren(locals)
+      .withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
+        astsForStatement(x, order + locals.size)
+      }.flatten)
   }
 
   private def astsForStatement(statement: soot.Unit, order: Int): Seq[Ast] = {
     val stmt = statement match {
       case x: AssignStmt       => astsForDefinition(x, order)
-      case x: IdentityStmt     => astsForDefinition(x, order)
+      case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
       case x: InvokeStmt       => astsForExpression(x.getInvokeExpr, order, statement)
       case x: ReturnStmt       => astsForReturnNode(x, order)
       case x: ReturnVoidStmt   => astsForReturnVoidNode(x, order)
@@ -356,11 +349,14 @@ class AstCreator(filename: String, global: Global) {
       case _: InstanceInvokeExpr          => DispatchTypes.DYNAMIC_DISPATCH
       case _                              => DispatchTypes.STATIC_DISPATCH
     }
-    val method = invokeExpr.getMethod
+    val method = invokeExpr.getMethodRef
     val signature =
-      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterCount)
+      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterTypes.size())
           yield method.getParameterType(i).toQuotedString).mkString(",")})"
-    val thisAsts = Seq(createThisNode(invokeExpr.getMethod, NewIdentifier()))
+    val thisAsts = invokeExpr match {
+      case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
+      case _                        => Seq(createThisNode(method, NewIdentifier()))
+    }
 
     val methodName =
       if (method.isConstructor)
@@ -372,13 +368,19 @@ class AstCreator(filename: String, global: Global) {
       if (invokeExpr.getMethod.isConstructor) "void"
       else registerType(method.getDeclaringClass.getType.toQuotedString)
 
+    val code = invokeExpr match {
+      case expr: InstanceInvokeExpr =>
+        s"${expr.getBase}.$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})"
+      case _ => s"$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})"
+    }
+
     val callNode = NewCall()
       .name(method.getName)
-      .code(s"$methodName(${invokeExpr.getArgs.asScala.mkString(", ")})")
+      .code(code)
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
-      .methodFullName(s"${method.getDeclaringClass.toString}.${method.getName}:$signature")
+      .methodFullName(s"${method.getDeclaringClass.getType.toQuotedString}.${method.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))
@@ -391,11 +393,16 @@ class AstCreator(filename: String, global: Global) {
       astsForValue(arg, order, parentUnit)
     }.flatten
 
-    Ast(callNode)
+    val callAst = Ast(callNode)
       .withChildren(thisAsts)
       .withChildren(argAsts)
       .withArgEdges(callNode, thisAsts.flatMap(_.root))
       .withArgEdges(callNode, argAsts.flatMap(_.root))
+
+    thisAsts.flatMap(_.root).headOption match {
+      case Some(thisAst) => callAst.withReceiverEdge(callNode, thisAst)
+      case None          => callAst
+    }
   }
 
   private def astForNewExpr(x: AnyNewExpr, order: Int, parentUnit: soot.Unit): Ast = {
@@ -480,7 +487,9 @@ class AstCreator(filename: String, global: Global) {
     )
   }
 
-  private def createThisNode(method: SootMethod, builder: NewNode): Ast = {
+  private def createThisNode(method: SootMethod, builder: NewNode): Ast = createThisNode(method.makeRef(), builder)
+
+  private def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
       val parentType = registerType(method.getDeclaringClass.getType.toQuotedString)
       Ast(builder match {
@@ -494,7 +503,7 @@ class AstCreator(filename: String, global: Global) {
         case x: NewMethodParameterIn =>
           x.name("this")
             .code("this")
-            .lineNumber(line(method))
+            .lineNumber(line(method.tryResolve()))
             .typeFullName(parentType)
             .order(0)
             .evaluationStrategy(EvaluationStrategies.BY_SHARING)
@@ -529,8 +538,6 @@ class AstCreator(filename: String, global: Global) {
       case x: ArrayRef   => x.toString()
       case x             => logger.warn(s"Unhandled LHS type in definition ${x.getClass}"); x.toString()
     }
-    val typeFullName = registerType(leftOp.getType.toQuotedString)
-    val code         = s"$typeFullName $name"
     val identifier = leftOp match {
       case x: soot.Local => Seq(astForLocal(x, 1, assignStmt))
       case x: FieldRef   => Seq(astForFieldRef(x, 1, assignStmt))
@@ -543,13 +550,14 @@ class AstCreator(filename: String, global: Global) {
       .mkString(", ")
     val assignment = NewCall()
       .name(Operators.assignment)
+      .methodFullName(Operators.assignment)
       .code(s"$name = $assignmentRhsCode")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
       .typeFullName(registerType(assignStmt.getLeftOp.getType.toQuotedString))
     val initializerAst = Seq(callAst(assignment, identifier ++ initAsts))
-    Seq(Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))) ++ initializerAst.toList
+    initializerAst.toList
   }
 
   private def astsForIfStmt(ifStmt: IfStmt, order: Int): Seq[Ast] = {
@@ -866,11 +874,15 @@ class AstCreator(filename: String, global: Global) {
 
 object AstCreator {
   def line(node: Host): Option[Integer] = {
-    Option(node.getJavaSourceStartLineNumber)
+    if (node == null) None
+    else if (node.getJavaSourceStartLineNumber == -1) None
+    else Option(node.getJavaSourceStartLineNumber)
   }
 
   def column(node: Host): Option[Integer] = {
-    Option(node.getJavaSourceStartColumnNumber)
+    if (node == null) None
+    else if (node.getJavaSourceStartColumnNumber == -1) None
+    else Option(node.getJavaSourceStartColumnNumber)
   }
 
   def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {

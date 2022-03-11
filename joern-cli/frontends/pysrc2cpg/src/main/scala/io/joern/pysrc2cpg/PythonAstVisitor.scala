@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import io.shiftleft.passes.DiffGraph
 import io.joern.pysrc2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperationCalculator, Store}
 import io.joern.pythonparser.ast
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
@@ -24,7 +25,7 @@ object PythonV2AndV3 extends PythonVersion
 
 class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonAstVisitorHelpers {
 
-  private val diffGraph     = new DiffGraph.Builder()
+  private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
 
@@ -36,8 +37,8 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   // is no more specific type than ast.istmt.
   private val functionDefToMethod = mutable.Map.empty[ast.istmt, nodes.NewMethod]
 
-  def getDiffGraph: DiffGraph = {
-    diffGraph.build()
+  def getDiffGraph: DiffGraphBuilder = {
+    diffGraph
   }
 
   private def createIdentifierLinks(): Unit = {

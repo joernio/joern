@@ -27,9 +27,13 @@ class JimpleCodeToCpgFixture extends CodeToCpgFixture(new JimpleFrontend) {
     val codeFile = File.createTempFile("Test", frontend.fileSuffix, tmpDir)
     codeFile.deleteOnExit()
     new PrintWriter(codeFile) { write(sourceCode); close() }
-    compileJava(codeFile)
+    JimpleCodeToCpgFixture.compileJava(codeFile)
     tmpDir
   }
+
+}
+
+object JimpleCodeToCpgFixture {
 
   /** Compiles the source code with debugging info.
     */
@@ -60,5 +64,4 @@ class JimpleCodeToCpgFixture extends CodeToCpgFixture(new JimpleFrontend) {
       case None        => throw new RuntimeException("Unable to find a Java compiler on the system!")
     }
   }
-
 }

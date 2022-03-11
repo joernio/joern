@@ -1,21 +1,20 @@
 package io.joern.c2cpg.passes
 
 import better.files.File
-import io.joern.c2cpg.C2Cpg.Config
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.datastructures.Global
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, Properties, PropertyNames}
-import io.shiftleft.passes.{SimpleCpgPass, KeyPool}
+import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
 import overflowdb.traversal._
 
-class HeaderContentPass(cpg: Cpg, keyPool: Option[KeyPool], config: Config)
-    extends SimpleCpgPass(cpg, keyPool = keyPool) {
+class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
 
   private val systemIncludePaths =
     IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)

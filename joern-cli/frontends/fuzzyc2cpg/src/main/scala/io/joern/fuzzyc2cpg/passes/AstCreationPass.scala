@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.joern.fuzzyc2cpg.Global
 import io.joern.fuzzyc2cpg.passes.astcreation.{AntlrCModuleParserDriver, AstVisitor}
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.slf4j.LoggerFactory
@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory
 /** Given a list of filenames, this pass creates abstract syntax trees for each file, including File and NamespaceBlock
   * Files are processed in parallel.
   */
-class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
-    extends ConcurrentWriterCpgPass[String](cpg, keyPool = Some(keyPool)) {
+class AstCreationPass(filenames: List[String], cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   val global: Global = Global()
