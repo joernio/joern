@@ -1,11 +1,12 @@
 package io.joern.ghidra2cpg.passes.x86
 
+import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang._
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
-import io.joern.ghidra2cpg.Decompiler
+import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.joern.ghidra2cpg.processors.X86Processor
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
@@ -16,13 +17,8 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
-class X86FunctionPass(
-  currentProgram: Program,
-  filename: String,
-  functions: List[Function],
-  cpg: Cpg,
-  decompiler: Decompiler
-) extends ConcurrentWriterCpgPass[Function](cpg) {
+class X86FunctionPass(flatProgramAPI: FlatProgramAPI, cpg: Cpg, decompiler: Decompiler)
+    extends ConcurrentWriterCpgPass[Function](cpg) {
   val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
   // needed by ghidra for decompiling reasons
   val codeUnitFormat: CodeUnitFormat = new CodeUnitFormat(
@@ -39,8 +35,8 @@ class X86FunctionPass(
       true
     )
   )
-  override def generateParts(): Array[Function] = functions.toArray
-  // override def partIterator: Iterator[Method] = cpg.method.l.iterator
+  override def generateParts(): Array[Function] =
+    flatProgramAPI.getCurrentProgram.getListing.getFunctions(true).asScala.toArray
 
   implicit def intToIntegerOption(intOption: Option[Int]): Option[Integer] = {
     intOption.map(intValue => {
@@ -59,7 +55,14 @@ class X86FunctionPass(
         .flatMap(x => Option(x.intValue()))
         .getOrElse(-1)
       val methodNode =
-        createMethodNode(code, function, filename, checkIfExternal(currentProgram, function.getName), lineNumberEnd)
+        createMethodNode(
+          code,
+          function,
+          flatProgramAPI.getProgramFile.getCanonicalPath,
+          checkIfExternal(flatProgramAPI.getCurrentProgram, function.getName),
+          lineNumberEnd
+        )
+
       diffGraphBuilder.addNode(methodNode)
       diffGraphBuilder.addNode(blockNode)
       diffGraphBuilder.addEdge(methodNode, blockNode, EdgeTypes.AST)
@@ -122,7 +125,7 @@ class X86FunctionPass(
         .NewLocal()
         .name(local.getName)
         .code(local.toString)
-        .typeFullName(local.getDataType.toString) // Types.registerType(local.getDataType.toString))
+        .typeFullName(Types.registerType(local.getDataType.toString))
       val identifier =
         createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, -1)
 
@@ -136,7 +139,7 @@ class X86FunctionPass(
 
   def handleBody(diffGraphBuilder: DiffGraphBuilder, function: Function, methodNode: NewMethod): Unit = {
     val instructions: Seq[Instruction] =
-      currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
+      flatProgramAPI.getCurrentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
       handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode, function)
@@ -169,7 +172,10 @@ class X86FunctionPass(
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
         codeUnitFormat.getOperandRepresentationString(instruction, 0)
-      val callee = functions.find(function => function.getName().equals(calledFunction))
+      val callee = flatProgramAPI.getCurrentProgram.getListing
+        .getFunctions(true)
+        .asScala
+        .find(function => function.getName().equals(calledFunction))
       if (callee.nonEmpty) {
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters: Array[(String, Int, String)] = Array.empty
@@ -215,7 +221,7 @@ class X86FunctionPass(
             checkedParameter,
             checkedParameter,
             index,
-            dataType, // Types.registerType(dataType),
+            Types.registerType(dataType),
             instruction.getMinAddress.getOffsetAsBigInteger.intValue
           )
           connectCallToArgument(diffGraphBuilder, callNode, node)
@@ -230,7 +236,7 @@ class X86FunctionPass(
             argument,
             argument,
             index + 1,
-            argument, // Types.registerType(argument),
+            Types.registerType(argument),
             instruction.getMinAddress.getOffsetAsBigInteger.intValue
           )
           connectCallToArgument(diffGraphBuilder, callNode, node)
@@ -244,7 +250,7 @@ class X86FunctionPass(
                   register.getName,
                   register.getName,
                   index + 1,
-                  register.getName, // Types.registerType(register.getName),
+                  Types.registerType(register.getName),
                   instruction.getMinAddress.getOffsetAsBigInteger.intValue
                 )
                 connectCallToArgument(diffGraphBuilder, callNode, node)

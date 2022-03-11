@@ -124,7 +124,7 @@ class Ghidra2Cpg() {
             .createAndApply()
         }
       case _ =>
-        new X86FunctionPass(program, flatProgramAPI.getProgramFile.getCanonicalPath, functions, cpg, decompiler)
+        new X86FunctionPass(flatProgramAPI, cpg, decompiler)
           .createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }

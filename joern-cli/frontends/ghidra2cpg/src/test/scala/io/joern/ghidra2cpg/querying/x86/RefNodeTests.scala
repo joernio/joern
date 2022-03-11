@@ -11,6 +11,7 @@ class RefNodeTests extends GhidraBinToCpgSuite {
   }
 
   "should contain exactly one local with one referencing identifier " in {
+    println(cpg.method.name("refNodeTests").local.name.l) // .referencingIdentifiers.l.size )
     cpg.method.name("refNodeTests").local.referencingIdentifiers.l match {
       case List(x, y) =>
         x.code shouldBe "local_c"
