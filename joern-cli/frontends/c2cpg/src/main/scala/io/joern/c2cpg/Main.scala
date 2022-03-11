@@ -67,13 +67,7 @@ object Main extends App {
           System.exit(1)
       }
     case Some(config) =>
-      try {
-        new C2Cpg().run(config)
-      } catch {
-        case NonFatal(ex) =>
-          logger.error("Failed to generate CPG.", ex)
-          System.exit(1)
-      }
+      new C2Cpg().run(config)
     case None =>
       System.exit(1)
   }
