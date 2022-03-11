@@ -21,29 +21,29 @@ import org.jetbrains.kotlin.psi.{
 }
 
 trait TypeInfoProvider {
-  def returnType(elem: KtNamedFunction, or: String): String
+  def returnType(elem: KtNamedFunction, defaultValue: String): String
 
-  def containingDeclType(expr: KtQualifiedExpression, or: String): String
+  def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String
 
-  def expressionType(expr: KtExpression, or: String): String
+  def expressionType(expr: KtExpression, defaultValue: String): String
 
   def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]
 
-  def parameterType(expr: KtParameter, or: String): String
+  def parameterType(expr: KtParameter, defaultValue: String): String
 
-  def propertyType(expr: KtProperty, or: String): String
+  def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def fullName(expr: KtClassOrObject, or: String): String
+  def fullName(expr: KtClassOrObject, defaultValue: String): String
 
-  def fullName(expr: KtTypeAlias, or: String): String
+  def fullName(expr: KtTypeAlias, defaultValue: String): String
 
   def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String)
 
-  def aliasTypeFullName(expr: KtTypeAlias, or: String): String
+  def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String
 
-  def typeFullName(expr: KtNameReferenceExpression, or: String): String
+  def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
-  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, or: String): String
+  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
 
@@ -75,13 +75,13 @@ trait TypeInfoProvider {
 
   def isConstructorCall(expr: KtCallExpression): Option[Boolean]
 
-  def typeFullName(expr: KtTypeReference, or: String): String
+  def typeFullName(expr: KtTypeReference, defaultValue: String): String
 
-  def typeFullName(expr: KtPrimaryConstructor, or: String): String
+  def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String
 
-  def typeFullName(expr: KtSecondaryConstructor, or: String): String
+  def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String
 
-  def typeFullName(expr: KtCallExpression, or: String): String
+  def typeFullName(expr: KtCallExpression, defaultValue: String): String
 
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 

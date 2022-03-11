@@ -554,7 +554,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
-  def fullNameWithSignature(expr: KtSecondaryConstructor, or: (String, String)): (String, String) = {
+  def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames =
       try {
@@ -586,10 +586,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     (fullname, signature)
   }
 
-  def fullNameWithSignature(expr: KtPrimaryConstructor, or: (String, String)): (String, String) = {
+  def fullNameWithSignature(expr: KtPrimaryConstructor, defaultValue: (String, String)): (String, String) = {
     // if not explicitly defined, the primary ctor will be `null`
     if (expr == null) {
-      return or
+      return defaultValue
     }
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames =
@@ -622,7 +622,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     (fullname, signature)
   }
 
-  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String) = {
+  def fullNameWithSignature(expr: KtNamedFunction, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.FUNCTION, expr))
     val returnTypeFullName =
       fnDesc match {
