@@ -93,7 +93,7 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
         }
       val cpg =
         c2cpg.createCpg(Config(Set(inputPath), outputPath, defines = defines.toSet))
-      cpg.close()
+      cpg.foreach(_.close())
       Some(outputPath)
     }
 

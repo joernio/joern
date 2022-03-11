@@ -68,8 +68,7 @@ object Main extends App {
       }
     case Some(config) =>
       try {
-        val cpg = new C2Cpg().createCpg(config)
-        cpg.close()
+        new C2Cpg().run(config)
       } catch {
         case NonFatal(ex) =>
           logger.error("Failed to generate CPG.", ex)
