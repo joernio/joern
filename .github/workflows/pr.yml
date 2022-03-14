@@ -15,7 +15,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Compile and run tests
-        run: sbt clean +test
+        run: joern-cli/frontends/php2cpg/installdeps.sh; sbt clean +test
         shell: bash
   formatting:
     runs-on: ubuntu-18.04
