@@ -27,7 +27,7 @@ class LoHiPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     val localDiffGraph = new DiffGraphBuilder
     fromToPairs.foreach { pair =>
       logger.debug("Adding REACHING_DEF EDGE for node pair `" + pair._1 + " | " + pair._2 + "`.")
-      localDiffGraph.addEdge(pair._1, pair._2, EdgeTypes.REACHING_DEF, Seq((PropertyNames.VARIABLE, pair._1.code)))
+      localDiffGraph.addEdge(pair._1, pair._2, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, pair._1.code)
     }
     diffGraph.absorb(localDiffGraph)
   }

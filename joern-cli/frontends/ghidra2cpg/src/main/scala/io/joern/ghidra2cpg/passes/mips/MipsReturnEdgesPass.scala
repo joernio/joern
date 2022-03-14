@@ -17,7 +17,7 @@ class MipsReturnEdgesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       //        the first .cfgNext is skipping a _nop instruction after the call
       val to = from.cfgNext.cfgNext.isCall.argument.code("v(0|1)").headOption
       if (to.nonEmpty) {
-        diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, Seq((PropertyNames.VARIABLE, from.code)))
+        diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, from.code)
       }
     }
   }
