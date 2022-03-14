@@ -1,6 +1,7 @@
 package io.joern.c2cpg
 
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.c2cpg.Frontend._
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -22,11 +23,11 @@ final case class Config(
   override def withOutputPath(x: String): Config                  = copy(outputPath = x)
 }
 
-object Main extends App {
+private object Frontend {
+  implicit val defaultConfig: Config = Config()
+  private val logger                 = LoggerFactory.getLogger(classOf[C2Cpg])
 
-  private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
-
-  val frontendSpecificOptions = {
+  val frontendSpecificOptions: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder._
     OParser.sequence(
@@ -57,19 +58,20 @@ object Main extends App {
     )
   }
 
-  X2Cpg.parseCommandLine(args, frontendSpecificOptions, Config()) match {
-    case Some(config) if config.printIfDefsOnly =>
+  def run(config: Config): Unit = {
+    if (config.printIfDefsOnly) {
       try {
         new C2Cpg().printIfDefsOnly(config)
       } catch {
         case NonFatal(ex) =>
           logger.error("Failed to print preprocessor statements.", ex)
-          System.exit(1)
+          throw ex
       }
-    case Some(config) =>
+    } else {
       new C2Cpg().run(config)
-    case None =>
-      System.exit(1)
+    }
   }
 
 }
+
+object Main extends X2CpgMain(frontendSpecificOptions, run) {}

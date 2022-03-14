@@ -18,6 +18,22 @@ trait X2CpgConfig[R] {
   def withOutputPath(x: String): R
 }
 
+class X2CpgMain[T <: X2CpgConfig[T]](frontendSpecificOptions: OParser[Unit, T], run: T => Unit)(implicit
+  defaultConfig: T
+) extends App {
+  X2Cpg.parseCommandLine(args, frontendSpecificOptions, defaultConfig) match {
+    case Some(config) =>
+      try {
+        run(config)
+      } catch {
+        case _: Throwable =>
+          System.exit(1)
+      }
+    case None =>
+      System.exit(1)
+  }
+}
+
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
   */
 trait X2CpgFrontend[T <: X2CpgConfig[_]] {
