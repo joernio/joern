@@ -147,7 +147,7 @@ abstract class FunctionPass(
       val callee = functions.find(function => function.getName().equals(calledFunction))
       if (callee.nonEmpty) {
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
-        var checkedParameters = Array.empty
+        var checkedParameters = Array.empty[(String, Int, String)]
 
         if (callee.head.isThunk) {
           // thunk functions contain parameters already
