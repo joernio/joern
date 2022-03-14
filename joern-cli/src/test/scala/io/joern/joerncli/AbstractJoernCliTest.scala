@@ -19,7 +19,7 @@ trait AbstractJoernCliTest {
     // Create a CPG using the C/C++ parser
     val c2cpg  = new C2Cpg()
     val config = Config(inputPaths = inputFilenames, outputPath = c2cpgOutFilename)
-    c2cpg.runAndOutput(config).close()
+    c2cpg.run(config)
     // Link CPG fragments and enhance to create semantic CPG
     val cpg = DefaultOverlays.create(c2cpgOutFilename)
     (cpg, c2cpgOutFilename)
