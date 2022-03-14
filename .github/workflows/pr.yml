@@ -10,6 +10,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 1
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Install astgen for jssrc2cpg
+        run: npm install -g astgen
       - name: Set up JDK 1.11
         uses: actions/setup-java@v1
         with:
