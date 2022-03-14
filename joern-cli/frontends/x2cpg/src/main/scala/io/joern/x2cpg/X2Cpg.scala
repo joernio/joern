@@ -18,9 +18,8 @@ trait X2CpgConfig[R] {
   def withOutputPath(x: String): R
 }
 
-/**
- * Trait that represents a CPG generator, where T is the frontend configuration class.
- * */
+/** Trait that represents a CPG generator, where T is the frontend configuration class.
+  */
 trait X2CpgFrontend[T <: X2CpgConfig[_]] {
 
   /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
