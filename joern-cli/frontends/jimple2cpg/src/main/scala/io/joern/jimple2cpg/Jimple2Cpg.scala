@@ -4,10 +4,9 @@ import io.joern.jimple2cpg.passes.AstCreationPass
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{extractSourceFilesFromArchive, moveClassFiles}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import org.slf4j.LoggerFactory
 import soot.options.Options
 import soot.{G, PhaseOptions, Scene, SootClass}
@@ -69,11 +68,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       }
 
       configureSoot()
-      val metaDataKeyPool = new IntervalKeyPool(1, 100)
-      val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-      val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
-
-      new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
+      new MetaDataPass(cpg, language).createAndApply()
 
       val sourceFileExtensions  = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
@@ -92,12 +87,12 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       // Load classes into Soot
       loadClassesIntoSoot(sourceFileNames)
       // Project Soot classes
-      val astCreator = new AstCreationPass(sourceFileNames, cpg, methodKeyPool)
+      val astCreator = new AstCreationPass(sourceFileNames, cpg)
       astCreator.createAndApply()
       // Clear classes from Soot
       G.reset()
 
-      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg, Some(typesKeyPool))
+      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg)
         .createAndApply()
     }
     clean()
