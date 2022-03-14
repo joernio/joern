@@ -46,9 +46,10 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
   implicit val context: EngineContext = EngineContext(semantics)
 
   "should find flows through `div*` instructions" in {
-    def source                       = cpg.call.code("_div t1,t0")
-    def sink                         = cpg.call.code("mflo t2")
+    def source                       = cpg.call.code("_div t1,t0").argument
+    def sink                         = cpg.call.code("mflo t2").argument
     def flowsThroughDivXInstructions = sink.reachableByFlows(source).l
+    println(flowsThroughDivXInstructions)
     flowsThroughDivXInstructions.map(flowToResultPairs).toSet shouldBe
       Set(List("_div t1,t0", "mflo t2"))
   }
