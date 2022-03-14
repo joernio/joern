@@ -3,20 +3,19 @@ import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.pcode.PcodeOp._
-import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
+import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.joern.ghidra2cpg.{Decompiler, Types}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 class MipsFunctionPass(
   currentProgram: Program,
@@ -170,7 +169,7 @@ class MipsFunctionPass(
   }
 
   def addCallArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
-    val opCodes = highFunction.get
+    val opCodes: Seq[PcodeOpAST] = highFunction.get
       .getPcodeOps(instruction.getAddress())
       .asScala
       .toList
@@ -240,7 +239,7 @@ class MipsFunctionPass(
       return
     }
     // CALL is the last PcodeOp
-    val opCodes = instruction.getPcode.toList // .last.getOpcode
+    val opCodes: Seq[PcodeOp] = instruction.getPcode.toList
     opCodes.last.getOpcode match {
       case CALLIND | CALL =>
         addCallArguments(diffGraphBuilder, instruction, callNode)
@@ -254,26 +253,17 @@ class MipsFunctionPass(
     val localDiffGraph = new DiffGraphBuilder
     // we need it just once with default settings
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
-    try {
-      val methodNode = {
-        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
-      }
-      highFunction = Some(getHighFunction(function))
-      val methodReturn = createReturnNode()
-      localDiffGraph.addNode(methodNode)
-      localDiffGraph.addNode(blockNode)
-      localDiffGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
-      localDiffGraph.addNode(methodReturn)
-      localDiffGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
-      handleParameters(diffGraphBuilder, function, methodNode)
-      handleLocals(diffGraphBuilder, function, blockNode)
-      handleBody(diffGraphBuilder, function, methodNode, blockNode)
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        println(e.getMessage)
-    }
+    val methodNode = createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+    highFunction = Some(getHighFunction(function))
+    val methodReturn = createReturnNode()
+    localDiffGraph.addNode(methodNode)
+    localDiffGraph.addNode(blockNode)
+    localDiffGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
+    localDiffGraph.addNode(methodReturn)
+    localDiffGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
+    handleParameters(diffGraphBuilder, function, methodNode)
+    handleLocals(diffGraphBuilder, function, blockNode)
+    handleBody(diffGraphBuilder, function, methodNode, blockNode)
     diffGraphBuilder.absorb(localDiffGraph)
-    // Iterator(diffGraph.build())
   }
 }

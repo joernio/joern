@@ -153,14 +153,14 @@ abstract class FunctionPass(
           // thunk functions contain parameters already
           val parameters = callee.head.getParameters
           // TODO:
-          // checkedParameters = parameters.map { parameter =>
-          //  val checkedParameter =
-          //    if (parameter.getRegister == null) parameter.getName
-          //    else parameter.getRegister.getName
+          checkedParameters = parameters.map { parameter =>
+            val checkedParameter =
+              if (parameter.getRegister == null) parameter.getName
+              else parameter.getRegister.getName
 
-          //  // checked parameter name, parameter index, parameter data type
-          //  (checkedParameter, parameter.getOrdinal + 1, parameter.getDataType.getName)
-          // }
+            // checked parameter name, parameter index, parameter data type
+            (checkedParameter, parameter.getOrdinal + 1, parameter.getDataType.getName)
+          }
         } else {
           // non thunk functions do not contain function parameters by default
           // need to decompile function to get parameter information
@@ -175,27 +175,25 @@ abstract class FunctionPass(
             .toSeq
             .filter(_.isParameter)
             .toArray
-          // TODO
-          // checkedParameters = parameters.map { parameter =>
-          //  val checkedParameter =
-          //    if (parameter.getStorage.getRegister == null) parameter.getName
-          //    else parameter.getStorage.getRegister.getName
+          checkedParameters = parameters.map { parameter =>
+            val checkedParameter =
+              if (parameter.getStorage.getRegister == null) parameter.getName
+              else parameter.getStorage.getRegister.getName
 
-          //  // checked parameter name, parameter index, parameter data type
-          //  (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
-          // }
+            // checked parameter name, parameter index, parameter data type
+            (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
+          }
         }
-        // TODO
-        // checkedParameters.foreach { case (checkedParameter, index, dataType) =>
-        //  val node = createIdentifier(
-        //    checkedParameter,
-        //    checkedParameter,
-        //    index,
-        //    Types.registerType(dataType),
-        //    instruction.getMinAddress.getOffsetAsBigInteger.intValue
-        //  )
-        //  connectCallToArgument(diffGraphBuilder, callNode, node)
-        // }
+        checkedParameters.foreach { case (checkedParameter, index, dataType) =>
+          val node = createIdentifier(
+            checkedParameter,
+            checkedParameter,
+            index,
+            Types.registerType(dataType),
+            instruction.getMinAddress.getOffsetAsBigInteger.intValue
+          )
+          connectCallToArgument(diffGraphBuilder, callNode, node)
+        }
       }
     } else
       for (index <- 0 until instruction.getNumOperands) {
