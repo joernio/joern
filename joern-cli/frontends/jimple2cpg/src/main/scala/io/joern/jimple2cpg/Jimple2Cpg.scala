@@ -4,10 +4,9 @@ import io.joern.jimple2cpg.passes.AstCreationPass
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{extractSourceFilesFromArchive, moveClassFiles}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import org.slf4j.LoggerFactory
 import soot.options.Options
 import soot.{G, PhaseOptions, Scene, SootClass}
@@ -16,6 +15,7 @@ import java.io.{File => JFile}
 import java.nio.file.Paths
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.language.postfixOps
+import scala.util.Try
 
 object Jimple2Cpg {
   val language = "JAVA"
@@ -44,24 +44,18 @@ object Jimple2Cpg {
   def apply(): Jimple2Cpg = new Jimple2Cpg()
 }
 
-class Jimple2Cpg {
+class Jimple2Cpg extends X2CpgFrontend[Config] {
 
   import Jimple2Cpg._
 
   private val logger = LoggerFactory.getLogger(classOf[Jimple2Cpg])
 
-  /** Creates a CPG from Jimple.
-    *
-    * @param rawSourceCodePath
-    *   The path to the Jimple code or code that can be transformed into Jimple.
-    * @param outputPath
-    *   The path to store the CPG. If `outputPath` is `None`, the CPG is created in-memory.
-    * @return
-    *   The constructed CPG.
-    */
-  def createCpg(rawSourceCodePath: String, outputPath: Option[String] = None): Cpg = {
-    try {
-      // Determine if the given path is a file or directory and sanitize accordingly
+  def createCpg(config: Config): Try[Cpg] = {
+    val ret = withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
+      if (config.inputPaths.size != 1) {
+        throw new RuntimeException("This frontend requires exactly one input path")
+      }
+      val rawSourceCodePath = config.inputPaths.head
       val rawSourceCodeFile = new JFile(rawSourceCodePath)
       val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
       val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
@@ -74,12 +68,7 @@ class Jimple2Cpg {
       }
 
       configureSoot()
-      val cpg             = newEmptyCpg(outputPath)
-      val metaDataKeyPool = new IntervalKeyPool(1, 100)
-      val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-      val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
-
-      new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
+      new MetaDataPass(cpg, language).createAndApply()
 
       val sourceFileExtensions  = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
@@ -98,18 +87,16 @@ class Jimple2Cpg {
       // Load classes into Soot
       loadClassesIntoSoot(sourceFileNames)
       // Project Soot classes
-      val astCreator = new AstCreationPass(sourceFileNames, cpg, methodKeyPool)
+      val astCreator = new AstCreationPass(sourceFileNames, cpg)
       astCreator.createAndApply()
       // Clear classes from Soot
       G.reset()
 
-      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg, Some(typesKeyPool))
+      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg)
         .createAndApply()
-
-      cpg
-    } finally {
-      clean()
     }
+    clean()
+    ret
   }
 
   /** Load all source files from archive and/or source file types.

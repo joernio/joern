@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.passes
 
 import io.joern.jimple2cpg.Jimple2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 import soot.Scene
 
@@ -12,8 +12,7 @@ case class Global(usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipL
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
-    extends ConcurrentWriterCpgPass[String](cpg, keyPool = Some(keyPool)) {
+class AstCreationPass(filenames: List[String], cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
 
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])

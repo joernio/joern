@@ -25,13 +25,7 @@ object Main extends App {
 
   X2Cpg.parseCommandLine(args, frontendSpecificOptions, Config()) match {
     case Some(config) =>
-      if (config.inputPaths.size == 1) {
-        val cpg = new Jimple2Cpg().createCpg(config.inputPaths.head, Some(config.outputPath))
-        cpg.close()
-      } else {
-        println("This frontend requires exactly one input path")
-        System.exit(1)
-      }
+      new Jimple2Cpg().run(config)
     case None =>
       System.exit(1)
   }

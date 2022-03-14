@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.testfixtures
 
-import io.joern.jimple2cpg.Jimple2Cpg
+import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
 
@@ -15,7 +15,8 @@ class JimpleFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    new Jimple2Cpg().createCpg(sourceCodeFile.getAbsolutePath)
+    implicit val defaultConfig: Config = Config()
+    new Jimple2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
 
