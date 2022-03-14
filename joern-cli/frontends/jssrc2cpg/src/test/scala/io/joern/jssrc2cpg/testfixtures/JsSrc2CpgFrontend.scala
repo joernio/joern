@@ -16,7 +16,7 @@ class JsSrc2CpgFrontend(override val fileSuffix: String = ".js") extends Languag
     packageJson.deleteOnExit()
     val jssrc2cpg = new JsSrc2Cpg()
     val config    = Config(inputPaths = Set(sourceCodePath.getAbsolutePath), outputPath = cpgFile.getAbsolutePath)
-    jssrc2cpg.createCpg(config)
+    jssrc2cpg.createCpg(config).get
   }
 }
 
