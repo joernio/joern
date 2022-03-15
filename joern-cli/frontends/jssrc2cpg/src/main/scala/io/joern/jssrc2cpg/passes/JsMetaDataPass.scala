@@ -11,7 +11,7 @@ class JsMetaDataPass(cpg: Cpg, hash: String) extends SimpleCpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     logger.debug("Generating meta-data.")
-    val metaNode = NewMetaData().language("NEWJS").hash(hash)
+    val metaNode = NewMetaData().language("NEWJS").hash(hash).version("0.1")
     diffGraph.addNode(metaNode)
   }
 

@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.joern.x2cpg.Ast
+import org.apache.commons.lang.StringUtils
 import ujson.Value
 
 object AstCreatorHelper {
@@ -60,6 +61,13 @@ trait AstCreatorHelper {
     val end   = node("end").num.toInt
     parserResult.fileContent.substring(start, end).trim
   }
+
+  // maximum length of re-mapped code fields after transpilation in number of characters
+  private val MAX_CODE_LENGTH: Int = 1000
+  private val MIN_CODE_LENGTH: Int = 50
+
+  protected def shortenCode(code: String, length: Int = MAX_CODE_LENGTH): String =
+    StringUtils.abbreviate(code, math.max(MIN_CODE_LENGTH, length))
 
   protected def columnEnd(node: Value): Option[Integer] =
     node("loc").objOpt.flatMap(loc => loc("end").objOpt.flatMap(start => start("column").numOpt.map(_.toInt)))
