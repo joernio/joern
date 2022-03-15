@@ -23,8 +23,6 @@
     }
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
     "chai": "^4.2.0",
     "coveralls": "^3.1.0",
     "husky": "^2.2.0",
@@ -33,7 +31,8 @@
   },
   "dependencies": {
     "@solidity-parser/parser": "^0.13.2",
-    "babel": "^6.23.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
     "c3-linearization": "^0.3.0",
     "colors": "^1.4.0",
     "graphviz": "0.0.9",
