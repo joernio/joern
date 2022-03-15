@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.unpacking
 
-import io.joern.jimple2cpg.Jimple2Cpg
+import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -21,7 +21,8 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     super.beforeAll()
     Try(getClass.getResource("/unpacking")) match {
       case Success(x) =>
-        cpg = new Jimple2Cpg().createCpg(x.getPath)
+        implicit val defaultConfig: Config = Config()
+        cpg = new Jimple2Cpg().createCpg(x.getPath).get
       case Failure(x: Throwable) =>
         fail("Unable to obtain test resources.", x)
     }

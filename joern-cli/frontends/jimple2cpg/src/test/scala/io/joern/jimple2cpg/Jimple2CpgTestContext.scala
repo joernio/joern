@@ -16,9 +16,11 @@ class Jimple2CpgTestContext {
 
   def buildCpg(runDataflow: Boolean): Cpg = {
     if (buildResult.isEmpty) {
-      val jimple2Cpg = Jimple2Cpg()
-      val cpg        = jimple2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
-      val context    = new LayerCreatorContext(cpg)
+      val jimple2Cpg                     = Jimple2Cpg()
+      val inputPath                      = writeCodeToFile(code).getAbsolutePath
+      implicit val defaultConfig: Config = Config()
+      val cpg                            = jimple2Cpg.createCpg(inputPath).get
+      val context                        = new LayerCreatorContext(cpg)
       new Base().run(context)
       new TypeRelations().run(context)
       new ControlFlow().run(context)
