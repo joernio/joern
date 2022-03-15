@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Surya(inheritance)</title>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <style type="text/css">
+        /** jsplumbtoolkit-defaults.css **/
+        {{jsplumbtoolkit-defaults.css}}
+    </style>
+    <style type="text/css">
+        *,
+        *:before,
+        *:after {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility
+        }
+
+
+        body {
+            background-color: #262626;
+            color: #434343;
+            font-family: "Lato", sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            height: 100%;
+            padding: 0
+        }
+
+        h3 {
+            color: #32CCB6;
+            font-size: 24px;
+        }
+
+        /** HOVER EFFECTS **/
+
+        .chart .window:hover,
+        .chart .window.jtk-source-hover,
+        .chart .window.jtk-target-hover {
+            background-color: #ec9f2e;
+            color: #eeeeee;
+        }
+
+        .description {
+            font-size: 15px;
+            margin-top: 25px;
+            padding: 13px;
+            margin-bottom: 22px;
+            background-color: #f4f5ef;
+            border-radius: 0.5em;
+        }
+
+        .window {
+            background-color: #56638F;
+            text-align: center;
+            z-index: 24;
+            cursor: pointer;
+            box-shadow: 2px 2px 12px #aaa;
+            -o-box-shadow: 2px 2px 12px #aaa;
+            -webkit-box-shadow: 2px 2px 12px #aaa;
+            -moz-box-shadow: 2px 2px 12px #aaa;
+            -moz-border-radius: 0.5em;
+            border-radius: 0.5em;
+            position: absolute;
+            color: white;
+            padding: 0.5em;
+            width: 14em;
+            height: 4em;
+            line-height: 4em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-transition: -webkit-box-shadow 0.15s ease-in;
+            -moz-transition: -moz-box-shadow 0.15s ease-in;
+            -o-transition: -o-box-shadow 0.15s ease-in;
+            transition: box-shadow 0.15s ease-in;
+        }
+
+        .window:hover {
+            border: 1px #123456;
+            box-shadow: 2px 2px 19px #444;
+            -o-box-shadow: 2px 2px 19px #444;
+            -webkit-box-shadow: 2px 2px 19px #444;
+            -moz-box-shadow: 2px 2px 19px #fff;
+            opacity: 0.9;
+        }
+
+        .jtk-canvas {
+            height: 1000px;
+            max-height: 1000px;
+            border: 1px dotted #79677E;
+            display: flex;
+        }
+
+        path,
+        jtk-endpoint {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h3>Surya(inheritance)</h3>
+    </div>
+    <div>
+        <div class="jtk-canvas canvas-wide chart jtk-surface jtk-surface-nopan" id="canvas">
+            <!--  
+                    nodes are added here.
+                -->
+        </div>
+
+        <!-- explanation -->
+        <div class="description">
+            <h4>Description</h4>
+            <p>This visualizes inheritance relationship among solidity contracts.</p>
+            <p>If you cannot see a diagram on the above, you may need to open this file in Chrome or Firefox.</p>
+        </div>
+        <!-- /explanation -->
+    </div>
+
+    <!--  jsplumb -->
+    <script>
+    {{jsplumb.min.js}}
+    </script>
+
+    <!--  jquery -->
+    <script>
+    {{jquery.min.js}}
+    </script>
+
+    <!--  main code -->
+    <script>
+        $(function () {
+            jsPlumb.ready(function () {
+                // definiton of contracts.
+                var def = JSON.parse('{{definition}}');
+
+                var levels = [0];   // arr index is level. element is the number of node on the level.
+                var nodeList = [];
+                var superRelationList = [];
+                var usesRelationList = [];
+
+
+                for (let contractName of def.contracts) {
+                    addNode(contractName, 0);
+                }
+
+                function addNode(contractName, level) {
+                    if (nodeList.indexOf(contractName) > -1) {
+                        // if already exists.
+                        return;
+                    }
+
+                    // push to node list
+                    nodeList.push(contractName);
+
+                    $('#canvas').append('<div class="window" style="left:' + (20 * level + 2) +
+                        'em; top:' + (10 * levels[level] + 3) + 'em" id="' + contractName + '">' + contractName + '</div>');
+
+                    // if element of this level, push the element.
+                    if (levels.length == level + 1) {
+                        levels.push(0);
+                    }
+
+                    // increment this level node count.
+                    levels[level] = levels[level] + 1;
+
+                    // increment level for next.
+                    level++;
+
+                    // process inheritances.
+                    def.inheritances.forEach(element => {
+                        var inheri = element.split('=>')
+                        var from = inheri[0]
+                        var to = inheri[1]
+                        if (from === contractName) {
+                            var relation = { "from": from, "to": to };
+                            superRelationList.push(relation);
+                            addNode(to, level);
+                        }
+                    });
+                }
+
+                jsPlumb.batch(function () {
+                    // for Super Relation
+                    var instanceSuper = jsPlumb.getInstance({
+                        Connector: ["Straight", { curviness: 50 }],
+                        DragOptions: { cursor: "pointer" },
+                        PaintStyle: { stroke: "#4648B8", strokeWidth: 2 },
+                        Endpoint: ["Dot", { radius: 4.0 }],
+                        EndpointStyle: { raidus: 1, fill: "gray" },
+                        HoverPaintStyle: { stroke: "#ec9f2e" },
+                        EndpointHoverStyle: { fill: "#ec9f2e" },
+                        Container: "canvas"
+                    });
+
+
+                    // declare some common values:
+                    var arrowCommon = { foldback: 0.7, fill: "gray", width: 14 },
+                        overlays = [
+                            ["PlainArrow", { location: 0.0, direction: -1 }, arrowCommon]
+                        ];
+
+                    // add endpoints for supers relation.
+                    var windows = jsPlumb.getSelector(".chart .window");
+                    for (var i = 0; i < windows.length; i++) {
+                        instanceSuper.addEndpoint(windows[i], {
+                            uuid: windows[i].getAttribute("id") + "-bottom",
+                            anchor: "Continuous",
+                            maxConnections: -1
+                        });
+                        instanceSuper.addEndpoint(windows[i], {
+                            uuid: windows[i].getAttribute("id") + "-top",
+                            anchor: "Continuous",
+                            maxConnections: -1
+                        });
+                    }
+
+                    // connect nodes for supers relation.
+                    superRelationList.forEach(element => {
+                        instanceSuper.connect({ uuids: [element.to + "-bottom", element.from + "-top"], overlays: overlays, detachable: true, reattach: true, dragOptions: {} });
+                    });
+
+                    // enable dragging.
+                    instanceSuper.draggable(windows);
+                }, true);
+            });
+        });
+    </script>
+</body>
+
+</html>

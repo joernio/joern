@@ -1,0 +1,35 @@
+dist: trusty
+sudo: false
+language: node_js
+version: 1.0
+node_js:
+- node
+cache:
+  directories:
+  - node_modules
+
+
+-: &npm_deploy
+    provider: npm
+    email: goncalo05@gmail.com
+    api_key: $NPM_TOKEN
+    skip_cleanup: true
+
+deploy:
+  - <<: *npm_deploy
+    on:
+      repo: ConsenSys/surya
+      branch: master
+      tags: true
+  - provider: script
+    edge: true
+    script: .travis/prerelease_pu.sh
+    on:
+      repo: ConsenSys/surya
+      branch: develop
+  - <<: *npm_deploy
+    tag: next
+    script: .travis/prerelease_pu.sh
+    on:
+      repo: ConsenSys/surya
+      branch: develop
