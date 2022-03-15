@@ -38,7 +38,10 @@ Some general development habits for the project:
   e.g. `fabs/control-structure-nodes`.
 - Code must be formatted using `sbt scalafmt` before a pull request otherwise the pipeline will fail.
 
-### Run time Dependencies
+### Convert .sol to .json
 
-solidity2cpg uses surya to parse solidity files to json format asts. Make sure to have it installed using
-`npm install -g suyra`, to see more about suyra <https://github.com/ConsenSys/surya>
+1. `cd package/`
+2. `yarn install`
+3. `cd ..`
+4. `npm link package/`
+5. use `surya parse contract.sol` with option -j/--json for json format or no option for treeified format.
