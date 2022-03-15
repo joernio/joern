@@ -9,13 +9,11 @@ import org.scalatest.Inside
 
 class JsSrc2CpgFrontend(override val fileSuffix: String = ".js") extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgFile = java.io.File.createTempFile("jssrc2cpg", ".bin")
-    cpgFile.deleteOnExit()
-    val packageJson = File(sourceCodePath.getPath) / "package.json"
+    val packageJson = File(sourceCodePath.getAbsolutePath) / "package.json"
     packageJson.createIfNotExists()
     packageJson.deleteOnExit()
     val jssrc2cpg = new JsSrc2Cpg()
-    val config    = Config(inputPaths = Set(sourceCodePath.getAbsolutePath), outputPath = cpgFile.getAbsolutePath)
+    val config    = Config(inputPaths = Set(sourceCodePath.getAbsolutePath))
     jssrc2cpg.createCpg(config).get
   }
 }

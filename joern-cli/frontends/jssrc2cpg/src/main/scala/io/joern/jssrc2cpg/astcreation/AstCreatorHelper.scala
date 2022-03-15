@@ -28,11 +28,6 @@ trait AstCreatorHelper {
 
   this: AstCreator =>
 
-  protected def registerType(typeName: String): String = {
-    global.usedTypes.putIfAbsent(typeName, true)
-    typeName
-  }
-
   protected def withOrder[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
     nodes.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)

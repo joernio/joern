@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.parsetests
+package io.joern.jssrc2cpg.parser
 
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.NodeTypes

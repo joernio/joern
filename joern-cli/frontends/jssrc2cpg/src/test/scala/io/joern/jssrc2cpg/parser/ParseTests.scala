@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.parsetests
+package io.joern.jssrc2cpg.parser
 
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.semanticcpg.language._

@@ -1,11 +1,10 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.Stack._
-import io.joern.jssrc2cpg.datastructures.Scope
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.datastructures.Global
+import io.joern.jssrc2cpg.datastructures.scope.Scope
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -15,13 +14,13 @@ import io.joern.x2cpg.Ast
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Value
 
-class AstCreator(val config: Config, val global: Global, diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
+class AstCreator(val config: Config, diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
     extends AstNodeBuilder
     with AstCreatorHelper {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
+  protected val scope = new Scope()
 
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
   // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
@@ -78,7 +77,6 @@ class AstCreator(val config: Config, val global: Global, diffGraph: DiffGraphBui
         .astParentFullName(fullName)
 
     methodAstParentStack.push(fakeGlobalMethod)
-    scope.pushNewScope(fakeGlobalMethod)
 
     val blockNode = NewBlock()
       .order(1)
