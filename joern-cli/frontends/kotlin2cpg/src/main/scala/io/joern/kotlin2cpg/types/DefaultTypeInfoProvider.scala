@@ -403,11 +403,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def containingDeclFullName(expr: KtCallExpression): Option[String] = {
     val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        val decl = fnDescriptor.getContainingDeclaration
-        Some(TypeRenderer.renderFqName(decl))
-      case None => None
+    resolvedDesc.map { fnDescriptor =>
+      val decl = fnDescriptor.getContainingDeclaration
+      TypeRenderer.renderFqName(decl)
     }
   }
 
