@@ -44,4 +44,4 @@ Some general development habits for the project:
 2. `yarn install`
 3. `cd ..`
 4. `npm link package/`
-5. use `surya parse contract.sol` with option -j/--json for json format or no option for treeified format.
+5. use `surya parse -j /path/to/contract.sol` with flag -j/--json for json format or no flag for treeified format.
