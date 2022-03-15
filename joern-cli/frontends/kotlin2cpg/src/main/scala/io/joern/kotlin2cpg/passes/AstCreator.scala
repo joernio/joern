@@ -2612,6 +2612,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
+    val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
+    declFullNameOption.foreach(registerType)
+
     val args = expr.getValueArguments
     val argAsts =
       withOrder(args) { case (arg, argOrder) =>
