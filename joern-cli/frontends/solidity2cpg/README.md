@@ -37,3 +37,11 @@ Some general development habits for the project:
 - When making a branch, use the following template `<short-name>/<feature-or-bug-name>`
   e.g. `fabs/control-structure-nodes`.
 - Code must be formatted using `sbt scalafmt` before a pull request otherwise the pipeline will fail.
+
+### Convert .sol to .json
+
+1. `cd package/`
+2. `yarn install`
+3. `cd ..`
+4. `npm link package/`
+5. use `surya parse contract.sol` with option -j/--json for json format or no option for treeified format.
