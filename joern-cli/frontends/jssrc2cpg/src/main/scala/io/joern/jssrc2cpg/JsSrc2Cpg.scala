@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg
 import better.files.File
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.passes.BuiltinTypesPass
+import io.joern.jssrc2cpg.passes.CallLinkerPass
 import io.joern.jssrc2cpg.passes.JsMetaDataPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
@@ -32,6 +33,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
           }
         val hash = FileUtils.md5(astgenResult.parsedFiles.toSeq.map(f => Paths.get(f._2)))
         new AstCreationPass(cpg, astgenResult, config, report).createAndApply()
+        new CallLinkerPass(cpg).createAndApply()
         new JsMetaDataPass(cpg, hash).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
         report.print()

@@ -79,7 +79,7 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
     val thisParam = createParameterInNode("this", "this", 0, lineNumber, columnNumber)
 
     var currOrder = 1
-    val declsAsts = allDecls.flatMap { node =>
+    val methodChildren = allDecls.flatMap { node =>
       val r = astsForNode(node, currOrder)
       currOrder = currOrder + r.length
       r
@@ -101,7 +101,7 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
     functionTypeAndTypeDeclAst.withChild(
       Ast(programMethod)
         .withChild(Ast(thisParam))
-        .withChild(Ast(blockNode).withChildren(declsAsts))
+        .withChild(Ast(blockNode).withChildren(methodChildren))
         .withChild(Ast(methodReturn))
     )
   }
