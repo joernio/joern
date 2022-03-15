@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.utils
 
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}

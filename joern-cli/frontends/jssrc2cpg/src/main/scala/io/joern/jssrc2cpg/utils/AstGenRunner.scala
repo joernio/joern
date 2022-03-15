@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.utils
 
 import better.files.File
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import scala.util.Failure
