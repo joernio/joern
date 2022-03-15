@@ -41,4 +41,4 @@ Some general development habits for the project:
 ### Run time Dependencies
 
 solidity2cpg uses surya to parse solidity files to json format asts. Make sure to have it installed using
-`npm install -g suyra`, to see more about suyra https://github.com/ConsenSys/surya
+`npm install -g suyra`, to see more about suyra <https://github.com/ConsenSys/surya>
