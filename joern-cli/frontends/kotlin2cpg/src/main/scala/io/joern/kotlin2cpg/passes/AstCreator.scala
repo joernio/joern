@@ -433,11 +433,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       withOrder(constructorParams.asJava) { (p, order) =>
         astForParameter(p, order)
       }
+    val orderAfterParams = constructorParamsWithCtx.size + 1
+    val ctorMethodBlock =
+      NewBlock()
+        .code("")
+        .typeFullName(TypeConstants.void)
+        .order(orderAfterParams)
 
-    val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
+    val orderAfterParamsAndBlock = orderAfterParams + 1
+    val typeFullName             = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn =
       NewMethodReturn()
-        .order(1)
+        .order(orderAfterParamsAndBlock)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
         .typeFullName(typeFullName)
         .dynamicTypeHintFullName(Some(fullName))
@@ -447,6 +454,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val constructorAst =
       Ast(constructorMethod)
         .withChildren(constructorParamsWithCtx.map(_.ast))
+        .withChild(Ast(ctorMethodBlock))
         .withChild(Ast(constructorMethodReturn))
 
     val membersFromPrimaryCtorAsts =
