@@ -22,6 +22,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
       m.fullName shouldBe "mypkg.Foo.<init>:void()"
+      m.name shouldBe "<init>"
       m.parameter.size shouldBe 0
       m.block.size shouldBe 1
     }
@@ -38,6 +39,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
+      m.name shouldBe "<init>"
       m.parameter.size shouldBe 1
       m.block.size shouldBe 1
     }
@@ -54,6 +56,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
+      m.name shouldBe "<init>"
       m.parameter.size shouldBe 1
       m.block.size shouldBe 1
     }

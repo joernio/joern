@@ -421,7 +421,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val primaryCtorOrder = 1
     val constructorMethod =
       NewMethod()
-        .name(className)
+        .name(TypeConstants.initPrefix)
         .fullName(ctorFnWithSig._1)
         .signature(ctorFnWithSig._2)
         .isExternal(false)
