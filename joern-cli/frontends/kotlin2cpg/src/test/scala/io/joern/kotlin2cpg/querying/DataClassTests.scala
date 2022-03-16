@@ -25,10 +25,12 @@ class DataClassTests extends AnyFreeSpec with Matchers {
       firstMethod.name shouldBe "component1"
       firstMethod.fullName shouldBe "mypkg.Result.component1:java.lang.Integer()"
       firstMethod.signature shouldBe "java.lang.Integer()"
+      firstMethod.block.size shouldBe 1
 
       secondMethod.name shouldBe "component2"
       secondMethod.fullName shouldBe "mypkg.Result.component2:java.lang.String()"
       secondMethod.signature shouldBe "java.lang.String()"
+      secondMethod.block.size shouldBe 1
     }
   }
 }

@@ -41,7 +41,7 @@ class FileTests extends AnyFreeSpec with Matchers {
         .name(".*.kt".replace("/", s"\\${JFile.separator}"))
         .method
         .name
-        .toSet shouldBe Set("baz", "Foo", "add")
+        .toSet shouldBe Set("baz", "<init>", "add")
     }
 
     "should allow traversing from file to its type declarations" in {
