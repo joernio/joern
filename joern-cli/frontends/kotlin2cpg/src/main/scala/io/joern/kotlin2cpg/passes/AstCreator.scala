@@ -37,6 +37,7 @@ object Constants {
   val this_                          = "this"
   val componentNPrefix               = "component"
   val tmpLocalPrefix                 = "tmp_"
+  val ret                            = "RET"
 }
 
 case class ImportEntry(
@@ -552,22 +553,45 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .dispatchType(DispatchTypes.STATIC_DISPATCH)
               .signature("")
               .typeFullName(typeFullName)
+              .order(1)
+              .argumentIndex(1)
           val fieldAccessCallAst =
             Ast(fieldAccessCall)
               .withChild(Ast(thisIdentifier))
               .withArgEdge(fieldAccessCall, thisIdentifier)
-              .withChild(Ast(fieldAccessCall))
+              .withChild(Ast(fieldIdentifier))
               .withArgEdge(fieldAccessCall, fieldIdentifier)
 
+          val returnNode =
+            NewReturn()
+              .code(Constants.ret)
+              .order(1)
+              .lineNumber(-1)
+              .columnNumber(-1)
+              .order(1)
+          val returnAst =
+            Ast(returnNode)
+              .withChild(fieldAccessCallAst)
+              .withArgEdge(returnNode, fieldAccessCall)
+
+          val methodBlock =
+            NewBlock()
+              .code(fieldAccessCall.code)
+              .typeFullName(typeFullName)
+              .order(1)
+              .lineNumber(-1)
+              .columnNumber(-1)
+          val methodBlockAst =
+            Ast(methodBlock)
+              .withChild(returnAst)
           val methodReturn =
             NewMethodReturn()
               .evaluationStrategy(EvaluationStrategies.BY_VALUE)
               .typeFullName(typeFullName)
-              .order(1)
-          val methodReturnAst =
-            Ast(methodNode)
-              .withChild(Ast(fieldAccessCall))
+              .order(2)
+
           Ast(methodNode)
+            .withChild(methodBlockAst)
             .withChild(Ast(methodReturn))
         }
       } else {
@@ -1547,7 +1571,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val initCallNode =
       NewCall()
         .name(Constants.init)
-        .code(tmpName + "." + "<init>" + "()") // TODO: fill args properly
+        .code(Constants.init)
         .order(orderForTmpInitCall)
         .methodFullName(fullNameWithSig._1)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)

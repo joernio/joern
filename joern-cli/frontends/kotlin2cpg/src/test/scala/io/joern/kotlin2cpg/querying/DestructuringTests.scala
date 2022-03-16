@@ -140,7 +140,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       allocAssignmentRhs.argumentIndex shouldBe 2
 
-      val List(tmpInitCall) = cpg.call.code("tmp.*init.*").l
+      val List(tmpInitCall) = cpg.call.code(".*init.*").l
       tmpInitCall.order shouldBe (firstAstConstruct.order + 6)
 
       val List(initCallFirstArg: Identifier, initCallSecondArg: Identifier, initCallThirdArg: Literal) =
