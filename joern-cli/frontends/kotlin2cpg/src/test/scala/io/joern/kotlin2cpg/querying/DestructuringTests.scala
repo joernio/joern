@@ -93,8 +93,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
         |
         |data class AClass(val a: String, val b: Int)
         |fun main() {
-        |    println("first")
-        |    val (myA, myB) = AClass("AMESSAGE", 41414141)
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, myB) = AClass(aMessage, 41414141)
         |    println(myA)
         |    println(myB)
         |// prints
@@ -106,7 +106,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a correctly-lowered representation" in {
-      val List(firstAstConstruct)  = cpg.call.code("print.*first.*").l
+      val List(firstAstConstruct)  = cpg.call.code("val aMessage.*=.*").l
       val List(firstDestructLocal) = cpg.local.nameExact("myA").l
       firstDestructLocal.code shouldBe "myA"
       firstDestructLocal.typeFullName shouldBe "java.lang.String"
@@ -141,14 +141,14 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(tmpInitCall) = cpg.call.code("tmp.*init.*").l
-      val List(initCallFirstArg: Identifier, initCallSecondArg: Literal, initCallThirdArg: Literal) =
+      val List(initCallFirstArg: Identifier, initCallSecondArg: Identifier, initCallThirdArg: Literal) =
         tmpInitCall.argument.l
       initCallFirstArg.code shouldBe "tmp_1"
       initCallFirstArg.typeFullName shouldBe "main.AClass"
       initCallFirstArg.argumentIndex shouldBe 0
       tmpLocal.referencingIdentifiers.id.l.contains(initCallFirstArg.id) shouldBe true
 
-      initCallSecondArg.code shouldBe "\"AMESSAGE\""
+      initCallSecondArg.code shouldBe "aMessage"
       initCallSecondArg.typeFullName shouldBe "java.lang.String"
       initCallSecondArg.argumentIndex shouldBe 1
 
