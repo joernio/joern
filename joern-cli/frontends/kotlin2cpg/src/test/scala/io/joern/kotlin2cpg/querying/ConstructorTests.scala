@@ -19,17 +19,11 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a TYPE_DECL node" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").size shouldBe 1
-    }
-
-    "should contain a METHOD node for the constructor with the correct fullname set" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe
-        List("mypkg.Foo.<init>:void()")
-    }
-
-    "should contain a METHOD node for the constructor with the correct number of parameters" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.parameter.size shouldBe 0
+    "should contain a METHOD node for the constructor with the correct props set" in {
+      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
+      m.fullName shouldBe "mypkg.Foo.<init>:void()"
+      m.parameter.size shouldBe 0
+      m.block.size shouldBe 1
     }
   }
 
@@ -41,16 +35,11 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a TYPE_DECL node" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").size shouldBe 1
-    }
-
-    "should contain a METHOD node for the constructor with the correct fullname set" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo.<init>:void(java.lang.String)")
-    }
-
-    "should contain a METHOD node for the constructor with the correct number of parameters" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.parameter.size shouldBe 1
+    "should contain a METHOD node for the constructor with the correct props set" in {
+      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
+      m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
+      m.parameter.size shouldBe 1
+      m.block.size shouldBe 1
     }
   }
 
@@ -62,16 +51,11 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a TYPE_DECL node" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").size shouldBe 1
-    }
-
-    "should contain a METHOD node for the constructor with the correct fullname set" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List("mypkg.Foo.<init>:void(java.lang.String)")
-    }
-
-    "should contain a METHOD node for the constructor with the correct number of parameters" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.parameter.size shouldBe 1
+    "should contain a METHOD node for the constructor with the correct props set" in {
+      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
+      m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
+      m.parameter.size shouldBe 1
+      m.block.size shouldBe 1
     }
   }
 
@@ -86,10 +70,6 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
         |    }
         |}
         |""".stripMargin)
-
-    "should contain a TYPE_DECL node" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").size shouldBe 1
-    }
 
     "should contain METHOD nodes for the primary and secondary constructors with the correct fullnames set" in {
       cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List(
@@ -107,22 +87,22 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a METHOD node for the primary constructor with properties set correctly" in {
-      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
-      td.lineNumber shouldBe Some(3)
-      td.columnNumber shouldBe Some(9)
-      td.methodReturn.code shouldBe "RET"
-      td.methodReturn.lineNumber shouldBe Some(3)
-      td.methodReturn.columnNumber shouldBe Some(9)
+      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
+      m.lineNumber shouldBe Some(3)
+      m.columnNumber shouldBe Some(9)
+      m.methodReturn.code shouldBe "RET"
+      m.methodReturn.lineNumber shouldBe Some(3)
+      m.methodReturn.columnNumber shouldBe Some(9)
     }
 
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
-      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
-      td.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
-      td.lineNumber shouldBe Some(5)
-      td.columnNumber shouldBe Some(4)
-      td.methodReturn.code shouldBe "RET"
-      td.methodReturn.lineNumber shouldBe Some(5)
-      td.methodReturn.columnNumber shouldBe Some(4)
+      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
+      m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
+      m.lineNumber shouldBe Some(5)
+      m.columnNumber shouldBe Some(4)
+      m.methodReturn.code shouldBe "RET"
+      m.methodReturn.lineNumber shouldBe Some(5)
+      m.methodReturn.columnNumber shouldBe Some(4)
     }
   }
 }
