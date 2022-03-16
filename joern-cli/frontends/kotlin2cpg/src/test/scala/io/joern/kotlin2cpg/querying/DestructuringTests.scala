@@ -141,25 +141,30 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(tmpInitCall) = cpg.call.code("tmp.*init.*").l
+      tmpInitCall.order shouldBe (firstAstConstruct.order + 6)
+
       val List(initCallFirstArg: Identifier, initCallSecondArg: Identifier, initCallThirdArg: Literal) =
         tmpInitCall.argument.l
       initCallFirstArg.code shouldBe "tmp_1"
       initCallFirstArg.typeFullName shouldBe "main.AClass"
       initCallFirstArg.argumentIndex shouldBe 0
+      initCallFirstArg.order shouldBe 1
       tmpLocal.referencingIdentifiers.id.l.contains(initCallFirstArg.id) shouldBe true
 
       initCallSecondArg.code shouldBe "aMessage"
       initCallSecondArg.typeFullName shouldBe "java.lang.String"
       initCallSecondArg.argumentIndex shouldBe 1
+      initCallSecondArg.order shouldBe 2
 
       initCallThirdArg.code shouldBe "41414141"
       initCallThirdArg.typeFullName shouldBe "java.lang.Integer"
       initCallThirdArg.argumentIndex shouldBe 2
+      initCallThirdArg.order shouldBe 3
 
       val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
-      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
+      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
 
       val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
       firstDestructLHSIdentifier.name shouldBe "myA"
@@ -182,7 +187,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(secondDestructAssignment) = cpg.call.code("myB.*=.*component.*").l
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
-      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
+      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 8)
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"

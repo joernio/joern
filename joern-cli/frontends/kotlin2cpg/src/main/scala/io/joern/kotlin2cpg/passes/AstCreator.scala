@@ -1536,19 +1536,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val args = ctorCall.getValueArguments
     val argAsts =
       withOrder(args) { case (arg, argOrder) =>
-        astsForExpression(arg.getArgumentExpression, scopeContext, argOrder, argOrder)
+        astsForExpression(arg.getArgumentExpression, scopeContext, argOrder + 1, argOrder)
       }.flatten
 
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(ctorCall, (TypeConstants.any, TypeConstants.any))
     val returnType      = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(returnType)
 
+    val orderForTmpInitCall = orderForTmpAssignmentCall + 1
     val initCallNode =
       NewCall()
         .name(Constants.init)
-        .code(tmpName + "." + "<init>" + "()") // TODO: fill properly
-        .order(3)
-        .argumentIndex(2)
+        .code(tmpName + "." + "<init>" + "()") // TODO: fill args properly
+        .order(orderForTmpInitCall)
         .methodFullName(fullNameWithSig._1)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(TypeConstants.void)
@@ -1561,7 +1561,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChildren(argAsts.map(_.ast))
         .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.ast.root))
 
-    val orderAfterLocalsAndTmpLowering = orderForTmpAssignmentCall + 1
+    val orderAfterLocalsAndTmpLowering = orderForTmpInitCall + 1
     val assignmentsForEntries =
       expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
