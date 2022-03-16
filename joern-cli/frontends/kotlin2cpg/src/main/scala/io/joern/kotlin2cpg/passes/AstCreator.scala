@@ -32,10 +32,10 @@ object Constants {
   val operatorSuffix                 = "<operator>"
   val paramNameLambdaDestructureDecl = "DESTRUCTURE_PARAM"
   val wildcardImportName             = "*"
-  val lambdaBindingName              = "invoke" // the underlying _invoke_ fn for Kotlin FunctionX types
+  val lambdaBindingName              = "invoke"    // the underlying _invoke_ fn for Kotlin FunctionX types
   val lambdaTypeDeclName             = "LAMBDA_TYPE_DECL"
   val this_                          = "this"
-  val componentNSuffix               = "component"
+  val componentNPrefix               = "component"
 }
 
 case class ImportEntry(
@@ -523,7 +523,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val typeFullName = typeInfoProvider.typeFullName(valueParam, TypeConstants.any)
           registerType(typeFullName)
 
-          val componentName = Constants.componentNSuffix + componentIdx
+          val componentName = Constants.componentNPrefix + componentIdx
           val signature     = typeFullName + "()"
           val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
           val methodNode =
@@ -1501,10 +1501,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val componentIdx      = entryWithIdx._2 + 1
         val fallbackSignature = TypeConstants.cpgUnresolved + "()"
         val fallbackFullName =
-          TypeConstants.cpgUnresolved + Constants.componentNSuffix + componentIdx + ":" + fallbackSignature
+          TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
         val componentNFullNameWithSignature =
           typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-        val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNSuffix + componentIdx + "()"
+        val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNPrefix + componentIdx + "()"
         val componentNCallNode =
           NewCall()
             .code(componentNCallCode)
@@ -2228,7 +2228,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .typeFullName(typeFullName)
         .order(order)
         .argumentIndex(argIdx)
-    val tmpName = "tmp_" + tmpKeyPool.next
+    val tmpName = Constants.tmpLocalPrefix + tmpKeyPool.next
     val tmpLocalNode =
       NewLocal()
         .code(tmpName)
