@@ -136,6 +136,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     Options.v().set_no_bodies_for_excluded(true)
     Options.v().set_allow_phantom_refs(true)
     // keep variable names
+    Options.v.setPhaseOption("jb.sils", "enabled:false")
     PhaseOptions.v().setPhaseOption("jb", "use-original-names:true")
   }
 
