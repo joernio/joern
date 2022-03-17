@@ -18,13 +18,16 @@ trait X2CpgConfig[R] {
   def withOutputPath(x: String): R
 }
 
-class X2CpgMain[T <: X2CpgConfig[T]](frontendSpecificOptions: OParser[Unit, T], run: T => Unit)(implicit
-  defaultConfig: T
-) extends App {
-  X2Cpg.parseCommandLine(args, frontendSpecificOptions, defaultConfig) match {
+class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](
+  cmdLineParser: OParser[Unit, T],
+  run: (T, X) => Unit,
+  frontend: X
+)(implicit defaultConfig: T)
+    extends App {
+  X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
     case Some(config) =>
       try {
-        run(config)
+        run(config, frontend)
       } catch {
         case _: Throwable =>
           System.exit(1)

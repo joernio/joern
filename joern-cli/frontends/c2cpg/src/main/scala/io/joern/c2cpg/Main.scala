@@ -24,10 +24,10 @@ final case class Config(
 }
 
 private object Frontend {
-  implicit val defaultConfig: Config = Config()
   private val logger                 = LoggerFactory.getLogger(classOf[C2Cpg])
+  implicit val defaultConfig: Config = Config()
 
-  val frontendSpecificOptions: OParser[Unit, Config] = {
+  val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder._
     OParser.sequence(
@@ -58,20 +58,20 @@ private object Frontend {
     )
   }
 
-  def run(config: Config): Unit = {
+  def run(config: Config, c2cpg: C2Cpg): Unit = {
     if (config.printIfDefsOnly) {
       try {
-        new C2Cpg().printIfDefsOnly(config)
+        c2cpg.printIfDefsOnly(config)
       } catch {
         case NonFatal(ex) =>
           logger.error("Failed to print preprocessor statements.", ex)
           throw ex
       }
     } else {
-      new C2Cpg().run(config)
+      c2cpg.run(config)
     }
   }
 
 }
 
-object Main extends X2CpgMain(frontendSpecificOptions, run) {}
+object Main extends X2CpgMain(cmdLineParser, run, new C2Cpg()) {}
