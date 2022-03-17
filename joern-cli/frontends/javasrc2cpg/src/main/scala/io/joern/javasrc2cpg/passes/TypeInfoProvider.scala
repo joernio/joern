@@ -47,10 +47,12 @@ class TypeInfoProvider(global: Global) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
-    * key in the map.
+    * key in the map. Skip the `ANY` type, since this is created by default.
     */
   def registerType(typeName: String): String = {
-    global.usedTypes.putIfAbsent(typeName, true)
+    if (typeName != "ANY") {
+      global.usedTypes.putIfAbsent(typeName, true)
+    }
     typeName
   }
 
@@ -202,7 +204,7 @@ class TypeInfoProvider(global: Global) {
 
       case Failure(_) =>
         logger.debug(s"Failed to resolve enum entry type for ${enumConstant.getNameAsString}")
-        "<empty>"
+        "ANY"
     }
 
     registerType(typeFullName)
@@ -213,8 +215,8 @@ class TypeInfoProvider(global: Global) {
       case Success(resolved) => resolvedTypeFullName(resolved)
 
       case Failure(_) =>
-        logger.debug(s"Failed to resolve return type. Defaulting to <empty>.")
-        "<empty>"
+        logger.debug(s"Failed to resolve return type. Defaulting to ANY.")
+        "ANY"
     }
 
     registerType(typeFullName)
@@ -242,8 +244,8 @@ class TypeInfoProvider(global: Global) {
       case Success(declaration) => resolvedTypeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.debug(s"Failed to resolve type for `this` expr. Defaulting to <empty>")
-        "<empty>"
+        logger.debug(s"Failed to resolve type for `this` expr. Defaulting to ANY")
+        "ANY"
     }
 
     registerType(typeFullName)
@@ -254,8 +256,8 @@ class TypeInfoProvider(global: Global) {
       case Success(declaration) => resolvedMethodLikeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.debug(s"Failed to resolve type for method-like $methodLike. Defaulting to <empty>")
-        "<empty>"
+        logger.debug(s"Failed to resolve type for method-like $methodLike. Defaulting to ANY")
+        "ANY"
     }
 
     registerType(typeFullName)
@@ -271,7 +273,7 @@ class TypeInfoProvider(global: Global) {
       case _: NullLiteralExpr      => "null"
       case _: StringLiteralExpr    => "java.lang.String"
       case _: TextBlockLiteralExpr => "java.lang.String"
-      case _                       => "<empty>"
+      case _                       => "ANY"
     }
 
     logger.debug(s"Processing type for literal ${literalExpr.getClass}: $typeFullName")
@@ -284,8 +286,8 @@ class TypeInfoProvider(global: Global) {
         resolvedMethodLikeDeclFullName(declaration)
 
       case Failure(_) =>
-        logger.debug(s"Could not resolve type for constructor invocation $invocation. Defaulting to <empty>.")
-        "<empty>"
+        logger.debug(s"Could not resolve type for constructor invocation $invocation. Defaulting to ANY.")
+        "ANY"
     }
 
     registerType(typeFullName)
@@ -303,7 +305,7 @@ class TypeInfoProvider(global: Global) {
 
       case Failure(_) =>
         logger.debug(s"Could not resolve type for expr $expr")
-        "<empty>"
+        "ANY"
     }
 
     registerType(typeFullName)

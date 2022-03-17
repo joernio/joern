@@ -17,6 +17,10 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |     Double y;
       |     return 1;
       |   }
+      |
+      |   void foo() {
+      |     UnknownType.run();
+      |   }
       | }
       |""".stripMargin
 
@@ -73,6 +77,13 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   "should allow traversing from local's TYPE to local" in {
     val List(x) = cpg.typ("java.lang.Double").localOfType.l
     x.name shouldBe "y"
+  }
+
+  "should default to ANY with a matching type node for unresolved types" in {
+    val List(x)    = cpg.typ("ANY").l
+    val List(node) = cpg.identifier.name("UnknownType").l
+    node.typeFullName shouldBe "ANY"
+    node.typ.headOption shouldBe Some(x)
   }
 
 }
