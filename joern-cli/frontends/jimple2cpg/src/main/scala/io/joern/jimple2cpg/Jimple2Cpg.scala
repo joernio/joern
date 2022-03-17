@@ -3,17 +3,17 @@ package io.joern.jimple2cpg
 import io.joern.jimple2cpg.passes.AstCreationPass
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{extractSourceFilesFromArchive, moveClassFiles}
-import io.shiftleft.codepropertygraph.Cpg
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 import soot.options.Options
-import soot.{G, PhaseOptions, Scene, SootClass}
+import soot.{G, PhaseOptions, Scene}
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.language.postfixOps
 import scala.util.Try
 
@@ -92,7 +92,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       // Clear classes from Soot
       G.reset()
 
-      new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg)
+      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
         .createAndApply()
     }
     clean()
@@ -116,18 +116,16 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     sourceFileNames
       .map(getQualifiedClassPath)
       .foreach { cp =>
-        Scene.v().addBasicClass(cp, SootClass.BODIES)
-        Scene.v().loadClassAndSupport(cp).setApplicationClass()
+        Scene.v().addBasicClass(cp)
+        Scene.v().loadClassAndSupport(cp)
       }
-    Scene.v().loadDynamicClasses()
     Scene.v().loadNecessaryClasses()
-    Scene.v().addBasicClass("soot.dummy.InvokeDynamic", SootClass.SIGNATURES)
   }
 
   private def configureSoot(): Unit = {
     // set application mode
-    Options.v().set_app(true)
-    Options.v().set_whole_program(true)
+    Options.v().set_app(false)
+    Options.v().set_whole_program(false)
     // make sure classpath is configured correctly
     Options.v().set_soot_classpath(ProgramHandlingUtil.TEMP_DIR.toString)
     Options.v().set_prepend_classpath(true)
