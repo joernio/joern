@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg
 
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.jimple2cpg.Frontend._
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 /** Command line configuration parameters
@@ -13,21 +14,22 @@ final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String 
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 
-/** Entry point for command line CPG creator
-  */
-object Main extends App {
+private object Frontend {
 
-  private val frontendSpecificOptions = {
+  implicit val defaultConfig: Config = Config()
+
+  val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.programName
     OParser.sequence(programName("jimple2cpg"))
   }
 
-  X2Cpg.parseCommandLine(args, frontendSpecificOptions, Config()) match {
-    case Some(config) =>
-      new Jimple2Cpg().run(config)
-    case None =>
-      System.exit(1)
+  def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
+    jimple2Cpg.run(config)
   }
 
 }
+
+/** Entry point for command line CPG creator
+  */
+object Main extends X2CpgMain(cmdLineParser, run, new Jimple2Cpg()) {}
