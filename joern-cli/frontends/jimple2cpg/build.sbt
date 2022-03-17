@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"            %% "semanticcpg"       % Versions.cpg,
   "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
   "io.shiftleft"            %% "semanticcpg"       % Versions.cpg       % Test classifier "tests",
-  "org.soot-oss"             % "soot"              % "4.3.0",
+  "org.soot-oss"             % "soot"              % "4.2.1",
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )
 
