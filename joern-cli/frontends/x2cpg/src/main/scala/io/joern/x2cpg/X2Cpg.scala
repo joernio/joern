@@ -18,6 +18,19 @@ trait X2CpgConfig[R] {
   def withOutputPath(x: String): R
 }
 
+/** Base class for `Main` classes of CPG frontends.
+  *
+  * Main classes that inherit from this base class parse the command line, exiting with an error code if this does not
+  * succeed. On success, the method `run` is called, which evaluates, given a frontend and a configuration, creates the
+  * CPG and stores it on disk.
+  *
+  * @param cmdLineParser
+  *   parser for command line arguments
+  * @param run
+  *   method that evaluates frontend with configuration
+  * @param frontend
+  *   the frontend to use for CPG creation
+  */
 class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](
   cmdLineParser: OParser[Unit, T],
   run: (T, X) => Unit,
