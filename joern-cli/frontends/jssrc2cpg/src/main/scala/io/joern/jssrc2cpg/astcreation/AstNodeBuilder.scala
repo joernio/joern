@@ -66,16 +66,24 @@ trait AstNodeBuilder {
     param
   }
 
-  protected def createTypeNode(name: String, fullName: String): NewType =
-    NewType()
-      .name(name)
-      .fullName(fullName)
-      .typeDeclFullName(fullName)
+  protected def createLocalNode(
+    name: String,
+    typeFullName: String,
+    order: Int,
+    closureBindingId: Option[String] = None
+  ): NewLocal =
+    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(order)
 
-  protected def createBindingNode(): NewBinding =
-    NewBinding()
-      .name("")
-      .signature("")
+  protected def createClosureBindingNode(closureBindingId: String, closureOriginalName: String): NewClosureBinding =
+    NewClosureBinding()
+      .closureBindingId(Some(closureBindingId))
+      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
+      .closureOriginalName(Some(closureOriginalName))
+
+  protected def createTypeNode(name: String, fullName: String): NewType =
+    NewType().name(name).fullName(fullName).typeDeclFullName(fullName)
+
+  protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
   protected def createFunctionTypeAndTypeDeclAst(
     methodNode: NewMethod,

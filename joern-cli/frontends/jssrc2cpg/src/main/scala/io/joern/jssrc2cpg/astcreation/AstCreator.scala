@@ -4,15 +4,24 @@ import io.joern.jssrc2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.Config
+import io.joern.jssrc2cpg.datastructures.scope.BlockScopeElement
+import io.joern.jssrc2cpg.datastructures.scope.MethodScope
+import io.joern.jssrc2cpg.datastructures.scope.MethodScopeElement
+import io.joern.jssrc2cpg.datastructures.scope.ResolvedReference
 import io.joern.jssrc2cpg.datastructures.scope.Scope
+import io.joern.jssrc2cpg.datastructures.scope.ScopeType
+import io.joern.jssrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Value
+
+import scala.collection.mutable
 
 class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
     extends AstNodeBuilder
@@ -28,8 +37,10 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
   protected val methodAstParentStack: Stack[NewNode] = new Stack[NewNode]()
   protected val localAstParentStack: Stack[NewBlock] = new Stack[NewBlock]()
 
-  def createAst(): Unit =
+  def createAst(): Unit = {
     Ast.storeInDiffGraph(astForFile(), diffGraph)
+    createVariableReferenceLinks()
+  }
 
   private def astForFile(): Ast = {
     val name    = parserResult.filename
@@ -117,6 +128,75 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
       .order(1)
     methodAstParentStack.push(namespaceBlock)
     Ast(namespaceBlock).withChild(createProgramMethod(absolutePath))
+  }
+
+  private def createVariableReferenceLinks(): Unit = {
+    val resolvedReferenceIt = scope.resolve(createMethodLocalForUnresolvedReference)
+    val capturedLocals      = mutable.HashMap.empty[String, NewNode]
+
+    resolvedReferenceIt.foreach { case ResolvedReference(variableNodeId, origin) =>
+      var currentScope             = origin.stack
+      var currentReferenceId       = origin.referenceNodeId
+      var nextReferenceId: NewNode = null
+
+      var done = false
+      while (!done) {
+        val localOrCapturedLocalIdOption =
+          if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
+            done = true
+            Some(variableNodeId)
+          } else {
+            currentScope.flatMap {
+              case methodScope: MethodScopeElement =>
+                // We have reached a MethodScope and still did not find a local variable to link to.
+                // For all non local references the CPG format does not allow us to link
+                // directly. Instead we need to create a fake local variable in method
+                // scope and link to this local which itself carries the information
+                // that it is a captured variable. This needs to be done for each
+                // method scope until we reach the originating scope.
+                val closureBindingIdProperty =
+                  methodScope.methodFullName + ":" + origin.variableName
+                capturedLocals
+                  .updateWith(closureBindingIdProperty) {
+                    case None =>
+                      val methodScopeNodeId = methodScope.scopeNode
+                      val localId =
+                        createLocalNode(origin.variableName, Defines.ANY.label, 0, Some(closureBindingIdProperty))
+                      diffGraph.addEdge(methodScopeNodeId, localId, EdgeTypes.AST)
+                      val closureBindingId = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
+                      methodScope.capturingRefId.foreach(ref =>
+                        diffGraph.addEdge(ref, closureBindingId, EdgeTypes.CAPTURE)
+                      )
+                      nextReferenceId = closureBindingId
+                      Some(localId)
+                    case someLocalId =>
+                      // When there is already a LOCAL representing the capturing, we do not
+                      // need to process the surrounding scope element as this has already
+                      // been processed.
+                      done = true
+                      someLocalId
+                  }
+              case _: BlockScopeElement => None
+            }
+          }
+
+        localOrCapturedLocalIdOption.foreach { localOrCapturedLocalId =>
+          diffGraph.addEdge(currentReferenceId, localOrCapturedLocalId, EdgeTypes.REF)
+          currentReferenceId = nextReferenceId
+        }
+
+        currentScope = currentScope.get.surroundingScope
+      }
+    }
+  }
+
+  private def createMethodLocalForUnresolvedReference(
+    methodScopeNodeId: NewNode,
+    variableName: String
+  ): (NewNode, ScopeType) = {
+    val varId = createLocalNode(variableName, Defines.ANY.label, 0)
+    diffGraph.addEdge(methodScopeNodeId, varId, EdgeTypes.AST)
+    (varId, MethodScope)
   }
 
 }
