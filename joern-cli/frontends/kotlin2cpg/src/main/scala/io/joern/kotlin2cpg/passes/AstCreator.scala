@@ -997,11 +997,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtProperty if typedExpr.isLocal =>
         astsForProperty(typedExpr, scopeContext, order)
       case typedExpr: KtIfExpression       => Seq(astForIf(typedExpr, scopeContext, order, argIdx))
-      case typedExpr: KtWhenExpression     => Seq(astForWhen(typedExpr, scopeContext, order))
+      case typedExpr: KtWhenExpression     => Seq(astForWhen(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtForExpression      => Seq(astForFor(typedExpr, scopeContext, order))
       case typedExpr: KtWhileExpression    => Seq(astForWhile(typedExpr, scopeContext, order))
       case typedExpr: KtDoWhileExpression  => Seq(astForDoWhile(typedExpr, scopeContext, order))
-      case typedExpr: KtTryExpression      => Seq(astForTry(typedExpr, scopeContext, order))
+      case typedExpr: KtTryExpression      => Seq(astForTry(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtBreakExpression    => Seq(astForBreak(typedExpr, scopeContext, order))
       case typedExpr: KtContinueExpression => Seq(astForContinue(typedExpr, scopeContext, order))
       case typedExpr: KtDotQualifiedExpression =>
@@ -1925,11 +1925,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val isStaticCall    = callKind == CallKinds.StaticCall
     val isDynamicCall   = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
+    val receiverIsRefToClass =
+      expr.getReceiverExpression match {
+        case typed: KtNameReferenceExpression =>
+          typeInfoProvider.isReferenceToClass(typed)
+        case _ => false
+      }
 
-    val isCallToSuper = expr.getReceiverExpression match {
-      case _: KtSuperExpression => true
-      case _                    => false
-    }
+    val isCallToSuper =
+      expr.getReceiverExpression match {
+        case _: KtSuperExpression => true
+        case _                    => false
+      }
 
     val orderForReceiver = 1
     val argIdxForReceiver =
@@ -1939,6 +1946,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       else if (isStaticCall) 1
       else 1
     val receiverExpr = expr.getReceiverExpression
+
+    // TODO: check if it's possible to replace this large `match` with a call to `astsForExpression`
     val receiverAstWithCtx: AstWithCtx =
       receiverExpr match {
         case typedExpr: KtConstantExpression =>
@@ -1964,6 +1973,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           astForQualifiedExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtClassLiteralExpression =>
           astForClassLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
+        case typedExpr: KtIfExpression =>
+          astForIfAsExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
+        case typedExpr: KtTryExpression =>
+          astForTry(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtPostfixExpression =>
           astForPostfixExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtStringTemplateExpression =>
@@ -1991,7 +2004,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         case typedExpr: KtSafeQualifiedExpression =>
           astForQualifiedExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtWhenExpression =>
-          astForWhen(typedExpr, scopeContext, orderForReceiver)
+          astForWhen(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
         case typedExpr: KtCallExpression =>
           val isCtorCall = typeInfoProvider.isConstructorCall(typedExpr)
           if (isCtorCall.getOrElse(false)) {
@@ -2109,7 +2122,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           .withArgEdge(callNode, receiverNode)
           .withChildren(argAsts.map(_.ast))
           .withArgEdges(callNode, argAsts.map(_.ast.root.get))
-      } else if (isStaticCall) {
+      } else if (receiverIsRefToClass) {
         root
           .withChild(receiverAst)
           .withChildren(argAsts.map(_.ast))
@@ -2161,18 +2174,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   // TODO: handle parameters passed to the clauses
-  def astForTry(expr: KtTryExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForTry(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val tryNode =
       NewControlStructure()
-        .controlStructureType(ControlStructureTypes.TRY)
         .code(expr.getText)
+        .controlStructureType(ControlStructureTypes.TRY)
         .order(order)
+        .argumentIndex(argumentIndex)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
-        .argumentIndex(order)
     val tryAstWithCtx = astsForExpression(expr.getTryBlock, scopeContext, 1, 1).headOption
       .getOrElse(AstWithCtx(Ast(), Context()))
     val tryAst =
@@ -2305,7 +2318,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(stmtAst.map(_.ctx) ++ loopAsts.map(_.ctx)))
   }
 
-  def astForWhen(expr: KtWhenExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForWhen(expr: KtWhenExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2340,7 +2353,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .code(expr.getText)
         .controlStructureType(ControlStructureTypes.SWITCH)
         .order(order)
-        .argumentIndex(order)
+        .argumentIndex(argumentIndex)
         .code(codeForSwitch)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
@@ -2393,11 +2406,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     if (expr.getParent.isInstanceOf[KtProperty]) {
       astForIfAsExpression(expr, scopeContext, order, argIdx)
     } else {
-      astForIfAsControlStructure(expr, scopeContext, order)
+      astForIfAsControlStructure(expr, scopeContext, order, argIdx)
     }
   }
 
-  def astForIfAsControlStructure(expr: KtIfExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForIfAsControlStructure(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2408,7 +2421,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(order)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
-        .argumentIndex(order)
+        .argumentIndex(argIdx)
     val conditionAst = astsForExpression(expr.getCondition, scopeContext, 1, 1)
     val thenAsts     = astsForExpression(expr.getThen, scopeContext, 2, 2)
     val elseAsts     = astsForExpression(expr.getElse, scopeContext, 3, 3)
