@@ -326,16 +326,11 @@ class TypeInfoProvider(global: Global) {
 
   def scopeType(scopeContext: ScopeContext, isSuper: Boolean = false): String = {
     scopeContext.typeDecl match {
+      case Some(typ) if isSuper =>
+        val parentType = typ.inheritsFromTypeFullName.headOption.getOrElse("ANY")
+        registerType(parentType)
       case Some(typ) =>
-        if (isSuper) {
-          val parentType =
-            typ.inheritsFromTypeFullName.headOption
-              .getOrElse("ANY")
-          registerType(parentType)
-        } else {
-          registerType(typ.fullName)
-        }
-
+        registerType(typ.fullName)
       case None => "ANY"
     }
   }
