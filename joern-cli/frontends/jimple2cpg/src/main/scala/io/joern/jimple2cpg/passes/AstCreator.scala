@@ -344,31 +344,31 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   }
 
   private def astForInvokeExpr(invokeExpr: InvokeExpr, order: Int, parentUnit: soot.Unit): Ast = {
-    val method = invokeExpr.getMethodRef
-    val dispatchType = method match {
-      case x if x.isConstructor  => DispatchTypes.STATIC_DISPATCH
-      case _: DynamicInvokeExpr  => DispatchTypes.DYNAMIC_DISPATCH
-      case _: InstanceInvokeExpr => DispatchTypes.DYNAMIC_DISPATCH
-      case _                     => DispatchTypes.STATIC_DISPATCH
+    val callee = invokeExpr.getMethodRef
+    val dispatchType = invokeExpr match {
+      case _ if callee.isConstructor => DispatchTypes.STATIC_DISPATCH
+      case _: DynamicInvokeExpr      => DispatchTypes.DYNAMIC_DISPATCH
+      case _: InstanceInvokeExpr     => DispatchTypes.DYNAMIC_DISPATCH
+      case _                         => DispatchTypes.STATIC_DISPATCH
     }
 
     val signature =
-      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterTypes.size())
-          yield method.getParameterType(i).toQuotedString).mkString(",")})"
+      s"${callee.getReturnType.toQuotedString}(${(for (i <- 0 until callee.getParameterTypes.size())
+          yield callee.getParameterType(i).toQuotedString).mkString(",")})"
     val thisAsts = invokeExpr match {
       case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
-      case _                        => Seq(createThisNode(method, NewIdentifier()))
+      case _                        => Seq(createThisNode(callee, NewIdentifier()))
     }
 
     val methodName =
-      if (method.isConstructor)
-        registerType(method.getDeclaringClass.getType.getClassName)
+      if (callee.isConstructor)
+        registerType(callee.getDeclaringClass.getType.getClassName)
       else
-        method.getName
+        callee.getName
 
     val callType =
-      if (method.isConstructor) "void"
-      else registerType(method.getDeclaringClass.getType.toQuotedString)
+      if (callee.isConstructor) "void"
+      else registerType(callee.getDeclaringClass.getType.toQuotedString)
 
     val code = invokeExpr match {
       case expr: InstanceInvokeExpr =>
@@ -377,12 +377,12 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     }
 
     val callNode = NewCall()
-      .name(method.getName)
+      .name(callee.getName)
       .code(code)
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
-      .methodFullName(s"${method.getDeclaringClass.getType.toQuotedString}.${method.getName}:$signature")
+      .methodFullName(s"${callee.getDeclaringClass.getType.toQuotedString}.${callee.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))
