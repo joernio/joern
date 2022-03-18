@@ -52,7 +52,8 @@ trait AstNodeBuilder {
     code: String,
     order: Int,
     line: Option[Integer] = None,
-    column: Option[Integer] = None
+    column: Option[Integer] = None,
+    tpe: Option[String] = None
   ): NewMethodParameterIn = {
     val param = NewMethodParameterIn()
       .name(name)
@@ -61,7 +62,7 @@ trait AstNodeBuilder {
       .lineNumber(line)
       .columnNumber(column)
       .order(order)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(tpe.getOrElse(Defines.ANY.label))
     scope.addVariable(name, param, MethodScope)
     param
   }

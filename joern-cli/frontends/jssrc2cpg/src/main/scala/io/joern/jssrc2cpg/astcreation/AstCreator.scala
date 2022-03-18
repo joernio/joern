@@ -62,7 +62,7 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
   private def createProgramMethod(path: String): Ast = {
     val allDecls     = Seq(parserResult.json("ast"))
     val lineNumber   = allDecls.headOption.flatMap(line)
-    val columnNumber = allDecls.lastOption.flatMap(column)
+    val columnNumber = allDecls.headOption.flatMap(column)
     val name         = ":program"
     val fullName     = parserResult.filename + ":" + name
 
@@ -87,7 +87,6 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    // We always create an instance parameter because in JS every function could get called with an instance.
     val thisParam = createParameterInNode("this", "this", 0, lineNumber, columnNumber)
 
     var currOrder = 1
