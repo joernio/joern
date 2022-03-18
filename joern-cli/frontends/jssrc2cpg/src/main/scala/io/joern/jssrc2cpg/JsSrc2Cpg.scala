@@ -12,6 +12,7 @@ import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.passes.frontend.TypeNodePass
 
 import java.nio.file.Paths
 import scala.util.Try
@@ -31,8 +32,10 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
               skippedFiles = result.skippedFiles ++ partialResult.skippedFiles
             )
           }
-        val hash = FileUtils.md5(astgenResult.parsedFiles.toSeq.map(f => Paths.get(f._2)))
-        new AstCreationPass(cpg, astgenResult, config, report).createAndApply()
+        val hash            = FileUtils.md5(astgenResult.parsedFiles.toSeq.map(f => Paths.get(f._2)))
+        val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
+        astCreationPass.createAndApply()
+        new TypeNodePass(astCreationPass.usedTypes(), cpg).createAndApply()
         new CallLinkerPass(cpg).createAndApply()
         new JsMetaDataPass(cpg, hash).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()

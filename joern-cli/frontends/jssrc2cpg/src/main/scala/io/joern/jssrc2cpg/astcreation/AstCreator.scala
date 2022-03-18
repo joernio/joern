@@ -17,13 +17,14 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult)
+class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult, val global: Global)
     extends AstNodeBuilder
     with AstCreatorHelper {
 

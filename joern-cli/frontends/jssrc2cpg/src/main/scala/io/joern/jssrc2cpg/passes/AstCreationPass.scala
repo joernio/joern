@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.utils.Report
 import io.joern.jssrc2cpg.utils.TimeUtils
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.utils.IOUtils
@@ -13,6 +14,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -22,7 +24,12 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
+  private val global: Global = new Global()
+
   override def generateParts(): Array[(String, String)] = astGenRunnerResult.parsedFiles.toArray
+
+  def usedTypes(): List[String] =
+    global.usedTypes.keys().asScala.filterNot(_ == Defines.ANY.label).toList
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
@@ -41,7 +48,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
       Try {
         val localDiff = new DiffGraphBuilder
-        new AstCreator(config, localDiff, parseResult).createAst()
+        new AstCreator(config, localDiff, parseResult, global).createAst()
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>

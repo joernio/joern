@@ -53,6 +53,9 @@ trait AstCreatorHelper {
     Ast(newUnknown(node, order))
   }
 
+  protected def registerType(typeName: String): Unit =
+    global.usedTypes.putIfAbsent(typeName, true)
+
   protected def nodeType(node: Value): BabelAst.BabelNode =
     BabelAst.fromString(node("type").str)
 
