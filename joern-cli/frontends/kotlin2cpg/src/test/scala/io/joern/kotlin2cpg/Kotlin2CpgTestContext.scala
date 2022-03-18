@@ -47,10 +47,9 @@ class Kotlin2CpgTestContext private () {
         file.writeText(inputPair.content)
       }
       val randomOutPath = "cpg_" + Random.alphanumeric.take(10).mkString + ".bin.zip"
-      val path          = Paths.get("/tmp/" + randomOutPath)
       val config = Config(
         inputPaths = Set(tempDir.pathAsString),
-        outputPath = path.toAbsolutePath.toString,
+        outputPath = randomOutPath,
         classpath = Set(),
         withAndroidJarsInClassPath = includeAllJars,
         withMiscJarsInClassPath = includeAllJars
@@ -65,7 +64,7 @@ class Kotlin2CpgTestContext private () {
       new ControlFlow().run(context)
       new CallGraph().run(context)
 
-      val outFile = File(path)
+      val outFile = File(randomOutPath)
       if (outFile.exists) {
         outFile.delete(true)
       }
