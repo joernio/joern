@@ -73,7 +73,7 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
         .fullName(fullName)
         .filename(path)
         .lineNumber(lineNumber)
-        .lineNumberEnd(columnNumber)
+        .columnNumber(columnNumber)
         .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullName)
 
