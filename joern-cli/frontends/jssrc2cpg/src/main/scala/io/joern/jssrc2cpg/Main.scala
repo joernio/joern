@@ -1,8 +1,9 @@
 package io.joern.jssrc2cpg
 
+import io.joern.jssrc2cpg.Frontend._
 import io.joern.jssrc2cpg.utils.Environment
-import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2CpgConfig
+import io.joern.x2cpg.X2CpgMain
 import scopt.OParser
 
 final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String = X2CpgConfig.defaultOutputPath)
@@ -12,19 +13,25 @@ final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String 
   override def withOutputPath(x: String): Config                  = copy(outputPath = x)
 }
 
-object Main extends App {
+private object Frontend {
+  implicit val defaultConfig: Config = Config()
 
-  private val frontendSpecificOptions = {
+  val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.programName
     OParser.sequence(programName("jssrc2cpg"))
   }
 
-  X2Cpg.parseCommandLine(args, frontendSpecificOptions, Config()) match {
-    case Some(config) if Environment.valid() =>
-      new JsSrc2Cpg().run(config)
-    case _ =>
+}
+
+object Main extends X2CpgMain(cmdLineParser, new JsSrc2Cpg()) {
+
+  def run(config: Config, jssrc2cpg: JsSrc2Cpg): Unit = {
+    if (Environment.valid()) {
+      jssrc2cpg.run(config)
+    } else {
       System.exit(1)
+    }
   }
 
 }

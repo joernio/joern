@@ -2,9 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
-import io.shiftleft.semanticcpg.language.toMethodForCallGraph
-import io.shiftleft.semanticcpg.language.toNodeTypeStarters
-import io.shiftleft.semanticcpg.language.NoResolve
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Inside
