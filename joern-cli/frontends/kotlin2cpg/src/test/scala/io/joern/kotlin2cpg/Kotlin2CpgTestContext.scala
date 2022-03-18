@@ -6,6 +6,7 @@ import better.files._
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
+import java.nio.file.Paths
 import scala.collection.mutable
 import scala.util.Random
 
@@ -45,10 +46,11 @@ class Kotlin2CpgTestContext private () {
         val file = tempDir / inputPair.fileName
         file.writeText(inputPair.content)
       }
-      val randomOutPath = "cpg" + Random.alphanumeric.take(10).mkString + ".bin.zip"
+      val randomOutPath = "cpg_" + Random.alphanumeric.take(10).mkString + ".bin.zip"
+      val path = Paths.get("/tmp/" + randomOutPath)
       val config = Config(
         inputPaths = Set(tempDir.pathAsString),
-        outputPath = randomOutPath,
+        outputPath = path.toAbsolutePath.toString,
         classpath = Set(),
         withAndroidJarsInClassPath = includeAllJars,
         withMiscJarsInClassPath = includeAllJars
@@ -62,6 +64,11 @@ class Kotlin2CpgTestContext private () {
       new TypeRelations().run(context)
       new ControlFlow().run(context)
       new CallGraph().run(context)
+
+      val outFile = File(path)
+      if(outFile.exists) {
+        outFile.delete(true)
+      }
       buildResult = Some(cpg.get)
     }
     buildResult.get
