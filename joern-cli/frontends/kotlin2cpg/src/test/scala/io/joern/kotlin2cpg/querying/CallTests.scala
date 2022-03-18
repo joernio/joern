@@ -213,7 +213,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
       c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "java.lang.String()"
       c.typeFullName shouldBe "java.lang.String"
     }
@@ -304,7 +304,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
       c.signature shouldBe "java.lang.String()"
       c.typeFullName shouldBe "java.lang.String"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
   }
 
@@ -374,7 +374,6 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code(".*toFloat.*").l
       c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
@@ -393,7 +392,6 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code("\\(.*toFloat.*").l
       c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
