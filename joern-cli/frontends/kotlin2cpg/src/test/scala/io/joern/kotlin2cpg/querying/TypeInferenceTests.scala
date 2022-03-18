@@ -160,7 +160,8 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Javalin web framework" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import io.javalin.Javalin
@@ -185,7 +186,9 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
         |    ctx.result("----Executed `" + invocation + "` with result: `" + out  + "`.\n-----\n")
         |  }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullNames set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
@@ -231,7 +234,8 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with CALL to `super`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.content.Intent
@@ -245,7 +249,9 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
         |        super.onCreate(savedInstanceState)
         |    }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `onCreate` with the correct props set" in {
       def createCall = cpg.call.code(".*onCreate.*")
@@ -265,7 +271,8 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the http4k framework" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
         |package com.example
         |
         |import org.http4k.core.HttpHandler
@@ -303,7 +310,9 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
         |    println("Serving content on port " + port.toString() + ".")
         |    HelloWorld().asServer(SunHttp(port)).start()
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `port.toString()` with the correct methodFullName set" in {
       val List(c) = cpg.call.codeExact("port.toString()").l

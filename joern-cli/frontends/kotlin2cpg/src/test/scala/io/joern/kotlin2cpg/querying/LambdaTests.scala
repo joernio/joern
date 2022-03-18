@@ -105,7 +105,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(14)
@@ -152,7 +152,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -182,7 +182,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
@@ -218,7 +218,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -251,7 +251,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(28)
@@ -290,7 +290,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.code shouldBe ""
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_test.kt_no1>:java.lang.Object(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l

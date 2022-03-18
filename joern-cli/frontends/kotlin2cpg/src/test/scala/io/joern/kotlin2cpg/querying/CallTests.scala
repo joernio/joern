@@ -1,7 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kt2CpgTestContext
-import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -183,7 +182,8 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a call to a constructor from library with type-inference support" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import com.google.gson.Gson
@@ -192,7 +192,9 @@ class CallTests extends AnyFreeSpec with Matchers {
         |  val serialized = Gson().toJson(productList)
         |  println(serialized)
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a call node for `Gson()`" in {
       val List(c) = cpg.call.methodFullName(".*Gson.*init.*").l

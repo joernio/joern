@@ -68,7 +68,8 @@ class TypeTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with Android SDK fn" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kt2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.util.Log
@@ -76,7 +77,9 @@ class TypeTests extends AnyFreeSpec with Matchers {
         |fun mine() {
         |  Log.d("foo", "bar")
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should have type for Log" in {
       val List(x) = cpg.typ.typeDeclFullName(".*Log.*").l
