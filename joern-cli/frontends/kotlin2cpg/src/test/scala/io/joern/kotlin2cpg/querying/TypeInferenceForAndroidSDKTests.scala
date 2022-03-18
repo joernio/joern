@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
@@ -19,7 +19,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
   // good source of vulns
   "CPG for code with calls to Android WebView methods" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -54,7 +54,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to method of `Activity` superclass" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -88,7 +88,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Android SDK" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -113,7 +113,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Android SDK defining a class inheriting from the `androidx` namespace" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package com.insecureshop
         |
@@ -141,7 +141,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
   // https://developer.android.com/reference/android/R
   "CPG for code with use of Android's `R`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -168,7 +168,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with use of Android log" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
       |package mypkg
       |
@@ -209,7 +209,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with use of Android's `findViewById`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
       |package mypkg
       |
@@ -250,7 +250,7 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to Android's `sendBroadcast`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |

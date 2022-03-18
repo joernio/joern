@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class TypeInferenceTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun add1mul(x: Int, y: Int): Int {
@@ -32,7 +32,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a simple class definition" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Foo {
@@ -57,7 +57,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with type alias of a stdlib type" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |typealias FooList = List<Int>
         |
         |fun foo() {
@@ -73,7 +73,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with array access" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun foo(): Int {
         |  val x = listOf(1, 2, 3)
         |  return x[0]
@@ -97,7 +97,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with `this` expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Foo {
@@ -115,7 +115,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a class definition" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Foo: Object {
@@ -134,7 +134,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with Java stdlib" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo(cmd: String) {
@@ -160,7 +160,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Javalin web framework" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -234,7 +234,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with CALL to `super`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -271,7 +271,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the http4k framework" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package com.example
         |
@@ -337,7 +337,7 @@ class TypeInferenceTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with addition of aliased type and its original" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |typealias MyInt = Int

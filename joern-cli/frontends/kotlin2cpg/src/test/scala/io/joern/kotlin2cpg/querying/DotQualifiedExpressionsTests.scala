@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -12,7 +12,7 @@ class DotQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with dot qualified expression as a receiver" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |

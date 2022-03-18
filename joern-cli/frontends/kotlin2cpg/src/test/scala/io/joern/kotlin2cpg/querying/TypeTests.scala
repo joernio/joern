@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class TypeTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package com.test.PackageFoo
         |
         |class Foo {
@@ -68,7 +68,7 @@ class TypeTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with Android SDK fn" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg(
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
         |
@@ -88,7 +88,7 @@ class TypeTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import javax.crypto.Cipher

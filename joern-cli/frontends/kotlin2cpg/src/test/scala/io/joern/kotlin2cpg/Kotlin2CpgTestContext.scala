@@ -8,25 +8,25 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.collection.mutable
 
-object Kt2CpgTestContext {
-  def newContext: Kt2CpgTestContext = {
-    new Kt2CpgTestContext()
+object Kotlin2CpgTestContext {
+  def newContext: Kotlin2CpgTestContext = {
+    new Kotlin2CpgTestContext()
   }
 
   def buildCpg(code: String, file: String = "generated.kt", includeAllJars: Boolean = false): Cpg = {
-    val context = new Kt2CpgTestContext()
+    val context = new Kotlin2CpgTestContext()
     context.addSource(code, file)
     context.includeAllJars = includeAllJars
     context.buildCpg
   }
 }
 
-class Kt2CpgTestContext private () {
+class Kotlin2CpgTestContext private () {
   private val codeAndFile    = mutable.ArrayBuffer.empty[Kotlin2Cpg.InputPair]
   private var buildResult    = Option.empty[Cpg]
   private var includeAllJars = false
 
-  def addSource(code: String, fileName: String = "generated.kt"): Kt2CpgTestContext = {
+  def addSource(code: String, fileName: String = "generated.kt"): Kotlin2CpgTestContext = {
     if (buildResult.nonEmpty) {
       throw new RuntimeException("Not allowed to add sources after buildCpg() was called.")
     }

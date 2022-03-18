@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Binding
 import io.shiftleft.semanticcpg.language._
@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 class TypeDeclTests extends AnyFreeSpec with Matchers {
 
   "CPG for simple class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import java.lang.Object
@@ -62,7 +62,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
   }
 
   "class with multiple initializers" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package baz
         |
         |import kotlin.io.println
@@ -91,7 +91,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple class declaration and usage" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Foo {
@@ -115,7 +115,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of setter of simple user-defined class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |class Simple {
