@@ -1,6 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
@@ -20,6 +22,10 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |
       |   void foo() {
       |     UnknownType.run();
+      |   }
+      |
+      |   public Foo() {
+      |     super();
       |   }
       | }
       |""".stripMargin
@@ -84,6 +90,24 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
     val List(node) = cpg.identifier.name("UnknownType").l
     node.typeFullName shouldBe "ANY"
     node.typ.headOption shouldBe Some(x)
+  }
+
+  "should use correct type for super calls" in {
+    val List(call) = cpg.call.name("<init>").l
+    call.methodFullName shouldBe "java.lang.Object.<init>:void()"
+    call.typeFullName shouldBe "void"
+    call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+
+    call.receiver.collect { case identifier: Identifier => identifier }.l match {
+      case identifier :: Nil =>
+        identifier.name shouldBe "this"
+        identifier.typeFullName shouldBe "java.lang.Object"
+        identifier.order shouldBe 0
+        identifier.argumentIndex shouldBe 0
+
+      case _ => fail("No receiver for super call found")
+    }
+
   }
 
 }

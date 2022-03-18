@@ -1750,7 +1750,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
       .code("this")
       .order(0)
       .argumentIndex(0)
-      .typeFullName(scopeContext.typeDecl.get.name)
+      .typeFullName(typeFullName)
     val thisAst = AstWithCtx(Ast(thisNode), Context())
 
     val args = withOrder(stmt.getArguments) { (s, o) =>
@@ -1893,23 +1893,18 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
 
   private def createObjectNode(
     call: MethodCallExpr,
-    resolvedDecl: Try[ResolvedMethodDeclaration],
+    callNode: NewCall,
     scopeContext: ScopeContext
   ): Option[NewIdentifier] = {
 
     val maybeScope     = call.getScope.toScala
     val maybeScopeType = maybeScope.map(getScopeType(_, scopeContext))
-    val isStatic = resolvedDecl match {
-      case Success(decl) => decl.isStatic
-
-      case _ => true // Assume unresolved call is static to avoid adding erroneous "this".
-    }
 
     // Default to the type of the enclosing `typeDecl` for implicit this nodes.
     val typeDeclType = scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>")
     val typeFullName = maybeScopeType.getOrElse(typeDeclType)
 
-    if (maybeScope.isDefined || !isStatic) {
+    if (maybeScope.isDefined || callNode.dispatchType == DispatchTypes.DYNAMIC_DISPATCH) {
       val name = maybeScope.map(_.toString).getOrElse("this")
       Some(
         NewIdentifier()
@@ -1918,8 +1913,8 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
           .typeFullName(typeFullName)
           .order(0)
           .argumentIndex(0)
-          .lineNumber(line(call))
-          .columnNumber(column(call))
+          .lineNumber(callNode.lineNumber)
+          .columnNumber(callNode.columnNumber)
       )
     } else {
       None
@@ -2151,7 +2146,7 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
     val returnType   = typeInfoProvider.getReturnType(call)
     val callNode     = createCallNode(call, resolvedDecl, returnType, order)
 
-    val objectNode = createObjectNode(call, resolvedDecl, scopeContext)
+    val objectNode = createObjectNode(call, callNode, scopeContext)
     val objectAst = objectNode
       .map(objIdentifier =>
         AstWithCtx(Ast(objIdentifier), Context(identifiers = Map(objIdentifier.name -> objIdentifier)))
