@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
@@ -19,7 +19,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
   // good source of vulns
   "CPG for code with calls to Android WebView methods" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.content.Intent
@@ -42,7 +43,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |    webview.loadUrl("https://vx-underground.org/pwn.yr.webview.html")
         |  }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for the `webview.settings` DQE on with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.codeExact("webview.settings").take(1).l
@@ -51,7 +54,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to method of `Activity` superclass" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.content.Intent
@@ -73,7 +77,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |    textView.text = "InsecureShop is an intentionally designed vulnerable android app built in Kotlin."
         |  }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `sendBroadcast` with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code("sendBroadcast.*").l
@@ -82,7 +88,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Android SDK" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.net.http.SslError
@@ -95,7 +102,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |        handler?.proceed()
         |    }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a TYPE_DECL node for `Foo` with the correct inheritsFromTypeFullName value set" in {
       val List(x) = cpg.typeDecl.isExternal(false).name("Foo").l
@@ -104,7 +113,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Android SDK defining a class inheriting from the `androidx` namespace" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package com.insecureshop
         |
         |import android.os.Bundle
@@ -118,7 +128,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |    finish()
         |  }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a TYPE_DECL node for `ResultActivity` with the correct FULL_NAME set" in {
       val List(x) = cpg.typeDecl.isExternal(false).name("ResultActivity").l
@@ -129,7 +141,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
 
   // https://developer.android.com/reference/android/R
   "CPG for code with use of Android's `R`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.app.Activity
@@ -144,7 +157,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |    setContentView(R.layout.placeholder_custom_view)
         |  }
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should not contain any CALL nodes which are missing a `:` character in their MFNs" in {
       val List(c) = cpg.call.code("setContentView.*").l
@@ -153,7 +168,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with use of Android log" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
       |package mypkg
       |
       |import android.app.Activity
@@ -168,7 +184,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       |    Log.d("PREFIX", username)
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `Log.d` with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*Log.*").l
@@ -191,7 +209,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with use of Android's `findViewById`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
       |package mypkg
       |
       |import android.app.Activity
@@ -207,7 +226,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
       |    webview.settings.javaScriptEnabled = true
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
       val List(c) = cpg.call.code("findViewB.*").codeNot(".*as.*").l
@@ -229,7 +250,8 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to Android's `sendBroadcast`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import android.content.Intent
@@ -245,7 +267,9 @@ class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
         |    sendBroadcast(intent)
         |  }
         |}
-        | """.stripMargin)
+        | """.stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `super.onCreate.*` with the correct props set" in {
       def callQ = cpg.call.code(".*onCreate.*")

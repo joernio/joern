@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -12,7 +12,7 @@ import overflowdb.traversal.jIteratortoTraversal
 
 class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   "CPG for code with usage of `kotlin.BooleanArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -31,7 +31,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.ByteArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -50,7 +50,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with extension fn called on instance of `kotlin.ByteArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -67,7 +67,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.CharArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -86,7 +86,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.DoubleArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -105,7 +105,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.FloatArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -124,7 +124,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.IntArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -143,7 +143,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.LongArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -162,7 +162,7 @@ class PrimitiveArrayTypeMappingTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of `kotlin.ShortArray`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {

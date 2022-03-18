@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.nodes.Import
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class ImportTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with a stdlib import" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.io.collections.listOf
@@ -46,7 +46,7 @@ class ImportTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code without explicit imports" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args : Array<String>) {

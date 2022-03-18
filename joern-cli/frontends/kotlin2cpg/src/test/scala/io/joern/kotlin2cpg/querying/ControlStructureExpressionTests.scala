@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple `if`-expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package baz
         |
         |fun main(argc: Int): Int {
@@ -47,7 +47,7 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `if`-expression with fn calls in branches" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun some1(): Int {
@@ -97,7 +97,7 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `if`-expression with DQEs in branches" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -151,7 +151,7 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `if`-expression with enum in branches" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -198,7 +198,7 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `if`-expression inside method" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -249,7 +249,7 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `when`-expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun myfun() {

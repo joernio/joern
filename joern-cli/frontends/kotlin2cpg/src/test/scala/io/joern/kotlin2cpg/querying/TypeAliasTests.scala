@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class TypeAliasTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple typealias to Int" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |typealias MyInt = Int
@@ -33,7 +33,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple typealias to ListInt" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |typealias Foo = List<Int>
@@ -58,7 +58,8 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with typealias of type from external library" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package org.http4k.core.body
         |
         |import org.http4k.core.Parameters
@@ -66,7 +67,9 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
         |
         |typealias Form = Parameters
         |fun Request.form(): Form = bodyString().toParameters()
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a TYPE_DECL with the correct ALIAS_TYPE_FULL_NAME set" in {
       cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "org.http4k.core.Parameters"

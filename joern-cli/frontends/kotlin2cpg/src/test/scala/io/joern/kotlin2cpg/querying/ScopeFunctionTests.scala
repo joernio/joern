@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class ScopeFunctionTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple `let` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo() {
@@ -43,7 +43,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `run` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo() {
@@ -78,7 +78,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `also` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo() {
@@ -113,7 +113,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with `with` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo(x: String): Int {
@@ -134,7 +134,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `apply` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Bar(p: String)
@@ -150,7 +150,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `takeIf` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo() {
@@ -167,7 +167,7 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `takeUnless` scope function" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo() {

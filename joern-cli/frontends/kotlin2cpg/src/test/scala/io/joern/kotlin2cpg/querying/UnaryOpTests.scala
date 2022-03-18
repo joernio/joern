@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class UnaryOpTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with calls to unary operators" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  val y: Boolean = true
