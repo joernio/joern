@@ -344,8 +344,8 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   }
 
   private def astForInvokeExpr(invokeExpr: InvokeExpr, order: Int, parentUnit: soot.Unit): Ast = {
-    val callee = invokeExpr.getMethodRef
-    val dispatchType = callee match {
+    val method = invokeExpr.getMethodRef
+    val dispatchType = method match {
       case x if x.isConstructor  => DispatchTypes.STATIC_DISPATCH
       case _: DynamicInvokeExpr  => DispatchTypes.DYNAMIC_DISPATCH
       case _: InstanceInvokeExpr => DispatchTypes.DYNAMIC_DISPATCH
@@ -353,22 +353,22 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     }
 
     val signature =
-      s"${callee.getReturnType.toQuotedString}(${(for (i <- 0 until callee.getParameterTypes.size())
-          yield callee.getParameterType(i).toQuotedString).mkString(",")})"
+      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterTypes.size())
+          yield method.getParameterType(i).toQuotedString).mkString(",")})"
     val thisAsts = invokeExpr match {
       case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
-      case _                        => Seq(createThisNode(callee, NewIdentifier()))
+      case _                        => Seq(createThisNode(method, NewIdentifier()))
     }
 
     val methodName =
-      if (callee.isConstructor)
-        registerType(callee.getDeclaringClass.getType.getClassName)
+      if (method.isConstructor)
+        registerType(method.getDeclaringClass.getType.getClassName)
       else
-        callee.getName
+        method.getName
 
     val callType =
-      if (callee.isConstructor) "void"
-      else registerType(callee.getDeclaringClass.getType.toQuotedString)
+      if (method.isConstructor) "void"
+      else registerType(method.getDeclaringClass.getType.toQuotedString)
 
     val code = invokeExpr match {
       case expr: InstanceInvokeExpr =>
@@ -377,12 +377,12 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     }
 
     val callNode = NewCall()
-      .name(callee.getName)
+      .name(method.getName)
       .code(code)
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
-      .methodFullName(s"${callee.getDeclaringClass.getType.toQuotedString}.${callee.getName}:$signature")
+      .methodFullName(s"${method.getDeclaringClass.getType.toQuotedString}.${method.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))
