@@ -23,11 +23,10 @@ private object Frontend {
     import builder.programName
     OParser.sequence(programName("javasrc2cpg"))
   }
+}
 
+object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) {
   def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
     javasrc2Cpg.run(config)
   }
-
 }
-
-object Main extends X2CpgMain(cmdLineParser, run, new JavaSrc2Cpg()) {}

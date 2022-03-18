@@ -23,11 +23,10 @@ private object Frontend {
     import builder.programName
     OParser.sequence(programName("ghidra2cpg"))
   }
+}
 
+object Main extends X2CpgMain(cmdLineParser, new Ghidra2Cpg()) {
   def run(config: Config, ghidra2Cpg: Ghidra2Cpg): Unit = {
     ghidra2Cpg.run(config)
   }
-
 }
-
-object Main extends X2CpgMain(cmdLineParser, run, new Ghidra2Cpg()) {}

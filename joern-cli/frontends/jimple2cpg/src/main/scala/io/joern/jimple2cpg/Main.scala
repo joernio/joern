@@ -23,13 +23,12 @@ private object Frontend {
     import builder.programName
     OParser.sequence(programName("jimple2cpg"))
   }
-
-  def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
-    jimple2Cpg.run(config)
-  }
-
 }
 
 /** Entry point for command line CPG creator
   */
-object Main extends X2CpgMain(cmdLineParser, run, new Jimple2Cpg()) {}
+object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) {
+  def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
+    jimple2Cpg.run(config)
+  }
+}

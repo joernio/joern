@@ -23,11 +23,10 @@ private object Frontend {
     import builder.programName
     OParser.sequence(programName("php2cpg"))
   }
+}
 
+object Main extends X2CpgMain(cmdLineParser, new Php2Cpg()) {
   def run(config: Config, php2Cpg: Php2Cpg): Unit = {
     php2Cpg.run(config)
   }
-
 }
-
-object Main extends X2CpgMain(cmdLineParser, run, new Php2Cpg()) {}

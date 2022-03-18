@@ -31,12 +31,12 @@ trait X2CpgConfig[R] {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](
-  cmdLineParser: OParser[Unit, T],
-  run: (T, X) => Unit,
-  frontend: X
-)(implicit defaultConfig: T)
-    extends App {
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](cmdLineParser: OParser[Unit, T], frontend: X)(
+  implicit defaultConfig: T
+) extends App {
+
+  def run(t: T, x: X): Unit
+
   X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
     case Some(config) =>
       try {

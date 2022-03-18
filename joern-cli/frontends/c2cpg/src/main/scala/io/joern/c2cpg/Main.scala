@@ -24,7 +24,6 @@ final case class Config(
 }
 
 private object Frontend {
-  private val logger                 = LoggerFactory.getLogger(classOf[C2Cpg])
   implicit val defaultConfig: Config = Config()
 
   val cmdLineParser: OParser[Unit, Config] = {
@@ -58,6 +57,12 @@ private object Frontend {
     )
   }
 
+}
+
+object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) {
+
+  private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
+
   def run(config: Config, c2cpg: C2Cpg): Unit = {
     if (config.printIfDefsOnly) {
       try {
@@ -73,5 +78,3 @@ private object Frontend {
   }
 
 }
-
-object Main extends X2CpgMain(cmdLineParser, run, new C2Cpg()) {}
