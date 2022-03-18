@@ -7,6 +7,7 @@ import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.collection.mutable
+import scala.util.Random
 
 object Kotlin2CpgTestContext {
   def newContext: Kotlin2CpgTestContext = {
@@ -44,8 +45,10 @@ class Kotlin2CpgTestContext private () {
         val file = tempDir / inputPair.fileName
         file.writeText(inputPair.content)
       }
+      val randomOutPath = "cpg" + Random.alphanumeric.take(10).mkString + ".bin.zip"
       val config = Config(
         inputPaths = Set(tempDir.pathAsString),
+        outputPath = randomOutPath,
         classpath = Set(),
         withAndroidJarsInClassPath = includeAllJars,
         withMiscJarsInClassPath = includeAllJars
