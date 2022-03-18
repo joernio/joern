@@ -1,17 +1,13 @@
 package io.joern.ghidra2cpg.fixtures
 
-import io.joern.ghidra2cpg.Ghidra2Cpg
+import io.joern.ghidra2cpg.{Config, Ghidra2Cpg}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import io.joern.x2cpg.testfixtures.{BinToCpgFixture, LanguageFrontend}
 import io.shiftleft.utils.ProjectRoot
 import org.apache.commons.io.FileUtils
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
-import io.shiftleft.semanticcpg.language.{ICallResolver, _}
+import io.shiftleft.semanticcpg.language._
 
 import java.nio.file.Files
 
@@ -25,8 +21,9 @@ class GhidraFrontend extends LanguageFrontend {
     val tempDir = Files.createTempDirectory("ghidra2cpg").toFile
     Runtime.getRuntime.addShutdownHook(new Thread(() => FileUtils.deleteQuietly(tempDir)))
 
-    val cpgBin = dir.getAbsolutePath
-    new Ghidra2Cpg().createCpg(inputFile, Some(cpgBin))
+    val cpgBin                         = dir.getAbsolutePath
+    implicit val defaultConfig: Config = Config()
+    new Ghidra2Cpg().createCpg(inputFile.getAbsolutePath, Some(cpgBin)).get
   }
 
 }

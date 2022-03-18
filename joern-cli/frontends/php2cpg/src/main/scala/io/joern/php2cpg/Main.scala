@@ -1,7 +1,7 @@
-package io.joern.jimple2cpg
+package io.joern.php2cpg
 
-import io.joern.jimple2cpg.Frontend._
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.php2cpg.Frontend._
 import scopt.OParser
 
 /** Command line configuration parameters
@@ -21,14 +21,12 @@ private object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.programName
-    OParser.sequence(programName("jimple2cpg"))
+    OParser.sequence(programName("php2cpg"))
   }
 }
 
-/** Entry point for command line CPG creator
-  */
-object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) {
-  def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
-    jimple2Cpg.run(config)
+object Main extends X2CpgMain(cmdLineParser, new Php2Cpg()) {
+  def run(config: Config, php2Cpg: Php2Cpg): Unit = {
+    php2Cpg.run(config)
   }
 }

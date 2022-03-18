@@ -49,6 +49,8 @@ trait TypeInfoProvider {
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
 
+  def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
+
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
 
   def isReferencingMember(expr: KtNameReferenceExpression): Boolean

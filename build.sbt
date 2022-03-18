@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion    = "1.3.515"
+val cpgVersion    = "1.3.517"
 val js2cpgVersion = "0.2.138"
 
 lazy val joerncli          = Projects.joerncli
@@ -16,6 +16,7 @@ lazy val jssrc2cpg         = Projects.jssrc2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
 lazy val pysrc2cpg         = Projects.pysrc2cpg
+lazy val php2cpg           = Projects.php2cpg
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
