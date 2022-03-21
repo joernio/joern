@@ -21,12 +21,11 @@ import scala.util.{Success, Try}
 
 case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
-class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPaths: Set[String], cpg: Cpg)
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
-  // TODO: Make this configurable
-  private val JarsPath = Some("/home/johannes/.m2/repository")
 
   override def generateParts(): Array[String] = filenames.toArray
 
@@ -51,11 +50,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg) extend
   }
 
   private def jarsList: List[String] = {
-    JarsPath match {
-      case Some(path) => recursiveJarsFromPath(path)
-
-      case _ => Nil
-    }
+    inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
   }
 
   private def recursiveJarsFromPath(path: String): List[String] = {
@@ -70,7 +65,6 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg) extend
         List(file.canonicalPath)
 
       case _ =>
-        logger.debug(s"Could not find any jars at path ${JarsPath}")
         Nil
     }
   }

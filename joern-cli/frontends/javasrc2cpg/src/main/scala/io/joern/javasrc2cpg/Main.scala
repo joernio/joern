@@ -6,8 +6,11 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String = X2CpgConfig.defaultOutputPath)
-    extends X2CpgConfig[Config] {
+final case class Config(
+  inputPaths: Set[String] = Set.empty,
+  outputPath: String = X2CpgConfig.defaultOutputPath,
+  inferenceJarPaths: Set[String] = Set.empty
+) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
     copy(inputPaths = inputPaths + inputPath)
@@ -20,8 +23,13 @@ private object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder.programName
-    OParser.sequence(programName("javasrc2cpg"))
+    import builder._
+    OParser.sequence(
+      programName("javasrc2cpg"),
+      opt[String]("inference-jar-paths")
+        .text(s"extra jars used only for type information")
+        .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path))
+    )
   }
 }
 
