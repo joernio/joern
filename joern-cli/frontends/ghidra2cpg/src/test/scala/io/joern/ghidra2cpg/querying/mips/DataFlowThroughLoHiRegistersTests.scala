@@ -1,15 +1,14 @@
 package io.joern.ghidra2cpg.querying.mips
 
-import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.semanticcpg.language.{ICallResolver, _}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers._
-
 class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
 
   override def passes(cpg: Cpg): Unit = {
@@ -46,8 +45,8 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
   implicit val context: EngineContext = EngineContext(semantics)
 
   "should find flows through `div*` instructions" in {
-    def source                       = cpg.call.code("_div t1,t0").argument
-    def sink                         = cpg.call.code("mflo t2").argument
+    def source                       = cpg.call.code("_div t1,t0")
+    def sink                         = cpg.call.code("mflo t2")
     def flowsThroughDivXInstructions = sink.reachableByFlows(source).l
     flowsThroughDivXInstructions.map(flowToResultPairs).toSet shouldBe
       Set(List("_div t1,t0", "mflo t2"))
