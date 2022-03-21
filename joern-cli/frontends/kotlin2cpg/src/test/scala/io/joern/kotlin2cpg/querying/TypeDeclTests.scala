@@ -61,6 +61,24 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with user-defined class which has no specific superclasses" - {
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass
+        |
+        |fun main() {
+        |    val aClass = AClass()
+        |    println(aClass.toString())
+        |}
+        | """.stripMargin)
+
+    "should contain TYPE_DECL node with a value of `java.lang.Object` in its INHERITS_FROM_TYPE_FULL_NAME prop" in {
+      val List(x) = cpg.typeDecl.nameExact("AClass").l
+      x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
+    }
+  }
+
   "class with multiple initializers" - {
     lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package baz

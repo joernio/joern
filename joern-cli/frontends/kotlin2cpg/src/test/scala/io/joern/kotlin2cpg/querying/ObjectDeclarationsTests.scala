@@ -28,7 +28,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "Foo"
       x.code shouldBe "Foo"
       x.fullName shouldBe "mypkg.Foo"
-      x.inheritsFromTypeFullName shouldBe List()
+      x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
       x.lineNumber shouldBe Some(3)
       x.columnNumber shouldBe Some(7)
@@ -114,7 +114,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.typeDecl.isExternal(false).name("Prefs").l
       x.name shouldBe "Prefs"
       x.fullName shouldBe "mypkg.Prefs"
-      x.inheritsFromTypeFullName shouldBe List()
+      x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
       x.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(7)
