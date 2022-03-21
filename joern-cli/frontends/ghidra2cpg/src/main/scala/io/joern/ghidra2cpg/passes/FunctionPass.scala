@@ -2,15 +2,7 @@ package io.joern.ghidra2cpg.passes
 
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
-import ghidra.program.model.listing.{
-  CodeUnitFormat,
-  CodeUnitFormatOptions,
-  Function,
-  FunctionIterator,
-  Instruction,
-  Listing,
-  Program
-}
+import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
 import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg._
@@ -19,7 +11,7 @@ import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
