@@ -6,7 +6,7 @@ else
     SCRIPT_ABS_PATH=$(readlink -f "$0")
 fi
 SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
-SCRIPT="$SCRIPT_ABS_DIR"/frontends/pysrc2cpg/bin/io_joern_pysrc-2-cpg_main
+SCRIPT="$SCRIPT_ABS_DIR"/frontends/pysrc2cpg/bin/pysrc2cpg
 
 if [ ! -f "$SCRIPT" ]; then
     echo "Unable to find $SCRIPT, have you created the distribution?"

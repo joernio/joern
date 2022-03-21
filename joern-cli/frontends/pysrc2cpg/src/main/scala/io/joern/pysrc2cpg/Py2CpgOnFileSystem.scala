@@ -1,5 +1,6 @@
 package io.joern.pysrc2cpg
 
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 import overflowdb.Graph
@@ -42,13 +43,7 @@ object Py2CpgOnFileSystem {
       Files.delete(outputFile)
     }
 
-    val odbConfig = overflowdb.Config.withDefaults.withStorageLocation(outputFile.toString)
-    val graph = Graph.open(
-      odbConfig,
-      io.shiftleft.codepropertygraph.generated.nodes.Factories.allAsJava,
-      io.shiftleft.codepropertygraph.generated.edges.Factories.allAsJava
-    )
-    new Cpg(graph)
+    X2Cpg.newEmptyCpg(Some(outputFile.toString))
   }
 
   private def collectInputFiles(inputDir: Path, ignorePrefixes: Iterable[Path]): Iterable[Path] = {
