@@ -48,7 +48,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
 
     "should contain MEMBER node with correct properties" in {
       val List(x) = cpg.member("x").l
-      x.code shouldBe "private val x: String"
+      x.code shouldBe "x"
       x.typeFullName shouldBe "java.lang.String"
     }
   }
