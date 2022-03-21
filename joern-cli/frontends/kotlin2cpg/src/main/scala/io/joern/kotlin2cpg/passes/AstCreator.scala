@@ -360,14 +360,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map(_.getText)
         .toList
 
-    val baseTypeFullNames = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val baseTypeFullNames =
+      typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val outBaseTypeFullNames =
+      if (baseTypeFullNames.isEmpty) {
+        Seq(TypeConstants.javaLangObject)
+      } else {
+        baseTypeFullNames
+      }
     val typeDecl =
       NewTypeDecl()
         .code(ktClass.getName)
         .name(className)
         .fullName(fullName)
         .order(order)
-        .inheritsFromTypeFullName(baseTypeFullNames)
+        .inheritsFromTypeFullName(outBaseTypeFullNames)
         .isExternal(false)
         .lineNumber(line(ktClass))
         .columnNumber(column(ktClass))
