@@ -289,7 +289,7 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
         val List(obj: Identifier, initArg: Identifier) = init.argument.l
         obj.name shouldBe "this"
-        obj.typeFullName shouldBe "Bar"
+        obj.typeFullName shouldBe "Foo"
         obj.argumentIndex shouldBe 0
         obj.order shouldBe 0
         obj.code shouldBe "this"

@@ -18,14 +18,51 @@ trait X2CpgConfig[R] {
   def withOutputPath(x: String): R
 }
 
+/** Base class for `Main` classes of CPG frontends.
+  *
+  * Main classes that inherit from this base class parse the command line, exiting with an error code if this does not
+  * succeed. On success, the method `run` is called, which evaluates, given a frontend and a configuration, creates the
+  * CPG and stores it on disk.
+  *
+  * @param cmdLineParser
+  *   parser for command line arguments
+  * @param frontend
+  *   the frontend to use for CPG creation
+  */
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](cmdLineParser: OParser[Unit, T], frontend: X)(
+  implicit defaultConfig: T
+) extends App {
+
+  /** method that evaluates frontend with configuration
+    */
+  def run(config: T, frontend: X): Unit
+
+  X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
+    case Some(config) =>
+      try {
+        run(config, frontend)
+      } catch {
+        case ex: Throwable =>
+          println(ex.getMessage)
+          ex.printStackTrace()
+          System.exit(1)
+      }
+    case None =>
+      println("Error parsing the command line")
+      System.exit(1)
+  }
+}
+
+/** Trait that represents a CPG generator, where T is the frontend configuration class.
+  */
 trait X2CpgFrontend[T <: X2CpgConfig[_]] {
 
   /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
-    * inspect exceptions in CPG generation.
+    * inspect exceptions in CPG generation. To be provided by the frontend.
     */
   def createCpg(config: T): Try[Cpg]
 
-  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is not
+  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG closed not
     * returned.
     */
   def run(config: T): Unit = {
@@ -65,7 +102,12 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     createCpg(List(inputName), outputName)(defaultConfig)
   }
 
+  /** Create a CPG in memory for file at `inputName` with default configuration.
+    */
   def createCpg(inputName: String)(implicit defaultConfig: T): Try[Cpg] = createCpg(inputName, None)(defaultConfig)
+
+  /** Create a CPG in memory for files at `inputNames` with default configuration.
+    */
   def createCpg(inputNames: List[String])(implicit defaultConfig: T): Try[Cpg] =
     createCpg(inputNames, None)(defaultConfig)
 }
@@ -75,10 +117,8 @@ object X2Cpg {
   private val logger = LoggerFactory.getLogger(X2Cpg.getClass)
 
   /** Parse commands line arguments in `args` using an X2Cpg command line parser, extended with the frontend specific
-    * options in `frontendSpecific` with the initial configuration set to `initialConf`.
-    *
-    * On success, the configuration is returned wrapped into an Option. On failure, error messages are printed and
-    * `None` is returned.
+    * options in `frontendSpecific` with the initial configuration set to `initialConf`. On success, the configuration
+    * is returned wrapped into an Option. On failure, error messages are printed and, `None` is returned.
     */
   def parseCommandLine[R <: X2CpgConfig[R]](
     args: Array[String],
@@ -128,6 +168,9 @@ object X2Cpg {
     Cpg.withConfig(odbConfig)
   }
 
+  /** Apply function `applyPasses` to a newly created CPG. The CPG is wrapped in a `Try` and returned. On failure, the
+    * CPG is ensured to be closed.
+    */
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
     val outputPath = if (outPath != "") Some(outPath) else None
     Try {

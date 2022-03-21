@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -11,7 +11,7 @@ class LabelTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with label usage" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun foo(x: Int, y: Int): Int {
         |    listOf(1, 2, 3, 4, 5).forEach {
         |        if (Random.nextInt(0, 1) == 0) return x // non-local return directly to the caller of foo()

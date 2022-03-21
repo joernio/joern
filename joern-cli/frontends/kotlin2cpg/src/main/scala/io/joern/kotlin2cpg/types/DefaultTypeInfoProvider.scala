@@ -401,6 +401,14 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
+  def containingDeclFullName(expr: KtCallExpression): Option[String] = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    resolvedDesc.map { fnDescriptor =>
+      val decl = fnDescriptor.getContainingDeclaration
+      TypeRenderer.renderFqName(decl)
+    }
+  }
+
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String = {
     val resolvedDesc = resolvedCallDescriptor(expr)
     resolvedDesc match {
@@ -441,12 +449,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedDesc match {
       case Some(fnDescriptor) =>
         val isExtension = DescriptorUtils.isExtension(fnDescriptor)
-        val isBuiltin   = isBuiltIn(fnDescriptor)
-        val isStatic =
-          DescriptorUtils.isStaticDeclaration(fnDescriptor) || hasStaticDesc(expr)
+        val isStatic    = DescriptorUtils.isStaticDeclaration(fnDescriptor) || hasStaticDesc(expr)
+
         if (isExtension) CallKinds.ExtensionCall
         else if (isStatic) CallKinds.StaticCall
-        else if (isBuiltin) CallKinds.StaticCall
         else CallKinds.DynamicCall
       case None => CallKinds.Unknown
     }
@@ -674,6 +680,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val signature = returnTypeFullName + paramListSignature
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
+  }
+
+  def isReferenceToClass(expr: KtNameReferenceExpression): Boolean = {
+    descriptorForNameReference(expr)
+      .collect {
+        case _: LazyJavaClassDescriptor =>
+          true
+        case _: LazyClassDescriptor =>
+          true
+      }
+      .getOrElse(false)
   }
 
   private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {

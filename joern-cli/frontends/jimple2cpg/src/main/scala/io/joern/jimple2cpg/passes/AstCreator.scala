@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Ast.storeInDiffGraph
+import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
@@ -26,7 +27,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     * key in the map.
     */
   private def registerType(typeName: String): String = {
-    global.usedTypes.add(typeName)
+    global.usedTypes.put(typeName, true)
     typeName
   }
 
@@ -343,30 +344,31 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   }
 
   private def astForInvokeExpr(invokeExpr: InvokeExpr, order: Int, parentUnit: soot.Unit): Ast = {
+    val callee = invokeExpr.getMethodRef
     val dispatchType = invokeExpr match {
-      case x if x.getMethod.isConstructor => DispatchTypes.STATIC_DISPATCH
-      case _: DynamicInvokeExpr           => DispatchTypes.DYNAMIC_DISPATCH
-      case _: InstanceInvokeExpr          => DispatchTypes.DYNAMIC_DISPATCH
-      case _                              => DispatchTypes.STATIC_DISPATCH
+      case _ if callee.isConstructor => DispatchTypes.STATIC_DISPATCH
+      case _: DynamicInvokeExpr      => DispatchTypes.DYNAMIC_DISPATCH
+      case _: InstanceInvokeExpr     => DispatchTypes.DYNAMIC_DISPATCH
+      case _                         => DispatchTypes.STATIC_DISPATCH
     }
-    val method = invokeExpr.getMethodRef
+
     val signature =
-      s"${method.getReturnType.toQuotedString}(${(for (i <- 0 until method.getParameterTypes.size())
-          yield method.getParameterType(i).toQuotedString).mkString(",")})"
+      s"${callee.getReturnType.toQuotedString}(${(for (i <- 0 until callee.getParameterTypes.size())
+          yield callee.getParameterType(i).toQuotedString).mkString(",")})"
     val thisAsts = invokeExpr match {
       case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
-      case _                        => Seq(createThisNode(method, NewIdentifier()))
+      case _                        => Seq(createThisNode(callee, NewIdentifier()))
     }
 
     val methodName =
-      if (method.isConstructor)
-        registerType(method.getDeclaringClass.getType.getClassName)
+      if (callee.isConstructor)
+        registerType(callee.getDeclaringClass.getType.getClassName)
       else
-        method.getName
+        callee.getName
 
     val callType =
-      if (invokeExpr.getMethod.isConstructor) "void"
-      else registerType(method.getDeclaringClass.getType.toQuotedString)
+      if (callee.isConstructor) "void"
+      else registerType(callee.getDeclaringClass.getType.toQuotedString)
 
     val code = invokeExpr match {
       case expr: InstanceInvokeExpr =>
@@ -375,12 +377,12 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     }
 
     val callNode = NewCall()
-      .name(method.getName)
+      .name(callee.getName)
       .code(code)
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
-      .methodFullName(s"${method.getDeclaringClass.getType.toQuotedString}.${method.getName}:$signature")
+      .methodFullName(s"${callee.getDeclaringClass.getType.toQuotedString}.${callee.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))

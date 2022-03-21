@@ -1,32 +1,18 @@
 package io.joern.kotlin2cpg
 
-import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.types.{
-  CompilerAPI,
-  DefaultTypeInfoProvider,
-  ErrorLoggingMessageCollector,
-  InferenceSourcesPicker
-}
-import io.joern.kotlin2cpg.utils.PathUtils
-import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig}
-import io.shiftleft.utils.IOUtils
-import io.shiftleft.semanticcpg.language._
-import better.files.File
-
-import java.nio.file.{Files, Paths}
-import org.slf4j.LoggerFactory
-
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import io.joern.kotlin2cpg.Frontend._
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 case class InferenceJarPath(path: String, isResource: Boolean)
 
-/** Command line configuration parameters
-  */
 final case class Config(
-  inputPaths: Set[String] = Set.empty, // TODO: make this a singular
+  inputPaths: Set[String] = Set.empty,
   outputPath: String = X2CpgConfig.defaultOutputPath,
-  classpath: Set[String] = Set.empty
+  classpath: Set[String] = Set.empty,
+  withStdlibJarsInClassPath: Boolean = true,
+  withAndroidJarsInClassPath: Boolean = true,
+  withMiscJarsInClassPath: Boolean = true // TODO: remove
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -35,14 +21,10 @@ final case class Config(
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 
-/** Entry point for command line CPG creator
-  */
-object Main extends App {
-  private val logger = LoggerFactory.getLogger(getClass)
+private object Frontend {
+  implicit val defaultConfig: Config = Config()
 
-  val parsingError = "KT2CPG_PARSING_ERROR"
-
-  private val frontendSpecificOptions = {
+  val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.programName
     import builder.opt
@@ -51,112 +33,22 @@ object Main extends App {
       opt[String]("classpath")
         .unbounded()
         .text("directories to be searched for type resolution jars")
-        .action((incl, c) => c.copy(classpath = c.classpath + incl))
+        .action((incl, c) => c.copy(classpath = c.classpath + incl)),
+      opt[Unit]("with-stdlib-jars")
+        .text("adds local versions of Kotlin stdlib jars to classpath")
+        .action((_, c) => c.copy(withStdlibJarsInClassPath = true)),
+      opt[Unit]("with-android-jars")
+        .text("adds local versions of Android jars to classpath")
+        .action((_, c) => c.copy(withStdlibJarsInClassPath = true)),
+      opt[Unit]("with-misc-jars")
+        .text("adds local versions of various common library jars to classpath")
+        .action((_, c) => c.copy(withStdlibJarsInClassPath = true))
     )
   }
+}
 
-  X2Cpg.parseCommandLine(args, frontendSpecificOptions, Config()) match {
-    case Some(config) =>
-      if (config.inputPaths.size == 1) {
-        val sourceDir = config.inputPaths.head
-        if (!Files.exists(Paths.get(sourceDir))) {
-          println("The input path provided does not exist `" + sourceDir + "`. Exiting.")
-          System.exit(1)
-        }
-        if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println("The input path provided is not a directory `" + sourceDir + "`. Exiting.")
-          System.exit(1)
-        }
-
-        val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
-        if (filesWithKtExtension.isEmpty) {
-          println("The provided input directory does not contain files ending in '.kt' `" + sourceDir + "`. Exiting.")
-          System.exit(1)
-        }
-        logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
-
-        val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(sourceDir)
-        val jarPathsFromClassPath =
-          config.classpath.foldLeft(Seq[String]())((acc, classpathEntry) => {
-            val f = File(classpathEntry)
-            val files =
-              if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == ".jar").map(_.toString)
-              else Seq()
-            acc ++ files
-          })
-        if (config.classpath.nonEmpty) {
-          if (jarPathsFromClassPath.nonEmpty) {
-            logger.info(s"Found ${jarPathsFromClassPath.size} jars in the specified classpath.")
-          } else {
-            logger.warn("No jars found in the specified classpath.")
-          }
-        }
-
-        val plugins = Seq()
-        val inferenceJars =
-          InferenceSourcesPicker.defaultInferenceJarPaths ++
-            jarPathsFromClassPath.map { path => InferenceJarPath(path, false) }
-        val messageCollector = new ErrorLoggingMessageCollector
-        val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJars, plugins, messageCollector)
-
-        val ktFiles = environment.getSourceFiles.asScala
-        val filesWithMeta =
-          ktFiles
-            .flatMap { f =>
-              try {
-                val relPath = PathUtils.relativize(sourceDir, f.getVirtualFilePath)
-                Some(f, relPath)
-              } catch {
-                case _: Throwable => None
-              }
-            }
-            .map { fwp =>
-              KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
-            }
-            .filterNot { fwp =>
-              // TODO: add test for this type of filtering
-              // TODO: support Windows paths
-              val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
-              if (willFilter) {
-                logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
-              }
-              willFilter
-            }
-
-        val fileContentsAtPath =
-          SourceFilesPicker
-            .configFiles(sourceDir)
-            .flatMap { fileName =>
-              try {
-                val relPath = PathUtils.relativize(sourceDir, fileName)
-                Some(fileName, relPath)
-              } catch {
-                case _: Throwable => None
-              }
-            }
-            .map { fnm =>
-              val fileContents =
-                try {
-                  IOUtils.readLinesInFile(Paths.get(fnm._1)).mkString("\n")
-                } catch {
-                  case t: Throwable => parsingError + "\n" + t.toString
-                }
-              FileContentAtPath(fileContents, fnm._2, fnm._1)
-            }
-
-        val typeInfoProvider = new DefaultTypeInfoProvider(environment)
-        val cpg = new Kt2Cpg().createCpg(filesWithMeta, fileContentsAtPath, typeInfoProvider, Some(config.outputPath))
-        val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
-        cpg.close()
-        if (!hasAtLeastOneMethodNode) {
-          logger.warn("Resulting CPG does not contain any METHOD nodes.")
-        }
-      } else {
-        println("This frontend requires exactly one input path")
-        System.exit(1)
-      }
-    case None =>
-      System.exit(1)
+object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) {
+  def run(config: Config, kotlin2cpg: Kotlin2Cpg): Unit = {
+    kotlin2cpg.run(config)
   }
-
 }

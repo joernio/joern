@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ControlStructureTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple if-else" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo(x: Int): Int {
@@ -26,7 +26,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with `when` statement with assignment in its conditional" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -50,7 +50,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with multiple control structures" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |import kotlin.random.Random
         |
         |class ClassFoo {
@@ -137,7 +137,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `for`-statements" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo() {
@@ -158,7 +158,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple `if`-statement" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -176,13 +176,13 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.collections.List.contains:java.lang.Boolean(java.lang.Object)"
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(5)
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "java.lang.Boolean(java.lang.Object)"
     }
   }
 
   "CPG for code with try-catch-finally statement" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |fun main() {
@@ -210,7 +210,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with try-catch statement" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |fun main() {
@@ -235,7 +235,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with range operators inside for-statements" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |fun foo() {

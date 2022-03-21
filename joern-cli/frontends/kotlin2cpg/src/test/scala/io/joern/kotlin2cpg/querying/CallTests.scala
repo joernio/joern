@@ -1,7 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
-import io.shiftleft.codepropertygraph.generated
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -14,7 +13,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with two functions with the same name, but different params" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun foo(x: Int, y: Int): Int {
@@ -100,7 +99,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a class declaration " - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class Foo {
@@ -157,7 +156,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a call to an implicitly imported stdlib fn " - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun doSome(x: String) {
@@ -183,7 +182,8 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a call to a constructor from library with type-inference support" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import com.google.gson.Gson
@@ -192,7 +192,9 @@ class CallTests extends AnyFreeSpec with Matchers {
         |  val serialized = Gson().toJson(productList)
         |  println(serialized)
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a call node for `Gson()`" in {
       val List(c) = cpg.call.methodFullName(".*Gson.*init.*").l
@@ -202,7 +204,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with invocation of extension function from stdlib" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -213,14 +215,14 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the `toString` invocation with the correct props set" in {
       val List(c) = cpg.call.code("1.*toString.*").l
       c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "java.lang.String()"
       c.typeFullName shouldBe "java.lang.String"
     }
   }
 
   "CPG for code with QE inside QE" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |fun main() {
@@ -240,7 +242,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call simple stdlib fn for map creation" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |import kotlin.collections.mutableMapOf
       |
       |fun main(args : Array<String>) {
@@ -261,7 +263,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a simple method call to decl of Java's stdlib" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |fun foo(x: String): Int {
@@ -280,7 +282,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with " - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
     |package mypkg
     |
     |fun main() {
@@ -304,12 +306,12 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.Int.toString:java.lang.String()"
       c.signature shouldBe "java.lang.String()"
       c.typeFullName shouldBe "java.lang.String"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
   }
 
   "CPG for code with a simple call to class from Java's stdlib imported with _as_" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import java.io.File as MyFile
@@ -329,7 +331,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a simple call with unknown identifier imported via _as_" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import no.such.CaseClass as MyCaseClass
@@ -363,7 +365,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to `100.toFloat`" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
      |package mypkg
      |
      |fun main() {
@@ -374,12 +376,11 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code(".*toFloat.*").l
       c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
   "CPG for code with call which has parenthesized expression as receiver" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |fun main() {
@@ -393,12 +394,11 @@ class CallTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code("\\(.*toFloat.*").l
       c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
 
   "CPG for code with usage of stdlib's `to` on stdlib objects" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {
@@ -415,7 +415,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with usage of stdlib's `to` on user-defined objects" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class AClass(val msg: String)

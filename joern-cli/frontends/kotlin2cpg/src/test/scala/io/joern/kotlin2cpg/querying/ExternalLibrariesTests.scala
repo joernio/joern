@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,8 @@ import org.scalatest.matchers.should.Matchers
 
 class ExternalLibrariesTests extends AnyFreeSpec with Matchers {
   "CPG for code with usage of the `timber` logging library" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import timber.log.Timber
@@ -18,7 +19,9 @@ class ExternalLibrariesTests extends AnyFreeSpec with Matchers {
         |  val secretKeys = listOf("LUSHQOXDMZNAIKFREPCYBWVGTJ", "ENIGMA")
         |  Timber.d("TODO: remove from prod: %s", secretKeys);
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL node for `Timber.d.*` with the correct METHOD_FULL_NAME set" in {
       cpg.call.code("Timber.*").methodFullName.l shouldBe List(

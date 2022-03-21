@@ -233,7 +233,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
             */
           val sameObjects: Iterable[Call] = allCalls.values.flatten
             .filter(_.asInstanceOf[HasName].name == Operators.fieldAccess)
-            .filter(_.ast.isIdentifier.name(identifier.name).nonEmpty)
+            .filter(_.ast.isIdentifier.nameExact(identifier.name).nonEmpty)
 
           sameIdentifiers ++ sameObjects
         case call: Call =>

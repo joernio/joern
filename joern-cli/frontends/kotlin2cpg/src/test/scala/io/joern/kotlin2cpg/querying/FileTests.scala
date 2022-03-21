@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
@@ -12,7 +12,7 @@ import java.io.{File => JFile}
 class FileTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple class definition and one method" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg.bar
         |
         |class Foo {
@@ -41,7 +41,7 @@ class FileTests extends AnyFreeSpec with Matchers {
         .name(".*.kt".replace("/", s"\\${JFile.separator}"))
         .method
         .name
-        .toSet shouldBe Set("baz", "Foo", "add")
+        .toSet shouldBe Set("baz", "<init>", "add")
     }
 
     "should allow traversing from file to its type declarations" in {

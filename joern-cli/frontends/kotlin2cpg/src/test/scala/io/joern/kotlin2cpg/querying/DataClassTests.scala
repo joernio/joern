@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class DataClassTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple data class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |data class Result(val p: Int, val q: String)
@@ -25,10 +25,12 @@ class DataClassTests extends AnyFreeSpec with Matchers {
       firstMethod.name shouldBe "component1"
       firstMethod.fullName shouldBe "mypkg.Result.component1:java.lang.Integer()"
       firstMethod.signature shouldBe "java.lang.Integer()"
+      firstMethod.block.size shouldBe 1
 
       secondMethod.name shouldBe "component2"
       secondMethod.fullName shouldBe "mypkg.Result.component2:java.lang.String()"
       secondMethod.signature shouldBe "java.lang.String()"
+      secondMethod.block.size shouldBe 1
     }
   }
 }

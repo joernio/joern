@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
@@ -14,7 +14,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with call to constructor of Java stdlib object inside declaration" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import java.io.File
@@ -86,7 +86,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to constructor of Java stdlib object inside QE" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import java.io.File
@@ -150,7 +150,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with call to simple constructor of user-defined class" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |class AClass(val x: String) {

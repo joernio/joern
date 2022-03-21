@@ -50,26 +50,7 @@ object InferenceSourcesPicker {
       .toList
   }
 
-  // TODO: iterate over inferencejars dir and get the paths like so
-  val defaultInferenceJarPaths = Seq(
-    InferenceJarPath("inferencejars/android-4.1.1.4.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.activity.activity-ktx-1.2.4.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.annotation-1.1.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.compose.foundation-1.0.5.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.compose.foundation-layout-1.0.5.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.constraintlayout-2.1.1.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.core-1.1.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.core-ktx-1.6.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.fragment-1.4.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.fragment-ktx-1.4.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.lifecycle-viewmodel-ktx-2.2.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.localbroadcastmanager-1.0.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.preference-ktx-1.1.1.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.viewpager.viewpager-1.0.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.recyclerview.recyclerview-1.0.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/androidx.webkit-1.4.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/annotation-1.1.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/appcompat-1.3.1-classes.jar", isResource = true),
+  val miscInferenceJarPaths = Seq(
     InferenceJarPath("inferencejars/com.appdynamics.appdynamics-runtime-20.7.1.jar", isResource = true),
     InferenceJarPath("inferencejars/com.chimerapps.niddler.niddler-1.5.5.jar", isResource = true),
     InferenceJarPath("inferencejars/com.chimerapps.niddler.niddler-noop-1.5.5.jar", isResource = true),
@@ -96,15 +77,39 @@ object InferenceSourcesPicker {
     InferenceJarPath("inferencejars/javax.servlet-api-4.0.1.jar", isResource = true),
     InferenceJarPath("inferencejars/javalin-4.1.1.jar", isResource = true),
     InferenceJarPath("inferencejars/jncryptor-1.2.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/kotlin-android-extensions-runtime-1.6.0-M1.jar", isResource = true),
-    InferenceJarPath("inferencejars/kotlin-stdlib-1.6.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true),
     InferenceJarPath("inferencejars/org.apache.commons.commons-collections4-4.4.jar", isResource = true),
     InferenceJarPath("inferencejars/org.apache.commons.commons-lang3-3.10.jar", isResource = true),
     InferenceJarPath("inferencejars/org.apache.commons.commons-text-1.8.jar", isResource = true),
-    InferenceJarPath("inferencejars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.0.jar", isResource = true),
-    InferenceJarPath("inferencejars/org.jetbrains.kotlinx.kotlinx-coroutines-android-1.3.9.jar", isResource = true),
     InferenceJarPath("inferencejars/rxjava-2.1.0.jar", isResource = true)
+  )
+
+  val defaultAndroidInferenceJarPaths = Seq(
+    InferenceJarPath("inferencejars/kotlin-android-extensions-runtime-1.6.0-M1.jar", isResource = true),
+    InferenceJarPath("inferencejars/android-4.1.1.4.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.activity.activity-ktx-1.2.4.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.annotation-1.1.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.compose.foundation-1.0.5.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.compose.foundation-layout-1.0.5.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.constraintlayout-2.1.1.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.core-1.1.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.core-ktx-1.6.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.fragment-1.4.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.fragment-ktx-1.4.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.lifecycle-viewmodel-ktx-2.2.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.localbroadcastmanager-1.0.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.preference-ktx-1.1.1.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.viewpager.viewpager-1.0.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.recyclerview.recyclerview-1.0.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/androidx.webkit-1.4.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/annotation-1.1.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/appcompat-1.3.1-classes.jar", isResource = true),
+    InferenceJarPath("inferencejars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.10.jar", isResource = true),
+    InferenceJarPath("inferencejars/org.jetbrains.kotlinx.kotlinx-coroutines-android-1.3.9.jar", isResource = true)
+  )
+
+  val defaultKotlinStdlibInferenceJarPaths = Seq(
+    InferenceJarPath("inferencejars/kotlin-stdlib-1.6.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
+    InferenceJarPath("inferencejars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true)
   )
 }

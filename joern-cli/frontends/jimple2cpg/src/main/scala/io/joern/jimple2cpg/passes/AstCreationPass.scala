@@ -1,21 +1,17 @@
 package io.joern.jimple2cpg.passes
 
 import io.joern.jimple2cpg.Jimple2Cpg
+import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, IntervalKeyPool}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 import soot.Scene
 
-import java.util.concurrent.ConcurrentSkipListSet
-
-case class Global(usedTypes: ConcurrentSkipListSet[String] = new ConcurrentSkipListSet[String]())
-
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPool)
-    extends ConcurrentWriterCpgPass[String](cpg, keyPool = Some(keyPool)) {
+class AstCreationPass(filenames: List[String], cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
 
-  val global: Global = Global()
+  val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
   override def generateParts(): Array[_ <: AnyRef] = filenames.toArray
@@ -24,6 +20,7 @@ class AstCreationPass(filenames: List[String], cpg: Cpg, keyPool: IntervalKeyPoo
     val qualifiedClassName = Jimple2Cpg.getQualifiedClassPath(part)
     try {
       val sootClass = Scene.v().loadClassAndSupport(qualifiedClassName)
+      sootClass.setApplicationClass()
       new AstCreator(part, builder, global).createAst(sootClass)
     } catch {
       case e: Exception =>

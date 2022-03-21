@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.psi.{
 trait TypeInfoProvider {
   def returnType(elem: KtNamedFunction, defaultValue: String): String
 
+  def containingDeclFullName(expr: KtCallExpression): Option[String]
+
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String
 
   def expressionType(expr: KtExpression, defaultValue: String): String
@@ -46,6 +48,8 @@ trait TypeInfoProvider {
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
+
+  def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
 

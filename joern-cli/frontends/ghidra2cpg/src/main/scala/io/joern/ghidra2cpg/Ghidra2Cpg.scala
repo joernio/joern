@@ -19,6 +19,7 @@ import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import utilities.util.FileUtilities
@@ -32,6 +33,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
   /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
+
   override def createCpg(config: Config): Try[Cpg] = {
     if (config.inputPaths.size != 1) {
       throw new RuntimeException("This frontend requires exactly one input path")
@@ -143,6 +145,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       extends DefaultProject(projectManager, connection) {}
 
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
+
 }
 
 object Types {

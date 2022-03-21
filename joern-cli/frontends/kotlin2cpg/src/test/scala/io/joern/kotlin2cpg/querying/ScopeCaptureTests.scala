@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class ScopeCaptureTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with identifier referencing two possible locals" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun foo() {
         |  val x: String = "n"
         |  1.let {
