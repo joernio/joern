@@ -1,101 +1,16 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  BodyDeclaration,
-  CallableDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.{BodyDeclaration, CallableDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  AssignExpr,
-  BinaryExpr,
-  CastExpr,
-  ClassExpr,
-  ConditionalExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  LambdaExpr,
-  LiteralExpr,
-  MethodCallExpr,
-  NameExpr,
-  ObjectCreationExpr,
-  ThisExpr,
-  UnaryExpr,
-  VariableDeclarationExpr
-}
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, CastExpr, ClassExpr, ConditionalExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, LambdaExpr, LiteralExpr, MethodCallExpr, NameExpr, ObjectCreationExpr, ThisExpr, UnaryExpr, VariableDeclarationExpr}
+import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, WhileStmt}
+import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  Operators
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
-
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
@@ -277,6 +192,10 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
 
       AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
     } catch {
+      case t: UnsolvedSymbolException =>
+        logger.error(s"Unsolved symbol exception caught in ${filename}")
+        t.printStackTrace()
+        throw t
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
         throw t

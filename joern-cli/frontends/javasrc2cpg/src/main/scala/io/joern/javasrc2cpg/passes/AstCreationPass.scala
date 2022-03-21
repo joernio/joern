@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.passes
 
+import better.files.File
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
@@ -7,6 +8,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   CombinedTypeSolver,
+  JarTypeSolver,
   JavaParserTypeSolver,
   ReflectionTypeSolver
 }
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
+import scala.util.{Success, Try}
 
 case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
 
@@ -22,6 +25,8 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg) extend
 
   val global: Global = Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
+  // TODO: Make this configurable
+  private val JarsPath = Some("/home/johannes/.m2/repository")
 
   override def generateParts(): Array[String] = filenames.toArray
 
@@ -45,12 +50,45 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg) extend
     }
   }
 
+  private def jarsList: List[String] = {
+    JarsPath match {
+      case Some(path) => recursiveJarsFromPath(path)
+
+      case _ => Nil
+    }
+  }
+
+  private def recursiveJarsFromPath(path: String): List[String] = {
+    Try(File(path)) match {
+      case Success(file) if file.isDirectory =>
+        file.listRecursively
+          .map(_.canonicalPath)
+          .filter(_.endsWith(".jar"))
+          .toList
+
+      case Success(file) if file.canonicalPath.endsWith(".jar") =>
+        List(file.canonicalPath)
+
+      case _ =>
+        logger.debug(s"Could not find any jars at path ${JarsPath}")
+        Nil
+    }
+  }
+
   private def typeSolver() = {
     val combinedTypeSolver   = new CombinedTypeSolver()
     val reflectionTypeSolver = new ReflectionTypeSolver()
     val javaParserTypeSolver = new JavaParserTypeSolver(codeDir)
     combinedTypeSolver.add(reflectionTypeSolver)
     combinedTypeSolver.add(javaParserTypeSolver)
+
+    // Add solvers for inference jars
+    jarsList
+      .flatMap { path =>
+        Try(new JarTypeSolver(path)).toOption
+      }
+      .foreach { combinedTypeSolver.add(_) }
+
     combinedTypeSolver
   }
 
