@@ -28,7 +28,6 @@ class NamespaceBlockTests extends GhidraBinToCpgSuite {
   }
 
   "should allow traversing from namespace block to method" in {
-    println(cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).method.name.l)
     cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).method.name.l shouldBe List(
       "_init",
       "FUN_00101020",
