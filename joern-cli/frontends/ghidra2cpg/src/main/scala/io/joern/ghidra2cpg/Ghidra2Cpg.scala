@@ -28,6 +28,7 @@ import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class Ghidra2Cpg extends X2CpgFrontend[Config] {
+
   /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
