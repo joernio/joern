@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.plugins
 
 import better.files.File
-import io.joern.kotlin2cpg.InferenceJarPath
-import io.joern.kotlin2cpg.types.{CompilerAPI, CompilerPluginInfo, DefaultTypeInfoProvider, InferenceSourcesPicker}
+import io.joern.kotlin2cpg.DefaultContentRootJarPath
+import io.joern.kotlin2cpg.types.{CompilerAPI, CompilerPluginInfo, DefaultTypeInfoProvider, ContentSourcesPicker}
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.allopen.{AllOpenComponentRegistrar, AllOpenConfigurationKeys}
 import org.jetbrains.kotlin.cli.common.messages.{
@@ -32,14 +32,14 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
       override def clear(): Unit      = {}
     }
 
-    val inferenceJarDir =
-      File(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/main/resources/inferencejars/"))
-    val inferenceJarsPaths =
-      inferenceJarDir.list
+    val defaultContentRootJarsDir =
+      File(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/main/resources/jars/"))
+    val defaultContentRootJarPaths =
+      defaultContentRootJarsDir.list
         .filter(_.hasExtension)
         .filter(_.pathAsString.endsWith("jar"))
         .map { f =>
-          InferenceJarPath(f.pathAsString, false)
+          DefaultContentRootJarPath(f.pathAsString, false)
         }
         .toSeq
 
@@ -48,8 +48,9 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
     "should receive a compiler error message if compiler plugins are not set up" in {
       val plugins          = Seq()
       val messageCollector = new ErrorCountMessageCollector()
-      val environment      = CompilerAPI.makeEnvironment(Seq(sourceDir), inferenceJarsPaths, plugins, messageCollector)
-      val nameGenerator    = new DefaultTypeInfoProvider(environment)
+      val environment =
+        CompilerAPI.makeEnvironment(Seq(sourceDir), defaultContentRootJarPaths, plugins, messageCollector)
+      val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       messageCollector.hasErrors() shouldBe true
     }
@@ -63,8 +64,9 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
 
       val plugins          = Seq(allOpenPluginInfo)
       val messageCollector = new ErrorCountMessageCollector()
-      val environment      = CompilerAPI.makeEnvironment(Seq(sourceDir), inferenceJarsPaths, plugins, messageCollector)
-      val nameGenerator    = new DefaultTypeInfoProvider(environment)
+      val environment =
+        CompilerAPI.makeEnvironment(Seq(sourceDir), defaultContentRootJarPaths, plugins, messageCollector)
+      val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       messageCollector.hasErrors() shouldBe false
     }

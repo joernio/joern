@@ -2165,6 +2165,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         }
       }
     }
+
     val finalCtx = mergedCtx(argAsts.map(_.ctx) ++ Seq(receiverAstWithCtx.ctx))
     AstWithCtx(finalAst, finalCtx)
   }

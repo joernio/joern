@@ -7,7 +7,7 @@ import org.scalatest.Ignore
 
 @Ignore // uncomment as soon as the sourceDir path is correct
 class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
-  "Running type inference operation on external project with lots of KotlinScript sources" - {
+  "Running `CompilerAPI.makeEnvironment` on external project with lots of KotlinScript sources" - {
     "should return an empty binding context" in {
       val sourceDir   = "src/test/resources/external_projects/kotlin-dsl"
       val environment = CompilerAPI.makeEnvironment(Seq(sourceDir), Seq(), Seq(), new ErrorLoggingMessageCollector)
@@ -20,7 +20,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
 
     "should not return an empty binding context" in {
       val sourceDir               = "src/test/resources/external_projects/kotlin-dsl"
-      val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(sourceDir)
+      val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
       val environment =
         CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq(), Seq(), new ErrorLoggingMessageCollector)
       environment.getSourceFiles should not be List()
