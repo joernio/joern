@@ -12,7 +12,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, DiffGraph, IntervalKeyPool, ParallelCpgPass}
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
@@ -117,13 +116,13 @@ abstract class FunctionPass(
     val instructions = getInstructions(function)
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
-      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode)
+      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode, function)
       diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
       diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
         val instructionNode = addCallOrReturnNode(instruction)
         diffGraphBuilder.addNode(instructionNode)
-        handleArguments(diffGraphBuilder, instruction, instructionNode)
+        handleArguments(diffGraphBuilder, instruction, instructionNode, function)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
         prevInstructionNode = instructionNode
@@ -132,7 +131,7 @@ abstract class FunctionPass(
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
+  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, function: Function): Unit = {
     val mnemonicString = processor.getInstructions(instruction.getMnemonicString)
     if (mnemonicString.equals("CALL")) {
       val calledFunction =

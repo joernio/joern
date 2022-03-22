@@ -26,7 +26,6 @@ class MipsFunctionPass(
   decompiler: Decompiler
 ) extends FunctionPass(new MipsProcessor, currentProgram, functions, cpg, decompiler) {
   private val logger                     = LoggerFactory.getLogger(classOf[MipsFunctionPass])
-  var highFunction: Option[HighFunction] = None
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {
@@ -168,8 +167,8 @@ class MipsFunctionPass(
     }
   }
 
-  def addCallArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew): Unit = {
-    val opCodes: Seq[PcodeOpAST] = highFunction.get
+  def addCallArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, highFunction: HighFunction): Unit = {
+    val opCodes: Seq[PcodeOpAST] = highFunction
       .getPcodeOps(instruction.getAddress())
       .asScala
       .toList
@@ -232,7 +231,8 @@ class MipsFunctionPass(
   override def handleArguments(
     diffGraphBuilder: DiffGraphBuilder,
     instruction: Instruction,
-    callNode: CfgNodeNew
+    callNode: CfgNodeNew,
+    function: Function
   ): Unit = {
     if (instruction.getPcode.toList.isEmpty) {
       // nop && _nop
@@ -242,7 +242,8 @@ class MipsFunctionPass(
     val opCodes: Seq[PcodeOp] = instruction.getPcode.toList
     opCodes.last.getOpcode match {
       case CALLIND | CALL =>
-        addCallArguments(diffGraphBuilder, instruction, callNode)
+        val highFunction = getHighFunction(function)
+        addCallArguments(diffGraphBuilder, instruction, callNode, highFunction)
       case _ =>
         // regular instructions, eg. add/sub
         addInstructionArguments(diffGraphBuilder, instruction, callNode)
@@ -254,7 +255,6 @@ class MipsFunctionPass(
     // we need it just once with default settings
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
     val methodNode = createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
-    highFunction = Some(getHighFunction(function))
     val methodReturn = createReturnNode()
     localDiffGraph.addNode(methodNode)
     localDiffGraph.addNode(blockNode)
