@@ -25,7 +25,7 @@ class MipsFunctionPass(
   cpg: Cpg,
   decompiler: Decompiler
 ) extends FunctionPass(new MipsProcessor, currentProgram, functions, cpg, decompiler) {
-  private val logger                     = LoggerFactory.getLogger(classOf[MipsFunctionPass])
+  private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {
@@ -167,7 +167,12 @@ class MipsFunctionPass(
     }
   }
 
-  def addCallArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, highFunction: HighFunction): Unit = {
+  def addCallArguments(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    highFunction: HighFunction
+  ): Unit = {
     val opCodes: Seq[PcodeOpAST] = highFunction
       .getPcodeOps(instruction.getAddress())
       .asScala
