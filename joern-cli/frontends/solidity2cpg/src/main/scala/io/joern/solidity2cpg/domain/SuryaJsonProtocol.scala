@@ -1,7 +1,7 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsNull, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsNull, JsString, JsValue, JsonFormat}
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -33,7 +33,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         case "PragmaDirective" =>
           PragmaDirective(fields("name").convertTo[String], fields("value").convertTo[String])
         case "ImportDirective" =>
-          ImportDirective(fields("path").convertTo[String])
+          // TODO: (Dave) Just added empty strings to get the project to compile
+          ImportDirective(fields("path").convertTo[String], "", "", "", "")
         case "ContractDefinition" =>
           ContractDefinitionJsonFormat.read(json)
         case "InheritanceSpecifier" =>
@@ -45,7 +46,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         case "VariableDeclaration" =>
           VariableDeclarationJsonFormat.read(json)
         case "ElementaryTypeName" =>
-          ElementaryTypeName(fields("name").convertTo[String], fields("stateMutability").convertTo[String])
+          ElementaryTypeName(
+            fields("name").convertTo[String],
+            fields("stateMutability") match {
+              case x: JsString => x.convertTo[String]
+              case _           => null
+            }
+          )
         case "Identifier" =>
           Identifier(fields("name").convertTo[String])
         case "Block" =>
@@ -95,7 +102,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
-        
+
       }
     }
   }
@@ -133,6 +140,17 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
+  implicit object BaseNameJsonFormat extends JsonFormat[BaseName] with DefaultJsonProtocol {
+
+    def write(c: BaseName): JsValue = JsNull
+
+    def read(json: JsValue): BaseName = {
+      val fields = json.asJsObject("Unable to decode JSON as InheritanceSpecifier").fields
+      BaseName(fields("type").convertTo[String], fields("namePath").convertTo[String])
+    }
+
+  }
+
   implicit object InheritanceSpecifierJsonFormat extends JsonFormat[InheritanceSpecifier] with DefaultJsonProtocol {
 
     def write(c: InheritanceSpecifier): JsValue = JsNull
@@ -142,9 +160,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "InheritanceSpecifier") {
         throw new RuntimeException("InheritanceSpecifier object expected")
       } else {
-        InheritanceSpecifier(
-          fields("baseName").convertTo[List[BaseASTNode]]
-        )
+        InheritanceSpecifier(fields("baseName").convertTo[BaseName])
       }
     }
   }
@@ -160,7 +176,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         ModifierDefinition(
           fields("name").convertTo[String],
-          fields("parameters").convertTo[List[BaseASTNode]].
+          fields("parameters").convertTo[List[BaseASTNode]],
           fields("body").convertTo[BaseASTNode],
           fields("isVirtual").convertTo[Boolean]
         )
@@ -179,7 +195,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         VariableDeclaration(
           fields("typeName").convertTo[BaseASTNode],
-          fields("name").convertTo[String].
+          fields("name").convertTo[String],
           fields("identifier").convertTo[BaseASTNode],
           fields("storageLocation").convertTo[String],
           fields("isStateVar").convertTo[Boolean],
@@ -199,9 +215,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "Block") {
         throw new RuntimeException("Block object expected")
       } else {
-        Block(
-          fields("statements").convertTo[List[BaseASTNode]]
-        )
+        Block(fields("statements").convertTo[List[BaseASTNode]])
       }
     }
   }
@@ -215,9 +229,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ExpressionStatement") {
         throw new RuntimeException("ExpressionStatement object expected")
       } else {
-        ExpressionStatement(
-          fields("expression").convertTo[BaseASTNode]
-        )
+        ExpressionStatement(fields("expression").convertTo[BaseASTNode])
       }
     }
   }
@@ -231,10 +243,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "FunctionCall") {
         throw new RuntimeException("FunctionCall object expected")
       } else {
-        FunctionCall(
-          fields("expression").convertTo[BaseASTNode],
-          fields("arguments").convertTo[List[BaseASTNode]]
-        )
+        FunctionCall(fields("expression").convertTo[BaseASTNode], fields("arguments").convertTo[List[BaseASTNode]])
       }
     }
   }
@@ -248,10 +257,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "MemberAccess") {
         throw new RuntimeException("MemberAccess object expected")
       } else {
-        MemberAccess(
-          fields("expression").convertTo[List[BaseASTNode]],
-          fields("memberName").convertTo[String]
-        )
+        MemberAccess(fields("expression").convertTo[List[BaseASTNode]], fields("memberName").convertTo[String])
       }
     }
   }
@@ -265,10 +271,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "IndexAccess") {
         throw new RuntimeException("IndexAccess object expected")
       } else {
-        IndexAccess(
-          fields("base").convertTo[BaseASTNode],
-          fields("index").convertTo[BaseASTNode]
-        )
+        IndexAccess(fields("base").convertTo[BaseASTNode], fields("index").convertTo[BaseASTNode])
       }
     }
   }
@@ -348,7 +351,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("isReceiveEther").convertTo[Boolean],
           fields("isFallback").convertTo[Boolean],
           fields("isVirtual").convertTo[Boolean],
-          fields("stateMutability").convertTo[String],
+          fields("stateMutability").convertTo[String]
         )
       }
     }
@@ -363,10 +366,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ModifierInvocation") {
         throw new RuntimeException("ModifierInvocation object expected")
       } else {
-        ModifierInvocation(
-          fields("name").convertTo[String],
-          fields("arguments").convertTo[List[BaseASTNode]]
-        )
+        ModifierInvocation(fields("name").convertTo[String], fields("arguments").convertTo[List[BaseASTNode]])
       }
     }
   }
@@ -380,9 +380,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "EmitStatement") {
         throw new RuntimeException("EmitStatement object expected")
       } else {
-        EmitStatement(
-          fields("eventCall").convertTo[BaseASTNode]
-        )
+        EmitStatement(fields("eventCall").convertTo[BaseASTNode])
       }
     }
   }
@@ -406,7 +404,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object VariableDeclarationStatementJsonFormat extends JsonFormat[VariableDeclarationStatement] with DefaultJsonProtocol {
+  implicit object VariableDeclarationStatementJsonFormat
+      extends JsonFormat[VariableDeclarationStatement]
+      with DefaultJsonProtocol {
 
     def write(c: VariableDeclarationStatement): JsValue = JsNull
 
@@ -468,9 +468,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "BooleanLiteral") {
         throw new RuntimeException("BooleanLiteral object expected")
       } else {
-        BooleanLiteral(
-          fields("value").convertTo[Boolean]
-        )
+        BooleanLiteral(fields("value").convertTo[Boolean])
       }
     }
   }
@@ -484,10 +482,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ArrayTypeName") {
         throw new RuntimeException("ArrayTypeName object expected")
       } else {
-        ArrayTypeName(
-          fields("baseTypeName").convertTo[BaseASTNode],
-          fields("length").convertTo[Int]
-        )
+        ArrayTypeName(fields("baseTypeName").convertTo[BaseASTNode], fields("length").convertTo[Int])
       }
     }
   }
@@ -501,15 +496,14 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "NumberLiteral") {
         throw new RuntimeException("NumberLiteral object expected")
       } else {
-        NumberLiteral(
-          fields("number").convertTo[Int],
-          fields("subdenomination").convertTo[Int]
-        )
+        NumberLiteral(fields("number").convertTo[Int], fields("subdenomination").convertTo[Int])
       }
     }
   }
 
-  implicit object StateVariableDeclarationJsonFormat extends JsonFormat[StateVariableDeclaration] with DefaultJsonProtocol {
+  implicit object StateVariableDeclarationJsonFormat
+      extends JsonFormat[StateVariableDeclaration]
+      with DefaultJsonProtocol {
 
     def write(c: StateVariableDeclaration): JsValue = JsNull
 
@@ -518,12 +512,10 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "StateVariableDeclaration") {
         throw new RuntimeException("StateVariableDeclaration object expected")
       } else {
-        StateVariableDeclaration(
-          fields("variables").convertTo[List[BaseASTNode]
-        )
+        StateVariableDeclaration(fields("variables").convertTo[List[BaseASTNode]])
       }
     }
-    }
+
   }
 
   implicit object MappingJsonFormat extends JsonFormat[Mapping] with DefaultJsonProtocol {
@@ -535,10 +527,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "Mapping") {
         throw new RuntimeException("Mapping object expected")
       } else {
-        Mapping(
-          fields("keyType").convertTo[BaseASTNode],
-          fields("valueType").convertTo[BaseASTNode]
-          )
+        Mapping(fields("keyType").convertTo[BaseASTNode], fields("valueType").convertTo[BaseASTNode])
       }
     }
   }
@@ -552,10 +541,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "StructDefinition") {
         throw new RuntimeException("StructDefinition object expected")
       } else {
-        StructDefinition(
-          fields("name").convertTo[String],
-          fields("members").convertTo[List[BaseASTNode]]
-        )
+        StructDefinition(fields("name").convertTo[String], fields("members").convertTo[List[BaseASTNode]])
       }
     }
   }
@@ -569,10 +555,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "UsingForDeclaration") {
         throw new RuntimeException("UsingForDeclaration object expected")
       } else {
-        UsingForDeclaration(
-          fields("typeName").convertTo[BaseASTNode],
-          fields("libraryName").convertTo[String]
-        )
+        UsingForDeclaration(fields("typeName").convertTo[BaseASTNode], fields("libraryName").convertTo[String])
       }
     }
   }

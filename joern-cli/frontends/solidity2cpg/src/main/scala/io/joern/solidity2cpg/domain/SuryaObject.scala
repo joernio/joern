@@ -34,7 +34,13 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class ImportDirective(path: String, unitAlias: String, unitAliasIdentifier: String, symbolAliases: String, symbolAliasesIdentifiers: String) extends BaseASTNode() {
+  case class ImportDirective(
+    path: String,
+    unitAlias: String,
+    unitAliasIdentifier: String,
+    symbolAliases: String,
+    symbolAliasesIdentifiers: String
+  ) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -47,7 +53,11 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class InheritanceSpecifier(baseName: List[BaseASTNode]) extends BaseASTNode() {
+  case class InheritanceSpecifier(baseName: BaseName) extends BaseASTNode() {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  case class BaseName(`type`: String, namePath: String) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
