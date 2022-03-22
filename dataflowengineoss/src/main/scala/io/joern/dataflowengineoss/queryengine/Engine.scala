@@ -4,13 +4,21 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
 
-import java.util.concurrent.{Callable, ExecutorCompletionService, ExecutorService, Executors}
+import java.util.concurrent.{
+  Callable,
+  ConcurrentHashMap,
+  ConcurrentMap,
+  ExecutorCompletionService,
+  ExecutorService,
+  Executors
+}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -332,8 +340,10 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
       expandIn(curNode, path).iterator.flatMap { parent =>
         val cachedResult = table.createFromTable(parent, path)
         if (cachedResult.isDefined) {
+          QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
           cachedResult.get
         } else {
+          QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
           results(parent +: path, sources, table, callSite)
         }
       }.toVector
@@ -385,5 +395,39 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
       semantics.forMethod(method.fullName)
     }
   }
+
+}
+
+/** Tracks various performance characteristics of the query engine.
+  */
+object QueryEngineStatistics extends Enumeration {
+
+  type QueryEngineStatistic = Value
+
+  val PATH_CACHE_HITS, PATH_CACHE_MISSES = Value
+
+  private val statistics = new ConcurrentHashMap[QueryEngineStatistic, Long]()
+
+  reset()
+
+  /** Adds the given value to the associated value to the given [[QueryEngineStatistics]] key.
+    * @param key
+    *   the key associated with the value to transform.
+    * @param value
+    *   the value to add to the statistic. Can be negative.
+    */
+  def incrementBy(key: QueryEngineStatistic, value: Long): Unit =
+    statistics.put(key, statistics.getOrDefault(key, 0L) + value)
+
+  /** The results of the measured statistics.
+    * @return
+    *   a map of each [[QueryEngineStatistic]] and the associated value measurement.
+    */
+  def results(): Map[QueryEngineStatistic, Long] = statistics.asScala.toMap
+
+  /** Sets all the tracked values back to 0.
+    */
+  def reset(): Unit =
+    QueryEngineStatistics.values.map((_, 0L)).foreach { case (v, t) => statistics.put(v, t) }
 
 }
