@@ -16,60 +16,55 @@ import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
-import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.passes.KeyPoolCreator
 import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.util.Try
-class Ghidra2Cpg extends X2CpgFrontend[Config] {
+
+class Ghidra2Cpg() {
 
   /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
+  def createCpg(inputFile: File, outputFile: Option[String]): Cpg = {
 
-  override def createCpg(config: Config): Try[Cpg] = {
-    if (config.inputPaths.size != 1) {
-      throw new RuntimeException("This frontend requires exactly one input path")
-    }
-
-    val inputFile = new File(config.inputPaths.head)
     if (!inputFile.isDirectory && !inputFile.isFile) {
       throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }
 
-    withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
-      better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
-        initGhidra()
-        val locator = new ProjectLocator(tempWorkingDir.path.toAbsolutePath.toString, CommandLineConfig.projectName)
-        var program: Program = null
-        var project: Project = null
+    val cpg = X2Cpg.newEmptyCpg(outputFile)
 
-        try {
-          val projectManager = new HeadlessGhidraProjectManager
-          project = projectManager.createProject(locator, null, false)
-          program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
-          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
-        } catch {
-          case e: Exception =>
-            e.printStackTrace()
-        } finally {
-          if (program != null) {
-            AutoAnalysisManager.getAnalysisManager(program).dispose()
-            program.release(this)
-          }
-          project.close()
-          FileUtilities.deleteDir(locator.getProjectDir)
-          locator.getMarkerFile.delete
+    better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
+      initGhidra()
+      val locator = new ProjectLocator(tempWorkingDir.path.toAbsolutePath.toString, CommandLineConfig.projectName)
+      var program: Program = null
+      var project: Project = null
+
+      try {
+        val projectManager = new HeadlessGhidraProjectManager
+        project = projectManager.createProject(locator, null, false)
+        program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
+        addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+      } finally {
+        if (program != null) {
+          AutoAnalysisManager.getAnalysisManager(program).dispose()
+          program.release(this)
         }
+        project.close()
+        FileUtilities.deleteDir(locator.getProjectDir)
+        locator.getMarkerFile.delete
       }
     }
+    cpg
   }
 
   private def initGhidra(): Unit = {
@@ -145,7 +140,6 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       extends DefaultProject(projectManager, connection) {}
 
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
-
 }
 
 object Types {
