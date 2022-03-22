@@ -16,10 +16,10 @@ import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
-import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.KeyPoolCreator
+import io.shiftleft.codepropertygraph.generated.Languages
 import utilities.util.FileUtilities
 
 import java.io.File
@@ -29,6 +29,9 @@ import scala.util.Try
 
 class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
+  /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
+    * the CPG.
+    */
   override def createCpg(config: Config): Try[Cpg] = {
     if (config.inputPaths.size != 1) {
       throw new RuntimeException("This frontend requires exactly one input path")
@@ -39,7 +42,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }
 
-    withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
+    X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
         initGhidra()
         val locator = new ProjectLocator(tempWorkingDir.path.toAbsolutePath.toString, CommandLineConfig.projectName)
@@ -50,7 +53,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
           val projectManager = new HeadlessGhidraProjectManager
           project = projectManager.createProject(locator, null, false)
           program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
-          addProgramToCpg(program, inputFile.getAbsolutePath, cpg)
+          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
         } catch {
           case e: Exception =>
             e.printStackTrace()
@@ -115,50 +118,31 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       .map(x => x.getAddress().getOffset -> x.getValue.toString)
       .toMap
 
-    // We touch every function twice, regular ASM and PCode
-    // Also we have + 2 for MetaDataPass and NamespacePass
-    val numOfKeypools   = functions.size * 3 + 2
-    val keyPoolIterator = KeyPoolCreator.obtain(numOfKeypools).iterator
-
-    new MetaDataPass(fileAbsolutePath, cpg).createAndApply()
-    new NamespacePass(cpg, fileAbsolutePath, keyPoolIterator.next()).createAndApply()
+    new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
+    new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
-        functions.foreach { function =>
-          new MipsFunctionPass(
-            program,
-            address2Literals,
-            fileAbsolutePath,
-            function,
-            cpg,
-            keyPoolIterator.next(),
-            decompiler
-          ).createAndApply()
-          new LoHiPass(cpg).createAndApply()
-        }
+        new MipsFunctionPass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
+        new LoHiPass(cpg).createAndApply()
       case "AARCH64" | "ARM" =>
-        functions.foreach { function =>
-          new ArmFunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
-            .createAndApply()
-        }
+        new ArmFunctionPass(program, fileAbsolutePath, functions, cpg, decompiler)
+          .createAndApply()
       case _ =>
-        functions.foreach { function =>
-          new X86FunctionPass(program, fileAbsolutePath, function, cpg, keyPoolIterator.next(), decompiler)
-            .createAndApply()
-          new ReturnEdgesPass(cpg).createAndApply()
-        }
+        new X86FunctionPass(program, fileAbsolutePath, functions, cpg, decompiler)
+          .createAndApply()
+        new ReturnEdgesPass(cpg).createAndApply()
     }
-    new TypesPass(cpg).createAndApply()
-    new JumpPass(cpg, keyPoolIterator.next()).createAndApply()
-    new LiteralPass(cpg, address2Literals, program, flatProgramAPI, keyPoolIterator.next()).createAndApply()
+
+    new TypeNodePass(Types.types.toList, cpg)
+    new JumpPass(cpg).createAndApply()
+    new LiteralPass(cpg, flatProgramAPI).createAndApply()
   }
 
   private class HeadlessProjectConnection(projectManager: HeadlessGhidraProjectManager, connection: GhidraURLConnection)
       extends DefaultProject(projectManager, connection) {}
 
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
-
 }
 
 object Types {

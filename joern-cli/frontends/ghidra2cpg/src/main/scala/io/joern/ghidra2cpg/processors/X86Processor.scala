@@ -94,6 +94,7 @@ class X86Processor extends Processor {
       "SUBSS"     -> "<operator>.subtraction",
       "TEST"      -> "<operator>.compare",
       "XADD"      -> "<operator>.incBy",
-      "XOR"       -> "<operator>.assignmentXor"
+      "XOR"       -> "<operator>.assignmentXor",
+      "HLT"       -> "<operator>.NOP"
     )
 }

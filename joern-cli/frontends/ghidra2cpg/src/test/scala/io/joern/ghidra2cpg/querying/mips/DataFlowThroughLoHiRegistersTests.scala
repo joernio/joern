@@ -1,15 +1,14 @@
 package io.joern.ghidra2cpg.querying.mips
 
-import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.semanticcpg.language.{ICallResolver, _}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers._
-
 class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
 
   override def passes(cpg: Cpg): Unit = {

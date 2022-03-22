@@ -6,54 +6,62 @@ import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.X86Processor
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod}
 
 import scala.language.implicitConversions
 class X86FunctionPass(
   currentProgram: Program,
   filename: String,
-  function: Function,
+  functions: List[Function],
   cpg: Cpg,
-  keyPool: IntervalKeyPool,
   decompiler: Decompiler
-) extends FunctionPass(new X86Processor, currentProgram, function, cpg, keyPool, decompiler) {
+) extends FunctionPass(new X86Processor, currentProgram, functions, cpg, decompiler) {
 
-  override def handleBody(): Unit = {
+  override def handleBody(
+    diffGraphBuilder: DiffGraphBuilder,
+    function: Function,
+    methodNode: NewMethod,
+    blockNode: NewBlock
+  ): Unit = {
+    val instructions = getInstructions(function)
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
-      handleArguments(instructions.head, prevInstructionNode)
-      diffGraph.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
-      diffGraph.addEdge(methodNode.get, prevInstructionNode, EdgeTypes.CFG)
+      handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode)
+      diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
         val instructionNode = addCallOrReturnNode(instruction)
-        diffGraph.addNode(instructionNode)
-        handleArguments(instruction, instructionNode)
-        diffGraph.addEdge(blockNode, instructionNode, EdgeTypes.AST)
+        diffGraphBuilder.addNode(instructionNode)
+        handleArguments(diffGraphBuilder, instruction, instructionNode)
+        diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         // Not connecting the previous instruction,
         // if it is an unconditional jump
         // JMP is x86 specific
         if (!prevInstructionNode.code.startsWith("JMP")) {
-          diffGraph.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+          diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
         }
         prevInstructionNode = instructionNode
       }
     }
   }
-  override def runOnPart(part: String): Iterator[DiffGraph] = {
-    methodNode = Some(
+  override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
+    // we need it just once with default settings
+    val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
+    val methodNode =
       createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
-    )
-    diffGraph.addNode(methodNode.get)
-    diffGraph.addNode(blockNode)
-    diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
-    val methodReturn = createReturnNode()
-    diffGraph.addNode(methodReturn)
-    diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
-    handleParameters()
-    handleLocals()
-    handleBody()
-    Iterator(diffGraph.build())
+    val localGraphBuilder = new DiffGraphBuilder()
+    val methodReturn      = createReturnNode()
+    localGraphBuilder.addNode(methodNode)
+    localGraphBuilder.addNode(blockNode)
+    localGraphBuilder.addEdge(methodNode, blockNode, EdgeTypes.AST)
+    localGraphBuilder.addNode(methodReturn)
+    localGraphBuilder.addEdge(methodNode, methodReturn, EdgeTypes.AST)
+    handleParameters(localGraphBuilder, function, methodNode)
+    handleLocals(localGraphBuilder, function, blockNode)
+    handleBody(localGraphBuilder, function, methodNode, blockNode)
+    diffGraphBuilder.absorb(localGraphBuilder)
+
   }
 
 }
