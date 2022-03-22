@@ -6,37 +6,36 @@ import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.ArmProcessor
 import io.joern.ghidra2cpg.utils.Nodes.{checkIfExternal, createMethodNode, createReturnNode}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 
 class ArmFunctionPass(
   currentProgram: Program,
   filename: String,
-  functions: List[Function],
+  function: Function,
   cpg: Cpg,
+  keyPool: IntervalKeyPool,
   decompiler: Decompiler
-) extends FunctionPass(new ArmProcessor, currentProgram, functions, cpg, decompiler) {
+) extends FunctionPass(new ArmProcessor, currentProgram, function, cpg, keyPool, decompiler) {
 
-  override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    val localDiffGraph = new DiffGraphBuilder()
-    // we need it just once with default settings
-    val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
+  override def runOnPart(part: String): Iterator[DiffGraph] = {
     try {
-      val methodNode =
+      methodNode = Some(
         createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+      )
+      diffGraph.addNode(methodNode.get)
+      diffGraph.addNode(blockNode)
+      diffGraph.addEdge(methodNode.get, blockNode, EdgeTypes.AST)
       val methodReturn = createReturnNode()
-      localDiffGraph.addNode(methodNode)
-      localDiffGraph.addNode(blockNode)
-      localDiffGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
-      localDiffGraph.addNode(methodReturn)
-      localDiffGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
-      handleParameters(localDiffGraph, function, methodNode)
-      handleLocals(localDiffGraph, function, blockNode)
-      handleBody(localDiffGraph, function, methodNode, blockNode)
+      diffGraph.addNode(methodReturn)
+      diffGraph.addEdge(methodNode.get, methodReturn, EdgeTypes.AST)
+      handleParameters()
+      handleLocals()
+      handleBody()
     } catch {
       case exception: Exception =>
         exception.printStackTrace()
     }
-    diffGraphBuilder.absorb(localDiffGraph)
+    Iterator(diffGraph.build())
   }
 }

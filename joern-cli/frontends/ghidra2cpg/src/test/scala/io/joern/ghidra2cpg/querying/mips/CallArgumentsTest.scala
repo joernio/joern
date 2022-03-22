@@ -46,11 +46,9 @@ class CallArgumentsTest extends GhidraBinToCpgSuite {
   }
 
   "The call to 'puts' in 'main' should have 'abcdefghij' arguments " in {
-    val a = cpg.method.name("main").call.name("puts").argument.code.l
-    a shouldBe List("abcdefghij")
+    cpg.method.name("main").call.name("puts").argument.code.l shouldBe List("abcdefghij")
   }
   "The call to 'puts' in 'test' should have '__s' arguments " in {
-    val __s = cpg.method.name("test").call.name("puts").argument.code.l
-    __s shouldBe List("__s")
+    cpg.method.name("test").call.name("puts").argument.code.l shouldBe List("__s")
   }
 }
