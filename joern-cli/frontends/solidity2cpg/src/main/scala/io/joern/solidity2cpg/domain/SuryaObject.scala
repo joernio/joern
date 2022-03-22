@@ -26,7 +26,7 @@ object SuryaObject {
     def getType: String = `type`
   }
 
-  case class SourceUnit(children: Map[String, SuryaObject]) extends BaseASTNode() {
+  case class SourceUnit(children: List[BaseASTNode]) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -34,15 +34,14 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  // TODO: Add missing unit and symbol aliases properties
-  case class ImportDirective(path: String) extends BaseASTNode() {
+  case class ImportDirective(path: String, unitAlias: String, unitAliasIdentifier: String, symbolAliases: String, symbolAliasesIdentifiers: String) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
   case class ContractDefinition(
     name: String,
-    baseContracts: Map[String, BaseASTNode],
-    subNodes: Map[String, BaseASTNode],
+    baseContracts: List[BaseASTNode],
+    subNodes: List[BaseASTNode],
     kind: String
   ) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
@@ -56,19 +55,19 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class ModifierDefinition(name: String, parameters: List[SuryaObject], body: SuryaObject, isVirtual: Boolean)
+  case class ModifierDefinition(name: String, parameters: List[BaseASTNode], body: BaseASTNode, isVirtual: Boolean)
       extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
   case class VariableDeclaration(
-    typeName: SuryaObject,
+    typeName: BaseASTNode,
     name: String,
-    identifier: SuryaObject,
+    identifier: BaseASTNode,
     storageLocation: String,
     isStateVar: Boolean,
     isIndexed: Boolean,
-    expression: SuryaObject
+    expression: BaseASTNode
   ) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
@@ -136,7 +135,7 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class ForeStatement(
+  case class ForStatement(
     initExpression: BaseASTNode,
     conditionExpression: BaseASTNode,
     loopExpression: BaseASTNode,

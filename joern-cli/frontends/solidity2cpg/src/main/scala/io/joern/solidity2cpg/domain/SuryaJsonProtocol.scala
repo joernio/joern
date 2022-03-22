@@ -28,15 +28,74 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       val fields = json.asJsObject("BaseASTNode object expected").fields
       val typ    = fields("type").convertTo[String]
       typ match {
+        case "SourceUnit" =>
+          SourceUnitJsonFormat.read(json)
         case "PragmaDirective" =>
           PragmaDirective(fields("name").convertTo[String], fields("value").convertTo[String])
         case "ImportDirective" =>
           ImportDirective(fields("path").convertTo[String])
         case "ContractDefinition" =>
           ContractDefinitionJsonFormat.read(json)
+        case "InheritanceSpecifier" =>
+          InheritanceSpecifierJsonFormat.read(json)
+        case "UserDefinedTypeName" =>
+          UserDefinedTypeName(fields("namePath").convertTo[String])
+        case "ModifierDefinition" =>
+          ModifierDefinitionJsonFormat.read(json)
+        case "VariableDeclaration" =>
+          VariableDeclarationJsonFormat.read(json)
+        case "ElementaryTypeName" =>
+          ElementaryTypeName(fields("name").convertTo[String], fields("stateMutability").convertTo[String])
+        case "Identifier" =>
+          Identifier(fields("name").convertTo[String])
+        case "Block" =>
+          BlockJsonFormat.read(json)
+        case "ExpressionStatement" =>
+          ExpressionStatementJsonFormat.read(json)
+        case "FunctionCall" =>
+          FunctionCallJsonFormat.read(json)
+        case "MemberAccess" =>
+          MemberAccessJsonFormat.read(json)
+        case "IndexAccess" =>
+          IndexAccessJsonFormat.read(json)
+        case "BinaryOperation" =>
+          BinaryOperationJsonFormat.read(json)
+        case "StringLiteral" =>
+          StringLiteralJsonFormat.read(json)
+        case "EventDefinition" =>
+          EventDefinitionJsonFormat.read(json)
+        case "FunctionDefinition" =>
+          FunctionDefinitionJsonFormat.read(json)
+        case "ModifierInvocation" =>
+          ModifierInvocationJsonFormat.read(json)
+        case "EmitStatement" =>
+          EmitStatementJsonFormat.read(json)
+        case "ForStatement" =>
+          ForStatementJsonFormat.read(json)
+        case "VariableDeclarationStatement" =>
+          VariableDeclarationStatementJsonFormat.read(json)
+        case "UnaryOperation" =>
+          UnaryOperationJsonFormat.read(json)
+        case "IfStatement" =>
+          IfStatementJsonFormat.read(json)
+        case "BooleanLiteral" =>
+          BooleanLiteralJsonFormat.read(json)
+        case "ArrayTypeName" =>
+          ArrayTypeNameJsonFormat.read(json)
+        case "NumberLiteral" =>
+          NumberLiteralJsonFormat.read(json)
+        case "StateVariableDeclaration" =>
+          StateVariableDeclarationJsonFormat.read(json)
+        case "Mapping" =>
+          MappingJsonFormat.read(json)
+        case "StructDefinition" =>
+          StructDefinitionJsonFormat.read(json)
+        case "UsingForDeclaration" =>
+          UsingForDeclarationJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
+        
       }
     }
   }
@@ -50,7 +109,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "SourceUnit") {
         throw new RuntimeException("SourceUnit object expected")
       } else {
-        SourceUnit(children = fields("children").convertTo[Map[String, BaseASTNode]])
+        SourceUnit(fields("children").convertTo[List[BaseASTNode]])
       }
     }
   }
@@ -66,9 +125,453 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         ContractDefinition(
           fields("name").convertTo[String],
-          fields("baseContracts").convertTo[Map[String, BaseASTNode]],
-          fields("subNodes").convertTo[Map[String, BaseASTNode]],
+          fields("baseContracts").convertTo[List[BaseASTNode]],
+          fields("subNodes").convertTo[List[BaseASTNode]],
           fields("kind").convertTo[String]
+        )
+      }
+    }
+  }
+
+  implicit object InheritanceSpecifierJsonFormat extends JsonFormat[InheritanceSpecifier] with DefaultJsonProtocol {
+
+    def write(c: InheritanceSpecifier): JsValue = JsNull
+
+    def read(json: JsValue): InheritanceSpecifier = {
+      val fields = json.asJsObject("Unable to decode JSON as InheritanceSpecifier").fields
+      if (fields("type").convertTo[String] != "InheritanceSpecifier") {
+        throw new RuntimeException("InheritanceSpecifier object expected")
+      } else {
+        InheritanceSpecifier(
+          fields("baseName").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object ModifierDefinitionJsonFormat extends JsonFormat[ModifierDefinition] with DefaultJsonProtocol {
+
+    def write(c: ModifierDefinition): JsValue = JsNull
+
+    def read(json: JsValue): ModifierDefinition = {
+      val fields = json.asJsObject("Unable to decode JSON as ModifierDefinition").fields
+      if (fields("type").convertTo[String] != "ModifierDefinition") {
+        throw new RuntimeException("ModifierDefinition object expected")
+      } else {
+        ModifierDefinition(
+          fields("name").convertTo[String],
+          fields("parameters").convertTo[List[BaseASTNode]].
+          fields("body").convertTo[BaseASTNode],
+          fields("isVirtual").convertTo[Boolean]
+        )
+      }
+    }
+  }
+
+  implicit object VariableDeclarationJsonFormat extends JsonFormat[VariableDeclaration] with DefaultJsonProtocol {
+
+    def write(c: VariableDeclaration): JsValue = JsNull
+
+    def read(json: JsValue): VariableDeclaration = {
+      val fields = json.asJsObject("Unable to decode JSON as VariableDeclaration").fields
+      if (fields("type").convertTo[String] != "VariableDeclaration") {
+        throw new RuntimeException("VariableDeclaration object expected")
+      } else {
+        VariableDeclaration(
+          fields("typeName").convertTo[BaseASTNode],
+          fields("name").convertTo[String].
+          fields("identifier").convertTo[BaseASTNode],
+          fields("storageLocation").convertTo[String],
+          fields("isStateVar").convertTo[Boolean],
+          fields("isIndexed").convertTo[Boolean],
+          fields("expression").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object BlockJsonFormat extends JsonFormat[Block] with DefaultJsonProtocol {
+
+    def write(c: Block): JsValue = JsNull
+
+    def read(json: JsValue): Block = {
+      val fields = json.asJsObject("Unable to decode JSON as Block").fields
+      if (fields("type").convertTo[String] != "Block") {
+        throw new RuntimeException("Block object expected")
+      } else {
+        Block(
+          fields("statements").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object ExpressionStatementJsonFormat extends JsonFormat[ExpressionStatement] with DefaultJsonProtocol {
+
+    def write(c: ExpressionStatement): JsValue = JsNull
+
+    def read(json: JsValue): ExpressionStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as ExpressionStatement").fields
+      if (fields("type").convertTo[String] != "ExpressionStatement") {
+        throw new RuntimeException("ExpressionStatement object expected")
+      } else {
+        ExpressionStatement(
+          fields("expression").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object FunctionCallJsonFormat extends JsonFormat[FunctionCall] with DefaultJsonProtocol {
+
+    def write(c: FunctionCall): JsValue = JsNull
+
+    def read(json: JsValue): FunctionCall = {
+      val fields = json.asJsObject("Unable to decode JSON as FunctionCall").fields
+      if (fields("type").convertTo[String] != "FunctionCall") {
+        throw new RuntimeException("FunctionCall object expected")
+      } else {
+        FunctionCall(
+          fields("expression").convertTo[BaseASTNode],
+          fields("arguments").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object MemberAccessJsonFormat extends JsonFormat[MemberAccess] with DefaultJsonProtocol {
+
+    def write(c: MemberAccess): JsValue = JsNull
+
+    def read(json: JsValue): MemberAccess = {
+      val fields = json.asJsObject("Unable to decode JSON as MemberAccess").fields
+      if (fields("type").convertTo[String] != "MemberAccess") {
+        throw new RuntimeException("MemberAccess object expected")
+      } else {
+        MemberAccess(
+          fields("expression").convertTo[List[BaseASTNode]],
+          fields("memberName").convertTo[String]
+        )
+      }
+    }
+  }
+
+  implicit object IndexAccessJsonFormat extends JsonFormat[IndexAccess] with DefaultJsonProtocol {
+
+    def write(c: IndexAccess): JsValue = JsNull
+
+    def read(json: JsValue): IndexAccess = {
+      val fields = json.asJsObject("Unable to decode JSON as IndexAccess").fields
+      if (fields("type").convertTo[String] != "IndexAccess") {
+        throw new RuntimeException("IndexAccess object expected")
+      } else {
+        IndexAccess(
+          fields("base").convertTo[BaseASTNode],
+          fields("index").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object BinaryOperationJsonFormat extends JsonFormat[BinaryOperation] with DefaultJsonProtocol {
+
+    def write(c: BinaryOperation): JsValue = JsNull
+
+    def read(json: JsValue): BinaryOperation = {
+      val fields = json.asJsObject("Unable to decode JSON as BinaryOperation").fields
+      if (fields("type").convertTo[String] != "BinaryOperation") {
+        throw new RuntimeException("BinaryOperation object expected")
+      } else {
+        BinaryOperation(
+          fields("operator").convertTo[String],
+          fields("left").convertTo[BaseASTNode],
+          fields("right").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object StringLiteralJsonFormat extends JsonFormat[StringLiteral] with DefaultJsonProtocol {
+
+    def write(c: StringLiteral): JsValue = JsNull
+
+    def read(json: JsValue): StringLiteral = {
+      val fields = json.asJsObject("Unable to decode JSON as StringLiteral").fields
+      if (fields("type").convertTo[String] != "StringLiteral") {
+        throw new RuntimeException("StringLiteral object expected")
+      } else {
+        StringLiteral(
+          fields("value").convertTo[String],
+          fields("parts").convertTo[List[String]],
+          fields("isUnicode").convertTo[Boolean]
+        )
+      }
+    }
+  }
+
+  implicit object EventDefinitionJsonFormat extends JsonFormat[EventDefinition] with DefaultJsonProtocol {
+
+    def write(c: EventDefinition): JsValue = JsNull
+
+    def read(json: JsValue): EventDefinition = {
+      val fields = json.asJsObject("Unable to decode JSON as EventDefinition").fields
+      if (fields("type").convertTo[String] != "EventDefinition") {
+        throw new RuntimeException("EventDefinition object expected")
+      } else {
+        EventDefinition(
+          fields("name").convertTo[String],
+          fields("parameters").convertTo[List[BaseASTNode]],
+          fields("isAnonymous").convertTo[Boolean]
+        )
+      }
+    }
+  }
+
+  implicit object FunctionDefinitionJsonFormat extends JsonFormat[FunctionDefinition] with DefaultJsonProtocol {
+
+    def write(c: FunctionDefinition): JsValue = JsNull
+
+    def read(json: JsValue): FunctionDefinition = {
+      val fields = json.asJsObject("Unable to decode JSON as FunctionDefinition").fields
+      if (fields("type").convertTo[String] != "FunctionDefinition") {
+        throw new RuntimeException("FunctionDefinition object expected")
+      } else {
+        FunctionDefinition(
+          fields("name").convertTo[String],
+          fields("parameters").convertTo[List[BaseASTNode]],
+          fields("returnParameters").convertTo[BaseASTNode],
+          fields("body").convertTo[BaseASTNode],
+          fields("visibility").convertTo[String],
+          fields("modifiers").convertTo[List[BaseASTNode]],
+          fields("override").convertTo[List[BaseASTNode]],
+          fields("isConstructor").convertTo[Boolean],
+          fields("isReceiveEther").convertTo[Boolean],
+          fields("isFallback").convertTo[Boolean],
+          fields("isVirtual").convertTo[Boolean],
+          fields("stateMutability").convertTo[String],
+        )
+      }
+    }
+  }
+
+  implicit object ModifierInvocationJsonFormat extends JsonFormat[ModifierInvocation] with DefaultJsonProtocol {
+
+    def write(c: ModifierInvocation): JsValue = JsNull
+
+    def read(json: JsValue): ModifierInvocation = {
+      val fields = json.asJsObject("Unable to decode JSON as ModifierInvocation").fields
+      if (fields("type").convertTo[String] != "ModifierInvocation") {
+        throw new RuntimeException("ModifierInvocation object expected")
+      } else {
+        ModifierInvocation(
+          fields("name").convertTo[String],
+          fields("arguments").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object EmitStatementJsonFormat extends JsonFormat[EmitStatement] with DefaultJsonProtocol {
+
+    def write(c: EmitStatement): JsValue = JsNull
+
+    def read(json: JsValue): EmitStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as EmitStatement").fields
+      if (fields("type").convertTo[String] != "EmitStatement") {
+        throw new RuntimeException("EmitStatement object expected")
+      } else {
+        EmitStatement(
+          fields("eventCall").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object ForStatementJsonFormat extends JsonFormat[ForStatement] with DefaultJsonProtocol {
+
+    def write(c: ForStatement): JsValue = JsNull
+
+    def read(json: JsValue): ForStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as ForStatement").fields
+      if (fields("type").convertTo[String] != "ForStatement") {
+        throw new RuntimeException("ForStatement object expected")
+      } else {
+        ForStatement(
+          fields("initExpression").convertTo[BaseASTNode],
+          fields("conditionExpression").convertTo[BaseASTNode],
+          fields("loopExpression").convertTo[BaseASTNode],
+          fields("body").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object VariableDeclarationStatementJsonFormat extends JsonFormat[VariableDeclarationStatement] with DefaultJsonProtocol {
+
+    def write(c: VariableDeclarationStatement): JsValue = JsNull
+
+    def read(json: JsValue): VariableDeclarationStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as VariableDeclarationStatement").fields
+      if (fields("type").convertTo[String] != "VariableDeclarationStatement") {
+        throw new RuntimeException("VariableDeclarationStatement object expected")
+      } else {
+        VariableDeclarationStatement(
+          fields("variables").convertTo[List[BaseASTNode]],
+          fields("initialValue").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object UnaryOperationJsonFormat extends JsonFormat[UnaryOperation] with DefaultJsonProtocol {
+
+    def write(c: UnaryOperation): JsValue = JsNull
+
+    def read(json: JsValue): UnaryOperation = {
+      val fields = json.asJsObject("Unable to decode JSON as UnaryOperation").fields
+      if (fields("type").convertTo[String] != "UnaryOperation") {
+        throw new RuntimeException("UnaryOperation object expected")
+      } else {
+        UnaryOperation(
+          fields("operator").convertTo[String],
+          fields("subExpression").convertTo[BaseASTNode],
+          fields("isPrefix").convertTo[Boolean]
+        )
+      }
+    }
+  }
+
+  implicit object IfStatementJsonFormat extends JsonFormat[IfStatement] with DefaultJsonProtocol {
+
+    def write(c: IfStatement): JsValue = JsNull
+
+    def read(json: JsValue): IfStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as IfStatement").fields
+      if (fields("type").convertTo[String] != "IfStatement") {
+        throw new RuntimeException("IfStatement object expected")
+      } else {
+        IfStatement(
+          fields("condition").convertTo[BaseASTNode],
+          fields("trueBody").convertTo[BaseASTNode],
+          fields("falseBody").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object BooleanLiteralJsonFormat extends JsonFormat[BooleanLiteral] with DefaultJsonProtocol {
+
+    def write(c: BooleanLiteral): JsValue = JsNull
+
+    def read(json: JsValue): BooleanLiteral = {
+      val fields = json.asJsObject("Unable to decode JSON as BooleanLiteral").fields
+      if (fields("type").convertTo[String] != "BooleanLiteral") {
+        throw new RuntimeException("BooleanLiteral object expected")
+      } else {
+        BooleanLiteral(
+          fields("value").convertTo[Boolean]
+        )
+      }
+    }
+  }
+
+  implicit object ArrayTypeNameJsonFormat extends JsonFormat[ArrayTypeName] with DefaultJsonProtocol {
+
+    def write(c: ArrayTypeName): JsValue = JsNull
+
+    def read(json: JsValue): ArrayTypeName = {
+      val fields = json.asJsObject("Unable to decode JSON as ArrayTypeName").fields
+      if (fields("type").convertTo[String] != "ArrayTypeName") {
+        throw new RuntimeException("ArrayTypeName object expected")
+      } else {
+        ArrayTypeName(
+          fields("baseTypeName").convertTo[BaseASTNode],
+          fields("length").convertTo[Int]
+        )
+      }
+    }
+  }
+
+  implicit object NumberLiteralJsonFormat extends JsonFormat[NumberLiteral] with DefaultJsonProtocol {
+
+    def write(c: NumberLiteral): JsValue = JsNull
+
+    def read(json: JsValue): NumberLiteral = {
+      val fields = json.asJsObject("Unable to decode JSON as NumberLiteral").fields
+      if (fields("type").convertTo[String] != "NumberLiteral") {
+        throw new RuntimeException("NumberLiteral object expected")
+      } else {
+        NumberLiteral(
+          fields("number").convertTo[Int],
+          fields("subdenomination").convertTo[Int]
+        )
+      }
+    }
+  }
+
+  implicit object StateVariableDeclarationJsonFormat extends JsonFormat[StateVariableDeclaration] with DefaultJsonProtocol {
+
+    def write(c: StateVariableDeclaration): JsValue = JsNull
+
+    def read(json: JsValue): StateVariableDeclaration = {
+      val fields = json.asJsObject("Unable to decode JSON as StateVariableDeclaration").fields
+      if (fields("type").convertTo[String] != "StateVariableDeclaration") {
+        throw new RuntimeException("StateVariableDeclaration object expected")
+      } else {
+        StateVariableDeclaration(
+          fields("variables").convertTo[List[BaseASTNode]
+        )
+      }
+    }
+    }
+  }
+
+  implicit object MappingJsonFormat extends JsonFormat[Mapping] with DefaultJsonProtocol {
+
+    def write(c: Mapping): JsValue = JsNull
+
+    def read(json: JsValue): Mapping = {
+      val fields = json.asJsObject("Unable to decode JSON as Mapping").fields
+      if (fields("type").convertTo[String] != "Mapping") {
+        throw new RuntimeException("Mapping object expected")
+      } else {
+        Mapping(
+          fields("keyType").convertTo[BaseASTNode],
+          fields("valueType").convertTo[BaseASTNode]
+          )
+      }
+    }
+  }
+
+  implicit object StructDefinitionJsonFormat extends JsonFormat[StructDefinition] with DefaultJsonProtocol {
+
+    def write(c: StructDefinition): JsValue = JsNull
+
+    def read(json: JsValue): StructDefinition = {
+      val fields = json.asJsObject("Unable to decode JSON as StructDefinition").fields
+      if (fields("type").convertTo[String] != "StructDefinition") {
+        throw new RuntimeException("StructDefinition object expected")
+      } else {
+        StructDefinition(
+          fields("name").convertTo[String],
+          fields("members").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object UsingForDeclarationJsonFormat extends JsonFormat[UsingForDeclaration] with DefaultJsonProtocol {
+
+    def write(c: UsingForDeclaration): JsValue = JsNull
+
+    def read(json: JsValue): UsingForDeclaration = {
+      val fields = json.asJsObject("Unable to decode JSON as UsingForDeclaration").fields
+      if (fields("type").convertTo[String] != "UsingForDeclaration") {
+        throw new RuntimeException("UsingForDeclaration object expected")
+      } else {
+        UsingForDeclaration(
+          fields("typeName").convertTo[BaseASTNode],
+          fields("libraryName").convertTo[String]
         )
       }
     }
