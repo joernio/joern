@@ -131,7 +131,12 @@ abstract class FunctionPass(
   }
 
   // Iterating over operands and add edges to call
-  def handleArguments(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, function: Function): Unit = {
+  def handleArguments(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    function: Function
+  ): Unit = {
     val mnemonicString = processor.getInstructions(instruction.getMnemonicString)
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
