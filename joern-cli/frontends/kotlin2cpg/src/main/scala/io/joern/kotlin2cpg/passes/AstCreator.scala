@@ -1050,6 +1050,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForUnknown(typedExpr, order, argIdx))
       case typedExpr: KtDestructuringDeclaration =>
         astsForDestructuringDeclaration(typedExpr, scopeContext, order)
+      case typedExpr: KtLabeledExpression =>
+        astsForExpression(typedExpr.getBaseExpression, scopeContext, order, argIdx)
       case null =>
         logger.debug("Received null expression! Skipping...")
         Seq()
