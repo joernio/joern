@@ -473,7 +473,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val node =
             NewMember()
               .name(param.getName)
-              .code(param.getText)
+              .code(param.getName)
               .typeFullName(typeFullName)
               .lineNumber(line(param))
               .columnNumber(column(param))
@@ -565,6 +565,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val fieldAccessCall =
             NewCall()
               .methodFullName(Operators.fieldAccess)
+              .name(Operators.fieldAccess)
               .dispatchType(DispatchTypes.STATIC_DISPATCH)
               .signature("")
               .typeFullName(typeFullName)
@@ -2107,7 +2108,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       } else {
         DispatchTypes.STATIC_DISPATCH
       }
-    val methodName = expr.getSelectorExpression.getFirstChild.getText
+
+    val isFieldAccess = fullNameWithSig._1 == Operators.fieldAccess
+    val methodName =
+      if (isFieldAccess) {
+        Operators.fieldAccess
+      } else {
+        expr.getSelectorExpression.getFirstChild.getText
+      }
     val callNode =
       NewCall()
         .order(order)
@@ -2698,7 +2706,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val callNode =
       NewCall()
-        .name(expr.getReferencedName)
+        .name(Operators.fieldAccess)
         .code(Constants.this_ + "." + expr.getReferencedName)
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .methodFullName(Operators.fieldAccess)
@@ -2991,7 +2999,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val memberNode =
       NewMember()
         .name(name)
-        .code(code)
+        .code(name)
         .typeFullName(typeFullName)
         .lineNumber(line(decl))
         .columnNumber(column(decl))
