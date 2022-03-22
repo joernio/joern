@@ -27,7 +27,19 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |   public Foo() {
       |     super();
       |   }
+      |
       | }
+      |
+      | class Bar extends A<B<C>> {
+      |   public D<E<F>> foo() {
+      |
+      |   }
+      |   @Override
+      |   public Class<?> getObjectType() {
+      |     return Bar.class;
+      |   }
+      | }
+      |
       |""".stripMargin
 
   "should create TYPE node with correct fields for class" in {

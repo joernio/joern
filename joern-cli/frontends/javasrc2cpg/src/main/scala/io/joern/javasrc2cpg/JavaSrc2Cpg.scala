@@ -31,7 +31,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val sourceCodePath = config.inputPaths.head
       new MetaDataPass(cpg, language).createAndApply()
       val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
-      val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
+      val inferencePaths                = config.inferenceJarPaths
+      val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, inferencePaths, cpg)
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
         .createAndApply()

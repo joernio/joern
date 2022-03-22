@@ -69,12 +69,22 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
+  private def extractNullableName(tryName: Try[String]): String = {
+    tryName match {
+      case Success(null) => ""
+
+      case Success(name) => name
+
+      case _ => ""
+    }
+  }
+
   private def resolvedTypeDeclFullName(
     declaration: ResolvedTypeDeclaration,
     typeParameterString: String = ""
   ): String = {
-    val packageName = Try(declaration.getPackageName).getOrElse("")
-    val className   = Try(declaration.getClassName).getOrElse(declaration.getName)
+    val packageName = extractNullableName(Try(declaration.getPackageName))
+    val className   = extractNullableName(Try(declaration.getClassName))
     buildTypeString(packageName, className, typeParameterString)
   }
 

@@ -60,6 +60,7 @@ import com.github.javaparser.ast.stmt.{
   TryStmt,
   WhileStmt
 }
+import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
@@ -95,7 +96,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
@@ -277,6 +277,9 @@ class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
 
       AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
     } catch {
+      case t: UnsolvedSymbolException =>
+        logger.error(s"Unsolved symbol exception caught in ${filename}")
+        throw t
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
         throw t
