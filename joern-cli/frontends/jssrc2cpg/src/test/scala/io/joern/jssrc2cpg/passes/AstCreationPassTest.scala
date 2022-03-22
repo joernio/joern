@@ -24,15 +24,15 @@ class AstCreationPassTest extends AbstractPassTest {
     "have correct structure for FILENAME property" in AstFixture("let x = 1;") { cpg =>
       def namespaceBlocks = cpg.namespaceBlock
       namespaceBlocks.checkNodeCount(1)
-      namespaceBlocks.checkProperty(PropertyNames.FILENAME, "test.js")
+      namespaceBlocks.checkProperty(PropertyNames.FILENAME, "code.js")
 
       def program = cpg.method.nameExact(":program")
       program.checkNodeCount(1)
-      program.checkProperty(PropertyNames.FILENAME, "test.js")
+      program.checkProperty(PropertyNames.FILENAME, "code.js")
 
       def typeDecls = cpg.typeDecl.nameExact(":program")
       typeDecls.checkNodeCount(1)
-      typeDecls.checkProperty(PropertyNames.FILENAME, "test.js")
+      typeDecls.checkProperty(PropertyNames.FILENAME, "code.js")
     }
 
     "have correct structure for block expression" in AstFixture("let x = (class Foo {}, bar())") { cpg =>
@@ -42,11 +42,11 @@ class AstCreationPassTest extends AbstractPassTest {
       def classFooMetaTypeDecl =
         cpg.typeDecl
           .nameExact("Foo<meta>")
-          .filter(PropertyNames.FULL_NAME, "test.js::program:Foo<meta>")
+          .filter(PropertyNames.FULL_NAME, "code.js::program:Foo<meta>")
       classFooMetaTypeDecl.checkNodeCount(1)
 
       def classFooTypeDecl =
-        cpg.typeDecl.nameExact("Foo").filter(PropertyNames.FULL_NAME, "test.js::program:Foo")
+        cpg.typeDecl.nameExact("Foo").filter(PropertyNames.FULL_NAME, "code.js::program:Foo")
       classFooTypeDecl.checkNodeCount(1)
 
       // constructor
@@ -342,7 +342,7 @@ class AstCreationPassTest extends AbstractPassTest {
     "have correct structure for conditional expression" in AstFixture("x ? y : z;") { cpg =>
       def file = cpg.file
       file.checkNodeCount(1)
-      file.checkProperty(PropertyNames.NAME, "test.js")
+      file.checkProperty(PropertyNames.NAME, "code.js")
 
       def program = cpg.method.nameExact(":program")
       program.checkNodeCount(1)
@@ -380,18 +380,18 @@ class AstCreationPassTest extends AbstractPassTest {
     "have correct file name for empty file" in AstFixture("function method(x) {}") { cpg =>
       def files = cpg.file
       files.checkNodeCount(1)
-      files.checkProperty(PropertyNames.NAME, "test.js")
+      files.checkProperty(PropertyNames.NAME, "code.js")
     }
 
     "have correct name space block for empty file" in AstFixture("") { cpg =>
       def files = cpg.file
       files.checkNodeCount(1)
-      files.checkProperty(PropertyNames.NAME, "test.js")
+      files.checkProperty(PropertyNames.NAME, "code.js")
 
       def namespaceBlock = files.expandAst(NodeTypes.NAMESPACE_BLOCK)
       namespaceBlock.checkNodeCount(1)
       namespaceBlock.checkProperty(PropertyNames.NAME, Defines.GLOBAL_NAMESPACE)
-      namespaceBlock.checkProperty(PropertyNames.FULL_NAME, "test.js:" + Defines.GLOBAL_NAMESPACE)
+      namespaceBlock.checkProperty(PropertyNames.FULL_NAME, "code.js:" + Defines.GLOBAL_NAMESPACE)
       namespaceBlock.checkProperty(PropertyNames.ORDER, 1)
     }
 
@@ -441,7 +441,7 @@ class AstCreationPassTest extends AbstractPassTest {
       cpg =>
         // happened in: https://github.com/ShiftLeftSecurity/js2cpg/issues/232
         // with the latest oracle js parser, anonymous function get an actual name
-        def lambdaFullName = "test.js::program:anonymous"
+        def lambdaFullName = "code.js::program:anonymous"
         def lambda         = cpg.method.fullNameExact(lambdaFullName)
         lambda.checkNodeCount(1)
         def parameters = lambda.expandAst(NodeTypes.METHOD_PARAMETER_IN)
@@ -458,8 +458,8 @@ class AstCreationPassTest extends AbstractPassTest {
           | var x = (a) => a
           | var y = (b) => b
         """.stripMargin) { cpg =>
-      def lambda1FullName = "test.js::program:anonymous"
-      def lambda2FullName = "test.js::program:anonymous1"
+      def lambda1FullName = "code.js::program:anonymous"
+      def lambda2FullName = "code.js::program:anonymous1"
 
       def lambda1 = cpg.method.fullNameExact(lambda1FullName)
       lambda1.checkNodeCount(1)
@@ -654,13 +654,13 @@ class AstCreationPassTest extends AbstractPassTest {
       localFoo.checkNodeCount(1)
 
       localFoo.checkProperty(PropertyNames.NAME, "method")
-      localFoo.checkProperty(PropertyNames.TYPE_FULL_NAME, "test.js::program:method")
+      localFoo.checkProperty(PropertyNames.TYPE_FULL_NAME, "code.js::program:method")
     }
 
     "have corresponding type decl with correct bindings for function" in AstFixture("function method(x) {}") { cpg =>
       def typeDecl = cpg.typeDecl.nameExact("method")
       typeDecl.checkNodeCount(1)
-      typeDecl.checkProperty(PropertyNames.FULL_NAME, "test.js::program:method")
+      typeDecl.checkProperty(PropertyNames.FULL_NAME, "code.js::program:method")
 
       def binding = typeDecl.expand(EdgeTypes.BINDS, NodeTypes.BINDING)
       binding.checkNodeCount(1)
@@ -1708,26 +1708,26 @@ class AstCreationPassTest extends AbstractPassTest {
 
   "AST method full names" should {
     "anonymous arrow function full name 1" in AstFixture("var func = (x) => x") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("test.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
     }
     "anonymous arrow function full name 2" in AstFixture("this.func = (x) => x") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("test.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
     }
     "anonymous function expression full name 1" in AstFixture("var func = function (x) {x}") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("test.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
     }
     "anonymous function expression full name 2" in AstFixture("this.func = function (x) {x}") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("test.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
     }
     "anonymous constructor full name 1" in AstFixture("class X { constructor(){} }") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("test.js::program:X<constructor>")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:X<constructor>")
     }
     "anonymous constructor of anonymous class full name" in AstFixture("""
                                                                           |var x = class {
                                                                           |  constructor(y) {
                                                                           |  }
                                                                           |}""".stripMargin) { cpg =>
-      cpg.method.fullName.toSetMutable should contain("test.js::program:anonClass<constructor>")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonClass<constructor>")
     }
   }
 
@@ -2029,7 +2029,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def closureBinding = barRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBinding.checkNodeCount(1)
-      closureBinding.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      closureBinding.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
       closureBinding.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBinding.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2044,7 +2044,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def barLocals = barMethodBlock.expandAst(NodeTypes.LOCAL)
       barLocals.checkNodeCount(1)
 
-      barLocals.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      barLocals.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def identifierX =
         barMethodBlock
@@ -2086,14 +2086,14 @@ class AstCreationPassTest extends AbstractPassTest {
       closureBinding.checkNodeCount(2)
 
       def closureBindForX = closureBinding.filter(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
-      closureBindForX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      closureBindForX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
       closureBindForX.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindForX.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
       closureBindForX.expandRef().head shouldBe fooLocalX.head
 
       def closureBindForY = closureBinding.filter(PropertyNames.CLOSURE_ORIGINAL_NAME, "y")
-      closureBindForY.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:y")
+      closureBindForY.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:y")
       closureBindForY.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "y")
       closureBindForY.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2109,7 +2109,7 @@ class AstCreationPassTest extends AbstractPassTest {
       barLocals.checkNodeCount(2)
 
       def barLocalsForX = barLocals.filter(PropertyNames.NAME, "x")
-      barLocalsForX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      barLocalsForX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def identifierX =
         barMethodBlock
@@ -2121,7 +2121,7 @@ class AstCreationPassTest extends AbstractPassTest {
       identifierX.expandRef().head shouldBe barLocalsForX.head
 
       def barLocalsForY = barLocals.filter(PropertyNames.NAME, "y")
-      barLocalsForY.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:y")
+      barLocalsForY.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:y")
 
       def identifierY =
         barMethodBlock
@@ -2159,7 +2159,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def closureBindingXInFoo = barRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXInFoo.checkNodeCount(1)
-      closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
       closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXInFoo.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2174,7 +2174,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def barLocalX = barMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       barLocalX.checkNodeCount(1)
 
-      barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def barIdentifierX =
         barMethodBlock
@@ -2190,7 +2190,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def closureBindingXInBar = bazRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXInBar.checkNodeCount(1)
-      closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:baz:x")
+      closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
       closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXInBar.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2205,7 +2205,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def bazLocalX = bazMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       bazLocalX.checkNodeCount(1)
 
-      bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:baz:x")
+      bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
 
       def bazIdentifierX =
         bazMethodBlock
@@ -2247,7 +2247,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def closureBindingXInFoo = barRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXInFoo.checkNodeCount(1)
-      closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
       closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXInFoo.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2262,7 +2262,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def barLocalX = barMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       barLocalX.checkNodeCount(1)
 
-      barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def barIdentifierX =
         barMethodBlock
@@ -2281,7 +2281,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def closureBindingXInBar = bazRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXInBar.checkNodeCount(1)
-      closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:baz:x")
+      closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
       closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXInBar.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2296,7 +2296,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def bazLocalX = bazMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       bazLocalX.checkNodeCount(1)
 
-      bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:baz:x")
+      bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
 
       def bazMethodInnerBlock = bazMethodBlock.expandAst(NodeTypes.BLOCK)
       bazMethodInnerBlock.checkNodeCount(1)
@@ -2336,7 +2336,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def closureBindingXInFoo = barRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXInFoo.checkNodeCount(1)
-      closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
       closureBindingXInFoo.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXInFoo.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2351,14 +2351,14 @@ class AstCreationPassTest extends AbstractPassTest {
       def barLocalX = barMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       barLocalX.checkNodeCount(1)
 
-      barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:x")
+      barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def bazRef = barMethodBlock.expandAst(NodeTypes.CALL).expandAst(NodeTypes.METHOD_REF)
       bazRef.checkNodeCount(1)
 
       def closureBindingXInBar = bazRef.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXInBar.checkNodeCount(1)
-      closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:baz:x")
+      closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
       closureBindingXInBar.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXInBar.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2373,7 +2373,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def bazLocalX = bazMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       bazLocalX.checkNodeCount(1)
 
-      bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:bar:baz:x")
+      bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
 
       def bazIdentifierX =
         bazMethodBlock
@@ -2406,12 +2406,12 @@ class AstCreationPassTest extends AbstractPassTest {
         fooBlock
           .expandAst(NodeTypes.CALL)
           .expandAst(NodeTypes.METHOD_REF)
-          .filter(PropertyNames.METHOD_FULL_NAME, "test.js::program:foo:anonymous")
+          .filter(PropertyNames.METHOD_FULL_NAME, "code.js::program:foo:anonymous")
       anon1Ref.checkNodeCount(1)
 
       def closureBindingXAnon1 = anon1Ref.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXAnon1.checkNodeCount(1)
-      closureBindingXAnon1.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:anonymous:x")
+      closureBindingXAnon1.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:anonymous:x")
       closureBindingXAnon1.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXAnon1.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2421,12 +2421,12 @@ class AstCreationPassTest extends AbstractPassTest {
         fooBlock
           .expandAst(NodeTypes.CALL)
           .expandAst(NodeTypes.METHOD_REF)
-          .filter(PropertyNames.METHOD_FULL_NAME, "test.js::program:foo:anonymous1")
+          .filter(PropertyNames.METHOD_FULL_NAME, "code.js::program:foo:anonymous1")
       anon2Ref.checkNodeCount(1)
 
       def closureBindingXAnon2 = anon2Ref.expandCapture(NodeTypes.CLOSURE_BINDING)
       closureBindingXAnon2.checkNodeCount(1)
-      closureBindingXAnon2.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "test.js::program:foo:anonymous1:x")
+      closureBindingXAnon2.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:anonymous1:x")
       closureBindingXAnon2.checkProperty(PropertyNames.CLOSURE_ORIGINAL_NAME, "x")
       closureBindingXAnon2.checkProperty(PropertyNames.EVALUATION_STRATEGY, EvaluationStrategies.BY_REFERENCE)
 
@@ -2529,10 +2529,10 @@ class AstCreationPassTest extends AbstractPassTest {
         |   }
         | }
         |        """.stripMargin) { cpg =>
-      cpg.method.lineNumber(2).head.fullName should be("test.js::program:anonymous")
-      cpg.method.lineNumber(3).head.fullName should be("test.js::program:anonymous:anonymous")
-      cpg.method.lineNumber(6).head.fullName should be("test.js::program:anonymous1")
-      cpg.method.lineNumber(7).head.fullName should be("test.js::program:anonymous1:anonymous")
+      cpg.method.lineNumber(2).head.fullName should be("code.js::program:anonymous")
+      cpg.method.lineNumber(3).head.fullName should be("code.js::program:anonymous:anonymous")
+      cpg.method.lineNumber(6).head.fullName should be("code.js::program:anonymous1")
+      cpg.method.lineNumber(7).head.fullName should be("code.js::program:anonymous1:anonymous")
     }
   }
 
@@ -2567,7 +2567,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def localSource = locals.filter(PropertyNames.NAME, "source")
       localSource.checkNodeCount(1)
-      localSource.checkProperty(PropertyNames.TYPE_FULL_NAME, "test.js::program:source")
+      localSource.checkProperty(PropertyNames.TYPE_FULL_NAME, "code.js::program:source")
 
       def localL = locals.filter(PropertyNames.NAME, "l")
       localL.checkNodeCount(1)
@@ -3684,13 +3684,13 @@ class AstCreationPassTest extends AbstractPassTest {
       def classAMetaTypeDecl =
         cpg.typeDecl
           .nameExact("ClassA<meta>")
-          .filter(PropertyNames.FULL_NAME, "test.js::program:ClassA<meta>")
+          .filter(PropertyNames.FULL_NAME, "code.js::program:ClassA<meta>")
       classAMetaTypeDecl.checkNodeCount(1)
 
       def classATypeDecl =
         cpg.typeDecl
           .nameExact("ClassA")
-          .filter(PropertyNames.FULL_NAME, "test.js::program:ClassA")
+          .filter(PropertyNames.FULL_NAME, "code.js::program:ClassA")
       classATypeDecl.checkNodeCount(1)
     }
 
@@ -3701,7 +3701,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def classAMetaTypeDecl =
         cpg.typeDecl
           .nameExact("ClassA<meta>")
-          .filter(PropertyNames.FULL_NAME, "test.js::program:ClassA<meta>")
+          .filter(PropertyNames.FULL_NAME, "code.js::program:ClassA<meta>")
       classAMetaTypeDecl.checkNodeCount(1)
 
       def constructorBinding = classAMetaTypeDecl.expand(EdgeTypes.BINDS, NodeTypes.BINDING)
@@ -3711,7 +3711,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def boundMethod = constructorBinding.expandRef(NodeTypes.METHOD)
       boundMethod.checkNodeCount(1)
-      boundMethod.checkProperty(PropertyNames.FULL_NAME, "test.js::program:ClassA<constructor>")
+      boundMethod.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA<constructor>")
     }
 
     "have member for static method in <meta> TYPE_DECL for ClassA" in AstFixture("""
@@ -3721,13 +3721,13 @@ class AstCreationPassTest extends AbstractPassTest {
       def classAMetaTypeDecl =
         cpg.typeDecl
           .nameExact("ClassA<meta>")
-          .filter(PropertyNames.FULL_NAME, "test.js::program:ClassA<meta>")
+          .filter(PropertyNames.FULL_NAME, "code.js::program:ClassA<meta>")
       classAMetaTypeDecl.checkNodeCount(1)
 
       def memberFoo = classAMetaTypeDecl.expandAst(NodeTypes.MEMBER)
       memberFoo.checkNodeCount(1)
       pendingUntilFixed {
-        memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, "test.js::program:ClassA:staticFoo")
+        memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, "code.js::program:ClassA:staticFoo")
       }
     }
 
@@ -3736,14 +3736,14 @@ class AstCreationPassTest extends AbstractPassTest {
         |  static staticFoo() {}
         |}""".stripMargin) { cpg =>
       def classATypeDecl =
-        cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "test.js::program:ClassA")
+        cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "code.js::program:ClassA")
       classATypeDecl.checkNodeCount(1)
 
       def methodFoo =
         classATypeDecl.expandAst(NodeTypes.METHOD).filter(PropertyNames.NAME, "staticFoo")
       methodFoo.checkNodeCount(1)
       pendingUntilFixed {
-        methodFoo.checkProperty(PropertyNames.FULL_NAME, "test.js::program:ClassA:staticFoo")
+        methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:staticFoo")
       }
     }
 
@@ -3752,13 +3752,13 @@ class AstCreationPassTest extends AbstractPassTest {
         |  foo() {}
         |}""".stripMargin) { cpg =>
       def classATypeDecl =
-        cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "test.js::program:ClassA")
+        cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "code.js::program:ClassA")
       classATypeDecl.checkNodeCount(1)
 
       def memberFoo = classATypeDecl.expandAst(NodeTypes.MEMBER)
       memberFoo.checkNodeCount(1)
       pendingUntilFixed {
-        memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, "test.js::program:ClassA:foo")
+        memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, "code.js::program:ClassA:foo")
       }
     }
 
@@ -3767,13 +3767,13 @@ class AstCreationPassTest extends AbstractPassTest {
         |  foo() {}
         |}""".stripMargin) { cpg =>
       def classATypeDecl =
-        cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "test.js::program:ClassA")
+        cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "code.js::program:ClassA")
       classATypeDecl.checkNodeCount(1)
 
       def methodFoo = classATypeDecl.expandAst(NodeTypes.METHOD).filter(PropertyNames.NAME, "foo")
       methodFoo.checkNodeCount(1)
       pendingUntilFixed {
-        methodFoo.checkProperty(PropertyNames.FULL_NAME, "test.js::program:ClassA:foo")
+        methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:foo")
       }
     }
 
@@ -3790,7 +3790,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def rhs = assignmentToTmp.expandAst(NodeTypes.TYPE_REF)
       rhs.checkNodeCount(1)
-      rhs.checkProperty(PropertyNames.TYPE_FULL_NAME, "test.js::program:ClassA<meta>")
+      rhs.checkProperty(PropertyNames.TYPE_FULL_NAME, "code.js::program:ClassA<meta>")
     }
 
     "have correct structure for type decls for classes with extends" in AstFixture("class ClassA extends Base {}") {

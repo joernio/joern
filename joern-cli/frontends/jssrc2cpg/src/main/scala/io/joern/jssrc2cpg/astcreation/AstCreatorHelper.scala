@@ -101,7 +101,7 @@ trait AstCreatorHelper {
   protected def shortenCode(code: String, length: Int = MAX_CODE_LENGTH): String =
     StringUtils.abbreviate(code, math.max(MIN_CODE_LENGTH, length))
 
-  private def safeObj(node: Value, key: String): Option[mutable.LinkedHashMap[String, Value]] = Try(
+  protected def safeObj(node: Value, key: String): Option[mutable.LinkedHashMap[String, Value]] = Try(
     node(key).obj
   ) match {
     case Success(value) if value.nonEmpty => Some(value)

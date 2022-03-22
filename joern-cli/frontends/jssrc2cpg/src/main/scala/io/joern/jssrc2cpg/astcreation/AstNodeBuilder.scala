@@ -50,6 +50,18 @@ trait AstNodeBuilder {
       .columnNumber(column)
       .order(order)
 
+  protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
+    val line   = func.lineNumber
+    val column = func.columnNumber
+    val code   = "RET"
+    NewMethodReturn()
+      .code(shortenCode(code))
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName(Defines.ANY.label)
+      .lineNumber(line)
+      .columnNumber(column)
+  }
+
   protected def createParameterInNode(
     name: String,
     code: String,
@@ -68,6 +80,31 @@ trait AstNodeBuilder {
       .typeFullName(tpe.getOrElse(Defines.ANY.label))
     scope.addVariable(name, param, MethodScope)
     param
+  }
+
+  protected def createMethodRefNode(code: String, methodFullName: String, func: BabelNodeInfo): NewMethodRef = {
+    val line   = func.lineNumber
+    val column = func.columnNumber
+    NewMethodRef()
+      .code(shortenCode(code))
+      .methodFullName(methodFullName)
+      .typeFullName(methodFullName)
+      .lineNumber(line)
+      .columnNumber(column)
+  }
+
+  protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
+    val line   = func.lineNumber
+    val column = func.columnNumber
+    val code   = func.code
+    NewMethod()
+      .name(methodName)
+      .filename(parserResult.filename)
+      .code(code)
+      .fullName(methodFullName)
+      .isExternal(false)
+      .lineNumber(line)
+      .columnNumber(column)
   }
 
   protected def codeOf(node: NewNode): String = node match {
