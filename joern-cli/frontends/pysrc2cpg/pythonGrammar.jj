@@ -135,11 +135,21 @@ TOKEN_MGR_DECLS:
     return result;
   }
 
-  // Cut token image by length since we do not want the close quote or "{" in the content.
-  // We also backup the input by length to generate an extra token for close quote or "{"
-  String cutContentTokenImageAndBackupInput(Token matchedToken, int len) {
-    String result = matchedToken.image.substring(0, matchedToken.image.length() - len);
-    input_stream.backup(len);
+  // Cut content token image by length of endToken1 or endToken2 since we do not them in the content.
+  // In our case this is either a close quote or "{".
+  // We also backup the input by this length to generate an extra token for close quote or "{"
+  String cutContentTokenImageAndBackupInput(Token matchedToken, String endToken1, String endToken2) {
+
+    int length;
+    if (matchedToken.image.endsWith(endToken1)) {
+        length = endToken1.length();
+    } else if (matchedToken.image.endsWith(endToken2)) {
+        length = endToken2.length();
+    } else {
+        throw new RuntimeException("Unexpected end of matchedToken " + matchedToken.image);
+    }
+    String result = matchedToken.image.substring(0, matchedToken.image.length() - length);
+    input_stream.backup(length);
     return result;
   }
 
@@ -549,7 +559,7 @@ TOKEN: {
 
 <FSDQ_LEX> TOKEN: {
   <FSDQ_CONTENT: "{" | "\"" > {
-    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 1);
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, "{", "\"");
     matchedToken.kind = FORMAT_STRING_CONTENT;
   }: FSDQ_LEX_EMIT_END
 }
@@ -570,7 +580,7 @@ TOKEN: {
 
 <FSSQ_LEX> TOKEN: {
   <FSSQ_CONTENT: "{" | "'" > {
-    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 1);
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, "{", "'");
     matchedToken.kind = FORMAT_STRING_CONTENT;
   }: FSSQ_LEX_EMIT_END
 }
@@ -591,7 +601,7 @@ TOKEN: {
 
 <FTDQ_LEX> TOKEN: {
   <FTDQ_CONTENT: "{" | "\"\"\"" > {
-    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 3);
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, "{", "\"\"\"");
     matchedToken.kind = FORMAT_STRING_CONTENT;
   }: FTDQ_LEX_EMIT_END
 }
@@ -612,7 +622,7 @@ TOKEN: {
 
 <FTSQ_LEX> TOKEN: {
   <FTSQ_CONTENT: "{" | "'''" > {
-    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, 3);
+    matchedToken.image = cutContentTokenImageAndBackupInput(matchedToken, "{", "'''");
     matchedToken.kind = FORMAT_STRING_CONTENT;
   }: FTSQ_LEX_EMIT_END
 }

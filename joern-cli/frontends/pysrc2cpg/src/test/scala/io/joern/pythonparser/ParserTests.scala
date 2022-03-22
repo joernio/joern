@@ -680,8 +680,11 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("rf\"{x=!s:1}\"")
 
     testT("f\"a\"")
+    testT("f'{a}'")
     testT("f'a'")
+    testT("f\"\"\"{a}\"\"\"")
     testT("f\"\"\"a\"\"\"")
+    testT("f'''{a}'''")
     testT("f'''a'''")
   }
 
