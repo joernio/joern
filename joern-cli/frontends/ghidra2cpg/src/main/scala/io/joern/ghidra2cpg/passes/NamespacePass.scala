@@ -2,24 +2,22 @@ package io.joern.ghidra2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool, ParallelCpgPass}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 
-class NamespacePass(cpg: Cpg, filename: String, keyPool: IntervalKeyPool)
-    extends ParallelCpgPass[String](cpg, keyPools = Some(keyPool.split(1))) {
-  override def partIterator: Iterator[String] = List("").iterator
+import java.io.File
 
-  override def runOnPart(part: String): Iterator[DiffGraph] = {
-    implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
+class NamespacePass(cpg: Cpg, programFile: File) extends ConcurrentWriterCpgPass[String](cpg) {
+  override def generateParts(): Array[String] = Array(programFile.getCanonicalFile.toString)
 
+  override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
     val namespaceNodeNode =
       nodes
         .NewNamespaceBlock()
-        .filename(filename)
-        .fullName(s"$filename:<global>")
+        .filename(fileName)
+        .fullName(s"$fileName:<global>")
         .name("<global>")
         .order(1)
 
     diffGraph.addNode(namespaceNodeNode)
-    Iterator(diffGraph.build())
   }
 }
