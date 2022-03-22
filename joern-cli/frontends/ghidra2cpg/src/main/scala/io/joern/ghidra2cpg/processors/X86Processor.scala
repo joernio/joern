@@ -87,6 +87,7 @@ class X86Processor extends Processor {
       "ROL"       -> "<operator>.rotateLeft",
       "ROR"       -> "<operator>.rotateRight",
       "SAR"       -> "<operator>.arithmeticShiftRight",
+      "SETNZ"     -> "<operator>.assignment",
       "SHL"       -> "<operator>.logicalShiftLeft",
       "SHR"       -> "<operator>.logicalShiftRight",
       "SUB"       -> "<operator>.subtraction",
