@@ -94,6 +94,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug("Started parsing of file `" + fileWithMeta.filename + "`")
+
+    val defaultTypes = Set(TypeConstants.javaLangObject)
+    defaultTypes.foreach { t =>
+      registerType(t)
+    }
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
   }
