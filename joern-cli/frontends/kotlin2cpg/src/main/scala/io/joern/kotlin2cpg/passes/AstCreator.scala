@@ -2740,7 +2740,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       NewCall()
         .name(Operators.fieldAccess)
         .code(Constants.this_ + "." + expr.getReferencedName)
-        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .methodFullName(Operators.fieldAccess)
         .signature("")
         .typeFullName(typeFullName)
@@ -2758,7 +2758,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .name(Constants.this_)
         .typeFullName(referenceTargetTypeFullName)
         .order(1)
-        .argumentIndex(0)
+        .argumentIndex(1)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
     val fieldIdentifierNode =
@@ -2766,7 +2766,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .code(expr.getReferencedName)
         .canonicalName(expr.getReferencedName)
         .order(2)
-        .argumentIndex(1)
+        .argumentIndex(2)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
     val ast =
