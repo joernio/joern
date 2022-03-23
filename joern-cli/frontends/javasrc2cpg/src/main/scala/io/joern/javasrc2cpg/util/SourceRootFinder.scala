@@ -2,12 +2,14 @@ package io.joern.javasrc2cpg.util
 
 import better.files.File
 
-case class DirectoryStructureInfo(priority: Int, structure: List[String])
-
-/** Given a `codeDirectory`, the HeuristicSourceFinder attempts to find all the source roots.
+/** Given a `codeDirectory`, the SourceRootFinder attempts to find all the source roots (so that the subdirectories
+  * match the package structure of the source files). The JavaParserTypeSolver is path-dependent, so without this the
+  * user would need to ensure that they specify the correct source directory when running javasrc2cpg.
   *
-  * You might wonder, isn't a basic FSM overkill for this? Well, it probably is, but does the job (maybe even moderately
-  * efficiently), so it's hopefully good enough for now.
+  * This works by checking if any subdirectories of the given directory match common java directory structures. In order
+  * of preference: * Maven's default structure, e.g. src/main/java/io/... and src/test/java/io/... * Top-level src and
+  * test directories, e.g. src/io/... and test/io/... If neither of these match, then it defaults to using the given
+  * user input as the source root.
   */
 object SourceRootFinder {
 
