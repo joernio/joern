@@ -37,7 +37,7 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       .map(_.getName)
       .toArray shouldBe Array("HelloWorld.jar")
     Files
-      .walk(Path.of(ProgramHandlingUtil.TEMP_DIR.toString))
+      .walk(Path.of(ProgramHandlingUtil.getUnpackingDir.toString))
       .map(_.toFile)
       .filter(f => f.isFile && f.getName.contains(".class"))
       .toArray

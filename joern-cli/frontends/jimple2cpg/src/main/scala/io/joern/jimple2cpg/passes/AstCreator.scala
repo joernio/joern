@@ -27,18 +27,9 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     * key in the map.
     */
   private def registerType(typeName: String): String = {
-    val cleanType = removeUnwantedPrefix(typeName)
-    global.usedTypes.put(cleanType, true)
-    cleanType
+    global.usedTypes.put(typeName, true)
+    typeName
   }
-
-  /** For certain frameworks, application classes are lumped into specific directories that produce undesirable class
-    * paths, e.g., Spring Boot places application code in a `BOOT-INF/classes/` directory.
-    * @param typePath
-    *   the path to modify.
-    */
-  private def removeUnwantedPrefix(typePath: String): String =
-    typePath.replaceAll("^(.*)-INF\\.classes\\.", "")
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
