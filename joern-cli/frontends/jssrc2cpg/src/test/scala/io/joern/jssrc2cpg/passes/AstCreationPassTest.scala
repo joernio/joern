@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
+import io.joern.x2cpg.testfixtures.CodeToCpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -4836,7 +4837,7 @@ class AstCreationPassTest extends AbstractPassTest {
     def apply(code: String)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val file = dir / "code.js"
-        file.write(code)
+        file.write(CodeToCpgFixture.codeToSystemLinebreaks(code))
         file.deleteOnExit()
         val cpg = new JsSrc2CpgFrontend().execute(dir.toJava)
         f(cpg)

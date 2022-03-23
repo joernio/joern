@@ -94,9 +94,11 @@ trait AstNodeBuilder {
   }
 
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
-    val line   = func.lineNumber
-    val column = func.columnNumber
-    val code   = func.code
+    val line      = func.lineNumber
+    val column    = func.columnNumber
+    val lineEnd   = func.lineNumberEnd
+    val columnEnd = func.columnNumberEnd
+    val code      = func.code
     NewMethod()
       .name(methodName)
       .filename(parserResult.filename)
@@ -105,6 +107,8 @@ trait AstNodeBuilder {
       .isExternal(false)
       .lineNumber(line)
       .columnNumber(column)
+      .lineNumberEnd(lineEnd)
+      .columnNumberEnd(columnEnd)
   }
 
   protected def codeOf(node: NewNode): String = node match {

@@ -6,6 +6,7 @@ import better.files.File
 import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.testfixtures.CodeToCpgFixture
 import overflowdb.traversal._
 
 class DependenciesPassTest extends AbstractPassTest {
@@ -135,7 +136,7 @@ class DependenciesPassTest extends AbstractPassTest {
       File.usingTemporaryDirectory("js2cpgTest") { dir =>
         val file = dir / "file.js"
         val json = dir / packageJsonName
-        file.write(code)
+        file.write(CodeToCpgFixture.codeToSystemLinebreaks(code))
         json.write(packageJsonContent)
         val cpg    = newEmptyCpg()
         val config = Config(inputPaths = Set(dir.toString()))

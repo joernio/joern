@@ -40,7 +40,9 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
     json: Value,
     code: String,
     lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
+    columnNumber: Option[Integer],
+    lineNumberEnd: Option[Integer],
+    columnNumberEnd: Option[Integer]
   )
 
   object BabelNodeInfo {
@@ -72,11 +74,13 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
   }
 
   private def createBabelNodeInfo(json: Value): BabelNodeInfo = {
-    val c    = shortenCode(code(json))
-    val ln   = line(json)
-    val cn   = column(json)
-    val node = nodeType(json)
-    BabelNodeInfo(node, json, c, ln, cn)
+    val c     = shortenCode(code(json))
+    val ln    = line(json)
+    val cn    = column(json)
+    val lnEnd = lineEnd(json)
+    val cnEnd = columnEnd(json)
+    val node  = nodeType(json)
+    BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 
   protected def astsForExpressionStatement(exprStmt: BabelNodeInfo, order: Int): Seq[Ast] =
@@ -355,11 +359,13 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
   }.flatten
 
   private def createProgramMethod(path: String): Ast = {
-    val allDecls     = Seq(parserResult.json("ast"))
-    val lineNumber   = allDecls.headOption.flatMap(line)
-    val columnNumber = allDecls.headOption.flatMap(column)
-    val name         = ":program"
-    val fullName     = parserResult.filename + ":" + name
+    val allDecls        = Seq(parserResult.json("ast"))
+    val lineNumber      = allDecls.headOption.flatMap(line)
+    val columnNumber    = allDecls.headOption.flatMap(column)
+    val lineNumberEnd   = allDecls.headOption.flatMap(lineEnd)
+    val columnNumberEnd = allDecls.headOption.flatMap(columnEnd)
+    val name            = ":program"
+    val fullName        = parserResult.filename + ":" + name
 
     val programMethod =
       NewMethod()
@@ -368,7 +374,9 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
         .fullName(fullName)
         .filename(path)
         .lineNumber(lineNumber)
+        .lineNumberEnd(lineNumberEnd)
         .columnNumber(columnNumber)
+        .columnNumberEnd(columnNumberEnd)
         .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullName)
 

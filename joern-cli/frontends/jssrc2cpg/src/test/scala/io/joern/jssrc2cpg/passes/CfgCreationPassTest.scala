@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
+import io.joern.x2cpg.testfixtures.CodeToCpgFixture
 import overflowdb.traversal._
 import overflowdb._
 import org.scalatest.matchers.should.Matchers
@@ -1291,7 +1292,7 @@ class CfgCreationPassTest extends AnyWordSpec with Matchers {
 
     File.usingTemporaryDirectory("jssrc2cpgCfgTest") { workspace =>
       val file = workspace / "code.js"
-      file.write(code)
+      file.write(CodeToCpgFixture.codeToSystemLinebreaks(code))
       file.deleteOnExit()
       cpg = new JsSrc2CpgFrontend().execute(workspace.toJava)
       new CfgCreationPass(cpg).createAndApply()
