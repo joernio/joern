@@ -348,7 +348,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
-    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName)
+    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName, lineAndColumn)
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
 
@@ -369,7 +369,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
-      nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName)
+      nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName, lineAndColOf(classDef))
     edgeBuilder.astEdge(metaTypeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
@@ -390,7 +390,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
     val instanceTypeDecl =
-      nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName)
+      nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName, lineAndColOf(classDef))
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create meta class call handling method and bind it to meta class type.

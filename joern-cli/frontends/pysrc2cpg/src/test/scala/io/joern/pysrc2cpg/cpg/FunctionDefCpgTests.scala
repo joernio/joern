@@ -75,6 +75,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       bindingTypeDecl.name shouldBe "func"
       bindingTypeDecl.fullName shouldBe "test.py:<module>.func"
       bindingTypeDecl.filename shouldBe "test.py"
+      bindingTypeDecl.lineNumber shouldBe Some(1)
+      bindingTypeDecl.columnNumber shouldBe Some(1)
 
       bindingTypeDecl.referencingType.name.head shouldBe "func"
       bindingTypeDecl.referencingType.fullName.head shouldBe "test.py:<module>.func"
