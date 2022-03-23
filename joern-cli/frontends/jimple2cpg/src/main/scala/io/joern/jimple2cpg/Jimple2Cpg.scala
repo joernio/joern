@@ -30,6 +30,7 @@ object Jimple2Cpg {
     */
   def getQualifiedClassPath(filename: String): String = {
     val codePath = ProgramHandlingUtil.getUnpackingDir
+
     val codeDir: String = if (codePath.toFile.isDirectory) {
       codePath.toAbsolutePath.normalize.toString
     } else {
