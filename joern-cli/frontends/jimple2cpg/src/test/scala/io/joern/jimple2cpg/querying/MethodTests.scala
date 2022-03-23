@@ -15,6 +15,18 @@ class MethodTests extends JimpleCodeToCpgFixture {
       | }
       |""".stripMargin
 
+  /* The equivalent Jimple code looks like
+    int foo(int, int)
+    {
+        int param1, param2;
+        Foo this;
+        this := @this: Foo;
+        param1 := @parameter0: int;
+        param2 := @parameter1: int;
+        return 1;
+    }
+   */
+
   "should contain exactly one non-stub method node with correct fields" in {
     val List(x) = cpg.method.nameNot("<init>").isExternal(false).l
     x.name shouldBe "foo"
@@ -32,9 +44,9 @@ class MethodTests extends JimpleCodeToCpgFixture {
     x.columnNumber shouldBe None
   }
 
-//  "should return correct number of lines" in {
-//    cpg.method.name("foo").numberOfLines.l shouldBe List(3)
-//  }
+  "should return correct number of lines" in {
+    cpg.method.name("foo").numberOfLines.l shouldBe List(8)
+  }
 
   "should allow traversing to parameters" in {
     cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("this", "param1", "param2")

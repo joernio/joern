@@ -8,7 +8,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class ItTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple `it` usage and straightforward type inference situation" - {
+  "CPG for code with simple `it`" - {
     lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
@@ -19,7 +19,7 @@ class ItTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain IDENTIFIER nodes for the `it`s with the correct types inferred" in {
+    "should contain IDENTIFIER nodes for the `it`s with the correct TYPE_FULL_NAMEs set" in {
       cpg.identifier.nameExact("it").typeFullName.toSet shouldBe Set("java.lang.String")
     }
 

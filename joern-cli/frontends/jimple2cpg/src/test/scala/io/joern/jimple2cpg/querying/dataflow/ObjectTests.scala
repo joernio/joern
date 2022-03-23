@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.dataflowengineoss.language.{toDdgNodeDot, toExtendedCfgNode}
+import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.jimple2cpg.testfixtures.JimpleDataflowFixture
 import io.shiftleft.semanticcpg.language._
 

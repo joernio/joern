@@ -1,7 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Kotlin2CpgTestContext
-import io.shiftleft.codepropertygraph.generated.nodes.{NewUnknown, Unknown}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

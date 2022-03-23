@@ -15,7 +15,7 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class TypeInferenceForAndroidSDKTests extends AnyFreeSpec with Matchers {
+class AndroidSDKTests extends AnyFreeSpec with Matchers {
 
   // good source of vulns
   "CPG for code with calls to Android WebView methods" - {

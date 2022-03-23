@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class TypeInferenceTests extends AnyFreeSpec with Matchers {
+class DefaultContentRootsTest extends AnyFreeSpec with Matchers {
 
   "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" - {
     lazy val cpg = Kotlin2CpgTestContext.buildCpg("""

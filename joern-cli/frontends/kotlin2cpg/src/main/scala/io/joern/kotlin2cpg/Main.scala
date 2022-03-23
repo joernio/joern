@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.Frontend._
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-case class InferenceJarPath(path: String, isResource: Boolean)
+case class DefaultContentRootJarPath(path: String, isResource: Boolean)
 
 final case class Config(
   inputPaths: Set[String] = Set.empty,

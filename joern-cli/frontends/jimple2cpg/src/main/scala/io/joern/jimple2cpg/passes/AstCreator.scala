@@ -73,12 +73,17 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
         if (!relatedClass.getSuperclass.isApplicationClass)
           registerType(relatedClass.getSuperclass.getType.toQuotedString)
         List(relatedClass.getSuperclass.toString)
-      } else List(registerType("java.lang.Object"))
+      } else List()
     val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { (i: SootClass) =>
       if (!i.isApplicationClass)
         registerType(i.getType.toQuotedString)
       i.getType.toQuotedString
     }.toList
+    val allSupers =
+      if (inheritsFromTypeFullName.isEmpty && implementsTypeFullName.isEmpty)
+        List(registerType("java.lang.Object"))
+      else
+        inheritsFromTypeFullName ++ implementsTypeFullName
 
     val typeDecl = NewTypeDecl()
       .name(shortName)
@@ -86,7 +91,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       .order(1) // Jimple always has 1 class per file
       .filename(filename)
       .code(shortName)
-      .inheritsFromTypeFullName(inheritsFromTypeFullName ++ implementsTypeFullName)
+      .inheritsFromTypeFullName(allSupers)
       .astParentType(NodeTypes.NAMESPACE_BLOCK)
       .astParentFullName(namespaceBlockFullName)
     val methodAsts = withOrder(typ.getSootClass.getMethods.asScala.toList.sortWith((x, y) => x.getName > y.getName)) {
@@ -137,8 +142,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
             (p, order) =>
               astForParameter(p, order, methodDeclaration)
           }
-
-        Ast(methodNode)
+        Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
           .withChild(astForMethodBody(methodBody, lastOrder))
@@ -208,7 +212,6 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   private def astsForStatement(statement: soot.Unit, order: Int): Seq[Ast] = {
     val stmt = statement match {
       case x: AssignStmt       => astsForDefinition(x, order)
-      case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
       case x: InvokeStmt       => astsForExpression(x.getInvokeExpr, order, statement)
       case x: ReturnStmt       => astsForReturnNode(x, order)
       case x: ReturnVoidStmt   => astsForReturnVoidNode(x, order)
@@ -218,6 +221,8 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       case x: TableSwitchStmt  => astsForTableSwitchStmt(x, order)
       case x: ThrowStmt        => Seq(astForUnknownStmt(x, x.getOp, order))
       case x: MonitorStmt      => Seq(astForUnknownStmt(x, x.getOp, order))
+      case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
+      case _: NopStmt          => Seq() // Ignore NOP statements
       case x =>
         logger.warn(s"Unhandled soot.Unit type ${x.getClass}")
         Seq()
