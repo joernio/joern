@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.joern.x2cpg.Ast
+import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -16,8 +17,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPASTQualifiedName, CPPFunction}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 import scala.collection.mutable
 
@@ -65,11 +65,7 @@ trait AstCreatorHelper {
   }
 
   private def genFileOffsetTable(fileName: Path): Array[Int] = {
-    val bytes    = Files.readAllBytes(fileName)
-    var asString = new String(bytes, StandardCharsets.UTF_8)
-    asString = asString.replaceAll("\r\n", "\n")
-    asString = asString.replaceAll("\r", "\n")
-    val asCharArray = asString.toCharArray
+    val asCharArray = IOUtils.readLinesInFile(fileName).mkString("\n").toCharArray
     val offsets     = mutable.ArrayBuffer.empty[Int]
 
     for (i <- Range(0, asCharArray.length)) {
