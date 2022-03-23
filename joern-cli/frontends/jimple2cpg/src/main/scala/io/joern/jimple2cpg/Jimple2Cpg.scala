@@ -29,7 +29,7 @@ object Jimple2Cpg {
     *   the correctly formatted class path.
     */
   def getQualifiedClassPath(filename: String): String = {
-    val codePath = ProgramHandlingUtil.TEMP_DIR
+    val codePath = ProgramHandlingUtil.getUnpackingDir
     val codeDir: String = if (codePath.toFile.isDirectory) {
       codePath.toAbsolutePath.normalize.toString
     } else {
@@ -127,7 +127,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     Options.v().set_app(false)
     Options.v().set_whole_program(false)
     // make sure classpath is configured correctly
-    Options.v().set_soot_classpath(ProgramHandlingUtil.TEMP_DIR.toString)
+    Options.v().set_soot_classpath(ProgramHandlingUtil.getUnpackingDir.toString)
     Options.v().set_prepend_classpath(true)
     // keep debugging info
     Options.v().set_keep_line_number(true)
