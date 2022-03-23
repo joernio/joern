@@ -46,7 +46,7 @@ class SourceRootFinderTests extends AnyFlatSpec with Matchers with BeforeAndAfte
   private def rootsWithUnixSeparators(file: File): List[String] = {
     SourceRootFinder
       .getSourceRoots(file.pathAsString)
-      .map { srcPath => srcPath.replaceAll(java.io.File.separator, "/") }
+      .map { srcPath => srcPath.replaceAll("\\" ++ java.io.File.separator, "/") }
   }
 
   it should "find all the correct source directories if tmp root is given" in {
