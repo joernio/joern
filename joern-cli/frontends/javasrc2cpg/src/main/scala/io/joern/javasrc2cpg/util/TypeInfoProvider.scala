@@ -1,41 +1,14 @@
-package io.joern.javasrc2cpg.passes
+package io.joern.javasrc2cpg.util
 
 import com.github.javaparser.ast.`type`.ClassOrInterfaceType
-import com.github.javaparser.ast.body.{
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  MethodDeclaration,
-  TypeDeclaration,
-  VariableDeclarator
-}
-import com.github.javaparser.ast.expr.{
-  BooleanLiteralExpr,
-  CharLiteralExpr,
-  DoubleLiteralExpr,
-  Expression,
-  IntegerLiteralExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MethodCallExpr,
-  NameExpr,
-  NullLiteralExpr,
-  StringLiteralExpr,
-  TextBlockLiteralExpr,
-  ThisExpr
-}
+import com.github.javaparser.ast.body.{EnumConstantDeclaration, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
-import com.github.javaparser.resolution.declarations.{
-  ResolvedDeclaration,
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedParameterDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeDeclaration,
-  ResolvedTypeParameterDeclaration
-}
+import com.github.javaparser.resolution.declarations._
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
+import io.joern.javasrc2cpg.passes.{Global, ScopeContext}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
