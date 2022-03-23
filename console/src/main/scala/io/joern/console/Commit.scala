@@ -19,7 +19,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val pass: SimpleCpgPass = new SimpleCpgPass(context.cpg) {
-      override val name                       = "commit"
+      override val name                                   = "commit"
       override def run(diffGraph: DiffGraphBuilder): Unit = ()
     }
     runPass(pass, context, storeUndoInfo)
