@@ -39,8 +39,14 @@ class SourceRootFinderTests extends AnyFlatSpec with Matchers with BeforeAndAfte
     }
   }
 
+  private def rootsWithUnixSeparators(path: String): List[String] = {
+    SourceRootFinder
+      .getSourceRoots(path)
+      .map { srcPath => srcPath.replaceAll(java.io.File.pathSeparator, "/")}
+  }
+
   it should "find all the correct source directories if tmp root is given" in {
-    val sourceRoots = SourceRootFinder.getSourceRoots(rootPath)
+    val sourceRoots = rootsWithUnixSeparators(rootPath)
     sourceRoots.sorted shouldBe List(
       s"$rootPath/maven/mvn1/src/main/java",
       s"$rootPath/maven/mvn1/src/test/java",
@@ -54,31 +60,31 @@ class SourceRootFinderTests extends AnyFlatSpec with Matchers with BeforeAndAfte
   }
 
   it should "find the given directory if no matching subdirectories are found" in {
-    val sourceRoots = SourceRootFinder.getSourceRoots(s"$rootPath/nosrc")
+    val sourceRoots = rootsWithUnixSeparators(s"$rootPath/nosrc")
     sourceRoots shouldBe List(s"$rootPath/nosrc")
   }
 
   it should "find a src directory without main/test subdirectory" in {
-    val sourceRoots = SourceRootFinder.getSourceRoots(s"$rootPath/some/nested/directories")
+    val sourceRoots = rootsWithUnixSeparators(s"$rootPath/some/nested/directories")
     sourceRoots shouldBe List(s"$rootPath/some/nested/directories/src")
 
-    val specificSourceRoots = SourceRootFinder.getSourceRoots(s"$rootPath/some/nested/directories/src")
+    val specificSourceRoots = rootsWithUnixSeparators(s"$rootPath/some/nested/directories/src")
     specificSourceRoots shouldBe List(s"$rootPath/some/nested/directories/src")
   }
 
   it should "find the correct directory if a rootPath partly into a src/maintest/java string is given" in {
-    val srcRoot = SourceRootFinder.getSourceRoots(s"$rootPath/maven/mvn2/src")
+    val srcRoot = rootsWithUnixSeparators(s"$rootPath/maven/mvn2/src")
     srcRoot shouldBe List(s"$rootPath/maven/mvn2/src/main/java")
 
-    val mainRoot = SourceRootFinder.getSourceRoots(s"$rootPath/maven/mvn2/src/main")
+    val mainRoot = rootsWithUnixSeparators(s"$rootPath/maven/mvn2/src/main")
     mainRoot shouldBe List(s"$rootPath/maven/mvn2/src/main/java")
 
-    val javaRoot = SourceRootFinder.getSourceRoots(s"$rootPath/maven/mvn2/src/main/java")
+    val javaRoot = rootsWithUnixSeparators(s"$rootPath/maven/mvn2/src/main/java")
     javaRoot shouldBe List(s"$rootPath/maven/mvn2/src/main/java")
 
     // This is an example of where the SourceRootFinder gets the wrong result. This is because it never
     // searches "up" from the given directory.
-    val ioRoot = SourceRootFinder.getSourceRoots(s"$rootPath/maven/mvn2/src/main/java/io")
+    val ioRoot = rootsWithUnixSeparators(s"$rootPath/maven/mvn2/src/main/java/io")
     ioRoot shouldBe List(s"$rootPath/maven/mvn2/src/main/java/io")
   }
 }
