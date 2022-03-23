@@ -133,7 +133,7 @@ class MacroHandlingTests4 extends CCodeToCpgSuite {
     call1.name shouldBe "A_MACRO"
     call1.methodFullName.endsWith("A_MACRO:3") shouldBe true
     call1.lineNumber shouldBe Some(22)
-    call1.columnNumber shouldBe Some(8)
+    call1.columnNumber shouldBe Some(9)
     call1.typeFullName shouldBe "ANY"
     call1.dispatchType shouldBe DispatchTypes.INLINED
     val List(arg1, arg2, arg3) = call1.argument.l.sortBy(_.order)
@@ -146,7 +146,7 @@ class MacroHandlingTests4 extends CCodeToCpgSuite {
     call2.name shouldBe "A_MACRO_2"
     call2.methodFullName.endsWith("A_MACRO_2:0") shouldBe true
     call2.lineNumber shouldBe Some(24)
-    call2.columnNumber shouldBe Some(8)
+    call2.columnNumber shouldBe Some(9)
     call2.typeFullName shouldBe "ANY"
     call2.argument.l.sortBy(_.order).size shouldBe 0
     call2.dispatchType shouldBe DispatchTypes.INLINED

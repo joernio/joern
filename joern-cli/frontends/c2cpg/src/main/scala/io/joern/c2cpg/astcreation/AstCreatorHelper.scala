@@ -1,6 +1,5 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -17,8 +16,10 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPASTQualifiedName, CPPFunction}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-import java.nio.file.Paths
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path, Paths}
 import scala.annotation.nowarn
+import scala.collection.mutable
 
 object AstCreatorHelper {
   implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
@@ -58,9 +59,25 @@ trait AstCreatorHelper {
     }
   }
 
-  private def fileLines(node: IASTNode): Seq[Int] = {
+  private def fileOffsetTable(node: IASTNode): Array[Int] = {
     val f = fileName(node)
-    global.file2LinesCache.computeIfAbsent(f, _ => IOUtils.readLineLengthsInFile(Paths.get(f)))
+    global.file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(f)))
+  }
+
+  private def genFileOffsetTable(fileName: Path): Array[Int] = {
+    val bytes    = Files.readAllBytes(fileName)
+    var asString = new String(bytes, StandardCharsets.UTF_8)
+    asString = asString.replaceAll("\r\n", "\n")
+    asString = asString.replaceAll("\r", "\n")
+    val asCharArray = asString.toCharArray
+    val offsets     = mutable.ArrayBuffer.empty[Int]
+
+    for (i <- Range(0, asCharArray.length)) {
+      if (asCharArray(i) == '\n') {
+        offsets.append(i + 1)
+      }
+    }
+    offsets.toArray
   }
 
   private def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =
@@ -81,37 +98,31 @@ trait AstCreatorHelper {
     nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
+  private def offsetToColumn(node: IASTNode, offset: Int): Int = {
+    val table      = fileOffsetTable(node)
+    val index      = java.util.Arrays.binarySearch(table, offset)
+    val tableIndex = if (index < 0) -(index + 1) else index + 1
+    val lineStartOffset = if (tableIndex == 0) {
+      0
+    } else {
+      table(tableIndex - 1)
+    }
+    val column = offset - lineStartOffset + 1
+    column
+  }
+
   protected def column(node: IASTNode): Option[Integer] = {
-    if (line(node).isEmpty) None
-    else {
-      val l   = line(node).get - 1
-      val loc = nullSafeFileLocation(node)
-      if (l == 0) {
-        loc.map(_.getNodeOffset)
-      } else if (loc.map(_.getNodeOffset).contains(0)) {
-        Some(0)
-      } else {
-        val slice  = fileLines(node).slice(0, l)
-        val length = slice.size - 1
-        loc.map(_.getNodeOffset - 1 - slice.sum - length)
-      }
+    val loc = nullSafeFileLocation(node)
+    loc.map { x =>
+      offsetToColumn(node, x.getNodeOffset)
     }
   }
 
   protected def columnEnd(node: IASTNode): Option[Integer] = {
-    if (lineEnd(node).isEmpty) None
-    else {
-      val l   = lineEnd(node).get - 1
-      val loc = nullSafeFileLocation(node)
-      if (l == 0) {
-        loc.map(l => l.getNodeOffset + l.getNodeLength)
-      } else if (loc.map(l => l.getNodeOffset + l.getNodeLength).contains(0)) {
-        Some(0)
-      } else {
-        val slice  = fileLines(node).slice(0, l)
-        val length = slice.size - 1
-        loc.map(l => l.getNodeOffset + l.getNodeLength - 1 - slice.sum - length)
-      }
+    val loc = nullSafeFileLocation(node)
+
+    loc.map { x =>
+      offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
     }
   }
 

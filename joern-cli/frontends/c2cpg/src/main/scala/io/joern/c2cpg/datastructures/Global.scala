@@ -12,7 +12,7 @@ class Global {
   val usedTypes: ConcurrentHashMap[String, Boolean] =
     new ConcurrentHashMap()
 
-  val file2LinesCache: ConcurrentHashMap[String, Seq[Int]] =
+  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] =
     new ConcurrentHashMap()
 
 }

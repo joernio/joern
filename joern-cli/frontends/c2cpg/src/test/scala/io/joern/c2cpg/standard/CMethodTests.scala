@@ -27,7 +27,7 @@ class CMethodTest1 extends CCodeToCpgSuite {
       )
       x.lineNumber shouldBe Some(2)
       x.lineNumberEnd shouldBe Some(3)
-      x.columnNumber shouldBe Some(2)
+      x.columnNumber shouldBe Some(3)
       x.columnNumberEnd shouldBe Some(2)
     }
   }

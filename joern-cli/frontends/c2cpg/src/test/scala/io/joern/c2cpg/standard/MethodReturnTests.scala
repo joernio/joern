@@ -15,7 +15,7 @@ class MethodReturnTest1 extends CCodeToCpgSuite {
     x.code shouldBe "int*"
     x.typeFullName shouldBe "int*"
     x.lineNumber shouldBe Some(2)
-    x.columnNumber shouldBe Some(1)
+    x.columnNumber shouldBe Some(2)
     // we expect the METHOD_RETURN node to be the right-most
     // child so that when traversing the AST from left to
     // right in CFG construction, we visit it last.
@@ -52,10 +52,10 @@ class MethodReturnTest2 extends CCodeToCpgSuite {
     inside(astReturns) { case List(ret1, ret2) =>
       ret1.code shouldBe "return 1;"
       ret1.lineNumber shouldBe Some(4)
-      ret1.columnNumber shouldBe Some(4)
+      ret1.columnNumber shouldBe Some(5)
       ret2.code shouldBe "return 2;"
       ret2.lineNumber shouldBe Some(6)
-      ret2.columnNumber shouldBe Some(2)
+      ret2.columnNumber shouldBe Some(3)
     }
     astReturns shouldBe cfgReturns
     astReturns shouldBe travReturns
