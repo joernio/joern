@@ -11,7 +11,7 @@ import io.joern.kotlin2cpg.types.{
   CompilerAPI,
   DefaultTypeInfoProvider,
   ErrorLoggingMessageCollector,
-  InferenceSourcesPicker,
+  ContentSourcesPicker,
   TypeInfoProvider
 }
 import io.joern.kotlin2cpg.utils.PathUtils
@@ -60,7 +60,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         }
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
-        val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(sourceDir)
+        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
         val jarPathsFromClassPath =
           config.classpath.foldLeft(Seq[String]())((acc, classpathEntry) => {
             val f = File(classpathEntry)
@@ -80,27 +80,28 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val plugins = Seq()
         val stdlibJars =
           if (config.withStdlibJarsInClassPath) {
-            InferenceSourcesPicker.defaultKotlinStdlibInferenceJarPaths
+            ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
           } else {
             Seq()
           }
         val androidJars =
           if (config.withAndroidJarsInClassPath) {
-            InferenceSourcesPicker.defaultAndroidInferenceJarPaths
+            ContentSourcesPicker.defaultAndroidContentRootJarPaths
           } else {
             Seq()
           }
         val miscJars =
           if (config.withMiscJarsInClassPath) {
-            InferenceSourcesPicker.miscInferenceJarPaths
+            ContentSourcesPicker.miscContentRootJarPaths
           } else {
             Seq()
           }
-        val inferenceJars =
+        val defaultContentRootJars =
           miscJars ++ androidJars ++ stdlibJars ++
-            jarPathsFromClassPath.map { path => InferenceJarPath(path, false) }
+            jarPathsFromClassPath.map { path => DefaultContentRootJarPath(path, false) }
         val messageCollector = new ErrorLoggingMessageCollector
-        val environment = CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJars, plugins, messageCollector)
+        val environment =
+          CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
         val ktFiles = environment.getSourceFiles.asScala
         val filesWithMeta =

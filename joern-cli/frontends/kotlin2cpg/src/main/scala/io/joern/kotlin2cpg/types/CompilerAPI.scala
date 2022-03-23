@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import io.joern.kotlin2cpg.InferenceJarPath
+import io.joern.kotlin2cpg.DefaultContentRootJarPath
 
 import java.io.{File, FileOutputStream}
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -31,7 +31,7 @@ object CompilerAPI {
 
   def makeEnvironment(
     forDirectories: Seq[String],
-    inferenceJarPaths: Seq[InferenceJarPath] = List(),
+    defaultContentRootJarPaths: Seq[DefaultContentRootJarPath] = List(),
     compilerPlugins: Seq[CompilerPluginInfo] = Seq(),
     messageCollector: MessageCollector
   ): KotlinCoreEnvironment = {
@@ -41,19 +41,19 @@ object CompilerAPI {
       config.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true))
     }
 
-    inferenceJarPaths.foreach { path =>
+    defaultContentRootJarPaths.foreach { path =>
       if (!path.isResource) {
         val f = new File(path.path)
         if (f.exists()) {
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(f))
-          logger.debug("Added inference jar from path `" + path.path + "`.")
+          logger.debug("Added default content root jar from path `" + path.path + "`.")
         } else {
-          logger.warn("Path to inference jar does not point to existing file `" + path.path + "`.")
+          logger.warn("Path to default content root jar does not point to existing file `" + path.path + "`.")
         }
       } else {
         val resourceStream = getClass.getClassLoader.getResourceAsStream(path.path)
         if (resourceStream != null) {
-          val tempFile = File.createTempFile("inference", "", new File("./"))
+          val tempFile = File.createTempFile("defaultContentRootJars", "", new File("./"))
           tempFile.deleteOnExit()
           val outStream = new FileOutputStream(tempFile)
 
@@ -61,9 +61,9 @@ object CompilerAPI {
             LazyList.continually(resourceStream.read).takeWhile(_ != -1).map(_.toByte).toArray
           outStream.write(bytes)
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(tempFile))
-          logger.debug("Added inference jar from resources `" + path.path + "`.")
+          logger.debug("Added default content root jar from resources `" + path.path + "`.")
         } else {
-          logger.warn("Path to inference jar does not point to existing resource `" + path.path + "`.")
+          logger.warn("Path to default content root jar does not point to existing resource `" + path.path + "`.")
         }
       }
     }

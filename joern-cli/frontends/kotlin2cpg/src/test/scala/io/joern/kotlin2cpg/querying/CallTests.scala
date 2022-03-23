@@ -181,7 +181,7 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to a constructor from library with type-inference support" - {
+  "CPG for code with a call to a constructor from library with default content root jar" - {
     lazy val cpg = Kotlin2CpgTestContext.buildCpg(
       """
         |package mypkg
