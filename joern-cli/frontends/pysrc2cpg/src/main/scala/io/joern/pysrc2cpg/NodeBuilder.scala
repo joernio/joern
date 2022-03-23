@@ -80,7 +80,9 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .filename(fileName)
       .isExternal(false)
       .lineNumber(lineAndColumn.line)
+      .lineNumberEnd(lineAndColumn.endLine)
       .columnNumber(lineAndColumn.column)
+      .columnNumberEnd(lineAndColumn.endColumn)
     addNodeToDiff(methodNode)
   }
 

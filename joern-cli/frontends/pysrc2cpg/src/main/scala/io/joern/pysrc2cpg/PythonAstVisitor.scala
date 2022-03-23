@@ -76,6 +76,13 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val methodFullName = calculateFullNameFromContext("<module>")
 
+    val firstLineAndCol = module.stmts.headOption.map(lineAndColOf)
+    val lastLineAndCol  = module.stmts.lastOption.map(lineAndColOf)
+    val line            = firstLineAndCol.map(_.line).getOrElse(1)
+    val column          = firstLineAndCol.map(_.column).getOrElse(1)
+    val endLine         = lastLineAndCol.map(_.endLine).getOrElse(1)
+    val endColumn       = lastLineAndCol.map(_.endColumn).getOrElse(1)
+
     val moduleMethodNode =
       createMethod(
         "<module>",
@@ -86,7 +93,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
         isAsync = false,
         methodRefNode = None,
         returnTypeHint = None,
-        LineAndColumn(1, 1)
+        LineAndColumn(line, column, endLine, endColumn)
       )
 
     createIdentifierLinks()
@@ -105,7 +112,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   // artificially created during lowering are not in that collection which is fine for now.
   private def createBuiltinIdentifiers(namesUsedInModule: collection.Set[String]): Iterable[nodes.NewNode] = {
     val result        = mutable.ArrayBuffer.empty[nodes.NewNode]
-    val lineAndColumn = LineAndColumn(1, 1)
+    val lineAndColumn = LineAndColumn(1, 1, 1, 1)
 
     val builtinFunctions = mutable.ArrayBuffer.empty[String]
     val builtinClasses   = mutable.ArrayBuffer.empty[String]

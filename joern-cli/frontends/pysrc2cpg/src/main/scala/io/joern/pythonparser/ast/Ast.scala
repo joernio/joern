@@ -1028,8 +1028,10 @@ case class TypeIgnore(lineno: Int, tag: String) extends iast {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 trait iattributes {
   val attributeProvider: AttributeProvider
-  def lineno: Int     = attributeProvider.lineno
-  def col_offset: Int = attributeProvider.col_offset
+  def lineno: Int         = attributeProvider.lineno
+  def col_offset: Int     = attributeProvider.col_offset
+  def end_lineno: Int     = attributeProvider.end_lineno
+  def end_col_offset: Int = attributeProvider.end_col_offset
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
