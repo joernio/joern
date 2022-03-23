@@ -1,8 +1,7 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.jimple2cpg.testfixtures.JimpleDataflowFixture
-
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
+import io.joern.jimple2cpg.testfixtures.JimpleDataflowFixture
 import io.shiftleft.semanticcpg.language._
 
 class FunctionCallTests extends JimpleDataflowFixture {
