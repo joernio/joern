@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.javasrc2cpg.querying.InferenceJarTests
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -12,12 +13,16 @@ class JavaSrc2CpgTestContext {
   private var code: String = ""
   private var buildResult  = Option.empty[Cpg]
 
-  def buildCpg(runDataflow: Boolean): Cpg = {
+  def buildCpg(runDataflow: Boolean, inferenceJarPaths: Set[String]): Cpg = {
     if (buildResult.isEmpty) {
-      val javaSrc2Cpg                    = JavaSrc2Cpg()
-      implicit val defaultConfig: Config = Config()
-      val cpg                            = javaSrc2Cpg.createCpg(writeCodeToFile(code).getAbsolutePath)
-      val context                        = new LayerCreatorContext(cpg.get)
+      val javaSrc2Cpg = JavaSrc2Cpg()
+      val config = Config(
+        inputPaths = Set(writeCodeToFile(code).getAbsolutePath),
+        outputPath = "",
+        inferenceJarPaths = inferenceJarPaths
+      )
+      val cpg     = javaSrc2Cpg.createCpg(config)
+      val context = new LayerCreatorContext(cpg.get)
       new Base().run(context)
       new TypeRelations().run(context)
       new ControlFlow().run(context)
@@ -47,15 +52,15 @@ class JavaSrc2CpgTestContext {
 }
 
 object JavaSrc2CpgTestContext {
-  def buildCpg(code: String): Cpg = {
+  def buildCpg(code: String, inferenceJarPaths: Set[String] = Set.empty): Cpg = {
     new JavaSrc2CpgTestContext()
       .withSource(code)
-      .buildCpg(runDataflow = false)
+      .buildCpg(runDataflow = false, inferenceJarPaths = inferenceJarPaths)
   }
 
-  def buildCpgWithDataflow(code: String): Cpg = {
+  def buildCpgWithDataflow(code: String, inferenceJarPaths: Set[String] = Set.empty): Cpg = {
     new JavaSrc2CpgTestContext()
       .withSource(code)
-      .buildCpg(runDataflow = true)
+      .buildCpg(runDataflow = true, inferenceJarPaths = inferenceJarPaths)
   }
 }

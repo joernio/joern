@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.nodes.{NewUnknown, Unknown}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple object declaration" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |object Foo {
@@ -28,7 +28,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "Foo"
       x.code shouldBe "Foo"
       x.fullName shouldBe "mypkg.Foo"
-      x.inheritsFromTypeFullName shouldBe List()
+      x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
       x.lineNumber shouldBe Some(3)
       x.columnNumber shouldBe Some(7)
@@ -60,7 +60,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with complex object declaration" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |import android.content.Context
@@ -114,7 +114,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.typeDecl.isExternal(false).name("Prefs").l
       x.name shouldBe "Prefs"
       x.fullName shouldBe "mypkg.Prefs"
-      x.inheritsFromTypeFullName shouldBe List()
+      x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
       x.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(7)

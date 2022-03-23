@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with _safe call_ operator" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |    val b: String? = null
         |    println(b?.length)
@@ -28,7 +28,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _as_ operator" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |    val b = "PLACEHOLDER" as String
         |    println(b)
@@ -46,7 +46,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with `notNullAssert` operator" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun foo(x : Int) {
         | val p = x!!
         | println(p)
@@ -59,7 +59,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _notNullAssert_ operator inside dot-qualified expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun foo() {
         |    val bar = " PLACEHOLDER "!!.trim()
         |    println(bar)
@@ -76,7 +76,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _is_ expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |packge mypkg
         |
         |fun main() {
@@ -104,7 +104,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with range expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |packge mypkg
         |
         |fun main() {
@@ -130,7 +130,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple usage of _elvis_ operator" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -157,7 +157,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _elvis_ operator usage and subexpression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package main
         |
         |fun main() {
@@ -174,7 +174,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _notIn_ operator" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -195,7 +195,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with _in_ operator" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args: Array<String>) {

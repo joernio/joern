@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 class MemberTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple member" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |class Foo {
         |  val bar: Int = 1
         |}
@@ -31,7 +31,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with member defined in primary constructor" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
       |package mypkg
       |
       |class AClass(private val x: String) {
@@ -48,13 +48,13 @@ class MemberTests extends AnyFreeSpec with Matchers {
 
     "should contain MEMBER node with correct properties" in {
       val List(x) = cpg.member("x").l
-      x.code shouldBe "private val x: String"
+      x.code shouldBe "x"
       x.typeFullName shouldBe "java.lang.String"
     }
   }
 
   "CPG for code with member which gets its init from constructor arg" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |class Foo(p: String) {
         |  val bar: Int = p
         |}
@@ -79,7 +79,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with member which gets its init from constructor arg with expression" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |class Foo(p: String) {
         |  val bar: Int = p + "baz"
         |}

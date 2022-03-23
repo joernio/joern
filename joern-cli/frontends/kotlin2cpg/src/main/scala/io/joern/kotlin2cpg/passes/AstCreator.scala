@@ -94,6 +94,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug("Started parsing of file `" + fileWithMeta.filename + "`")
+
+    val defaultTypes = Set(TypeConstants.javaLangObject)
+    defaultTypes.foreach { t =>
+      registerType(t)
+    }
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
   }
@@ -360,14 +365,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map(_.getText)
         .toList
 
-    val baseTypeFullNames = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val baseTypeFullNames =
+      typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val outBaseTypeFullNames =
+      if (baseTypeFullNames.isEmpty) {
+        Seq(TypeConstants.javaLangObject)
+      } else {
+        baseTypeFullNames
+      }
     val typeDecl =
       NewTypeDecl()
         .code(ktClass.getName)
         .name(className)
         .fullName(fullName)
         .order(order)
-        .inheritsFromTypeFullName(baseTypeFullNames)
+        .inheritsFromTypeFullName(outBaseTypeFullNames)
         .isExternal(false)
         .lineNumber(line(ktClass))
         .columnNumber(column(ktClass))
@@ -466,7 +478,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val node =
             NewMember()
               .name(param.getName)
-              .code(param.getText)
+              .code(param.getName)
               .typeFullName(typeFullName)
               .lineNumber(line(param))
               .columnNumber(column(param))
@@ -558,6 +570,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val fieldAccessCall =
             NewCall()
               .methodFullName(Operators.fieldAccess)
+              .name(Operators.fieldAccess)
               .dispatchType(DispatchTypes.STATIC_DISPATCH)
               .signature("")
               .typeFullName(typeFullName)
@@ -1037,6 +1050,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForUnknown(typedExpr, order, argIdx))
       case typedExpr: KtDestructuringDeclaration =>
         astsForDestructuringDeclaration(typedExpr, scopeContext, order)
+      case typedExpr: KtLabeledExpression =>
+        astsForExpression(typedExpr.getBaseExpression, scopeContext, order, argIdx)
       case null =>
         logger.debug("Received null expression! Skipping...")
         Seq()
@@ -2100,7 +2115,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       } else {
         DispatchTypes.STATIC_DISPATCH
       }
-    val methodName = expr.getSelectorExpression.getFirstChild.getText
+
+    val isFieldAccess = fullNameWithSig._1 == Operators.fieldAccess
+    val methodName =
+      if (isFieldAccess) {
+        Operators.fieldAccess
+      } else {
+        expr.getSelectorExpression.getFirstChild.getText
+      }
     val callNode =
       NewCall()
         .order(order)
@@ -2691,7 +2713,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val callNode =
       NewCall()
-        .name(expr.getReferencedName)
+        .name(Operators.fieldAccess)
         .code(Constants.this_ + "." + expr.getReferencedName)
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .methodFullName(Operators.fieldAccess)
@@ -2984,7 +3006,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val memberNode =
       NewMember()
         .name(name)
-        .code(code)
+        .code(name)
         .typeFullName(typeFullName)
         .lineNumber(line(decl))
         .columnNumber(column(decl))

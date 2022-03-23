@@ -1,22 +1,14 @@
 package io.joern.kotlin2cpg.integration
 
-import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
-import io.joern.kotlin2cpg.{InferenceJarPath, Kt2Cpg, KtFileWithMeta}
-import io.joern.kotlin2cpg.types.{CompilerAPI, DefaultTypeInfoProvider, InferenceSourcesPicker}
+import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
-import better.files.File
-import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.utils.PathUtils
 
 import java.nio.file.Files
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Ignore
+import org.scalatest.{BeforeAndAfterAll, Ignore}
 import overflowdb.traversal.jIteratortoTraversal
-
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 @Ignore // re-enable with a good setup for cloning and syncing external projects
 class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
@@ -25,7 +17,7 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
 
   override def beforeAll() = {
     super.beforeAll()
-    val sourceDir = "src/test/resources/external_projects/AceJump"
+    val sourceDir = "src/projectskotlin/AceJump"
     cpg = makeCpg(sourceDir, outFilePath.toString)
   }
 
@@ -36,44 +28,10 @@ class IntegrationTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll 
   }
 
   def makeCpg(inPath: String, outPath: String): Cpg = {
-    val inferenceJarDir = File("joern-cli/frontends/kotlin2cpg/src/main/resources/inferencejars/")
-    val inferenceJarsPaths =
-      inferenceJarDir.list
-        .filter(_.extension.exists { e => e == ".jar" })
-        .map { f =>
-          InferenceJarPath(f.pathAsString, false)
-        }
-        .toSeq
-
-    val dirsForSourcesToCompile = InferenceSourcesPicker.dirsForRoot(inPath)
-    val environment =
-      CompilerAPI.makeEnvironment(dirsForSourcesToCompile, inferenceJarsPaths, Seq(), new ErrorLoggingMessageCollector)
-    val ktFiles = environment.getSourceFiles.asScala
-    val filesWithMeta =
-      ktFiles
-        .flatMap { f =>
-          try {
-            val relPath = PathUtils.relativize(inPath, f.getVirtualFilePath)
-            Some(f, relPath)
-          } catch {
-            case _: Throwable => None
-          }
-        }
-        .map { fwp =>
-          KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
-        }
-        .filterNot { fwp =>
-          // TODO: add test for this type of filtering
-          // TODO: support Windows paths
-          val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
-          if (willFilter) {
-            println("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
-          }
-          willFilter
-        }
-
-    val nameGenerator = new DefaultTypeInfoProvider(environment)
-    new Kt2Cpg().createCpg(filesWithMeta, Seq(), nameGenerator, Some(outPath))
+    val kt2cpg = new Kotlin2Cpg()
+    val config = Config(inputPaths = Set(inPath), classpath = Set())
+    val cpg    = kt2cpg.createCpg(config)
+    cpg.get
   }
 
   "CPG generated from large sample project" - {

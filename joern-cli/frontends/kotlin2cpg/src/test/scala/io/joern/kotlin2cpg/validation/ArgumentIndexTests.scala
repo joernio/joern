@@ -1,25 +1,15 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.edges.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  ClosureBinding,
-  ControlStructure,
-  FieldIdentifier,
-  Identifier,
-  Literal
-}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, Literal}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
 
 class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple if-expression inside DQE" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package main
         |
         |import kotlin.random.Random
@@ -34,7 +24,9 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
         |        }.plus(" came up")
         |    println(out)
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL for the DQE with ARGUMENTs with the correct index set" in {
       val List(c) = cpg.call.methodFullName(".*plus.*").l
@@ -48,7 +40,8 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple when-expression inside DQE" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package mypkg
         |
         |import kotlin.random.Random
@@ -63,7 +56,9 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
         |        }.plus(" came up")
         |    println(out)
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL for the DQE with ARGUMENTs with the correct index set" in {
       val List(c) = cpg.call.methodFullName(".*plus.*").l
@@ -77,7 +72,8 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple try-catch-expression inside DQE" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+      """
         |package main
         |
         |fun main() {
@@ -90,7 +86,9 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
         |        }.plus(" came up")
         |    println(out)
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      includeAllJars = true
+    )
 
     "should contain a CALL for the DQE with ARGUMENTs with the correct index set" in {
       val List(c) = cpg.call.methodFullName(".*plus.*").l

@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg.querying.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
+import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics
 import io.joern.jimple2cpg.testfixtures.JimpleDataflowFixture
 
 class OperatorTests extends JimpleDataflowFixture {

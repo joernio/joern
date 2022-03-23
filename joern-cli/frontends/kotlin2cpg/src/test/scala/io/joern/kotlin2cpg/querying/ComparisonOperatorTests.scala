@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.Operators
 
@@ -11,7 +11,7 @@ class ComparisonOperatorTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple comparison operator usage" - {
 
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |fun main(args : Array<String>): Int {
         | val x: Int = 1
         | val y: Int = 2

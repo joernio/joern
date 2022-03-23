@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kt2CpgTestContext
+import io.joern.kotlin2cpg.Kotlin2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple map construction and access" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -42,7 +42,7 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple array construction and access" - {
-    lazy val cpg = Kt2CpgTestContext.buildCpg("""
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
