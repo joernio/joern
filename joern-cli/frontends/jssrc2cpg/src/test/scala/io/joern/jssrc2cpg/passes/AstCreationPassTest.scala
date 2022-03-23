@@ -699,6 +699,42 @@ class AstCreationPassTest extends AbstractPassTest {
         .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
     }
 
+    "have correct structure for empty method with rest parameter" in AstFixture("function method(x, ...args) {}") {
+      cpg =>
+        def method = cpg.method.nameExact("method")
+        method.checkNodeCount(1)
+
+        method.expandAst(NodeTypes.BLOCK).checkNodeCount(1)
+
+        method
+          .expandAst(NodeTypes.METHOD_RETURN)
+          .checkNodeCount(1)
+          .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
+
+        method
+          .expandAst(NodeTypes.METHOD_PARAMETER_IN)
+          .filter(PropertyNames.ORDER, 0)
+          .checkNodeCount(1)
+          .checkProperty(PropertyNames.NAME, "this")
+          .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
+
+        method
+          .expandAst(NodeTypes.METHOD_PARAMETER_IN)
+          .filter(PropertyNames.ORDER, 1)
+          .checkNodeCount(1)
+          .checkProperty(PropertyNames.NAME, "x")
+          .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
+
+        method
+          .expandAst(NodeTypes.METHOD_PARAMETER_IN)
+          .filter(PropertyNames.ORDER, 2)
+          .checkNodeCount(1)
+          .checkProperty(PropertyNames.NAME, "args")
+          .checkProperty(PropertyNames.CODE, "...args")
+          .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
+          .checkProperty(PropertyNames.IS_VARIADIC, true)
+    }
+
     "have correct structure for decl assignment" in AstFixture("function foo(x) { var local = 1; }") { cpg =>
       def method = cpg.method.nameExact("foo")
       method.checkNodeCount(1)

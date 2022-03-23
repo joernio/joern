@@ -306,8 +306,15 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
     val thisId = createParameterInNode("this", "this", 0, line = func.lineNumber, column = func.columnNumber)
 
     val paramIds = withOrder(params) { (p, o) =>
-      val c = code(p)
-      Ast(createParameterInNode(c, c, o, line(p), column(p)))
+      createBabelNodeInfo(p) match {
+        case rest @ BabelNodeInfo(BabelAst.RestElement) =>
+          Ast(
+            createParameterInNode(rest.code.replace("...", ""), rest.code, o, rest.lineNumber, rest.columnNumber)
+              .isVariadic(true)
+          )
+        case other =>
+          Ast(createParameterInNode(other.code, other.code, o, other.lineNumber, other.columnNumber))
+      }
     }
 
     localAstParentStack.push(blockId)
