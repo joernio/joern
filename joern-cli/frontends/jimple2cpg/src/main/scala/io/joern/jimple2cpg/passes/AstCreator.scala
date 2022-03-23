@@ -132,8 +132,6 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
           case Failure(_)    => methodDeclaration.retrieveActiveBody()
           case Success(body) => body
         }
-        if (methodDeclaration.getName.contains("test3"))
-          println(methodBody.toString.split('\n').filterNot(_.isBlank).mkString("\n"))
         val parameterAsts =
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
             (p, order) =>
