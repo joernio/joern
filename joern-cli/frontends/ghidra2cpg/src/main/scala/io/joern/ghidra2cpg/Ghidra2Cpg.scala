@@ -110,20 +110,12 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
     val functionIterator = listing.getFunctions(true)
     val functions        = functionIterator.iterator.asScala.toList
 
-    val address2Literals: Map[Long, String] = DefinedDataIterator
-      .definedStrings(program)
-      .iterator()
-      .asScala
-      .toList
-      .map(x => x.getAddress().getOffset -> x.getValue.toString)
-      .toMap
-
     new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
     new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
-        new MipsFunctionPass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
+        new MipsFunctionPass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
         new LoHiPass(cpg).createAndApply()
       case "AARCH64" | "ARM" =>
         new ArmFunctionPass(program, fileAbsolutePath, functions, cpg, decompiler)

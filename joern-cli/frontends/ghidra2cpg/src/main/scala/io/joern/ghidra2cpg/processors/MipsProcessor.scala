@@ -140,7 +140,7 @@ class MipsProcessor extends Processor {
       "hlt"        -> "<operator>.TODO",
       "imul"       -> "<operator>.multiplication",
       "ins"        -> "<operator>.assignment",
-      "j"          -> "<operator>.goto",
+      "j"          -> "<operator>.jmp",
       "jal"        -> "CALL",
       "jalr"       -> "CALL",
       "jbe"        -> "<operator>.goto",

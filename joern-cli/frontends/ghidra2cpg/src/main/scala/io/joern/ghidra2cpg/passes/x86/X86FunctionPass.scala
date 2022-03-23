@@ -13,11 +13,11 @@ import scala.language.implicitConversions
 
 class X86FunctionPass(
   currentProgram: Program,
-  filename: String,
+  fileName: String,
   functions: List[Function],
   cpg: Cpg,
   decompiler: Decompiler
-) extends FunctionPass(new X86Processor, currentProgram, functions, cpg, decompiler) {
+) extends FunctionPass(new X86Processor, currentProgram, fileName, functions, cpg, decompiler) {
 
   override def handleBody(
     diffGraphBuilder: DiffGraphBuilder,
@@ -46,23 +46,4 @@ class X86FunctionPass(
       }
     }
   }
-  override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    // we need it just once with default settings
-    val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
-    val methodNode =
-      createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
-    val localGraphBuilder = new DiffGraphBuilder()
-    val methodReturn      = createReturnNode()
-    localGraphBuilder.addNode(methodNode)
-    localGraphBuilder.addNode(blockNode)
-    localGraphBuilder.addEdge(methodNode, blockNode, EdgeTypes.AST)
-    localGraphBuilder.addNode(methodReturn)
-    localGraphBuilder.addEdge(methodNode, methodReturn, EdgeTypes.AST)
-    handleParameters(localGraphBuilder, function, methodNode)
-    handleLocals(localGraphBuilder, function, blockNode)
-    handleBody(localGraphBuilder, function, methodNode, blockNode)
-    diffGraphBuilder.absorb(localGraphBuilder)
-
-  }
-
 }
