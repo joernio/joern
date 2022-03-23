@@ -27,9 +27,18 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     * key in the map.
     */
   private def registerType(typeName: String): String = {
-    global.usedTypes.put(typeName, true)
-    typeName
+    val cleanType = removeUnwantedPrefix(typeName)
+    global.usedTypes.put(cleanType, true)
+    cleanType
   }
+
+  /** For certain frameworks, application classes are lumped into specific directories that produce undesirable class
+    * paths, e.g., Spring Boot places application code in a `BOOT-INF/classes/` directory.
+    * @param typePath
+    *   the path to modify.
+    */
+  private def removeUnwantedPrefix(typePath: String): String =
+    typePath.replaceAll("^(.*)-INF\\.classes\\.", "")
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -59,39 +68,36 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     Ast(namespaceBlock.filename(absolutePath).order(1))
   }
 
+  /** Creates a list of all inherited classes and implemented interfaces. If there are none then a list with a single
+    * element 'java.lang.Object' is returned by default.
+    */
+  private def listOfSuperClasses(clazz: SootClass): List[String] = {
+    val implementsTypeFullName = clazz.getInterfaces.asScala.map { (i: SootClass) =>
+      registerType(i.getType.toQuotedString)
+    }.toList
+    val inheritsFromTypeFullName =
+      if (clazz.hasSuperclass && clazz.getSuperclass.getType.toQuotedString != "java.lang.Object") {
+        List(registerType(clazz.getSuperclass.getType.toQuotedString))
+      } else if (implementsTypeFullName.isEmpty) {
+        List(registerType("java.lang.Object"))
+      } else List()
+
+    inheritsFromTypeFullName ++ implementsTypeFullName
+  }
+
   /** Creates the AST root for type declarations and acts as the entry point for method generation.
     */
   private def astForTypeDecl(typ: RefType, namespaceBlockFullName: String): Ast = {
-    val fullName = typ.toQuotedString
-    val shortName =
-      if (fullName.contains('.')) fullName.substring(fullName.lastIndexOf('.') + 1)
-      else fullName
-
-    val relatedClass = typ.getSootClass
-    val inheritsFromTypeFullName =
-      if (relatedClass.hasSuperclass) {
-        if (!relatedClass.getSuperclass.isApplicationClass)
-          registerType(relatedClass.getSuperclass.getType.toQuotedString)
-        List(relatedClass.getSuperclass.toString)
-      } else List()
-    val implementsTypeFullName = relatedClass.getInterfaces.asScala.map { (i: SootClass) =>
-      if (!i.isApplicationClass)
-        registerType(i.getType.toQuotedString)
-      i.getType.toQuotedString
-    }.toList
-    val allSupers =
-      if (inheritsFromTypeFullName.isEmpty && implementsTypeFullName.isEmpty)
-        List(registerType("java.lang.Object"))
-      else
-        inheritsFromTypeFullName ++ implementsTypeFullName
+    val fullName  = registerType(typ.toQuotedString)
+    val shortName = typ.getSootClass.getShortJavaStyleName
 
     val typeDecl = NewTypeDecl()
       .name(shortName)
-      .fullName(registerType(fullName))
+      .fullName(fullName)
       .order(1) // Jimple always has 1 class per file
       .filename(filename)
       .code(shortName)
-      .inheritsFromTypeFullName(allSupers)
+      .inheritsFromTypeFullName(listOfSuperClasses(typ.getSootClass))
       .astParentType(NodeTypes.NAMESPACE_BLOCK)
       .astParentFullName(namespaceBlockFullName)
     val methodAsts = withOrder(typ.getSootClass.getMethods.asScala.toList.sortWith((x, y) => x.getName > y.getName)) {
@@ -182,7 +188,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     val typeFullName = registerType(parameter.getType.toQuotedString)
     val parameterNode = NewMethodParameterIn()
       .name(parameter.getName)
-      .code(s"${parameter.getType.toQuotedString} ${parameter.getName}")
+      .code(s"$typeFullName ${parameter.getName}")
       .typeFullName(typeFullName)
       .order(childNum)
       .lineNumber(line(methodDeclaration))
@@ -358,8 +364,8 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     }
 
     val signature =
-      s"${callee.getReturnType.toQuotedString}(${(for (i <- 0 until callee.getParameterTypes.size())
-          yield callee.getParameterType(i).toQuotedString).mkString(",")})"
+      s"${registerType(callee.getReturnType.toQuotedString)}(${(for (i <- 0 until callee.getParameterTypes.size())
+          yield registerType(callee.getParameterType(i).toQuotedString)).mkString(",")})"
     val thisAsts = invokeExpr match {
       case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
       case _                        => Seq(createThisNode(callee, NewIdentifier()))
@@ -371,9 +377,10 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       else
         callee.getName
 
+    val calleeType = registerType(callee.getDeclaringClass.getType.toQuotedString)
     val callType =
       if (callee.isConstructor) "void"
-      else registerType(callee.getDeclaringClass.getType.toQuotedString)
+      else calleeType
 
     val code = invokeExpr match {
       case expr: InstanceInvokeExpr =>
@@ -387,7 +394,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       .dispatchType(dispatchType)
       .order(order)
       .argumentIndex(order)
-      .methodFullName(s"${callee.getDeclaringClass.getType.toQuotedString}.${callee.getName}:$signature")
+      .methodFullName(s"$calleeType.${callee.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))
@@ -488,7 +495,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
         .name("this")
         .code("this")
         .typeFullName(registerType(method.getType.toQuotedString))
-        .dynamicTypeHintFullName(Seq(method.getType.toQuotedString))
+        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
         .order(0)
         .argumentIndex(0)
     )
@@ -711,7 +718,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     }
     val fieldAccessBlock = NewCall()
       .name(Operators.fieldAccess)
-      .code(s"${leftOpType.toQuotedString}.${fieldRef.getFieldRef.name()}")
+      .code(s"${registerType(leftOpType.toQuotedString)}.${fieldRef.getFieldRef.name()}")
       .typeFullName(registerType(fieldRef.getType.toQuotedString))
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -832,15 +839,16 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       NewMethodReturn()
         .order(methodDeclaration.getParameterCount + 2)
         .typeFullName(typeFullName)
-        .code(methodDeclaration.getReturnType.toQuotedString)
+        .code(typeFullName)
         .lineNumber(line(methodDeclaration))
     Ast(methodReturnNode)
   }
 
   private def createMethodNode(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int) = {
-    val fullName = methodFullName(typeDecl, methodDeclaration)
+    val fullName       = methodFullName(typeDecl, methodDeclaration)
+    val methodDeclType = registerType(methodDeclaration.getReturnType.toQuotedString)
     val code = if (!methodDeclaration.isConstructor) {
-      s"${methodDeclaration.getReturnType.toQuotedString} ${methodDeclaration.getName}${paramListSignature(methodDeclaration, withParams = true)}"
+      s"$methodDeclType ${methodDeclaration.getName}${paramListSignature(methodDeclaration, withParams = true)}"
     } else {
       s"${typeDecl.getClassName}${paramListSignature(methodDeclaration, withParams = true)}"
     }
@@ -848,7 +856,7 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
       .name(methodDeclaration.getName)
       .fullName(fullName)
       .code(code)
-      .signature(methodDeclaration.getReturnType.toQuotedString + paramListSignature(methodDeclaration))
+      .signature(methodDeclType + paramListSignature(methodDeclaration))
       .isExternal(false)
       .order(childNum)
       .filename(filename)
@@ -857,14 +865,14 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   }
 
   private def methodFullName(typeDecl: RefType, methodDeclaration: SootMethod): String = {
-    val typeName   = typeDecl.toQuotedString
-    val returnType = methodDeclaration.getReturnType.toQuotedString
+    val typeName   = registerType(typeDecl.toQuotedString)
+    val returnType = registerType(methodDeclaration.getReturnType.toQuotedString)
     val methodName = methodDeclaration.getName
     s"$typeName.$methodName:$returnType${paramListSignature(methodDeclaration)}"
   }
 
   private def paramListSignature(methodDeclaration: SootMethod, withParams: Boolean = false) = {
-    val paramTypes = methodDeclaration.getParameterTypes.asScala.map(_.toQuotedString)
+    val paramTypes = methodDeclaration.getParameterTypes.asScala.map(x => registerType(x.toQuotedString))
 
     val paramNames =
       if (!methodDeclaration.isPhantom && Try(methodDeclaration.retrieveActiveBody()).isSuccess)
