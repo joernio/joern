@@ -843,4 +843,25 @@ class ValidationTests extends AnyFreeSpec with Matchers {
       cCtorCall2.methodFullName shouldBe cCtor2.fullName
     }
   }
+
+  "CPG for code with `fieldAccess` call on Java stdlib type" - {
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |import java.io.File
+        |
+        |fun main() {
+        |    val sep = File.separator
+        |    println("sep: " + sep)
+        |}
+        |""".stripMargin)
+
+    "should not contain `fieldAccess` CALL nodes with less than to ARGUMENT edges" in {
+      cpg.call
+        .methodFullName(Operators.fieldAccess)
+        .filter(_.argument.size < 2)
+        .code
+        .l shouldBe List()
+    }
+  }
 }

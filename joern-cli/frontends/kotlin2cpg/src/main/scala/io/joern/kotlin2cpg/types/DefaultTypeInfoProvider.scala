@@ -1,8 +1,6 @@
 package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
-
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns.isBuiltIn
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -17,6 +15,8 @@ import org.jetbrains.kotlin.descriptors.impl.{
   TypeAliasConstructorDescriptorImpl
 }
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
+import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
+import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
   KtArrayAccessExpression,
   KtBinaryExpression,
@@ -100,6 +100,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .map(TypeRenderer.renderFqName)
       .filter(isValidRender)
       .getOrElse(defaultValue)
+  }
+
+  def isStaticMethodCall(expr: KtQualifiedExpression): Boolean = {
+    val resolvedDesc = resolvedCallDescriptor(expr)
+    val isStatic =
+      resolvedDesc
+        .map(_.getSource)
+        .collect { case s: JavaSourceElement => s }
+        .map(_.getJavaElement)
+        .collect { case bjm: BinaryJavaMethod => bjm }
+        .map(_.isStatic)
+        .getOrElse(false)
+    isStatic
   }
 
   def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String) = {
