@@ -1,6 +1,7 @@
-package io.joern.x2cpg.testfixtures
+package io.joern.ghidra2cpg.fixtures
 
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers._
 import io.shiftleft.utils.ProjectRoot
