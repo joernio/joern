@@ -82,7 +82,12 @@ class Engine(context: EngineContext) {
           exception.printStackTrace()
       }
     }
-    deduplicate(result.toVector).toList
+    // Update the results with the latest ResultTable
+    val finalResult = tasks.collectFirst(_.table) match {
+      case Some(finalTable) => result.map(rbr => rbr.copy(table = finalTable)).toVector
+      case None             => result.toVector
+    }
+    deduplicate(finalResult).toList
   }
 
   private def newTasksFromResults(
