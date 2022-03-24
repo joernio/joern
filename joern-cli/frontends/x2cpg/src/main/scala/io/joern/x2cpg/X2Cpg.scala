@@ -213,8 +213,12 @@ object X2Cpg {
     new CallGraph().run(context)
   }
 
-  def writeCodeToFile(sourceCode: String, prefix: String, suffix: String): java.io.File = {
-    val tmpDir = Files.createTempDirectory(prefix).toFile
+  /** Write `sourceCode` to a temporary file inside a temporary directory. The prefix for the temporary directory is
+    * given by `tmpDirPrefix`. The suffix for the temporary file is given by `suffix`. Both file and directory are
+    * deleted on exit.
+    */
+  def writeCodeToFile(sourceCode: String, tmpDirPrefix: String, suffix: String): java.io.File = {
+    val tmpDir = Files.createTempDirectory(tmpDirPrefix).toFile
     tmpDir.deleteOnExit()
     val codeFile = java.io.File.createTempFile("Test", suffix, tmpDir)
     codeFile.deleteOnExit()
