@@ -11,6 +11,7 @@ import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.util.concurrent._
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -76,10 +77,12 @@ class Engine(context: EngineContext) {
     }
     // Update the results with the latest ResultTable which could be between tasks or results
     val finalResult = (tasks.map(_.table) ++ result.map(_.table))
-      .reduceOption { case (a: ResultTable, b: ResultTable) =>
-        b.table.map { case (n: StoredNode, paths: Vector[ReachableByResult]) =>
+      .reduceOption { (a: ResultTable, b: ResultTable) =>
+        val mergedMap = b.table.map { case (n: StoredNode, paths: Vector[ReachableByResult]) =>
           n -> a.table.getOrElse(n, Vector.empty[ReachableByResult]).++(paths).distinct
         }.toMap
+        val concurrentMap = new java.util.concurrent.ConcurrentHashMap(mergedMap.asJava)
+        new ResultTable(concurrentMap.asScala)
       } match {
       case Some(finalTable: ResultTable) => result.map(rbr => rbr.copy(table = finalTable)).toVector
       case None                          => result.toVector
