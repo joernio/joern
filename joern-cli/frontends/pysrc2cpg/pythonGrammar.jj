@@ -19,10 +19,10 @@ public class PythonParser {
     }
   }
   TokenAttributeProvider attributes(Token startToken, Token endToken) {
-    return new TokenAttributeProvider(startToken);
+    return new TokenAttributeProvider(startToken, endToken);
   }
   NodeAttributeProvider attributes(iattributes attributeAstNode, Token endToken) {
-    return new NodeAttributeProvider(attributeAstNode);
+    return new NodeAttributeProvider(attributeAstNode, endToken);
   }
 
   private ArrayList<ErrorStatement> errors = new ArrayList<ErrorStatement>();

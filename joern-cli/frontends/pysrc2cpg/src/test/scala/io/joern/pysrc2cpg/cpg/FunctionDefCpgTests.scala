@@ -19,6 +19,9 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       methodNode.filename shouldBe "test.py"
       methodNode.isExternal shouldBe false
       methodNode.lineNumber shouldBe Some(1)
+      methodNode.columnNumber shouldBe Some(1)
+      methodNode.lineNumberEnd shouldBe Some(2)
+      methodNode.columnNumberEnd shouldBe Some(6)
     }
 
     "test method modifier" in {

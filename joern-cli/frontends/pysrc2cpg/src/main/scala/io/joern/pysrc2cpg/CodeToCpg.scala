@@ -14,9 +14,10 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider]) extends Concur
   override def runOnPart(diffGraph: DiffGraphBuilder, inputProvider: InputProvider): Unit = {
     val inputPair = inputProvider()
     try {
-      val parser     = new PyParser()
-      val astRoot    = parser.parse(inputPair.content)
-      val astVisitor = new PythonAstVisitor(inputPair.file, PythonV2AndV3)
+      val parser                 = new PyParser()
+      val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
+      val astRoot                = parser.parse(lineBreakCorrectedCode)
+      val astVisitor             = new PythonAstVisitor(inputPair.file, PythonV2AndV3)
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.getDiffGraph)
