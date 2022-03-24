@@ -1,13 +1,10 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
-import io.shiftleft.codepropertygraph.generated.edges.Capture
-import io.shiftleft.codepropertygraph.generated.nodes.ClosureBinding
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import overflowdb.traversal._
 
 class InferenceJarTests extends AnyFreeSpec with Matchers {
 

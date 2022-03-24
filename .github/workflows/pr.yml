@@ -38,8 +38,7 @@ jobs:
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt'"
         if: ${{ failure() }}
   test-scripts:
-    needs: [test, formatting]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
         with:

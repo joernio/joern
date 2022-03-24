@@ -12,6 +12,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JavaParserTypeSolver,
   ReflectionTypeSolver
 }
+import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.ConcurrentHashMap
@@ -24,15 +25,13 @@ case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new Concurrent
 class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPaths: Set[String], cpg: Cpg)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
-  val global: Global = Global()
-  private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
+  val global: Global              = Global()
+  private val logger              = LoggerFactory.getLogger(classOf[AstCreationPass])
+  lazy private val symbolResolver = createSymbolSolver()
 
   override def generateParts(): Array[String] = filenames.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val solver         = typeSolver()
-    val symbolResolver = new JavaSymbolSolver(solver)
-
     val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
     val parser       = new JavaParser(parserConfig)
     val parseResult  = parser.parse(new java.io.File(filename))
@@ -69,12 +68,19 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
     }
   }
 
-  private def typeSolver() = {
+  private def createSymbolSolver(): JavaSymbolSolver = {
+
+    SourceRootFinder.getSourceRoots(codeDir)
+
     val combinedTypeSolver   = new CombinedTypeSolver()
     val reflectionTypeSolver = new ReflectionTypeSolver()
-    val javaParserTypeSolver = new JavaParserTypeSolver(codeDir)
     combinedTypeSolver.add(reflectionTypeSolver)
-    combinedTypeSolver.add(javaParserTypeSolver)
+
+    // Add solvers for all detected sources roots
+    SourceRootFinder.getSourceRoots(codeDir).foreach { srcDir =>
+      val javaParserTypeSolver = new JavaParserTypeSolver(srcDir)
+      combinedTypeSolver.add(javaParserTypeSolver)
+    }
 
     // Add solvers for inference jars
     jarsList
@@ -83,7 +89,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
       }
       .foreach { combinedTypeSolver.add(_) }
 
-    combinedTypeSolver
+    new JavaSymbolSolver(combinedTypeSolver)
   }
 
 }

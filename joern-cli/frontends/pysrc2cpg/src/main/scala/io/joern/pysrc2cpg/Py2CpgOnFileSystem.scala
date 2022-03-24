@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.Graph
 
@@ -27,9 +28,8 @@ object Py2CpgOnFileSystem {
     val inputFiles = collectInputFiles(config.inputDir, config.ignoreVenvDir.to(Iterable))
     val inputProviders = inputFiles.map { inputFile => () =>
       {
-        val content    = Files.readAllBytes(inputFile)
-        val contentStr = new String(content, StandardCharsets.UTF_8)
-        Py2Cpg.InputPair(contentStr, config.inputDir.relativize(inputFile).toString)
+        val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
+        Py2Cpg.InputPair(content, config.inputDir.relativize(inputFile).toString)
       }
     }
 

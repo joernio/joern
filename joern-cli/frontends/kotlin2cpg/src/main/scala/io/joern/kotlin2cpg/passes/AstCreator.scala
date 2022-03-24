@@ -1940,19 +1940,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val isStaticCall    = callKind == CallKinds.StaticCall
     val isDynamicCall   = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
-    val receiverIsRefToClass =
-      expr.getReceiverExpression match {
-        case typed: KtNameReferenceExpression =>
-          typeInfoProvider.isReferenceToClass(typed)
-        case _ => false
-      }
-
     val isCallToSuper =
       expr.getReceiverExpression match {
         case _: KtSuperExpression => true
         case _                    => false
       }
 
+    val isStaticMethodCall = typeInfoProvider.isStaticMethodCall(expr)
+    val hasRefToClassReceiver = expr.getReceiverExpression match {
+      case r: KtNameReferenceExpression =>
+        typeInfoProvider.isReferenceToClass(r)
+      case _ =>
+        false
+    }
+    val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
     val orderForReceiver = 1
     val argIdxForReceiver =
       if (isCallToSuper) 0
@@ -2144,7 +2145,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           .withArgEdge(callNode, receiverNode)
           .withChildren(argAsts.map(_.ast))
           .withArgEdges(callNode, argAsts.map(_.ast.root.get))
-      } else if (receiverIsRefToClass) {
+      } else if (noAstForReceiver) {
         root
           .withChild(receiverAst)
           .withChildren(argAsts.map(_.ast))
@@ -2700,10 +2701,33 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForNameReference(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    typeInfoProvider.isReferencingMember(expr) match {
-      case true  => astForNameReferenceToMember(expr, order, argIdx)
-      case false => astForNonSpecialNameReference(expr, order, argIdx)
+    val isRefToClass = typeInfoProvider.isReferenceToClass(expr)
+    if (isRefToClass) {
+      astForNameReferenceToType(expr, order, argIdx)
+    } else {
+      typeInfoProvider.isReferencingMember(expr) match {
+        case true  => astForNameReferenceToMember(expr, order, argIdx)
+        case false => astForNonSpecialNameReference(expr, order, argIdx)
+      }
     }
+  }
+
+  private def astForNameReferenceToType(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): AstWithCtx = {
+    val typeFullName = typeInfoProvider.typeFullName(expr, TypeConstants.any)
+    registerType(typeFullName)
+
+    val name = expr.getIdentifier.getText
+    val typeRefNode =
+      NewTypeRef()
+        .order(order)
+        .argumentIndex(argIdx)
+        .code(name)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+        .typeFullName(typeFullName)
+    AstWithCtx(Ast(typeRefNode), Context())
   }
 
   private def astForNameReferenceToMember(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
@@ -2716,7 +2740,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       NewCall()
         .name(Operators.fieldAccess)
         .code(Constants.this_ + "." + expr.getReferencedName)
-        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .methodFullName(Operators.fieldAccess)
         .signature("")
         .typeFullName(typeFullName)
@@ -2734,7 +2758,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .name(Constants.this_)
         .typeFullName(referenceTargetTypeFullName)
         .order(1)
-        .argumentIndex(0)
+        .argumentIndex(1)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
     val fieldIdentifierNode =
@@ -2742,7 +2766,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .code(expr.getReferencedName)
         .canonicalName(expr.getReferencedName)
         .order(2)
-        .argumentIndex(1)
+        .argumentIndex(2)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
     val ast =

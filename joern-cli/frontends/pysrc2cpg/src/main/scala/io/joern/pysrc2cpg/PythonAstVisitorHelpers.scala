@@ -13,7 +13,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   }
 
   protected def lineAndColOf(node: ast.iattributes): LineAndColumn = {
-    new LineAndColumn(node.lineno, node.col_offset)
+    // node.end_col_offset - 1 because the end column offset of the parser points
+    // behind the last symbol.
+    new LineAndColumn(node.lineno, node.col_offset, node.end_lineno, node.end_col_offset - 1)
   }
 
   private var tmpCounter = 0

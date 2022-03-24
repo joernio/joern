@@ -76,6 +76,13 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val methodFullName = calculateFullNameFromContext("<module>")
 
+    val firstLineAndCol = module.stmts.headOption.map(lineAndColOf)
+    val lastLineAndCol  = module.stmts.lastOption.map(lineAndColOf)
+    val line            = firstLineAndCol.map(_.line).getOrElse(1)
+    val column          = firstLineAndCol.map(_.column).getOrElse(1)
+    val endLine         = lastLineAndCol.map(_.endLine).getOrElse(1)
+    val endColumn       = lastLineAndCol.map(_.endColumn).getOrElse(1)
+
     val moduleMethodNode =
       createMethod(
         "<module>",
@@ -86,7 +93,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
         isAsync = false,
         methodRefNode = None,
         returnTypeHint = None,
-        LineAndColumn(1, 1)
+        LineAndColumn(line, column, endLine, endColumn)
       )
 
     createIdentifierLinks()
@@ -105,7 +112,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   // artificially created during lowering are not in that collection which is fine for now.
   private def createBuiltinIdentifiers(namesUsedInModule: collection.Set[String]): Iterable[nodes.NewNode] = {
     val result        = mutable.ArrayBuffer.empty[nodes.NewNode]
-    val lineAndColumn = LineAndColumn(1, 1)
+    val lineAndColumn = LineAndColumn(1, 1, 1, 1)
 
     val builtinFunctions = mutable.ArrayBuffer.empty[String]
     val builtinClasses   = mutable.ArrayBuffer.empty[String]
@@ -348,7 +355,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
-    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName)
+    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName, lineAndColumn)
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
 
@@ -369,7 +376,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
-      nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName)
+      nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName, lineAndColOf(classDef))
     edgeBuilder.astEdge(metaTypeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
@@ -390,7 +397,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
     val instanceTypeDecl =
-      nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName)
+      nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName, lineAndColOf(classDef))
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create meta class call handling method and bind it to meta class type.

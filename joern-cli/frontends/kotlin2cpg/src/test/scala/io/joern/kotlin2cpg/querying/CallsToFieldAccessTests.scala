@@ -28,17 +28,17 @@ class CallsToFieldAccessTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.codeExact("println(x)").argument.isCall.l
       c.code shouldBe "this.x"
       c.name shouldBe Operators.fieldAccess
-      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(16)
 
       val List(firstArg: Identifier, secondArg: FieldIdentifier) =
         cpg.call.codeExact("println(x)").argument.isCall.argument.l
-      firstArg.argumentIndex shouldBe 0
+      firstArg.argumentIndex shouldBe 1
       firstArg.code shouldBe "this"
       firstArg.typeFullName shouldBe "mypkg.AClass"
 
-      secondArg.argumentIndex shouldBe 1
+      secondArg.argumentIndex shouldBe 2
       secondArg.code shouldBe "x"
       secondArg.canonicalName shouldBe "x"
     }

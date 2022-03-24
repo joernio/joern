@@ -19,6 +19,9 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       methodNode.filename shouldBe "test.py"
       methodNode.isExternal shouldBe false
       methodNode.lineNumber shouldBe Some(1)
+      methodNode.columnNumber shouldBe Some(1)
+      methodNode.lineNumberEnd shouldBe Some(2)
+      methodNode.columnNumberEnd shouldBe Some(6)
     }
 
     "test method modifier" in {
@@ -75,6 +78,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       bindingTypeDecl.name shouldBe "func"
       bindingTypeDecl.fullName shouldBe "test.py:<module>.func"
       bindingTypeDecl.filename shouldBe "test.py"
+      bindingTypeDecl.lineNumber shouldBe Some(1)
+      bindingTypeDecl.columnNumber shouldBe Some(1)
 
       bindingTypeDecl.referencingType.name.head shouldBe "func"
       bindingTypeDecl.referencingType.fullName.head shouldBe "test.py:<module>.func"
