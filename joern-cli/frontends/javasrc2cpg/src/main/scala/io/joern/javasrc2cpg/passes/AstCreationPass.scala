@@ -13,6 +13,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   ReflectionTypeSolver
 }
 import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
+import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.ConcurrentHashMap
@@ -20,12 +21,10 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
 
-case class Global(usedTypes: ConcurrentHashMap[String, Boolean] = new ConcurrentHashMap[String, Boolean]())
-
 class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPaths: Set[String], cpg: Cpg)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
-  val global: Global              = Global()
+  val global: Global              = new Global()
   private val logger              = LoggerFactory.getLogger(classOf[AstCreationPass])
   lazy private val symbolResolver = createSymbolSolver()
 

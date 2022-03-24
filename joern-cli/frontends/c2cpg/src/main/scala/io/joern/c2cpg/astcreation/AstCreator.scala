@@ -1,7 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.datastructures.Global
+import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -18,7 +18,7 @@ import scala.collection.mutable
 class AstCreator(
   val filename: String,
   val config: Config,
-  val global: Global,
+  val global: CGlobal,
   val diffGraph: DiffGraphBuilder,
   val parserResult: IASTTranslationUnit
 ) extends AstForTypesCreator
@@ -103,7 +103,7 @@ class AstCreator(
     var currOrder = 1
     val declsAsts = allDecls.flatMap { stmt =>
       val r =
-        Global.getAstsFromAstCache(
+        CGlobal.getAstsFromAstCache(
           diffGraph,
           fileName(stmt),
           filename,

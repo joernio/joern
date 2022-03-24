@@ -7,7 +7,6 @@ import com.github.javaparser.ast.body.{
   ConstructorDeclaration,
   EnumConstantDeclaration,
   FieldDeclaration,
-  InitializerDeclaration,
   MethodDeclaration,
   Parameter,
   TypeDeclaration,
@@ -99,6 +98,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 

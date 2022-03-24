@@ -2,7 +2,7 @@ package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.{AstCreator, Defines}
-import io.joern.c2cpg.datastructures.Global
+import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.joern.c2cpg.utils.{Report, TimeUtils}
@@ -23,7 +23,7 @@ object AstCreationPass {
 class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Report = new Report())
     extends ConcurrentWriterCpgPass[String](cpg) {
 
-  private val global: Global    = new Global()
+  private val global: CGlobal   = new CGlobal()
   private val parser: CdtParser = new CdtParser(config)
 
   private def sourceFiles: Set[String] =
@@ -31,7 +31,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
 
   private def headerFiles: Set[String] = {
     val allHeaderFiles         = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
-    val alreadySeenHeaderFiles = Global.headerFiles
+    val alreadySeenHeaderFiles = CGlobal.headerFiles
     allHeaderFiles -- alreadySeenHeaderFiles
   }
 
