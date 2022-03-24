@@ -27,7 +27,7 @@ class CallTests extends CCodeToCpgSuite {
     // TODO x.signature
     // x.typeFullName : deprecated
     x.lineNumber shouldBe Some(6)
-    x.columnNumber shouldBe Some(17)
+    x.columnNumber shouldBe Some(18)
   }
 
   "should allow traversing from call to arguments" in {

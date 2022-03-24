@@ -1877,11 +1877,11 @@ class AstCreationPassTests
       """.stripMargin) { cpg =>
       inside(cpg.identifier.l) { case List(a, b, c) =>
         a.lineNumber shouldBe Some(3)
-        a.columnNumber shouldBe Some(4)
+        a.columnNumber shouldBe Some(5)
         b.lineNumber shouldBe Some(5)
-        b.columnNumber shouldBe Some(4)
+        b.columnNumber shouldBe Some(5)
         c.lineNumber shouldBe Some(6)
-        c.columnNumber shouldBe Some(4)
+        c.columnNumber shouldBe Some(5)
       }
     }
 

@@ -12,7 +12,7 @@ class Global {
   val usedTypes: ConcurrentHashMap[String, Boolean] =
     new ConcurrentHashMap()
 
-  val file2LinesCache: ConcurrentHashMap[String, Seq[Int]] =
+  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] =
     new ConcurrentHashMap()
 
 }
@@ -40,22 +40,40 @@ object Global {
     linenumber: Option[Integer],
     columnnumber: Option[Integer],
     astCreatorFunction: => Seq[Ast]
-  ): Seq[Ast] = Global.synchronized {
-    if (
-      FileDefaults
-        .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined
-    ) {
-      if (!headerAstCache.contains(filename)) {
-        headerAstCache.put(filename, mutable.HashSet((linenumber.get, columnnumber.get)))
-        astCreatorFunction.foreach(Ast.storeInDiffGraph(_, diffGraph))
-      } else {
-        if (!headerAstCache(filename).contains((linenumber.get, columnnumber.get))) {
-          headerAstCache(filename).add((linenumber.get, columnnumber.get))
-          astCreatorFunction.foreach(Ast.storeInDiffGraph(_, diffGraph))
+  ): Seq[Ast] = {
+    val (callCreatorFunc, addDirectlyToDiff) =
+      Global.synchronized {
+        if (
+          FileDefaults
+            .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined
+        ) {
+          if (!headerAstCache.contains(filename)) {
+            headerAstCache.put(filename, mutable.HashSet((linenumber.get, columnnumber.get)))
+            (true, true)
+          } else {
+            if (!headerAstCache(filename).contains((linenumber.get, columnnumber.get))) {
+              headerAstCache(filename).add((linenumber.get, columnnumber.get))
+              (true, true)
+            } else {
+              (false, false)
+            }
+          }
+        } else {
+          (true, false)
         }
       }
+
+    if (callCreatorFunc) {
+      val asts = astCreatorFunction
+      if (addDirectlyToDiff) {
+        asts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+        Seq.empty
+      } else {
+        asts
+      }
+    } else {
       Seq.empty
-    } else { astCreatorFunction }
+    }
   }
 
 }
