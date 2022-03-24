@@ -864,4 +864,30 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe List()
     }
   }
+
+  "CPG for code with `fieldAccess` call on implicit _this_" - {
+    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+        |package main
+        |
+        |class AClass {
+        |    val AMESSAGE = "AMESSAGE"
+        |    fun printMsg() {
+        |        println(AMESSAGE)
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val aClass = AClass()
+        |    aClass.printMsg()
+        |}
+        |""".stripMargin)
+
+    "should not contain `fieldAccess` CALLs with DYNAMIC_DISPATCH" in {
+      cpg.call
+        .methodFullName(Operators.fieldAccess)
+        .dispatchTypeExact(DispatchTypes.DYNAMIC_DISPATCH)
+        .code
+        .l shouldBe List()
+    }
+  }
 }
