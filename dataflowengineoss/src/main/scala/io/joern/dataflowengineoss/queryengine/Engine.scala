@@ -76,18 +76,13 @@ class Engine(context: EngineContext) {
       }
     }
     // Update the results with the latest ResultTable which could be between tasks or results
-    val finalResult = (tasks.map(_.table) ++ result.map(_.table))
-      .reduceOption { (a: ResultTable, b: ResultTable) =>
-        val mergedMap = b.table.map { case (n: StoredNode, paths: Vector[ReachableByResult]) =>
-          n -> a.table.getOrElse(n, Vector.empty[ReachableByResult]).++(paths).distinct
-        }.toMap
-        val concurrentMap = new java.util.concurrent.ConcurrentHashMap(mergedMap.asJava)
-        new ResultTable(concurrentMap.asScala)
-      } match {
-      case Some(finalTable: ResultTable) => result.map(rbr => rbr.copy(table = finalTable)).toVector
-      case None                          => result.toVector
+    val finalTable = new ResultTable
+    (tasks.map(_.table) ++ result.map(_.table)).distinct.foreach { resultTable =>
+      resultTable.table.foreach { case (key, values) =>
+        finalTable.add(key, values.map(_.copy(table = finalTable)))
+      }
     }
-    deduplicate(finalResult).toList
+    deduplicate(result.map(rbr => rbr.copy(table = finalTable)).toVector).toList
   }
 
   private def newTasksFromResults(
