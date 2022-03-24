@@ -1,14 +1,15 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.datastructures.Stack._
-import io.joern.c2cpg.datastructures.{Global, Scope}
+import io.joern.c2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Scope
+import io.joern.x2cpg.datastructures.Stack._
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.slf4j.{Logger, LoggerFactory}
 

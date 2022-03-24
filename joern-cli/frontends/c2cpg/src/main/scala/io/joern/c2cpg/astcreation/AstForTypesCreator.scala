@@ -1,6 +1,5 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -9,6 +8,7 @@ import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTAliasDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
+import io.joern.x2cpg.datastructures.Stack._
 
 trait AstForTypesCreator {
 
