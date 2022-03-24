@@ -1,13 +1,13 @@
 package io.joern.x2cpg.testfixtures
 
+import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.{File, PrintWriter}
-import java.nio.file.Files
+import java.io.File
 
 class CodeToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -20,18 +20,13 @@ class CodeToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with 
     buildCpgForDir(tmpDir)
   }
 
+  def writeCodeToFile(sourceCode: String): File = {
+    X2Cpg.writeCodeToFile(sourceCode, "semanticcpgtest", frontend.fileSuffix)
+  }
+
   private def buildCpgForDir[T](dir: File): Unit = {
     cpg = frontend.execute(dir)
     passes(cpg)
-  }
-
-  protected def writeCodeToFile(sourceCode: String): File = {
-    val tmpDir = Files.createTempDirectory("semanticcpgtest").toFile
-    tmpDir.deleteOnExit()
-    val codeFile = File.createTempFile("Test", frontend.fileSuffix, tmpDir)
-    codeFile.deleteOnExit()
-    new PrintWriter(codeFile) { write(sourceCode); close() }
-    tmpDir
   }
 
   override def afterAll(): Unit = {

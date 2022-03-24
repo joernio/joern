@@ -16,7 +16,7 @@ class MetaDataTests extends AnyFreeSpec with Matchers {
     val List(x) = cpg.metaData.l
     x.language shouldBe "KOTLIN"
     x.version shouldBe "0.1"
-    x.overlays shouldBe List("base", "typerel", "controlflow", "callgraph")
+    x.overlays shouldBe List("base", "controlflow", "typerel", "callgraph")
   }
 
   "should not have any incoming or outgoing edges" in {

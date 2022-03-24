@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory
 import overflowdb.Config
 import scopt.OParser
 
+import java.io.PrintWriter
+import java.nio.file.Files
 import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
@@ -209,6 +211,15 @@ object X2Cpg {
     new ControlFlow().run(context)
     new TypeRelations().run(context)
     new CallGraph().run(context)
+  }
+
+  def writeCodeToFile(sourceCode: String, prefix: String, suffix: String): java.io.File = {
+    val tmpDir = Files.createTempDirectory(prefix).toFile
+    tmpDir.deleteOnExit()
+    val codeFile = java.io.File.createTempFile("Test", suffix, tmpDir)
+    codeFile.deleteOnExit()
+    new PrintWriter(codeFile) { write(sourceCode); close() }
+    tmpDir
   }
 
 }
