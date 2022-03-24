@@ -12,7 +12,7 @@ object IOUtils {
   def readFileAsFileContent(path: Path): FileContent = {
     val lines = io.shiftleft.utils.IOUtils
       .readLinesInFile(path)
-      .flatMap(_.toCharArray.appendedAll(System.lineSeparator().toCharArray))
+      .mkString("\n")
       .toArray
     FileContent.create(path.toString, true, lines)
   }
