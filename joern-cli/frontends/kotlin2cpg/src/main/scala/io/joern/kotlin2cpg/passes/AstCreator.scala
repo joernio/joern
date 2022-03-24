@@ -441,16 +441,109 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .filename(relativizedPath)
         .lineNumber(line(ktClass.getPrimaryConstructor))
         .columnNumber(column(ktClass.getPrimaryConstructor))
-    val constructorParamsWithCtx =
-      withOrder(constructorParams.asJava) { (p, order) =>
-        astForParameter(p, order)
-      }
+    val ctorThisParam =
+      NewMethodParameterIn()
+        .name(Constants.this_)
+        .code(Constants.this_)
+        .typeFullName(fullName)
+        .order(0)
+    val constructorParamsWithCtx = {
+      Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
+        withOrder(constructorParams.asJava) { (p, order) =>
+          astForParameter(p, order)
+        }
+    }
     val orderAfterParams = constructorParamsWithCtx.size + 1
     val ctorMethodBlock =
       NewBlock()
         .code("")
         .typeFullName(TypeConstants.void)
         .order(orderAfterParams)
+
+    val memberSetCalls =
+      constructorParams
+        .filter(_.hasValOrVar)
+        .zipWithIndex
+        .map { case (ctorParam, idx) =>
+          val typeFullName = typeInfoProvider.typeFullName(ctorParam, TypeConstants.any)
+          registerType(typeFullName)
+
+          val paramName = ctorParam.getName
+          val paramIdentifier =
+            NewIdentifier()
+              .name(paramName)
+              .code(paramName)
+              .typeFullName(typeFullName)
+              .argumentIndex(2)
+              .order(2)
+
+          val matchingMethodParamNode =
+            constructorParamsWithCtx.flatMap { pWithCtx =>
+              val node = pWithCtx.ast.root.get.asInstanceOf[NewMethodParameterIn]
+              if (node.name == paramName) {
+                Some(node)
+              } else {
+                None
+              }
+            }.head
+          val paramIdentifierAst =
+            Ast(paramIdentifier)
+              .withRefEdge(paramIdentifier, matchingMethodParamNode)
+
+          val this_ =
+            NewIdentifier()
+              .code(Constants.this_)
+              .name(Constants.this_)
+              .typeFullName(fullName)
+              .argumentIndex(1)
+              .order(1)
+
+          val fieldIdentifier =
+            NewFieldIdentifier()
+              .code(paramName)
+              .argumentIndex(2)
+              .order(2)
+              .canonicalName(paramName)
+
+          val fieldAccessCall =
+            NewCall()
+              .methodFullName(Operators.fieldAccess)
+              .name(Operators.fieldAccess)
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+              .code(Constants.this_ + "." + paramName)
+              .typeFullName(typeFullName)
+              .order(1)
+              .argumentIndex(1)
+
+          val fieldAccessCallAst =
+            Ast(fieldAccessCall)
+              .withChild(Ast(this_))
+              .withArgEdge(fieldAccessCall, this_)
+              .withChild(Ast(fieldIdentifier))
+              .withArgEdge(fieldAccessCall, fieldIdentifier)
+
+          val assignmentNode =
+            NewCall()
+              .methodFullName(Operators.assignment)
+              .name(Operators.assignment)
+              .code(fieldAccessCall.code + " = " + paramIdentifier.code)
+              .typeFullName(TypeConstants.any)
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+              .order(idx + 1)
+
+          val assignmentAst =
+            Ast(assignmentNode)
+              .withChild(fieldAccessCallAst)
+              .withArgEdge(assignmentNode, fieldAccessCall)
+              .withChild(paramIdentifierAst)
+              .withArgEdge(assignmentNode, paramIdentifier)
+
+          assignmentAst
+        }
+
+    val ctorMethodAst =
+      Ast(ctorMethodBlock)
+        .withChildren(memberSetCalls)
 
     val orderAfterParamsAndBlock = orderAfterParams + 1
     val typeFullName             = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
@@ -466,7 +559,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val constructorAst =
       Ast(constructorMethod)
         .withChildren(constructorParamsWithCtx.map(_.ast))
-        .withChild(Ast(ctorMethodBlock))
+        .withChild(ctorMethodAst)
         .withChild(Ast(constructorMethodReturn))
 
     val membersFromPrimaryCtorAsts =
@@ -515,10 +608,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .lineNumber(line(secondaryCtor))
             .columnNumber(column(secondaryCtor))
 
+        val ctorThisParam =
+          NewMethodParameterIn()
+            .name(Constants.this_)
+            .code(Constants.this_)
+            .typeFullName(fullName)
+            .order(0)
         val constructorParamsWithCtx =
-          withOrder(constructorParams.asJava) { (p, order) =>
-            astForParameter(p, order)
-          }
+          Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
+            withOrder(constructorParams.asJava) { (p, order) =>
+              astForParameter(p, order)
+            }
         val constructorAst =
           Ast(constructorMethod)
             .withChildren(constructorParamsWithCtx.map(_.ast))

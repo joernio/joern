@@ -169,7 +169,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       val List(local) = cpg.local.nameExact("a").l
       local.typeFullName shouldBe "mypkg.AClass"
 
-      val List(assignmentCall) = cpg.call.methodFullNameExact(Operators.assignment).take(1).l
+      val List(assignmentCall) = cpg.call.methodFullNameExact(Operators.assignment).code("val a.*").l
       assignmentCall.signature shouldBe ""
 
       val List(assignmentLhs: Identifier, assignmentRhs: Block) = assignmentCall.argument.l
