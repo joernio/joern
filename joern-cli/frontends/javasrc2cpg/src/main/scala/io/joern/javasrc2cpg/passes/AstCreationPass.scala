@@ -36,11 +36,9 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
     val parser       = new JavaParser(parserConfig)
     val parseResult  = parser.parse(new java.io.File(filename))
 
-    val typeInfoProvider = TypeInfoProvider(global)
-
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED =>
-        diffGraph.absorb(new AstCreator(filename, typeInfoProvider).createAst(result))
+        diffGraph.absorb(new AstCreator(filename, global).createAst(result))
       case _ =>
         logger.warn("Cannot parse: " + filename)
         logger.warn("Problems: ", parseResult.getProblems.asScala.toList.map(_.toString))

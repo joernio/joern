@@ -195,7 +195,9 @@ object AstWithCtx {
   }
 }
 
-class AstCreator(filename: String, typeInfoProvider: TypeInfoProvider) {
+class AstCreator(filename: String, global: Global) {
+
+  private val typeInfoProvider = TypeInfoProvider(global)
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
