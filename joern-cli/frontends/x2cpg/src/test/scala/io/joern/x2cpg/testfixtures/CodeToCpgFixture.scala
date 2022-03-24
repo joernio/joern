@@ -1,8 +1,7 @@
 package io.joern.x2cpg.testfixtures
 
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,19 +13,11 @@ class CodeToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with 
 
   val code                   = ""
   var cpg: Cpg               = _
-  def passes(cpg: Cpg): Unit = createEnhancements(cpg)
+  def passes(cpg: Cpg): Unit = applyDefaultOverlays(cpg)
 
   override def beforeAll(): Unit = {
     val tmpDir = writeCodeToFile(code)
     buildCpgForDir(tmpDir)
-  }
-
-  def createEnhancements(cpg: Cpg): Unit = {
-    val context = new LayerCreatorContext(cpg)
-    new Base().run(context)
-    new ControlFlow().run(context)
-    new TypeRelations().run(context)
-    new CallGraph().run(context)
   }
 
   private def buildCpgForDir[T](dir: File): Unit = {

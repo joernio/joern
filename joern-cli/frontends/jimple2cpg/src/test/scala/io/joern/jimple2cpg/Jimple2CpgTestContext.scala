@@ -2,7 +2,7 @@ package io.joern.jimple2cpg
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers._
 
@@ -20,12 +20,9 @@ class Jimple2CpgTestContext {
       val inputPath                      = writeCodeToFile(code).getAbsolutePath
       implicit val defaultConfig: Config = Config()
       val cpg                            = jimple2Cpg.createCpg(inputPath).get
-      val context                        = new LayerCreatorContext(cpg)
-      new Base().run(context)
-      new TypeRelations().run(context)
-      new ControlFlow().run(context)
-      new CallGraph().run(context)
+      applyDefaultOverlays(cpg)
       if (runDataflow) {
+        val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
         new OssDataFlow(options).run(context)
       }

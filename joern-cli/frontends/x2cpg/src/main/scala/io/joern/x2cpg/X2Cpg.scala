@@ -2,7 +2,9 @@ package io.joern.x2cpg
 
 import better.files.File
 import io.joern.x2cpg.X2Cpg.withErrorsToConsole
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 import overflowdb.Config
 import scopt.OParser
@@ -199,6 +201,14 @@ object X2Cpg {
         Failure(exception)
       case Success(v) => v
     }
+  }
+
+  def applyDefaultOverlays(cpg: Cpg): Unit = {
+    val context = new LayerCreatorContext(cpg)
+    new Base().run(context)
+    new ControlFlow().run(context)
+    new TypeRelations().run(context)
+    new CallGraph().run(context)
   }
 
 }

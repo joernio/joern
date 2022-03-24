@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers._
 
@@ -16,12 +16,9 @@ object DefaultOverlays {
     *   the filename of the cpg
     */
   def create(storeFilename: String, maxNumberOfDefinitions: Int = defaultMaxNumberOfDefinitions): Cpg = {
-    val cpg     = CpgBasedTool.loadFromOdb(storeFilename)
+    val cpg = CpgBasedTool.loadFromOdb(storeFilename)
+    applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
-    new Base().run(context)
-    new TypeRelations().run(context)
-    new ControlFlow().run(context)
-    new CallGraph().run(context)
     val options = new OssDataFlowOptions(maxNumberOfDefinitions)
     new OssDataFlow(options).run(context)
     cpg

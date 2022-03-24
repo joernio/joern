@@ -2,8 +2,7 @@ package io.joern.javasrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.querying.InferenceJarTests
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.io.{File, PrintWriter}
@@ -21,13 +20,10 @@ class JavaSrc2CpgTestContext {
         outputPath = "",
         inferenceJarPaths = inferenceJarPaths
       )
-      val cpg     = javaSrc2Cpg.createCpg(config)
-      val context = new LayerCreatorContext(cpg.get)
-      new Base().run(context)
-      new TypeRelations().run(context)
-      new ControlFlow().run(context)
-      new CallGraph().run(context)
+      val cpg = javaSrc2Cpg.createCpg(config)
+      applyDefaultOverlays(cpg.get)
       if (runDataflow) {
+        val context = new LayerCreatorContext(cpg.get)
         val options = new OssDataFlowOptions()
         new OssDataFlow(options).run(context)
       }

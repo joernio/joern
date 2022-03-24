@@ -1,12 +1,9 @@
 package io.joern.kotlin2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.utils.ProjectRoot
 import better.files._
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 
-import java.nio.file.Paths
 import scala.collection.mutable
 import scala.util.Random
 
@@ -57,13 +54,7 @@ class Kotlin2CpgTestContext private () {
 
       val kt2Cpg = new Kotlin2Cpg()
       val cpg    = kt2Cpg.createCpg(config)
-
-      val context = new LayerCreatorContext(cpg.get)
-      new Base().run(context)
-      new TypeRelations().run(context)
-      new ControlFlow().run(context)
-      new CallGraph().run(context)
-
+      applyDefaultOverlays(cpg.get)
       val outFile = File(randomOutPath)
       if (outFile.exists) {
         outFile.delete(true)
