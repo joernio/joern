@@ -3,6 +3,8 @@ options {
     DEBUG_PARSER = false;
     UNICODE_INPUT = true;
     STATIC = false;
+    TOKEN_EXTENDS = "PositionToken";
+    COMMON_TOKEN_ACTION = true;
 }
 PARSER_BEGIN(PythonParser)
 package io.joern.pythonparser;
@@ -161,6 +163,11 @@ TOKEN_MGR_DECLS:
 
   // Number of opened curly brackets while parsing a format string in FORMAT_SPEC_LEX.
   int formatSpecOpenCurly = 0;
+
+  void CommonTokenAction(Token token) {
+    token.startPos = input_stream.tokenBegin;
+    token.endPos = input_stream.bufpos + 1;
+  }
 }
 
 TOKEN: {

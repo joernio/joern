@@ -538,14 +538,19 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     bindingNode
   }
 
-  protected def createReturn(returnExprOption: Option[nodes.NewNode], lineAndColumn: LineAndColumn): nodes.NewReturn = {
-    val code =
+  protected def createReturn(
+    returnExprOption: Option[nodes.NewNode],
+    codeOption: Option[String],
+    lineAndColumn: LineAndColumn
+  ): nodes.NewReturn = {
+    val code = codeOption.getOrElse {
       returnExprOption match {
         case Some(returnExpr) =>
           "return " + codeOf(returnExpr)
         case None =>
           "return"
       }
+    }
     val returnNode = nodeBuilder.returnNode(code, lineAndColumn)
     returnExprOption.foreach { returnExpr => addAstChildrenAsArguments(returnNode, 1, returnExpr) }
 

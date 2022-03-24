@@ -17,7 +17,8 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider]) extends Concur
       val parser                 = new PyParser()
       val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
       val astRoot                = parser.parse(lineBreakCorrectedCode)
-      val astVisitor             = new PythonAstVisitor(inputPair.file, PythonV2AndV3)
+      val nodeToCode             = new NodeToCode(lineBreakCorrectedCode)
+      val astVisitor             = new PythonAstVisitor(inputPair.file, nodeToCode, PythonV2AndV3)
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.getDiffGraph)
