@@ -6,6 +6,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
@@ -35,12 +36,8 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
     }
 
   override def passes(cpg: Cpg): Unit = {
+    applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
-    new Base().run(context)
-    new TypeRelations().run(context)
-    new ControlFlow().run(context)
-    new CallGraph().run(context)
-
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
   }

@@ -2,8 +2,7 @@ package io.joern.javasrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.querying.InferenceJarTests
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, writeCodeToFile}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.io.{File, PrintWriter}
@@ -17,17 +16,14 @@ class JavaSrc2CpgTestContext {
     if (buildResult.isEmpty) {
       val javaSrc2Cpg = JavaSrc2Cpg()
       val config = Config(
-        inputPaths = Set(writeCodeToFile(code).getAbsolutePath),
+        inputPaths = Set(writeCodeToFile(code, "javasrc2cpgTest", ".java").getAbsolutePath),
         outputPath = "",
         inferenceJarPaths = inferenceJarPaths
       )
-      val cpg     = javaSrc2Cpg.createCpg(config)
-      val context = new LayerCreatorContext(cpg.get)
-      new Base().run(context)
-      new TypeRelations().run(context)
-      new ControlFlow().run(context)
-      new CallGraph().run(context)
+      val cpg = javaSrc2Cpg.createCpg(config)
+      applyDefaultOverlays(cpg.get)
       if (runDataflow) {
+        val context = new LayerCreatorContext(cpg.get)
         val options = new OssDataFlowOptions()
         new OssDataFlow(options).run(context)
       }
@@ -41,14 +37,6 @@ class JavaSrc2CpgTestContext {
     this
   }
 
-  private def writeCodeToFile(code: String): File = {
-    val tmpDir = Files.createTempDirectory("javasrc2cpgTest").toFile
-    tmpDir.deleteOnExit()
-    val codeFile = File.createTempFile("Test", ".java", tmpDir)
-    codeFile.deleteOnExit()
-    new PrintWriter(codeFile) { write(code); close() }
-    tmpDir
-  }
 }
 
 object JavaSrc2CpgTestContext {
