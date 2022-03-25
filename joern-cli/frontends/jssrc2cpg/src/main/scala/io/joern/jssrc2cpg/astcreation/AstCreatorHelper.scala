@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 import ujson.Value
@@ -86,6 +86,44 @@ trait AstCreatorHelper {
     usedVariableNames.put(variableName, counter)
 
     currentVariableName
+  }
+
+  protected def addOrder(node: NewNode, order: Int): Unit = node match {
+    case n: NewTypeDecl          => n.order = order
+    case n: NewBlock             => n.order = order
+    case n: NewCall              => n.order = order
+    case n: NewFieldIdentifier   => n.order = order
+    case n: NewFile              => n.order = order
+    case n: NewIdentifier        => n.order = order
+    case n: NewLocal             => n.order = order
+    case n: NewMethod            => n.order = order
+    case n: NewMethodParameterIn => n.order = order
+    case n: NewMethodRef         => n.order = order
+    case n: NewNamespaceBlock    => n.order = order
+    case n: NewTypeRef           => n.order = order
+    case n: NewUnknown           => n.order = order
+    case n: NewModifier          => n.order = order
+    case n: NewMethodReturn      => n.order = order
+    case n: NewMember            => n.order = order
+    case n: NewControlStructure  => n.order = order
+    case n: NewLiteral           => n.order = order
+    case n: NewReturn            => n.order = order
+    case n: NewJumpTarget        => n.order = order
+    case n                       => logger.warn(s"Unable to set ORDER for node: '$n'")
+  }
+
+  protected def addArgumentIndex(node: NewNode, argIndex: Int): Unit = node match {
+    case n: NewBlock            => n.argumentIndex = argIndex
+    case n: NewCall             => n.argumentIndex = argIndex
+    case n: NewFieldIdentifier  => n.argumentIndex = argIndex
+    case n: NewIdentifier       => n.argumentIndex = argIndex
+    case n: NewMethodRef        => n.argumentIndex = argIndex
+    case n: NewTypeRef          => n.argumentIndex = argIndex
+    case n: NewUnknown          => n.argumentIndex = argIndex
+    case n: NewControlStructure => n.argumentIndex = argIndex
+    case n: NewLiteral          => n.argumentIndex = argIndex
+    case n: NewReturn           => n.argumentIndex = argIndex
+    case n                      => logger.warn(s"Unable to set ARGUMENT_INDEX for node: '$n'")
   }
 
   protected def code(node: Value): String = {

@@ -47,8 +47,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       val fileLOC     = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
       report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
       Try {
-        val localDiff = new DiffGraphBuilder
-        new AstCreator(config, localDiff, parseResult, global).createAst()
+        val localDiff = new AstCreator(config, parseResult, global).createAst()
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>

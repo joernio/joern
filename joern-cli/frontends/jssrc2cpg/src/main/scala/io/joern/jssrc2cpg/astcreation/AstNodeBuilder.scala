@@ -2,7 +2,6 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.scope.MethodScope
 import io.joern.jssrc2cpg.passes.Defines
-import AstCreatorHelper.OptionSafeAst
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -130,6 +129,10 @@ trait AstNodeBuilder {
       line,
       column
     ).order(order).argumentIndex(order)
+    addOrder(baseId, 1)
+    addArgumentIndex(baseId, 1)
+    addOrder(partId, 2)
+    addArgumentIndex(partId, 2)
     Ast(call).withChild(Ast(baseId)).withChild(Ast(partId)).withArgEdge(call, baseId).withArgEdge(call, partId)
   }
 
@@ -176,7 +179,7 @@ trait AstNodeBuilder {
 
   protected def createAssignment(
     destId: NewNode,
-    sourceId: Seq[Ast],
+    sourceId: NewNode,
     code: String,
     order: Int,
     line: Option[Integer] = None,
@@ -185,7 +188,11 @@ trait AstNodeBuilder {
     val call = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
       .order(order)
       .argumentIndex(order)
-    Ast(call).withChild(Ast(destId)).withChildren(sourceId).withArgEdge(call, destId).withArgEdges(call, sourceId)
+    addOrder(destId, 1)
+    addArgumentIndex(destId, 1)
+    addOrder(sourceId, 2)
+    addArgumentIndex(sourceId, 2)
+    Ast(call).withChild(Ast(destId)).withChild(Ast(sourceId)).withArgEdge(call, destId).withArgEdge(call, sourceId)
   }
 
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {

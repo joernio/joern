@@ -23,6 +23,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.AstCreatorBase
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
@@ -31,8 +32,9 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parserResult: ParseResult, val global: Global)
-    extends AstNodeBuilder
+class AstCreator(val config: Config, val parserResult: ParseResult, val global: Global)
+    extends AstCreatorBase(parserResult.filename)
+    with AstNodeBuilder
     with AstCreatorHelper {
 
   protected case class BabelNodeInfo(
@@ -65,12 +67,13 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
   private val functionFullNames                                 = mutable.HashSet.empty[String]
   private val metaTypeRefIdStack                                = mutable.Stack.empty[NewTypeRef]
 
-  def createAst(): Unit = {
+  override def createAst(): DiffGraphBuilder = {
     val name    = parserResult.filename
     val cpgFile = Ast(NewFile().name(name).order(0))
     val ast     = cpgFile.withChild(astForFileGlobal())
     Ast.storeInDiffGraph(ast, diffGraph)
     createVariableReferenceLinks()
+    diffGraph
   }
 
   private def createBabelNodeInfo(json: Value): BabelNodeInfo = {
@@ -107,14 +110,14 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
 
   private def handleCallNodeArgs(
     callExpr: BabelNodeInfo,
-    receiverId: Seq[Ast],
-    baseId: NewIdentifier,
-    functionBaseId: Seq[Ast],
+    receiverId: NewNode,
+    baseId: NewNode,
+    functionBaseId: NewNode,
     functionPropertyId: Option[NewFieldIdentifier]
   ): Seq[Ast] = {
     val args = astsForNodes(callExpr.json("arguments").arr.toSeq)
 
-    val baseCode = codeOf(functionBaseId.head.nodes.head)
+    val baseCode = codeOf(functionBaseId)
     val propertyCode = functionPropertyId match {
       case Some(id) => "." + codeOf(id)
       case None     => ""
@@ -125,10 +128,23 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
 
     val callId = createCallNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, callExpr.lineNumber, callExpr.columnNumber)
 
+    addOrder(receiverId, 0)
+    addOrder(baseId, 1)
+    addArgumentIndex(baseId, 0)
+
+    var currOrder    = 2
+    var currArgIndex = 1
+    args.foreach { ast =>
+      addOrder(ast.nodes.head, currOrder)
+      addArgumentIndex(ast.nodes.head, currArgIndex)
+      currOrder += 1
+      currArgIndex += 1
+    }
+
     Seq(
       Ast(callId)
-        .withChildren(receiverId)
-        .withReceiverEdges(callId, receiverId)
+        .withChild(Ast(receiverId))
+        .withReceiverEdge(callId, receiverId)
         .withChild(Ast(baseId))
         .withArgEdge(callId, baseId)
         .withChildren(args)
@@ -149,24 +165,29 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
           base.node match {
             case BabelAst.Identifier =>
               val receiverId = astsForNode(callee.json, 0)
-              val baseId     = createIdentifierNode(base.code, base).order(1)
+              val baseId     = createIdentifierNode(base.code, base).order(1).argumentIndex(1)
               scope.addVariableReference(base.code, baseId)
               (receiverId, None, receiverId, baseId)
             case _ =>
               // TODO: check for used nodes
               val tmpVarName = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
-              val baseTmpId  = createIdentifierNode(tmpVarName, base).order(0)
+              val baseTmpId  = createIdentifierNode(tmpVarName, base)
               scope.addVariableReference(tmpVarName, baseTmpId)
-              val baseId          = astsForNode(base.json, 1)
-              val code            = s"(${codeOf(baseTmpId)} = ${base.code})"
-              val tmpAssignmentId = createAssignment(baseTmpId, baseId, code, 0, base.lineNumber, base.columnNumber)
-              val memberNode      = createBabelNodeInfo(callee.json("property"))
-              val memberId =
-                createFieldIdentifierNode(memberNode.code, memberNode.lineNumber, memberNode.columnNumber).order(1)
+              val baseId = astsForNode(base.json, 2)
+              val code   = s"(${codeOf(baseTmpId)} = ${base.code})"
+              val tmpAssignmentId =
+                createAssignment(baseTmpId, baseId.head.nodes.head, code, 1, base.lineNumber, base.columnNumber)
+              val memberNode = createBabelNodeInfo(callee.json("property"))
+              val memberId = createFieldIdentifierNode(memberNode.code, memberNode.lineNumber, memberNode.columnNumber)
               val fieldAccessId =
                 createFieldAccessNode(tmpAssignmentId.nodes.head, memberId, 0, callee.lineNumber, callee.columnNumber)
               val thisTmpId = createIdentifierNode(tmpVarName, callee)
               scope.addVariableReference(tmpVarName, thisTmpId)
+
+              Ast.storeInDiffGraph(tmpAssignmentId, diffGraph)
+              Ast.storeInDiffGraph(fieldAccessId, diffGraph)
+              Ast.storeInDiffGraph(Ast(memberId), diffGraph)
+
               (baseId, Some(memberId), Seq(fieldAccessId), thisTmpId)
           }
         case _ =>
@@ -175,7 +196,13 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
           scope.addVariableReference("this", thisId)
           (receiverId, None, receiverId, thisId)
       }
-      handleCallNodeArgs(callExpr, receiverId, baseId, functionBaseId, functionPropertyId)
+      handleCallNodeArgs(
+        callExpr,
+        receiverId.head.nodes.head,
+        baseId,
+        functionBaseId.head.nodes.head,
+        functionPropertyId
+      )
     }
     callId
   }
@@ -184,8 +211,6 @@ class AstCreator(val config: Config, val diffGraph: DiffGraphBuilder, val parser
     val baseId = astsForNode(memberExpr.json("object"), 1)
     val memberId =
       createFieldIdentifierNode(code(memberExpr.json("property")), memberExpr.lineNumber, memberExpr.columnNumber)
-        .order(2)
-        .argumentIndex(2)
     val accessId =
       createFieldAccessNode(baseId.head.nodes.head, memberId, order, memberExpr.lineNumber, memberExpr.columnNumber)
     Seq(accessId)
