@@ -1,26 +1,22 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.datastructures.Stack._
-import io.joern.c2cpg.datastructures.{Global, Scope}
+import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.datastructures.Scope
+import io.joern.x2cpg.datastructures.Stack._
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(
-  val filename: String,
-  val config: Config,
-  val global: Global,
-  val diffGraph: DiffGraphBuilder,
-  val parserResult: IASTTranslationUnit
-) extends AstForTypesCreator
+class AstCreator(val filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
+    extends AstCreatorBase(filename)
+    with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
     with AstForStatementsCreator
@@ -40,14 +36,13 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
-  def createAst(): Unit =
+  def createAst(): DiffGraphBuilder = {
     Ast.storeInDiffGraph(astForFile(parserResult), diffGraph)
+    diffGraph
+  }
 
   private def astForFile(parserResult: IASTTranslationUnit): Ast = {
-    val cpgFile            = Ast(NewFile().name(filename).order(0))
-    val translationUnitAst = astForTranslationUnit(parserResult)
-
-    val ast = cpgFile.withChild(translationUnitAst)
+    val ast = astForTranslationUnit(parserResult)
     if (config.includeComments) {
       val commentsAsts = parserResult.getComments.map(comment => astForComment(comment)).toIndexedSeq
       ast.withChildren(commentsAsts)
@@ -102,7 +97,7 @@ class AstCreator(
     var currOrder = 1
     val declsAsts = allDecls.flatMap { stmt =>
       val r =
-        Global.getAstsFromAstCache(
+        CGlobal.getAstsFromAstCache(
           diffGraph,
           fileName(stmt),
           filename,
@@ -128,16 +123,12 @@ class AstCreator(
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val absolutePath = better.files.File(iASTTranslationUnit.getFilePath).path.toAbsolutePath.normalize().toString
-    val name         = NamespaceTraversal.globalNamespaceName
-    val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
-    val namespaceBlock = NewNamespaceBlock()
-      .name(name)
-      .fullName(fullName)
-      .filename(absolutePath)
-      .order(1)
+    val name           = NamespaceTraversal.globalNamespaceName
+    val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
-    Ast(namespaceBlock).withChild(createFakeMethod(name, fullName, absolutePath, iASTTranslationUnit))
+    Ast(namespaceBlock).withChild(
+      createFakeMethod(name, namespaceBlock.fullName, absolutePath(filename), iASTTranslationUnit)
+    )
   }
 
 }

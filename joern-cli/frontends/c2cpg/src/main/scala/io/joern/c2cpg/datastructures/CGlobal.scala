@@ -3,21 +3,19 @@ package io.joern.c2cpg.datastructures
 import io.joern.c2cpg.parser.FileDefaults
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Global
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
-class Global {
-
-  val usedTypes: ConcurrentHashMap[String, Boolean] =
-    new ConcurrentHashMap()
+class CGlobal extends Global {
 
   val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] =
     new ConcurrentHashMap()
 
 }
 
-object Global {
+object CGlobal {
 
   private val headerAstCache: mutable.HashMap[String, mutable.HashSet[(Integer, Integer)]] =
     mutable.HashMap.empty
@@ -42,7 +40,7 @@ object Global {
     astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = {
     val (callCreatorFunc, addDirectlyToDiff) =
-      Global.synchronized {
+      CGlobal.synchronized {
         if (
           FileDefaults
             .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined

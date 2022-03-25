@@ -21,7 +21,8 @@ class AstCreationPass(filenames: List[String], cpg: Cpg) extends ConcurrentWrite
     try {
       val sootClass = Scene.v().loadClassAndSupport(qualifiedClassName)
       sootClass.setApplicationClass()
-      new AstCreator(part, builder, global).createAst(sootClass)
+      val localDiff = new AstCreator(part, sootClass, global).createAst()
+      builder.absorb(localDiff)
     } catch {
       case e: Exception =>
         logger.warn(s"Cannot parse: $part ($qualifiedClassName)", e)

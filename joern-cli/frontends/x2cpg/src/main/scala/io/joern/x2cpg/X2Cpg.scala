@@ -3,9 +3,13 @@ package io.joern.x2cpg
 import better.files.File
 import io.joern.x2cpg.X2Cpg.withErrorsToConsole
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.Config
 import scopt.OParser
 
@@ -114,6 +118,30 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     */
   def createCpg(inputNames: List[String])(implicit defaultConfig: T): Try[Cpg] =
     createCpg(inputNames, None)(defaultConfig)
+}
+
+abstract class AstCreatorBase(filename: String) {
+  val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
+  def createAst(): DiffGraphBuilder
+
+  /** Create a global namespace block for the given `filename`
+    */
+  def globalNamespaceBlock(): NewNamespaceBlock = {
+    val absPath  = absolutePath(filename)
+    val name     = NamespaceTraversal.globalNamespaceName
+    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absPath))
+    NewNamespaceBlock()
+      .name(name)
+      .fullName(fullName)
+      .filename(absPath)
+      .order(1)
+  }
+
+  /** Absolute path for the given file name
+    */
+  def absolutePath(filename: String): String =
+    better.files.File(filename).path.toAbsolutePath.normalize().toString
+
 }
 
 object X2Cpg {

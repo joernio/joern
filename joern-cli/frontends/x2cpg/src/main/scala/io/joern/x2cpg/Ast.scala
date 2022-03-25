@@ -28,11 +28,13 @@ object Ast {
     ast.refEdges.foreach { edge =>
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.REF)
     }
-    ast.bindsEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.BINDS)
-    }
+
     ast.argEdges.foreach { edge =>
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
+    }
+
+    ast.bindsEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.BINDS)
     }
   }
 }
