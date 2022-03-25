@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class TypeAliasTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple typealias to Int" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |typealias MyInt = Int
@@ -33,7 +33,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple typealias to ListInt" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |typealias Foo = List<Int>
@@ -58,7 +58,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with typealias of type from external library" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+    lazy val cpg = TestContext.buildCpg(
       """
         |package org.http4k.core.body
         |

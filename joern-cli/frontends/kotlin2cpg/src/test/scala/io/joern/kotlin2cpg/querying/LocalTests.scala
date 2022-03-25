@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language._
 
@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class LocalTests extends AnyFreeSpec with Matchers {
 
   "CPG for code simple local declarations" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |fun foo() {
         |  val x: Int = 1
         |  val y: Int = 2
@@ -36,7 +36,7 @@ class LocalTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code simple local declarations without explicit types" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |fun foo() {
         |  val x = 1
         |  val y = 2

@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -14,7 +14,7 @@ class DispatchTypeValidationTests extends AnyFreeSpec with Matchers {
   // TODO: add inputs as arrays
 
   "CPG for code with simple qualified-expression" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import java.lang.Runtime

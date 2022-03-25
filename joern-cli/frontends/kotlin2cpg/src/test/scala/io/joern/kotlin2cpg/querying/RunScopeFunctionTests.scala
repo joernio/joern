@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language._
 
@@ -11,7 +11,7 @@ class RunScopeFunctionTests extends AnyFreeSpec with Matchers {
   // TODO add test case with refs to properties without `this`
 
   "CPG for code with simple `run` usage" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class Foo(x: String) {
