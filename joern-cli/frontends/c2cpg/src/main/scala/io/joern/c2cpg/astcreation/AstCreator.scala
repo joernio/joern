@@ -15,7 +15,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(val filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
+class AstCreator(filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
     extends AstCreatorBase(filename)
     with AstForTypesCreator
     with AstForFunctionsCreator

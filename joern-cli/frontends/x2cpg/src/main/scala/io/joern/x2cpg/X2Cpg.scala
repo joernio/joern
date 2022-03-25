@@ -118,7 +118,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     createCpg(inputNames, None)(defaultConfig)
 }
 
-abstract class AstCreatorBase(filename: String) {
+abstract class AstCreatorBase(val filename: String) {
   val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
   def createAst(): DiffGraphBuilder
 }
