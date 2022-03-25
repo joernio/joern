@@ -6,7 +6,12 @@ import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethodReturn, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodReturn,
+  NewNamespaceBlock
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
@@ -138,16 +143,35 @@ abstract class AstCreatorBase(filename: String) {
       .order(1)
   }
 
-  def astForMethodReturn(line: Option[Integer], column: Option[Integer], order: Int, tpe: String): Ast =
-    Ast(
-      NewMethodReturn()
-        .order(order)
-        .typeFullName(tpe)
-        .code(tpe)
-        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .lineNumber(line)
-        .columnNumber(column)
-    )
+  def methodReturnNode(line: Option[Integer], column: Option[Integer], order: Int, tpe: String): NewMethodReturn =
+    NewMethodReturn()
+      .order(order)
+      .typeFullName(tpe)
+      .code(tpe)
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .lineNumber(line)
+      .columnNumber(column)
+
+  /** Creates an AST that represents a method stub, containing information about the method, its parameters, and the
+    * return type.
+    */
+  def methodStubAst(method: NewMethod, parameters: Seq[NewMethodParameterIn], methodReturn: NewMethodReturn): Ast =
+    Ast(method)
+      .withChildren(parameters.map(Ast(_)))
+      .withChild(Ast(methodReturn))
+
+  /** Creates an AST that represents an entire method, including its content.
+    */
+  def methodAst(
+    method: NewMethod,
+    parameters: Seq[NewMethodParameterIn],
+    body: Ast,
+    methodReturn: NewMethodReturn
+  ): Ast =
+    Ast(method)
+      .withChildren(parameters.map(Ast(_)))
+      .withChild(body)
+      .withChild(Ast(methodReturn))
 
   /** Absolute path for the given file name
     */
