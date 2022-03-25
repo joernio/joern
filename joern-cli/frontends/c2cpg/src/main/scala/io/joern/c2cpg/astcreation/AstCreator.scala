@@ -43,10 +43,7 @@ class AstCreator(filename: String, val config: Config, val global: CGlobal, val 
   }
 
   private def astForFile(parserResult: IASTTranslationUnit): Ast = {
-    val cpgFile            = Ast(NewFile().name(filename).order(0))
-    val translationUnitAst = astForTranslationUnit(parserResult)
-
-    val ast = cpgFile.withChild(translationUnitAst)
+    val ast = astForTranslationUnit(parserResult)
     if (config.includeComments) {
       val commentsAsts = parserResult.getComments.map(comment => astForComment(comment)).toIndexedSeq
       ast.withChildren(commentsAsts)
