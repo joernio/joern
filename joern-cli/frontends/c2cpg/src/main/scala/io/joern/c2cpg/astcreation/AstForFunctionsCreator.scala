@@ -282,14 +282,6 @@ trait AstForFunctionsCreator {
   }
 
   private def astForMethodReturn(func: IASTNode, order: Int, tpe: String): Ast =
-    Ast(
-      NewMethodReturn()
-        .order(order)
-        .typeFullName(registerType(tpe))
-        .code(tpe)
-        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .lineNumber(line(func))
-        .columnNumber(column(func))
-    )
+    astForMethodReturn(line(func), column(func), order, registerType(tpe))
 
 }

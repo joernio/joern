@@ -5,7 +5,8 @@ import io.joern.x2cpg.X2Cpg.withErrorsToConsole
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethodReturn, NewNamespaceBlock}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
@@ -136,6 +137,17 @@ abstract class AstCreatorBase(filename: String) {
       .filename(absPath)
       .order(1)
   }
+
+  def astForMethodReturn(line: Option[Integer], column: Option[Integer], order: Int, tpe: String): Ast =
+    Ast(
+      NewMethodReturn()
+        .order(order)
+        .typeFullName(tpe)
+        .code(tpe)
+        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+        .lineNumber(line)
+        .columnNumber(column)
+    )
 
   /** Absolute path for the given file name
     */
