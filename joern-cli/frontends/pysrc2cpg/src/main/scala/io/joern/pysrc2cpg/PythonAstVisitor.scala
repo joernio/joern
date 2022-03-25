@@ -23,7 +23,8 @@ object PythonV2      extends PythonVersion
 object PythonV3      extends PythonVersion
 object PythonV2AndV3 extends PythonVersion
 
-class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonAstVisitorHelpers {
+class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, version: PythonVersion)
+    extends PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -536,7 +537,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
         val (arguments, keywordArguments) = createArguments(parameters, lineAndColumn)
         val staticCall =
           createStaticCall(adaptedMethodName, adaptedMethodFullName, lineAndColumn, arguments, keywordArguments)
-        val returnNode = createReturn(Some(staticCall), lineAndColumn)
+        val returnNode = createReturn(Some(staticCall), None, lineAndColumn)
         returnNode :: Nil
       },
       returns = None,
@@ -622,7 +623,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
           keywordArguments
         )
 
-        val returnNode = createReturn(Some(fakeNewCall), lineAndColumn)
+        val returnNode = createReturn(Some(fakeNewCall), None, lineAndColumn)
 
         returnNode :: Nil
       },
@@ -687,7 +688,8 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
           keywordArguments
         )
 
-        val returnNode = createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), lineAndColumn)
+        val returnNode =
+          createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), None, lineAndColumn)
 
         assignmentToNewInstance :: initCall :: returnNode :: Nil
       },
@@ -700,7 +702,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   }
 
   def convert(ret: ast.Return): NewNode = {
-    createReturn(ret.value.map(convert), lineAndColOf(ret))
+    createReturn(ret.value.map(convert), Some(nodeToCode.getCode(ret)), lineAndColOf(ret))
   }
 
   def convert(delete: ast.Delete): NewNode = {
