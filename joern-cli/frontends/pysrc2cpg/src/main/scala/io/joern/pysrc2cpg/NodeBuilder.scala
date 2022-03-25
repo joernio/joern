@@ -241,11 +241,11 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(fileNode)
   }
 
-  def namespaceBlockNode(fileName: String): nodes.NewNamespaceBlock = {
+  def namespaceBlockNode(name: String, fullName: String, fileName: String): nodes.NewNamespaceBlock = {
     val namespaceBlockNode = nodes
       .NewNamespaceBlock()
-      .name("<global>")
-      .fullName(fileName + ":" + "<global>")
+      .name(name)
+      .fullName(fullName)
       .filename(fileName)
     addNodeToDiff(namespaceBlockNode)
   }

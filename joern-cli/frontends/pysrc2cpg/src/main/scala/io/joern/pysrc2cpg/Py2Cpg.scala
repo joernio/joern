@@ -22,9 +22,15 @@ object Py2Cpg {
 class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
   private val diffGraph   = new DiffGraphBuilder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
+  private val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
     nodeBuilder.metaNode(Languages.PYTHONSRC, version = "")
+    val globalNamespaceBlock =
+      nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, Constants.GLOBAL_NAMESPACE, "N/A")
+    nodeBuilder.typeNode(Constants.ANY, Constants.ANY)
+    val anyTypeDecl = nodeBuilder.typeDeclNode(Constants.ANY, Constants.ANY, "N/A", Nil, LineAndColumn(1, 1, 1, 1))
+    edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
     BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
     new CodeToCpg(outputCpg, inputProviders).createAndApply()
   }
