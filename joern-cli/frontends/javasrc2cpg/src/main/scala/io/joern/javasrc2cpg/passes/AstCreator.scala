@@ -274,7 +274,7 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
   /** Translate package declaration into AST consisting of a corresponding namespace block.
     */
   private def astForPackageDeclaration(packageDecl: Option[PackageDeclaration]): AstWithCtx = {
-    val absolutePath = new java.io.File(filename).toPath.toAbsolutePath.normalize().toString
+
     val namespaceBlock = packageDecl match {
       case Some(decl) =>
         val packageName = decl.getName.toString
@@ -283,9 +283,9 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
           .name(name)
           .fullName(packageName)
       case None =>
-        createGlobalNamespaceBlock
+        globalNamespaceBlock()
     }
-    AstWithCtx(Ast(namespaceBlock.filename(absolutePath).order(1)), Context())
+    AstWithCtx(Ast(namespaceBlock.filename(absolutePath(filename)).order(1)), Context())
   }
 
   private def bindingForMethod(maybeMethodNode: Option[NewMethod], scopeContext: ScopeContext): List[BindingInfo] = {
@@ -306,11 +306,6 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
       case None => Nil
     }
   }
-
-  private def createGlobalNamespaceBlock: NewNamespaceBlock =
-    NewNamespaceBlock()
-      .name(globalNamespaceName)
-      .fullName(globalNamespaceName)
 
   private def astForTypeDeclMember(
     member: BodyDeclaration[_],

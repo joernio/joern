@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack._
@@ -15,7 +14,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
+class AstCreator(val filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
     extends AstCreatorBase(filename)
     with AstForTypesCreator
     with AstForFunctionsCreator
@@ -124,16 +123,12 @@ class AstCreator(filename: String, val config: Config, val global: CGlobal, val 
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val absolutePath = better.files.File(iASTTranslationUnit.getFilePath).path.toAbsolutePath.normalize().toString
-    val name         = NamespaceTraversal.globalNamespaceName
-    val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
-    val namespaceBlock = NewNamespaceBlock()
-      .name(name)
-      .fullName(fullName)
-      .filename(absolutePath)
-      .order(1)
+    val name           = NamespaceTraversal.globalNamespaceName
+    val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
-    Ast(namespaceBlock).withChild(createFakeMethod(name, fullName, absolutePath, iASTTranslationUnit))
+    Ast(namespaceBlock).withChild(
+      createFakeMethod(name, namespaceBlock.fullName, absolutePath(filename), iASTTranslationUnit)
+    )
   }
 
 }
