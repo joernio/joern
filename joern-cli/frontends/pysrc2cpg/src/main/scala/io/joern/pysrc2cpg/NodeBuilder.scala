@@ -37,6 +37,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     name: String,
     fullName: String,
     fileName: String,
+    inheritsFromFullNames: collection.Seq[String],
     lineAndColumn: LineAndColumn
   ): nodes.NewTypeDecl = {
     val typeDeclNode = nodes
@@ -45,6 +46,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .fullName(fullName)
       .isExternal(false)
       .filename(fileName)
+      .inheritsFromTypeFullName(inheritsFromFullNames)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
     addNodeToDiff(typeDeclNode)
