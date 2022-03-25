@@ -51,8 +51,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
       parseResult match {
         case Some(translationUnit) =>
           report.addReportInfo(filename, fileLOC, parsed = true)
-          val localDiff = new DiffGraphBuilder
-          new AstCreator(filename, config, global, localDiff, translationUnit).createAst()
+          val localDiff = new AstCreator(filename, config, global, translationUnit).createAst()
           diffGraph.absorb(localDiff)
           true
         case None =>

@@ -97,7 +97,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewUnknown
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -195,7 +195,7 @@ object AstWithCtx {
   }
 }
 
-class AstCreator(filename: String, global: Global) {
+class AstCreator(filename: String, parserResult: CompilationUnit, global: Global) extends AstCreatorBase(filename) {
 
   private val typeInfoProvider = TypeInfoProvider(global)
 
@@ -203,38 +203,20 @@ class AstCreator(filename: String, global: Global) {
   import AstCreator._
 
   val stack: mutable.Stack[NewNode] = mutable.Stack()
-  val diffGraph: DiffGraphBuilder   = new DiffGraphBuilder
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
     */
-  def createAst(parserResult: CompilationUnit): DiffGraphBuilder = {
+  def createAst(): DiffGraphBuilder = {
     storeInDiffGraph(astForCompilationUnit(parserResult))
     diffGraph
   }
 
   /** Copy nodes/edges of given `AST` into the diff graph
     */
-  private def storeInDiffGraph(astWithCtx: AstWithCtx): Unit = {
+  def storeInDiffGraph(astWithCtx: AstWithCtx): Unit = {
     val ast = astWithCtx.ast
-    ast.nodes.foreach { node =>
-      diffGraph.addNode(node)
-    }
-    ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
-    }
-    ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
-    }
-    ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
-    }
-    ast.refEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.REF)
-    }
-    ast.receiverEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.RECEIVER)
-    }
+    Ast.storeInDiffGraph(ast, diffGraph)
 
     astWithCtx.ctx.bindingsInfo.foreach { bindingInfo =>
       diffGraph.addNode(bindingInfo.node)

@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack._
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
@@ -15,13 +15,9 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(
-  val filename: String,
-  val config: Config,
-  val global: CGlobal,
-  val diffGraph: DiffGraphBuilder,
-  val parserResult: IASTTranslationUnit
-) extends AstForTypesCreator
+class AstCreator(val filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
+    extends AstCreatorBase(filename)
+    with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
     with AstForStatementsCreator
@@ -41,8 +37,10 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
-  def createAst(): Unit =
+  def createAst(): DiffGraphBuilder = {
     Ast.storeInDiffGraph(astForFile(parserResult), diffGraph)
+    diffGraph
+  }
 
   private def astForFile(parserResult: IASTTranslationUnit): Ast = {
     val cpgFile            = Ast(NewFile().name(filename).order(0))

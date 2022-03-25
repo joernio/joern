@@ -37,7 +37,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED =>
-        diffGraph.absorb(new AstCreator(filename, global).createAst(result))
+        diffGraph.absorb(new AstCreator(filename, result, global).createAst())
       case _ =>
         logger.warn("Cannot parse: " + filename)
         logger.warn("Problems: ", parseResult.getProblems.asScala.toList.map(_.toString))
