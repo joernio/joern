@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 
 import java.util.UUID.randomUUID
@@ -78,14 +78,13 @@ case class ScopeContext(
 case class FileInfo(imports: Seq[ImportEntry], classes: List[KtClass])
 
 // TODO: add description
-class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global) {
+class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)
+    extends AstCreatorBase(fileWithMeta.filename) {
 
   // TODO: remove flag as soon as all ASTs without root are not being passed around any more
   // debug flag; when turned on, parsing continues even if an AST has no root
   // only here to help in paying back technical debt. Remove after
   private val continueParsingOnAstNodesWithoutRoot = false
-
-  private val diffGraph: DiffGraphBuilder = new DiffGraphBuilder()
 
   private val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   private val tmpKeyPool    = new IntervalKeyPool(first = 1, last = Long.MaxValue)
@@ -116,24 +115,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   private def storeInDiffGraph(astWithCtx: AstWithCtx): Unit = {
     val ast = astWithCtx.ast
-    ast.nodes.foreach { node =>
-      diffGraph.addNode(node)
-    }
-    ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
-    }
-    ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
-    }
-    ast.refEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.REF)
-    }
-    ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
-    }
-    ast.receiverEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.RECEIVER)
-    }
+
+    Ast.storeInDiffGraph(ast, diffGraph)
 
     astWithCtx.ctx.bindingsInfo.foreach { bindingInfo =>
       diffGraph.addNode(bindingInfo.node)
