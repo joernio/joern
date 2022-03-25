@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class MethodReturnTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple method with two parameters" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
       |fun foo(x: Int, y: Double): Int {
       |  return x * 2
       |}

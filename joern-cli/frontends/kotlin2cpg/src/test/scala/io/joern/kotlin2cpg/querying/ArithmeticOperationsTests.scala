@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -11,7 +11,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with simple arithmetic operations" - {
 
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  println(1 + 2)
         |  println(1 - 2)

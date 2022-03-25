@@ -7,25 +7,25 @@ import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import scala.collection.mutable
 import scala.util.Random
 
-object Kotlin2CpgTestContext {
-  def newContext: Kotlin2CpgTestContext = {
-    new Kotlin2CpgTestContext()
+object TestContext {
+  def newContext: TestContext = {
+    new TestContext()
   }
 
   def buildCpg(code: String, file: String = "generated.kt", includeAllJars: Boolean = false): Cpg = {
-    val context = new Kotlin2CpgTestContext()
+    val context = new TestContext()
     context.addSource(code, file)
     context.includeAllJars = includeAllJars
     context.buildCpg
   }
 }
 
-class Kotlin2CpgTestContext private () {
+class TestContext private () {
   private val codeAndFile    = mutable.ArrayBuffer.empty[Kotlin2Cpg.InputPair]
   private var buildResult    = Option.empty[Cpg]
   private var includeAllJars = false
 
-  def addSource(code: String, fileName: String = "generated.kt"): Kotlin2CpgTestContext = {
+  def addSource(code: String, fileName: String = "generated.kt"): TestContext = {
     if (buildResult.nonEmpty) {
       throw new RuntimeException("Not allowed to add sources after buildCpg() was called.")
     }
