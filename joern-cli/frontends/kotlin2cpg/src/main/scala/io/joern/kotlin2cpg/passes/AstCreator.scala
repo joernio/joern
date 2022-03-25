@@ -738,15 +738,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChildren(membersFromPrimaryCtorAsts)
         .withChildren(secondaryConstructorAsts)
         .withChildren(componentNMethodAsts.toList)
-        // TODO: reenable initializer block parsing when methodReturn nodes have been added
-        // otherwise the CfgCreator throws
-        /*
-        .withChildren(
-          withOrder(blockInitializers) { (initializer, order) =>
-            astForInitializerBlock(initializer, order).ast
-          }
-        )
-         */
         .withChildren(withOrder(classDeclarations) { (method, order) =>
           astForMember(method, orderAfterComponentN + order)
         })
@@ -758,37 +749,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, finalCtx)
   }
 
-  private def astForInitializerBlock(initBlock: KtAnonymousInitializer, scopeContext: ScopeContext, order: Int)(implicit
-    fileInfo: FileInfo,
-    typeInfoProvider: TypeInfoProvider
-  ): AstWithCtx = {
-    val methodNode =
-      NewMethod()
-        .name("PLACEHOLDER_INIT_NAME")
-        .fullName("PLACHOLDER_INIT_FULLNAME")
-        .isExternal(false)
-        .order(order)
-        .filename(relativizedPath)
-        .lineNumber(line(initBlock.getBody))
-        .columnNumber(column(initBlock.getBody))
-
-    val blockOrder = 1
-    val block =
-      NewBlock()
-        .order(blockOrder)
-        .lineNumber(line(initBlock.getBody))
-        .columnNumber(column(initBlock.getBody))
-        .code(initBlock.getText)
-    val bodyAsts = astsForExpression(initBlock.getBody, scopeContext, blockOrder + 1, blockOrder + 1)
-    val blockAst =
-      Ast(block)
-        .withChildren(bodyAsts.map(_.ast))
-    val ast =
-      Ast(methodNode)
-        .withChild(blockAst)
-    AstWithCtx(ast, Context())
-  }
-
   private def astForMethod(ktFn: KtNamedFunction, scopeContext: ScopeContext, childNum: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
@@ -797,12 +757,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     // TODO: add the annotations as soon as they're part of the open source schema
     // ktFn.getModifierList.getAnnotationEntries().asScala.map(_.getText)
     //
-    val typeDeclName =
-      if (scopeContext.typeDecl.isDefined) {
-        scopeContext.typeDecl.get.fullName
-      } else {
-        ""
-      }
     val methodNode = createMethodNode(ktFn, childNum)
     val parametersWithCtx =
       withOrder(ktFn.getValueParameters) { (p, order) =>
@@ -1131,9 +1085,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForArrayAccess(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtLambdaExpression =>
         Seq(astForLambda(typedExpr, scopeContext, order, argIdx))
-      case typedExpr: KtNamedFunction =>
-        // TODO: re-enable after all AST issues have been fixed
-        // Seq(astForAnonymousFunction(typedExpr, scopeContext, order))
+      case _: KtNamedFunction =>
         Seq()
       case classExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(classExpr, scopeContext, order, argIdx))
@@ -1187,9 +1139,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val getClassMethodName = "getClass"
-    val receiverName       = expr.getReceiverExpression.getText
-    val signature          = "java.lang.Class()"
-    val methodFullName     = receiverName + "." + getClassMethodName + ":" + signature
 
     val fullNameWithSignature = typeInfoProvider.fullNameWithSignature(expr, ("", ""))
     val typeFullName          = typeInfoProvider.expressionType(expr, "java.lang.Class")
@@ -1210,70 +1159,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(Ast(callNode), Context())
   }
 
-  def astForAnonymousFunction(expr: KtNamedFunction, scopeContext: ScopeContext, order: Int)(implicit
-    fileInfo: FileInfo,
-    typeInfoProvider: TypeInfoProvider
-  ): AstWithCtx = {
-    val containingFile = expr.getContainingKtFile
-    val fileName       = expr.getContainingKtFile.getName
-    val lambdaNum      = lambdaKeyPool.next
-    val fullName =
-      containingFile.getPackageFqName.toString + ":<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">()"
-    val signature = typeInfoProvider.erasedSignature(expr.getValueParameters.asScala.toList)
-    val lambdaMethod =
-      NewMethod()
-        .name(Constants.lambdaName)
-        .code("")
-        .isExternal(false)
-        .fullName(fullName)
-        .lineNumber(line(expr))
-        .columnNumber(column(expr))
-        .signature(signature)
-        .filename(relativizedPath)
-
-    val parametersWithCtx =
-      withOrder(expr.getValueParameters) { (p, order) =>
-        astForParameter(p, order)
-      }
-    val lastOrder = parametersWithCtx.size + 2
-
-    val bodyAstWithCtx = astForMethodBody(expr.getBodyBlockExpression, scopeContext, lastOrder)
-
-    val methodReturnNode =
-      NewMethodReturn()
-        .order(lastOrder + 1)
-        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .typeFullName(TypeConstants.any)
-        .code(Constants.retCode)
-        .lineNumber(line(expr))
-        .columnNumber(column(expr))
-    val lambdaMethodAst =
-      Ast(lambdaMethod)
-        .withChildren(parametersWithCtx.map(_.ast))
-        .withChild(bodyAstWithCtx.ast)
-        .withChild(Ast(methodReturnNode))
-
-    val methodRef =
-      NewMethodRef()
-        .code("")
-        .methodFullName(fullName)
-        .typeFullName(TypeConstants.any)
-        .lineNumber(line(expr))
-        .columnNumber(column(expr))
-        .order(order)
-    val methodRefAst = Ast(methodRef)
-
-    val finalCtx =
-      Context(
-        lambdaAsts = Seq(lambdaMethodAst),
-        identifiers = bodyAstWithCtx.ctx.identifiers,
-        closureBindingInfo = bodyAstWithCtx.ctx.closureBindingInfo,
-        lambdaBindingInfo = bodyAstWithCtx.ctx.lambdaBindingInfo,
-        bindingsInfo = bodyAstWithCtx.ctx.bindingsInfo
-      )
-    AstWithCtx(methodRefAst, finalCtx)
-  }
-
   def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
@@ -1285,8 +1170,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     val lastOrder = parametersWithCtx.size + 2
 
-    val bodyAstWithCtx   = astForMethodBody(expr.getBodyExpression, scopeContext, lastOrder)
-    val bodyIndentifiers = bodyAstWithCtx.ctx.identifiers // TODO: delete refs to global decls
+    val bodyAstWithCtx = astForMethodBody(expr.getBodyExpression, scopeContext, lastOrder)
 
     val methodParameterNodes: Seq[NewMethodParameterIn] =
       parametersWithCtx
