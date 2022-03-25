@@ -355,8 +355,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
       fqName + "." + className
     }
-    val fullName = typeInfoProvider.fullName(ktClass, explicitFullName)
-    registerType(fullName)
+    val classFullName = typeInfoProvider.fullName(ktClass, explicitFullName)
+    registerType(classFullName)
 
     val explicitBaseTypeFullNames =
       ktClass.getSuperTypeListEntries.asScala
@@ -377,7 +377,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       NewTypeDecl()
         .code(ktClass.getName)
         .name(className)
-        .fullName(fullName)
+        .fullName(classFullName)
         .order(order)
         .inheritsFromTypeFullName(outBaseTypeFullNames)
         .isExternal(false)
@@ -427,7 +427,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       } else {
         typeInfoProvider.erasedSignature(constructorParams)
       }
-    val defaultFullName = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+    val defaultFullName = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
     val ctorFnWithSig =
       typeInfoProvider.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
     val primaryCtorOrder = 1
@@ -445,7 +445,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       NewMethodParameterIn()
         .name(Constants.this_)
         .code(Constants.this_)
-        .typeFullName(fullName)
+        .typeFullName(classFullName)
         .order(0)
     val constructorParamsWithCtx = {
       Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
@@ -494,7 +494,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             NewIdentifier()
               .code(Constants.this_)
               .name(Constants.this_)
-              .typeFullName(fullName)
+              .typeFullName(classFullName)
               .argumentIndex(1)
               .order(1)
 
@@ -552,7 +552,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(orderAfterParamsAndBlock)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
         .typeFullName(typeFullName)
-        .dynamicTypeHintFullName(Some(fullName))
+        .dynamicTypeHintFullName(Some(classFullName))
         .code(Constants.retCode)
         .lineNumber(line(ktClass.getPrimaryConstructor))
         .columnNumber(column(ktClass.getPrimaryConstructor))
@@ -584,7 +584,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       withOrder(ktClass.getSecondaryConstructors) { (secondaryCtor, order) =>
         val constructorParams = secondaryCtor.getValueParameters.asScala.toList
         val defaultSignature  = typeInfoProvider.erasedSignature(constructorParams)
-        val defaultFullName   = fullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+        val defaultFullName   = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
         val ctorFnWithSig = typeInfoProvider.fullNameWithSignature(secondaryCtor, (defaultFullName, defaultSignature))
         val constructorMethod =
           NewMethod()
@@ -603,7 +603,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .order(1)
             .evaluationStrategy(EvaluationStrategies.BY_VALUE)
             .typeFullName(typeFullName)
-            .dynamicTypeHintFullName(Some(fullName))
+            .dynamicTypeHintFullName(Some(classFullName))
             .code(Constants.retCode)
             .lineNumber(line(secondaryCtor))
             .columnNumber(column(secondaryCtor))
@@ -612,7 +612,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           NewMethodParameterIn()
             .name(Constants.this_)
             .code(Constants.this_)
-            .typeFullName(fullName)
+            .typeFullName(classFullName)
             .order(0)
         val constructorParamsWithCtx =
           Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
@@ -648,6 +648,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val componentName = Constants.componentNPrefix + componentIdx
           val signature     = typeFullName + "()"
           val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
+
+          val thisParam =
+            NewMethodParameterIn()
+              .name(Constants.this_)
+              .code(Constants.this_)
+              .typeFullName(classFullName)
+              .order(0)
           val methodNode =
             NewMethod()
               .name(componentName)
@@ -658,19 +665,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             NewIdentifier()
               .typeFullName(typeDecl.fullName)
               .code(Constants.this_)
-              .argumentIndex(0)
+              .name(Constants.this_)
+              .argumentIndex(1)
               .order(1)
           val fieldIdentifier =
             NewFieldIdentifier()
               .code(valueParam.getName)
               .canonicalName(valueParam.getName)
-              .argumentIndex(1)
+              .argumentIndex(2)
               .order(2)
 
           val fieldAccessCall =
             NewCall()
               .methodFullName(Operators.fieldAccess)
               .name(Operators.fieldAccess)
+              .code(Constants.this_ + "." + valueParam.getName)
               .dispatchType(DispatchTypes.STATIC_DISPATCH)
               .signature("")
               .typeFullName(typeFullName)
@@ -712,6 +721,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .order(2)
 
           Ast(methodNode)
+            .withChild(Ast(thisParam))
             .withChild(methodBlockAst)
             .withChild(Ast(methodReturn))
         }
