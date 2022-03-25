@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, MethodParameterIn}
@@ -13,7 +13,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for a class declaration with an implicit constructor" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class Foo
@@ -29,7 +29,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with class with param in its primary constructor" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class AClass(x: String)
@@ -46,7 +46,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with class which defines member in its primary constructor" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class AClass(val x: String)
@@ -113,7 +113,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for a class declaration with an implicit constructor with parameters" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class Foo(bar: String) {
@@ -130,7 +130,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for a class declaration with an explicit constructor with parameters" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class Foo constructor(bar: String) {
@@ -147,7 +147,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for a class declaration with secondary constructor" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |class Foo(foo: String) {

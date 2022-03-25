@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, Literal}
@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple if-expression inside DQE" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+    lazy val cpg = TestContext.buildCpg(
       """
         |package main
         |
@@ -40,7 +40,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple when-expression inside DQE" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+    lazy val cpg = TestContext.buildCpg(
       """
         |package mypkg
         |
@@ -72,7 +72,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple try-catch-expression inside DQE" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg(
+    lazy val cpg = TestContext.buildCpg(
       """
         |package main
         |

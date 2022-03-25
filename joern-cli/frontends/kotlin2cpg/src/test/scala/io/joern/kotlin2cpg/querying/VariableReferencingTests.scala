@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.semanticcpg.language._
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class VariableReferencingTests extends AnyFreeSpec with Matchers {
   "should find references for simple case" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |fun foo(x: Int): Int {
         |  val y = x
         |  return y
@@ -32,7 +32,7 @@ class VariableReferencingTests extends AnyFreeSpec with Matchers {
   }
 
   "should find references inside expressions" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |fun foo(x: Int): Int {
         |  val y = 1 + x
         |  return y

@@ -2,7 +2,7 @@ package io.joern.c2cpg.passes
 
 import better.files.File
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.datastructures.Global
+import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
@@ -105,7 +105,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
   }
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    if (!Global.shouldBeCleared()) {
+    if (!CGlobal.shouldBeCleared()) {
       ;
     } else {
       createMissingAstEdges(dstGraph)

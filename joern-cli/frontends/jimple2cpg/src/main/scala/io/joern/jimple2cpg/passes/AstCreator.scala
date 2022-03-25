@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
-class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) {
+class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCreatorBase(filename) {
 
   import AstCreator._
 
@@ -34,9 +34,10 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
     */
-  def createAst(cls: SootClass): scala.Unit = {
+  def createAst(): DiffGraphBuilder = {
     val astRoot = astForCompilationUnit(cls)
     storeInDiffGraph(astRoot, diffGraph)
+    diffGraph
   }
 
   /** Translate compilation unit into AST

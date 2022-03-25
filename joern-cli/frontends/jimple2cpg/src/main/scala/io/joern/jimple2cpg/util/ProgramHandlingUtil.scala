@@ -48,7 +48,7 @@ object ProgramHandlingUtil {
   def moveClassFiles(files: List[String]): List[String] = {
     var destPath: Option[String] = None
 
-    sealed class ClassPathVisitor extends ClassVisitor(Opcodes.ASM8) {
+    sealed class ClassPathVisitor extends ClassVisitor(Opcodes.ASM9) {
       override def visit(
         version: Int,
         access: Int,

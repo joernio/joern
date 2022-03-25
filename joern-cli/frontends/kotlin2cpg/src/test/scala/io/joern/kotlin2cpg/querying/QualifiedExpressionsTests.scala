@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 
 class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
   "CPG for code with qualified expression with QE as a receiver" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -30,7 +30,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with qualified expression with CALL as a receiver" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |fun getHashMap(): HashMap<String,String> {
@@ -63,7 +63,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with qualified expression with `when` as receiver" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -87,7 +87,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with qualified expression in which the receiver is a call to array access" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |fun main() {

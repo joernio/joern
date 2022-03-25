@@ -23,7 +23,8 @@ object PythonV2      extends PythonVersion
 object PythonV3      extends PythonVersion
 object PythonV2AndV3 extends PythonVersion
 
-class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonAstVisitorHelpers {
+class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, version: PythonVersion)
+    extends PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -355,7 +356,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
-    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName, lineAndColumn)
+    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName, Seq(Constants.ANY), lineAndColumn)
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
 
@@ -376,7 +377,13 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
-      nodeBuilder.typeDeclNode(metaTypeDeclName, metaTypeDeclFullName, fileName, lineAndColOf(classDef))
+      nodeBuilder.typeDeclNode(
+        metaTypeDeclName,
+        metaTypeDeclFullName,
+        fileName,
+        Seq(Constants.ANY),
+        lineAndColOf(classDef)
+      )
     edgeBuilder.astEdge(metaTypeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
@@ -395,9 +402,18 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
     val instanceTypeDeclName     = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
 
+    // TODO for now we just take the code of the base expression and pretend they are full names.
+    val inheritsFrom = classDef.bases.map(nodeToCode.getCode)
+
     val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
     val instanceTypeDecl =
-      nodeBuilder.typeDeclNode(instanceTypeDeclName, instanceTypeDeclFullName, fileName, lineAndColOf(classDef))
+      nodeBuilder.typeDeclNode(
+        instanceTypeDeclName,
+        instanceTypeDeclFullName,
+        fileName,
+        inheritsFrom,
+        lineAndColOf(classDef)
+      )
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create meta class call handling method and bind it to meta class type.
@@ -536,7 +552,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
         val (arguments, keywordArguments) = createArguments(parameters, lineAndColumn)
         val staticCall =
           createStaticCall(adaptedMethodName, adaptedMethodFullName, lineAndColumn, arguments, keywordArguments)
-        val returnNode = createReturn(Some(staticCall), lineAndColumn)
+        val returnNode = createReturn(Some(staticCall), None, lineAndColumn)
         returnNode :: Nil
       },
       returns = None,
@@ -622,7 +638,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
           keywordArguments
         )
 
-        val returnNode = createReturn(Some(fakeNewCall), lineAndColumn)
+        val returnNode = createReturn(Some(fakeNewCall), None, lineAndColumn)
 
         returnNode :: Nil
       },
@@ -687,7 +703,8 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
           keywordArguments
         )
 
-        val returnNode = createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), lineAndColumn)
+        val returnNode =
+          createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), None, lineAndColumn)
 
         assignmentToNewInstance :: initCall :: returnNode :: Nil
       },
@@ -700,7 +717,7 @@ class PythonAstVisitor(fileName: String, version: PythonVersion) extends PythonA
   }
 
   def convert(ret: ast.Return): NewNode = {
-    createReturn(ret.value.map(convert), lineAndColOf(ret))
+    createReturn(ret.value.map(convert), Some(nodeToCode.getCode(ret)), lineAndColOf(ret))
   }
 
   def convert(delete: ast.Delete): NewNode = {

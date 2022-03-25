@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Kotlin2CpgTestContext
+import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
@@ -12,7 +12,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with destructuring declaration and a variable as RHS" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -88,7 +88,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with destructuring expression with a ctor-invocation RHS" - {
-    lazy val cpg = Kotlin2CpgTestContext.buildCpg("""
+    lazy val cpg = TestContext.buildCpg("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)

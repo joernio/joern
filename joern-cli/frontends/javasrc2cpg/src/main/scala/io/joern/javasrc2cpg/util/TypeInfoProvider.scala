@@ -8,7 +8,8 @@ import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
 import com.github.javaparser.resolution.declarations._
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
-import io.joern.javasrc2cpg.passes.{Global, ScopeContext}
+import io.joern.javasrc2cpg.passes.ScopeContext
+import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
