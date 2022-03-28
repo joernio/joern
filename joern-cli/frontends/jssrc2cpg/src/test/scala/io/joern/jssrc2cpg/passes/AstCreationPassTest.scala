@@ -23,9 +23,8 @@ class AstCreationPassTest extends AbstractPassTest {
   "AST generation for simple fragments" should {
 
     "have correct structure for FILENAME property" in AstFixture("let x = 1;") { cpg =>
-      def namespaceBlocks = cpg.namespaceBlock
+      def namespaceBlocks = cpg.namespaceBlock.filter(PropertyNames.FILENAME, "code.js")
       namespaceBlocks.checkNodeCount(1)
-      namespaceBlocks.checkProperty(PropertyNames.FILENAME, "code.js")
 
       def program = cpg.method.nameExact(":program")
       program.checkNodeCount(1)

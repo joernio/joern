@@ -17,6 +17,8 @@ class BuiltinTypesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     val namespaceBlock = NewNamespaceBlock()
       .name(Defines.GLOBAL_NAMESPACE)
       .fullName(Defines.GLOBAL_NAMESPACE)
+      .order(0)
+      .filename("builtintypes")
 
     diffGraph.addNode(namespaceBlock)
 

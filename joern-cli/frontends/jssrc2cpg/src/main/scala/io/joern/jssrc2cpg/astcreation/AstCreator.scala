@@ -14,6 +14,7 @@ import io.joern.jssrc2cpg.parser.BabelAst.BabelNode
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.jssrc2cpg.passes.GlobalBuiltins
 import AstCreatorHelper.OptionSafeAst
+import io.joern.jssrc2cpg.datastructures.scope.BlockScope
 import io.joern.jssrc2cpg.datastructures.scope.ScopeElement
 import io.joern.jssrc2cpg.datastructures.scope.ScopeElementIterator
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -27,10 +28,12 @@ import io.joern.x2cpg.AstCreatorBase
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Value
 
 import scala.collection.mutable
+import scala.util.Try
 
 class AstCreator(val config: Config, val parserResult: ParseResult, val global: Global)
     extends AstCreatorBase(parserResult.filename)
@@ -236,6 +239,19 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
       )
     )
 
+  protected def astsForNumericLiteral(numericLiteral: BabelNodeInfo, order: Int): Seq[Ast] =
+    Seq(
+      Ast(
+        createLiteralNode(
+          numericLiteral.code,
+          Some(Defines.NUMBER.label),
+          order,
+          numericLiteral.lineNumber,
+          numericLiteral.columnNumber
+        )
+      )
+    )
+
   private def computeScopePath(stack: Option[ScopeElement]): String =
     new ScopeElementIterator(stack)
       .to(Seq)
@@ -374,16 +390,112 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     methodRefId.map(Ast(_)).toSeq
   }
 
+  protected def astsForVariableDeclarator(declarator: Value, order: Int, scopeType: ScopeType): Seq[Ast] = {
+    val id   = createBabelNodeInfo(declarator("id"))
+    val init = Try(createBabelNodeInfo(declarator("init"))).toOption
+
+    val typeFullName = init match {
+      case Some(f @ BabelNodeInfo(BabelAst.FunctionDeclaration)) =>
+        val (_, methodFullName) = calcMethodNameAndFullName(f)
+        methodFullName
+      case _ => Defines.ANY.label
+    }
+
+    val varId = createLocalNode(id.code, typeFullName, 0)
+    scope.addVariable(id.code, varId, scopeType)
+
+    init match {
+      case Some(initExpr) =>
+        val destId   = astsForNode(id.json, 1)
+        val sourceId = astsForNode(initExpr.json, 2)
+        val assigmentCallId =
+          createAssignment(
+            destId.head.nodes.head,
+            sourceId.head.nodes.head,
+            code(declarator),
+            order,
+            line = initExpr.lineNumber,
+            column = initExpr.columnNumber
+          )
+        Seq(Ast(varId), assigmentCallId) ++ destId ++ sourceId
+      case None => Seq(Ast(varId))
+    }
+  }
+
+  protected def astsForVariableDeclaration(declaration: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val scopeType = if (declaration.json("kind").str == "let") {
+      BlockScope
+    } else {
+      MethodScope
+    }
+
+    withOrder(declaration.json("declarations").arr.toSeq) { (d, o) =>
+      astsForVariableDeclarator(d, order + o - 1, scopeType)
+    }.flatten
+  }
+
+  protected def astsForAssignmentExpression(assignment: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val op = assignment.json("operator").str match {
+      case "="    => Operators.assignment
+      case "+="   => Operators.assignmentPlus
+      case "-="   => Operators.assignmentMinus
+      case "*="   => Operators.assignmentMultiplication
+      case "/="   => Operators.assignmentDivision
+      case "%="   => Operators.assignmentModulo
+      case "**="  => Operators.assignmentExponentiation
+      case "&="   => Operators.assignmentAnd
+      case "&&="  => Operators.assignmentAnd
+      case "|="   => Operators.assignmentOr
+      case "||="  => Operators.assignmentOr
+      case "^="   => Operators.assignmentXor
+      case "<<="  => Operators.assignmentShiftLeft
+      case ">>="  => Operators.assignmentArithmeticShiftRight
+      case ">>>=" => Operators.assignmentLogicalShiftRight
+      case "??="  => Operators.notNullAssert
+      case other =>
+        logger.warn(s"Unknown assignment operator: '$other'")
+        Operators.assignment
+    }
+
+    val lhsId = astsForNode(assignment.json("left"), 1)
+    val rhsId = astsForNode(assignment.json("right"), 2)
+
+    val callId =
+      createCallNode(assignment.code, op, DispatchTypes.STATIC_DISPATCH, assignment.lineNumber, assignment.columnNumber)
+        .order(order)
+
+    Seq(Ast(callId).withChildren(lhsId).withChildren(rhsId).withArgEdges(callId, lhsId).withArgEdges(callId, rhsId))
+  }
+
+  protected def astsForBlockStatement(block: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val blockId = createBlockNode(block.code, order, block.lineNumber, block.columnNumber)
+    scope.pushNewBlockScope(blockId)
+    localAstParentStack.push(blockId)
+
+    val blockStatements = withOrder(block.json("body").arr.toSeq) { (s, o) =>
+      astsForNode(s, o)
+    }.flatten
+
+    localAstParentStack.pop()
+    scope.popScope()
+
+    Seq(Ast(blockId).withChildren(blockStatements))
+  }
+
   protected def astsForNode(json: Value, order: Int): Seq[Ast] = createBabelNodeInfo(json) match {
-    case BabelNodeInfo(BabelAst.File)                           => astsForNode(json("program"), order)
-    case BabelNodeInfo(BabelAst.Program)                        => astsForNodes(json("body").arr.toSeq)
-    case exprStmt @ BabelNodeInfo(BabelAst.ExpressionStatement) => astsForExpressionStatement(exprStmt, order)
-    case callExpr @ BabelNodeInfo(BabelAst.CallExpression)      => astsForCallExpression(callExpr, order)
-    case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)  => astsForMemberExpression(memberExpr, order)
-    case ident @ BabelNodeInfo(BabelAst.Identifier)             => astsForIdentifier(ident, order)
-    case stringLiteral @ BabelNodeInfo(BabelAst.StringLiteral)  => astsForStringLiteral(stringLiteral, order)
-    case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)     => astsForFunctionDeclaration(func, order)
-    case other                                                  => Seq(notHandledYet(other, order))
+    case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"), order)
+    case BabelNodeInfo(BabelAst.Program)                           => astsForNodes(json("body").arr.toSeq)
+    case exprStmt @ BabelNodeInfo(BabelAst.ExpressionStatement)    => astsForExpressionStatement(exprStmt, order)
+    case callExpr @ BabelNodeInfo(BabelAst.CallExpression)         => astsForCallExpression(callExpr, order)
+    case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)     => astsForMemberExpression(memberExpr, order)
+    case ident @ BabelNodeInfo(BabelAst.Identifier)                => astsForIdentifier(ident, order)
+    case stringLiteral @ BabelNodeInfo(BabelAst.StringLiteral)     => astsForStringLiteral(stringLiteral, order)
+    case numLiteral @ BabelNodeInfo(BabelAst.NumericLiteral)       => astsForNumericLiteral(numLiteral, order)
+    case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)        => astsForFunctionDeclaration(func, order)
+    case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)        => astsForVariableDeclaration(decl, order)
+    case assignment @ BabelNodeInfo(BabelAst.AssignmentExpression) => astsForAssignmentExpression(assignment, order)
+    case block @ BabelNodeInfo(BabelAst.BlockStatement)            => astsForBlockStatement(block, order)
+    case other                                                     => Seq(notHandledYet(other, order))
   }
 
   protected def astsForNodes(jsons: Seq[Value]): Seq[Ast] = withOrder(jsons) { (n, o) =>

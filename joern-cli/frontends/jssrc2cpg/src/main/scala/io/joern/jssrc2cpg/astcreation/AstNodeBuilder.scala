@@ -261,6 +261,18 @@ trait AstNodeBuilder {
 
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
+  protected def createBlockNode(
+    code: String,
+    order: Int,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewBlock = NewBlock()
+    .typeFullName(Defines.ANY.label)
+    .code(code)
+    .order(order)
+    .lineNumber(line)
+    .columnNumber(column)
+
   protected def createFunctionTypeAndTypeDeclAst(
     methodNode: NewMethod,
     parentNode: NewNode,
