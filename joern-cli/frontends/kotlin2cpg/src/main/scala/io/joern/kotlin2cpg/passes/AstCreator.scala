@@ -2,6 +2,8 @@ package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.types.{CallKinds, NameReferenceKinds, TypeConstants, TypeInfoProvider}
+import io.joern.kotlin2cpg.psi.Extractor._
+
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.IntervalKeyPool
@@ -11,7 +13,6 @@ import io.joern.x2cpg.datastructures.Global
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -147,28 +148,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     nodeList.asScala.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }.toSeq
-  }
-
-  private def line(element: PsiElement): Int = {
-    try {
-      element.getContainingFile.getViewProvider.getDocument
-        .getLineNumber(element.getTextOffset)
-    } catch {
-      case _: Throwable => -1
-    }
-  }
-
-  private def column(element: PsiElement): Int = {
-    try {
-      val lineNumber =
-        element.getContainingFile.getViewProvider.getDocument
-          .getLineNumber(element.getTextOffset)
-      val lineOffset =
-        element.getContainingFile.getViewProvider.getDocument.getLineStartOffset(lineNumber)
-      element.getTextOffset - lineOffset
-    } catch {
-      case _: Throwable => -1
-    }
   }
 
   private def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): AstWithCtx = {
