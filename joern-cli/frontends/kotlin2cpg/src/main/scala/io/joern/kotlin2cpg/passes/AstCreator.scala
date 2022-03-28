@@ -1574,7 +1574,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
         val assignmentLHSNode =
           NewIdentifier()
-            .name(entry.getName)
+            .name(entry.getText)
             .code(entry.getText)
             .typeFullName(entryTypeFullName)
             .order(1)
@@ -1607,6 +1607,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           NewCall()
             .code(componentNCallCode)
             .methodFullName(componentNFullNameWithSignature._1)
+            .name(Constants.componentNPrefix + componentIdx)
             .signature(componentNFullNameWithSignature._2)
             .typeFullName(entryTypeFullName)
             .order(2)
@@ -1720,7 +1721,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val componentNIdentifierNode =
           NewIdentifier()
             .code(destructuringRHS.getText)
-            .name(destructuringRHS.getName)
+            .name(destructuringRHS.getText)
             .order(1)
             .argumentIndex(0)
             .typeFullName(componentNIdentifierTFN)
@@ -1740,6 +1741,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .methodFullName(componentNFullNameWithSignature._1)
             .signature(componentNFullNameWithSignature._2)
             .typeFullName(entryTypeFullName)
+            .name(Constants.componentNPrefix + componentIdx)
             .order(2)
             .argumentIndex(2)
             .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
