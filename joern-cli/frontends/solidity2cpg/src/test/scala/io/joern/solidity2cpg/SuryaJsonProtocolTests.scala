@@ -22,12 +22,12 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
   "should be able to decode a string JSON input to a root SourceUnit" in {
     import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
     import io.joern.solidity2cpg.domain.SuryaObject._
-    val astRoot = Try(code.parseJson.convertTo[SourceUnit]) match {
-      case Failure(e)          => fail(s"Unable to convert JSON to SourceUnit due to an exception", e)
-      case Success(sourceUnit) => sourceUnit
-    }
+   val astRoot = Try(code.parseJson.convertTo[SourceUnit]) match {
+     case Failure(e)          => fail(s"Unable to convert JSON to SourceUnit due to an exception", e)
+     case Success(sourceUnit) => sourceUnit
+   }
     // TODO: Write tests to spot check that important things are here in the AST ROOT
-    println(astRoot)
+   println(astRoot)
   }
 
 }

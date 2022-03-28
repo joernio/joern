@@ -1,5 +1,5 @@
 package io.joern.solidity2cpg.domain
-
+import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsString, JsValue, JsonFormat}
 /** Represents objects in the Surya JSON. This allows them to be easily grouped together and used in match statements.
   */
 sealed trait SuryaObject
@@ -65,7 +65,7 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class ModifierDefinition(name: String, parameters: List[BaseASTNode], body: BaseASTNode, isVirtual: Boolean)
+  case class ModifierDefinition(name: String, parameters: List[BaseASTNode], body: BaseASTNode, isVirtual: Boolean, `override`: BaseASTNode)
       extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
@@ -98,11 +98,11 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class FunctionCall(expression: BaseASTNode, arguments: List[BaseASTNode]) extends BaseASTNode() {
+  case class FunctionCall(expression: BaseASTNode, arguments: List[BaseASTNode], names: List[String], identifiers: List[String]) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class MemberAccess(expression: List[BaseASTNode], memberName: String) extends BaseASTNode() {
+  case class MemberAccess(expression: BaseASTNode, memberName: String) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -114,7 +114,7 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class StringLiteral(value: String, parts: List[String], isUnicode: Boolean) extends BaseASTNode() {
+  case class StringLiteral(value: String, parts: List[String], isUnicode: List[JsBoolean]) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -129,7 +129,7 @@ object SuryaObject {
     body: BaseASTNode,
     visibility: String,
     modifiers: List[BaseASTNode],
-    `override`: List[BaseASTNode],
+    `override`: BaseASTNode,
     isConstructor: Boolean,
     isReceiveEther: Boolean,
     isFallback: Boolean,
@@ -169,11 +169,11 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class ArrayTypeName(baseTypeName: BaseASTNode, length: Int) extends BaseASTNode() {
+  case class ArrayTypeName(baseTypeName: BaseASTNode, length: String) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class NumberLiteral(number: Int, subdenomination: Int) extends BaseASTNode() {
+  case class NumberLiteral(number: String, subdenomination: String) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
