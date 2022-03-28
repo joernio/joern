@@ -52,6 +52,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
       firstDestructRHSCall.code shouldBe "aClass.component1()"
+      firstDestructRHSCall.name shouldBe "component1"
       firstDestructRHSCall.methodFullName shouldBe "main.AClass.component1:java.lang.String()"
       firstDestructRHSCall.signature shouldBe "java.lang.String()"
       firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
@@ -60,6 +61,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
         firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l
       firstDestructRHSCallArgument.argumentIndex shouldBe 0
       firstDestructRHSCallArgument.code shouldBe "aClass"
+      firstDestructRHSCallArgument.name shouldBe "aClass"
       firstDestructRHSCallArgument.typeFullName shouldBe "main.AClass"
       firstDestructRHSCallArgument.refsTo.size shouldBe 1
 
@@ -173,6 +175,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
       firstDestructRHSCall.code should startWith("tmp_")
       firstDestructRHSCall.code should endWith("component1()")
+      firstDestructRHSCall.name shouldBe "component1"
       firstDestructRHSCall.methodFullName shouldBe "main.AClass.component1:java.lang.String()"
       firstDestructRHSCall.signature shouldBe "java.lang.String()"
       firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
@@ -196,6 +199,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
+      secondDestructRHSCall.name shouldBe "component2"
       secondDestructRHSCall.methodFullName shouldBe "main.AClass.component2:java.lang.Integer()"
       secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
       secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
