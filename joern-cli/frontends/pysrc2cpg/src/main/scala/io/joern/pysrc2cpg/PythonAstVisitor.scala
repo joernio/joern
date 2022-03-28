@@ -70,8 +70,9 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
 
-    val fileNode           = nodeBuilder.fileNode(fileName)
-    val namespaceBlockNode = nodeBuilder.namespaceBlockNode(fileName)
+    val fileNode = nodeBuilder.fileNode(fileName)
+    val namespaceBlockNode =
+      nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, fileName + ":" + Constants.GLOBAL_NAMESPACE, fileName)
     edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
     contextStack.setFileNamespaceBlock(namespaceBlockNode)
 
