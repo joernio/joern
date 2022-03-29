@@ -9,7 +9,11 @@ import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
 /** Result of executing a query, containing in particular output received on standard out and on standard error.
   */
-class QueryResult(val out: String, val err: String, val uuid: UUID)
+class QueryResult(val out: String, val err: String, val uuid: UUID) extends HasUUID
+
+trait HasUUID {
+  def uuid: UUID
+}
 
 private[embammonite] case class Job(uuid: UUID, query: String, observer: QueryResult => Unit)
 
