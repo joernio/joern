@@ -7,8 +7,8 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 case class AstEdge(src: NewNode, dst: NewNode)
 
 object Ast {
-  def apply(node: NewNode): Ast = Ast(List(node))
-  def apply(): Ast              = new Ast(List())
+  def apply(node: NewNode): Ast = Ast(Vector.empty :+ node)
+  def apply(): Ast              = new Ast(Vector.empty)
 
   /** Copy nodes/edges of given `AST` into the given `diffGraph`.
     */
@@ -40,13 +40,13 @@ object Ast {
 }
 
 case class Ast(
-  nodes: List[NewNode],
-  edges: List[AstEdge] = List(),
-  conditionEdges: List[AstEdge] = List(),
-  refEdges: List[AstEdge] = List(),
-  bindsEdges: List[AstEdge] = List(),
-  receiverEdges: List[AstEdge] = List(),
-  argEdges: List[AstEdge] = List()
+  nodes: collection.Seq[NewNode],
+  edges: collection.Seq[AstEdge] = Vector.empty,
+  conditionEdges: collection.Seq[AstEdge] = Vector.empty,
+  refEdges: collection.Seq[AstEdge] = Vector.empty,
+  bindsEdges: collection.Seq[AstEdge] = Vector.empty,
+  receiverEdges: collection.Seq[AstEdge] = Vector.empty,
+  argEdges: collection.Seq[AstEdge] = Vector.empty
 ) {
 
   def root: Option[NewNode] = nodes.headOption
@@ -86,7 +86,7 @@ case class Ast(
   /** AST that results when adding all ASTs in `asts` as children, that is, connecting them to the root node of this
     * AST.
     */
-  def withChildren(asts: Seq[Ast]): Ast = {
+  def withChildren(asts: collection.Seq[Ast]): Ast = {
     if (asts.isEmpty) {
       this
     } else {

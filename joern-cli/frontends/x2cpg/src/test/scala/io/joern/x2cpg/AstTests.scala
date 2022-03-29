@@ -40,12 +40,12 @@ class AstTests extends AnyWordSpec with Matchers {
     }
 
     "copy AST edges correctly" in {
-      val List(_, callInCallClone: NewCall, leafClone: NewIdentifier) = copied.nodes
+      val Seq(_, callInCallClone: NewCall, leafClone: NewIdentifier) = copied.nodes
       callInCallClone.order shouldBe 1
       leafClone.order shouldBe 1
 
       copied.edges.filter(_.src == callInCallClone).map(_.dst) match {
-        case List(x: NewIdentifier) =>
+        case Seq(x: NewIdentifier) =>
           x shouldBe leafClone
           x should not be leaf
           x.name shouldBe "leaf"
@@ -54,7 +54,7 @@ class AstTests extends AnyWordSpec with Matchers {
     }
 
     "copy argument edges correctly" in {
-      val List(edge1, edge2) = copied.argEdges
+      val Seq(edge1, edge2) = copied.argEdges
       edge1 match {
         case AstEdge(m: NewCall, c: NewCall) =>
           m should not be moo
