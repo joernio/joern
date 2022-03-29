@@ -195,7 +195,9 @@ object AstWithCtx {
   }
 }
 
-class AstCreator(filename: String, parserResult: CompilationUnit, global: Global) extends AstCreatorBase(filename) {
+/** Translate a Java Parser AST into a CPG AST
+  */
+class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global) extends AstCreatorBase(filename) {
 
   private val typeInfoProvider = TypeInfoProvider(global)
 
@@ -208,7 +210,8 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
     * corresponding CPG AST.
     */
   def createAst(): DiffGraphBuilder = {
-    storeInDiffGraph(astForCompilationUnit(parserResult))
+    val ast = astForTranslationUnit(javaParserAst)
+    storeInDiffGraph(ast)
     diffGraph
   }
 
@@ -237,7 +240,7 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
 
   /** Translate compilation unit into AST
     */
-  private def astForCompilationUnit(compilationUnit: CompilationUnit): AstWithCtx = {
+  private def astForTranslationUnit(compilationUnit: CompilationUnit): AstWithCtx = {
 
     try {
       val AstWithCtx(ast, ctx) = astForPackageDeclaration(compilationUnit.getPackageDeclaration.toScala)
@@ -428,7 +431,7 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
       .filename(filename)
       .isExternal(false)
 
-    val thisAst = thisAstForMethod(typeFullName, scopeContext, lineNumber = None)
+    val thisAst = thisAstForMethod(typeFullName, lineNumber = None)
     val bodyAst = Ast(NewBlock().order(1).argumentIndex(1))
 
     val returnNode = NewMethodReturn()
@@ -505,7 +508,7 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
       createConstructorNode(constructorDeclaration, scopeContext.typeDecl, childNum)
 
     val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(constructorDeclaration)
-    val thisAst      = thisAstForMethod(typeFullName, scopeContext, line(constructorDeclaration))
+    val thisAst      = thisAstForMethod(typeFullName, line(constructorDeclaration))
 
     val parameterAstsWithCtx = astsForParameterList(constructorDeclaration.getParameters)
     val lastOrder            = 2 + parameterAstsWithCtx.size
@@ -527,11 +530,7 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
     AstWithCtx(constructorAst, ctx)
   }
 
-  private def thisAstForMethod(
-    typeFullName: String,
-    scopeContext: ScopeContext,
-    lineNumber: Option[Integer]
-  ): AstWithCtx = {
+  private def thisAstForMethod(typeFullName: String, lineNumber: Option[Integer]): AstWithCtx = {
     val node = NewMethodParameterIn()
       .name("this")
       .lineNumber(lineNumber)
@@ -555,7 +554,7 @@ class AstCreator(filename: String, parserResult: CompilationUnit, global: Global
       Seq()
     } else {
       val typeFullName = scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>")
-      Seq(thisAstForMethod(typeFullName, scopeContext, line(methodDeclaration)))
+      Seq(thisAstForMethod(typeFullName, line(methodDeclaration)))
     }
     val parameterAstsWithCtx = astsForParameterList(methodDeclaration.getParameters)
     val lastOrder            = 1 + parameterAstsWithCtx.size
