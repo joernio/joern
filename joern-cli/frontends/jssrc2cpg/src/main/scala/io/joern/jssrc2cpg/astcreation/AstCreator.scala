@@ -311,18 +311,32 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   protected def astsForFunctionDeclaration(
     func: BabelNodeInfo,
     order: Int,
-    shouldCreateFunctionReference: Boolean = false
+    shouldCreateFunctionReference: Boolean = false,
+    shouldCreateAssignmentCall: Boolean = false
   ): Seq[Ast] = {
-    val bodyStmts = func.json("body")("body").arr.toSeq
-    val params    = func.json("params").arr.toSeq
-
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-
-    val methodId          = createMethodNode(methodName, methodFullName, func).order(order)
-    val virtualModifierId = NewModifier().modifierType(ModifierTypes.VIRTUAL)
     val methodRefId = if (!shouldCreateFunctionReference) {
       None
     } else { Some(createMethodRefNode(methodName, methodFullName, func)) }
+
+    val call = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
+      val id      = createIdentifierNode(methodName, func)
+      val idLocal = createLocalNode(methodName, methodFullName, 0)
+      diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
+      scope.addVariable(methodName, idLocal, BlockScope)
+      val code       = s"$methodName = ${func.code}"
+      val assignment = createAssignment(id, methodRefId.get, code, order, func.lineNumber, func.columnNumber)
+      Seq(assignment)
+    } else {
+      Seq.empty
+    }
+
+    val bodyStmts =
+      func.json("body")("body").arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toSeq
+    val params = func.json("params").arr.toSeq
+
+    val methodId          = createMethodNode(methodName, methodFullName, func).order(order)
+    val virtualModifierId = NewModifier().modifierType(ModifierTypes.VIRTUAL)
 
     methodAstParentStack.push(methodId)
 
@@ -360,13 +374,20 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
     localAstParentStack.push(blockId)
 
-    val bodyStmtsIds = astsForNodes(bodyStmts)
+    val bodyStmtsIds = withOrder(bodyStmts) { (n, o) =>
+      n match {
+        case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
+          astsForFunctionDeclaration(func, o, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case _ => astsForNode(n.json, o)
+      }
+    }.flatten
 
     val methodReturnId = createMethodReturnNode(func).order(2)
 
     localAstParentStack.pop()
     scope.popScope()
     methodAstParentStack.pop()
+
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(
         methodId,
@@ -387,7 +408,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodId, EdgeTypes.AST)
 
-    methodRefId.map(Ast(_)).toSeq
+    call ++ methodRefId.map(Ast(_)).toSeq
   }
 
   protected def astsForVariableDeclarator(declarator: Value, order: Int, scopeType: ScopeType): Seq[Ast] = {
@@ -402,9 +423,23 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     }
 
     val varId = createLocalNode(id.code, typeFullName, 0)
+    diffGraph.addEdge(localAstParentStack.head, varId, EdgeTypes.AST)
     scope.addVariable(id.code, varId, scopeType)
 
     init match {
+      case Some(f @ BabelNodeInfo(BabelAst.FunctionDeclaration)) =>
+        val destId   = astsForNode(id.json, 1)
+        val sourceId = astsForFunctionDeclaration(f, 2, shouldCreateFunctionReference = true)
+        val assigmentCallId =
+          createAssignment(
+            destId.head.nodes.head,
+            sourceId.head.nodes.head,
+            code(declarator),
+            order,
+            line = line(declarator),
+            column = column(declarator)
+          )
+        Seq(assigmentCallId) ++ destId ++ sourceId
       case Some(initExpr) =>
         val destId   = astsForNode(id.json, 1)
         val sourceId = astsForNode(initExpr.json, 2)
@@ -414,10 +449,10 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
             sourceId.head.nodes.head,
             code(declarator),
             order,
-            line = initExpr.lineNumber,
-            column = initExpr.columnNumber
+            line = line(declarator),
+            column = column(declarator)
           )
-        Seq(Ast(varId), assigmentCallId) ++ destId ++ sourceId
+        Seq(assigmentCallId) ++ destId ++ sourceId
       case None => Seq(Ast(varId))
     }
   }
@@ -472,8 +507,15 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     scope.pushNewBlockScope(blockId)
     localAstParentStack.push(blockId)
 
-    val blockStatements = withOrder(block.json("body").arr.toSeq) { (s, o) =>
-      astsForNode(s, o)
+    val blockStmts =
+      block.json("body").arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toSeq
+
+    val blockStatements = withOrder(blockStmts) { (n, o) =>
+      n match {
+        case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
+          astsForFunctionDeclaration(func, o, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case _ => astsForNode(n.json, o)
+      }
     }.flatten
 
     localAstParentStack.pop()
@@ -484,7 +526,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
   protected def astsForNode(json: Value, order: Int): Seq[Ast] = createBabelNodeInfo(json) match {
     case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"), order)
-    case BabelNodeInfo(BabelAst.Program)                           => astsForNodes(json("body").arr.toSeq)
+    case program @ BabelNodeInfo(BabelAst.Program)                 => astsForProgram(program)
     case exprStmt @ BabelNodeInfo(BabelAst.ExpressionStatement)    => astsForExpressionStatement(exprStmt, order)
     case callExpr @ BabelNodeInfo(BabelAst.CallExpression)         => astsForCallExpression(callExpr, order)
     case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)     => astsForMemberExpression(memberExpr, order)
@@ -496,6 +538,18 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     case assignment @ BabelNodeInfo(BabelAst.AssignmentExpression) => astsForAssignmentExpression(assignment, order)
     case block @ BabelNodeInfo(BabelAst.BlockStatement)            => astsForBlockStatement(block, order)
     case other                                                     => Seq(notHandledYet(other, order))
+  }
+
+  protected def astsForProgram(program: BabelNodeInfo): Seq[Ast] = {
+    val programStmts =
+      program.json("body").arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toSeq
+    withOrder(programStmts) { (n, o) =>
+      n match {
+        case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
+          astsForFunctionDeclaration(func, o, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case _ => astsForNode(n.json, o)
+      }
+    }.flatten
   }
 
   protected def astsForNodes(jsons: Seq[Value]): Seq[Ast] = withOrder(jsons) { (n, o) =>
