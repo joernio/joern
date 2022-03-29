@@ -101,22 +101,19 @@ trait AstForFunctionsCreator {
       .filename(filename)
 
     scope.pushNewScope(methodNode)
-    val parameterAsts = withOrder(parameters(lambdaExpression.getDeclarator)) { (p, o) =>
-      astForParameter(p, o)
+    val parameterNodes = withOrder(parameters(lambdaExpression.getDeclarator)) { (p, o) =>
+      parameterNode(p, o)
     }
 
-    parameterAsts.lastOption.foreach(_.root.foreach {
+    parameterNodes.lastOption.foreach {
       case p: NewMethodParameterIn if isVariadic(lambdaExpression) =>
         p.isVariadic = true
         p.code = p.code + "..."
       case _ =>
-    })
+    }
 
-    val lastOrder = 1 + parameterAsts.size
-
-    val r = Ast(methodNode)
-      .withChildren(parameterAsts)
-      .withChild(astForMethodReturn(lambdaExpression, lastOrder, returnType))
+    val lastOrder = 1 + parameterNodes.size
+    val r         = methodStubAst(methodNode, parameterNodes, methodReturnNode(lambdaExpression, lastOrder, returnType))
 
     scope.popScope()
     val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode, name, fullname, signature)
@@ -153,21 +150,20 @@ trait AstForFunctionsCreator {
 
     scope.pushNewScope(methodNode)
 
-    val parameterAsts = withOrder(parameters(funcDecl)) { (p, order) =>
-      astForParameter(p, order)
+    val parameterNodes = withOrder(parameters(funcDecl)) { (p, order) =>
+      parameterNode(p, order)
     }
 
-    parameterAsts.lastOption.foreach(_.root.foreach {
+    parameterNodes.lastOption.foreach {
       case p: NewMethodParameterIn if isVariadic(funcDecl) =>
         p.isVariadic = true
         p.code = p.code + "..."
       case _ =>
-    })
+    }
 
-    val lastOrder = 1 + parameterAsts.size
-    val r = Ast(methodNode)
-      .withChildren(parameterAsts)
-      .withChild(astForMethodReturn(funcDecl, lastOrder, returnType))
+    val lastOrder = 1 + parameterNodes.size
+
+    val r = methodStubAst(methodNode, parameterNodes, methodReturnNode(funcDecl, lastOrder, returnType))
 
     scope.popScope()
 
@@ -204,22 +200,25 @@ trait AstForFunctionsCreator {
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)
 
-    val parameterAsts = withOrder(parameters(funcDef)) { (p, order) =>
-      astForParameter(p, order)
+    val parameterNodes = withOrder(parameters(funcDef)) { (p, order) =>
+      parameterNode(p, order)
     }
 
-    parameterAsts.lastOption.foreach(_.root.foreach {
+    parameterNodes.lastOption.foreach {
       case p: NewMethodParameterIn if isVariadic(funcDef) =>
         p.isVariadic = true
         p.code = p.code + "..."
       case _ =>
-    })
+    }
 
-    val lastOrder = 1 + parameterAsts.size
-    val r = Ast(methodNode)
-      .withChildren(parameterAsts)
-      .withChild(astForMethodBody(Option(funcDef.getBody), lastOrder))
-      .withChild(astForMethodReturn(funcDef, lastOrder + 1, typeForDeclSpecifier(funcDef.getDeclSpecifier)))
+    val lastOrder = 1 + parameterNodes.size
+
+    val r = methodAst(
+      methodNode,
+      parameterNodes,
+      astForMethodBody(Option(funcDef.getBody), lastOrder),
+      methodReturnNode(funcDef, lastOrder + 1, typeForDeclSpecifier(funcDef.getDeclSpecifier))
+    )
 
     scope.popScope()
     methodAstParentStack.pop()
@@ -229,7 +228,7 @@ trait AstForFunctionsCreator {
     r.merge(typeDeclAst)
   }
 
-  private def astForParameter(parameter: IASTNode, childNum: Int): Ast = {
+  private def parameterNode(parameter: IASTNode, childNum: Int): NewMethodParameterIn = {
     val (name, code, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (
@@ -270,7 +269,7 @@ trait AstForFunctionsCreator {
 
     scope.addToScope(name, (parameterNode, tpe))
 
-    Ast(parameterNode)
+    parameterNode
   }
 
   private def astForMethodBody(body: Option[IASTStatement], order: Int): Ast = {
@@ -281,15 +280,7 @@ trait AstForFunctionsCreator {
     }
   }
 
-  private def astForMethodReturn(func: IASTNode, order: Int, tpe: String): Ast =
-    Ast(
-      NewMethodReturn()
-        .order(order)
-        .typeFullName(registerType(tpe))
-        .code(tpe)
-        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .lineNumber(line(func))
-        .columnNumber(column(func))
-    )
+  private def methodReturnNode(func: IASTNode, order: Int, tpe: String): NewMethodReturn =
+    methodReturnNode(line(func), column(func), order, registerType(tpe))
 
 }

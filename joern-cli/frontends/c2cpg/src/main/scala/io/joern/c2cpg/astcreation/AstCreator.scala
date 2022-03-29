@@ -14,7 +14,9 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(val filename: String, val config: Config, val global: CGlobal, val parserResult: IASTTranslationUnit)
+/** Translates the Eclipse CDT AST into a CPG AST.
+  */
+class AstCreator(val filename: String, val config: Config, val global: CGlobal, val cdtAst: IASTTranslationUnit)
     extends AstCreatorBase(filename)
     with AstForTypesCreator
     with AstForFunctionsCreator
@@ -37,30 +39,33 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
   def createAst(): DiffGraphBuilder = {
-    Ast.storeInDiffGraph(astForFile(parserResult), diffGraph)
+    val ast = astForTranslationUnit(cdtAst)
+    Ast.storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
 
-  private def astForFile(parserResult: IASTTranslationUnit): Ast = {
-    val ast = astForTranslationUnit(parserResult)
+  private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
+    val namespaceBlock = globalNamespaceBlock()
+    methodAstParentStack.push(namespaceBlock)
+    val ast = Ast(namespaceBlock).withChild(
+      astInFakeMethod(namespaceBlock.fullName, absolutePath(filename), iASTTranslationUnit)
+    )
     if (config.includeComments) {
-      val commentsAsts = parserResult.getComments.map(comment => astForComment(comment)).toIndexedSeq
+      val commentsAsts = cdtAst.getComments.map(comment => astForComment(comment)).toIndexedSeq
       ast.withChildren(commentsAsts)
     } else {
       ast
     }
   }
 
-  private def createFakeMethod(
-    name: String,
-    fullName: String,
-    path: String,
-    iASTTranslationUnit: IASTTranslationUnit
-  ): Ast = {
+  /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
+    */
+  private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
     val allDecls      = iASTTranslationUnit.getDeclarations
     val lineNumber    = allDecls.headOption.flatMap(line)
     val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
 
+    val name = NamespaceTraversal.globalNamespaceName
     val fakeGlobalTypeDecl = newTypeDecl(
       name,
       fullName,
@@ -119,15 +124,6 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
       Ast(fakeGlobalMethod)
         .withChild(Ast(blockNode).withChildren(declsAsts))
         .withChild(Ast(methodReturn))
-    )
-  }
-
-  private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val name           = NamespaceTraversal.globalNamespaceName
-    val namespaceBlock = globalNamespaceBlock()
-    methodAstParentStack.push(namespaceBlock)
-    Ast(namespaceBlock).withChild(
-      createFakeMethod(name, namespaceBlock.fullName, absolutePath(filename), iASTTranslationUnit)
     )
   }
 

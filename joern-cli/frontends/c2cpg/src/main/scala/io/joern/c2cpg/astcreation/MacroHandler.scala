@@ -61,7 +61,7 @@ trait MacroHandler {
           nodeOffsetMacroPairs.remove(0)
           val name = ASTStringUtil.getSimpleName(macroDefinition.getName)
           if (macroName == name) {
-            val arguments = new MacroArgumentExtractor(parserResult, node.getFileLocation).getArguments
+            val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
             return Some((macroDefinition, arguments))
           }
         }
@@ -131,7 +131,7 @@ trait MacroHandler {
   }
 
   private val nodeOffsetMacroPairs: mutable.Buffer[(Int, IASTPreprocessorMacroDefinition)] = {
-    parserResult.getNodeLocations.toList
+    cdtAst.getNodeLocations.toList
       .collect { case exp: IASTMacroExpansionLocation =>
         (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
       }
