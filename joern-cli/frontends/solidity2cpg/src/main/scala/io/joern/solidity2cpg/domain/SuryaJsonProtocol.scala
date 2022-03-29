@@ -185,7 +185,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     def write(c: BaseName): JsValue = JsNull
 
     def read(json: JsValue): BaseName = {
-      val fields = json.asJsObject("Unable to decode JSON as InheritanceSpecifier").fields
+      val fields = json.asJsObject("Unable to decode JSON as BaseName").fields
       BaseName(fields("type").convertTo[String], fields("namePath").convertTo[String])
     }
 
@@ -200,7 +200,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "InheritanceSpecifier") {
         throw new RuntimeException("InheritanceSpecifier object expected")
       } else {
-        InheritanceSpecifier(fields("baseName").convertTo[BaseName])
+        InheritanceSpecifier(fields("baseName").convertTo[BaseName], fields("arguments").convertTo[List[BaseASTNode]])
       }
     }
   }
@@ -258,7 +258,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             case _ => null
             },
           fields("identifier") match {
-            case x : BaseASTNode => x.convertTo[BaseASTNode]
+            case x => x.convertTo[BaseASTNode]
             case _ => null
             },
           fields("storageLocation") match {
@@ -353,7 +353,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         FunctionCall(
           fields("expression").convertTo[BaseASTNode], 
           fields("arguments") match {
-            case x : List[BaseASTNode] => x.convertTo[List[BaseASTNode]]
+            case x => x.convertTo[List[BaseASTNode]]
             case _ => null
           },
           fields("names").convertTo[List[String]],

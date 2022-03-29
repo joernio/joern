@@ -53,7 +53,7 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class InheritanceSpecifier(baseName: BaseName) extends BaseASTNode() {
+  case class InheritanceSpecifier(baseName: BaseName, arguments: List[BaseASTNode]) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
