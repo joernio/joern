@@ -434,10 +434,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val thisAst = thisAstForMethod(typeFullName, lineNumber = None)
     val bodyAst = Ast(NewBlock().order(1).argumentIndex(1))
 
-    val returnNode = NewMethodReturn()
-      .order(2)
-      .typeFullName("void")
-    val returnAst = Ast(returnNode)
+    val returnNode = methodReturnNode(None, None, 2, "void")
+    val returnAst  = Ast(returnNode)
 
     val modifiers = List(
       Ast(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR)),
@@ -578,23 +576,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForMethodReturn(methodDeclaration: MethodDeclaration): Ast = {
     val typeFullName = typeInfoProvider.getReturnType(methodDeclaration)
-    val methodReturnNode =
-      NewMethodReturn()
-        .order(methodDeclaration.getParameters.size + 2)
-        .typeFullName(typeFullName)
-        .code(methodDeclaration.getTypeAsString)
-        .lineNumber(line(methodDeclaration.getType))
-    Ast(methodReturnNode)
+    val order        = methodDeclaration.getParameters.size + 2
+    Ast(methodReturnNode(line(methodDeclaration.getType), column(methodDeclaration.getType), order, typeFullName))
   }
 
   private def astForConstructorReturn(constructorDeclaration: ConstructorDeclaration): Ast = {
-    val constructorReturnNode =
-      NewMethodReturn()
-        .order(constructorDeclaration.getParameters.size + 2)
-        .typeFullName("void")
-        .code(constructorDeclaration.getNameAsString)
-        .lineNumber(constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala)
-    Ast(constructorReturnNode)
+    val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
+    val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
+    val order  = constructorDeclaration.getParameters.size + 2
+    val node   = methodReturnNode(line, column, order, "void")
+    Ast(node)
   }
 
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
@@ -2086,19 +2077,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
 
     val methodReturnOrder = parameterAsts.size + 2
-    val methodReturnNode =
-      NewMethodReturn()
-        .order(methodReturnOrder)
-        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .typeFullName("ANY")
-        .code("RET")
-        .lineNumber(lineNumber)
-        .columnNumber(columnNumber)
+
+    val retNode = methodReturnNode(lineNumber, columnNumber, methodReturnOrder, "ANY")
 
     val lambdaMethodAst = Ast(lambdaMethodNode)
       .withChildren(parameterAsts)
       .withChild(bodyAst.withChildren(localsForCapturedIdentifiers))
-      .withChild(Ast(methodReturnNode))
+      .withChild(Ast(retNode))
 
     val lambdaMethodAstWithRefEdges = refEdgePairs.foldLeft(lambdaMethodAst)((acc, edgePair) => {
       acc.withRefEdge(edgePair.from, edgePair.to)

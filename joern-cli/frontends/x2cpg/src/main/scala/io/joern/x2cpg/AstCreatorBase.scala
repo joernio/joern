@@ -13,6 +13,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 abstract class AstCreatorBase(filename: String) {
   val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
+
   def createAst(): DiffGraphBuilder
 
   /** Create a global namespace block for the given `filename`
