@@ -9,7 +9,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.collection.parallel
 
 object Py2Cpg {
-  case class InputPair(content: String, file: String)
+  case class InputPair(content: String, absFileName: String, relFileName: String)
   type InputProvider = () => InputPair
 }
 
