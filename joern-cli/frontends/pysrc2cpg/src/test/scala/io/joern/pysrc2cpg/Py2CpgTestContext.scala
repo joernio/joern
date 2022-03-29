@@ -28,10 +28,10 @@ class Py2CpgTestContext private () {
     if (buildResult.nonEmpty) {
       throw new RuntimeException("Not allowed to add sources after buildCpg() was called.")
     }
-    if (codeAndFile.exists(_.file == file)) {
+    if (codeAndFile.exists(_.absFileName == file)) {
       throw new RuntimeException(s"Add more than one source under file name $file.")
     }
-    codeAndFile.append(new Py2Cpg.InputPair(code, file))
+    codeAndFile.append(new Py2Cpg.InputPair(code, "<absoluteTestPath>/" + file, file))
     this
   }
 
