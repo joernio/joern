@@ -8,7 +8,6 @@ dependsOn(Projects.x2cpg)
 libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "ujson" % "1.5.0",
   "io.shiftleft"  %% "codepropertygraph"        % Versions.cpg,
-  "io.shiftleft"  %% "semanticcpg"              % Versions.cpg,
   "org.scalatest" %% "scalatest"                % Versions.scalatest % Test
 )
 

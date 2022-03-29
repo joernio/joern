@@ -2,17 +2,19 @@ name               := "c2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.1")
 
-dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.semanticcpg,
+  Projects.dataflowengineoss % Test,
+  Projects.x2cpg % "compile->compile;test->test",
+)
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"            %% "semanticcpg"                % Versions.cpg,
   "org.scala-lang.modules"  %% "scala-parallel-collections" % "1.0.4",
   "com.diffplug.spotless"    % "spotless-eclipse-cdt"       % "10.5.0",
   "org.jline"                % "jline"                      % "3.21.0",
   "org.slf4j"                % "slf4j-api"                  % "1.7.36",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j     % Runtime,
   "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test,
-  "io.shiftleft"            %% "semanticcpg"                % Versions.cpg       % Test classifier "tests"
 )
 
 Test / packageBin / publishArtifact := true

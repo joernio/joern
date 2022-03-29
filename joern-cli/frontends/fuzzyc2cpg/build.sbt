@@ -1,10 +1,12 @@
 name := "fuzzyc2cpg"
 
-dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.semanticcpg,
+  Projects.dataflowengineoss % Test,
+  Projects.x2cpg % "compile->compile;test->test",
+)
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"            %% "semanticcpg"                % Versions.cpg,
-  "io.shiftleft"            %% "semanticcpg"                % Versions.cpg       % Test classifier "tests",
   "org.antlr"                % "antlr4-runtime"             % Versions.antlr,
   "org.apache.commons"       % "commons-lang3"              % "3.12.0",
   "commons-cli"              % "commons-cli"                % "1.5.0",
