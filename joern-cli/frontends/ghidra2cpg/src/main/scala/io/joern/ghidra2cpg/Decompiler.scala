@@ -4,7 +4,7 @@ import ghidra.app.decompiler.{DecompInterface, DecompileOptions, DecompileResult
 import ghidra.program.model.listing.{Function, Program}
 import ghidra.program.model.pcode.HighFunction
 
-import scala.collection.mutable
+import scala.collection.immutable
 
 object Decompiler {
 
@@ -30,8 +30,9 @@ object Decompiler {
   */
 class Decompiler(val decompInterface: DecompInterface) {
 
-  val timeoutInSeconds                             = 60
-  val cache: mutable.Map[String, DecompileResults] = mutable.Map()
+  val timeoutInSeconds                                      = 60
+  @volatile private var cache                               = immutable.HashMap[String, DecompileResults]()
+  def getCache: immutable.HashMap[String, DecompileResults] = this.cache
 
   /** Retrieve HighFunction for given function, using the cache.
     */
@@ -47,19 +48,27 @@ class Decompiler(val decompInterface: DecompInterface) {
     * None on error.
     */
   private def decompile(function: Function): Option[DecompileResults] = {
-    val addr = function.getEntryPoint.toString(true)
-    cache.get(addr) match {
-      case Some(x) =>
-        Option(x)
-      case None =>
-        decompInterface.decompileFunction(function, timeoutInSeconds, null) match {
-          case null =>
-            cache.put(addr, null)
-            None
-          case x =>
-            cache.put(addr, x)
-            Some(x)
+    // ghidra decompileFunction acquires a lock on decompInterface.
+    // we can still run with many threads, using the cache.
+    // we use double-checked locking with volatile copy-on-write hashmap as a cache
+    val addr  = function.getEntryPoint.toString(true)
+    val ccOld = this.cache
+    ccOld.get(addr) match {
+      case Some(null)       => return None
+      case some @ Some(res) => return some
+      case _                =>
+    }
+    this.synchronized {
+      val ccCurrent = this.cache
+      if (!(ccOld eq ccCurrent))
+        ccCurrent.get(addr) match {
+          case Some(null)       => return None
+          case some @ Some(res) => return some
+          case _                =>
         }
+      val res = decompInterface.decompileFunction(function, timeoutInSeconds, null)
+      this.cache = ccCurrent.updated(addr, res)
+      if (res == null) None else Some(res)
     }
   }
 }

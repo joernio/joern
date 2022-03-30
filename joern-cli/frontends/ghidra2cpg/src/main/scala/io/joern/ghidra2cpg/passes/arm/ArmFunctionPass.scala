@@ -15,7 +15,7 @@ class ArmFunctionPass(
   functions: List[Function],
   cpg: Cpg,
   decompiler: Decompiler
-) extends FunctionPass(new ArmProcessor, currentProgram, functions, cpg, decompiler) {
+) extends FunctionPass(ArmProcessor, currentProgram, functions, cpg, decompiler) {
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     val localDiffGraph = new DiffGraphBuilder()

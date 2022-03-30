@@ -1,8 +1,8 @@
 package io.joern.ghidra2cpg.processors
-import scala.collection.immutable._
+import scala.collection.mutable.HashMap
 
-class PCodeProcessor extends Processor {
-  override def getInstructions: HashMap[String, String] =
+object PCodeProcessor extends Processor {
+  override val getInstructions: HashMap[String, String] =
     HashMap(
       "BOOL_AND"          -> "<operator>.TODO",
       "BOOL_NEGATE"       -> "<operator>.TODO",
