@@ -70,14 +70,15 @@ import com.github.javaparser.resolution.declarations.{
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
 import io.joern.javasrc2cpg.util.TypeInfoProvider
-import io.joern.javasrc2cpg.util.TypeInfoProvider.UnresolvedTypeDefault
+import io.joern.javasrc2cpg.util.TypeInfoProvider.{Primitives, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
   EdgeTypes,
   EvaluationStrategies,
   ModifierTypes,
-  Operators
+  Operators,
+  PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBinding,
@@ -1326,7 +1327,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def rootType(astWithCtx: AstWithCtx): Option[String] = {
-    astWithCtx.ast.root.flatMap(_.properties.get("TYPE_FULL_NAME").map(_.toString))
+    astWithCtx.ast.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
   }
 
   def astsForAssignExpr(
@@ -1552,7 +1553,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     order: Int,
     expectedType: Option[String]
   ): AstWithCtx = {
-    val condAst = astsForExpression(expr.getCondition, scopeContext, 1, Some("boolean"))
+    val condAst = astsForExpression(expr.getCondition, scopeContext, 1, Some(Primitives.Boolean))
     val thenAst = astsForExpression(expr.getThenExpr, scopeContext, 2, expectedType)
     val elseAst = astsForExpression(expr.getElseExpr, scopeContext, 3, expectedType)
 
@@ -1722,7 +1723,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .orElse(expectedType)
       .getOrElse(UnresolvedTypeDefault)
     val argTypes = args.map { arg =>
-      arg.ast.root.flatMap(_.properties.get("TYPE_FULL_NAME")).getOrElse("<empty>")
+      arg.ast.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME)).getOrElse(UnresolvedTypeDefault)
     }
     val signature = s"void(${argTypes.mkString(",")})"
 

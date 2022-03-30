@@ -349,6 +349,17 @@ object TypeInfoProvider {
     NumericTypes.contains(typeName)
   }
 
+  object Primitives {
+    val Byte: String    = "byte"
+    val Short: String   = "short"
+    val Int: String     = "int"
+    val Long: String    = "long"
+    val Float: String   = "float"
+    val Double: String  = "double"
+    val Char: String    = "char"
+    val Boolean: String = "boolean"
+  }
+
   val NumericTypes = Set(
     "byte",
     "short",
