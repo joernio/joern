@@ -16,7 +16,6 @@ import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
