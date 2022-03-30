@@ -16,8 +16,6 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"          %% "upickle"      % "1.5.0",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "com.github.scopt"     %% "scopt"        % "4.0.1",
-  "io.shiftleft"         %% "semanticcpg"  % Versions.cpg,
-  "io.shiftleft"         %% "semanticcpg"  % Versions.cpg       % Test classifier "tests",
   "org.scalatest"        %% "scalatest"    % Versions.scalatest % Test
 )
 

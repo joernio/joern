@@ -2,9 +2,11 @@ name := "macros"
 
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.1")
+
+dependsOn(Projects.semanticcpg % Test)
+
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "io.shiftleft"  %% "semanticcpg"       % Versions.cpg       % Test,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 ) ++ (
   CrossVersion.partialVersion(scalaVersion.value) match {

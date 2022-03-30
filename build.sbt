@@ -10,6 +10,7 @@ lazy val querydb           = Projects.querydb
 lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
+lazy val semanticcpg       = Projects.semanticcpg
 lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val jssrc2cpg         = Projects.jssrc2cpg
