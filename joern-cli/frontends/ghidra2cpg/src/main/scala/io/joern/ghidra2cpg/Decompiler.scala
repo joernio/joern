@@ -30,8 +30,11 @@ object Decompiler {
   */
 class Decompiler(val decompInterface: DecompInterface) {
 
-  val timeoutInSeconds                                      = 60
-  @volatile private var cache                               = immutable.HashMap[String, DecompileResults]()
+  val timeoutInSeconds        = 60
+  @volatile private var cache = immutable.HashMap[String, DecompileResults]()
+
+  /** Return the cache of decompile results. For debugging only.
+    */
   def getCache: immutable.HashMap[String, DecompileResults] = this.cache
 
   /** Retrieve HighFunction for given function, using the cache.
