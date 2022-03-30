@@ -1,7 +1,6 @@
 package io.joern.ghidra2cpg.processors
 import scala.collection.mutable.HashMap
 
-
 object MipsProcessor extends Processor {
   override val getInstructions: HashMap[String, String] =
     HashMap(

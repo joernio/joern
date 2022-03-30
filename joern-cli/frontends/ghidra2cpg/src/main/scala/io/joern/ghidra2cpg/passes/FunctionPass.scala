@@ -26,9 +26,9 @@ abstract class FunctionPass(
 ) extends ConcurrentWriterCpgPass[Function](cpg) {
 
   protected val functionByName = mutable.HashMap[String, Function]()
-  for(fn<- functions){
+  for (fn <- functions) {
     val other = functionByName.getOrElseUpdate(fn.getName, fn)
-    if(!(other eq fn)){
+    if (!(other eq fn)) {
       baseLogger.warn(s"Multiple functions with same name ${fn.getName}, can't disambiguate: ${fn}, ${other}")
     }
   }
