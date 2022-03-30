@@ -10,15 +10,15 @@ val AmmoniteVersion       = "2.5.2"
 val ZeroturnaroundVersion = "1.15"
 
 dependsOn(
+  Projects.semanticcpg,
+  Projects.macros,
   Projects.fuzzyc2cpg % Test,
   Projects.c2cpg      % Test,
-  Projects.macros,
-  Projects.x2cpg % "compile->compile;test->test"
+  Projects.x2cpg % "compile->compile;test->test",
 )
 
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
-  "io.shiftleft"         %% "semanticcpg"       % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "com.github.pathikrit" %% "better-files"      % BetterFilesVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,

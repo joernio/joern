@@ -1,9 +1,10 @@
 name := "dataflowengineoss"
 
-scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.1")
+
+dependsOn(Projects.semanticcpg)
+
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "semanticcpg"    % Versions.cpg,
   "org.antlr"      % "antlr4-runtime" % Versions.antlr,
   "org.scalatest" %% "scalatest"      % Versions.scalatest % Test
 )
