@@ -5,6 +5,7 @@ import io.joern.solidity2cpg.passes.AstCreationPass
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.IntervalKeyPool
 
@@ -55,12 +56,14 @@ class Solidity2Cpg {
     if (sourceFile.isDirectory) {
       val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
       // TODO: Convert sourceFiles to JSON by calling Surya. These will then be picked up in the next line
+      sourceFileNames.foreach { fName => ExternalCommand.run(s"surya parse -j $fName", sourceCodePath) }
       val jsonFiles = SourceFiles.determine(Set(sourceCodePath), suryaOutputFileExtensions)
       (sourceCodePath, jsonFiles)
     } else {
       val dir = File.newTemporaryDirectory("solidity").deleteOnExit()
       sourceFile.copyToDirectory(dir).deleteOnExit()
       // TODO: Convert sourceFile to JSON by calling Surya. These will then be picked up in the next line
+      ExternalCommand.run(s"surya parse -j $sourceFile", sourceCodePath)
       val jsonFiles = SourceFiles.determine(Set(dir.pathAsString), suryaOutputFileExtensions)
       (dir.pathAsString, jsonFiles)
     }
