@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
@@ -47,6 +48,16 @@ trait AstCreatorHelper {
     nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
+
+  protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
+    val c     = shortenCode(code(json))
+    val ln    = line(json)
+    val cn    = column(json)
+    val lnEnd = lineEnd(json)
+    val cnEnd = columnEnd(json)
+    val node  = nodeType(json)
+    BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+  }
 
   private def notHandledText(node: BabelNodeInfo, order: Int): String =
     s"""Node type '${node.node.toString}' not handled yet!

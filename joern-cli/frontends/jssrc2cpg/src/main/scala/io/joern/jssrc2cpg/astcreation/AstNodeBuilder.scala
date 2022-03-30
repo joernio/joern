@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.scope.MethodScope
+import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -22,7 +23,7 @@ trait AstNodeBuilder {
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
 
-  protected def newTypeDecl(
+  protected def createTypeDeclNode(
     name: String,
     fullname: String,
     filename: String,
@@ -54,7 +55,7 @@ trait AstNodeBuilder {
     val column = func.columnNumber
     val code   = "RET"
     NewMethodReturn()
-      .code(shortenCode(code))
+      .code(code)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName(Defines.ANY.label)
       .lineNumber(line)
@@ -115,7 +116,7 @@ trait AstNodeBuilder {
     case _             => ""
   }
 
-  protected def createFieldAccessNode(
+  protected def createFieldAccess(
     baseId: NewNode,
     partId: NewNode,
     order: Int,
@@ -273,7 +274,7 @@ trait AstNodeBuilder {
     .lineNumber(line)
     .columnNumber(column)
 
-  protected def createFunctionTypeAndTypeDeclAst(
+  protected def createFunctionTypeAndTypeDecl(
     methodNode: NewMethod,
     parentNode: NewNode,
     methodName: String,
@@ -286,7 +287,7 @@ trait AstNodeBuilder {
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString
     val functionTypeDeclNode =
-      newTypeDecl(
+      createTypeDeclNode(
         methodName,
         methodFullName,
         filename,
