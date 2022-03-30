@@ -23,8 +23,12 @@ object PythonV2      extends PythonVersion
 object PythonV3      extends PythonVersion
 object PythonV2AndV3 extends PythonVersion
 
-class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, version: PythonVersion)
-    extends PythonAstVisitorHelpers {
+class PythonAstVisitor(
+  absFileName: String,
+  relFileName: String,
+  protected val nodeToCode: NodeToCode,
+  version: PythonVersion
+) extends PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -70,9 +74,13 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
 
-    val fileNode = nodeBuilder.fileNode(fileName)
+    val fileNode = nodeBuilder.fileNode(absFileName)
     val namespaceBlockNode =
-      nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, fileName + ":" + Constants.GLOBAL_NAMESPACE, fileName)
+      nodeBuilder.namespaceBlockNode(
+        Constants.GLOBAL_NAMESPACE,
+        relFileName + ":" + Constants.GLOBAL_NAMESPACE,
+        absFileName
+      )
     edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
     contextStack.setFileNamespaceBlock(namespaceBlockNode)
 
@@ -325,7 +333,7 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
     returnTypeHint: Option[String],
     lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
-    val methodNode = nodeBuilder.methodNode(name, fullName, fileName, lineAndColumn)
+    val methodNode = nodeBuilder.methodNode(name, fullName, absFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
 
     val blockNode = nodeBuilder.blockNode("", lineAndColumn)
@@ -357,7 +365,7 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
-    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, fileName, Seq(Constants.ANY), lineAndColumn)
+    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
 
@@ -381,7 +389,7 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
       nodeBuilder.typeDeclNode(
         metaTypeDeclName,
         metaTypeDeclFullName,
-        fileName,
+        absFileName,
         Seq(Constants.ANY),
         lineAndColOf(classDef)
       )
@@ -411,7 +419,7 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
       nodeBuilder.typeDeclNode(
         instanceTypeDeclName,
         instanceTypeDeclFullName,
-        fileName,
+        absFileName,
         inheritsFrom,
         lineAndColOf(classDef)
       )
@@ -1886,9 +1894,9 @@ class PythonAstVisitor(fileName: String, protected val nodeToCode: NodeToCode, v
   private def calculateFullNameFromContext(name: String): String = {
     val contextQualName = contextStack.qualName
     if (contextQualName != "") {
-      fileName + ":" + contextQualName + "." + name
+      relFileName + ":" + contextQualName + "." + name
     } else {
-      fileName + ":" + name
+      relFileName + ":" + name
     }
   }
 }

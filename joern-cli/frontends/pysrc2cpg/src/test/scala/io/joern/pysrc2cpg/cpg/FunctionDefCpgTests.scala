@@ -16,7 +16,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       val methodNode = cpg.method.fullName("test.py:<module>.func").head
       methodNode.name shouldBe "func"
       methodNode.fullName shouldBe "test.py:<module>.func"
-      methodNode.filename shouldBe "test.py"
+      methodNode.filename shouldBe "<absoluteTestPath>/test.py"
       methodNode.isExternal shouldBe false
       methodNode.lineNumber shouldBe Some(1)
       methodNode.columnNumber shouldBe Some(1)
@@ -77,7 +77,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
       bindingTypeDecl.name shouldBe "func"
       bindingTypeDecl.fullName shouldBe "test.py:<module>.func"
-      bindingTypeDecl.filename shouldBe "test.py"
+      bindingTypeDecl.filename shouldBe "<absoluteTestPath>/test.py"
       bindingTypeDecl.lineNumber shouldBe Some(1)
       bindingTypeDecl.columnNumber shouldBe Some(1)
 

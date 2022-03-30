@@ -31,7 +31,7 @@ trait AstNodeBuilder {
       .columnNumber(column(node))
 
   protected def newCallNode(
-    astNode: IASTNode,
+    node: IASTNode,
     name: String,
     fullname: String,
     dispatchType: String,
@@ -40,13 +40,12 @@ trait AstNodeBuilder {
     NewCall()
       .name(name)
       .dispatchType(dispatchType)
-      .signature("TODO")
       .methodFullName(fullname)
-      .code(nodeSignature(astNode))
+      .code(nodeSignature(node))
       .order(order)
       .argumentIndex(order)
-      .lineNumber(line(astNode))
-      .columnNumber(column(astNode))
+      .lineNumber(line(node))
+      .columnNumber(column(node))
   }
 
   protected def newControlStructureNode(
