@@ -29,7 +29,7 @@ object Py2CpgOnFileSystem {
     val inputProviders = inputFiles.map { inputFile => () =>
       {
         val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-        Py2Cpg.InputPair(content, config.inputDir.relativize(inputFile).toString)
+        Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
       }
     }
 

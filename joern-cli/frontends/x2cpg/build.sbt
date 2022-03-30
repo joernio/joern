@@ -2,12 +2,12 @@ name               := "x2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.1")
 
+dependsOn(Projects.semanticcpg)
+
 libraryDependencies ++= Seq(
-  "io.shiftleft"            %% "semanticcpg"                % Versions.cpg,
   "org.slf4j"                % "slf4j-api"                  % "1.7.36",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j     % Runtime,
   "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test,
-  "io.shiftleft"            %% "semanticcpg"                % Versions.cpg       % Test classifier "tests"
 )
 
 Test / packageBin / publishArtifact := true

@@ -18,13 +18,13 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider]) extends Concur
       val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
       val astRoot                = parser.parse(lineBreakCorrectedCode)
       val nodeToCode             = new NodeToCode(lineBreakCorrectedCode)
-      val astVisitor             = new PythonAstVisitor(inputPair.file, nodeToCode, PythonV2AndV3)
+      val astVisitor = new PythonAstVisitor(inputPair.absFileName, inputPair.relFileName, nodeToCode, PythonV2AndV3)
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.getDiffGraph)
     } catch {
       case exception: Throwable =>
-        logger.warn(s"Failed to convert file ${inputPair.file}", exception)
+        logger.warn(s"Failed to convert file ${inputPair.absFileName}", exception)
         Iterator.empty
     }
   }

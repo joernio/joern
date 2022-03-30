@@ -193,6 +193,10 @@ class ObjectTests extends JavaDataflowFixture {
     sink.reachableByFlows(source).size shouldBe 1
   }
 
+  it should "not create Baz method with ANY type in signature" in {
+    cpg.method.fullNameExact("Baz.sink:void(ANY)").size shouldBe 0
+  }
+
   it should "find a inter-procedural path from object instantiation in call argument" in {
     def source = cpg.method.name("test12").literal.code("\"MALICIOUS\"")
     def sink   = cpg.method.name("sink").call.name("println").argument
