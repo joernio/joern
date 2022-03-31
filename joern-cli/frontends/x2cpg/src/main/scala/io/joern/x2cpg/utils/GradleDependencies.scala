@@ -26,6 +26,8 @@ object GradleDependencies {
   }
 
   def downloadRuntimeLibs(projectDirectory: String, destinationDir: String): Unit = {
+    // TODO: check if the directories exist
+    // TODO: check if the build task already exists, and insert the init script only if it does not
     logger.info(s"Attempting to download runtime libs for project at '$projectDirectory' into '$destinationDir'...")
     val gradleInitDDir = home / ".gradle" / "init.d"
     // TODO: check for permission errors / exceptions
