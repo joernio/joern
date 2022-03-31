@@ -8,6 +8,7 @@ libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"                  % "1.7.36",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j     % Runtime,
   "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test,
+  "org.gradle" % "gradle-tooling-api" % "6.1.1",
 )
 
 Test / packageBin / publishArtifact := true
