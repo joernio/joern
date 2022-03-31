@@ -29,18 +29,30 @@ object GradleDependencies {
     // TODO: check if the directories exist
     // TODO: check if the build task already exists, and insert the init script only if it does not
     logger.info(s"Attempting to download runtime libs for project at '$projectDirectory' into '$destinationDir'...")
+
     val gradleInitDDir = home / ".gradle" / "init.d"
-    // TODO: check for permission errors / exceptions
-    if (!gradleInitDDir.exists) {
-      logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
-      gradleInitDDir.createDirectory()
+    try {
+      if (!gradleInitDDir.exists) {
+        logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
+        gradleInitDDir.createDirectory()
+      }
+    } catch {
+      case t: Throwable =>
+        logger.warn(s"Caught exception while trying to create init script directory: '${t.getMessage}'.")
     }
-    val gradleInitScript = gradleInitDDir / initScriptName
-    gradleInitScript.createFileIfNotExists()
-    gradleInitScript.write(
-      gradle4OrLaterInitScript(destinationDir)
-    ) // overwrite whatever is there, dirty solution, but also least likely to cause functional problems
-    gradleInitScript.deleteOnExit()
+
+    try {
+      val gradleInitScript = gradleInitDDir / initScriptName
+      gradleInitScript.createFileIfNotExists()
+      gradleInitScript.write(
+        gradle4OrLaterInitScript(destinationDir)
+      ) // overwrite whatever is there, dirty solution, but also least likely to cause functional problems
+      gradleInitScript.deleteOnExit()
+    } catch {
+      case t: Throwable =>
+        // TODO: make sure this doesn't run if the previous step failed
+        logger.warn(s"Caught exception while trying to create init script: '${t.getMessage}'.")
+    }
 
     val connectionOption =
       try {
