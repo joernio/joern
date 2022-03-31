@@ -3,6 +3,7 @@ package io.joern.kotlin2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import better.files._
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.shiftleft.utils.ProjectRoot
 
 import scala.collection.mutable
 import scala.util.Random
@@ -44,10 +45,11 @@ class TestContext private () {
         file.writeText(inputPair.content)
       }
       val randomOutPath = "cpg_" + Random.alphanumeric.take(10).mkString + ".bin.zip"
+      val dir           = File(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
       val config = Config(
         inputPaths = Set(tempDir.pathAsString),
         outputPath = randomOutPath,
-        classpath = Set(),
+        classpath = Set(dir.path.toAbsolutePath.toString),
         withAndroidJarsInClassPath = includeAllJars,
         withMiscJarsInClassPath = includeAllJars
       )
