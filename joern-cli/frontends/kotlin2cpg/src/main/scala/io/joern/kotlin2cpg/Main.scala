@@ -12,7 +12,6 @@ final case class Config(
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
   withAndroidJarsInClassPath: Boolean = true,
-  withMiscJarsInClassPath: Boolean = true, // TODO: remove
   copyRuntimeLibs: Boolean = false
 ) extends X2CpgConfig[Config] {
 
@@ -41,9 +40,6 @@ private object Frontend {
       opt[Unit]("no-android-jars")
         .text("Do not add local versions of Android jars to classpath")
         .action((_, c) => c.copy(withAndroidJarsInClassPath = false)),
-      opt[Unit]("no-misc-jars")
-        .text("Do not add local versions of various common library jars to classpath")
-        .action((_, c) => c.copy(withMiscJarsInClassPath = false)),
       opt[Unit]("copy-runtime-libs")
         .text("Attempt to copy the runtime libs using the build tool found at the input path")
         .action((_, c) => c.copy(copyRuntimeLibs = true))

@@ -50,8 +50,7 @@ class TestContext private () {
         inputPaths = Set(tempDir.pathAsString),
         outputPath = randomOutPath,
         classpath = Set(dir.path.toAbsolutePath.toString),
-        withAndroidJarsInClassPath = includeAllJars,
-        withMiscJarsInClassPath = includeAllJars
+        withAndroidJarsInClassPath = includeAllJars
       )
 
       val kt2Cpg = new Kotlin2Cpg()
