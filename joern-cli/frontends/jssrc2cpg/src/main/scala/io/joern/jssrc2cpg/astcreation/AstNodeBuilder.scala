@@ -50,6 +50,12 @@ trait AstNodeBuilder {
       .columnNumber(column)
       .order(order)
 
+  protected def createReturnNode(ret: BabelNodeInfo): NewReturn =
+    NewReturn()
+      .code(ret.code)
+      .lineNumber(ret.lineNumber)
+      .columnNumber(ret.columnNumber)
+
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     val line   = func.lineNumber
     val column = func.columnNumber

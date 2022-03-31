@@ -30,6 +30,7 @@ import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
+import ujson.Obj
 import ujson.Value
 
 import scala.collection.mutable
@@ -190,6 +191,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
   protected def astsForMemberExpression(memberExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
     val baseAsts = astsForNode(memberExpr.json("object"), 1)
+    baseAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
     val memberNode =
       createFieldIdentifierNode(code(memberExpr.json("property")), memberExpr.lineNumber, memberExpr.columnNumber)
     val accessAst =
@@ -416,7 +418,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
             column = column(declarator)
           )
         Seq(assigmentCallAst) ++ destAsts ++ sourceAsts
-      case None => Seq(Ast(localNode))
+      case None => Seq.empty
     }
   }
 
@@ -492,6 +494,109 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     Seq(Ast(blockNode).withChildren(blockStatementAsts))
   }
 
+  protected def astsForBinaryExpression(binExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val op = binExpr.json("operator").str match {
+      case "+"          => Operators.addition
+      case "-"          => Operators.subtraction
+      case "/"          => Operators.division
+      case "%"          => Operators.modulo
+      case "*"          => Operators.multiplication
+      case "**"         => Operators.exponentiation
+      case "&"          => Operators.and
+      case ">>"         => Operators.arithmeticShiftRight
+      case ">>>"        => Operators.arithmeticShiftRight
+      case "<<"         => Operators.shiftLeft
+      case "^"          => Operators.xor
+      case "=="         => Operators.equals
+      case "==="        => Operators.equals
+      case "!="         => Operators.notEquals
+      case "!=="        => Operators.notEquals
+      case "in"         => Operators.in
+      case ">"          => Operators.greaterThan
+      case "<"          => Operators.lessThan
+      case ">="         => Operators.greaterEqualsThan
+      case "<="         => Operators.lessEqualsThan
+      case "instanceof" => Operators.instanceOf
+      case "case"       => "<operator>.case"
+      case other =>
+        logger.warn(s"Unknown binary operator: '$other'")
+        Operators.assignment
+    }
+
+    val lhsAsts = astsForNode(binExpr.json("left"), 1)
+    val rhsAsts = astsForNode(binExpr.json("right"), 2)
+
+    val callNode =
+      createCallNode(binExpr.code, op, DispatchTypes.STATIC_DISPATCH, binExpr.lineNumber, binExpr.columnNumber)
+        .order(order)
+
+    Seq(
+      Ast(callNode)
+        .withChildren(lhsAsts)
+        .withChildren(rhsAsts)
+        .withArgEdges(callNode, lhsAsts)
+        .withArgEdges(callNode, rhsAsts)
+    )
+  }
+
+  protected def astsForUpdateExpression(updateExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val op = updateExpr.json("operator").str match {
+      case "++" => Operators.preIncrement
+      case "--" => Operators.preDecrement
+      case other =>
+        logger.warn(s"Unknown update operator: '$other'")
+        Operators.assignment
+    }
+
+    val argumentAsts = astsForNode(updateExpr.json("argument"), 1)
+
+    val callNode =
+      createCallNode(updateExpr.code, op, DispatchTypes.STATIC_DISPATCH, updateExpr.lineNumber, updateExpr.columnNumber)
+        .order(order)
+
+    Seq(
+      Ast(callNode)
+        .withChildren(argumentAsts)
+        .withArgEdges(callNode, argumentAsts)
+    )
+  }
+
+  protected def astsForUnaryExpression(unaryExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val op = unaryExpr.json("operator").str match {
+      case "void"   => "<operator>.void"
+      case "throw"  => "<operator>.throw"
+      case "delete" => Operators.delete
+      case "!"      => Operators.logicalNot
+      case "+"      => Operators.plus
+      case "-"      => Operators.minus
+      case "~"      => "<operator>.bitNot"
+      case "typeof" => Operators.instanceOf
+      case other =>
+        logger.warn(s"Unknown update operator: '$other'")
+        Operators.assignment
+    }
+
+    val argumentAsts = astsForNode(unaryExpr.json("argument"), 1)
+
+    val callNode =
+      createCallNode(unaryExpr.code, op, DispatchTypes.STATIC_DISPATCH, unaryExpr.lineNumber, unaryExpr.columnNumber)
+        .order(order)
+
+    Seq(
+      Ast(callNode)
+        .withChildren(argumentAsts)
+        .withArgEdges(callNode, argumentAsts)
+    )
+  }
+
+  protected def astsForReturnStatement(ret: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val retNode = createReturnNode(ret).order(order).argumentIndex(order)
+    safeObj(ret.json, "argument").map { argument =>
+      val argAsts = astsForNode(Obj(argument), 1)
+      Ast(retNode).withChildren(argAsts).withArgEdges(retNode, argAsts)
+    }.toSeq
+  }
+
   protected def astsForNode(json: Value, order: Int): Seq[Ast] = createBabelNodeInfo(json) match {
     case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"), order)
     case program @ BabelNodeInfo(BabelAst.Program)                 => astsForProgram(program)
@@ -504,7 +609,11 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)        => astsForFunctionDeclaration(func, order)
     case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)        => astsForVariableDeclaration(decl, order)
     case assignment @ BabelNodeInfo(BabelAst.AssignmentExpression) => astsForAssignmentExpression(assignment, order)
+    case binExpr @ BabelNodeInfo(BabelAst.BinaryExpression)        => astsForBinaryExpression(binExpr, order)
+    case updateExpr @ BabelNodeInfo(BabelAst.UpdateExpression)     => astsForUpdateExpression(updateExpr, order)
+    case unaryExpr @ BabelNodeInfo(BabelAst.UnaryExpression)       => astsForUnaryExpression(unaryExpr, order)
     case block @ BabelNodeInfo(BabelAst.BlockStatement)            => astsForBlockStatement(block, order)
+    case ret @ BabelNodeInfo(BabelAst.ReturnStatement)             => astsForReturnStatement(ret, order)
     case other                                                     => Seq(notHandledYet(other, order))
   }
 

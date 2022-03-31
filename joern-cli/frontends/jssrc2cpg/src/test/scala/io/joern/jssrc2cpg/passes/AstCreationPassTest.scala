@@ -1692,6 +1692,8 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def rightHandSide = returnStatement.expandAst(NodeTypes.CALL)
       rightHandSide.checkNodeCount(1)
+      rightHandSide.checkProperty(PropertyNames.ORDER, 1)
+      rightHandSide.checkProperty(PropertyNames.ARGUMENT_INDEX, 1)
       rightHandSide.checkProperty(PropertyNames.METHOD_FULL_NAME, Operators.fieldAccess)
 
       def identifierX =
