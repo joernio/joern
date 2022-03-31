@@ -40,20 +40,39 @@ object GradleDependencies {
     gradleInitScript.write(
       gradle4OrLaterInitScript(destinationDir)
     ) // overwrite whatever is there, dirty solution, but also least likely to cause functional problems
+    gradleInitScript.deleteOnExit()
 
-    logger.info(s"Establishing gradle connection for project directory at '$projectDirectory'...")
-    val conn =
-      GradleConnector
-        .newConnector()
-        .forProjectDirectory(new JFile(projectDirectory))
-        .connect()
-    logger.info(s"Executing gradle task '$taskName'...")
-    conn
-      .newBuild()
-      .forTasks(taskName)
-      // .setStandardOutput(System.out) // uncomment for debugging
-      // .setStandardError(System.err)  // uncomment for debugging
-      .run()
-    conn.close()
+    val connectionOption =
+      try {
+        logger.info(s"Establishing gradle connection for project directory at '$projectDirectory'...")
+        Some(
+          GradleConnector
+            .newConnector()
+            .forProjectDirectory(new JFile(projectDirectory))
+            .connect()
+        )
+      } catch {
+        case t: Throwable =>
+          logger.warn(s"Caught exception while trying to estabish a Gradle connection: '${t.getMessage}'.")
+          None
+      }
+
+    if (connectionOption.isDefined) {
+      val connection = connectionOption.get
+      try {
+        logger.info(s"Executing gradle task '$taskName'...")
+        connection
+          .newBuild()
+          .forTasks(taskName)
+          // .setStandardOutput(System.out) // uncomment for debugging
+          // .setStandardError(System.err)  // uncomment for debugging
+          .run()
+      } catch {
+        case t: Throwable =>
+          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'.")
+      } finally {
+        connection.close()
+      }
+    }
   }
 }
