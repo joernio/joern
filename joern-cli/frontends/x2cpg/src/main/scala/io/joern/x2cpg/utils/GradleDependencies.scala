@@ -1,6 +1,5 @@
 package io.joern.x2cpg.utils
 
-import better.files._
 import better.files.File.home
 import org.gradle.tooling.GradleConnector
 
