@@ -13,7 +13,7 @@ object GradleDependencies {
   private val taskName       = "x2cpgCopyRuntimeLibs"
 
   // TODO: support gradle4Minus (configurations.default won't work)
-  private def gradle4PlusInitScript(destination: String): String = {
+  private def gradle4OrLaterInitScript(destination: String): String = {
     s"""
      |allprojects {
      |  apply plugin: 'java'
@@ -36,7 +36,7 @@ object GradleDependencies {
     val gradleInitScript = gradleInitDDir / initScriptName
     gradleInitScript.createFileIfNotExists()
     gradleInitScript.write(
-      gradle4PlusInitScript(destinationDir)
+      gradle4OrLaterInitScript(destinationDir)
     ) // overwrite whatever is there, dirty solution, but also least likely to cause functional problems
 
     logger.info(s"Establishing gradle connection for project directory at '$projectDirectory'...")
