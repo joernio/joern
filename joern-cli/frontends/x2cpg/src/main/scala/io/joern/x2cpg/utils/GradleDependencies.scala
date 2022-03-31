@@ -50,6 +50,7 @@ object GradleDependencies {
       gradleInitScript.deleteOnExit()
     } catch {
       case t: Throwable =>
+        // TODO: make sure this doesn't run if the previous step failed
         logger.warn(s"Caught exception while trying to create init script: '${t.getMessage}'.")
     }
 
