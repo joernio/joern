@@ -12,7 +12,8 @@ final case class Config(
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
   withAndroidJarsInClassPath: Boolean = true,
-  withMiscJarsInClassPath: Boolean = true // TODO: remove
+  withMiscJarsInClassPath: Boolean = true, // TODO: remove
+  copyRuntimeLibs: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -42,7 +43,10 @@ private object Frontend {
         .action((_, c) => c.copy(withStdlibJarsInClassPath = true)),
       opt[Unit]("with-misc-jars")
         .text("adds local versions of various common library jars to classpath")
-        .action((_, c) => c.copy(withStdlibJarsInClassPath = true))
+        .action((_, c) => c.copy(withStdlibJarsInClassPath = true)),
+      opt[Unit]("copy-runtime-libs")
+        .text("Attempt to copy the runtime libs using the build tool found at the input path")
+        .action((_, c) => c.copy(copyRuntimeLibs = true))
     )
   }
 }
