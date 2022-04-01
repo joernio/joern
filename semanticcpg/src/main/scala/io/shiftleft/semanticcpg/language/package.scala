@@ -3,6 +3,8 @@ package io.shiftleft.semanticcpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AbstractNode,
+  Annotation,
+  AnnotationParameterAssign,
   AstNode,
   Call,
   CfgNode,
@@ -98,6 +100,20 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new IdentifierTraversal(Traversal.fromSingle(a))
   implicit def iterOnceToIdentifierTrav[A <: Identifier](a: IterableOnce[A]): IdentifierTraversal =
     new IdentifierTraversal(iterableToTraversal(a))
+
+  implicit def singleToAnnotationTrav[A <: Annotation](a: A): AnnotationTraversal =
+    new AnnotationTraversal(Traversal.fromSingle(a))
+  implicit def iterOnceToAnnotationTrav[A <: Annotation](a: IterableOnce[A]): AnnotationTraversal =
+    new AnnotationTraversal(iterableToTraversal(a))
+
+  implicit def singleToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
+    a: A
+  ): AnnotationParameterAssignTraversal =
+    new AnnotationParameterAssignTraversal(Traversal.fromSingle(a))
+  implicit def iterOnceToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
+    a: IterableOnce[A]
+  ): AnnotationParameterAssignTraversal =
+    new AnnotationParameterAssignTraversal(iterableToTraversal(a))
 
   implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal)
   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal)
