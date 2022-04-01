@@ -116,7 +116,7 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
     val List(iterator: Identifier, variable: Local, body: Block) = forLoop.astChildren.l
 
     iterator.name shouldBe "xs"
-    iterator.typeFullName shouldBe "java.lang.Iterable<java.lang.Integer>"
+    iterator.typeFullName shouldBe "java.lang.Iterable"
     variable.name shouldBe "x"
     variable.typeFullName shouldBe "java.lang.Integer"
 

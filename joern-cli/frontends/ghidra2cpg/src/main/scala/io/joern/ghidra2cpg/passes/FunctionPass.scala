@@ -146,7 +146,7 @@ abstract class FunctionPass(
     callNode: CfgNodeNew,
     function: Function
   ): Unit = {
-    val mnemonicString = processor.getInstructions(instruction.getMnemonicString)
+    val mnemonicString = processor.getInstructions.getOrElse(instruction.getMnemonicString, "UNKNOWN")
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
         codeUnitFormat.getOperandRepresentationString(instruction, 0)
