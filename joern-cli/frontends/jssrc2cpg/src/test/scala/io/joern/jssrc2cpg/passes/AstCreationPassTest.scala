@@ -3764,9 +3764,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def memberFoo = classAMetaTypeDecl.expandAst(NodeTypes.MEMBER)
       memberFoo.checkNodeCount(1)
-      pendingUntilFixed {
-        memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, "code.js::program:ClassA:staticFoo")
-      }
+      memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("code.js::program:ClassA:staticFoo"))
     }
 
     "have method for static method in ClassA AST" in AstFixture("""
@@ -3780,9 +3778,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def methodFoo =
         classATypeDecl.expandAst(NodeTypes.METHOD).filter(PropertyNames.NAME, "staticFoo")
       methodFoo.checkNodeCount(1)
-      pendingUntilFixed {
-        methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:staticFoo")
-      }
+      methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:staticFoo")
     }
 
     "have member for non-static method in TYPE_DECL for ClassA" in AstFixture("""
@@ -3795,9 +3791,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def memberFoo = classATypeDecl.expandAst(NodeTypes.MEMBER)
       memberFoo.checkNodeCount(1)
-      pendingUntilFixed {
-        memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, "code.js::program:ClassA:foo")
-      }
+      memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("code.js::program:ClassA:foo"))
     }
 
     "have method for non-static method in ClassA AST" in AstFixture("""
@@ -3810,9 +3804,7 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def methodFoo = classATypeDecl.expandAst(NodeTypes.METHOD).filter(PropertyNames.NAME, "foo")
       methodFoo.checkNodeCount(1)
-      pendingUntilFixed {
-        methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:foo")
-      }
+      methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:foo")
     }
 
     "have TYPE_REF to <meta> for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
@@ -3834,10 +3826,9 @@ class AstCreationPassTest extends AbstractPassTest {
     "have correct structure for type decls for classes with extends" in AstFixture("class ClassA extends Base {}") {
       cpg =>
         def classATypeDecl =
-          cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.FULL_NAME, "ClassA")
-        classATypeDecl.checkProperty(PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, "Base")
-        // Currently we do not handle class inheritance. Thus we expect 0.
-        classATypeDecl.checkNodeCount(0)
+          cpg.typeDecl.nameExact("ClassA").filter(PropertyNames.NAME, "ClassA")
+        classATypeDecl.checkNodeCount(1)
+        classATypeDecl.checkProperty(PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, Seq("Base"))
     }
   }
 

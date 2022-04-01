@@ -138,8 +138,8 @@ trait AstCreatorHelper {
   }
 
   protected def code(node: Value): String = {
-    val start = node("start").num.toInt
-    val end   = node("end").num.toInt
+    val start = Try(node("start").num.toInt).getOrElse(0)
+    val end   = Try(node("end").num.toInt).getOrElse(0)
     parserResult.fileContent.substring(start, end).trim
   }
 

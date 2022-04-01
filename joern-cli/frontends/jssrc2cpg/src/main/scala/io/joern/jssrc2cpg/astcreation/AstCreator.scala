@@ -48,14 +48,15 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
   // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
-  private val methodAstParentStack: Stack[NewNode]            = new Stack[NewNode]()
-  private val localAstParentStack: Stack[NewBlock]            = new Stack[NewBlock]()
-  private val usedVariableNames: mutable.HashMap[String, Int] = mutable.HashMap.empty[String, Int]
-  private val functionNodeToNameAndFullName                   = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
-  private val functionFullNames                               = mutable.HashSet.empty[String]
-  private val metaTypeRefIdStack                              = mutable.Stack.empty[NewTypeRef]
-
-  protected val dynamicInstanceTypeStack: mutable.Seq[String] = mutable.Stack.empty[String]
+  private val methodAstParentStack: Stack[NewNode]              = new Stack[NewNode]()
+  private val localAstParentStack: Stack[NewBlock]              = new Stack[NewBlock]()
+  private val usedVariableNames: mutable.HashMap[String, Int]   = mutable.HashMap.empty[String, Int]
+  private val functionNodeToNameAndFullName                     = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
+  private val functionFullNames                                 = mutable.HashSet.empty[String]
+  private val metaTypeRefIdStack                                = mutable.Stack.empty[NewTypeRef]
+  private val typeFullNameToPostfix                             = mutable.HashMap.empty[String, Int]
+  private val typeToNameAndFullName                             = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
+  protected val dynamicInstanceTypeStack: mutable.Stack[String] = mutable.Stack.empty[String]
 
   override def createAst(): DiffGraphBuilder = {
     val name    = parserResult.filename
@@ -244,12 +245,14 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   protected def calcMethodNameAndFullName(func: BabelNodeInfo): (String, String) = {
     def calcMethodName(func: BabelNodeInfo): String = {
       val name = func match {
-        // case _ if func.isAnonymous && func.isClassConstructor =>
-        //  "anonClass<constructor>"
+        case _ if func.json("key").isNull && func.json("kind").str == "constructor" =>
+          "anonClass<constructor>"
         // case _ if func.isAnonymous => TODO: is this a ArrowFunctionExpression?
         //  "anonymous"
-        // case _ if func.isClassConstructor =>
-        //  s"${func.getName}<constructor>"
+        case _ if func.json("kind").str == "method" =>
+          func.json("key")("name").str
+        case _ if func.json("kind").str == "constructor" =>
+          "<constructor>"
         case _ if func.json("id").isNull =>
           "anonymous"
         case _ =>
@@ -288,12 +291,12 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     }
   }
 
-  protected def astsForFunctionDeclaration(
+  private def createMethodNode(
     func: BabelNodeInfo,
     order: Int,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): Seq[Ast] = {
+  ): (Seq[Ast], NewMethod) = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None
@@ -348,7 +351,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
     localAstParentStack.push(blockNode)
 
-    val bodyStmtAsts = createBlockStatementAsts(func.json("body")("body"))
+    val bodyStmtAsts = createBlockStatementAsts(block("body"))
 
     val methodReturnNode = createMethodReturnNode(func).order(2)
 
@@ -373,8 +376,15 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
 
-    callAsts ++ methodRefNode.map(Ast(_)).toSeq
+    (callAsts ++ methodRefNode.map(Ast(_)).toSeq, methodNode)
   }
+
+  protected def astsForFunctionDeclaration(
+    func: BabelNodeInfo,
+    order: Int,
+    shouldCreateFunctionReference: Boolean = false,
+    shouldCreateAssignmentCall: Boolean = false
+  ): Seq[Ast] = createMethodNode(func, order, shouldCreateFunctionReference, shouldCreateAssignmentCall)._1
 
   protected def astsForVariableDeclarator(declarator: Value, order: Int, scopeType: ScopeType): Seq[Ast] = {
     val id   = createBabelNodeInfo(declarator("id"))
@@ -597,6 +607,174 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     }.toSeq
   }
 
+  protected def astsForSequenceExpression(seq: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val blockNode = createBlockNode(seq.code, order, seq.lineNumber, seq.columnNumber)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+    val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
+    localAstParentStack.pop()
+    scope.popScope()
+    Seq(Ast(blockNode).withChildren(sequenceExpressionAsts))
+  }
+
+  protected def calcTypeNameAndFullName(classNode: BabelNodeInfo): (String, String) = {
+    def calcTypeName(classNode: BabelNodeInfo): String = {
+      val typeName = Try(createBabelNodeInfo(classNode.json("id")).code).toOption match {
+        case Some(ident) => ident
+        // in JS it is possible to create anonymous classes; hence no name
+        case None =>
+          "_anon_cdecl"
+      }
+      typeName
+    }
+
+    typeToNameAndFullName.get(classNode) match {
+      case Some(nameAndFullName) =>
+        nameAndFullName
+      case None =>
+        val name             = calcTypeName(classNode)
+        val fullNamePrefix   = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
+        val intendedFullName = fullNamePrefix + name
+        val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
+
+        val resultingFullName =
+          if (postfix == 0) {
+            intendedFullName
+          } else {
+            intendedFullName + postfix.toString
+          }
+
+        typeFullNameToPostfix.put(intendedFullName, postfix + 1)
+        (name, resultingFullName)
+    }
+
+  }
+
+  private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
+    val maybeClassConstructor = Try(classExpr.json("body")("body").arr.find(_("kind").str == "constructor")).toOption
+    val methodNode = maybeClassConstructor match {
+      case Some(Some(classConstructor)) => createMethodNode(createBabelNodeInfo(classConstructor), 0)._2
+      case _ =>
+        val fakeConstructorCode = """{
+            | "type": "ClassMethod",
+            | "key": {
+            |   "type": "Identifier",
+            |   "name": "constructor"
+            | },
+            | "kind": "constructor",
+            | "id": null,
+            | "params": [],
+            | "body": {
+            |   "type": "BlockStatement",
+            |   "body": []
+            | }
+            |}""".stripMargin
+        createMethodNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)), 0)._2
+    }
+    if (!typeName.startsWith("_anon_cdecl")) {
+      val name     = methodNode.name.replace("<", s"$typeName<")
+      val fullName = methodNode.fullName.replace("<", s"$typeName<")
+      methodNode.name(name).fullName(fullName)
+    } else {
+      methodNode
+    }
+  }
+
+  protected def astsForClass(clazz: BabelNodeInfo, order: Int): Seq[Ast] = {
+    val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
+    val metaTypeName             = s"$typeName<meta>"
+    val metaTypeFullName         = s"$typeFullName<meta>"
+
+    val classTypeNode = createTypeNode(typeName, typeFullName)
+    Ast.storeInDiffGraph(Ast(classTypeNode), diffGraph)
+
+    // We do not need to look at classNode.getClassHeritage because
+    // the CPG only allows us to encode inheriting from fully known
+    // types. Since in JS we "inherit" from a variable which would
+    // need to be resolved first, we for now dont handle the class
+    // hierarchy.
+    val astParentType     = methodAstParentStack.head.label
+    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+
+    val superClass = Try(createBabelNodeInfo(clazz.json("superClass")).code).toOption.toSeq
+    val implements = Try(clazz.json("implements").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
+    val mixins     = Try(clazz.json("mixins").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
+
+    val typeDeclId = createTypeDeclNode(
+      typeName,
+      typeFullName,
+      parserResult.filename,
+      s"class $typeName",
+      astParentType,
+      astParentFullName,
+      order = order,
+      inherits = superClass ++ implements ++ mixins
+    )
+
+    val classMetaTypeNode = createTypeNode(metaTypeName, metaTypeFullName)
+    Ast.storeInDiffGraph(Ast(classMetaTypeNode), diffGraph)
+
+    val metaTypeDeclId = createTypeDeclNode(
+      metaTypeName,
+      metaTypeFullName,
+      parserResult.filename,
+      s"class $metaTypeName",
+      astParentType,
+      astParentFullName,
+      order = order
+    )
+
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclId, EdgeTypes.AST)
+    diffGraph.addEdge(methodAstParentStack.head, metaTypeDeclId, EdgeTypes.AST)
+
+    val metaTypeRefId = createTypeRefNode(s"class $typeName", metaTypeFullName, clazz)
+
+    methodAstParentStack.push(typeDeclId)
+    dynamicInstanceTypeStack.push(typeFullName)
+    metaTypeRefIdStack.push(metaTypeRefId)
+
+    // In case there is no user-written constructor the JS parser creates
+    // an empty one automatically. Hence, the following is safe:
+    val constructorId = classConstructor(typeName, clazz)
+
+    val constructorBindingId = createBindingNode()
+    diffGraph.addEdge(metaTypeDeclId, constructorBindingId, EdgeTypes.BINDS)
+    diffGraph.addEdge(constructorBindingId, constructorId, EdgeTypes.REF)
+
+    val classBodyElements = clazz.json("body")("body").arr.filterNot(_("kind").str == "constructor").toSeq
+
+    withOrder(classBodyElements) { (classElement, o) =>
+      val memberId = createBabelNodeInfo(classElement) match {
+        case m @ BabelNodeInfo(BabelAst.ClassMethod) =>
+          val function = createMethodNode(m, o)._2
+          val classMethod = if (!typeName.startsWith("_anon_cdecl")) {
+            val fullName = function.fullName.replace(s":${function.name}", s":$typeName:${function.name}")
+            function.fullName(fullName)
+          } else {
+            function
+          }
+          val functionFullName        = classMethod.fullName
+          val dynamicTypeHintFullName = Some(functionFullName)
+          createMemberNode(classMethod.name, m.code, dynamicTypeHintFullName)
+        case other =>
+          // TODO: unclear
+          createMemberNode(other.code, other.code, dynamicTypeOption = None)
+      }
+
+      if (classElement("static").bool) {
+        diffGraph.addEdge(metaTypeDeclId, memberId, EdgeTypes.AST)
+      } else {
+        diffGraph.addEdge(typeDeclId, memberId, EdgeTypes.AST)
+      }
+    }
+
+    methodAstParentStack.pop()
+    dynamicInstanceTypeStack.pop()
+    metaTypeRefIdStack.pop()
+
+    Seq(Ast(metaTypeRefId))
+  }
+
   protected def astsForNode(json: Value, order: Int): Seq[Ast] = createBabelNodeInfo(json) match {
     case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"), order)
     case program @ BabelNodeInfo(BabelAst.Program)                 => astsForProgram(program)
@@ -614,6 +792,9 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     case unaryExpr @ BabelNodeInfo(BabelAst.UnaryExpression)       => astsForUnaryExpression(unaryExpr, order)
     case block @ BabelNodeInfo(BabelAst.BlockStatement)            => astsForBlockStatement(block, order)
     case ret @ BabelNodeInfo(BabelAst.ReturnStatement)             => astsForReturnStatement(ret, order)
+    case seq @ BabelNodeInfo(BabelAst.SequenceExpression)          => astsForSequenceExpression(seq, order)
+    case classExpr @ BabelNodeInfo(BabelAst.ClassExpression)       => astsForClass(classExpr, order)
+    case classDecl @ BabelNodeInfo(BabelAst.ClassDeclaration)      => astsForClass(classDecl, order)
     case other                                                     => Seq(notHandledYet(other, order))
   }
 

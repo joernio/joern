@@ -23,6 +23,13 @@ trait AstNodeBuilder {
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
 
+  protected def createTypeRefNode(code: String, typeFullName: String, classNode: BabelNodeInfo): NewTypeRef =
+    NewTypeRef()
+      .code(code)
+      .typeFullName(typeFullName)
+      .lineNumber(classNode.lineNumber)
+      .columnNumber(classNode.columnNumber)
+
   protected def createTypeDeclNode(
     name: String,
     fullname: String,
@@ -98,6 +105,13 @@ trait AstNodeBuilder {
       .lineNumber(line)
       .columnNumber(column)
   }
+
+  protected def createMemberNode(name: String, code: String, dynamicTypeOption: Option[String]): NewMember =
+    NewMember()
+      .code(code)
+      .name(name)
+      .typeFullName(Defines.ANY.label)
+      .dynamicTypeHintFullName(dynamicTypeOption.toList)
 
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
     val line      = func.lineNumber
