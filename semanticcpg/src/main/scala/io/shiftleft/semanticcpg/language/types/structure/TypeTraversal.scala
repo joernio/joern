@@ -1,11 +1,16 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{Traversal, toElementTraversal, toNodeTraversal}
 
 class TypeTraversal(val traversal: Traversal[Type]) extends AnyVal {
+
+  /** Annotations of the corresponding type declaration.
+    */
+  def annotation: Traversal[nodes.Annotation] =
+    traversal.referencedTypeDecl.annotation
 
   /** Namespaces in which the corresponding type declaration is defined.
     */

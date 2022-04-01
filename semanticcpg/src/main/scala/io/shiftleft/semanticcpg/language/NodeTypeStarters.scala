@@ -16,6 +16,11 @@ class NodeTypeStarters(cpg: Cpg) {
   def all: Traversal[StoredNode] =
     cpg.graph.nodes.cast[StoredNode]
 
+  /** Traverse to all annotations
+    */
+  def annotation: Traversal[Annotation] =
+    cpg.graph.nodes(NodeTypes.ANNOTATION).cast[Annotation]
+
   /** Traverse to all arguments passed to methods
     */
   @Doc(info = "All arguments (actual parameters)")
