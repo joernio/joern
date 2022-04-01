@@ -32,20 +32,20 @@ class LiteralTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   val expectedOutput = List(
-    ("a", "0b10110010", "int"),
-    ("b", "0", "int"),
+    ("a", "0b10110010", "byte"),
+    ("b", "0", "short"),
     ("c", "0175", "int"),
     ("d", "0xABCD", "int"),
-    ("e", "9223372036854775807", "int"),
+    ("e", "9223372036854775807", "long"),
     ("f", "0.42f", "float"),
     ("g", "11d", "double"),
     ("h", "11.0", "double"),
     ("i", "1.0e2D", "double"),
     ("j", "'j'", "char"),
-    ("k", "062", "int"),
+    ("k", "062", "char"),
     ("l", "'\\n'", "char"),
     ("m", "\"Hello, world!\"", "java.lang.String"),
-    ("n", "null", "null"),
+    ("n", "null", "java.lang.String"),
     ("o", "true", "boolean"),
     ("p", "false", "boolean")
   )

@@ -12,7 +12,7 @@ final case class Config(
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
   withAndroidJarsInClassPath: Boolean = true,
-  withMiscJarsInClassPath: Boolean = true // TODO: remove
+  copyRuntimeLibs: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -34,15 +34,15 @@ private object Frontend {
         .unbounded()
         .text("directories to be searched for type resolution jars")
         .action((incl, c) => c.copy(classpath = c.classpath + incl)),
-      opt[Unit]("with-stdlib-jars")
-        .text("adds local versions of Kotlin stdlib jars to classpath")
-        .action((_, c) => c.copy(withStdlibJarsInClassPath = true)),
-      opt[Unit]("with-android-jars")
-        .text("adds local versions of Android jars to classpath")
-        .action((_, c) => c.copy(withStdlibJarsInClassPath = true)),
-      opt[Unit]("with-misc-jars")
-        .text("adds local versions of various common library jars to classpath")
-        .action((_, c) => c.copy(withStdlibJarsInClassPath = true))
+      opt[Unit]("no-stdlib-jars")
+        .text("Do not add local versions of Kotlin stdlib jars to classpath")
+        .action((_, c) => c.copy(withStdlibJarsInClassPath = false)),
+      opt[Unit]("no-android-jars")
+        .text("Do not add local versions of Android jars to classpath")
+        .action((_, c) => c.copy(withAndroidJarsInClassPath = false)),
+      opt[Unit]("copy-runtime-libs")
+        .text("Attempt to copy the runtime libs using the build tool found at the input path")
+        .action((_, c) => c.copy(copyRuntimeLibs = true))
     )
   }
 }
