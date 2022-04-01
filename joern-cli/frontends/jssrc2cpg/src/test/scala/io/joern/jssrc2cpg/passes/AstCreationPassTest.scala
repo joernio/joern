@@ -55,6 +55,7 @@ class AstCreationPassTest extends AbstractPassTest {
           .expandAst(NodeTypes.METHOD)
           .filter(PropertyNames.NAME, "Foo<constructor>")
       classFooMethod.checkNodeCount(1)
+      classFooMethod.checkProperty(PropertyNames.CODE, "constructor() {}")
 
       def programBlock = program.expandAst(NodeTypes.BLOCK)
       programBlock.checkNodeCount(1)
@@ -1765,7 +1766,7 @@ class AstCreationPassTest extends AbstractPassTest {
                                                                           |  constructor(y) {
                                                                           |  }
                                                                           |}""".stripMargin) { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:anonClass<constructor>")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:_anon_cdecl<constructor>")
     }
   }
 
@@ -3750,6 +3751,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def boundMethod = constructorBinding.expandRef(NodeTypes.METHOD)
       boundMethod.checkNodeCount(1)
       boundMethod.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA<constructor>")
+      boundMethod.checkProperty(PropertyNames.CODE, "constructor() {}")
     }
 
     "have member for static method in <meta> TYPE_DECL for ClassA" in AstFixture("""
@@ -3765,6 +3767,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def memberFoo = classAMetaTypeDecl.expandAst(NodeTypes.MEMBER)
       memberFoo.checkNodeCount(1)
       memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("code.js::program:ClassA:staticFoo"))
+      memberFoo.checkProperty(PropertyNames.CODE, "static staticFoo() {}")
     }
 
     "have method for static method in ClassA AST" in AstFixture("""
@@ -3779,6 +3782,7 @@ class AstCreationPassTest extends AbstractPassTest {
         classATypeDecl.expandAst(NodeTypes.METHOD).filter(PropertyNames.NAME, "staticFoo")
       methodFoo.checkNodeCount(1)
       methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:staticFoo")
+      methodFoo.checkProperty(PropertyNames.CODE, "static staticFoo() {}")
     }
 
     "have member for non-static method in TYPE_DECL for ClassA" in AstFixture("""
@@ -3792,6 +3796,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def memberFoo = classATypeDecl.expandAst(NodeTypes.MEMBER)
       memberFoo.checkNodeCount(1)
       memberFoo.checkProperty(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("code.js::program:ClassA:foo"))
+      memberFoo.checkProperty(PropertyNames.CODE, "foo() {}")
     }
 
     "have method for non-static method in ClassA AST" in AstFixture("""
@@ -3805,6 +3810,7 @@ class AstCreationPassTest extends AbstractPassTest {
       def methodFoo = classATypeDecl.expandAst(NodeTypes.METHOD).filter(PropertyNames.NAME, "foo")
       methodFoo.checkNodeCount(1)
       methodFoo.checkProperty(PropertyNames.FULL_NAME, "code.js::program:ClassA:foo")
+      methodFoo.checkProperty(PropertyNames.CODE, "foo() {}")
     }
 
     "have TYPE_REF to <meta> for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
