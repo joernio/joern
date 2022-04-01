@@ -70,7 +70,7 @@ object ContentSourcesPicker {
     DefaultContentRootJarPath("jars/androidx.webkit-1.4.0.jar", isResource = true),
     DefaultContentRootJarPath("jars/annotation-1.1.0.jar", isResource = true),
     DefaultContentRootJarPath("jars/appcompat-1.3.1-classes.jar", isResource = true),
-    DefaultContentRootJarPath("jars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.10.jar", isResource = true),
+    DefaultContentRootJarPath("jars/org.jetbrains.kotlin.kotlin-android-extensions-1.6.20.jar", isResource = true),
     DefaultContentRootJarPath("jars/org.jetbrains.kotlinx.kotlinx-coroutines-android-1.3.9.jar", isResource = true)
   )
 
