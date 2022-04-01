@@ -1,9 +1,10 @@
 package io.joern.x2cpg.utils
 
-import better.files.File.home
+import better.files.File
 import org.gradle.tooling.GradleConnector
 
 import java.io.{File => JFile}
+import java.nio.file.Files
 import org.slf4j.LoggerFactory
 
 // TODO: try to find out the version of gradle and generate the initScript based on that
@@ -26,28 +27,17 @@ object GradleDependencies {
   }
 
   def downloadRuntimeLibs(projectDirectory: String, destinationDir: String): Unit = {
-    // TODO: check if the directories exist
-    // TODO: check if the build task already exists, and insert the init script only if it does not
     logger.info(s"Attempting to download runtime libs for project at '$projectDirectory' into '$destinationDir'...")
 
-    val gradleInitDDir = home / ".gradle" / "init.d"
-    try {
-      if (!gradleInitDDir.exists) {
-        logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
-        gradleInitDDir.createDirectory()
-      }
-    } catch {
-      case t: Throwable =>
-        logger.warn(s"Caught exception while trying to create init script directory: '${t.getMessage}'.")
-    }
+    val tmpDir = File(Files.createTempDirectory("x2cpg"))
+    val initDir = (tmpDir / "init.d").createDirectoryIfNotExists()
+    tmpDir.deleteOnExit()
 
     try {
-      val gradleInitScript = gradleInitDDir / initScriptName
-      gradleInitScript.createFileIfNotExists()
+      val gradleInitScript = initDir / initScriptName
       gradleInitScript.write(
         gradle4OrLaterInitScript(destinationDir)
       ) // overwrite whatever is there, dirty solution, but also least likely to cause functional problems
-      gradleInitScript.deleteOnExit()
     } catch {
       case t: Throwable =>
         // TODO: make sure this doesn't run if the previous step failed
@@ -61,6 +51,7 @@ object GradleDependencies {
           GradleConnector
             .newConnector()
             .forProjectDirectory(new JFile(projectDirectory))
+            .useGradleUserHomeDir(tmpDir.toJava)
             .connect()
         )
       } catch {
