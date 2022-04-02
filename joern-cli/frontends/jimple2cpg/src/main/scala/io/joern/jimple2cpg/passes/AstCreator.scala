@@ -1,10 +1,10 @@
 package io.joern.jimple2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated._
-import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
@@ -217,7 +217,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case x: GotoStmt         => astsForGotoStmt(x, order)
       case x: LookupSwitchStmt => astsForLookupSwitchStmt(x, order)
       case x: TableSwitchStmt  => astsForTableSwitchStmt(x, order)
-      case x: ThrowStmt        => Seq(astForUnknownStmt(x, x.getOp, order))
+      case x: ThrowStmt        => astsForThrowStmt(x, order)
       case x: MonitorStmt      => Seq(astForUnknownStmt(x, x.getOp, order))
       case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
       case _: NopStmt          => Seq() // Ignore NOP statements
@@ -582,7 +582,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     val gotoAst = Seq(
       Ast(
         NewUnknown()
-          .code(gotoStmt.toString)
+          .code(s"goto ${line(gotoStmt.getTarget).getOrElse(gotoStmt.getTarget.toString())}")
           .order(order)
           .argumentIndex(order)
           .lineNumber(line(gotoStmt))
@@ -668,6 +668,23 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     Seq(
       switchAst
         .withChildren(tgtAsts)
+    )
+  }
+
+  def astsForThrowStmt(throwStmt: ThrowStmt, order: Int): Seq[Ast] = {
+    val opAst = astsForValue(throwStmt.getOp, 1, throwStmt)
+    val throwNode = NewCall()
+      .name("<operator>.throw")
+      .methodFullName("<operator>.throw")
+      .lineNumber(line(throwStmt))
+      .columnNumber(column(throwStmt))
+      .code(s"throw new ${throwStmt.getOp.getType}()")
+      .order(order)
+      .argumentIndex(order)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+    Seq(
+      Ast(throwNode)
+        .withChildren(opAst)
     )
   }
 
