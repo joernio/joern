@@ -86,7 +86,9 @@ class Engine(context: EngineContext) {
 
   private def submitTask(task: ReachableByTask): Unit = {
     numberOfTasksRunning += 1
-    completionService.submit(new ReachableByCallable(task, context))
+    completionService.submit(
+      new ReachableByCallable(if (context.config.disableCacheUse) task.copy(table = new ResultTable) else task, context)
+    )
   }
 
   private def tasksForParams(
@@ -349,7 +351,7 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
 
     val resultsForParents: Vector[ReachableByResult] = {
       expandIn(curNode, path).iterator.flatMap { parent =>
-        val cachedResult = if (context.config.disableCacheUse) None else table.createFromTable(parent, path)
+        val cachedResult = table.createFromTable(parent, path)
         if (cachedResult.isDefined) {
           QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
           cachedResult.get
