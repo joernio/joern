@@ -717,8 +717,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   def astForThrow(stmt: ThrowStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
     val throwNode = NewCall()
-      .name("operator.<throw>")
-      .methodFullName("operator.<throw>")
+      .name("<operator>.throw")
+      .methodFullName("<operator>.throw")
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
       .code(stmt.toString())
