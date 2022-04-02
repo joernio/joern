@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  Annotation,
   Block,
   CfgNode,
   ControlStructure,
@@ -14,6 +15,11 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{Traversal, jIteratortoTraversal}
 
 class MethodMethods(val method: Method) extends AnyVal with NodeExtension with HasLocation {
+
+  /** Traverse to annotations of method
+    */
+  def annotation: Traversal[Annotation] =
+    method._annotationViaAstOut
 
   def local: Traversal[Local] =
     method._blockViaContainsOut.flatMap(_._localViaAstOut)
