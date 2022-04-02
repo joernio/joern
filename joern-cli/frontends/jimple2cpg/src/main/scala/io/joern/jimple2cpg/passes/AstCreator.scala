@@ -414,9 +414,9 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForNewExpr(x: AnyNewExpr, order: Int, parentUnit: soot.Unit): Ast = {
     x match {
       case u: NewArrayExpr =>
-        astForArrayInitializeExpr(x, List(u.getSize), order, parentUnit)
+        astForArrayCreateExpr(x, List(u.getSize), order, parentUnit)
       case u: NewMultiArrayExpr =>
-        astForArrayInitializeExpr(x, u.getSizes.asScala, order, parentUnit)
+        astForArrayCreateExpr(x, u.getSizes.asScala, order, parentUnit)
       case _ =>
         val parentType = registerType(x.getType.toQuotedString)
         Ast(
@@ -434,19 +434,23 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }
   }
 
-  private def astForArrayInitializeExpr(
+  private def astForArrayCreateExpr(
     arrayInitExpr: Expr,
     sizes: Iterable[Value],
     order: Int,
     parentUnit: soot.Unit
   ): Ast = {
+    // Jimple does not have Operators.arrayInitializer
+    // to enforce 3 address code form
+    val arrayBaseType = registerType(arrayInitExpr.getType.toQuotedString)
+    val code = s"new ${arrayBaseType.substring(0, arrayBaseType.indexOf('['))}${sizes.map(s => s"[$s]").mkString}"
     val callBlock = NewCall()
-      .name(Operators.arrayInitializer)
-      .methodFullName(Operators.arrayInitializer)
-      .code(arrayInitExpr.toString())
+      .name("<operator>.arrayCreator")
+      .methodFullName("<operator>.arrayCreator")
+      .code(code)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
-      .typeFullName(registerType(arrayInitExpr.getType.toQuotedString))
+      .typeFullName(arrayBaseType)
       .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
