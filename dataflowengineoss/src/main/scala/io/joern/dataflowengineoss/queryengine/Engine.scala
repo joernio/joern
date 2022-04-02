@@ -1,24 +1,16 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
 
-import java.util.concurrent.{
-  Callable,
-  ConcurrentHashMap,
-  ConcurrentMap,
-  ExecutorCompletionService,
-  ExecutorService,
-  Executors
-}
+import java.util.concurrent._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -287,8 +279,27 @@ object Engine {
 
 }
 
+/** The execution context for the data flow engine.
+  * @param semantics
+  *   pre-determined semantic models for method calls e.g., logical operators, operators for common data structures.
+  * @param config
+  *   additional configurations for the data flow engine.
+  */
 case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConfig())
-case class EngineConfig(var maxCallDepth: Int = 2, initialTable: Option[ResultTable] = None)
+
+/** Various configurations for the data flow engine.
+  * @param maxCallDepth
+  *   the k-limit for calls and field accesses.
+  * @param initialTable
+  *   an initial (starting node) -> (path-edges) cache to initiate data flow queries with.
+  * @param disableCacheUse
+  *   disables re-use of previously calculated paths.
+  */
+case class EngineConfig(
+  var maxCallDepth: Int = 2,
+  initialTable: Option[ResultTable] = None,
+  disableCacheUse: Boolean = false
+)
 
 /** Callable for solving a ReachableByTask
   *
@@ -338,7 +349,7 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
 
     val resultsForParents: Vector[ReachableByResult] = {
       expandIn(curNode, path).iterator.flatMap { parent =>
-        val cachedResult = table.createFromTable(parent, path)
+        val cachedResult = if (context.config.disableCacheUse) None else table.createFromTable(parent, path)
         if (cachedResult.isDefined) {
           QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
           cachedResult.get
