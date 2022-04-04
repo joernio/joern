@@ -8,6 +8,11 @@ import overflowdb.traversal._
   */
 class MemberTraversal(val traversal: Traversal[Member]) extends AnyVal {
 
+  /** Traverse to annotations of member
+    */
+  def annotation: Traversal[nodes.Annotation] =
+    traversal.flatMap(_._annotationViaAstOut)
+
   /** Places where
     */
   def ref: Traversal[Call] =

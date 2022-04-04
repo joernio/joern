@@ -12,6 +12,11 @@ import overflowdb.traversal.{Traversal, help, toElementTraversal, toNodeTraversa
 @help.Traversal(elementType = classOf[Method])
 class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
 
+  /** Traverse to annotations of method
+    */
+  def annotation: Traversal[nodes.Annotation] =
+    traversal.flatMap(_._annotationViaAstOut)
+
   /** All control structures of this method
     */
   @Doc(info = "Control structures (source frontends only)")
