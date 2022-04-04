@@ -1,10 +1,6 @@
 name := "fuzzyc2cpg"
 
-dependsOn(
-  Projects.semanticcpg,
-  Projects.dataflowengineoss % Test,
-  Projects.x2cpg % "compile->compile;test->test",
-)
+dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "org.antlr"                % "antlr4-runtime"             % Versions.antlr,

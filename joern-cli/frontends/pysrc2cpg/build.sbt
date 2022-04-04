@@ -2,7 +2,7 @@ name := "pysrc2cpg"
 
 scalaVersion := "2.13.8"
 
-dependsOn(Projects.x2cpg  % "compile->compile;test->test")
+dependsOn(Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,

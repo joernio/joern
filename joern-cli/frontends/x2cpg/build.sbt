@@ -5,10 +5,10 @@ crossScalaVersions := Seq("2.13.8", "3.1.1")
 dependsOn(Projects.semanticcpg)
 
 libraryDependencies ++= Seq(
-  "org.slf4j"                % "slf4j-api"                  % "1.7.36",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j % Optional,
-  "org.gradle"               % "gradle-tooling-api"         % "6.1.1" % Optional,
-  "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test,
+  "org.slf4j"                % "slf4j-api"          % "1.7.36",
+  "org.apache.logging.log4j" % "log4j-slf4j-impl"   % Versions.log4j     % Optional,
+  "org.gradle"               % "gradle-tooling-api" % "6.1.1"            % Optional,
+  "org.scalatest"           %% "scalatest"          % Versions.scalatest % Test
 )
 
 Test / packageBin / publishArtifact := true
@@ -31,9 +31,9 @@ scalacOptions ++= Seq() ++ (
         "-language:implicitConversions", // Allow definition of implicit functions called views
         "-unchecked",                    // Enable additional warnings where generated code depends on assumptions.
         "-Xcheckinit",                   // Wrap field accessors to throw an exception on uninitialized access.
-        //"-Xfatal-warnings",            //-Werror is incompatible with the concept of @deprecate.
-                                         // TODO: Find the right incantation to ensure that deprecation warnings are
-                                         //       not suppressed but are not treated as error either
+        // "-Xfatal-warnings",            //-Werror is incompatible with the concept of @deprecate.
+        // TODO: Find the right incantation to ensure that deprecation warnings are
+        //       not suppressed but are not treated as error either
         "-Xlint:adapted-args",           // Warn if an argument list is modified to match the receiver.
         "-Xlint:constant",               // Evaluation of a constant arithmetic expression results in an error.
         "-Xlint:delayedinit-select",     // Selecting member of DelayedInit.
