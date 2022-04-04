@@ -7,7 +7,6 @@ import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
-import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}

@@ -9,14 +9,13 @@ import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
-import ghidra.program.util.GhidraProgramUtilities
+import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
-import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass, MipsReturnEdgesPass}
+import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
-import io.joern.ghidra2cpg.utils.{CommandLineConfig, Decompiler}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
@@ -111,14 +110,21 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
     val functionIterator = listing.getFunctions(true)
     val functions        = functionIterator.iterator.asScala.toList
 
+    val address2Literals: Map[Long, String] = DefinedDataIterator
+      .definedStrings(program)
+      .iterator()
+      .asScala
+      .toList
+      .map(x => x.getAddress().getOffset -> x.getValue.toString)
+      .toMap
+
     new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
     new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
-        new MipsFunctionPass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
+        new MipsFunctionPass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
         new LoHiPass(cpg).createAndApply()
-        new MipsReturnEdgesPass(cpg).createAndApply()
       case "AARCH64" | "ARM" =>
         new ArmFunctionPass(program, fileAbsolutePath, functions, cpg, decompiler)
           .createAndApply()
