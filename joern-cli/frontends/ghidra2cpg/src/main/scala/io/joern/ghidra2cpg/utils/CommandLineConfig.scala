@@ -5,10 +5,10 @@ object CommandLineConfig {
   // therefor we have to provide the same
   // arguments
   val projectDirectory = "src/test/resources/ghidraworkingdirectory"
-  val projectName = "defaultProject"
+  val projectName      = "defaultProject"
   // we overwrite on a rerun
-  val overwrite = "-overwrite"
-  val importFlag = "-import"
+  val overwrite    = "-overwrite"
+  val importFlag   = "-import"
   val pathToBinary = "src/test/resources/test"
 
   val outputFile = "cpg.bin"
