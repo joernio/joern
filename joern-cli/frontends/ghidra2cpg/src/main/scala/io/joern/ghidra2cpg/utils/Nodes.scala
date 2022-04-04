@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{Function, Program}
-import io.joern.ghidra2cpg.{Decompiler, Types}
+import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -31,7 +31,7 @@ object Nodes {
     nodes
       .NewMethodParameterIn()
       .code(code)
-      .name(code)
+      .name(name)
       .order(order)
       .typeFullName(Types.registerType(typ))
       .lineNumber(lineNumber)
@@ -41,7 +41,7 @@ object Nodes {
     nodes
       .NewIdentifier()
       .code(code)
-      .name(name) // parameter.getName)
+      .name(name)
       .order(index)
       .argumentIndex(index)
       .typeFullName(Types.registerType(typ))

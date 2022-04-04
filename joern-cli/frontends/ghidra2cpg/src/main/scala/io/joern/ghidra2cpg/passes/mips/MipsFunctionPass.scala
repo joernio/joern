@@ -1,9 +1,9 @@
 package io.joern.ghidra2cpg.passes.mips
 import ghidra.program.model.listing.{Function, Program}
 import ghidra.program.model.pcode.PcodeOp._
-import io.joern.ghidra2cpg.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
+import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.utils.Nodes._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock

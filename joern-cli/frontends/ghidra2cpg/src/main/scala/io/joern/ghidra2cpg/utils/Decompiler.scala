@@ -1,4 +1,4 @@
-package io.joern.ghidra2cpg
+package io.joern.ghidra2cpg.utils
 
 import ghidra.app.decompiler.{DecompInterface, DecompileOptions, DecompileResults, DecompiledFunction}
 import ghidra.program.model.listing.{Function, Program}
