@@ -31,7 +31,6 @@ object Constants {
   val defaultCaseNode                = "default"
   val caseNodeParserTypeName         = "CaseNode"
   val unknownOperator                = "<operator>.unknown"
-  val tryCatchOperator               = "<operator>.tryCatch"
   val operatorSuffix                 = "<operator>"
   val paramNameLambdaDestructureDecl = "DESTRUCTURE_PARAM"
   val wildcardImportName             = "*"
@@ -2210,9 +2209,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   ): AstWithCtx = {
     val callNode =
       NewCall()
-        .name(Constants.tryCatchOperator)
+        .name(Operators.tryCatch)
         .code(expr.getText)
-        .methodFullName(Constants.tryCatchOperator)
+        .methodFullName(Operators.tryCatch)
         .typeFullName(TypeConstants.any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .order(order)

@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.TestContext
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
@@ -29,7 +30,7 @@ class TryExpressionsTests extends AnyFreeSpec with Matchers {
         | """.stripMargin)
 
     "should contain a CALL for the `try`-expression with the correct props set" in {
-      val List(c) = cpg.call.methodFullNameExact("<operator>.tryCatch").l
+      val List(c) = cpg.call.methodFullNameExact(Operators.tryCatch).l
       c.argument.size shouldBe 2
 
       val List(firstArg: Block, secondArg: Block) = c.argument.l
