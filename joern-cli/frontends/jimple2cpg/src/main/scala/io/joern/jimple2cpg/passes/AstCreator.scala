@@ -203,7 +203,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     Ast(block)
       .withChildren(locals)
       .withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
-        astsForStatement(x, order + locals.size)
+        astsForStatement(x, order + locals.size - 1)
       }.flatten)
   }
 
@@ -701,9 +701,18 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   }
 
   private def astsForReturnNode(returnStmt: ReturnStmt, order: Int): Seq[Ast] = {
+    val astChildren = astsForValue(returnStmt.getOp, 1, returnStmt)
+    val returnNode = NewReturn()
+      .argumentIndex(order)
+      .order(order)
+      .code(s"return ${astChildren.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
+      .lineNumber(line(returnStmt))
+      .columnNumber(column(returnStmt))
+
     Seq(
-      Ast(NewReturn().order(order).lineNumber(line(returnStmt)).columnNumber(column(returnStmt)))
-        .withChildren(astsForValue(returnStmt.getOp, order + 1, returnStmt))
+      Ast(returnNode)
+        .withChildren(astChildren)
+        .withArgEdges(returnNode, astChildren.flatMap(_.root))
     )
   }
 
@@ -711,7 +720,9 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     Seq(
       Ast(
         NewReturn()
+          .argumentIndex(order)
           .order(order)
+          .code(s"return;")
           .lineNumber(line(returnVoidStmt))
           .columnNumber(column(returnVoidStmt))
       )
