@@ -34,7 +34,7 @@ object GradleDependencies {
     try {
       if (!gradleInitDDir.exists) {
         logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
-        gradleInitDDir.createDirectory()
+        gradleInitDDir.createDirectories()
       }
     } catch {
       case t: Throwable =>

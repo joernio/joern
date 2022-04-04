@@ -30,11 +30,7 @@ class IfGotoTests extends JimpleCodeToCpgFixture {
       |""".stripMargin
 
   "should identify `goto` blocks" in {
-    cpg.all.collect { case x: Unknown => x }.code.toSetMutable shouldBe Set(
-      "goto [?= $stack6 = y]",
-      "goto [?= i = i + 1]",
-      "goto [?= (branch)]"
-    )
+    cpg.all.collect { case x: Unknown => x }.code.toSetMutable shouldBe Set("goto 9", "goto 5")
   }
 
   "should contain 4 branching nodes at conditional calls" in {

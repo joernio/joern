@@ -14,7 +14,7 @@ dependsOn(
   Projects.macros,
   Projects.fuzzyc2cpg % Test,
   Projects.c2cpg      % Test,
-  Projects.x2cpg % "compile->compile;test->test",
+  Projects.x2cpg      % "compile->compile;test->test"
 )
 
 libraryDependencies ++= Seq(
