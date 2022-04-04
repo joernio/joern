@@ -1,9 +1,9 @@
 package io.joern.ghidra2cpg.processors
 
-import scala.collection.immutable._
+import scala.collection.mutable.HashMap
 
-class ArmProcessor extends Processor {
-  override def getInstructions: HashMap[String, String] =
+object ArmProcessor extends Processor {
+  override val getInstructions: HashMap[String, String] =
     HashMap(
       "add"     -> "<operator>.incBy",
       "adr"     -> "<operator>.assignment",
