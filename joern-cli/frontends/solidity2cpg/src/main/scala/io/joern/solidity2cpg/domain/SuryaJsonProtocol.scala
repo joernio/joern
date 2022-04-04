@@ -33,7 +33,6 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         case "PragmaDirective" =>
           PragmaDirectiveJsonFormat.read(json)
         case "ImportDirective" =>
-          // TODO: (Dave) Just added empty strings to get the project to compile
           ImportDirectiveJsonFormat.read(json)
         case "ContractDefinition" =>
           ContractDefinitionJsonFormat.read(json)
