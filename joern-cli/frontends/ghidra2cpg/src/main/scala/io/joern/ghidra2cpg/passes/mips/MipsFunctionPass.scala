@@ -14,7 +14,6 @@ import scala.language.implicitConversions
 
 class MipsFunctionPass(
   currentProgram: Program,
-  address2Literal: Map[Long, String],
   filename: String,
   functions: List[Function],
   cpg: Cpg,
