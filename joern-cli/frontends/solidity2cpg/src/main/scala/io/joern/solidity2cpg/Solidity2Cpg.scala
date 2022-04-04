@@ -7,9 +7,8 @@ import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.IntervalKeyPool
 
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 object Solidity2Cpg {
   // TODO: Add to io.shiftleft.codepropertygraph.generated.Languages
@@ -29,18 +28,15 @@ class Solidity2Cpg {
     * `None`, the CPG is created in-memory.
     */
   def createCpg(sourceCodePath: String, outputPath: Option[String] = None): Cpg = {
-    val cpg             = newEmptyCpg(outputPath)
-    val metaDataKeyPool = new IntervalKeyPool(1, 100)
-    val typesKeyPool    = new IntervalKeyPool(100, 1000100)
-    val methodKeyPool   = new IntervalKeyPool(first = 1000100, last = Long.MaxValue)
+    val cpg = newEmptyCpg(outputPath)
 
-    new MetaDataPass(cpg, language, Some(metaDataKeyPool)).createAndApply()
+    new MetaDataPass(cpg, language).createAndApply()
 
     val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
-    val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg, methodKeyPool)
+    val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
     astCreator.createAndApply()
 
-    new TypeNodePass(astCreator.global.usedTypes.asScala.toList, cpg, Some(typesKeyPool))
+    new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
       .createAndApply()
 
     cpg

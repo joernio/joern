@@ -1,7 +1,8 @@
 package io.joern.solidity2cpg.passes
 
 import io.joern.solidity2cpg.domain.SuryaObject.SourceUnit
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -9,8 +10,12 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 /** Creates an AST using [[createAst]].
   * @param filename
   *   the name of the file this file is generated from. This should correspond to the .sol file.
+  * @param sourceUnit
+  *   the parsed [[SourceUnit]] representation of a Surya JSON AST.
+  * @param global
+  *   shared project-wide information.
   */
-class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) {
+class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -18,17 +23,18 @@ class AstCreator(filename: String, diffGraph: DiffGraphBuilder, global: Global) 
     * key in the map.
     */
   private def registerType(typeName: String): String = {
-    global.usedTypes.add(typeName)
+    global.usedTypes.put(typeName, true)
     typeName
   }
 
   /** Creates the AST for the given Surya [[SourceUnit]].
-    * @param sourceUnit
-    *   The parsed [[SourceUnit]] representation of a Surya JSON AST.
+    * @return
+    *   the changes associated to building the AST.
     */
-  def createAst(sourceUnit: SourceUnit): Unit = {
+  override def createAst(): DiffGraphBuilder = {
     val astRoot = astForCompilationUnit(sourceUnit)
     storeInDiffGraph(astRoot)
+    diffGraph
   }
 
   /** Copy nodes/edges of given `AST` into the diff graph

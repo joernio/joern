@@ -17,7 +17,7 @@ class X86FunctionPass(
   functions: List[Function],
   cpg: Cpg,
   decompiler: Decompiler
-) extends FunctionPass(new X86Processor, currentProgram, functions, cpg, decompiler) {
+) extends FunctionPass(X86Processor, currentProgram, functions, cpg, decompiler) {
 
   override def handleBody(
     diffGraphBuilder: DiffGraphBuilder,

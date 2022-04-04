@@ -13,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, New
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
@@ -23,6 +24,14 @@ abstract class FunctionPass(
   cpg: Cpg,
   decompiler: Decompiler
 ) extends ConcurrentWriterCpgPass[Function](cpg) {
+
+  protected val functionByName = mutable.HashMap[String, Function]()
+  for (fn <- functions) {
+    val other = functionByName.getOrElseUpdate(fn.getName, fn)
+    if (!(other eq fn)) {
+      baseLogger.warn(s"Multiple functions with same name ${fn.getName}, can't disambiguate: ${fn}, ${other}")
+    }
+  }
 
   def getHighFunction(function: Function): HighFunction = decompiler.toHighFunction(function).orNull
   protected def getInstructions(function: Function): Seq[Instruction] =
@@ -137,11 +146,11 @@ abstract class FunctionPass(
     callNode: CfgNodeNew,
     function: Function
   ): Unit = {
-    val mnemonicString = processor.getInstructions(instruction.getMnemonicString)
+    val mnemonicString = processor.getInstructions.getOrElse(instruction.getMnemonicString, "UNKNOWN")
     if (mnemonicString.equals("CALL")) {
       val calledFunction =
         codeUnitFormat.getOperandRepresentationString(instruction, 0)
-      val callee = functions.find(function => function.getName().equals(calledFunction))
+      val callee = functionByName.get(calledFunction)
       if (callee.nonEmpty) {
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters = Array.empty[(String, Int, String)]

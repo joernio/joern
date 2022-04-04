@@ -24,7 +24,7 @@ class MipsFunctionPass(
   functions: List[Function],
   cpg: Cpg,
   decompiler: Decompiler
-) extends FunctionPass(new MipsProcessor, currentProgram, functions, cpg, decompiler) {
+) extends FunctionPass(MipsProcessor, currentProgram, functions, cpg, decompiler) {
   private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {

@@ -12,6 +12,7 @@ import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedTy
 import io.joern.javasrc2cpg.passes.ScopeContext
 import io.joern.x2cpg.datastructures.Global
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{ImportInfo, UnresolvedTypeDefault}
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
@@ -33,16 +34,20 @@ class TypeInfoProvider(global: Global) {
     typeName
   }
 
-  private def simpleResolvedTypeFullName(resolvedType: ResolvedType, typeParameterString: String = ""): String = {
-    resolvedType.describe()
+  private def simpleResolvedTypeFullName(resolvedType: ResolvedType): Option[String] = {
+    if (resolvedType.isTypeVariable) {
+      None
+    } else {
+      Some(resolvedType.describe())
+    }
   }
 
-  private def buildTypeString(packageName: String, className: String, typeParameterString: String): String = {
+  private def buildTypeString(packageName: String, className: String): String = {
     val dollaredClass = className.replaceAll("\\.", "\\$")
     if (packageName.nonEmpty) {
-      s"$packageName.$dollaredClass$typeParameterString"
+      s"$packageName.$dollaredClass"
     } else {
-      s"$dollaredClass$typeParameterString"
+      dollaredClass
     }
   }
 
@@ -56,74 +61,48 @@ class TypeInfoProvider(global: Global) {
     }
   }
 
-  private def resolvedTypeDeclFullName(
-    declaration: ResolvedTypeDeclaration,
-    typeParameterString: String = ""
-  ): String = {
+  private def resolvedTypeDeclFullName(declaration: ResolvedTypeDeclaration): String = {
     val packageName = extractNullableName(Try(declaration.getPackageName))
     val className   = extractNullableName(Try(declaration.getClassName))
-    buildTypeString(packageName, className, typeParameterString)
+    buildTypeString(packageName, className)
   }
 
-  private def resolvedTypeParamFullName(
-    declaration: ResolvedTypeParameterDeclaration,
-    typeParameterString: String = ""
-  ): String = {
+  private def resolvedMethodLikeDeclFullName(declaration: ResolvedMethodLikeDeclaration): String = {
     val packageName = Try(declaration.getPackageName).getOrElse("")
     val className   = Try(declaration.getClassName).getOrElse(declaration.getName)
-    buildTypeString(packageName, className, typeParameterString)
+
+    buildTypeString(packageName, className)
   }
 
-  private def resolvedMethodLikeDeclFullName(
-    declaration: ResolvedMethodLikeDeclaration,
-    typeParameterString: String = ""
-  ): String = {
-    val packageName = Try(declaration.getPackageName).getOrElse("")
-    val className   = Try(declaration.getClassName).getOrElse(declaration.getName)
-    val baseString  = buildTypeString(packageName, className, typeParameterString)
-    val typeParameters =
-      declaration.getTypeParameters.asScala.map(resolvedTypeParamFullName(_, typeParameterString)).toList
-
-    val typeParamString = if (typeParameters.nonEmpty) {
-      s"<${typeParameters.mkString(",")}>"
-    } else {
-      ""
-    }
-
-    s"$baseString$typeParamString"
-  }
-
-  private def buildTypeParameterString(typeParams: Iterable[ResolvedType]): String = {
-    typeParams match {
-      case Nil => ""
-
-      case _ =>
-        val innerString = typeParams
-          .map { param =>
-            simpleResolvedTypeFullName(param)
-          }
-          .mkString(",")
-        s"<$innerString>"
-    }
-  }
-
-  private def resolvedReferenceTypeFullName(resolvedType: ResolvedReferenceType): String = {
-    val typeParamString = buildTypeParameterString(resolvedType.typeParametersValues().asScala)
-
+  private def resolvedReferenceTypeFullName(resolvedType: ResolvedReferenceType): Option[String] = {
     resolvedType.getTypeDeclaration.toScala match {
-      case Some(typeDeclaration) => resolvedTypeDeclFullName(typeDeclaration, typeParamString)
+      case Some(typeDeclaration) => Some(resolvedTypeDeclFullName(typeDeclaration))
 
       case None =>
-        simpleResolvedTypeFullName(resolvedType, typeParamString)
+        simpleResolvedTypeFullName(resolvedType)
     }
   }
 
-  def resolvedTypeFullName(resolvedType: ResolvedType): String = {
+  private def resolvedTypeFullName(resolvedType: ResolvedType): Option[String] = {
     resolvedType match {
       case resolvedReferenceType: ResolvedReferenceType => resolvedReferenceTypeFullName(resolvedReferenceType)
 
       case _ => simpleResolvedTypeFullName(resolvedType)
     }
+  }
+
+  def getResolvedTypeFullName(resolvedType: ResolvedType): Option[String] = {
+    resolvedTypeFullName(resolvedType).map(registerType)
+  }
+
+  private def resolvedTypeParameterTypeFullName(resolvedType: ResolvedTypeParameterDeclaration): String = {
+    val packageName = extractNullableName(Try(resolvedType.getPackageName))
+    val className   = extractNullableName(Try(resolvedType.getClassName))
+    buildTypeString(packageName, className)
+  }
+
+  def typeFullNameForResolvedTypeParam(typeParam: ResolvedTypeParameterDeclaration): String = {
+    registerType(resolvedTypeParameterTypeFullName(typeParam))
   }
 
   private def typeNameForTypeDecl(typeDecl: TypeDeclaration[_], fullName: Boolean): String = {
@@ -160,9 +139,9 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(node: NodeWithType[_, _ <: Resolvable[ResolvedType]]): Option[String] = {
     val typeFullName = Try(node.getType.resolve()) match {
-      case Success(resolvedType: ResolvedReferenceType) => Some(resolvedReferenceTypeFullName(resolvedType))
+      case Success(resolvedType: ResolvedReferenceType) => resolvedReferenceTypeFullName(resolvedType)
 
-      case Success(resolvedType: ResolvedType) => Some(simpleResolvedTypeFullName(resolvedType))
+      case Success(resolvedType: ResolvedType) => simpleResolvedTypeFullName(resolvedType)
 
       case Failure(_) =>
         logger.debug(s"Resolving type ${node.getTypeAsString} failed. Falling back to import default.")
@@ -174,7 +153,7 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(typ: ClassOrInterfaceType): Option[String] = {
     val typeFullName = Try(typ.resolve) match {
-      case Success(resolvedType) => Some(resolvedReferenceTypeFullName(resolvedType))
+      case Success(resolvedType) => resolvedReferenceTypeFullName(resolvedType)
 
       case Failure(_) =>
         logger.debug(s"Failed to resolve class type ${typ.getNameAsString}. Falling back to imports info.")
@@ -184,32 +163,28 @@ class TypeInfoProvider(global: Global) {
     typeFullName.map(registerType)
   }
 
-  def getTypeFullName(enumConstant: EnumConstantDeclaration): String = {
+  def getTypeFullName(enumConstant: EnumConstantDeclaration): Option[String] = {
     val typeFullName = Try(enumConstant.resolve()) match {
       case Success(resolvedDeclaration) =>
         resolvedTypeFullName(resolvedDeclaration.getType)
 
       case Failure(_) =>
         logger.debug(s"Failed to resolve enum entry type for ${enumConstant.getNameAsString}")
-        "ANY"
+        None
     }
 
-    registerType(typeFullName)
+    typeFullName.map(registerType)
   }
 
   def getTypeFullName(referenceType: ReferenceType): Option[String] = {
-    val typeFullName = Try(referenceType.resolve()) match {
-      case Success(resolvedType) => Some(resolvedTypeFullName(resolvedType))
-
-      case Failure(_) => None
-    }
+    val typeFullName = Try(referenceType.resolve()).toOption.flatMap(resolvedTypeFullName)
 
     typeFullName.map(registerType)
   }
 
   def getReturnType(node: Resolvable[ResolvedMethodDeclaration]): Option[String] = {
     val typeFullName = Try(node.resolve().getReturnType) match {
-      case Success(resolved) => Some(resolvedTypeFullName(resolved))
+      case Success(resolved) => resolvedTypeFullName(resolved)
 
       case Failure(_) =>
         logger.debug(s"Failed to resolve return type.")
@@ -221,8 +196,7 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(nameExpr: NameExpr): Option[String] = {
     val typeFullName = Try(nameExpr.calculateResolvedType()) match {
-      case Success(resolvedValueDeclaration) =>
-        Try(resolvedTypeFullName(resolvedValueDeclaration)).toOption
+      case Success(resolvedValueDeclaration) => resolvedTypeFullName(resolvedValueDeclaration)
 
       case Failure(_) =>
         logger.debug(s"Failed to resolved type for nameExpr ${nameExpr.getNameAsString}.")
@@ -282,15 +256,15 @@ class TypeInfoProvider(global: Global) {
     registerType(typeFullName)
   }
 
-  def getTypeFullName(resolvedParam: ResolvedParameterDeclaration): String = {
+  def getTypeFullName(resolvedParam: ResolvedParameterDeclaration): Option[String] = {
     val typeFullName = resolvedTypeFullName(resolvedParam.getType)
 
-    registerType(typeFullName)
+    typeFullName.map(registerType)
   }
 
   def getTypeForExpression(expr: Expression): Option[String] = {
     val typeFullName = Try(expr.calculateResolvedType()) match {
-      case Success(resolvedType) => Some(resolvedTypeFullName(resolvedType))
+      case Success(resolvedType) => resolvedTypeFullName(resolvedType)
 
       case Failure(_) =>
         logger.debug(s"Could not resolve type for expr $expr")
@@ -301,26 +275,27 @@ class TypeInfoProvider(global: Global) {
   }
 
   def getInitializerType(variableDeclarator: VariableDeclarator): Option[String] = {
-    variableDeclarator.getInitializer.toScala flatMap { initializer =>
+    val typeFullName = variableDeclarator.getInitializer.toScala flatMap { initializer =>
       Try(initializer.calculateResolvedType()) match {
-        case Success(resolvedType) =>
-          Some(registerType(resolvedTypeFullName(resolvedType)))
+        case Success(resolvedType) => resolvedTypeFullName(resolvedType)
 
         case Failure(_) =>
           logger.debug(s"Failed to resolve type for initializer ${initializer.toString}")
           None
       }
     }
+
+    typeFullName.map(registerType)
   }
 
   def scopeType(scopeContext: ScopeContext, isSuper: Boolean = false): String = {
     scopeContext.typeDecl match {
       case Some(typ) if isSuper =>
-        val parentType = typ.inheritsFromTypeFullName.headOption.getOrElse("ANY")
+        val parentType = typ.inheritsFromTypeFullName.headOption.getOrElse(UnresolvedTypeDefault)
         registerType(parentType)
       case Some(typ) =>
         registerType(typ.fullName)
-      case None => "ANY"
+      case None => UnresolvedTypeDefault
     }
   }
 
@@ -349,7 +324,7 @@ object TypeInfoProvider {
     NumericTypes.contains(typeName)
   }
 
-  object Primitives {
+  object TypeConstants {
     val Byte: String    = "byte"
     val Short: String   = "short"
     val Int: String     = "int"
@@ -358,6 +333,7 @@ object TypeInfoProvider {
     val Double: String  = "double"
     val Char: String    = "char"
     val Boolean: String = "boolean"
+    val Object: String  = "java.lang.Object"
   }
 
   val NumericTypes = Set(
