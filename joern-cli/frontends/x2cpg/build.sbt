@@ -6,8 +6,8 @@ dependsOn(Projects.semanticcpg)
 
 libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"          % "1.7.36",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl"   % Versions.log4j     % Optional,
-  "org.gradle"               % "gradle-tooling-api" % "6.9.2"            % Optional,
+  "org.apache.logging.log4j" % "log4j-slf4j-impl"   % Versions.log4j % Optional,
+  "org.gradle"               % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest"           %% "scalatest"          % Versions.scalatest % Test
 )
 
