@@ -202,9 +202,17 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }
     Ast(block)
       .withChildren(locals)
-      .withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
-        astsForStatement(x, (order - 1) + (locals.size - 1))
+      .withChildren(withOrder(body.getUnits.asScala.filterNot(isIgnoredUnit)) { (x, order) =>
+        astsForStatement(x, order + locals.size)
       }.flatten)
+  }
+
+  private def isIgnoredUnit(unit: soot.Unit): Boolean = {
+    unit match {
+      case _: IdentityStmt => true
+      case _: NopStmt      => true
+      case _               => false
+    }
   }
 
   private def astsForStatement(statement: soot.Unit, order: Int): Seq[Ast] = {
