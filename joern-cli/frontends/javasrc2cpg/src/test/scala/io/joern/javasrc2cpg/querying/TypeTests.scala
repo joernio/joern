@@ -28,6 +28,11 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |     super();
       |   }
       |
+      |   static void bar(int[] xs) {}
+      |
+      |   static void baz(Foo[] fs) {}
+      |
+      |   static void bak(Foo... fs) {}
       | }
       |
       | class Bar extends A<B<C>> {
@@ -102,6 +107,39 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
     val List(node) = cpg.identifier.name("UnknownType").l
     node.typeFullName shouldBe "ANY"
     node.typ.headOption shouldBe Some(x)
+  }
+
+  "should handle primitive type arrays" in {
+    cpg.method.name("bar").parameter.name("xs").headOption match {
+      case Some(param) =>
+        param.typeFullName shouldBe "int[]"
+        param.typ.name shouldBe "int[]"
+        param.typ.fullName shouldBe "int[]"
+
+      case res => fail(s"Expected single param xs but got $res")
+    }
+  }
+
+  "should handle reference type arrays" in {
+    cpg.method.name("baz").parameter.name("fs").headOption match {
+      case Some(param) =>
+        param.typeFullName shouldBe "foo.Foo[]"
+        param.typ.name shouldBe "Foo[]"
+        param.typ.fullName shouldBe "foo.Foo[]"
+
+      case res => fail(s"Expected array parameter fs but got $res")
+    }
+  }
+
+  "should use array type for varargs" in {
+    cpg.method.name("bak").parameter.name("fs").headOption match {
+      case Some(param) =>
+        param.typeFullName shouldBe "foo.Foo[]"
+        param.typ.name shouldBe "Foo[]"
+        param.typ.fullName shouldBe "foo.Foo[]"
+
+      case res => fail(s"Expected array parameter fs but got $res")
+    }
   }
 
   "should use correct type for super calls" in {
