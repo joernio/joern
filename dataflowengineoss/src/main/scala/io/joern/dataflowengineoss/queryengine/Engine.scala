@@ -87,7 +87,10 @@ class Engine(context: EngineContext) {
   private def submitTask(task: ReachableByTask): Unit = {
     numberOfTasksRunning += 1
     completionService.submit(
-      new ReachableByCallable(if (context.config.disableCacheUse) task.copy(table = new ResultTable) else task, context)
+      new ReachableByCallable(
+        if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
+        context
+      )
     )
   }
 
@@ -294,13 +297,13 @@ case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConf
   *   the k-limit for calls and field accesses.
   * @param initialTable
   *   an initial (starting node) -> (path-edges) cache to initiate data flow queries with.
-  * @param disableCacheUse
-  *   disables re-use of previously calculated paths.
+  * @param shareCacheBetweenTasks
+  *   enables sharing of previously calculated paths among other tasks.
   */
 case class EngineConfig(
   var maxCallDepth: Int = 2,
   initialTable: Option[ResultTable] = None,
-  disableCacheUse: Boolean = false
+  shareCacheBetweenTasks: Boolean = true
 )
 
 /** Callable for solving a ReachableByTask
