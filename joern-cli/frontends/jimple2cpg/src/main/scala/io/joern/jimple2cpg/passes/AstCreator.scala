@@ -203,7 +203,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     Ast(block)
       .withChildren(locals)
       .withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
-        astsForStatement(x, order + locals.size - 2)
+        astsForStatement(x, (order - 1) + (locals.size - 1))
       }.flatten)
   }
 
