@@ -96,6 +96,28 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with `if`-expression as receiver of a DQE" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val r = Random.nextInt(100)
+        |    val out = (if (r < 50) 0 else 1).toFloat()
+        |    println(out)
+        |//prints `0.0` or `1.0`
+        |}
+         """.stripMargin)
+
+    "should contain a CALL for the `if`-expression with the correct props set" in {
+      val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
+      c.argument.size shouldBe 3
+      c.lineNumber shouldBe Some(7)
+      c.columnNumber shouldBe Some(15)
+    }
+  }
+
   "CPG for code with simple `if`-expression with DQEs in branches" - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
