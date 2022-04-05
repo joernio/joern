@@ -625,7 +625,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(Ast(node), Context(methodParameters = Seq(node)))
   }
 
-  private def convertAnnotationValueExpr(expr: Expression, order: Int): Ast = {
+  private def convertAnnotationValueExpr(expr: Expression, order: Int): Option[Ast] = {
     expr match {
       case arrayInit: ArrayInitializerExpr =>
         val arrayInitNode = NewArrayInitializer()
@@ -636,15 +636,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           convertAnnotationValueExpr(value, order)
         }
 
-        initElementAsts.foldLeft(Ast(arrayInitNode)) { case (ast, elementAst) =>
-          ast.withChild(elementAst)
+        val returnAst = initElementAsts.foldLeft(Ast(arrayInitNode)) {
+          case (ast, Some(elementAst)) =>
+            ast.withChild(elementAst)
+          case (ast, _) => ast
         }
+        Some(returnAst)
+
       case annotationExpr: AnnotationExpr =>
-        astForAnnotationExpr(annotationExpr, order)
+        Some(astForAnnotationExpr(annotationExpr, order))
+
       case literalExpr: LiteralExpr =>
-        astForAnnotationLiteralExpr(literalExpr, order)
+        Some(astForAnnotationLiteralExpr(literalExpr, order))
+
       case _ =>
         logger.info(s"convertAnnotationValueExpr not yet implemented for ${expr.getClass}")
+        None
     }
   }
 
@@ -704,7 +711,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     Ast(assign)
       .withChild(Ast(parameter))
-      .withChild(rhs)
+      .withChildren(rhs.toSeq)
   }
 
   private def createAnnotationNode(annotationExpr: AnnotationExpr, order: Int): NewAnnotation = {
