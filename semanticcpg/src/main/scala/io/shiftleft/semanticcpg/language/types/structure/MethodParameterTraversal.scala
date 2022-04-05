@@ -20,17 +20,17 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
   /** Traverse to all `num`th parameters
     */
   def index(num: Int): Traversal[MethodParameterIn] =
-    traversal.order(num)
+    traversal.index(num)
 
   /** Traverse to all parameters with index greater or equal than `num`
     */
   def indexFrom(num: Int): Traversal[MethodParameterIn] =
-    traversal.filter(_.order >= num)
+    traversal.filter(_.index >= num)
 
   /** Traverse to all parameters with index smaller or equal than `num`
     */
   def indexTo(num: Int): Traversal[MethodParameterIn] =
-    traversal.filter(_.order <= num)
+    traversal.filter(_.index <= num)
 
   /** Traverse to arguments (actual parameters) associated with this formal parameter
     */
