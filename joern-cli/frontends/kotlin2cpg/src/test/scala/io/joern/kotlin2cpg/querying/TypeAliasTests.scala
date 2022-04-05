@@ -32,6 +32,58 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  // _seemingly_ because adding the springframework jar to the classpath will give the
+  // compiler enough information to detect that there is no recursion in the typealias definition
+  "CPG for code with seemingly-recursive type alias" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |import org.springframework.data.annotation.Id
+        |actual typealias Id = Id
+        |fun main() {}
+        |""".stripMargin)
+
+    "should contain a type decl for alias `MyInt` with the correct props set" in {
+      val List(x) = cpg.typeDecl(".*Id.*").l
+      x.name shouldBe "Id"
+      x.fullName shouldBe "mypkg.Id"
+      x.isExternal shouldBe false
+      x.inheritsFromTypeFullName shouldBe List()
+      x.aliasTypeFullName shouldBe Some("codepropertygraph.Unresolved")
+    }
+  }
+
+  "CPG for code with typealias containing other type alias in its RHS" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |
+        |typealias MyInt = Int
+        |typealias MyArray = Array<MyInt>
+        |
+        |fun main() {
+        |    val out = MyArray(4, {x -> x % 2 })
+        |    out.forEach { x -> println(x) }
+        |//prints:
+        |//```
+        |//0
+        |//1
+        |//0
+        |//1
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should contain a type decl for alias `MyInt` with the correct props set" in {
+      val List(x) = cpg.typeDecl(".*MyInt.*").take(1).l
+      x.code shouldBe "typealias MyInt = Int"
+      x.name shouldBe "MyInt"
+      x.fullName shouldBe "mypkg.MyInt"
+      x.isExternal shouldBe false
+      x.inheritsFromTypeFullName shouldBe List()
+      x.aliasTypeFullName shouldBe Some("java.lang.Integer")
+    }
+  }
+
   "CPG for code with simple typealias to ListInt" - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
@@ -72,7 +124,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
     )
 
     "should contain a TYPE_DECL with the correct ALIAS_TYPE_FULL_NAME set" in {
-      cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "org.http4k.core.Parameters"
+      cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "java.util.List"
     }
   }
 }
