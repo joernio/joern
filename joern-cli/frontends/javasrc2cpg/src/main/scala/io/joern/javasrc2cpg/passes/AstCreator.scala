@@ -2,12 +2,14 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
+import com.github.javaparser.ast.Modifier.{Keyword => JPKeyWord}
 import com.github.javaparser.ast.body.{
   BodyDeclaration,
   CallableDeclaration,
   ConstructorDeclaration,
   EnumConstantDeclaration,
   FieldDeclaration,
+  InitializerDeclaration,
   MethodDeclaration,
   Parameter,
   TypeDeclaration,
@@ -149,7 +151,8 @@ case class Context(
   bindingsInfo: Seq[BindingInfo] = List(),
   lambdaAsts: Seq[Ast] = List(),
   closureBindingInfo: Seq[ClosureBindingMeta] = List(),
-  partialConstructors: Seq[PartialConstructor] = List()
+  partialConstructors: Seq[PartialConstructor] = List(),
+  staticInitializers: Seq[Ast] = List()
 ) {
   def ++(other: Context): Context = {
     val newLocals           = locals ++ other.locals
@@ -159,8 +162,18 @@ case class Context(
     val newLambdas          = lambdaAsts ++ other.lambdaAsts
     val newClosureBindings  = closureBindingInfo ++ other.closureBindingInfo
     val newConstructorInits = partialConstructors ++ other.partialConstructors
+    val newStaticInits      = staticInitializers ++ other.staticInitializers
 
-    Context(newLocals, newIdentifiers, newParameters, newBindings, newLambdas, newClosureBindings, newConstructorInits)
+    Context(
+      newLocals,
+      newIdentifiers,
+      newParameters,
+      newBindings,
+      newLambdas,
+      newClosureBindings,
+      newConstructorInits,
+      newStaticInits
+    )
   }
 
   def addBindings(bindings: Seq[BindingInfo]): Context = {
@@ -213,6 +226,16 @@ case class ScopeContext(
 case class RefEdgePair(from: NewIdentifier, to: NewMethodParameterIn)
 
 case class AstWithCtx(ast: Ast, ctx: Context)
+
+case class AstWithStaticInit(astWithCtx: Seq[AstWithCtx], staticInits: Seq[AstWithCtx])
+
+object AstWithStaticInit {
+  val empty: AstWithStaticInit = AstWithStaticInit(Seq.empty, Seq.empty)
+
+  def apply(astWithCtx: AstWithCtx): AstWithStaticInit = {
+    AstWithStaticInit(Seq(astWithCtx), staticInits = Seq.empty)
+  }
+}
 
 object AstWithCtx {
   val empty: AstWithCtx = AstWithCtx(Ast(), Context())
@@ -342,34 +365,57 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     member: BodyDeclaration[_],
     scopeContext: ScopeContext,
     order: Int,
+    clinitOrder: Int,
     astParentFullName: String
-  ): Seq[AstWithCtx] = {
+  ): AstWithStaticInit = {
     member match {
       case constructor: ConstructorDeclaration =>
         val AstWithCtx(ast, ctx) = astForConstructor(constructor, scopeContext, order)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo          = bindingForMethod(rootNode, scopeContext)
-        AstWithCtx(ast, ctx.addBindings(bindingInfo))
+        AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
 
       case method: MethodDeclaration =>
         val AstWithCtx(ast, ctx) = astForMethod(method, scopeContext, order)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo          = bindingForMethod(rootNode, scopeContext)
-        AstWithCtx(ast, ctx.addBindings(bindingInfo))
+        AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
 
       case typeDeclaration: TypeDeclaration[_] =>
-        astForTypeDecl(typeDeclaration, order, "TYPE_DECL", astParentFullName)
+        AstWithStaticInit(astForTypeDecl(typeDeclaration, order, "TYPE_DECL", astParentFullName))
 
       case fieldDeclaration: FieldDeclaration =>
-        withOrder(fieldDeclaration.getVariables) { (variable, idx) =>
-          astForVariableDeclarator(variable, fieldDeclaration.getAnnotations, order + idx - 1)
+        val memberAsts = withOrder(fieldDeclaration.getVariables) { (variable, idx) =>
+          astForFieldVariable(variable, fieldDeclaration, order + idx - 1)
         }
+
+        val staticInitAsts = if (fieldDeclaration.isStatic) {
+          val assignments = assignmentsForVarDecl(
+            fieldDeclaration.getVariables.asScala.toList,
+            scopeContext,
+            line(fieldDeclaration),
+            column(fieldDeclaration),
+            clinitOrder
+          )
+          assignments
+        } else {
+          Nil
+        }
+
+        AstWithStaticInit(memberAsts, staticInitAsts)
+
+      case initDeclaration: InitializerDeclaration =>
+        val stmts = initDeclaration.getBody.getStatements.asScala
+        val (asts, _) = withOrderAndCtx(stmts, scopeContext, clinitOrder) { case (stmt, scope, order) =>
+          astsForStatement(stmt, scope, order)
+        }
+        AstWithStaticInit(astWithCtx = Seq.empty, staticInits = asts)
 
       case unhandled =>
         // AnnotationMemberDeclarations and InitializerDeclarations as children of typeDecls are the
         // expected cases.
         logger.info(s"Found unhandled typeDecl member ${unhandled.getClass} in file $filename")
-        AstWithCtx.empty
+        AstWithStaticInit.empty
     }
   }
 
@@ -410,6 +456,47 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         }.toMap
 
       case Failure(_) => Map.empty
+    }
+  }
+
+  private def clinitAstsFromStaticInits(
+    staticInits: Seq[AstWithCtx],
+    scopeContext: ScopeContext,
+    order: Int
+  ): Option[Ast] = {
+    if (staticInits.isEmpty) {
+      None
+    } else {
+      // TODO: Get rid of magic strings
+      val signature = "void()"
+      val fullName = scopeContext.typeDecl
+        .map { typeDecl =>
+          s"${typeDecl.fullName}.<clinit>:$signature"
+        }
+        .getOrElse("")
+
+      val methodNode = NewMethod()
+        .name("<clinit>")
+        .fullName(fullName)
+        .signature("void()")
+        .order(order)
+
+      val staticModifier = NewModifier()
+        .modifierType(ModifierTypes.STATIC)
+        .code(ModifierTypes.STATIC)
+        .order(-1)
+
+      val body = Ast(NewBlock().order(1)).withChildren(staticInits.map(_.ast))
+
+      val methodReturn = methodReturnNode(None, None, 2, "void")
+
+      val methodAst =
+        Ast(methodNode)
+          .withChild(Ast(staticModifier))
+          .withChild(body)
+          .withChild(Ast(methodReturn))
+
+      Some(methodAst)
     }
   }
 
@@ -466,9 +553,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       List.empty
     }
 
+    var clinitOrder                             = 1
+    val staticInits: mutable.Buffer[AstWithCtx] = mutable.Buffer()
     val (memberAsts, _) = withOrderAndCtx(typ.getMembers.asScala, initScopeContext, initialOrder = enumEntryAsts.size) {
       (member, scopeContext, idx) =>
-        astForTypeDeclMember(member, scopeContext, order + idx, astParentFullName = typeFullName)
+        val astWithInits =
+          astForTypeDeclMember(member, scopeContext, order + idx, clinitOrder, astParentFullName = typeFullName)
+        clinitOrder += astWithInits.staticInits.size
+        staticInits.appendAll(astWithInits.staticInits)
+        astWithInits.astWithCtx
     }
 
     val defaultConstructorAst = if (typ.getConstructors.isEmpty) {
@@ -480,11 +573,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val annotationAsts = typ.getAnnotations.asScala.map(astForAnnotationExpr)
 
+    val clinitAst =
+      clinitAstsFromStaticInits(staticInits.toSeq, initScopeContext, memberAsts.size + defaultConstructorAst.size + 1)
+
     val typeDeclAst = Ast(typeDecl)
       .withChildren(enumEntryAsts)
       .withChildren(memberAsts.map(_.ast))
       .withChildren(defaultConstructorAst.map(_.ast).toList)
       .withChildren(annotationAsts)
+      .withChildren(clinitAst.toSeq)
 
     val typeDeclContext = Context.mergedCtx((memberAsts ++ defaultConstructorAst.toList).map(_.ctx))
 
@@ -554,15 +651,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(args.map(_.ast))
   }
 
-  private def astForVariableDeclarator(
-    v: VariableDeclarator,
-    annotations: NodeList[AnnotationExpr],
-    order: Int
-  ): AstWithCtx = {
+  private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration, order: Int): AstWithCtx = {
     // TODO: Should be able to find expected type here
+    val annotations  = fieldDeclaration.getAnnotations
     val typeFullName = typeInfoProvider.getTypeFullName(v).getOrElse(UnresolvedTypeDefault)
     val name         = v.getName.toString
-    val ast = Ast(
+    val memberAst = Ast(
       NewMember()
         .name(name)
         .typeFullName(typeFullName)
@@ -570,7 +664,30 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"$typeFullName $name")
     )
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
-    AstWithCtx(ast.withChildren(annotationAsts), Context())
+
+    val staticModifier = if (fieldDeclaration.isStatic) {
+      Some(NewModifier().modifierType(ModifierTypes.STATIC).code(ModifierTypes.STATIC).order(-1))
+    } else {
+      None
+    }
+
+    val accessModifier = if (fieldDeclaration.isPublic) {
+      Some(NewModifier().modifierType(ModifierTypes.PUBLIC).code(ModifierTypes.PUBLIC).order(-1))
+    } else if (fieldDeclaration.isPrivate) {
+      Some(NewModifier().modifierType(ModifierTypes.PRIVATE).code(ModifierTypes.PRIVATE).order(-1))
+    } else if (fieldDeclaration.isProtected) {
+      Some(NewModifier().modifierType(ModifierTypes.PROTECTED).code(ModifierTypes.PROTECTED).order(-1))
+    } else {
+      None
+    }
+
+    val memberAstWithModifiers =
+      memberAst
+        .withChildren(annotationAsts)
+        .withChildren(staticModifier.map(Ast(_)).toSeq)
+        .withChildren(accessModifier.map(Ast(_)).toSeq)
+
+    AstWithCtx(memberAstWithModifiers, Context())
   }
 
   private def astForConstructor(
@@ -1628,13 +1745,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def assignmentsForVarDecl(
-    varDecl: VariableDeclarationExpr,
+    variables: Iterable[VariableDeclarator],
     scopeContext: ScopeContext,
-    order: Int
+    lineNumber: Option[Integer],
+    columnNumber: Option[Integer],
+    order: Int,
+    isField: Boolean = false
   ): Seq[AstWithCtx] = {
     var constructorCount = 0
     val variablesWithInitializers =
-      varDecl.getVariables.asScala.filter(_.getInitializer.toScala.isDefined)
+      variables.filter(_.getInitializer.toScala.isDefined)
     val assignments = variablesWithInitializers.zipWithIndex flatMap { case (variable, idx) =>
       val name                    = variable.getName.toString
       val initializer             = variable.getInitializer.toScala.get // Won't crash because of filter
@@ -1657,8 +1777,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"$name = ${initializer.toString()}")
         .order(order + idx)
         .argumentIndex(order + idx + constructorCount)
-        .lineNumber(line(varDecl))
-        .columnNumber(column(varDecl))
+        .lineNumber(lineNumber)
+        .columnNumber(columnNumber)
         .typeFullName(typeFullName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
@@ -1670,7 +1790,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .typeFullName(typeFullName)
         .lineNumber(line(variable))
         .columnNumber(column(variable))
-      val identifierAst = AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
+      val targetAst = AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
+
+//      val targetAst = if (isField) {
+//      } else {
+//        val identifier = NewIdentifier()
+//          .name(name)
+//          .order(1)
+//          .argumentIndex(1)
+//          .code(name)
+//          .typeFullName(typeFullName)
+//          .lineNumber(line(variable))
+//          .columnNumber(column(variable))
+//        AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
+//      }
 
       // TODO Add expected type here if possible
       val initializerAstsWithCtx = astsForExpression(initializer, scopeContext, 2, Some(typeFullName))
@@ -1679,7 +1812,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         AstWithCtx(ast, ctx.clearConstructors())
       }
 
-      val declAst = callAst(callNode, Seq(identifierAst) ++ initAstsWithoutConstructorCtx)
+      val declAst = callAst(callNode, Seq(targetAst) ++ initAstsWithoutConstructorCtx)
 
       val constructorAsts = initializerAstsWithCtx
         .flatMap(_.ctx.partialConstructors)
@@ -1726,9 +1859,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       AstWithCtx(Ast(local), Context(locals = Seq(local)))
     }
 
-    val assignOrder        = order + locals.size
-    val assignScopeCtx     = scopeContext.withNewLocals(locals)
-    val assignmentsWithCtx = assignmentsForVarDecl(varDecl, assignScopeCtx, assignOrder)
+    val assignOrder    = order + locals.size
+    val assignScopeCtx = scopeContext.withNewLocals(locals)
+    val assignmentsWithCtx =
+      assignmentsForVarDecl(varDecl.getVariables.asScala, assignScopeCtx, line(varDecl), column(varDecl), assignOrder)
 
     localAsts ++ assignmentsWithCtx
   }
@@ -1847,7 +1981,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .code(fieldIdentifier.toString)
     val fieldIdAstsWithCtx = AstWithCtx(Ast(fieldIdentifierNode), Context())
 
-    callAst(callNode, Seq(fieldIdAstsWithCtx) ++ identifierAsts)
+    callAst(callNode, identifierAsts ++ Seq(fieldIdAstsWithCtx))
   }
 
   def astForInstanceOfExpr(expr: InstanceOfExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
@@ -1887,23 +2021,67 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   def astForNameExpr(x: NameExpr, scopeContext: ScopeContext, order: Int, expectedType: Option[String]): AstWithCtx = {
     val name = x.getName.toString
-
     val typeFullName = typeInfoProvider
       .getTypeFullName(x)
       .orElse(nameExprTypeFromScope(name, scopeContext))
       .orElse(expectedType)
       .getOrElse(UnresolvedTypeDefault)
 
-    val identifier = NewIdentifier()
-      .name(name)
-      .order(order)
-      .argumentIndex(order)
-      .code(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line(x.getName))
-      .columnNumber(column(x.getName))
+    Try(x.resolve()) match {
+      case Success(value) if value.isField =>
+        println(s"Successfully resolved type for nameExpr $x as $value")
+        println(s"IsField: ${value.isField}")
+        println(s"Type   : ${value.getType}")
+        val typeName = typeFullName.split("\\.").lastOption.getOrElse("")
+        val identifierName = if (value.asField.isStatic) {
+          typeName
+        } else {
+          "this"
+        }
 
-    AstWithCtx(Ast(identifier), Context())
+        val identifier = NewIdentifier()
+          .name(identifierName)
+          .typeFullName(typeFullName)
+          .order(1)
+          .argumentIndex(1)
+          .lineNumber(line(x))
+          .columnNumber(column(x))
+          .code(typeName)
+
+        val fieldIdentifier = NewFieldIdentifier()
+          .code(x.toString)
+          .canonicalName(name)
+          .order(2)
+          .argumentIndex(2)
+          .lineNumber(line(x))
+          .columnNumber(column(x))
+
+        val fieldAccess = NewCall()
+          .name(Operators.fieldAccess)
+          .methodFullName(Operators.fieldAccess)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .code(s"$typeName $name")
+          .argumentIndex(order)
+          .order(order)
+          .typeFullName(typeFullName)
+
+        val identifierAst = AstWithCtx(Ast(identifier), Context())
+        val fieldIdentAst = AstWithCtx(Ast(fieldIdentifier), Context())
+
+        callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
+
+      case _ =>
+        val identifier = NewIdentifier()
+          .name(name)
+          .order(order)
+          .argumentIndex(order)
+          .code(name)
+          .typeFullName(typeFullName)
+          .lineNumber(line(x.getName))
+          .columnNumber(column(x.getName))
+        AstWithCtx(Ast(identifier), Context())
+    }
+
   }
 
   /** The below representation for constructor invocations and object creations was chosen for the sake of consistency

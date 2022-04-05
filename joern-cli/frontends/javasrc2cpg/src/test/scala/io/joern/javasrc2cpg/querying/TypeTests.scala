@@ -131,17 +131,6 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
     }
   }
 
-  "should use array type for varargs" in {
-    cpg.method.name("bak").parameter.name("fs").headOption match {
-      case Some(param) =>
-        param.typeFullName shouldBe "foo.Foo[]"
-        param.typ.name shouldBe "Foo[]"
-        param.typ.fullName shouldBe "foo.Foo[]"
-
-      case res => fail(s"Expected array parameter fs but got $res")
-    }
-  }
-
   "should use correct type for super calls" in {
     val List(call) = cpg.call.name("<init>").l
     call.methodFullName shouldBe "java.lang.Object.<init>:void()"
