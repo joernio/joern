@@ -163,6 +163,20 @@ class TypeInfoProvider(global: Global) {
     typeFullName.map(registerType)
   }
 
+  def getTypeFullName(annotationExpr: AnnotationExpr): Option[String] = {
+    val typeFullName = Try(annotationExpr.resolve()) match {
+      case Success(resolvedType) => Some(resolvedTypeDeclFullName(resolvedType))
+
+      case Failure(_) =>
+        logger.debug(
+          s"Failed to resolve annotation type ${annotationExpr.getNameAsString}. Falling back to imports info."
+        )
+        importInfo.getType(annotationExpr.getNameAsString)
+    }
+
+    typeFullName.map(registerType)
+  }
+
   def getTypeFullName(enumConstant: EnumConstantDeclaration): Option[String] = {
     val typeFullName = Try(enumConstant.resolve()) match {
       case Success(resolvedDeclaration) =>

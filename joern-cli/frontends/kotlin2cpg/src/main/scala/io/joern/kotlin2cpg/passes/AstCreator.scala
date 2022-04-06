@@ -2156,8 +2156,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, Context())
   }
 
-  // TODO: handle parameters passed to the clauses
-  def astForTry(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(implicit
+  private def astForTryAsStatement(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(
+    implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2200,6 +2200,55 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     val finalCtx = mergedCtx(Seq(tryAstWithCtx.ctx) ++ clauseAstsWitCtx.map(_.ctx) ++ finallyAstsWithCtx.map(_.ctx))
     AstWithCtx(finalAst, finalCtx)
+  }
+
+  private def astForTryAsExpression(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(
+    implicit
+    fileInfo: FileInfo,
+    typeInfoProvider: TypeInfoProvider
+  ): AstWithCtx = {
+    val callNode =
+      NewCall()
+        .name(Operators.tryCatch)
+        .code(expr.getText)
+        .methodFullName(Operators.tryCatch)
+        .typeFullName(TypeConstants.any)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(order)
+        .argumentIndex(argumentIndex)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+
+    val tryAstWithCtx = astsForExpression(expr.getTryBlock, scopeContext, 1, 1).headOption
+      .getOrElse(AstWithCtx(Ast(), Context()))
+    val tryAst =
+      Ast(callNode)
+        .withChild(tryAstWithCtx.ast)
+        .withArgEdge(callNode, tryAstWithCtx.ast.root.get)
+
+    val clauseAstsWitCtx =
+      withOrder(expr.getCatchClauses) { (entry, order) =>
+        astsForExpression(entry.getCatchBody, scopeContext, order + 1, order + 1)
+      }.flatten
+
+    val finalAst =
+      tryAst
+        .withChildren(clauseAstsWitCtx.map(_.ast))
+        .withArgEdges(callNode, clauseAstsWitCtx.map(_.ast.root.get))
+    val finalCtx = mergedCtx(Seq(tryAstWithCtx.ctx) ++ clauseAstsWitCtx.map(_.ctx))
+    AstWithCtx(finalAst, finalCtx)
+  }
+
+  // TODO: handle parameters passed to the clauses
+  def astForTry(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(implicit
+    fileInfo: FileInfo,
+    typeInfoProvider: TypeInfoProvider
+  ): AstWithCtx = {
+    if (KtPsiUtil.isStatement(expr)) {
+      astForTryAsStatement(expr, scopeContext, order, argumentIndex)
+    } else {
+      astForTryAsExpression(expr, scopeContext, order, argumentIndex)
+    }
   }
 
   def astForWhile(expr: KtWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
@@ -2386,10 +2435,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    if (expr.getParent.isInstanceOf[KtProperty]) {
-      astForIfAsExpression(expr, scopeContext, order, argIdx)
-    } else {
+    if (KtPsiUtil.isStatement(expr)) {
       astForIfAsControlStructure(expr, scopeContext, order, argIdx)
+    } else {
+      astForIfAsExpression(expr, scopeContext, order, argIdx)
     }
   }
 

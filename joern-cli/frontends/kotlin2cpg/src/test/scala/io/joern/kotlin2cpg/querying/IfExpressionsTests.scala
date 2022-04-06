@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
+class IfExpressionsTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple `if`-expression" - {
     lazy val cpg = TestContext.buildCpg("""
         |package baz
@@ -93,6 +93,28 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
       a3.lineNumber shouldBe Some(14)
       a3.columnNumber shouldBe Some(10)
       a3.order shouldBe 3
+    }
+  }
+
+  "CPG for code with `if`-expression as receiver of a DQE" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val r = Random.nextInt(100)
+        |    val out = (if (r < 50) 0 else 1).toFloat()
+        |    println(out)
+        |//prints `0.0` or `1.0`
+        |}
+         """.stripMargin)
+
+    "should contain a CALL for the `if`-expression with the correct props set" in {
+      val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
+      c.argument.size shouldBe 3
+      c.lineNumber shouldBe Some(7)
+      c.columnNumber shouldBe Some(15)
     }
   }
 
@@ -247,25 +269,4 @@ class ControlStructureExpressionTests extends AnyFreeSpec with Matchers {
       a3.order shouldBe 3
     }
   }
-
-  "CPG for code with simple `when`-expression" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun myfun() {
-        |  val x =  Random.nextInt(0, 3)
-        |  val foo = when (x) {
-        |      1 -> 123
-        |      2 -> 234
-        |      else -> {
-        |          456
-        |      }
-        |  }
-        |  println(foo)
-        |}
-        | """.stripMargin)
-
-    // TODO: add test case
-  }
-
 }

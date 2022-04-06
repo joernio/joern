@@ -95,7 +95,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
       c.typeFullName shouldBe "java.lang.String"
       c.argument.size shouldBe 2
 
-      val List(firstArg: ControlStructure, secondArg: Literal) = c.argument.l
+      val List(firstArg: Call, secondArg: Literal) = c.argument.l
       firstArg.argumentIndex shouldBe 0
       secondArg.argumentIndex shouldBe 1
     }
