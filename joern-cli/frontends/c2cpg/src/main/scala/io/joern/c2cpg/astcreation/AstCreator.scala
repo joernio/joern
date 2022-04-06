@@ -73,7 +73,6 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
       name,
       NodeTypes.NAMESPACE_BLOCK,
       fullName,
-      1,
       line = lineNumber,
       column = lineNumberEnd
     )
@@ -95,7 +94,6 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
     scope.pushNewScope(fakeGlobalMethod)
 
     val blockNode = NewBlock()
-      .order(1)
       .argumentIndex(1)
       .typeFullName("ANY")
 
@@ -118,7 +116,6 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName("ANY")
-      .order(2)
 
     Ast(fakeGlobalTypeDecl).withChild(
       Ast(fakeGlobalMethod)

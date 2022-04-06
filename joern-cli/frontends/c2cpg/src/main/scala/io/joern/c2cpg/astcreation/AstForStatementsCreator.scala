@@ -45,9 +45,7 @@ trait AstForStatementsCreator {
         Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator], order))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
-          withOrder(simplDecl.getDeclarators) { (d, o) =>
-            astForDeclarator(simplDecl, d, order + o - 1)
-          }
+          simplDecl.getDeclarators.map(d => astForDeclarator(simplDecl, d)).toList
         val calls =
           withOrder(simplDecl.getDeclarators.filter(_.getInitializer != null)) { (d, o) =>
             astForInitializer(d, d.getInitializer, locals.size + order + o - 1)
@@ -55,7 +53,7 @@ trait AstForStatementsCreator {
         locals ++ calls
       case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, order))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
-      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias, order))
+      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))
       case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, order))
       case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, order))
       case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, order))

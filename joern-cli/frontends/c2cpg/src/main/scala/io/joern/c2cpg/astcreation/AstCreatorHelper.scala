@@ -332,10 +332,9 @@ trait AstCreatorHelper {
     Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
   }
 
-  private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer, order: Int): Ast = {
+  private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer, argIndex: Int): Ast = {
     val b = NewBlock()
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(d))
       .columnNumber(column(d))
@@ -355,10 +354,9 @@ trait AstCreatorHelper {
     Ast(b).withChildren(calls)
   }
 
-  private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer, order: Int): Ast = {
+  private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer, argIndex: Int): Ast = {
     val b = NewBlock()
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(d))
       .columnNumber(column(d))
@@ -390,7 +388,6 @@ trait AstCreatorHelper {
     lineNumber: Option[Integer],
     astParentType: String,
     astParentFullName: String,
-    order: Int,
     childrenAsts: Seq[Ast]
   ): Ast = {
     val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
@@ -403,7 +400,6 @@ trait AstCreatorHelper {
         .lineNumber(lineNumber)
         .astParentType(astParentType)
         .astParentFullName(astParentFullName)
-        .order(order)
 
     val blockNode = NewBlock()
       .order(1)

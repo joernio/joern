@@ -87,7 +87,6 @@ trait AstNodeBuilder {
     code: String,
     astParentType: String = "",
     astParentFullName: String = "",
-    order: Int = -1,
     inherits: Seq[String] = Seq.empty,
     alias: Option[String] = None,
     line: Option[Integer] = None,
@@ -105,6 +104,5 @@ trait AstNodeBuilder {
       .aliasTypeFullName(alias)
       .lineNumber(line)
       .columnNumber(column)
-      .order(order)
 
 }
