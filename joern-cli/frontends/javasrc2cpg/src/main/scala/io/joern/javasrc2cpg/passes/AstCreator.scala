@@ -1195,9 +1195,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val ctx = bodyAst.ctx.mergeWith(exprAsts.map(_.ctx))
     val ast = Ast(parentNode)
+      .withChild(modifier)
       .withChildren(exprAsts.map(_.ast))
       .withChild(bodyAst.ast)
-      .withChild(modifier)
 
     AstWithCtx(ast, ctx)
   }

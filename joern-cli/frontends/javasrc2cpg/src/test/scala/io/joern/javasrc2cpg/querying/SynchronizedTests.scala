@@ -45,6 +45,7 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
     val List(syncBlock: Block) = method.ast.isBlock.where(_.astChildren.isModifier.modifierType("SYNCHRONIZED")).l
 
     syncBlock.astChildren.size shouldBe 3
+
     val List(mod: Modifier, cond: Identifier, body: Block) = syncBlock.astChildren.l
 
     mod.modifierType shouldBe "SYNCHRONIZED"
