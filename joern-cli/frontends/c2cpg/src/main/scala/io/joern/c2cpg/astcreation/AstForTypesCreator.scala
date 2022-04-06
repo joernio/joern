@@ -9,6 +9,7 @@ import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTAliasDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack._
+import io.shiftleft.codepropertygraph.generated.nodes.Expression.PropertyDefaults
 
 trait AstForTypesCreator {
 
@@ -215,9 +216,9 @@ trait AstForTypesCreator {
     blockAst
   }
 
-  protected def astsForDeclaration(decl: IASTDeclaration, order: Int): Seq[Ast] = {
+  protected def astsForDeclaration(decl: IASTDeclaration, argIndex: Int = PropertyDefaults.ArgumentIndex): Seq[Ast] = {
     val declAsts = decl match {
-      case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb, order))
+      case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb, argIndex))
       case declaration: IASTSimpleDeclaration =>
         declaration.getDeclSpecifier match {
           case spec: IASTCompositeTypeSpecifier =>
@@ -243,21 +244,22 @@ trait AstForTypesCreator {
             Seq.empty // dangling decls from unresolved macros; we ignore them
           case _ if declaration.getDeclarators.isEmpty && declaration.getParent.isInstanceOf[IASTTranslationUnit] =>
             Seq.empty // dangling decls from unresolved macros; we ignore them
-          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
+          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, argIndex))
         }
-      case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias))
-      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef))
-      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias))
-      case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition, order))
-      case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a, order))
-      case asm: IASTASMDeclaration                         => Seq(astForASMDeclaration(asm, order))
-      case t: ICPPASTTemplateDeclaration                   => astsForDeclaration(t.getDeclaration, order)
-      case l: ICPPASTLinkageSpecification                  => astsForLinkageSpecification(l)
-      case u: ICPPASTUsingDeclaration                      => handleUsingDeclaration(u)
-      case _: ICPPASTVisibilityLabel                       => Seq.empty
-      case _: ICPPASTUsingDirective                        => Seq.empty
-      case _: ICPPASTExplicitTemplateInstantiation         => Seq.empty
-      case _                                               => Seq(astForNode(decl, order))
+      case alias: CPPASTAliasDeclaration         => Seq(astForAliasDeclaration(alias))
+      case functDef: IASTFunctionDefinition      => Seq(astForFunctionDefinition(functDef))
+      case namespaceAlias: ICPPASTNamespaceAlias => Seq(astForNamespaceAlias(namespaceAlias))
+      case namespaceDefinition: ICPPASTNamespaceDefinition =>
+        Seq(astForNamespaceDefinition(namespaceDefinition, argIndex))
+      case a: ICPPASTStaticAssertDeclaration       => Seq(astForStaticAssert(a, argIndex))
+      case asm: IASTASMDeclaration                 => Seq(astForASMDeclaration(asm, argIndex))
+      case t: ICPPASTTemplateDeclaration           => astsForDeclaration(t.getDeclaration, argIndex)
+      case l: ICPPASTLinkageSpecification          => astsForLinkageSpecification(l)
+      case u: ICPPASTUsingDeclaration              => handleUsingDeclaration(u)
+      case _: ICPPASTVisibilityLabel               => Seq.empty
+      case _: ICPPASTUsingDirective                => Seq.empty
+      case _: ICPPASTExplicitTemplateInstantiation => Seq.empty
+      case _                                       => Seq(astForNode(decl, argIndex))
     }
 
     val lastOrder = declAsts.length
@@ -265,7 +267,7 @@ trait AstForTypesCreator {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         withIndex(declaration.getDeclarators) {
           case (d: IASTDeclarator, o) if d.getInitializer != null =>
-            astForInitializer(d, d.getInitializer, order + lastOrder + o - 1)
+            astForInitializer(d, d.getInitializer, argIndex + lastOrder + o - 1)
           case _ => Ast()
         }
       case _ => Nil

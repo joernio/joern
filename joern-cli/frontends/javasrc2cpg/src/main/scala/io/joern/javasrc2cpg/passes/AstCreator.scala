@@ -316,7 +316,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case None =>
         globalNamespaceBlock()
     }
-    AstWithCtx(Ast(namespaceBlock.filename(absolutePath(filename)).order(1)), Context())
+    AstWithCtx(Ast(namespaceBlock.filename(absolutePath(filename))), Context())
   }
 
   private def bindingForMethod(maybeMethodNode: Option[NewMethod], scopeContext: ScopeContext): List[BindingInfo] = {
@@ -352,7 +352,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         AstWithCtx(ast, ctx.addBindings(bindingInfo))
 
       case method: MethodDeclaration =>
-        val AstWithCtx(ast, ctx) = astForMethod(method, scopeContext, order)
+        val AstWithCtx(ast, ctx) = astForMethod(method, scopeContext)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo          = bindingForMethod(rootNode, scopeContext)
         AstWithCtx(ast, ctx.addBindings(bindingInfo))
@@ -448,7 +448,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(typ))
       .columnNumber(column(typ))
       .inheritsFromTypeFullName(baseTypeFullNames)
-      .order(order)
       .filename(filename)
       .code(typ.getNameAsString)
       .astParentType(astParentType)
@@ -497,12 +496,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .name("<init>")
       .fullName(s"$typeFullName.<init>:void()")
       .signature("void()")
-      .order(order)
       .filename(filename)
       .isExternal(false)
 
     val thisAst = thisAstForMethod(typeFullName, lineNumber = None)
-    val bodyAst = Ast(NewBlock().order(1).argumentIndex(1))
+    val bodyAst = Ast(NewBlock().argumentIndex(1))
 
     val returnNode = methodReturnNode(None, None, 2, "void")
     val returnAst  = Ast(returnNode)
@@ -531,7 +529,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(entry))
       .columnNumber(column(entry))
       .code(entry.toString)
-      .order(order)
       .name(entry.getName.toString)
       .typeFullName(typeFullName)
 
@@ -546,7 +543,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .lineNumber(line(entry))
           .columnNumber(column(entry))
           .argumentIndex(o)
-          .order(o)
       callAst(callNode, children)
     }.flatten
 
@@ -566,7 +562,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       NewMember()
         .name(name)
         .typeFullName(typeFullName)
-        .order(order)
         .code(s"$typeFullName $name")
     )
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
@@ -583,7 +578,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val signature            = s"void(${parameterTypes.mkString(",")})"
     val fullName             = constructorFullName(scopeContext.typeDecl, signature)
 
-    val constructorNode = createPartialMethod(constructorDeclaration, childNum)
+    val constructorNode = createPartialMethod(constructorDeclaration)
       .fullName(fullName)
       .signature(signature)
 
@@ -630,7 +625,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case arrayInit: ArrayInitializerExpr =>
         val arrayInitNode = NewArrayInitializer()
           .code(arrayInit.toString)
-          .order(order)
           .argumentIndex(order)
         val initElementAsts = withOrder(arrayInit.getValues) { case (value, order) =>
           convertAnnotationValueExpr(value, order)
@@ -694,7 +688,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     Ast(
       valueNode
-        .order(order)
         .argumentIndex(order)
     )
   }
@@ -702,24 +695,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def createAnnotationAssignmentAst(name: String, value: Expression, code: String, order: Int): Ast = {
     val parameter = NewAnnotationParameter()
       .code(name)
-      .order(1)
     val rhs = convertAnnotationValueExpr(value, 2)
 
     val assign = NewAnnotationParameterAssign()
       .code(code)
-      .order(order)
 
     Ast(assign)
       .withChild(Ast(parameter))
       .withChildren(rhs.toSeq)
   }
 
-  private def createAnnotationNode(annotationExpr: AnnotationExpr, order: Int): NewAnnotation = {
+  private def createAnnotationNode(annotationExpr: AnnotationExpr): NewAnnotation = {
     NewAnnotation()
       .code(annotationExpr.toString)
       .name(annotationExpr.getName.getIdentifier)
       .fullName(typeInfoProvider.getTypeFullName(annotationExpr).getOrElse(UnresolvedTypeDefault))
-      .order(order)
   }
 
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
@@ -729,9 +719,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr, order: Int): Ast = {
     annotationExpr match {
       case _: MarkerAnnotationExpr =>
-        Ast(createAnnotationNode(annotationExpr, order))
+        Ast(createAnnotationNode(annotationExpr))
       case normal: NormalAnnotationExpr =>
-        val annotationAst = Ast(createAnnotationNode(annotationExpr, order))
+        val annotationAst = Ast(createAnnotationNode(annotationExpr))
         val assignmentAsts =
           withOrder(normal.getPairs) { case (pair, order) =>
             createAnnotationAssignmentAst(pair.getName.getIdentifier, pair.getValue, pair.toString, order)
@@ -740,7 +730,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           ast.withChild(assignmentAst)
         }
       case single: SingleMemberAnnotationExpr =>
-        val annotationAst = Ast(createAnnotationNode(annotationExpr, order))
+        val annotationAst = Ast(createAnnotationNode(annotationExpr))
         annotationAst.withChild(
           createAnnotationAssignmentAst("value", single.getMemberValue, single.getMemberValue.toString, 1)
         )
@@ -763,11 +753,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astForMethod(
-    methodDeclaration: MethodDeclaration,
-    scopeContext: ScopeContext,
-    childNum: Int
-  ): AstWithCtx = {
+  private def astForMethod(methodDeclaration: MethodDeclaration, scopeContext: ScopeContext): AstWithCtx = {
 
     val typeParamMap         = getTypeParameterMap(methodDeclaration.getTypeParameters.asScala)
     val scopeWithTypes       = scopeContext.withNewIdentifiers(typeParamMap)
@@ -784,7 +770,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     val methodFullName = getMethodFullName(scopeWithTypes.typeDecl, methodDeclaration, signature)
 
-    val methodNode = createPartialMethod(methodDeclaration, childNum)
+    val methodNode = createPartialMethod(methodDeclaration)
       .fullName(methodFullName)
       .signature(signature.getOrElse(""))
 
@@ -833,7 +819,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
     * `fullName` and `signature` are omitted
     */
-  private def createPartialMethod(declaration: CallableDeclaration[_], childNum: Int): NewMethod = {
+  private def createPartialMethod(declaration: CallableDeclaration[_]): NewMethod = {
     val code         = declaration.getDeclarationAsString.trim
     val columnNumber = declaration.getBegin.map(x => Integer.valueOf(x.column)).toScala
     val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
@@ -843,7 +829,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .name(declaration.getNameAsString)
       .code(code)
       .isExternal(false)
-      .order(childNum)
       .filename(filename)
       .lineNumber(line(declaration))
       .columnNumber(columnNumber)
@@ -876,7 +861,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
       .code(stmt.toString())
-      .order(order)
       .argumentIndex(order)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
@@ -893,7 +877,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val tryNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.TRY)
       .code("try")
-      .order(order)
       .argumentIndex(order)
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
@@ -903,7 +886,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val catchAsts = withOrder(stmt.getCatchClauses) { (s, o) =>
       astForCatchClause(s, scopeContext, o)
     }
-    val catchBlock = Ast(NewBlock().order(2).argumentIndex(2).code("catch"))
+    val catchBlock = Ast(NewBlock().argumentIndex(2).code("catch"))
       .withChildren(catchAsts.map(_.ast))
     // Finally order must be 3 for CFG generation
     val finallyAst =
@@ -930,9 +913,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         Seq(astForExplicitConstructorInvocation(x, scopeContext, order))
       case x: AssertStmt       => Seq(astForAssertStatement(x, scopeContext, order))
       case x: BlockStmt        => Seq(astForBlockStatement(x, scopeContext, order))
-      case x: BreakStmt        => Seq(astForBreakStatement(x, order))
-      case x: ContinueStmt     => Seq(astForContinueStatement(x, order))
-      case x: DoStmt           => Seq(astForDo(x, scopeContext, order))
+      case x: BreakStmt        => Seq(astForBreakStatement(x))
+      case x: ContinueStmt     => Seq(astForContinueStatement(x))
+      case x: DoStmt           => Seq(astForDo(x, scopeContext))
       case _: EmptyStmt        => Seq() // Intentionally skipping this
       case x: ExpressionStmt   => astsForExpression(x.getExpression, scopeContext, order, Some("void"))
       case x: ForEachStmt      => Seq(astForForEach(x, scopeContext, order))
@@ -956,7 +939,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val elseNode =
         NewControlStructure()
           .controlStructureType(ControlStructureTypes.ELSE)
-          .order(3)
           .argumentIndex(3)
           .lineNumber(line(stmt))
           .columnNumber(column(stmt))
@@ -970,7 +952,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val ifNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.IF)
-        .order(order)
         .argumentIndex(order)
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
@@ -1006,7 +987,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val whileNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.WHILE)
-        .order(order)
         .argumentIndex(order)
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
@@ -1032,9 +1012,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(whileAst, ctx)
   }
 
-  def astForDo(stmt: DoStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForDo(stmt: DoStmt, scopeContext: ScopeContext): AstWithCtx = {
     val doNode =
-      NewControlStructure().controlStructureType(ControlStructureTypes.DO).order(order)
+      NewControlStructure().controlStructureType(ControlStructureTypes.DO)
     val conditionAstWithCtx =
       astsForExpression(stmt.getCondition, scopeContext, order = 0, Some("boolean")).headOption
         .getOrElse(AstWithCtx.empty)
@@ -1054,23 +1034,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(doAst, ctx)
   }
 
-  def astForBreakStatement(stmt: BreakStmt, order: Int): AstWithCtx = {
+  def astForBreakStatement(stmt: BreakStmt): AstWithCtx = {
     val node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
       .code(stmt.toString)
-      .order(order)
+
     AstWithCtx(Ast(node), Context())
   }
 
-  def astForContinueStatement(stmt: ContinueStmt, order: Int): AstWithCtx = {
+  def astForContinueStatement(stmt: ContinueStmt): AstWithCtx = {
     val node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.CONTINUE)
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
       .code(stmt.toString)
-      .order(order)
     AstWithCtx(Ast(node), Context())
   }
 
@@ -1084,7 +1063,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val forNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.FOR)
-        .order(order)
         .argumentIndex(order)
         .code(getForCode(stmt))
         .lineNumber(line(stmt))
@@ -1128,7 +1106,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForForEach(stmt: ForEachStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
     val forNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.FOR)
-      .order(order)
 
     val iterableAstsWithCtx = astsForExpression(stmt.getIterable, scopeContext, 1, None)
     val variableAstsWithCtx =
@@ -1152,8 +1129,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val switchNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.SWITCH)
-        .order(order)
-        .argumentIndex(order)
         .code(s"switch(${stmt.getSelector.toString})")
 
     val selectorAstsWithCtx = astsForExpression(stmt.getSelector, scopeContext, 1, None)

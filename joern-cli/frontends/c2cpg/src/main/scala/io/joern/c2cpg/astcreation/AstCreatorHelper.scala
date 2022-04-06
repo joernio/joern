@@ -189,24 +189,24 @@ trait AstCreatorHelper {
        |  Line: ${line(node).getOrElse(-1)}
        |  """.stripMargin
 
-  protected def notHandledYet(node: IASTNode, order: Int): Ast = {
+  protected def notHandledYet(node: IASTNode, argIndex: Int): Ast = {
     if (!node.isInstanceOf[IASTProblem] && !node.isInstanceOf[IASTProblemHolder]) {
       val text = notHandledText(node)
       logger.info(text)
     }
-    Ast(newUnknown(node, order))
+    Ast(newUnknown(node, argIndex))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
     Option(node).map(nodeSignature).getOrElse("")
   }
 
-  protected def nullSafeAst(node: IASTExpression, order: Int): Ast = {
-    Option(node).map(astForNode(_, order)).getOrElse(Ast())
+  protected def nullSafeAst(node: IASTExpression, argIndex: Int): Ast = {
+    Option(node).map(astForNode(_, argIndex)).getOrElse(Ast())
   }
 
-  protected def nullSafeAst(node: IASTStatement, order: Int): Seq[Ast] = {
-    Option(node).map(astsForStatement(_, order)).getOrElse(Seq.empty)
+  protected def nullSafeAst(node: IASTStatement, argIndex: Int): Seq[Ast] = {
+    Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
 
   protected def fixQualifiedName(name: String): String =
@@ -325,9 +325,9 @@ trait AstCreatorHelper {
     }
   }
 
-  private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, order: Int): Ast = {
+  private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, argIndex: Int): Ast = {
     val op       = "<operator>.typeOf"
-    val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
     val operand  = nullSafeAst(decl.getDecltypeExpression, 1)
     Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
   }
@@ -376,10 +376,10 @@ trait AstCreatorHelper {
     Ast(b).withChildren(calls)
   }
 
-  private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer, order: Int): Ast = {
+  private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer, argIndex: Int): Ast = {
     val name     = "<operator>.constructorInitializer"
-    val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val args     = withIndex(c.getArguments) { case (a, o) => astForNode(a, o) }
+    val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, argIndex)
+    val args     = withIndex(c.getArguments) { case (a, i) => astForNode(a, i) }
     Ast(callNode).withChildren(args).withArgEdges(callNode, args)
   }
 

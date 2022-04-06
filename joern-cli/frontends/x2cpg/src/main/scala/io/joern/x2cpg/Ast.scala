@@ -43,6 +43,13 @@ object Ast {
   }
 
   private def setOrderWhereNotSet(ast: Ast): Unit = {
+
+    ast.root.collect { case r: AstNodeNew =>
+      if (r.order == PropertyDefaults.Order) {
+        r.order = 1
+      }
+    }
+
     val nodeToChildren = ast.edges
       .groupBy(_.src)
       .map { case (_, edgeToChild) => edgeToChild.map(_.dst) }

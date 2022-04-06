@@ -105,17 +105,17 @@ trait AstForPrimitivesCreator {
     }
   }
 
-  protected def astForQualifiedName(qualId: CPPASTQualifiedName, order: Int): Ast = {
+  protected def astForQualifiedName(qualId: CPPASTQualifiedName, argIndex: Int): Ast = {
     val op = Operators.fieldAccess
-    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
 
-    def fieldAccesses(names: List[IASTNode], order: Int): Ast = names match {
+    def fieldAccesses(names: List[IASTNode], argIndex: Int): Ast = names match {
       case Nil => Ast()
       case head :: Nil =>
-        astForNode(head, order)
+        astForNode(head, argIndex)
       case head :: tail =>
         val code     = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
-        val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, order)
+        val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
         callNode.code = code
         val arg1 = astForNode(head, 1)
         val arg2 = fieldAccesses(tail, 2)
