@@ -42,7 +42,7 @@ trait AstForStatementsCreator {
     decl.getDeclaration match {
       case simplDecl: IASTSimpleDeclaration
           if simplDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
-        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator], order))
+        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
           simplDecl.getDeclarators.map(d => astForDeclarator(simplDecl, d)).toList
@@ -54,8 +54,8 @@ trait AstForStatementsCreator {
       case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, order))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
       case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))
-      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, order))
-      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, order))
+      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func))
+      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias))
       case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, order))
       case _: ICPPASTUsingDirective                  => Seq.empty
       case decl                                      => Seq(astForNode(decl, order))
@@ -111,8 +111,8 @@ trait AstForStatementsCreator {
     val stmtAsts     = nullSafeAst(doStmt.getBody, 1)
 
     Ast(doNode)
-      .withChild(conditionAst)
       .withChildren(stmtAsts)
+      .withChild(conditionAst)
       .withConditionEdge(doNode, conditionAst.root)
   }
 

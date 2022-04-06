@@ -200,7 +200,7 @@ class AstCreationPassTests
       cpg.member.name("x").order.l shouldBe List(1)
 
       inside(cpg.assignment.l) { case List(assignment1) =>
-        assignment1.order shouldBe 2
+        assignment1.argumentIndex shouldBe 2
         inside(assignment1.astMinusRoot.isMethodRef.l) { case List(ref) =>
           ref.methodFullName shouldBe lambdaFullName
         }
@@ -243,7 +243,7 @@ class AstCreationPassTests
       cpg.member.name("x").order.l shouldBe List(1)
 
       inside(cpg.assignment.l) { case List(assignment1) =>
-        assignment1.order shouldBe 2
+        assignment1.argumentIndex shouldBe 2
         inside(assignment1.astMinusRoot.isMethodRef.l) { case List(ref) =>
           ref.methodFullName shouldBe lambdaFullName
         }

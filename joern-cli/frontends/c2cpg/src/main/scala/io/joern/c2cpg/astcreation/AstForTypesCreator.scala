@@ -56,7 +56,6 @@ trait AstForTypesCreator {
       .filename(filename)
       .name(name)
       .fullName(fullname)
-      .order(order)
 
     scope.pushNewScope(cpgNamespace)
     var currOrder = order
@@ -71,7 +70,7 @@ trait AstForTypesCreator {
     namespaceAst
   }
 
-  protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias, order: Int): Ast = {
+  protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
     val linenumber   = line(namespaceAlias)
     val columnnumber = column(namespaceAlias)
     val filename     = fileName(namespaceAlias)
@@ -91,7 +90,6 @@ trait AstForTypesCreator {
       .filename(filename)
       .name(name)
       .fullName(fullname)
-      .order(order)
 
     Ast(cpgNamespace)
   }
@@ -131,10 +129,10 @@ trait AstForTypesCreator {
 
   }
 
-  protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer, order: Int): Ast = init match {
+  protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer, argIndex: Int): Ast = init match {
     case i: IASTEqualsInitializer =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
+      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, argIndex)
       val left         = astForNode(declarator.getName, 1)
       val right        = astForNode(i.getInitializerClause, 2)
       Ast(callNode)
@@ -144,12 +142,12 @@ trait AstForTypesCreator {
         .withArgEdge(callNode, right.root)
     case i: ICPPASTConstructorInitializer =>
       val name     = ASTStringUtil.getSimpleName(declarator.getName)
-      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, order)
+      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, argIndex)
       val args     = withOrder(i.getArguments) { case (a, o) => astForNode(a, o) }
       Ast(callNode).withChildren(args).withArgEdges(callNode, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
+      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, argIndex)
       val left         = astForNode(declarator.getName, 1)
       val right        = astForNode(i, 2)
       Ast(callNode)
@@ -157,7 +155,7 @@ trait AstForTypesCreator {
         .withChild(right)
         .withArgEdge(callNode, left.root)
         .withArgEdge(callNode, right.root)
-    case _ => astForNode(init, order)
+    case _ => astForNode(init, argIndex)
   }
 
   protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
@@ -199,11 +197,10 @@ trait AstForTypesCreator {
 
   private def astForStructuredBindingDeclaration(
     structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration,
-    order: Int
+    argIndex: Int
   ): Ast = {
     val cpgBlock = NewBlock()
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(structuredBindingDeclaration))
       .columnNumber(column(structuredBindingDeclaration))
@@ -236,7 +233,7 @@ trait AstForTypesCreator {
           case _ if declaration.getDeclarators.nonEmpty =>
             declaration.getDeclarators.toIndexedSeq.map {
               case d: IASTFunctionDeclarator =>
-                astForFunctionDeclarator(d, order)
+                astForFunctionDeclarator(d)
               case d: IASTSimpleDeclaration if d.getInitializer != null =>
                 Ast() // we do the AST for this down below with initAsts
               case d =>
@@ -249,8 +246,8 @@ trait AstForTypesCreator {
           case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
         }
       case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias))
-      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef, order))
-      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias, order))
+      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef))
+      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias))
       case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition, order))
       case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a, order))
       case asm: IASTASMDeclaration                         => Seq(astForASMDeclaration(asm, order))
@@ -334,7 +331,7 @@ trait AstForTypesCreator {
     Ast(typeDecl) +: declAsts
   }
 
-  private def astsForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator, order: Int): Seq[Ast] = {
+  private def astsForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator, argIndex: Int): Seq[Ast] = {
     val tpe = enumerator.getParent match {
       case enumeration: ICPPASTEnumerationSpecifier if enumeration.getBaseType != null =>
         enumeration.getBaseType.toString
@@ -344,13 +341,12 @@ trait AstForTypesCreator {
       .code(nodeSignature(enumerator))
       .name(ASTStringUtil.getSimpleName(enumerator.getName))
       .typeFullName(registerType(cleanType(tpe)))
-      .order(order)
 
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order + 1)
-      val left         = astForNode(enumerator.getName, 1)
-      val right        = astForNode(enumerator.getValue, 2)
+      val callNode = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, argIndex + 1)
+      val left     = astForNode(enumerator.getName, 1)
+      val right    = astForNode(enumerator.getValue, 2)
       val ast = Ast(callNode)
         .withChild(left)
         .withChild(right)

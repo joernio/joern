@@ -123,7 +123,7 @@ trait AstForFunctionsCreator {
     Ast(newMethodRefNode(code, fullname, methodNode.astParentFullName, lambdaExpression))
   }
 
-  protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator, order: Int): Ast = {
+  protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     val linenumber   = line(funcDecl)
     val columnnumber = column(funcDecl)
     val filename     = fileName(funcDecl)
@@ -146,7 +146,6 @@ trait AstForFunctionsCreator {
       .columnNumberEnd(columnEnd(funcDecl))
       .signature(signature)
       .filename(filename)
-      .order(order)
 
     scope.pushNewScope(methodNode)
 
@@ -172,7 +171,7 @@ trait AstForFunctionsCreator {
     r.merge(typeDeclAst)
   }
 
-  protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition, order: Int): Ast = {
+  protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val linenumber   = line(funcDef)
     val columnnumber = column(funcDef)
     val filename     = fileName(funcDef)
@@ -195,7 +194,6 @@ trait AstForFunctionsCreator {
       .columnNumberEnd(columnEnd(funcDef))
       .signature(signature)
       .filename(filename)
-      .order(order)
 
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)

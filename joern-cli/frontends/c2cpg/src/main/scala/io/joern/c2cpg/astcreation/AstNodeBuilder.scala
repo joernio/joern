@@ -8,12 +8,11 @@ trait AstNodeBuilder {
 
   this: AstCreator =>
 
-  protected def newUnknown(node: IASTNode, order: Int): NewUnknown =
+  protected def newUnknown(node: IASTNode, argIndex: Int): NewUnknown =
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(nodeSignature(node))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
 
@@ -35,15 +34,14 @@ trait AstNodeBuilder {
     name: String,
     fullname: String,
     dispatchType: String,
-    order: Int
+    argIndex: Int
   ): NewCall = {
     NewCall()
       .name(name)
       .dispatchType(dispatchType)
       .methodFullName(fullname)
       .code(nodeSignature(node))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
@@ -52,14 +50,13 @@ trait AstNodeBuilder {
     node: IASTNode,
     controlStructureType: String,
     code: String,
-    order: Int
+    argIndex: Int
   ): NewControlStructure =
     NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(controlStructureType)
       .code(code)
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
 
