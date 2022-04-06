@@ -910,7 +910,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     // case _: YieldStmt                  => Seq()
     statement match {
       case x: ExplicitConstructorInvocationStmt =>
-        Seq(astForExplicitConstructorInvocation(x, scopeContext, order))
+        Seq(astForExplicitConstructorInvocation(x, scopeContext))
       case x: AssertStmt       => Seq(astForAssertStatement(x, scopeContext, order))
       case x: BlockStmt        => Seq(astForBlockStatement(x, scopeContext, order))
       case x: BreakStmt        => Seq(astForBreakStatement(x))
@@ -919,12 +919,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case _: EmptyStmt        => Seq() // Intentionally skipping this
       case x: ExpressionStmt   => astsForExpression(x.getExpression, scopeContext, order, Some("void"))
       case x: ForEachStmt      => Seq(astForForEach(x, scopeContext, order))
-      case x: ForStmt          => Seq(astForFor(x, scopeContext, order))
-      case x: IfStmt           => Seq(astForIf(x, scopeContext, order))
+      case x: ForStmt          => Seq(astForFor(x, scopeContext))
+      case x: IfStmt           => Seq(astForIf(x, scopeContext))
       case x: LabeledStmt      => astsForLabeledStatement(x, scopeContext, order)
       case x: ReturnStmt       => astsForReturnNode(x, scopeContext, order)
-      case x: SwitchStmt       => Seq(astForSwitchStatement(x, scopeContext, order))
-      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, scopeContext, order))
+      case x: SwitchStmt       => Seq(astForSwitchStatement(x, scopeContext))
+      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, scopeContext))
       case x: ThrowStmt        => Seq(astForThrow(x, scopeContext, order))
       case x: TryStmt          => Seq(astForTry(x, scopeContext, order))
       case x: WhileStmt        => Seq(astForWhile(x, scopeContext, order))
@@ -948,11 +948,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForIf(stmt: IfStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForIf(stmt: IfStmt, scopeContext: ScopeContext): AstWithCtx = {
     val ifNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.IF)
-        .argumentIndex(order)
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
         .code(s"if (${stmt.getCondition.toString})")
@@ -1059,11 +1058,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val update  = stmt.getUpdate.asScala.map(_.toString).mkString(", ")
     s"for ($init; $compare; $update)"
   }
-  def astForFor(stmt: ForStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForFor(stmt: ForStmt, scopeContext: ScopeContext): AstWithCtx = {
     val forNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.FOR)
-        .argumentIndex(order)
         .code(getForCode(stmt))
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
@@ -1125,7 +1123,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(forEachAst, ctx)
   }
 
-  def astForSwitchStatement(stmt: SwitchStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForSwitchStatement(stmt: SwitchStmt, scopeContext: ScopeContext): AstWithCtx = {
     val switchNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.SWITCH)
@@ -1151,17 +1149,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(switchAst, ctx)
   }
 
-  private def astForSynchronizedStatement(
-    stmt: SynchronizedStmt,
-    scopeContext: ScopeContext,
-    order: Int
-  ): AstWithCtx = {
+  private def astForSynchronizedStatement(stmt: SynchronizedStmt, scopeContext: ScopeContext): AstWithCtx = {
     val parentNode =
       NewBlock()
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
-        .order(order)
-        .argumentIndex(order)
 
     val modifier = Ast(NewModifier().modifierType("SYNCHRONIZED"))
 
@@ -2048,8 +2040,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForExplicitConstructorInvocation(
     stmt: ExplicitConstructorInvocationStmt,
-    scopeContext: ScopeContext,
-    order: Int
+    scopeContext: ScopeContext
   ): AstWithCtx = {
     val args = withOrder(stmt.getArguments) { (s, o) =>
       astsForExpression(s, scopeContext, o, None)
@@ -2062,8 +2053,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val callNode = NewCall()
       .name("<init>")
       .methodFullName(s"$typeFullName.<init>:$signature")
-      .argumentIndex(order)
-      .order(order)
       .code(stmt.toString)
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
