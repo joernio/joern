@@ -21,19 +21,31 @@ import com.github.javaparser.ast.expr.{
   ArrayInitializerExpr,
   AssignExpr,
   BinaryExpr,
+  BooleanLiteralExpr,
   CastExpr,
+  CharLiteralExpr,
   ClassExpr,
   ConditionalExpr,
+  DoubleLiteralExpr,
   EnclosedExpr,
   Expression,
   FieldAccessExpr,
   InstanceOfExpr,
+  IntegerLiteralExpr,
   LambdaExpr,
   LiteralExpr,
+  LongLiteralExpr,
+  MarkerAnnotationExpr,
+  MemberValuePair,
   MethodCallExpr,
   NameExpr,
+  NormalAnnotationExpr,
+  NullLiteralExpr,
   ObjectCreationExpr,
+  SingleMemberAnnotationExpr,
+  StringLiteralExpr,
   SuperExpr,
+  TextBlockLiteralExpr,
   ThisExpr,
   UnaryExpr,
   VariableDeclarationExpr
@@ -83,6 +95,12 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  HasOrder,
+  NewAnnotation,
+  NewAnnotationLiteral,
+  NewAnnotationParameter,
+  NewAnnotationParameterAssign,
+  NewArrayInitializer,
   NewBinding,
   NewBlock,
   NewCall,
@@ -344,7 +362,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       case fieldDeclaration: FieldDeclaration =>
         withOrder(fieldDeclaration.getVariables) { (variable, idx) =>
-          astForVariableDeclarator(variable, order + idx - 1)
+          astForVariableDeclarator(variable, fieldDeclaration.getAnnotations, order + idx - 1)
         }
 
       case unhandled =>
@@ -460,10 +478,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       None
     }
 
+    val annotationAsts = typ.getAnnotations.asScala.map(astForAnnotationExpr)
+
     val typeDeclAst = Ast(typeDecl)
       .withChildren(enumEntryAsts)
       .withChildren(memberAsts.map(_.ast))
       .withChildren(defaultConstructorAst.map(_.ast).toList)
+      .withChildren(annotationAsts)
 
     val typeDeclContext = Context.mergedCtx((memberAsts ++ defaultConstructorAst.toList).map(_.ctx))
 
@@ -533,7 +554,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(args.map(_.ast))
   }
 
-  private def astForVariableDeclarator(v: VariableDeclarator, order: Int): AstWithCtx = {
+  private def astForVariableDeclarator(
+    v: VariableDeclarator,
+    annotations: NodeList[AnnotationExpr],
+    order: Int
+  ): AstWithCtx = {
     // TODO: Should be able to find expected type here
     val typeFullName = typeInfoProvider.getTypeFullName(v).getOrElse(UnresolvedTypeDefault)
     val name         = v.getName.toString
@@ -544,7 +569,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .order(order)
         .code(s"$typeFullName $name")
     )
-    AstWithCtx(ast, Context())
+    val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
+    AstWithCtx(ast.withChildren(annotationAsts), Context())
   }
 
   private def astForConstructor(
@@ -572,11 +598,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astForMethodBody(Some(constructorDeclaration.getBody), scopeWithParams, lastOrder)
     val returnAstWithCtx = astForConstructorReturn(constructorDeclaration)
 
+    val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
+
     val constructorAst = Ast(constructorNode)
       .withChild(thisAst.ast)
       .withChildren(parameterAstsWithCtx.map(_.ast))
       .withChild(bodyAstWithCtx.ast)
       .withChild(returnAstWithCtx)
+      .withChildren(annotationAsts)
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(Seq(thisAst.ctx) ++ parameterAstsWithCtx.map(_.ctx))
 
@@ -594,6 +623,128 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
     AstWithCtx(Ast(node), Context(methodParameters = Seq(node)))
+  }
+
+  private def convertAnnotationValueExpr(expr: Expression, order: Int): Option[Ast] = {
+    expr match {
+      case arrayInit: ArrayInitializerExpr =>
+        val arrayInitNode = NewArrayInitializer()
+          .code(arrayInit.toString)
+          .order(order)
+          .argumentIndex(order)
+        val initElementAsts = withOrder(arrayInit.getValues) { case (value, order) =>
+          convertAnnotationValueExpr(value, order)
+        }
+
+        val returnAst = initElementAsts.foldLeft(Ast(arrayInitNode)) {
+          case (ast, Some(elementAst)) =>
+            ast.withChild(elementAst)
+          case (ast, _) => ast
+        }
+        Some(returnAst)
+
+      case annotationExpr: AnnotationExpr =>
+        Some(astForAnnotationExpr(annotationExpr, order))
+
+      case literalExpr: LiteralExpr =>
+        Some(astForAnnotationLiteralExpr(literalExpr, order))
+
+      case _ =>
+        logger.info(s"convertAnnotationValueExpr not yet implemented for ${expr.getClass}")
+        None
+    }
+  }
+
+  private def astForAnnotationLiteralExpr(literalExpr: LiteralExpr, order: Int): Ast = {
+    val valueNode =
+      literalExpr match {
+        case literal: StringLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(literal.getValue)
+            .name(literal.getValue)
+        case literal: IntegerLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(literal.getValue)
+            .name(literal.getValue)
+        case literal: BooleanLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(java.lang.Boolean.toString(literal.getValue))
+            .name(java.lang.Boolean.toString(literal.getValue))
+        case literal: CharLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(literal.getValue)
+            .name(literal.getValue)
+        case literal: DoubleLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(literal.getValue)
+            .name(literal.getValue)
+        case literal: LongLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(literal.getValue)
+            .name(literal.getValue)
+        case literal: NullLiteralExpr =>
+          NewAnnotationLiteral()
+            .code("null")
+            .name("null")
+        case literal: TextBlockLiteralExpr =>
+          NewAnnotationLiteral()
+            .code(literal.getValue)
+            .name(literal.getValue)
+      }
+
+    Ast(
+      valueNode
+        .order(order)
+        .argumentIndex(order)
+    )
+  }
+
+  private def createAnnotationAssignmentAst(name: String, value: Expression, code: String, order: Int): Ast = {
+    val parameter = NewAnnotationParameter()
+      .code(name)
+      .order(1)
+    val rhs = convertAnnotationValueExpr(value, 2)
+
+    val assign = NewAnnotationParameterAssign()
+      .code(code)
+      .order(order)
+
+    Ast(assign)
+      .withChild(Ast(parameter))
+      .withChildren(rhs.toSeq)
+  }
+
+  private def createAnnotationNode(annotationExpr: AnnotationExpr, order: Int): NewAnnotation = {
+    NewAnnotation()
+      .code(annotationExpr.toString)
+      .name(annotationExpr.getName.getIdentifier)
+      .fullName(typeInfoProvider.getTypeFullName(annotationExpr).getOrElse(UnresolvedTypeDefault))
+      .order(order)
+  }
+
+  private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
+    astForAnnotationExpr(annotationExpr, -1)
+  }
+
+  private def astForAnnotationExpr(annotationExpr: AnnotationExpr, order: Int): Ast = {
+    annotationExpr match {
+      case _: MarkerAnnotationExpr =>
+        Ast(createAnnotationNode(annotationExpr, order))
+      case normal: NormalAnnotationExpr =>
+        val annotationAst = Ast(createAnnotationNode(annotationExpr, order))
+        val assignmentAsts =
+          withOrder(normal.getPairs) { case (pair, order) =>
+            createAnnotationAssignmentAst(pair.getName.getIdentifier, pair.getValue, pair.toString, order)
+          }
+        assignmentAsts.foldLeft(annotationAst) { case (ast, assignmentAst) =>
+          ast.withChild(assignmentAst)
+        }
+      case single: SingleMemberAnnotationExpr =>
+        val annotationAst = Ast(createAnnotationNode(annotationExpr, order))
+        annotationAst.withChild(
+          createAnnotationAssignmentAst("value", single.getMemberValue, single.getMemberValue.toString, 1)
+        )
+    }
   }
 
   private def getMethodFullName(
@@ -651,11 +802,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astForMethodBody(methodDeclaration.getBody.toScala, scopeCtxWithParams, lastOrder)
     val returnAstWithCtx = astForMethodReturn(methodDeclaration)
 
+    val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
+
     val ast = Ast(methodNode)
       .withChildren(thisAst.map(_.ast))
       .withChildren(parameterAstsWithCtx.map(_.ast))
       .withChild(bodyAstWithCtx.ast)
       .withChild(returnAstWithCtx)
+      .withChildren(annotationAsts)
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(parameterAstsWithCtx.map(_.ctx))
 
@@ -2448,8 +2602,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(parameter))
       .columnNumber(column(parameter))
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-    val ast = Ast(parameterNode)
-    AstWithCtx(ast, Context(methodParameters = List(parameterNode)))
+    val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
+    val ast            = Ast(parameterNode)
+    AstWithCtx(ast.withChildren(annotationAsts), Context(methodParameters = List(parameterNode)))
   }
 
   private def constructorFullName(typeDecl: Option[NewTypeDecl], signature: String): String = {

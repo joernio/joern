@@ -2435,10 +2435,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    if (expr.getParent.isInstanceOf[KtProperty]) {
-      astForIfAsExpression(expr, scopeContext, order, argIdx)
-    } else {
+    if (KtPsiUtil.isStatement(expr)) {
       astForIfAsControlStructure(expr, scopeContext, order, argIdx)
+    } else {
+      astForIfAsExpression(expr, scopeContext, order, argIdx)
     }
   }
 
