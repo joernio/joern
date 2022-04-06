@@ -2435,7 +2435,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    if (KtPsiUtil.isStatement(expr)) {
+    val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
+    if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) {
       astForIfAsControlStructure(expr, scopeContext, order, argIdx)
     } else {
       astForIfAsExpression(expr, scopeContext, order, argIdx)
