@@ -72,9 +72,9 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
 
       val List(firstParam: MethodParameterIn, secondParam: MethodParameterIn) = m.parameter.l
       firstParam.name shouldBe "this"
-      firstParam.order shouldBe 0
+      firstParam.index shouldBe 0
       secondParam.name shouldBe "x"
-      secondParam.order shouldBe 1
+      secondParam.index shouldBe 1
 
       val List(memberAssignmentCall) = m.block.expressionDown.isCall.l
       memberAssignmentCall.code shouldBe "this.x = x"

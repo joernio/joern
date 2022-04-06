@@ -11,7 +11,7 @@ class ParameterNodeTests extends GhidraBinToCpgSuite {
   }
 
   "should contain at least one nodes with all mandatory fields set" in {
-    cpg.method.name("printf").parameter.order(1).name.l match {
+    cpg.method.name("printf").parameter.index(1).name.l match {
       case List(x, y) =>
         (x, y) shouldBe ("__format", "__format")
       case _ => fail()

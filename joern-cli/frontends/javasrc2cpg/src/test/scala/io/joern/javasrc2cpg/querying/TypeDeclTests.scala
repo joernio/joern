@@ -69,7 +69,7 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     val thisParam = constructor.parameter.head
     thisParam.name shouldBe "this"
     thisParam.typeFullName shouldBe typeFullName
-    thisParam.order shouldBe 0
+    thisParam.index shouldBe 0
     thisParam.dynamicTypeHintFullName shouldBe List(typeFullName)
 
     val constructorReturn = constructor.methodReturn

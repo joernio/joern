@@ -109,7 +109,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find typeFullName for param from import" in {
-    cpg.method.name("test3").parameter.order(1).l match {
+    cpg.method.name("test3").parameter.index(1).l match {
       case param :: Nil =>
         param.name shouldBe "b"
         param.typeFullName shouldBe "a.b.c.Bar"

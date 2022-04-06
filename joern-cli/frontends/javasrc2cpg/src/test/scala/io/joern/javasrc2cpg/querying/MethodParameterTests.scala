@@ -23,21 +23,21 @@ class MethodParameterTests extends JavaSrcCodeToCpgFixture {
     t.typeFullName shouldBe "a.Foo"
     t.lineNumber shouldBe Some(3)
     t.columnNumber shouldBe None
-    t.order shouldBe 0
+    t.index shouldBe 0
 
     val List(x) = cpg.parameter.filter(_.method.name == "foo").name("param1").l
     x.code shouldBe "int param1"
     x.typeFullName shouldBe "int"
     x.lineNumber shouldBe Some(3)
     x.columnNumber shouldBe Some(10)
-    x.order shouldBe 1
+    x.index shouldBe 1
 
     val List(y) = cpg.parameter.filter(_.method.name == "foo").name("param2").l
     y.code shouldBe "int param2"
     y.typeFullName shouldBe "int"
     y.lineNumber shouldBe Some(3)
     y.columnNumber shouldBe Some(22)
-    y.order shouldBe 2
+    y.index shouldBe 2
   }
 
   "should allow traversing from parameter to method" in {

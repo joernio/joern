@@ -409,7 +409,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .name(Constants.this_)
         .code(Constants.this_)
         .typeFullName(classFullName)
-        .order(0)
+        .index(0)
     val constructorParamsWithCtx = {
       Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
         withOrder(constructorParams.asJava) { (p, order) =>
@@ -576,7 +576,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .name(Constants.this_)
             .code(Constants.this_)
             .typeFullName(classFullName)
-            .order(0)
+            .index(0)
         val constructorParamsWithCtx =
           Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
             withOrder(constructorParams.asJava) { (p, order) =>
@@ -617,7 +617,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .name(Constants.this_)
               .code(Constants.this_)
               .typeFullName(classFullName)
-              .order(0)
+              .index(0)
           val methodNode =
             NewMethod()
               .name(componentName)
@@ -3071,7 +3071,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .name(name)
         .code(param.getText)
         .typeFullName(typeFullName)
-        .order(childNum)
+        .index(childNum)
         .lineNumber(line(param))
         .columnNumber(column(param))
     val ast = Ast(parameterNode)

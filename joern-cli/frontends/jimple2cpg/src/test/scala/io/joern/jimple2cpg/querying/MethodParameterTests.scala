@@ -23,7 +23,7 @@ class MethodParameterTests extends JimpleCodeToCpgFixture {
     t.typeFullName shouldBe "a.Foo"
     t.lineNumber shouldBe Some(3)
     t.columnNumber shouldBe None
-    t.order shouldBe 0
+    t.index shouldBe 0
     t.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
 
     val List(x) = cpg.parameter.filter(_.method.name == "foo").name("param1").l
@@ -31,7 +31,7 @@ class MethodParameterTests extends JimpleCodeToCpgFixture {
     x.typeFullName shouldBe "int"
     x.lineNumber shouldBe Some(3)
     x.columnNumber shouldBe None
-    x.order shouldBe 1
+    x.index shouldBe 1
     x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
     val List(y) = cpg.parameter.filter(_.method.name == "foo").name("param2").l
@@ -39,7 +39,7 @@ class MethodParameterTests extends JimpleCodeToCpgFixture {
     y.typeFullName shouldBe "java.lang.Object"
     y.lineNumber shouldBe Some(3)
     y.columnNumber shouldBe None
-    y.order shouldBe 2
+    y.index shouldBe 2
     y.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
   }
 

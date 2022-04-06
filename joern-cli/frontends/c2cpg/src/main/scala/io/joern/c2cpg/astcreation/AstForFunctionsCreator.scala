@@ -261,7 +261,7 @@ trait AstForFunctionsCreator {
       .name(name)
       .code(code)
       .typeFullName(registerType(tpe))
-      .order(childNum)
+      .index(childNum)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .isVariadic(variadic)
       .lineNumber(line(parameter))
