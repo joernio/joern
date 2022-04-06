@@ -60,10 +60,9 @@ trait AstForStatementsCreator {
       case decl                                      => Seq(astForNode(decl, order))
     }
 
-  private def astForReturnStatement(ret: IASTReturnStatement, order: Int): Ast = {
+  private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
     val cpgReturn = NewReturn()
       .code(nodeSignature(ret))
-      .argumentIndex(order)
       .lineNumber(line(ret))
       .columnNumber(column(ret))
     val expr = nullSafeAst(ret.getReturnValue, 1)
@@ -83,20 +82,20 @@ trait AstForStatementsCreator {
     Ast(newControlStructureNode(goto, ControlStructureTypes.GOTO, code))
   }
 
-  private def astsForGnuGotoStatement(goto: IGNUASTGotoStatement, order: Int): Seq[Ast] = {
+  private def astsForGnuGotoStatement(goto: IGNUASTGotoStatement): Seq[Ast] = {
     // This is for GNU GOTO labels as values.
     // See: https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html
     // For such GOTOs we cannot statically determine the target label. As a quick
     // hack we simply put edges to all labels found indicated by *. This might be an over-taint.
     val code     = s"goto *;"
     val gotoNode = Ast(newControlStructureNode(goto, ControlStructureTypes.GOTO, code))
-    val exprNode = nullSafeAst(goto.getLabelNameExpression, order + 1)
+    val exprNode = nullSafeAst(goto.getLabelNameExpression, -1)
     Seq(gotoNode, exprNode)
   }
 
-  private def astsForLabelStatement(label: IASTLabelStatement, order: Int): Seq[Ast] = {
-    val cpgLabel    = newJumpTarget(label, order)
-    val nestedStmts = nullSafeAst(label.getNestedStatement, order + 1)
+  private def astsForLabelStatement(label: IASTLabelStatement): Seq[Ast] = {
+    val cpgLabel    = newJumpTarget(label)
+    val nestedStmts = nullSafeAst(label.getNestedStatement, -1)
     Ast(cpgLabel) +: nestedStmts
   }
 
@@ -128,14 +127,14 @@ trait AstForStatementsCreator {
       .withConditionEdge(switchNode, conditionAst.root)
   }
 
-  private def astsForCaseStatement(caseStmt: IASTCaseStatement, order: Int): Seq[Ast] = {
-    val labelNode = newJumpTarget(caseStmt, order)
-    val stmt      = nullSafeAst(caseStmt.getExpression, order)
+  private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
+    val labelNode = newJumpTarget(caseStmt)
+    val stmt      = nullSafeAst(caseStmt.getExpression, -1)
     Seq(Ast(labelNode), stmt)
   }
 
-  private def astForDefaultStatement(caseStmt: IASTDefaultStatement, order: Int): Ast = {
-    Ast(newJumpTarget(caseStmt, order))
+  private def astForDefaultStatement(caseStmt: IASTDefaultStatement): Ast = {
+    Ast(newJumpTarget(caseStmt))
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
@@ -158,16 +157,16 @@ trait AstForStatementsCreator {
       case forStmt: ICPPASTRangeBasedForStatement => Seq(astForRangedFor(forStmt))
       case doStmt: IASTDoStatement                => Seq(astForDoStatement(doStmt))
       case switchStmt: IASTSwitchStatement        => Seq(astForSwitchStatement(switchStmt))
-      case ret: IASTReturnStatement               => Seq(astForReturnStatement(ret, argIndex))
+      case ret: IASTReturnStatement               => Seq(astForReturnStatement(ret))
       case br: IASTBreakStatement                 => Seq(astForBreakStatement(br))
       case cont: IASTContinueStatement            => Seq(astForContinueStatement(cont))
       case goto: IASTGotoStatement                => Seq(astForGotoStatement(goto))
-      case goto: IGNUASTGotoStatement             => astsForGnuGotoStatement(goto, argIndex)
-      case defStmt: IASTDefaultStatement          => Seq(astForDefaultStatement(defStmt, argIndex))
+      case goto: IGNUASTGotoStatement             => astsForGnuGotoStatement(goto)
+      case defStmt: IASTDefaultStatement          => Seq(astForDefaultStatement(defStmt))
       case tryStmt: ICPPASTTryBlockStatement      => Seq(astForTryStatement(tryStmt))
-      case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt, argIndex)
+      case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt)
       case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl, argIndex)
-      case label: IASTLabelStatement              => astsForLabelStatement(label, argIndex)
+      case label: IASTLabelStatement              => astsForLabelStatement(label)
       case _: IASTNullStatement                   => Seq.empty
       case _                                      => Seq(astForNode(statement, argIndex))
     }
