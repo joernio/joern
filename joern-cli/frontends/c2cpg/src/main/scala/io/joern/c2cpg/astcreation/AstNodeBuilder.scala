@@ -71,7 +71,6 @@ trait AstNodeBuilder {
       .parserTypeName(node.getClass.getSimpleName)
       .name(name)
       .code(code)
-      .order(order)
       .argumentIndex(order)
       .lineNumber(line(node))
       .columnNumber(column(node))

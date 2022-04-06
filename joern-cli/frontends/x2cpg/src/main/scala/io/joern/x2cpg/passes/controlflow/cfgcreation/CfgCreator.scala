@@ -298,12 +298,16 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * for the loop and a fringe.
     */
   protected def cfgForForStatement(node: ControlStructure): Cfg = {
-    val children     = node.astChildren.l
-    val nLocals      = children.count(_.isLocal)
-    val initExprCfg  = children.find(_.order == nLocals + 1).map(cfgFor).getOrElse(Cfg.empty)
-    val conditionCfg = children.find(_.order == nLocals + 2).map(cfgFor).getOrElse(Cfg.empty)
-    val loopExprCfg  = children.find(_.order == nLocals + 3).map(cfgFor).getOrElse(Cfg.empty)
-    val bodyCfg      = children.find(_.order == nLocals + 4).map(cfgFor).getOrElse(Cfg.empty)
+    val children = node.astChildren.l
+    val nLocals  = children.count(_.isLocal)
+    val initExprCfg =
+      children.collect { case x: Expression => x }.find(_.argumentIndex == nLocals + 1).map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg =
+      children.collect { case x: Expression => x }.find(_.argumentIndex == nLocals + 2).map(cfgFor).getOrElse(Cfg.empty)
+    val loopExprCfg =
+      children.collect { case x: Expression => x }.find(_.argumentIndex == nLocals + 3).map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfg =
+      children.collect { case x: Expression => x }.find(_.argumentIndex == nLocals + 4).map(cfgFor).getOrElse(Cfg.empty)
 
     val innerCfg  = conditionCfg ++ bodyCfg ++ loopExprCfg
     val entryNode = (initExprCfg ++ innerCfg).entryNode
@@ -436,7 +440,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       Traversal
         .fromSingle(node)
         .astChildren
-        .where(_.order(1))
+        .collect { case x: Expression => x }
+        .where(_.argumentIndex(1))
         .where(_.astChildren) // Filter out empty `try` bodies
         .headOption
 
@@ -449,7 +454,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       Traversal
         .fromSingle(node)
         .astChildren
-        .where(_.order(2))
+        .collect { case x: Expression => x }
+        .where(_.argumentIndex(2))
         .toList match {
         case Nil  => List(Cfg.empty)
         case asts => asts.map(cfgFor)
@@ -459,7 +465,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       Traversal
         .fromSingle(node)
         .astChildren
-        .where(_.order(3))
+        .collect { case x: Expression => x }
+        .where(_.argumentIndex(3))
         .map(cfgFor)
         .headOption // Assume there can only be one
         .toList

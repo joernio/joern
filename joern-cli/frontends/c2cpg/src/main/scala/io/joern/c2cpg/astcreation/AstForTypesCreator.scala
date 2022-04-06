@@ -143,7 +143,7 @@ trait AstForTypesCreator {
     case i: ICPPASTConstructorInitializer =>
       val name     = ASTStringUtil.getSimpleName(declarator.getName)
       val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, argIndex)
-      val args     = withOrder(i.getArguments) { case (a, o) => astForNode(a, o) }
+      val args     = withIndex(i.getArguments) { case (a, o) => astForNode(a, o) }
       Ast(callNode).withChildren(args).withArgEdges(callNode, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
@@ -206,7 +206,7 @@ trait AstForTypesCreator {
       .columnNumber(column(structuredBindingDeclaration))
 
     scope.pushNewScope(cpgBlock)
-    val childAsts = withOrder(structuredBindingDeclaration.getNames) { case (name, o) =>
+    val childAsts = withIndex(structuredBindingDeclaration.getNames) { case (name, o) =>
       astForNode(name, o)
     }
 
@@ -263,7 +263,7 @@ trait AstForTypesCreator {
     val lastOrder = declAsts.length
     val initAsts = decl match {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
-        withOrder(declaration.getDeclarators) {
+        withIndex(declaration.getDeclarators) {
           case (d: IASTDeclarator, o) if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer, order + lastOrder + o - 1)
           case _ => Ast()
@@ -274,7 +274,7 @@ trait AstForTypesCreator {
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =
-    withOrder(l.getDeclarations) { case (d, o) =>
+    withIndex(l.getDeclarations) { case (d, o) =>
       astsForDeclaration(d, o)
     }.flatten
 
@@ -298,7 +298,7 @@ trait AstForTypesCreator {
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val memberAsts = withOrder(typeSpecifier.getDeclarations(true)) { (m, o) =>
+    val memberAsts = withIndex(typeSpecifier.getDeclarations(true)) { (m, o) =>
       astsForDeclaration(m, o)
     }.flatten
 

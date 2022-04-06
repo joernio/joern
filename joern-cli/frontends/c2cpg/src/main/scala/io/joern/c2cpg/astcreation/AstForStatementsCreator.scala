@@ -19,7 +19,6 @@ trait AstForStatementsCreator {
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int): Ast = {
     val cpgBlock = NewBlock()
-      .order(order)
       .argumentIndex(order)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(blockStmt))
@@ -47,7 +46,7 @@ trait AstForStatementsCreator {
         val locals =
           simplDecl.getDeclarators.map(d => astForDeclarator(simplDecl, d)).toList
         val calls =
-          withOrder(simplDecl.getDeclarators.filter(_.getInitializer != null)) { (d, o) =>
+          withIndex(simplDecl.getDeclarators.filter(_.getInitializer != null)) { (d, o) =>
             astForInitializer(d, d.getInitializer, locals.size + order + o - 1)
           }
         locals ++ calls
@@ -64,7 +63,6 @@ trait AstForStatementsCreator {
   private def astForReturnStatement(ret: IASTReturnStatement, order: Int): Ast = {
     val cpgReturn = NewReturn()
       .code(nodeSignature(ret))
-      .order(order)
       .argumentIndex(order)
       .lineNumber(line(ret))
       .columnNumber(column(ret))
@@ -176,16 +174,15 @@ trait AstForStatementsCreator {
     r.map(x => asChildOfMacroCall(statement, x, order))
   }
 
-  private def astForFor(forStmt: IASTForStatement, order: Int): Ast = {
+  private def astForFor(forStmt: IASTForStatement, argIndex: Int): Ast = {
     val codeInit = nullSafeCode(forStmt.getInitializerStatement)
     val codeCond = nullSafeCode(forStmt.getConditionExpression)
     val codeIter = nullSafeCode(forStmt.getIterationExpression)
 
     val code    = s"for ($codeInit$codeCond;$codeIter)"
-    val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, order)
+    val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, argIndex)
 
     val initAstBlock = NewBlock()
-      .order(1)
       .argumentIndex(1)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(forStmt))
@@ -250,7 +247,6 @@ trait AstForStatementsCreator {
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = NewBlock()
-          .order(1)
           .argumentIndex(1)
           .typeFullName(registerType(Defines.voidTypeName))
           .lineNumber(line(s.getConditionDeclaration))

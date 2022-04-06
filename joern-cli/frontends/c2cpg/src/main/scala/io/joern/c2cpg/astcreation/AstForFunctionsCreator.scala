@@ -101,8 +101,8 @@ trait AstForFunctionsCreator {
       .filename(filename)
 
     scope.pushNewScope(methodNode)
-    val parameterNodes = withOrder(parameters(lambdaExpression.getDeclarator)) { (p, o) =>
-      parameterNode(p, o)
+    val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
+      parameterNode(p, i)
     }
 
     parameterNodes.lastOption.foreach {
@@ -149,8 +149,8 @@ trait AstForFunctionsCreator {
 
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withOrder(parameters(funcDecl)) { (p, order) =>
-      parameterNode(p, order)
+    val parameterNodes = withIndex(parameters(funcDecl)) { (p, index) =>
+      parameterNode(p, index)
     }
 
     parameterNodes.lastOption.foreach {
@@ -198,8 +198,8 @@ trait AstForFunctionsCreator {
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withOrder(parameters(funcDef)) { (p, order) =>
-      parameterNode(p, order)
+    val parameterNodes = withIndex(parameters(funcDef)) { (p, index) =>
+      parameterNode(p, index)
     }
 
     parameterNodes.lastOption.foreach {
@@ -226,7 +226,7 @@ trait AstForFunctionsCreator {
     r.merge(typeDeclAst)
   }
 
-  private def parameterNode(parameter: IASTNode, childNum: Int): NewMethodParameterIn = {
+  private def parameterNode(parameter: IASTNode, index: Int): NewMethodParameterIn = {
     val (name, code, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (
@@ -259,7 +259,7 @@ trait AstForFunctionsCreator {
       .name(name)
       .code(code)
       .typeFullName(registerType(tpe))
-      .index(childNum)
+      .index(index)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .isVariadic(variadic)
       .lineNumber(line(parameter))

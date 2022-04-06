@@ -64,7 +64,6 @@ trait AstForExpressionsCreator {
 
   private def astForExpressionList(exprList: IASTExpressionList, order: Int): Ast = {
     val b = NewBlock()
-      .order(order)
       .argumentIndex(order)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(exprList))
@@ -87,7 +86,6 @@ trait AstForExpressionsCreator {
         astForUnaryExpression(unaryExpression.getOperand.asInstanceOf[IASTUnaryExpression], 0)
       case lambdaExpression: ICPPASTLambdaExpression =>
         val methodRefAst = astForMethodRefForLambda(lambdaExpression)
-        methodRefAst.root.get.asInstanceOf[NewMethodRef].order = 0
         methodRefAst.root.get.asInstanceOf[NewMethodRef].argumentIndex = 0
         methodRefAst
       case other => astForExpression(other, 0)
@@ -107,7 +105,7 @@ trait AstForExpressionsCreator {
     }
 
     val cpgCall = Ast(newCallNode(call, name, name, dd, order))
-    val args    = withOrder(call.getArguments) { case (a, o) => astForNode(a, o) }
+    val args    = withIndex(call.getArguments) { case (a, o) => astForNode(a, o) }
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
       // e.g., for `f(x)`, don't include an `f` identifier node as a first child. Since we
@@ -236,7 +234,7 @@ trait AstForExpressionsCreator {
             .isInstanceOf[ICPPASTConstructorInitializer]
         ) {
           val args = newExpression.getInitializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments
-          withOrder(args) { (a, o) =>
+          withIndex(args) { (a, o) =>
             astForNode(a, 1 + o)
           }
         } else {
@@ -318,9 +316,9 @@ trait AstForExpressionsCreator {
     asChildOfMacroCall(expression, r, order)
   }
 
-  protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration, order: Int): Ast = {
+  protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration, argIndex: Int): Ast = {
     val name  = "static_assert"
-    val call  = newCallNode(a, name, name, DispatchTypes.STATIC_DISPATCH, order)
+    val call  = newCallNode(a, name, name, DispatchTypes.STATIC_DISPATCH, argIndex)
     val cond  = nullSafeAst(a.getCondition, 1)
     val messg = nullSafeAst(a.getMessage, 2)
     var ast   = Ast(call).withChild(cond).withChild(messg)

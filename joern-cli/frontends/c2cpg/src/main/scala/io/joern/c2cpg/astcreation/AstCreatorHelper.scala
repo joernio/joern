@@ -122,12 +122,12 @@ trait AstCreatorHelper {
     }
   }
 
-  protected def withOrder[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
+  protected def withIndex[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
     nodes.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
 
-  protected def withOrder[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
+  protected def withIndex[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
     nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
@@ -340,8 +340,8 @@ trait AstCreatorHelper {
       .columnNumber(column(d))
     scope.pushNewScope(b)
     val op = Operators.assignment
-    val calls = withOrder(d.getDesignators) { (des, o) =>
-      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
+    val calls = withIndex(d.getDesignators) { (des, i) =>
+      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, i)
       val left     = astForNode(des, 1)
       val right    = astForNode(d.getOperand, 2)
       Ast(callNode)
@@ -362,8 +362,8 @@ trait AstCreatorHelper {
       .columnNumber(column(d))
     scope.pushNewScope(b)
     val op = Operators.assignment
-    val calls = withOrder(d.getDesignators) { (des, o) =>
-      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
+    val calls = withIndex(d.getDesignators) { (des, i) =>
+      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, i)
       val left     = astForNode(des, 1)
       val right    = astForNode(d.getOperand, 2)
       Ast(callNode)
@@ -379,7 +379,7 @@ trait AstCreatorHelper {
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer, order: Int): Ast = {
     val name     = "<operator>.constructorInitializer"
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val args     = withOrder(c.getArguments) { case (a, o) => astForNode(a, o) }
+    val args     = withIndex(c.getArguments) { case (a, o) => astForNode(a, o) }
     Ast(callNode).withChildren(args).withArgEdges(callNode, args)
   }
 
@@ -402,7 +402,6 @@ trait AstCreatorHelper {
         .astParentFullName(astParentFullName)
 
     val blockNode = NewBlock()
-      .order(1)
       .argumentIndex(1)
       .typeFullName("ANY")
 
@@ -410,28 +409,27 @@ trait AstCreatorHelper {
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName("ANY")
-      .order(2)
     Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
   }
 
-  protected def astForNode(node: IASTNode, order: Int): Ast = {
+  protected def astForNode(node: IASTNode, argIndex: Int): Ast = {
     node match {
       case id: IASTIdExpression if id.getName.isInstanceOf[CPPASTQualifiedName] =>
-        astForQualifiedName(id.getName.asInstanceOf[CPPASTQualifiedName], order)
-      case id: IASTIdExpression             => astForIdentifier(id, order)
-      case name: IASTName                   => astForIdentifier(name, order)
-      case decl: IASTDeclSpecifier          => astForIdentifier(decl, order)
-      case expr: IASTExpression             => astForExpression(expr, order)
-      case l: IASTInitializerList           => astForInitializerList(l, order)
-      case c: ICPPASTConstructorInitializer => astForCPPASTConstructorInitializer(c, order)
-      case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d, order)
-      case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d, order)
-      case d: ICASTArrayDesignator          => nullSafeAst(d.getSubscriptExpression, order)
-      case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression, order)
-      case d: ICPPASTFieldDesignator        => astForNode(d.getName, order)
-      case d: ICASTFieldDesignator          => astForNode(d.getName, order)
-      case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl, order)
-      case _                                => notHandledYet(node, order)
+        astForQualifiedName(id.getName.asInstanceOf[CPPASTQualifiedName], argIndex)
+      case id: IASTIdExpression             => astForIdentifier(id, argIndex)
+      case name: IASTName                   => astForIdentifier(name, argIndex)
+      case decl: IASTDeclSpecifier          => astForIdentifier(decl, argIndex)
+      case expr: IASTExpression             => astForExpression(expr, argIndex)
+      case l: IASTInitializerList           => astForInitializerList(l, argIndex)
+      case c: ICPPASTConstructorInitializer => astForCPPASTConstructorInitializer(c, argIndex)
+      case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d, argIndex)
+      case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d, argIndex)
+      case d: ICASTArrayDesignator          => nullSafeAst(d.getSubscriptExpression, argIndex)
+      case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression, argIndex)
+      case d: ICPPASTFieldDesignator        => astForNode(d.getName, argIndex)
+      case d: ICASTFieldDesignator          => astForNode(d.getName, argIndex)
+      case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl, argIndex)
+      case _                                => notHandledYet(node, argIndex)
     }
   }
 

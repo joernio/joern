@@ -34,7 +34,6 @@ trait MacroHandler {
       // to be connected via AST edges under a CALL. E.g., LOCALs.
       val b = Ast(
         NewBlock()
-          .order(1)
           .argumentIndex(1)
           .typeFullName(registerType(Defines.voidTypeName))
       )
@@ -122,7 +121,6 @@ trait MacroHandler {
       .columnNumber(column(node))
       .typeFullName(typeFor(node))
       .dispatchType(DispatchTypes.INLINED)
-      .order(order)
       .argumentIndex(order)
 
     Ast(callNode)
