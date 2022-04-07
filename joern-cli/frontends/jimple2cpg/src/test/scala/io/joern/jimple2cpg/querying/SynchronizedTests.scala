@@ -3,7 +3,6 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.proto.cpg.Cpg.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 class SynchronizedTests extends JimpleCodeToCpgFixture {
@@ -30,14 +29,14 @@ class SynchronizedTests extends JimpleCodeToCpgFixture {
 
     method.astChildren.size shouldBe 7
     val List("STATIC", "PUBLIC", "SYNCHRONIZED") = method.modifier.map(_.modifierType).l
-    val List(param) = method.parameter.l
-    val List(body) = method.block.l
+    val List(param)                              = method.parameter.l
+    val List(body)                               = method.block.l
     param.code shouldBe "java.lang.String s"
     body.astChildren.head shouldBe a[Return]
   }
 
   "it should create a enter/exit monitor nodes" in {
-    val List(method: Method)   = cpg.method.name("bar").l
+    val List(method: Method) = cpg.method.name("bar").l
     // 'l2' aliases 'this' so there is never an 'entermonitor l2'
     val List(enterThis, exit1, _, exit2) = method.ast.where(_.label(NodeTypes.UNKNOWN)).l
 
