@@ -113,12 +113,15 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForField(v: SootField, order: Int): Ast = {
     val typeFullName = registerType(v.getType.toQuotedString)
     val name         = v.getName
+    val code         = if (v.getDeclaration.contains("enum")) name else s"$typeFullName $name"
     Ast(
       NewMember()
         .name(name)
+        .lineNumber(line(v))
+        .columnNumber(column(v))
         .typeFullName(typeFullName)
         .order(order)
-        .code(s"$typeFullName $name")
+        .code(code)
     )
   }
 
