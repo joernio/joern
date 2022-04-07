@@ -10,17 +10,17 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
 
   /* method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def index(num: Int): Traversal[MethodParameterOut] =
-    traversal.order(num)
+    traversal.filter(_.parameterLinkIn.index(num).nonEmpty)
 
   /* get all parameters from (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexFrom(num: Int): Traversal[MethodParameterOut] =
-    traversal.filter(_.order >= num)
+    traversal.filter(_.parameterLinkIn.index.headOption.exists(_ >= num))
 
   /* get all parameters up to (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexTo(num: Int): Traversal[MethodParameterOut] =
-    traversal.filter(_.order <= num)
+    traversal.filter(_.parameterLinkIn.index.headOption.exists(_ <= num))
 
   def argument: Traversal[Expression] =
     for {
@@ -28,7 +28,7 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
       method   <- paramOut.method
       call     <- method._callViaCallIn
       arg      <- call._argumentOut.asScala.collect { case node: Expression with HasArgumentIndex => node }
-      if arg.argumentIndex == paramOut.order
+      if paramOut._parameterLinkIn.property("INDEX").headOption.contains(arg.argumentIndex)
     } yield arg
 
 }

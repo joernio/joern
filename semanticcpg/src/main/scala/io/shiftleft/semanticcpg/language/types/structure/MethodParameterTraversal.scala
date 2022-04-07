@@ -17,20 +17,15 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
   def annotation: Traversal[nodes.Annotation] =
     traversal.flatMap(_._annotationViaAstOut)
 
-  /** Traverse to all `num`th parameters
-    */
-  def index(num: Int): Traversal[MethodParameterIn] =
-    traversal.order(num)
-
   /** Traverse to all parameters with index greater or equal than `num`
     */
   def indexFrom(num: Int): Traversal[MethodParameterIn] =
-    traversal.filter(_.order >= num)
+    traversal.filter(_.index >= num)
 
   /** Traverse to all parameters with index smaller or equal than `num`
     */
   def indexTo(num: Int): Traversal[MethodParameterIn] =
-    traversal.filter(_.order <= num)
+    traversal.filter(_.index <= num)
 
   /** Traverse to arguments (actual parameters) associated with this formal parameter
     */
@@ -39,7 +34,7 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
       paramIn <- traversal
       call    <- callResolver.getMethodCallsites(paramIn.method)
       arg     <- call._argumentOut.asScala.collect { case node: Expression with HasArgumentIndex => node }
-      if arg.argumentIndex == paramIn.order
+      if arg.argumentIndex == paramIn.index
     } yield arg
 
 }
