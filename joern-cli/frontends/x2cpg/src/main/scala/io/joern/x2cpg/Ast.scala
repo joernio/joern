@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewNode}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -13,6 +14,9 @@ object Ast {
   /** Copy nodes/edges of given `AST` into the given `diffGraph`.
     */
   def storeInDiffGraph(ast: Ast, diffGraph: DiffGraphBuilder): Unit = {
+
+    setOrderWhereNotSet(ast)
+
     ast.nodes.foreach { node =>
       diffGraph.addNode(node)
     }
@@ -37,6 +41,26 @@ object Ast {
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.BINDS)
     }
   }
+
+  /** For all `order` fields that are unset, derive the `order` field automatically by determining the position of the
+    * child among its siblings.
+    */
+  private def setOrderWhereNotSet(ast: Ast): Unit = {
+    ast.root.collect { case r: AstNodeNew =>
+      if (r.order == PropertyDefaults.Order) {
+        r.order = 1
+      }
+    }
+    val siblings = ast.edges.groupBy(_.src).map { case (_, edgeToChild) => edgeToChild.map(_.dst) }
+    siblings.foreach { children =>
+      children.zipWithIndex.collect { case (c: AstNodeNew, i) =>
+        if (c.order == PropertyDefaults.Order) {
+          c.order = i + 1
+        }
+      }
+    }
+  }
+
 }
 
 case class Ast(
