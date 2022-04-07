@@ -26,9 +26,9 @@ class EnumTests extends JimpleCodeToCpgFixture {
       |""".stripMargin
 
   "it should contain the basic enum methods" in {
-    cpg.typeDecl.name(".*FuzzyBool.*").method.size shouldBe 4
-
-    val List(values, valueOf, constructor, staticInit) = cpg.typeDecl.name(".*FuzzyBool.*").method.l
+    cpg.typeDecl.name(".*FuzzyBool.*").method.filterNot(_.name.contains("$")).size shouldBe 4
+    val List(values, valueOf, constructor, staticInit) =
+      cpg.typeDecl.name(".*FuzzyBool.*").method.filterNot(_.name.contains("$")).l
 
     values.order shouldBe 1
     values.name shouldBe "values"
@@ -52,28 +52,24 @@ class EnumTests extends JimpleCodeToCpgFixture {
     cpg.typeDecl.name(".*FuzzyBool.*").member.size shouldBe 4
     val List(t, f, m, v) = cpg.typeDecl.name(".*FuzzyBool.*").member.l
 
-    t.order shouldBe 5
     t.lineNumber shouldBe None
     t.columnNumber shouldBe None
     t.typeFullName shouldBe "FuzzyBool"
     t.name shouldBe "TRUE"
     t.code shouldBe "TRUE"
 
-    f.order shouldBe 6
     f.lineNumber shouldBe None
     f.columnNumber shouldBe None
     f.typeFullName shouldBe "FuzzyBool"
     f.name shouldBe "FALSE"
     f.code shouldBe "FALSE"
 
-    m.order shouldBe 7
     m.lineNumber shouldBe None
     m.columnNumber shouldBe None
     m.typeFullName shouldBe "FuzzyBool"
     m.name shouldBe "MAYBE"
     m.code shouldBe "MAYBE"
 
-    v.order shouldBe 8
     v.lineNumber shouldBe None
     v.columnNumber shouldBe None
     v.typeFullName shouldBe "FuzzyBool[]"
@@ -102,7 +98,6 @@ class EnumTests extends JimpleCodeToCpgFixture {
 
     redCall.name shouldBe "<init>"
     redCall.methodFullName shouldBe "Color.<init>:void(java.lang.String,int,java.lang.String)"
-    redCall.order shouldBe 7
     redCall.astChildren.size shouldBe 4
     redCall.astChildren.last shouldBe a[Literal]
     redCall.astChildren.last.code shouldBe "\"Red\""
@@ -111,7 +106,6 @@ class EnumTests extends JimpleCodeToCpgFixture {
 
     blueCall.name shouldBe "<init>"
     blueCall.methodFullName shouldBe "Color.<init>:void(java.lang.String,int,java.lang.String)"
-    blueCall.order shouldBe 10
     blueCall.astChildren.size shouldBe 4
     blueCall.astChildren.last shouldBe a[Literal]
     blueCall.astChildren.last.code shouldBe "\"Blue\""
