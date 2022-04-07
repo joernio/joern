@@ -4,6 +4,7 @@ import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 class SynchronizedTests extends JimpleCodeToCpgFixture {
 
@@ -38,7 +39,7 @@ class SynchronizedTests extends JimpleCodeToCpgFixture {
   "it should create a enter/exit monitor nodes" in {
     val List(method: Method) = cpg.method.name("bar").l
     // 'l2' aliases 'this' so there is never an 'entermonitor l2'
-    val List(enterThis, exit1, _, exit2) = method.ast.where(_.label(NodeTypes.UNKNOWN)).l
+    val List(enterThis, exit1, _, exit2) = method.ast.where { (x: Traversal[AstNode]) => x.label(NodeTypes.UNKNOWN) }.l
 
     enterThis.code shouldBe "entermonitor this"
     enterThis.order shouldBe 7
