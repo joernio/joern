@@ -40,6 +40,12 @@ object Constants {
   val componentNPrefix               = "component"
   val tmpLocalPrefix                 = "tmp_"
   val ret                            = "RET"
+  val javaUtilIterator               = "java.util.Iterator"
+  val collectionsIteratorName        = "kotlin.collections.Iterator"
+  val getIteratorMethodName          = "iterator"
+  val iteratorPrefix                 = "iterator_"
+  val hasNextIteratorMethodName      = "hasNext"
+  val nextIteratorMethodName         = "next"
 }
 
 case class ImportEntry(
@@ -63,7 +69,8 @@ case class Context(
   lambdaAsts: Seq[Ast] = List(),
   closureBindingInfo: Seq[ClosureBindingInfo] = List(),
   lambdaBindingInfo: Seq[BindingInfo] = List(),
-  typeDecl: Option[NewTypeDecl] = None
+  typeDecl: Option[NewTypeDecl] = None,
+  additionalLocals: Seq[NewLocal] = List() // TODO: remove this and the rest of the junk from this case class
 )
 
 // TODO: add description
@@ -81,8 +88,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   // only here to help in paying back technical debt. Remove after
   private val continueParsingOnAstNodesWithoutRoot = false
 
-  private val lambdaKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-  private val tmpKeyPool    = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  private val lambdaKeyPool   = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  private val tmpKeyPool      = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  private val iteratorKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 
   private val relativizedPath = fileWithMeta.relativizedPath
 
@@ -782,7 +790,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val lambdaAsts         = acc.lambdaAsts ++ ctx.lambdaAsts
       val closureBindingInfo = acc.closureBindingInfo ++ ctx.closureBindingInfo
       val lambdaBindingInfo  = acc.lambdaBindingInfo ++ ctx.lambdaBindingInfo
-      Context(locals, identifiers, methodParameters, bindingsInfo, lambdaAsts, closureBindingInfo, lambdaBindingInfo)
+      val additionalLocals   = acc.additionalLocals ++ ctx.additionalLocals
+      Context(
+        locals,
+        identifiers,
+        methodParameters,
+        bindingsInfo,
+        lambdaAsts,
+        closureBindingInfo,
+        lambdaBindingInfo,
+        acc.typeDecl,
+        additionalLocals
+      )
     })
   }
 
@@ -872,7 +891,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         }
         .map { expr =>
           expr.ast.root.get.asInstanceOf[NewLocal]
-        }
+        } ++ scopeContext.additionalLocals
+
     val identifiersMatchingLocals =
       childrenCtx.identifiers
         .filter { identifier =>
@@ -2485,45 +2505,220 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(stmtAsts.map(_.ctx) ++ Seq(conditionAst.ctx)))
   }
 
+  /// \/\//\\\\\\\\\\\\\\///\\\//\\//\/\\/\//\/\\//\\/
+  ////////////// \\/\/\/\/\/\/\\//\\/\/\///\\/\//\\/\/\/\/\//\/\/\/\/\/\//////\\\|||||/\/\/\/\/\/\\/\/\//\
+  // e.g. lowering:
+  // for `for (one in l) { <statements> }`
+  // BLOCK
+  //     LOCAL iterator
+  //     loweringOf{iterator = l.iterator()}
+  //     CONTROL_STRUCTURE (while)
+  //         --AST[order.1]--> loweringOf{iterator.hasNext()}
+  //         --AST[order.2]--> BLOCK
+  //                            |-> LOCAL one
+  //                            |-> loweringOf{one = iterator.next()}
+  //                            |-> <statements>
+  //
   def astForFor(expr: KtForExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    val forNode =
+    val loopRangeText = expr.getLoopRange.getText
+    val iteratorName  = Constants.iteratorPrefix + iteratorKeyPool.next()
+    val iteratorLocal =
+      NewLocal()
+        .name(iteratorName)
+        .code(iteratorName)
+        .typeFullName("")
+        .order(1)
+    val iteratorAssignmentLhs =
+      NewIdentifier()
+        .code(iteratorName)
+        .name(iteratorName)
+        .typeFullName("")
+        .argumentIndex(1)
+        .order(1)
+    val iteratorLocalAst =
+      Ast(iteratorLocal)
+        .withRefEdge(iteratorAssignmentLhs, iteratorLocal)
+
+    // TODO: maybe use a different method here, one which does not translate `kotlin.collections.List` to `java.util.List`
+    val loopRangeExprTypeFullName =
+      typeInfoProvider.expressionType(expr.getLoopRange, TypeConstants.any)
+    registerType(loopRangeExprTypeFullName)
+
+    val iteratorAssignmentRhsIdentifier =
+      NewIdentifier()
+        .code(loopRangeText)
+        .name(loopRangeText)
+        .typeFullName(loopRangeExprTypeFullName)
+        .argumentIndex(0)
+        .order(1)
+    val iteratorAssignmentRhs =
+      NewCall()
+        .code(loopRangeText + "." + Constants.getIteratorMethodName + "()")
+        .methodFullName(
+          loopRangeExprTypeFullName + "." + Constants.getIteratorMethodName + ":" + Constants.javaUtilIterator + "()"
+        )
+        .name(Constants.getIteratorMethodName)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .signature(Constants.javaUtilIterator + "()")
+        .typeFullName(Constants.javaUtilIterator)
+        .argumentIndex(2)
+
+    val iteratorAssignmentRhsAst =
+      Ast(iteratorAssignmentRhs)
+        .withChild(Ast(iteratorAssignmentRhsIdentifier))
+        .withArgEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
+        .withReceiverEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
+
+    val iteratorAssignment =
+      NewCall()
+        .code(iteratorName + " = " + iteratorAssignmentRhs.code)
+        .methodFullName(Operators.assignment)
+        .name(Operators.assignment)
+        .typeFullName("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(2)
+    val iteratorAssignmentAst =
+      Ast(iteratorAssignment)
+        .withChild(Ast(iteratorAssignmentLhs))
+        .withArgEdge(iteratorAssignment, iteratorAssignmentLhs)
+        .withChild(iteratorAssignmentRhsAst)
+        .withArgEdge(iteratorAssignment, iteratorAssignmentRhs)
+
+    val controlStructure =
       NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FOR)
-        .order(order)
+        .controlStructureType(ControlStructureTypes.WHILE)
+        .order(3)
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .code(expr.getText)
-    val loopAsts = if (expr.getChildren.toList.size >= 2) {
-      val loopExpr = expr.getChildren.toList(1)
-      loopExpr match {
-        case e: KtContainerNode =>
-          e.getFirstChild match {
-            case typed: KtExpression =>
-              astsForExpression(typed, scopeContext, 1, 1)
-            case _ => Seq()
-          }
-        case _ =>
-          Seq()
-      }
 
-    } else {
-      Seq()
-    }
-    val stmtAst = astsForExpression(expr.getBody, scopeContext, loopAsts.size + 1, loopAsts.size + 1)
+    val conditionIdentifier =
+      NewIdentifier()
+        .code(loopRangeText)
+        .name(loopRangeText)
+        .typeFullName(loopRangeExprTypeFullName)
+        .argumentIndex(0)
+        .order(1)
 
-    val ast =
-      if (loopAsts.nonEmpty) {
-        Ast(forNode)
-          .withChildren(loopAsts.map(_.ast))
-          .withChildren(stmtAst.map(_.ast))
-      } else {
-        Ast(forNode)
-          .withChildren(stmtAst.map(_.ast))
-      }
-    AstWithCtx(ast, mergedCtx(stmtAst.map(_.ctx) ++ loopAsts.map(_.ctx)))
+    val hasNextFullName =
+      Constants.collectionsIteratorName + "." + Constants.hasNextIteratorMethodName + ":" + TypeConstants.javaLangBoolean + "()"
+    val controlStructureCondition =
+      NewCall()
+        .code(iteratorName + "." + Constants.hasNextIteratorMethodName + "()")
+        .methodFullName(hasNextFullName)
+        .name(Constants.hasNextIteratorMethodName)
+        .typeFullName(TypeConstants.javaLangBoolean)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .signature(TypeConstants.javaLangBoolean + "()")
+        .order(1)
+        .argumentIndex(0)
+    val controlStructureConditionAst =
+      Ast(controlStructureCondition)
+        .withChild(Ast(conditionIdentifier))
+        .withArgEdge(controlStructureCondition, conditionIdentifier)
+        .withReceiverEdge(controlStructureCondition, conditionIdentifier)
+
+    val loopParameterTypeFullName = typeInfoProvider.typeFullName(expr.getLoopParameter, TypeConstants.any)
+    registerType(loopParameterTypeFullName)
+
+    val loopParameterName = expr.getLoopParameter.getText
+    val loopParameterLocal =
+      NewLocal()
+        .name(loopParameterName)
+        .code(loopParameterName)
+        .typeFullName(loopParameterTypeFullName)
+        .order(1)
+
+    val loopParameterIdentifier =
+      NewIdentifier()
+        .code(loopParameterName)
+        .name(loopParameterName)
+        .typeFullName("") // TODO: set the TYPE_FULL_NAME
+        .argumentIndex(1)
+        .order(1)
+    val loopParameterAst =
+      Ast(loopParameterLocal)
+        .withRefEdge(loopParameterIdentifier, loopParameterLocal)
+
+    val iteratorNextIdentifier =
+      NewIdentifier()
+        .code(iteratorName)
+        .name(iteratorName)
+        .typeFullName("")
+        .argumentIndex(0)
+        .order(1)
+    val iteratorNextIdentifierAst =
+      Ast(iteratorNextIdentifier)
+        .withRefEdge(iteratorNextIdentifier, iteratorLocal)
+
+    val iteratorNextCall =
+      NewCall()
+        .code(iteratorName + "." + Constants.nextIteratorMethodName + "()")
+        .methodFullName(
+          Constants.collectionsIteratorName + "." + Constants.nextIteratorMethodName + ":" + TypeConstants.javaLangObject + "()"
+        )
+        .name(Constants.nextIteratorMethodName)
+        .signature(TypeConstants.javaLangObject + "()")
+        .typeFullName(TypeConstants.javaLangObject)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .order(2)
+        .argumentIndex(2)
+    val iteratorNextCallAst =
+      Ast(iteratorNextCall)
+        .withChild(iteratorNextIdentifierAst)
+        .withArgEdge(iteratorNextCall, iteratorNextIdentifier)
+        .withReceiverEdge(iteratorNextCall, iteratorNextIdentifier)
+    val loopParameterNextAssignment =
+      NewCall()
+        .code(loopParameterName + " = " + iteratorNextCall.code)
+        .methodFullName(Operators.assignment)
+        .name(Operators.assignment)
+        .typeFullName("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(2)
+    val loopParameterNextAssignmentAst =
+      Ast(loopParameterNextAssignment)
+        .withChild(Ast(loopParameterIdentifier))
+        .withArgEdge(loopParameterNextAssignment, loopParameterIdentifier)
+        .withChild(iteratorNextCallAst)
+        .withArgEdge(loopParameterNextAssignment, iteratorNextCall)
+
+    val withLocalsCtx = Context(additionalLocals = Seq(iteratorLocal, loopParameterLocal))
+    val ctxForBody    = mergedCtx(Seq(scopeContext, withLocalsCtx))
+    val stmtAsts      = astsForExpression(expr.getBody, ctxForBody, 3, 3)
+    val controlStructureBody =
+      NewBlock()
+        .code("")
+        .typeFullName("")
+        // maybe add the line number also
+        // maybe add the column number also
+        .order(2)
+    val controlStructureBodyAst =
+      Ast(controlStructureBody)
+        .withChild(loopParameterAst)
+        .withChild(loopParameterNextAssignmentAst)
+        .withChildren(stmtAsts.map(_.ast))
+
+    val controlStructureAst =
+      Ast(controlStructure)
+        .withChild(controlStructureConditionAst)
+        .withChild(controlStructureBodyAst)
+        .withConditionEdge(controlStructure, controlStructureCondition)
+    val topLevelBlock =
+      NewBlock()
+        .code("FOR-BLOCK") // TODO: set this to something more appropriate
+        .typeFullName("")
+        .order(order)
+    val outAst =
+      Ast(topLevelBlock)
+        .withChild(iteratorLocalAst)
+        .withChild(iteratorAssignmentAst)
+        .withChild(controlStructureAst)
+    val outCtx = mergedCtx(stmtAsts.map(_.ctx))
+    AstWithCtx(outAst, outCtx)
   }
 
   def astForWhen(expr: KtWhenExpression, scopeContext: Context, order: Int, argumentIndex: Int)(implicit
