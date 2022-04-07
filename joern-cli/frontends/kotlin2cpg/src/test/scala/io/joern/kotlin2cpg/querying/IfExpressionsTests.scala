@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -43,6 +44,45 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
       a3.lineNumber shouldBe Some(4)
       a3.columnNumber shouldBe Some(39)
       a3.order shouldBe 3
+    }
+  }
+
+  "CPG for code with `if`-expression with `else-if`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val r = Random.nextInt(100)
+        |    val out = if(r < 33) "<33" else if (r < 66) ">=33<66" else ">=66"
+        |    println(out) // prints `<33`, `>=33<66` or `>=66`
+        |}
+        | """.stripMargin)
+
+    "should contain a CALL for the `if`-expression with the correct props set" in {
+      val List(parentConditional) =
+        cpg.call.methodFullNameExact(Operators.conditional).where(_.argument(1).code(".*r < 33.*")).l
+      parentConditional.argument.size shouldBe 3
+
+      val List(firstChild: Call, secondChild: Literal, thirdChild: Call) = parentConditional.argument.l
+      firstChild.code shouldBe "r < 33"
+      firstChild.methodFullName shouldBe Operators.lessThan
+      secondChild.code shouldBe "\"<33\""
+      secondChild.typeFullName shouldBe "java.lang.String"
+      thirdChild.methodFullName shouldBe Operators.conditional
+
+      val List(
+        firstArgOfChildConditional: Call,
+        secondArgOfChildConditional: Literal,
+        thirdArgOfChildConditional: Literal
+      ) = thirdChild.argument.l
+      firstArgOfChildConditional.code shouldBe "r < 66"
+      firstArgOfChildConditional.methodFullName shouldBe Operators.lessThan
+      secondArgOfChildConditional.code shouldBe "\">=33<66\""
+      secondArgOfChildConditional.typeFullName shouldBe "java.lang.String"
+      thirdArgOfChildConditional.code shouldBe "\">=66\""
+      thirdArgOfChildConditional.typeFullName shouldBe "java.lang.String"
     }
   }
 
@@ -93,6 +133,28 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
       a3.lineNumber shouldBe Some(14)
       a3.columnNumber shouldBe Some(10)
       a3.order shouldBe 3
+    }
+  }
+
+  "CPG for code with `if`-expression as receiver of a DQE" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun main() {
+        |    val r = Random.nextInt(100)
+        |    val out = (if (r < 50) 0 else 1).toFloat()
+        |    println(out)
+        |//prints `0.0` or `1.0`
+        |}
+         """.stripMargin)
+
+    "should contain a CALL for the `if`-expression with the correct props set" in {
+      val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
+      c.argument.size shouldBe 3
+      c.lineNumber shouldBe Some(7)
+      c.columnNumber shouldBe Some(15)
     }
   }
 

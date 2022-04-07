@@ -550,26 +550,24 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astsForDefinition(assignStmt: DefinitionStmt, order: Int): Seq[Ast] = {
     val initializer = assignStmt.getRightOp
     val leftOp      = assignStmt.getLeftOp
-    val name = assignStmt.getLeftOp match {
-      case x: soot.Local => x.getName
-      case x: FieldRef   => x.getFieldRef.name
-      case x: ArrayRef   => x.toString()
-      case x             => logger.warn(s"Unhandled LHS type in definition ${x.getClass}"); x.toString()
-    }
+
     val identifier = leftOp match {
       case x: soot.Local => Seq(astForLocal(x, 1, assignStmt))
       case x: FieldRef   => Seq(astForFieldRef(x, 1, assignStmt))
       case x             => astsForValue(x, 1, assignStmt)
     }
+    val lhsCode = identifier.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
+
     val initAsts = astsForValue(initializer, 2, assignStmt)
-    val assignmentRhsCode = initAsts
+    val rhsCode = initAsts
       .flatMap(_.root)
       .map(_.properties.getOrElse(PropertyNames.CODE, ""))
       .mkString(", ")
+
     val assignment = NewCall()
       .name(Operators.assignment)
       .methodFullName(Operators.assignment)
-      .code(s"$name = $assignmentRhsCode")
+      .code(s"$lhsCode = $rhsCode")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
@@ -748,9 +746,10 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case x: InstanceFieldRef => x.getBase.getType
       case _                   => fieldRef.getFieldRef.declaringClass().getType
     }
+
     val fieldAccessBlock = NewCall()
       .name(Operators.fieldAccess)
-      .code(s"${registerType(leftOpType.toQuotedString)}.${fieldRef.getFieldRef.name()}")
+      .code(s"$leftOpString.${fieldRef.getFieldRef.name()}")
       .typeFullName(registerType(fieldRef.getType.toQuotedString))
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -773,7 +772,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         .argumentIndex(2)
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
-        .canonicalName(fieldRef.getFieldRef.getSignature)
+        .canonicalName(fieldRef.getFieldRef.name())
         .code(fieldRef.getFieldRef.name())
     ).map(Ast(_))
 
