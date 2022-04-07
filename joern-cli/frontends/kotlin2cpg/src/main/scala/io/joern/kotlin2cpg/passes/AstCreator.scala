@@ -62,18 +62,12 @@ case class Context(
   bindingsInfo: Seq[BindingInfo] = List(),
   lambdaAsts: Seq[Ast] = List(),
   closureBindingInfo: Seq[ClosureBindingInfo] = List(),
-  lambdaBindingInfo: Seq[BindingInfo] = List()
+  lambdaBindingInfo: Seq[BindingInfo] = List(),
+  typeDecl: Option[NewTypeDecl] = None
 )
 
 // TODO: add description
 case class AstWithCtx(ast: Ast, ctx: Context)
-
-// TODO: add description
-case class ScopeContext(
-  typeDecl: Option[NewTypeDecl] = None,
-  methodParameters: Seq[NewMethodParameterIn] = List(),
-  locals: Seq[NewLocal] = List()
-)
 
 // TODO: add description
 case class FileInfo(imports: Seq[ImportEntry], classes: List[KtClass])
@@ -176,7 +170,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     var idxEpsilon      = 0 // when multiple AST nodes are returned by `astForDeclaration`
     val declarationsAstsWithCtx =
       withOrder(ktFile.getDeclarations) { (decl, order) =>
-        val asts = astForDeclaration(decl, ScopeContext(), order + lastImportOrder + idxEpsilon)
+        val asts = astForDeclaration(decl, Context(), order + lastImportOrder + idxEpsilon)
         idxEpsilon += asts.size - 1
         asts
       }.flatten
@@ -263,7 +257,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(Ast(namespaceBlock.filename(relativizedPath).order(1)), Context())
   }
 
-  def astForDeclaration(decl: KtDeclaration, scopeContext: ScopeContext, order: Int)(implicit
+  def astForDeclaration(decl: KtDeclaration, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -282,7 +276,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   // TODO: lower them
-  def astForTopLevelProperty(prop: KtProperty, scopeContext: ScopeContext, order: Int)(implicit
+  def astForTopLevelProperty(prop: KtProperty, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -367,7 +361,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     /** curently unused val blockInitializers = if (ktClass.getBody != null) { ktClass.getBody.getAnonymousInitializers
       * } else { List().asJava }
       */
-    val scopeCtx = ScopeContext(typeDecl = Some(typeDecl))
+    val scopeCtx = Context(typeDecl = Some(typeDecl))
     val methodAstsWithCtx =
       withOrder(classFunctions) { (method, order) =>
         astForMethod(method, scopeCtx, order)
@@ -722,7 +716,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, finalCtx)
   }
 
-  private def astForMethod(ktFn: KtNamedFunction, scopeContext: ScopeContext, childNum: Int)(implicit
+  private def astForMethod(ktFn: KtNamedFunction, scopeContext: Context, childNum: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -740,7 +734,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       parametersWithCtx.foldLeft(scopeContext)((acc, paramWithCtx) => {
         val params = paramWithCtx.ctx.methodParameters
         val locals = paramWithCtx.ctx.locals
-        ScopeContext(None, params ++ acc.methodParameters, locals ++ acc.locals)
+        Context(methodParameters = params ++ acc.methodParameters, locals = locals ++ acc.locals)
       })
 
     val lastOrder = parametersWithCtx.size + 2
@@ -815,7 +809,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Ast(node)
   }
 
-  private def astForMethodBody(body: KtBlockExpression, scopeContext: ScopeContext, order: Int)(implicit
+  private def astForMethodBody(body: KtBlockExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -827,7 +821,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  private def astForBlock(expr: KtBlockExpression, scopeContext: ScopeContext, order: Int)(implicit
+  private def astForBlock(expr: KtBlockExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -846,7 +840,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val expressions =
       withOrder(expr.getStatements) { (statement, order) =>
         val mergedScopeContext =
-          ScopeContext(None, scopeContext.methodParameters, scopeContext.locals ++ locals)
+          Context(methodParameters = scopeContext.methodParameters, locals = scopeContext.locals ++ locals)
         val asts = astsForExpression(statement, mergedScopeContext, order + orderRemainder, order + orderRemainder)
         locals = locals ++ asts
           .filterNot { astWithCtx =>
@@ -920,7 +914,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(astWithRefEdges, childrenCtxMinusMatchedIdentifiers)
   }
 
-  private def astsForReturnNode(expr: KtReturnExpression, scopeContext: ScopeContext, order: Int)(implicit
+  private def astsForReturnNode(expr: KtReturnExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -939,7 +933,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Seq(AstWithCtx(ast, child.ctx))
   }
 
-  def astForIsExpression(expr: KtIsExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForIsExpression(expr: KtIsExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -965,12 +959,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
   }
 
-  def astForBinaryExprWithTypeRHS(
-    expr: KtBinaryExpressionWithTypeRHS,
-    scopeContext: ScopeContext,
-    order: Int,
-    argIdx: Int
-  )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): AstWithCtx = {
+  def astForBinaryExprWithTypeRHS(expr: KtBinaryExpressionWithTypeRHS, scopeContext: Context, order: Int, argIdx: Int)(
+    implicit
+    fileInfo: FileInfo,
+    typeInfoProvider: TypeInfoProvider
+  ): AstWithCtx = {
     val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(typeFullName)
 
@@ -991,7 +984,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
   }
 
-  private def astForTypeReference(expr: KtTypeReference, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  private def astForTypeReference(expr: KtTypeReference, scopeContext: Context, order: Int, argIdx: Int)(implicit
     typeInfoProvider: TypeInfoProvider,
     fileInfo: FileInfo
   ): AstWithCtx = {
@@ -1010,7 +1003,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   @tailrec
-  private def astsForExpression(expr: KtExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  private def astsForExpression(expr: KtExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -1088,7 +1081,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  def astForThisExpression(expr: KtThisExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForThisExpression(expr: KtThisExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -1107,7 +1100,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(Ast(node), Context())
   }
 
-  def astForClassLiteral(expr: KtClassLiteralExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForClassLiteral(expr: KtClassLiteralExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -1132,7 +1125,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(Ast(callNode), Context())
   }
 
-  def astForLambda(expr: KtLambdaExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForLambda(expr: KtLambdaExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -1298,7 +1291,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(methodRefAst, finalCtx)
   }
 
-  def astForArrayAccess(expr: KtArrayAccessExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForArrayAccess(expr: KtArrayAccessExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -1346,7 +1339,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(finalAst, Context(identifiers = List(identifier)))
   }
 
-  def astForPostfixExpression(expr: KtPostfixExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForPostfixExpression(expr: KtPostfixExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -1382,7 +1375,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
   }
 
-  def astForPrefixExpression(expr: KtPrefixExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForPrefixExpression(expr: KtPrefixExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -1432,7 +1425,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
    */
   def astsForDestructuringDeclarationWithNonCtorCallRHS(
     expr: KtDestructuringDeclaration,
-    scopeContext: ScopeContext,
+    scopeContext: Context,
     order: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
     val initExpr = expr.getInitializer
@@ -1611,7 +1604,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
    */
   def astsForDestructuringDeclarationWithCtorRHS(
     expr: KtDestructuringDeclaration,
-    scopeContext: ScopeContext,
+    scopeContext: Context,
     order: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
     val typedInit =
@@ -1842,7 +1835,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
    */
   def astsForDestructuringDeclarationWithVarRHS(
     expr: KtDestructuringDeclaration,
-    scopeContext: ScopeContext,
+    scopeContext: Context,
     order: Int
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
     val typedInit =
@@ -1973,7 +1966,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       assignmentsForEntries.map(AstWithCtx(_, Context()))
   }
 
-  def astsForDestructuringDeclaration(expr: KtDestructuringDeclaration, scopeContext: ScopeContext, order: Int)(implicit
+  def astsForDestructuringDeclaration(expr: KtDestructuringDeclaration, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -2012,8 +2005,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(Ast(unknownNode), Context())
   }
 
-  def astForStringTemplate(expr: KtStringTemplateExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(
-    implicit
+  def astForStringTemplate(expr: KtStringTemplateExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2075,8 +2067,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  def astForQualifiedExpression(expr: KtQualifiedExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(
-    implicit
+  def astForQualifiedExpression(expr: KtQualifiedExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2315,7 +2306,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(finalAst, finalCtx)
   }
 
-  def astForBreak(expr: KtBreakExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForBreak(expr: KtBreakExpression, scopeContext: Context, order: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val node = NewControlStructure()
@@ -2328,7 +2319,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, Context())
   }
 
-  def astForContinue(expr: KtContinueExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForContinue(expr: KtContinueExpression, scopeContext: Context, order: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val node = NewControlStructure()
@@ -2341,7 +2332,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, Context())
   }
 
-  private def astForTryAsStatement(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(
+  private def astForTryAsStatement(expr: KtTryExpression, scopeContext: Context, order: Int, argumentIndex: Int)(
     implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
@@ -2387,7 +2378,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(finalAst, finalCtx)
   }
 
-  private def astForTryAsExpression(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(
+  private def astForTryAsExpression(expr: KtTryExpression, scopeContext: Context, order: Int, argumentIndex: Int)(
     implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
@@ -2425,7 +2416,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   // TODO: handle parameters passed to the clauses
-  def astForTry(expr: KtTryExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(implicit
+  def astForTry(expr: KtTryExpression, scopeContext: Context, order: Int, argumentIndex: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2436,7 +2427,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  def astForWhile(expr: KtWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForWhile(expr: KtWhileExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2466,7 +2457,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, finalCtx)
   }
 
-  def astForDoWhile(expr: KtDoWhileExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForDoWhile(expr: KtDoWhileExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2494,7 +2485,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(stmtAsts.map(_.ctx) ++ Seq(conditionAst.ctx)))
   }
 
-  def astForFor(expr: KtForExpression, scopeContext: ScopeContext, order: Int)(implicit
+  def astForFor(expr: KtForExpression, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2535,7 +2526,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, mergedCtx(stmtAst.map(_.ctx) ++ loopAsts.map(_.ctx)))
   }
 
-  def astForWhen(expr: KtWhenExpression, scopeContext: ScopeContext, order: Int, argumentIndex: Int)(implicit
+  def astForWhen(expr: KtWhenExpression, scopeContext: Context, order: Int, argumentIndex: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2590,7 +2581,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(astWithCondition, finalCtx)
   }
 
-  def astsForWhenEntry(entry: KtWhenEntry, scopeContext: ScopeContext, order: Int)(implicit
+  def astsForWhenEntry(entry: KtWhenEntry, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -2616,7 +2607,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Seq(jumpNodeAstsWithCtx) ++ Seq(exprNode)
   }
 
-  def astForIf(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForIf(expr: KtIfExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2628,7 +2619,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  def astForIfAsControlStructure(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForIfAsControlStructure(expr: KtIfExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2658,7 +2649,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(withCondition, finalCtx)
   }
 
-  def astForIfAsExpression(expr: KtIfExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForIfAsExpression(expr: KtIfExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2703,7 +2694,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  private def astForCtorCall(expr: KtCallExpression, scopeContext: ScopeContext, order: Int = 1, argIdx: Int)(implicit
+  private def astForCtorCall(expr: KtCallExpression, scopeContext: Context, order: Int = 1, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -2823,7 +2814,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(blockAst, initArgsCtx)
   }
 
-  private def astsForProperty(expr: KtProperty, scopeContext: ScopeContext, order: Int)(implicit
+  private def astsForProperty(expr: KtProperty, scopeContext: Context, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): Seq[AstWithCtx] = {
@@ -3000,7 +2991,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(Ast(identifierNode), Context(identifiers = identifiersForCtx))
   }
 
-  def astForLiteral(expr: KtConstantExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForLiteral(expr: KtConstantExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
     val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
@@ -3018,7 +3009,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithCtx(ast, Context())
   }
 
-  def astForBinaryExpr(expr: KtBinaryExpression, scopeContext: ScopeContext, order: Int, argIdx: Int)(implicit
+  def astForBinaryExpr(expr: KtBinaryExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
@@ -3119,7 +3110,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withArgEdges(rootNode, args.flatMap(_.root))
   }
 
-  private def astForCall(expr: KtCallExpression, scopeContext: ScopeContext, order: Int = 1, argIdx: Int)(implicit
+  private def astForCall(expr: KtCallExpression, scopeContext: Context, order: Int = 1, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
