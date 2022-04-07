@@ -7,7 +7,8 @@ import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
-
+import java.io.{File => javaFile}
+import java.io.PrintWriter
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success}
 
@@ -52,31 +53,45 @@ class Solidity2Cpg {
     val sourceFile = File(sourceCodePath)
     if (sourceFile.isDirectory) {
       val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
-      // TODO: Convert sourceFiles to JSON by calling Surya. These will then be picked up in the next line
-      sourceFileNames.foreach { fName => ExternalCommand.run(s"surya parse -j $fName", sourceCodePath) match {
-        case Success(stdOut: Seq[String]) =>
-          val jsonFiles = SourceFiles.determine(Set(sourceCodePath), suryaOutputFileExtensions)
-          (sourceCodePath, jsonFiles)
-        case Failure(e) =>
-          println(s"Could not parse Solidity source code at $sourceCodePath", e)
-        }
-      }
+      val dir = File.newTemporaryDirectory("solidity").deleteOnExit()
+      val matches : Iterator[File] = sourceFile.glob("*.sol")
+      matches.foreach(file => file.copyToDirectory(dir))
+      val names : Array[String] = new Array(1000)
+      var pathOfParseFiles: List[String] = List()
+      var counter = 0
+      sourceFileNames.foreach(fName => {
+        names(counter) = (fName.split("/")(fName.split("/").length-1))
+        ExternalCommand.run(s"surya parse -j ${names(counter)}", dir.pathAsString) match {
+          case Success(stdOut: Seq[String]) =>
+            val path = dir.pathAsString+s"/${names(counter).substring(0,(names(counter).length - 3))}"+"json"
+            val writer = new PrintWriter(new javaFile(path))
+            writer.write(stdOut.toString().substring(5, (stdOut.toString().length - 1)))
+            writer.close()
+            pathOfParseFiles = pathOfParseFiles:+ (path)
+          case Failure(e) =>
+            println(s"Could not parse Solidity source code at $sourceCodePath", e)
 
-      (sourceCodePath, null)
+        }
+        counter += 1
+      } )
+      (dir.toString(), pathOfParseFiles)
     } else {
       val dir = File.newTemporaryDirectory("solidity").deleteOnExit()
-      sourceFile.copyToDirectory(dir).deleteOnExit()
-      // TODO: Convert sourceFile to JSON by calling Surya. These will then be picked up in the next line
-      ExternalCommand.run(s"surya parse -j ${sourceFile.pathAsString}", dir.pathAsString) match {
+      var list : List[String] = List()
+      sourceFile.copyToDirectory(dir)
+      val name = sourceFile.pathAsString.split("/")(sourceFile.pathAsString.split("/").length-1)
+      ExternalCommand.run(s"surya parse -j ${name}", dir.pathAsString) match {
         case Success(stdOut: Seq[String]) =>
-          val jsonFiles = SourceFiles.determine(Set(dir.pathAsString), suryaOutputFileExtensions)
-          (dir.pathAsString, jsonFiles)
+          val path = dir.pathAsString+s"/${name.substring(0,name.length-3)+"json"}"
+          val writer = new PrintWriter(new javaFile(path))
+          val output = stdOut.toString()
+          writer.write(output.substring(5, (output.length - 1)))
+          writer.close()
+          list = list:+ (path)
         case Failure(e) =>
-          println("Failure when executing Surya on :", e)
-          ("", List())
+          println("Failure when executing Surya on :", e.printStackTrace())
       }
-//      val jsonFiles = SourceFiles.determine(Set(dir.pathAsString), suryaOutputFileExtensions)
-//      (dir.pathAsString, jsonFiles)
+      (dir.pathAsString, list)
     }
   }
 
