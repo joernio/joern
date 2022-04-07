@@ -491,13 +491,13 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
 
-    def astForTypeRef(t: String) = {
+    def astForTypeRef(t: String, order: Int) = {
       Seq(
         Ast(
           NewTypeRef()
             .code(if (t.contains('.')) t.substring(t.lastIndexOf('.') + 1, t.length) else t)
-            .order(2)
-            .argumentIndex(2)
+            .order(order)
+            .argumentIndex(order)
             .lineNumber(line(parentUnit))
             .columnNumber(column(parentUnit))
             .typeFullName(t)
@@ -508,10 +508,10 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     val valueAsts = unaryExpr match {
       case instanceOfExpr: InstanceOfExpr =>
         val t = registerType(instanceOfExpr.getCheckType.toQuotedString)
-        astsForValue(op, 1, parentUnit) ++ astForTypeRef(t)
+        astsForValue(op, 1, parentUnit) ++ astForTypeRef(t, 2)
       case castExpr: CastExpr =>
         val t = registerType(castExpr.getCastType.toQuotedString)
-        astForTypeRef(t) ++ astsForValue(op, 2, parentUnit)
+        astForTypeRef(t, 1) ++ astsForValue(op, 2, parentUnit)
       case _ => astsForValue(op, 1, parentUnit)
     }
 

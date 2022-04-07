@@ -78,7 +78,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
     v.columnNumber shouldBe None
     v.typeFullName shouldBe "FuzzyBool[]"
     v.name shouldBe "$VALUES"
-    v.code shouldBe "$VALUES"
+    v.code shouldBe "FuzzyBool[] $VALUES"
   }
 
   "it should correctly parse an enum with values" in {
