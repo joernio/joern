@@ -229,12 +229,12 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case x: LookupSwitchStmt => astsForLookupSwitchStmt(x, order)
       case x: TableSwitchStmt  => astsForTableSwitchStmt(x, order)
       case x: ThrowStmt        => astsForThrowStmt(x, order)
-      case x: MonitorStmt      => Seq(astForUnknownStmt(x, x.getOp, order))
+      case x: MonitorStmt      => astsForMonitorStmt(x, order)
       case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
       case _: NopStmt          => Seq() // Ignore NOP statements
       case x =>
         logger.warn(s"Unhandled soot.Unit type ${x.getClass}")
-        Seq()
+        Seq(astForUnknownStmt(x, None, order))
     }
     unitToAsts.put(statement, stmt)
     stmt
@@ -704,7 +704,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     )
   }
 
-  def astsForThrowStmt(throwStmt: ThrowStmt, order: Int): Seq[Ast] = {
+  private def astsForThrowStmt(throwStmt: ThrowStmt, order: Int): Seq[Ast] = {
     val opAst = astsForValue(throwStmt.getOp, 1, throwStmt)
     val throwNode = NewCall()
       .name("<operator>.throw")
@@ -721,8 +721,31 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     )
   }
 
-  private def astForUnknownStmt(stmt: Stmt, op: Value, order: Int): Ast = {
-    val opAst = astsForValue(op, 1, stmt)
+  private def astsForMonitorStmt(monitorStmt: MonitorStmt, order: Int): Seq[Ast] = {
+    val opAst      = astsForValue(monitorStmt.getOp, 1, monitorStmt)
+    val typeString = opAst.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString
+    val code = monitorStmt match {
+      case _: EnterMonitorStmt => s"entermonitor $typeString"
+      case _: ExitMonitorStmt  => s"exitmonitor $typeString"
+      case _                   => s"<unknown>monitor $typeString"
+    }
+    Seq(
+      Ast(
+        NewUnknown()
+          .order(order)
+          .argumentIndex(order)
+          .code(code)
+          .lineNumber(line(monitorStmt))
+          .columnNumber(column(monitorStmt))
+      ).withChildren(opAst)
+    )
+  }
+
+  private def astForUnknownStmt(stmt: Unit, maybeOp: Option[Value], order: Int): Ast = {
+    val opAst = maybeOp match {
+      case Some(op) => astsForValue(op, 1, stmt)
+      case None     => Seq()
+    }
     val unknown = NewUnknown()
       .order(order)
       .code(stmt.toString())
