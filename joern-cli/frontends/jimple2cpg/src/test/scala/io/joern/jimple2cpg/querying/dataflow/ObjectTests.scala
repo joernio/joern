@@ -179,8 +179,9 @@ class ObjectTests extends JimpleDataflowFixture {
     sink.reachableBy(source).size shouldBe 1
   }
 
-  it should "find a path if a field is reassigned to `MALICIOUS` via an alias" in {
+  ignore should "find a path if a field is reassigned to `MALICIOUS` via an alias" in {
     val (source, sink) = getConstSourceSink("test10")
+    // TODO: The data flow appears to be alias insensitive and taints the whole object instance
     sink.reachableBy(source).size shouldBe 1
   }
 
