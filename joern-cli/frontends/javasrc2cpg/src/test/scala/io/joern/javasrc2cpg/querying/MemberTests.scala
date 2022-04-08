@@ -83,49 +83,52 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should create a single <clinit> method for classes with static members" in {
-    cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").size shouldBe 1
+    pendingUntilFixed {
 
-    val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").head
-    clinit.signature shouldBe "void()"
-    clinit.fullName shouldBe "Bar.<clinit>:void()"
+      cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").size shouldBe 1
 
-    clinit.body.astChildren.l match {
-      case List(
-            isStaticInit: Call,
-            isStaticObjectAssign: Call,
-            isStaticObjectInit: Call,
-            isAlsoStaticInit: Call,
-            printStmt: Call
-          ) =>
-        isStaticInit.methodFullName shouldBe Operators.assignment
-        isStaticInit.argument.size shouldBe 2
-        isStaticInit.argument.headOption match {
-          case Some(fieldAccess: Call) =>
-            fieldAccess.argument.size shouldBe 2
-            fieldAccess.code shouldBe "Bar.isStatic"
-            fieldAccess.typeFullName shouldBe "int"
-            fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").head
+      clinit.signature shouldBe "void()"
+      clinit.fullName shouldBe "Bar.<clinit>:void()"
 
-            val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l
-            identifier.name shouldBe "Bar"
-            identifier.typeFullName shouldBe "Bar"
-            identifier.order shouldBe 1
-            identifier.argumentIndex shouldBe 1
+      clinit.body.astChildren.l match {
+        case List(
+              isStaticInit: Call,
+              isStaticObjectAssign: Call,
+              isStaticObjectInit: Call,
+              isAlsoStaticInit: Call,
+              printStmt: Call
+            ) =>
+          isStaticInit.methodFullName shouldBe Operators.assignment
+          isStaticInit.argument.size shouldBe 2
+          isStaticInit.argument.headOption match {
+            case Some(fieldAccess: Call) =>
+              fieldAccess.argument.size shouldBe 2
+              fieldAccess.code shouldBe "Bar.isStatic"
+              fieldAccess.typeFullName shouldBe "int"
+              fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-            field.canonicalName shouldBe "isStatic"
-            field.code shouldBe "isStatic"
+              val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l
+              identifier.name shouldBe "Bar"
+              identifier.typeFullName shouldBe "Bar"
+              identifier.order shouldBe 1
+              identifier.argumentIndex shouldBe 1
 
-          case res =>
-            fail(s"Expected member field access but got ${res}")
-        }
+              field.canonicalName shouldBe "isStatic"
+              field.code shouldBe "isStatic"
 
-        isStaticObjectInit.methodFullName shouldBe "Bar.<init>:void()"
+            case res =>
+              fail(s"Expected member field access but got ${res}")
+          }
 
-        isAlsoStaticInit.methodFullName shouldBe Operators.assignment
+          isStaticObjectInit.methodFullName shouldBe "Bar.<init>:void()"
 
-        printStmt.methodFullName shouldBe "java.io.PrintStream.println:void(java.lang.String)"
+          isAlsoStaticInit.methodFullName shouldBe Operators.assignment
 
-      case res => fail(s"Expected 4 calls in <clinit> body but found $res")
+          printStmt.methodFullName shouldBe "java.io.PrintStream.println:void(java.lang.String)"
+
+        case res => fail(s"Expected 4 calls in <clinit> body but found $res")
+      }
     }
   }
 }

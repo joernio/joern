@@ -2,7 +2,6 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.Modifier.{Keyword => JPKeyWord}
 import com.github.javaparser.ast.body.{
   BodyDeclaration,
   CallableDeclaration,
@@ -38,7 +37,6 @@ import com.github.javaparser.ast.expr.{
   LiteralExpr,
   LongLiteralExpr,
   MarkerAnnotationExpr,
-  MemberValuePair,
   MethodCallExpr,
   NameExpr,
   NormalAnnotationExpr,
@@ -75,12 +73,11 @@ import com.github.javaparser.ast.stmt.{
   TryStmt,
   WhileStmt
 }
-import com.github.javaparser.resolution.{Resolvable, UnsolvedSymbolException}
+import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
   ResolvedConstructorDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
-  ResolvedParameterDeclaration,
   ResolvedReferenceTypeDeclaration
 }
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
@@ -97,7 +94,6 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  HasOrder,
   NewAnnotation,
   NewAnnotationLiteral,
   NewAnnotationParameter,
@@ -117,7 +113,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodParameterIn,
   NewMethodRef,
-  NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
   NewNode,
@@ -317,7 +312,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
     } catch {
       case t: UnsolvedSymbolException =>
-        logger.error(s"Unsolved symbol exception caught in ${filename}")
+        logger.error(s"Unsolved symbol exception caught in $filename")
         throw t
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
@@ -799,7 +794,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           NewAnnotationLiteral()
             .code(literal.getValue)
             .name(literal.getValue)
-        case literal: NullLiteralExpr =>
+        case _: NullLiteralExpr =>
           NewAnnotationLiteral()
             .code("null")
             .name("null")
@@ -1458,6 +1453,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     order: Int,
     expectedType: Option[String]
   ): AstWithCtx = {
+    val typeFullName = typeInfoProvider.getTypeForExpression(expr).orElse(expectedType).getOrElse(UnresolvedTypeDefault)
     val callNode = NewCall()
       .name(Operators.indexAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1467,6 +1463,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .methodFullName(Operators.indexAccess)
       .lineNumber(line(expr))
       .columnNumber(column(expr))
+      .typeFullName(typeFullName)
 
     val argsWithCtx =
       astsForExpression(expr.getName, scopeContext, 1, expectedType.map(_ ++ "[]")) ++ astsForExpression(
@@ -1749,8 +1746,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     scopeContext: ScopeContext,
     lineNumber: Option[Integer],
     columnNumber: Option[Integer],
-    order: Int,
-    isField: Boolean = false
+    order: Int
   ): Seq[AstWithCtx] = {
     var constructorCount = 0
     val variablesWithInitializers =
@@ -1791,19 +1787,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(line(variable))
         .columnNumber(column(variable))
       val targetAst = AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
-
-//      val targetAst = if (isField) {
-//      } else {
-//        val identifier = NewIdentifier()
-//          .name(name)
-//          .order(1)
-//          .argumentIndex(1)
-//          .code(name)
-//          .typeFullName(typeFullName)
-//          .lineNumber(line(variable))
-//          .columnNumber(column(variable))
-//        AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
-//      }
 
       // TODO Add expected type here if possible
       val initializerAstsWithCtx = astsForExpression(initializer, scopeContext, 2, Some(typeFullName))
@@ -2029,12 +2012,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     Try(x.resolve()) match {
       case Success(value) if value.isField =>
-        println(s"Successfully resolved type for nameExpr $x as $value")
-        println(s"IsField: ${value.isField}")
-        println(s"Type   : ${value.getType}")
         val typeName = typeFullName.split("\\.").lastOption.getOrElse("")
         val identifierName = if (value.asField.isStatic) {
-          typeName
+          // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
+          // from other classes are represented by a FieldAccessExpr instead.
+          scopeContext.typeDecl.map(_.name).getOrElse(UnresolvedTypeDefault)
         } else {
           "this"
         }
@@ -2180,6 +2162,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .argumentIndex(order)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
+      .typeFullName(allocNode.typeFullName)
 
     val tempName = "$obj" ++ tempConstCount.toString
     tempConstCount += 1
@@ -2259,7 +2242,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }.flatten
 
     val typeFullName = typeInfoProvider.getTypeFullName(stmt)
-    val argTypes     = argumentTypesForCall(Try(stmt.resolve()), args, scopeContext)
+    val argTypes     = argumentTypesForCall(Try(stmt.resolve()), args)
 
     val signature = s"void(${argTypes.mkString(",")})"
     val callNode = NewCall()
@@ -2663,8 +2646,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def argumentTypesForCall(
     maybeMethod: Try[ResolvedMethodLikeDeclaration],
-    argAsts: Seq[AstWithCtx],
-    scopeContext: ScopeContext
+    argAsts: Seq[AstWithCtx]
   ): List[String] = {
     maybeMethod match {
       case Success(resolved) =>
@@ -2676,7 +2658,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         }
 
         (0 until resolved.getNumberOfParams)
-          .zip(argAsts)
+          .zip(matchingArgs)
           .map { case (idx, argAst) =>
             val param = resolved.getParam(idx)
             typeInfoProvider
@@ -2714,7 +2696,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val maybeTargetType = targetTypeForCall(call, scopeContext)
 
-    val argumentTypes = argumentTypesForCall(maybeResolvedCall, argumentAsts, scopeContext)
+    val argumentTypes = argumentTypesForCall(maybeResolvedCall, argumentAsts)
 
     val (signature, methodFullName) = (maybeTargetType, maybeReturnType) match {
       case (Some(targetType), Some(returnType)) =>
@@ -2739,20 +2721,31 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(call))
       .columnNumber(column(call))
 
-    val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
-    val objectAst = objectNode
-      .map(objIdentifier =>
-        AstWithCtx(Ast(objIdentifier), Context(identifiers = Map(objIdentifier.name -> objIdentifier)))
-      )
-      .getOrElse(AstWithCtx.empty)
+    val scopeAsts = call.getScope.toScala match {
+      case Some(scope) =>
+        astsForExpression(scope, scopeContext, 0, maybeTargetType)
 
-    val ast = callAst(callNode, Seq(objectAst) ++ argumentAsts)
+      case None =>
+        val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
+        objectNode.map { objIdentifier =>
+          AstWithCtx(Ast(objIdentifier), Context(identifiers = Map(objIdentifier.name -> objIdentifier)))
+        }.toSeq
+    }
+//    val maybeScopeAst = call.getScope.toScala.toList.flatMap(astsForExpression(_, scopeContext, 0, maybeTargetType))
+//    val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
+//    val objectAst = objectNode
+//      .map(objIdentifier =>
+//        AstWithCtx(Ast(objIdentifier), Context(identifiers = Map(objIdentifier.name -> objIdentifier)))
+//      )
+//      .getOrElse(AstWithCtx.empty)
 
-    objectNode match {
+    val ast = callAst(callNode, scopeAsts ++ argumentAsts)
+
+    scopeAsts.headOption.flatMap(_.ast.root) match {
       case None => ast
 
-      case Some(_) =>
-        AstWithCtx(ast.ast.withReceiverEdge(callNode, objectAst.ast.root.get), ast.ctx)
+      case Some(rootNode) =>
+        AstWithCtx(ast.ast.withReceiverEdge(callNode, rootNode), ast.ctx)
     }
   }
 
@@ -2788,13 +2781,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def constructorFullName(typeDecl: Option[NewTypeDecl], signature: String): String = {
     val typeName = typeDecl.map(_.fullName).getOrElse(UnresolvedTypeDefault)
     s"$typeName.<init>:$signature"
-  }
-
-  private def paramListSignature(methodDeclaration: CallableDeclaration[_]) = {
-    val paramTypes = methodDeclaration.getParameters.asScala.map(p =>
-      typeInfoProvider.getTypeFullName(p).getOrElse(UnresolvedTypeDefault)
-    )
-    "(" + paramTypes.mkString(",") + ")"
   }
 
   private def emptyBlock(order: Int): AstWithCtx = {
