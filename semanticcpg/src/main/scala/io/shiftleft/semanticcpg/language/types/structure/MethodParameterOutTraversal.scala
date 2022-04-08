@@ -8,9 +8,13 @@ import scala.jdk.CollectionConverters._
 
 class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) extends AnyVal {
 
+  def paramIn: Traversal[MethodParameterIn] = traversal.flatMap(_.parameterLinkIn.headOption)
+
+  def index: Traversal[Int] = paramIn.index
+
   /* method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def index(num: Int): Traversal[MethodParameterOut] =
-    traversal.filter(_.parameterLinkIn.index(num).nonEmpty)
+    traversal.filter(_.paramIn.index(num).nonEmpty)
 
   /* get all parameters from (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
