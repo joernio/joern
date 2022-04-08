@@ -69,6 +69,10 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
   def controls: Traversal[CfgNode] =
     traversal.flatMap(_.controls)
 
+  @Doc(info = "Direct children of node in the CFG. Siblings are order is not guaranteed.")
+  def cfgChildren: Traversal[CfgNode] =
+    traversal.flatMap(_.cfgChildren)
+
   /** Recursively determine all nodes by which this node is dominated
     */
   @Doc(info = "All nodes by which this node is dominated")
