@@ -3,6 +3,8 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ControlStructure, Identifier, Local}
+import io.shiftleft.semanticcpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -69,16 +71,6 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
         |      }
         |    }
         |
-        |    for (i in 1..5) {
-        |      if (i == 1) {
-        |        continue
-        |      }
-        |      if (i == 5) {
-        |        break
-        |      }
-        |      print(i)
-        |    }
-        |
         |    var z = x
         |    while (z > 0) {
         |      z--
@@ -93,7 +85,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should identify `if` block" in {
-      cpg.method.name("methodFoo").ifBlock.condition.code.l shouldBe List("x > 1", "i == 1", "i == 5")
+      cpg.method.name("methodFoo").ifBlock.condition.code.l shouldBe List("x > 1")
     }
 
     "complex `if` statement contains all required properties" in {
@@ -115,24 +107,12 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       cpg.method.name("methodFoo").switchBlock.code.l shouldBe List("when(x)")
     }
 
-    "should identify `for` block" in {
-      cpg.method.name("methodFoo").forBlock.code.size shouldBe 1
-    }
-
     "should identify `while` block" in {
       cpg.method.name("methodFoo").whileBlock.code.size shouldBe 1
     }
 
     "should identify `do` block" in {
       cpg.method.name("methodFoo").doBlock.code.size shouldBe 1
-    }
-
-    "should identify `break`" in {
-      cpg.method.name("methodFoo").break.code.l shouldBe List("break")
-    }
-
-    "should identify `continue`" in {
-      cpg.method.name("methodFoo").continue.code.l shouldBe List("continue")
     }
   }
 
@@ -234,46 +214,116 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with range operators inside for-statements" - {
+  "CPG for code with code with `for-in` loop" - {
     lazy val cpg = TestContext.buildCpg("""
-      |package mypkg
-      |
-      |fun foo() {
-      |  for (i in 1..4 step 2) print(i)
-      |
-      |  for (i in 8 downTo 1 step 2) print(i)
-      |
-      |  for (i in 1 until 10) {
-      |    print(i)
-      |  }
-      |}
-      |""".stripMargin)
+        |package mypkg
+        |
+        |fun main() {
+        |    val l = listOf("one", "two", "three")
+        |    for (entry in l) {
+        |        println(entry)
+        |    }
+        |//prints:
+        |//```
+        |//one
+        |//two
+        |//three
+        |//```
+        |}
+        |""".stripMargin)
 
-    "should contain CALL nodes for the loop expressions with the correct props set" in {
-      val List(c1) = cpg.call.code(".*4.*step.*").l
-      c1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c1.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(java.lang.Integer)"
-      c1.signature shouldBe "kotlin.ranges.IntProgression(java.lang.Integer)"
-      c1.typeFullName shouldBe "kotlin.ranges.IntProgression"
-      c1.lineNumber shouldBe Some(4)
-      c1.columnNumber shouldBe Some(12)
+    "should contain a correctly lowered representation" in {
+      val expectedIteratorLocalName = "iterator_1"
+      val List(iteratorLocal)       = cpg.local.nameExact(expectedIteratorLocalName).l
+      iteratorLocal.name shouldBe expectedIteratorLocalName
+      iteratorLocal.code shouldBe expectedIteratorLocalName
+      iteratorLocal.typeFullName shouldBe "" // TODO: maybe try to add a type here if possible to get it
 
-      val List(c2) = cpg.call.code(".*8.*downTo.*step.*").l
-      c2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c2.methodFullName shouldBe "kotlin.ranges.step:kotlin.ranges.IntProgression(java.lang.Integer)"
-      c2.signature shouldBe "kotlin.ranges.IntProgression(java.lang.Integer)"
-      c2.typeFullName shouldBe "kotlin.ranges.IntProgression"
-      c2.lineNumber shouldBe Some(6)
-      c2.columnNumber shouldBe Some(12)
+      // TODO: add test for the block in here
+      val List(iteratorAssignment: Call) = cpg.call.code("iterator.*itera.*").head.l
+      iteratorAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      iteratorAssignment.name shouldBe Operators.assignment
+      iteratorAssignment.methodFullName shouldBe Operators.assignment
+      iteratorAssignment.code shouldBe expectedIteratorLocalName + " = " + "l.iterator()"
+      iteratorAssignment.typeFullName shouldBe ""
 
-      val List(c3) = cpg.call.code(".*until.*10").l
-      c3.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c3.methodFullName shouldBe "kotlin.ranges.until:kotlin.ranges.IntRange(java.lang.Integer)"
-      c3.signature shouldBe "kotlin.ranges.IntRange(java.lang.Integer)"
-      c3.typeFullName shouldBe "kotlin.ranges.IntRange"
-      c3.lineNumber shouldBe Some(8)
-      c3.columnNumber shouldBe Some(12)
+      val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) = iteratorAssignment.argument.l
+      iteratorAssignmentLhs.argumentIndex shouldBe 1
+      iteratorAssignmentLhs.code shouldBe expectedIteratorLocalName
+      iteratorAssignmentLhs.typeFullName shouldBe ""
+      iteratorAssignmentRhs.argumentIndex shouldBe 2
+      iteratorAssignmentRhs.code shouldBe "l.iterator()"
+      iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      iteratorAssignmentRhs.typeFullName shouldBe "java.util.Iterator"
+      iteratorAssignmentRhs.methodFullName shouldBe "java.util.List.iterator:java.util.Iterator()"
+      iteratorAssignmentRhs.signature shouldBe "java.util.Iterator()"
+      iteratorLocal.referencingIdentifiers.id.l.contains(iteratorAssignmentLhs.id) shouldBe true
+
+      val List(iteratorAssignmentRhsArg: Identifier) = iteratorAssignmentRhs.argument.l
+      iteratorAssignmentRhsArg.code shouldBe "l"
+      iteratorAssignmentRhsArg.name shouldBe "l"
+      iteratorAssignmentRhsArg.argumentIndex shouldBe 0
+      iteratorAssignmentRhsArg.typeFullName shouldBe "java.util.List"
+
+      val List(controlStructure: ControlStructure) = cpg.controlStructure.head.l
+      controlStructure.controlStructureType shouldBe ControlStructureTypes.WHILE
+      controlStructure.order shouldBe 3
+      controlStructure.condition.size shouldBe 1
+
+      val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) = controlStructure.astChildren.l
+      controlStructureFirstChild.order shouldBe 1
+      controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:java.lang.Boolean()"
+      controlStructureFirstChild.receiver.size shouldBe 1
+      controlStructureFirstChild.name shouldBe "hasNext"
+      controlStructureFirstChild.signature shouldBe "java.lang.Boolean()"
+      controlStructureSecondChild.order shouldBe 2
+
+      val List(loopParameter: Local, getNext: Call, blockInsideBody: Block) = controlStructureSecondChild.astChildren.l
+      loopParameter.order shouldBe 1
+      loopParameter.code shouldBe "entry"
+      getNext.order shouldBe 2
+      getNext.methodFullName shouldBe Operators.assignment
+      getNext.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      getNext.code shouldBe "entry = iterator_1.next()"
+
+      val List(getNextFirstArg: Identifier, getNextSecondArg: Call) = getNext.argument.l
+      getNextFirstArg.order shouldBe 1
+      getNextFirstArg.argumentIndex shouldBe 1
+      getNextFirstArg.code shouldBe "entry"
+      loopParameter.referencingIdentifiers.id.l.contains(getNextFirstArg.id) shouldBe true
+
+      getNextSecondArg.order shouldBe 2
+      getNextSecondArg.argumentIndex shouldBe 2
+      getNextSecondArg.code shouldBe "iterator_1.next()"
+      getNextSecondArg.methodFullName shouldBe "kotlin.collections.Iterator.next:java.lang.Object()"
+      getNextSecondArg.name shouldBe "next"
+      getNextSecondArg.signature shouldBe "java.lang.Object()"
+      getNextSecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      getNextSecondArg.receiver.size shouldBe 1
+
+      val List(getNextSecondArgFirstArg: Identifier) = getNextSecondArg.argument.l
+      getNextSecondArgFirstArg.order shouldBe 1
+      getNextSecondArgFirstArg.argumentIndex shouldBe 0
+      getNextSecondArgFirstArg.code shouldBe "iterator_1"
+      getNextSecondArgFirstArg.typeFullName shouldBe ""
+      iteratorLocal.referencingIdentifiers.id.l.contains(getNextSecondArgFirstArg.id) shouldBe true
+
+      blockInsideBody.order shouldBe 3 // ????
+      val List(statementInsideBody: Call) = blockInsideBody.astChildren.l
+      statementInsideBody.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      statementInsideBody.methodFullName shouldBe "kotlin.io.println:void(java.lang.Object)"
+      statementInsideBody.code shouldBe "println(entry)"
+      statementInsideBody.argument.size shouldBe 1
+
+      val List(statementInsideBodyFirstArg: Identifier) = statementInsideBody.argument.l
+      statementInsideBodyFirstArg.order shouldBe 1
+      statementInsideBodyFirstArg.argumentIndex shouldBe 1
+      statementInsideBodyFirstArg.code shouldBe "entry"
+      loopParameter.referencingIdentifiers.id.l.contains(statementInsideBodyFirstArg.id) shouldBe true
     }
   }
 
+  // TODO: add a test case also for a `for-in` statement with a destructuring declaration inside the condition
+  // TODO: also add test for the loop range, when it is with downTo or whatever
 }
