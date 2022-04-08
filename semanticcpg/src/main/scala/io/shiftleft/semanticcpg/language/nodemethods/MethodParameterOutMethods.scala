@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{MethodParameterOut, NewLocation}
+import io.shiftleft.codepropertygraph.generated.nodes.{MethodParameterIn, MethodParameterOut, NewLocation}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.{HasLocation, LocationCreator}
 
@@ -8,4 +8,8 @@ class MethodParameterOutMethods(val paramOut: MethodParameterOut) extends AnyVal
   override def location: NewLocation = {
     LocationCreator(paramOut, paramOut.name, paramOut.label, paramOut.lineNumber, paramOut.method)
   }
+
+  def paramIn: MethodParameterIn = paramOut._parameterLinkIn.next.asInstanceOf[MethodParameterIn]
+  def index: Int                 = paramIn.index
+
 }

@@ -28,7 +28,7 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
       method   <- paramOut.method
       call     <- method._callViaCallIn
       arg      <- call._argumentOut.asScala.collect { case node: Expression with HasArgumentIndex => node }
-      if paramOut._parameterLinkIn.property("INDEX").headOption.contains(arg.argumentIndex)
+      if paramOut.paramIn.index == arg.argumentIndex
     } yield arg
 
 }
