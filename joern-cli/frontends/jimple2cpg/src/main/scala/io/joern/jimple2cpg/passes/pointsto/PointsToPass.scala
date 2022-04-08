@@ -10,6 +10,9 @@ import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
+/** Creates an intraprocedural pointer assignment graph. This provides may point to information for each identifier or
+  * field identifier.
+  */
 class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   val allocCall              = "<operator>.alloc"
@@ -72,6 +75,7 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
       findRootAllocation(varNode, assignmentGraph) match {
         case Some(allocSite) =>
           println(s"$varNode points to $allocSite")
+          // Need to do more than this an find all references of the `varNode.node` in the method.
           builder.addEdge(varNode.node, allocSite.node, "DATA_FLOW")
         case None =>
       }
