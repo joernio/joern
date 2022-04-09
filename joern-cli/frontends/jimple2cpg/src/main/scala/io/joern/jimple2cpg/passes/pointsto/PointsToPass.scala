@@ -98,6 +98,7 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
     */
   class VarDecl(val node: CfgNode) {
 
+    // TODO: Could make this a more permanent traversal step
     def getParentBlock(n: CfgNode): AstNode = {
       var nextBlock: AstNode = n
       while (!nextBlock.isInstanceOf[Block]) {
