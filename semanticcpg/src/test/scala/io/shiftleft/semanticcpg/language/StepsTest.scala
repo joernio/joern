@@ -100,9 +100,9 @@ class StepsTest extends AnyWordSpec with Matchers {
   "when calling for an AST node's parent block" should {
 
     "return the parent block for a block's AST child" in {
-      val List(block: Block) = cpg.method("woo").block.l
+      val List(block: Block)        = cpg.method("woo").block.l
       val blockDirectChild: AstNode = cpg.method("woo").block.ast.head
-      val blockLeafChild: AstNode = cpg.method("woo").block.ast.last
+      val blockLeafChild: AstNode   = cpg.method("woo").block.ast.last
 
       blockDirectChild.parentBlock.head shouldBe block
       blockLeafChild.parentBlock.head shouldBe block
