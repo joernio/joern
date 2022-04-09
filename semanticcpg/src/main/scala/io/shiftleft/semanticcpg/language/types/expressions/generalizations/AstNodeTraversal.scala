@@ -49,6 +49,16 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def astParent: Traversal[AstNode] =
     traversal.in(EdgeTypes.AST).cast[AstNode]
 
+  /** Traverses up the AST and returns the first block node.
+    */
+  def parentBlock: Traversal[Block] =
+    traversal
+      .repeat(_.in(EdgeTypes.AST))(
+        _.emit
+          .until(_.hasLabel(NodeTypes.BLOCK))
+      )
+      .cast[Block]
+
   /** Nodes of the AST obtained by expanding AST edges backwards until the method root is reached
     */
   def inAst: Traversal[AstNode] =
