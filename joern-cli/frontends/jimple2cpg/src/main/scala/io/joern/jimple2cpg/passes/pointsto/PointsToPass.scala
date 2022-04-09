@@ -2,6 +2,7 @@ package io.joern.jimple2cpg.passes.pointsto
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
@@ -15,7 +16,9 @@ import scala.collection.mutable.ListBuffer
   */
 class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  val allocCall              = "<operator>.alloc"
+  val allocCall = "<operator>.alloc"
+  // TODO: Replace with POINTS_TO from PR #1627 in codepropertygraph
+  val edge                   = "DATA_FLOW"
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[Method] = cpg.method.toArray
@@ -23,27 +26,37 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
   override def runOnPart(builder: DiffGraphBuilder, method: Method): Unit = {
     val allocSites = method.ast.isCall.name(allocCall).l
     if (allocSites.nonEmpty) {
-      println(s"Creating assignment graph for ${method.fullName}")
       val assignmentGraph = buildAssignmentGraph(method)
-      assignmentGraph.foreach { case (k, v) =>
-        println(s"Variable $k assigned to $v")
-      }
-      println(s"Creating pointer assignment graph for ${method.fullName}")
-      buildPointsToGraph(builder, assignmentGraph)
+      val pointsToGraph   = buildPointsToGraph(assignmentGraph)
+      // All references to nodes in the method body should now have their
+      // "may point to" edge added to an allocation site if it is in the map
+      method.ast
+        .collect {
+          case x: Identifier      => x
+          case y: FieldIdentifier => y
+        }
+        .map(new VarInCtx(_))
+        .foreach { varDecl =>
+          pointsToGraph.get(varDecl) match {
+            case Some(tgtNode) => builder.addEdge(varDecl.node, tgtNode.node, edge)
+            case None          =>
+          }
+        }
     }
   }
 
-  private def buildAssignmentGraph(m: Method): Map[VarDecl, VarDecl] = {
-    val assignmentGraph               = mutable.HashMap.empty[VarDecl, VarDecl]
+  private def buildAssignmentGraph(m: Method): Map[VarInCtx, VarInCtx] = {
+    val assignmentGraph               = mutable.HashMap.empty[VarInCtx, VarInCtx]
     var worklist: ListBuffer[CfgNode] = mutable.ListBuffer.from(m.ast.isCall.name(allocCall).l)
 
     while (worklist.nonEmpty) {
       val alloc = worklist.head
       worklist = worklist.tail
       val allocLhs = alloc.astParent.astChildren.collect {
-        case x: Identifier      => x.name
-        case y: FieldIdentifier => y.canonicalName
+        case x: Identifier      => VarInCtx(x)
+        case y: FieldIdentifier => VarInCtx(y)
       }.toSet
+      // TODO: See if we can use something else instead of adding cfgChildren
       Traversal(alloc).cfgChildren
         .collect {
           case x: Identifier      => x
@@ -52,11 +65,12 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
         .l
         .reverse
         .foreach { identifier =>
+          val varDecl                 = VarInCtx(identifier)
           val siblings: List[CfgNode] = identifier.astParent.astChildren.isCfgNode.l
-          if (siblings.indexOf(identifier) > 0 && allocLhs.contains(identifier.code)) {
-            val assignee = new VarDecl(siblings.head)
+          if (siblings.indexOf(identifier) > 0 && allocLhs.contains(varDecl)) {
+            val assignee = VarInCtx(siblings.head)
             if (!assignmentGraph.contains(assignee)) {
-              assignmentGraph.put(assignee, new VarDecl(identifier))
+              assignmentGraph.put(assignee, varDecl)
               worklist += assignee.node
             }
           }
@@ -66,23 +80,22 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
     assignmentGraph.toMap
   }
 
-  private def buildPointsToGraph(builder: DiffGraphBuilder, assignmentGraph: Map[VarDecl, VarDecl]): Unit = {
-    var worklist: ListBuffer[VarDecl] = mutable.ListBuffer.from(assignmentGraph.keySet)
+  private def buildPointsToGraph(assignmentGraph: Map[VarInCtx, VarInCtx]): Map[VarInCtx, VarInCtx] = {
+    val pointsToGraph                  = mutable.HashMap.empty[VarInCtx, VarInCtx]
+    var worklist: ListBuffer[VarInCtx] = mutable.ListBuffer.from(assignmentGraph.keySet)
 
     while (worklist.nonEmpty) {
       val varNode = worklist.head
       worklist = worklist.tail
       findRootAllocation(varNode, assignmentGraph) match {
-        case Some(allocSite) =>
-          println(s"$varNode points to $allocSite")
-          // Need to do more than this an find all references of the `varNode.node` in the method.
-          builder.addEdge(varNode.node, allocSite.node, "DATA_FLOW")
-        case None =>
+        case Some(allocSite) => pointsToGraph.put(varNode, allocSite)
+        case None            =>
       }
     }
+    pointsToGraph.toMap
   }
 
-  private def findRootAllocation(startNode: VarDecl, assignmentGraph: Map[VarDecl, VarDecl]): Option[VarDecl] = {
+  private def findRootAllocation(startNode: VarInCtx, assignmentGraph: Map[VarInCtx, VarInCtx]): Option[VarInCtx] = {
     var varNode = startNode
     Iterator
       .continually(assignmentGraph.get(varNode))
@@ -94,36 +107,39 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
   }
 
   /** Wraps around a node and provides scope given the parent block node.
-    * @param node
     */
-  class VarDecl(val node: CfgNode) {
+  class VarInCtx(val node: CfgNode) {
 
-    // TODO: Could make this a more permanent traversal step
-    def getParentBlock(n: CfgNode): AstNode = {
-      var nextBlock: AstNode = n
-      while (!nextBlock.isInstanceOf[Block]) {
-        nextBlock = nextBlock.astParent
-      }
-      nextBlock
-    }
+    // TODO: Use parentBlock from PR #1248 in Joern
+    def parentBlock(traversal: AstNode): Traversal[Block] =
+      Traversal(traversal)
+        .repeat(_.in(EdgeTypes.AST))(
+          _.emit
+            .until(_.hasLabel(NodeTypes.BLOCK))
+        )
+        .collectAll[Block]
 
-    val parentBlock: AstNode = getParentBlock(node)
+    val block: Block = parentBlock(node).head
 
-    def canEqual(other: Any): Boolean = other.isInstanceOf[VarDecl]
+    def canEqual(other: Any): Boolean = other.isInstanceOf[VarInCtx]
 
     override def equals(other: Any): Boolean = other match {
-      case that: VarDecl =>
+      case that: VarInCtx =>
         (that canEqual this) &&
         node.code == that.node.code &&
-        parentBlock == that.parentBlock
+        block == that.block
       case _ => false
     }
 
     override def hashCode(): Int = {
-      val state = Seq(node.code, parentBlock)
+      val state = Seq(node.code, block)
       state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
     }
 
     override def toString: String = node.code
+  }
+
+  object VarInCtx {
+    def apply(node: CfgNode): VarInCtx = new VarInCtx(node)
   }
 }
