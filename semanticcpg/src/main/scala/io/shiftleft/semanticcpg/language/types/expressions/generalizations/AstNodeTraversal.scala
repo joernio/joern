@@ -57,7 +57,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
         _.emit
           .until(_.hasLabel(NodeTypes.BLOCK))
       )
-      .cast[Block]
+      .collectAll[Block]
 
   /** Nodes of the AST obtained by expanding AST edges backwards until the method root is reached
     */
