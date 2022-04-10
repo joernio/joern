@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.iterableToTraversal
@@ -48,9 +49,9 @@ class PointsToTests extends JavaSrcCodeToCpgFixture {
   "foo should contain two allocation sites" in {
     cpg.method("foo").call("<operator>.alloc").size shouldBe 2
     val List(newA, newB) = cpg.method("foo").call("<operator>.alloc").l
-    newA.name shouldBe "<operator>.alloc"
+    newA.name shouldBe Operators.alloc
     newA.code shouldBe "new A()"
-    newB.name shouldBe "<operator>.alloc"
+    newB.name shouldBe Operators.alloc
     newB.code shouldBe "new B()"
   }
 

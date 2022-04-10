@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.typerelations
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
@@ -16,7 +16,6 @@ import scala.collection.mutable.ListBuffer
   */
 class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  val allocCall = "<operator>.alloc"
   // TODO: Replace with POINTS_TO from PR #1627 in codepropertygraph
   val edge                   = "DATA_FLOW"
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -24,7 +23,7 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
   override def generateParts(): Array[Method] = cpg.method.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, method: Method): Unit = {
-    val allocSites = method.ast.isCall.name(allocCall).l
+    val allocSites = method.ast.isCall.name(Operators.alloc).l
     if (allocSites.nonEmpty) {
       val assignmentGraph = buildAssignmentGraph(method)
       val pointsToGraph   = buildPointsToGraph(assignmentGraph)
@@ -48,7 +47,7 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
 
   private def buildAssignmentGraph(m: Method): Map[VarInCtx, VarInCtx] = {
     val assignmentGraph               = mutable.HashMap.empty[VarInCtx, VarInCtx]
-    var worklist: ListBuffer[CfgNode] = mutable.ListBuffer.from(m.ast.isCall.name(allocCall).l)
+    var worklist: ListBuffer[CfgNode] = mutable.ListBuffer.from(m.ast.isCall.name(Operators.alloc).l)
 
     while (worklist.nonEmpty) {
       val alloc = worklist.head
