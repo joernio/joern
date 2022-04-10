@@ -3,14 +3,18 @@ package io.joern.x2cpg.layers
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import io.joern.x2cpg.passes.typerelations.{AliasLinkerPass, TypeHierarchyPass}
+import io.joern.x2cpg.passes.typerelations.{AliasLinkerPass, PointerAssignmentPass, TypeHierarchyPass}
 
 object TypeRelations {
   val overlayName: String = "typerel"
   val description: String = "Type relations layer (hierarchy and aliases)"
   def defaultOpts         = new LayerCreatorOptions()
 
-  def passes(cpg: Cpg): Iterator[CpgPassBase] = Iterator(new TypeHierarchyPass(cpg), new AliasLinkerPass(cpg))
+  def passes(cpg: Cpg): Iterator[CpgPassBase] = Iterator(
+    new PointerAssignmentPass(cpg),
+    new TypeHierarchyPass(cpg),
+    new AliasLinkerPass(cpg),
+  )
 }
 
 class TypeRelations extends LayerCreator {

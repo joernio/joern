@@ -1,7 +1,6 @@
 package io.joern.jimple2cpg
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.jimple2cpg.passes.pointsto.PointsToPass
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
@@ -25,8 +24,6 @@ class Jimple2CpgTestContext {
       if (runDataflow) {
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
-        // todo; temporary
-        new PointsToPass(cpg).createAndApply()
         new OssDataFlow(options).run(context)
       }
       buildResult = Some(cpg)

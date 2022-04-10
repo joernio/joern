@@ -1,4 +1,4 @@
-package io.joern.jimple2cpg.passes.pointsto
+package io.joern.x2cpg.passes.typerelations
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 /** Creates an intraprocedural pointer assignment graph. This provides may point to information for each identifier or
   * field identifier.
   */
-class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
+class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   val allocCall = "<operator>.alloc"
   // TODO: Replace with POINTS_TO from PR #1627 in codepropertygraph
@@ -38,8 +38,9 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
         .map(new VarInCtx(_))
         .foreach { varDecl =>
           pointsToGraph.get(varDecl) match {
-            case Some(tgtNode) => builder.addEdge(varDecl.node, tgtNode.node, edge)
-            case None          =>
+            case Some(tgtNode) =>
+              builder.addEdge(varDecl.node, tgtNode.node, edge)
+            case None =>
           }
         }
     }
@@ -56,6 +57,13 @@ class PointsToPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
         case x: Identifier      => VarInCtx(x)
         case y: FieldIdentifier => VarInCtx(y)
       }.toSet
+
+      allocLhs.foreach { idAtAlloc =>
+        if (!assignmentGraph.contains(idAtAlloc)) {
+          assignmentGraph.put(idAtAlloc, VarInCtx(alloc))
+        }
+      }
+
       // TODO: See if we can use something else instead of adding cfgChildren
       Traversal(alloc).cfgChildren
         .collect {
