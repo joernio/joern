@@ -70,12 +70,10 @@ class TypeTests extends AnyWordSpec with Matchers {
           .name(".*Base")
           .toList
 
-      cpg.typeDecl.name(".*Derived").baseTypeDecl.foreach(println)
-
       queryResult.size shouldBe 1
     }
 
-    "have class Dervied as derived class of class Base" in {
+    "have class Derived as derived class of class Base" in {
       def queryResult: List[TypeDecl] =
         cpg.typeDecl
           .name(".*Base")
