@@ -10,11 +10,8 @@ object TypeRelations {
   val description: String = "Type relations layer (hierarchy and aliases)"
   def defaultOpts         = new LayerCreatorOptions()
 
-  def passes(cpg: Cpg): Iterator[CpgPassBase] = Iterator(
-    new PointerAssignmentPass(cpg),
-    new TypeHierarchyPass(cpg),
-    new AliasLinkerPass(cpg),
-  )
+  def passes(cpg: Cpg): Iterator[CpgPassBase] =
+    Iterator(new PointerAssignmentPass(cpg), new TypeHierarchyPass(cpg), new AliasLinkerPass(cpg))
 }
 
 class TypeRelations extends LayerCreator {

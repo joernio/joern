@@ -56,7 +56,6 @@ class PointsToTests extends JimpleCodeToCpgFixture {
 
   "all identifiers should (conservatively) point to their allocation site" in {
     val List(newA, newB) = cpg.method("foo").call("<operator>.alloc").l
-//    println(cpg.method("foo").dotPag.head)
     newA.in("DATA_FLOW").asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack4", "p", "q")
     newB.in("DATA_FLOW").asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack5", "r")
   }
