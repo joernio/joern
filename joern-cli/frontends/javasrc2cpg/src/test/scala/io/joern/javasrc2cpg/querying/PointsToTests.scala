@@ -1,13 +1,13 @@
-package io.joern.jimple2cpg.querying
+package io.joern.javasrc2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.iterableToTraversal
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-class PointsToTests extends JimpleCodeToCpgFixture {
+class PointsToTests extends JavaSrcCodeToCpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
@@ -49,16 +49,15 @@ class PointsToTests extends JimpleCodeToCpgFixture {
     cpg.method("foo").call("<operator>.alloc").size shouldBe 2
     val List(newA, newB) = cpg.method("foo").call("<operator>.alloc").l
     newA.name shouldBe "<operator>.alloc"
-    newA.code shouldBe "new A"
+    newA.code shouldBe "new A()"
     newB.name shouldBe "<operator>.alloc"
-    newB.code shouldBe "new B"
+    newB.code shouldBe "new B()"
   }
 
   "all identifiers should (conservatively) point to their allocation site" in {
     val List(newA, newB) = cpg.method("foo").call("<operator>.alloc").l
-//    println(cpg.method("foo").dotPag.head)
-    newA.in("DATA_FLOW").asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack4", "p", "q")
-    newB.in("DATA_FLOW").asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack5", "r")
+    newA.in("DATA_FLOW").asScala.collectAll[AstNode].code.dedup.l shouldBe List("p", "q")
+    newB.in("DATA_FLOW").asScala.collectAll[AstNode].code.dedup.l shouldBe List("r")
   }
 
 }
