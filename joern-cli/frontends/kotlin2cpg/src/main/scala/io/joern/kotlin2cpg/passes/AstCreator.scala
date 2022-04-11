@@ -46,6 +46,7 @@ object Constants {
   val hasNextIteratorMethodName      = "hasNext"
   val nextIteratorMethodName         = "next"
   val codeForLoweredForBlock         = "FOR-BLOCK" // TODO: improve this
+  val underscore                     = "_"
 }
 
 case class ImportEntry(
@@ -1450,7 +1451,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   )(implicit fileInfo: FileInfo, typeInfoProvider: TypeInfoProvider): Seq[AstWithCtx] = {
     val initExpr = expr.getInitializer
     val localsForEntries =
-      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
+      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry        = entryWithIdx._1
         val orderForNode = entryWithIdx._2 + order
 
@@ -1466,7 +1467,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .lineNumber(line(entry))
             .columnNumber(column(entry))
         Ast(node)
-      }.toSeq
+      }
 
     val orderAfterEntryLocals = localsForEntries.size + order
 
@@ -1526,7 +1527,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val orderAfterLocalsAndTmpLowering = orderForTmpAssignmentCall + 1
     val assignmentsForEntries =
-      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
+      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
         val entryTypeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
         registerType(entryTypeFullName)
@@ -1602,12 +1603,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .withChild(componentNAst)
             .withArgEdge(assignmentCallNode, componentNCallNode)
         assignmentAst
-      }.toSeq
+      }
 
     localsForEntries.map(AstWithCtx(_, Context())) ++
       Seq(AstWithCtx(localForTmpAst, Context())) ++
       Seq(AstWithCtx(assignmentAst, Context())) ++
       assignmentsForEntries.map(AstWithCtx(_, Context()))
+  }
+
+  def nonUnderscoreEntries(expr: KtDestructuringDeclaration): Seq[KtDestructuringDeclarationEntry] = {
+    expr.getEntries.asScala.filterNot(hasUnderscoreText(_)).toSeq
   }
 
   /*
@@ -1637,7 +1642,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val ctorCall = typedInit.get
 
     val localsForEntries =
-      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
+      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry        = entryWithIdx._1
         val orderForNode = entryWithIdx._2 + order
 
@@ -1653,7 +1658,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .lineNumber(line(entry))
             .columnNumber(column(entry))
         Ast(node)
-      }.toSeq
+      }
 
     val orderAfterEntryLocals = localsForEntries.size + order
 
@@ -1758,7 +1763,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val orderAfterLocalsAndTmpLowering = orderForTmpInitCall + 1
     val assignmentsForEntries =
-      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
+      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
         val entryTypeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
         registerType(entryTypeFullName)
@@ -1834,13 +1839,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .withChild(componentNAst)
             .withArgEdge(assignmentCallNode, componentNCallNode)
         assignmentAst
-      }.toSeq
+      }
 
     localsForEntries.map(AstWithCtx(_, Context())) ++
       Seq(AstWithCtx(localForTmpAst, Context())) ++
       Seq(AstWithCtx(assignmentAst, Context())) ++
       Seq(AstWithCtx(initCallAst, Context())) ++
       assignmentsForEntries.map(AstWithCtx(_, Context()))
+  }
+
+  private def hasUnderscoreText(entry: KtDestructuringDeclarationEntry): Boolean = {
+    entry.getText == Constants.underscore
   }
 
   /*
@@ -1867,120 +1876,122 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
     val destructuringRHS = typedInit.get
     val localsForEntries =
-      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
-        val entry        = entryWithIdx._1
-        val orderForNode = entryWithIdx._2 + order
+      nonUnderscoreEntries(expr).zipWithIndex
+        .map { entryWithIdx =>
+          val entry        = entryWithIdx._1
+          val orderForNode = entryWithIdx._2 + order
 
-        val typeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
-        registerType(typeFullName)
+          val typeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
+          registerType(typeFullName)
 
-        val node =
-          NewLocal()
-            .code(entry.getText)
-            .name(entry.getName)
-            .typeFullName(typeFullName)
-            .order(orderForNode)
-            .lineNumber(line(entry))
-            .columnNumber(column(entry))
-        Ast(node)
-      }.toSeq
+          val node =
+            NewLocal()
+              .code(entry.getText)
+              .name(entry.getName)
+              .typeFullName(typeFullName)
+              .order(orderForNode)
+              .lineNumber(line(entry))
+              .columnNumber(column(entry))
+          Ast(node)
+        }
 
     val orderAfterLocals = localsForEntries.size + order
     val assignmentsForEntries =
-      expr.getEntries.asScala.zipWithIndex.map { entryWithIdx =>
-        val entry             = entryWithIdx._1
-        val entryTypeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
-        registerType(entryTypeFullName)
+      nonUnderscoreEntries(expr).zipWithIndex
+        .map { entryWithIdx =>
+          val entry             = entryWithIdx._1
+          val entryTypeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
+          registerType(entryTypeFullName)
 
-        val assignmentLHSNode =
-          NewIdentifier()
-            .name(entry.getName)
-            .code(entry.getText)
-            .typeFullName(entryTypeFullName)
-            .order(1)
-            .argumentIndex(1)
-            .lineNumber(line(entry))
-            .columnNumber(column(entry))
-        val relevantLocal = localsForEntries(entryWithIdx._2).root.get
-        val assignmentLHSAst =
-          Ast(assignmentLHSNode)
-            .withRefEdge(assignmentLHSNode, relevantLocal)
+          val assignmentLHSNode =
+            NewIdentifier()
+              .name(entry.getName)
+              .code(entry.getText)
+              .typeFullName(entryTypeFullName)
+              .order(1)
+              .argumentIndex(1)
+              .lineNumber(line(entry))
+              .columnNumber(column(entry))
+          val relevantLocal = localsForEntries(entryWithIdx._2).root.get
+          val assignmentLHSAst =
+            Ast(assignmentLHSNode)
+              .withRefEdge(assignmentLHSNode, relevantLocal)
 
-        val componentNIdentifierTFN = typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any)
-        registerType(componentNIdentifierTFN)
+          val componentNIdentifierTFN = typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any)
+          registerType(componentNIdentifierTFN)
 
-        val componentNIdentifierNode =
-          NewIdentifier()
-            .code(destructuringRHS.getText)
-            .name(destructuringRHS.getText)
-            .order(1)
-            .argumentIndex(0)
-            .typeFullName(componentNIdentifierTFN)
-            .lineNumber(line(entry))
-            .columnNumber(column(entry))
+          val componentNIdentifierNode =
+            NewIdentifier()
+              .code(destructuringRHS.getText)
+              .name(destructuringRHS.getText)
+              .order(1)
+              .argumentIndex(0)
+              .typeFullName(componentNIdentifierTFN)
+              .lineNumber(line(entry))
+              .columnNumber(column(entry))
 
-        val componentIdx      = entryWithIdx._2 + 1
-        val fallbackSignature = TypeConstants.cpgUnresolved + "()"
-        val fallbackFullName =
-          TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
-        val componentNFullNameWithSignature =
-          typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-        val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNPrefix + componentIdx + "()"
-        val componentNCallNode =
-          NewCall()
-            .code(componentNCallCode)
-            .methodFullName(componentNFullNameWithSignature._1)
-            .signature(componentNFullNameWithSignature._2)
-            .typeFullName(entryTypeFullName)
-            .name(Constants.componentNPrefix + componentIdx)
-            .order(2)
-            .argumentIndex(2)
-            .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
-            .lineNumber(line(entry))
-            .columnNumber(column(entry))
+          val componentIdx      = entryWithIdx._2 + 1
+          val fallbackSignature = TypeConstants.cpgUnresolved + "()"
+          val fallbackFullName =
+            TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
+          val componentNFullNameWithSignature =
+            typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
+          val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNPrefix + componentIdx + "()"
+          val componentNCallNode =
+            NewCall()
+              .code(componentNCallCode)
+              .methodFullName(componentNFullNameWithSignature._1)
+              .signature(componentNFullNameWithSignature._2)
+              .typeFullName(entryTypeFullName)
+              .name(Constants.componentNPrefix + componentIdx)
+              .order(2)
+              .argumentIndex(2)
+              .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+              .lineNumber(line(entry))
+              .columnNumber(column(entry))
 
-        val matchingLocal =
-          scopeContext.locals.filter { l =>
-            l.name == destructuringRHS.getText
-          }.headOption
-        val matchingMethodParam =
-          scopeContext.methodParameters.filter { l =>
-            l.name == destructuringRHS.getText
-          }.headOption
+          val matchingLocal =
+            scopeContext.locals.filter { l =>
+              l.name == destructuringRHS.getText
+            }.headOption
+          val matchingMethodParam =
+            scopeContext.methodParameters.filter { l =>
+              l.name == destructuringRHS.getText
+            }.headOption
 
-        val matchingRefOption = matchingLocal.orElse(matchingMethodParam)
-        val componentNIdentifierAst =
-          if (matchingRefOption.isDefined) {
-            Ast(componentNIdentifierNode)
-              .withRefEdge(componentNIdentifierNode, matchingRefOption.get)
-          } else {
-            Ast(componentNIdentifierNode)
-          }
-        val componentNAst =
-          Ast(componentNCallNode)
-            .withChild(componentNIdentifierAst)
-            .withArgEdge(componentNCallNode, componentNIdentifierNode)
-            .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
+          val matchingRefOption = matchingLocal.orElse(matchingMethodParam)
+          val componentNIdentifierAst =
+            if (matchingRefOption.isDefined) {
+              Ast(componentNIdentifierNode)
+                .withRefEdge(componentNIdentifierNode, matchingRefOption.get)
+            } else {
+              Ast(componentNIdentifierNode)
+            }
+          val componentNAst =
+            Ast(componentNCallNode)
+              .withChild(componentNIdentifierAst)
+              .withArgEdge(componentNCallNode, componentNIdentifierNode)
+              .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
 
-        val orderForNode = orderAfterLocals + entryWithIdx._2
-        val assignmentCallNode =
-          NewCall()
-            .code(entry.getText + " = " + componentNCallCode)
-            .methodFullName(Operators.assignment)
-            .signature("")
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .order(orderForNode)
-            .lineNumber(line(entry))
-            .columnNumber(column(entry))
+          val orderForNode = orderAfterLocals + entryWithIdx._2
+          val assignmentCallNode =
+            NewCall()
+              .code(entry.getText + " = " + componentNCallCode)
+              .methodFullName(Operators.assignment)
+              .signature("")
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+              .order(orderForNode)
+              .lineNumber(line(entry))
+              .columnNumber(column(entry))
 
-        val assignmentAst =
-          Ast(assignmentCallNode)
-            .withChild(assignmentLHSAst)
-            .withArgEdge(assignmentCallNode, assignmentLHSNode)
-            .withChild(componentNAst)
-            .withArgEdge(assignmentCallNode, componentNCallNode)
-        assignmentAst
-      }.toSeq
+          val assignmentAst =
+            Ast(assignmentCallNode)
+              .withChild(assignmentLHSAst)
+              .withArgEdge(assignmentCallNode, assignmentLHSNode)
+              .withChild(componentNAst)
+              .withArgEdge(assignmentCallNode, componentNCallNode)
+          assignmentAst
+        }
 
     localsForEntries.map(AstWithCtx(_, Context())) ++
       assignmentsForEntries.map(AstWithCtx(_, Context()))
