@@ -214,7 +214,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with code with `for-in` loop" - {
+  "CPG for code with `for-in` loop which has a simple variable loop parameter" - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
@@ -324,6 +324,199 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  // TODO: add a test case also for a `for-in` statement with a destructuring declaration inside the condition
+  "CPG for code with `for-in` loop which has a destructuring declaration loop parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val x: String, val y: Int)
+        |
+        |fun main() {
+        |    val a1 = AClass("1x", 1)
+        |    val a2 = AClass("2x", 2)
+        |    val aList = listOf(a1, a2)
+        |    for ((dVal1, dVal2) in aList) {
+        |        println(dVal1)
+        |        println(dVal2)
+        |    }
+        |//prints:
+        |//```
+        |//1x
+        |//1
+        |//2x
+        |//2
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should contain a correctly lowered representation" in {
+      val expectedIteratorLocalName = "iterator_1"
+      val List(iteratorLocal)       = cpg.local.nameExact(expectedIteratorLocalName).l
+      iteratorLocal.name shouldBe expectedIteratorLocalName
+      iteratorLocal.code shouldBe expectedIteratorLocalName
+      iteratorLocal.typeFullName shouldBe "" // TODO: maybe try to add a type here if possible to get it
+
+      // TODO: add test for the block in here
+      val List(iteratorAssignment: Call) = cpg.call.code("iterator.*itera.*").head.l
+      iteratorAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      iteratorAssignment.name shouldBe Operators.assignment
+      iteratorAssignment.methodFullName shouldBe Operators.assignment
+      iteratorAssignment.code shouldBe expectedIteratorLocalName + " = " + "aList.iterator()"
+      iteratorAssignment.typeFullName shouldBe ""
+
+      val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) = iteratorAssignment.argument.l
+      iteratorAssignmentLhs.argumentIndex shouldBe 1
+      iteratorAssignmentLhs.code shouldBe expectedIteratorLocalName
+      iteratorAssignmentLhs.typeFullName shouldBe ""
+      iteratorAssignmentRhs.argumentIndex shouldBe 2
+      iteratorAssignmentRhs.code shouldBe "aList.iterator()"
+      iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      iteratorAssignmentRhs.typeFullName shouldBe "java.util.Iterator"
+      iteratorAssignmentRhs.methodFullName shouldBe "java.util.List.iterator:java.util.Iterator()"
+      iteratorAssignmentRhs.signature shouldBe "java.util.Iterator()"
+      iteratorLocal.referencingIdentifiers.id.l.contains(iteratorAssignmentLhs.id) shouldBe true
+
+      val List(iteratorAssignmentRhsArg: Identifier) = iteratorAssignmentRhs.argument.l
+      iteratorAssignmentRhsArg.code shouldBe "aList"
+      iteratorAssignmentRhsArg.name shouldBe "aList"
+      iteratorAssignmentRhsArg.argumentIndex shouldBe 0
+      iteratorAssignmentRhsArg.typeFullName shouldBe "java.util.List"
+
+      val List(controlStructure: ControlStructure) = cpg.controlStructure.head.l
+      controlStructure.controlStructureType shouldBe ControlStructureTypes.WHILE
+      controlStructure.order shouldBe 3
+      controlStructure.condition.size shouldBe 1
+
+      val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) = controlStructure.astChildren.l
+      controlStructureFirstChild.order shouldBe 1
+      controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:java.lang.Boolean()"
+      controlStructureFirstChild.receiver.size shouldBe 1
+      controlStructureFirstChild.name shouldBe "hasNext"
+      controlStructureFirstChild.signature shouldBe "java.lang.Boolean()"
+      controlStructureSecondChild.order shouldBe 2
+
+      val List(dVal1: Local, dVal2: Local, tmp: Local) = controlStructureSecondChild.astChildren.take(3).l
+      dVal1.order shouldBe 1
+      dVal1.code shouldBe "dVal1"
+      dVal1.name shouldBe "dVal1"
+      dVal1.typeFullName shouldBe "java.lang.String"
+      dVal2.order shouldBe 2
+      dVal2.code shouldBe "dVal2"
+      dVal2.name shouldBe "dVal2"
+      dVal2.typeFullName shouldBe "java.lang.Integer"
+      tmp.order shouldBe 3
+      tmp.code shouldBe "tmp_3"
+      tmp.name shouldBe "tmp_3"
+      // tmp.typeFullName shouldBe "xxx"
+      // TODO: test more here
+
+      val List(getNext: Call, component1: Call, component2: Call) =
+        controlStructureSecondChild.astChildren.drop(3).take(3).l
+      getNext.order shouldBe 4
+      getNext.methodFullName shouldBe Operators.assignment
+      getNext.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      getNext.code shouldBe "tmp_3 = iterator_1.next()"
+      component1.order shouldBe 5
+      component1.code shouldBe "dVal1 = tmp_3.component1()"
+      component1.name shouldBe Operators.assignment
+      component1.methodFullName shouldBe Operators.assignment
+      component1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      component1.signature shouldBe ""
+      component2.order shouldBe 6
+      component2.code shouldBe "dVal2 = tmp_3.component2()"
+      component2.name shouldBe Operators.assignment
+      component2.methodFullName shouldBe Operators.assignment
+      component2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      component2.signature shouldBe ""
+
+      val List(getNextFirstArg: Identifier, getNextSecondArg: Call) = getNext.argument.l
+      getNextFirstArg.order shouldBe 1
+      getNextFirstArg.argumentIndex shouldBe 1
+      getNextFirstArg.code shouldBe "tmp_3"
+      getNextFirstArg.name shouldBe "tmp_3"
+      tmp.referencingIdentifiers.id.l.contains(getNextFirstArg.id) shouldBe true
+
+      getNextSecondArg.order shouldBe 2
+      getNextSecondArg.argumentIndex shouldBe 2
+      getNextSecondArg.code shouldBe "iterator_1.next()"
+      getNextSecondArg.methodFullName shouldBe "kotlin.collections.Iterator.next:java.lang.Object()"
+      getNextSecondArg.name shouldBe "next"
+      getNextSecondArg.signature shouldBe "java.lang.Object()"
+      getNextSecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      getNextSecondArg.receiver.size shouldBe 1
+
+      val List(getNextSecondArgFirstArg: Identifier) = getNextSecondArg.argument.l
+      getNextSecondArgFirstArg.order shouldBe 1
+      getNextSecondArgFirstArg.argumentIndex shouldBe 0
+      getNextSecondArgFirstArg.code shouldBe "iterator_1"
+      getNextSecondArgFirstArg.typeFullName shouldBe ""
+      iteratorLocal.referencingIdentifiers.id.l.contains(getNextSecondArgFirstArg.id) shouldBe true
+
+      val List(component1FirstArg: Identifier, component1SecondArg: Call) = component1.argument.l
+      component1FirstArg.order shouldBe 1
+      component1FirstArg.argumentIndex shouldBe 1
+      component1FirstArg.code shouldBe "dVal1"
+      dVal1.referencingIdentifiers.id.l.contains(component1FirstArg.id) shouldBe true
+
+      component1SecondArg.order shouldBe 2
+      component1SecondArg.argumentIndex shouldBe 2
+      component1SecondArg.code shouldBe "tmp_3.component1()"
+      component1SecondArg.methodFullName shouldBe "mypkg.AClass.component1:java.lang.String()"
+      component1SecondArg.name shouldBe "component1"
+      component1SecondArg.signature shouldBe "java.lang.String()"
+      component1SecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      component1SecondArg.receiver.size shouldBe 1
+
+      val List(tmpInComponent1Call: Identifier) = component1SecondArg.argument.l
+      tmp.referencingIdentifiers.id.l.contains(tmpInComponent1Call.id) shouldBe true
+
+      val List(component2FirstArg: Identifier, component2SecondArg: Call) = component2.argument.l
+      component2FirstArg.order shouldBe 1
+      component2FirstArg.argumentIndex shouldBe 1
+      component2FirstArg.code shouldBe "dVal2"
+      dVal2.referencingIdentifiers.id.l.contains(component2FirstArg.id) shouldBe true
+
+      component2SecondArg.order shouldBe 2
+      component2SecondArg.argumentIndex shouldBe 2
+      component2SecondArg.code shouldBe "tmp_3.component2()"
+      component2SecondArg.methodFullName shouldBe "mypkg.AClass.component2:java.lang.Integer()"
+      component2SecondArg.name shouldBe "component2"
+      component2SecondArg.signature shouldBe "java.lang.Integer()"
+      component2SecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      component2SecondArg.receiver.size shouldBe 1
+
+      val List(tmpInComponent2Call: Identifier) = component2SecondArg.argument.l
+      tmp.referencingIdentifiers.id.l.contains(tmpInComponent2Call.id) shouldBe true
+
+      val List(blockInsideBody: Block) = controlStructureSecondChild.astChildren.drop(6).l
+      blockInsideBody.order shouldBe 7
+      val List(statementInsideBody: Call, secondStatementInsideBody: Call) = blockInsideBody.astChildren.l
+      statementInsideBody.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      statementInsideBody.methodFullName shouldBe "kotlin.io.println:void(java.lang.Object)"
+      statementInsideBody.code shouldBe "println(dVal1)"
+      statementInsideBody.argument.size shouldBe 1
+
+      secondStatementInsideBody.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      secondStatementInsideBody.methodFullName shouldBe "kotlin.io.println:void(java.lang.Integer)"
+      secondStatementInsideBody.code shouldBe "println(dVal2)"
+      secondStatementInsideBody.argument.size shouldBe 1
+
+      val List(statementInsideBodyFirstArg: Identifier) = statementInsideBody.argument.l
+      statementInsideBodyFirstArg.order shouldBe 1
+      statementInsideBodyFirstArg.argumentIndex shouldBe 1
+      statementInsideBodyFirstArg.code shouldBe "dVal1"
+      statementInsideBodyFirstArg.typeFullName shouldBe "java.lang.String"
+      dVal1.referencingIdentifiers.id.l.contains(statementInsideBodyFirstArg.id) shouldBe true
+
+      val List(secondStatementInsideBodyFirstArg: Identifier) = secondStatementInsideBody.argument.l
+      secondStatementInsideBodyFirstArg.order shouldBe 1
+      secondStatementInsideBodyFirstArg.argumentIndex shouldBe 1
+      secondStatementInsideBodyFirstArg.code shouldBe "dVal2"
+      secondStatementInsideBodyFirstArg.typeFullName shouldBe "java.lang.Integer"
+      dVal2.referencingIdentifiers.id.l.contains(secondStatementInsideBodyFirstArg.id) shouldBe true
+    }
+  }
+
+  // TODO: add test case for destructuring declaration but `_` in one of its values (should be ignored, no lowering there)
   // TODO: also add test for the loop range, when it is with downTo or whatever
 }
