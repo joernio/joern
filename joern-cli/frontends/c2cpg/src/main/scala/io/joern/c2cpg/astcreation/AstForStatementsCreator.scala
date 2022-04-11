@@ -42,7 +42,7 @@ trait AstForStatementsCreator {
     decl.getDeclaration match {
       case simplDecl: IASTSimpleDeclaration
           if simplDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
-        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator], -1))
+        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
           withOrder(simplDecl.getDeclarators) { (d, _) =>
@@ -56,9 +56,9 @@ trait AstForStatementsCreator {
       case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, -1))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
       case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))
-      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, -1))
-      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, -1))
-      case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, -1))
+      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func))
+      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias))
+      case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm))
       case _: ICPPASTUsingDirective                  => Seq.empty
       case decl                                      => Seq(astForNode(decl, -1))
     }
@@ -216,7 +216,7 @@ trait AstForStatementsCreator {
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code, order)
 
     val initAst = astForNode(forStmt.getInitializerClause, 1)
-    val declAst = astsForDeclaration(forStmt.getDeclaration, 2)
+    val declAst = astsForDeclaration(forStmt.getDeclaration)
     val stmtAst = nullSafeAst(forStmt.getBody, 3)
 
     Ast(forNode)
@@ -258,7 +258,7 @@ trait AstForStatementsCreator {
           .lineNumber(line(s.getConditionDeclaration))
           .columnNumber(column(s.getConditionDeclaration))
         scope.pushNewScope(exprBlock)
-        val a        = astsForDeclaration(s.getConditionDeclaration, 1)
+        val a        = astsForDeclaration(s.getConditionDeclaration)
         val blockAst = Ast(exprBlock).withChildren(a)
         scope.popScope()
         (c, blockAst)

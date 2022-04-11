@@ -318,7 +318,7 @@ trait AstForExpressionsCreator {
     asChildOfMacroCall(expression, r, order)
   }
 
-  protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration, order: Int): Ast = {
+  protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration, order: Int = -1): Ast = {
     val name  = "static_assert"
     val call  = newCallNode(a, name, name, DispatchTypes.STATIC_DISPATCH, order)
     val cond  = nullSafeAst(a.getCondition, 1)

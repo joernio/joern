@@ -122,7 +122,7 @@ trait AstCreatorHelper {
     }
   }
 
-  protected def withOrder[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
+  protected def withIndex[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
     nodes.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
@@ -411,7 +411,7 @@ trait AstCreatorHelper {
     Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
   }
 
-  protected def astForNode(node: IASTNode, order: Int): Ast = {
+  protected def astForNode(node: IASTNode, order: Int = -1): Ast = {
     node match {
       case id: IASTIdExpression if id.getName.isInstanceOf[CPPASTQualifiedName] =>
         astForQualifiedName(id.getName.asInstanceOf[CPPASTQualifiedName], order)

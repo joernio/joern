@@ -68,7 +68,7 @@ trait AstForTypesCreator {
     namespaceAst
   }
 
-  protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias, order: Int): Ast = {
+  protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
     val linenumber   = line(namespaceAlias)
     val columnnumber = column(namespaceAlias)
     val filename     = fileName(namespaceAlias)
@@ -88,7 +88,6 @@ trait AstForTypesCreator {
       .filename(filename)
       .name(name)
       .fullName(fullname)
-      .order(order)
 
     Ast(cpgNamespace)
   }
@@ -192,7 +191,7 @@ trait AstForTypesCreator {
     Ast(typeDeclNode)
   }
 
-  protected def astForASMDeclaration(asm: IASTASMDeclaration, order: Int): Ast = Ast(newUnknown(asm, order))
+  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknown(asm, -1))
 
   private def astForStructuredBindingDeclaration(
     structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration
@@ -212,7 +211,7 @@ trait AstForTypesCreator {
     blockAst
   }
 
-  protected def astsForDeclaration(decl: IASTDeclaration, order: Int = -1): Seq[Ast] = {
+  protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
     val declAsts = decl match {
       case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb))
       case declaration: IASTSimpleDeclaration =>
@@ -230,7 +229,7 @@ trait AstForTypesCreator {
           case _ if declaration.getDeclarators.nonEmpty =>
             declaration.getDeclarators.toIndexedSeq.map {
               case d: IASTFunctionDeclarator =>
-                astForFunctionDeclarator(d, order)
+                astForFunctionDeclarator(d)
               case d: IASTSimpleDeclaration if d.getInitializer != null =>
                 Ast() // we do the AST for this down below with initAsts
               case d =>
@@ -240,21 +239,21 @@ trait AstForTypesCreator {
             Seq.empty // dangling decls from unresolved macros; we ignore them
           case _ if declaration.getDeclarators.isEmpty && declaration.getParent.isInstanceOf[IASTTranslationUnit] =>
             Seq.empty // dangling decls from unresolved macros; we ignore them
-          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration, order))
+          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration))
         }
       case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias))
-      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef, order))
-      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias, order))
+      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef))
+      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias))
       case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition))
-      case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a, order))
-      case asm: IASTASMDeclaration                         => Seq(astForASMDeclaration(asm, order))
-      case t: ICPPASTTemplateDeclaration                   => astsForDeclaration(t.getDeclaration, order)
+      case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a))
+      case asm: IASTASMDeclaration                         => Seq(astForASMDeclaration(asm))
+      case t: ICPPASTTemplateDeclaration                   => astsForDeclaration(t.getDeclaration)
       case l: ICPPASTLinkageSpecification                  => astsForLinkageSpecification(l)
       case u: ICPPASTUsingDeclaration                      => handleUsingDeclaration(u)
       case _: ICPPASTVisibilityLabel                       => Seq.empty
       case _: ICPPASTUsingDirective                        => Seq.empty
       case _: ICPPASTExplicitTemplateInstantiation         => Seq.empty
-      case _                                               => Seq(astForNode(decl, order))
+      case _                                               => Seq(astForNode(decl))
     }
 
     val initAsts = decl match {
@@ -270,13 +269,13 @@ trait AstForTypesCreator {
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =
-    withOrder(l.getDeclarations) { case (d, o) =>
-      astsForDeclaration(d, o)
+    withOrder(l.getDeclarations) { case (d, _) =>
+      astsForDeclaration(d)
     }.flatten
 
   private def astsForCompositeType(typeSpecifier: IASTCompositeTypeSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withOrder(decls) { (d, _) =>
+    val declAsts = withIndex(decls) { (d, _) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 
@@ -297,8 +296,8 @@ trait AstForTypesCreator {
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val memberAsts = withOrder(typeSpecifier.getDeclarations(true)) { (m, o) =>
-      astsForDeclaration(m, o)
+    val memberAsts = withOrder(typeSpecifier.getDeclarations(true)) { (m, _) =>
+      astsForDeclaration(m)
     }.flatten
 
     methodAstParentStack.pop()
@@ -318,7 +317,7 @@ trait AstForTypesCreator {
     decls: List[IASTDeclarator]
   ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withOrder(decls) { (d, _) =>
+    val declAsts = withIndex(decls) { (d, _) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 
@@ -363,7 +362,7 @@ trait AstForTypesCreator {
 
   private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withOrder(decls) { (d, _) =>
+    val declAsts = withIndex(decls) { (d, _) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 

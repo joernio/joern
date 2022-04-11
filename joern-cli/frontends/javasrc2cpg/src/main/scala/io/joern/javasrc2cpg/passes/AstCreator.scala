@@ -596,7 +596,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val thisAst = thisAstForMethod(typeFullName, lineNumber = None)
     val bodyAst = Ast(NewBlock().order(1).argumentIndex(1))
 
-    val returnNode = methodReturnNode(None, None, 2, "void")
+    val returnNode = methodReturnNode(None, None, "void")
     val returnAst  = Ast(returnNode)
 
     val modifiers = List(
@@ -920,8 +920,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(thisAst.map(_.ast))
       .withChildren(parameterAstsWithCtx.map(_.ast))
       .withChild(bodyAstWithCtx.ast)
-      .withChild(returnAstWithCtx)
       .withChildren(annotationAsts)
+      .withChild(returnAstWithCtx)
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(parameterAstsWithCtx.map(_.ctx))
 
@@ -930,15 +930,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForMethodReturn(methodDeclaration: MethodDeclaration): Ast = {
     val typeFullName = typeInfoProvider.getReturnType(methodDeclaration).getOrElse(UnresolvedTypeDefault)
-    val order        = methodDeclaration.getParameters.size + 2
-    Ast(methodReturnNode(line(methodDeclaration.getType), column(methodDeclaration.getType), order, typeFullName))
+    Ast(methodReturnNode(line(methodDeclaration.getType), column(methodDeclaration.getType), typeFullName))
   }
 
   private def astForConstructorReturn(constructorDeclaration: ConstructorDeclaration): Ast = {
     val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
     val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
     val order  = constructorDeclaration.getParameters.size + 2
-    val node   = methodReturnNode(line, column, order, "void")
+    val node   = methodReturnNode(line, column, "void")
     Ast(node)
   }
 
@@ -2554,13 +2553,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             .lineNumber(identifier.lineNumber)
             .columnNumber(identifier.columnNumber)
             .closureBindingId(bindingWithInfo.bindingId)
-            .order(idx + 1)
         )
       }
 
-    val methodReturnOrder = parameterAsts.size + 2
-
-    val retNode = methodReturnNode(lineNumber, columnNumber, methodReturnOrder, "ANY")
+    val retNode = methodReturnNode(lineNumber, columnNumber, "ANY")
 
     val lambdaMethodAst = Ast(lambdaMethodNode)
       .withChildren(parameterAsts)
