@@ -138,11 +138,15 @@ object ProgramHandlingUtil {
   /** Retrieve parseable files from archive types.
     */
   def extractSourceFilesFromArchive(sourceCodeDir: String, archiveFileExtensions: Set[String]): List[String] = {
-    val archives = if (new File(sourceCodeDir).isFile) {
-      List(sourceCodeDir)
-    } else {
-      SourceFiles.determine(Set(sourceCodeDir), archiveFileExtensions)
-    }
+    val archives =
+      if (
+        new File(sourceCodeDir).isFile &&
+        archiveFileExtensions.map(sourceCodeDir.endsWith).reduce((a, b) => a && b)
+      ) {
+        List(sourceCodeDir)
+      } else {
+        SourceFiles.determine(Set(sourceCodeDir), archiveFileExtensions)
+      }
     archives.flatMap { x => unzipArchive(new ZipFile(x), sourceCodeDir) }
   }
 

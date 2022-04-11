@@ -186,6 +186,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .code(s"$typeFullName ${parameter.getName}")
       .typeFullName(typeFullName)
       .order(childNum)
+      .index(childNum)
       .lineNumber(line(methodDeclaration))
       .columnNumber(column(methodDeclaration))
       .evaluationStrategy(getEvaluationStrategy(parameter.getType))
