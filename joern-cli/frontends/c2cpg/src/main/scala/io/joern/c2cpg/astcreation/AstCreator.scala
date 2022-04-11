@@ -73,7 +73,6 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
       name,
       NodeTypes.NAMESPACE_BLOCK,
       fullName,
-      1,
       line = lineNumber,
       column = lineNumberEnd
     )
@@ -105,7 +104,7 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
           filename,
           line(stmt),
           column(stmt),
-          astsForDeclaration(stmt, -1)
+          astsForDeclaration(stmt)
         )
       r
     }.toIndexedSeq

@@ -332,10 +332,8 @@ trait AstCreatorHelper {
     Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
   }
 
-  private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer, order: Int): Ast = {
+  private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
     val b = NewBlock()
-      .order(order)
-      .argumentIndex(order)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(d))
       .columnNumber(column(d))
@@ -423,7 +421,7 @@ trait AstCreatorHelper {
       case expr: IASTExpression             => astForExpression(expr, order)
       case l: IASTInitializerList           => astForInitializerList(l, order)
       case c: ICPPASTConstructorInitializer => astForCPPASTConstructorInitializer(c, order)
-      case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d, order)
+      case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d)
       case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d, order)
       case d: ICASTArrayDesignator          => nullSafeAst(d.getSubscriptExpression, order)
       case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression, order)

@@ -55,7 +55,7 @@ trait AstForStatementsCreator {
         locals ++ calls
       case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, -1))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
-      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias, -1))
+      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))
       case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, -1))
       case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, -1))
       case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, -1))
