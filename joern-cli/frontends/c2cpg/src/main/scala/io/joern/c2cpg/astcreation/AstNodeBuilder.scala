@@ -35,7 +35,7 @@ trait AstNodeBuilder {
     name: String,
     fullname: String,
     dispatchType: String,
-    order: Int = -1
+    order: Int
   ): NewCall = {
     NewCall()
       .name(name)
@@ -60,7 +60,7 @@ trait AstNodeBuilder {
       .lineNumber(line(node))
       .columnNumber(column(node))
 
-  protected def newJumpTarget(node: IASTNode): NewJumpTarget = {
+  protected def newJumpTarget(node: IASTNode, order: Int): NewJumpTarget = {
     val code = nodeSignature(node)
     val name = node match {
       case label: IASTLabelStatement    => ASTStringUtil.getSimpleName(label.getName)
@@ -71,6 +71,8 @@ trait AstNodeBuilder {
       .parserTypeName(node.getClass.getSimpleName)
       .name(name)
       .code(code)
+      .order(order)
+      .argumentIndex(order)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }

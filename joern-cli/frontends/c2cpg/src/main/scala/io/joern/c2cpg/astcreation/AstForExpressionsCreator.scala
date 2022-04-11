@@ -289,7 +289,7 @@ trait AstForExpressionsCreator {
   private def astForPackExpansionExpression(packExpansionExpression: ICPPASTPackExpansionExpression, order: Int): Ast =
     astForExpression(packExpansionExpression.getPattern, order)
 
-  protected def astForExpression(expression: IASTExpression, order: Int = -1): Ast = {
+  protected def astForExpression(expression: IASTExpression, order: Int): Ast = {
     val r = expression match {
       case lit: IASTLiteralExpression   => astForLiteral(lit, order)
       case un: IASTUnaryExpression      => astForUnaryExpression(un, order)

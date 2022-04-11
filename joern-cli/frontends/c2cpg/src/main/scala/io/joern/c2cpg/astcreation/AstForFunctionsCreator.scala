@@ -148,8 +148,8 @@ trait AstForFunctionsCreator {
 
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
-      parameterNode(p, i)
+    val parameterNodes = withIndex(parameters(funcDecl)) { (p, order) =>
+      parameterNode(p, order)
     }
 
     parameterNodes.lastOption.foreach {
@@ -195,8 +195,8 @@ trait AstForFunctionsCreator {
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withIndex(parameters(funcDef)) { (p, i) =>
-      parameterNode(p, i)
+    val parameterNodes = withIndex(parameters(funcDef)) { (p, order) =>
+      parameterNode(p, order)
     }
 
     parameterNodes.lastOption.foreach {
