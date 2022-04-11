@@ -38,29 +38,29 @@ trait AstForStatementsCreator {
     blockAst
   }
 
-  private def astsForDeclarationStatement(decl: IASTDeclarationStatement, order: Int): Seq[Ast] =
+  private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
       case simplDecl: IASTSimpleDeclaration
           if simplDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
-        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator], order))
+        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator], -1))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
-          withOrder(simplDecl.getDeclarators) { (d, o) =>
-            astForDeclarator(simplDecl, d, order + o - 1)
+          withOrder(simplDecl.getDeclarators) { (d, _) =>
+            astForDeclarator(simplDecl, d)
           }
         val calls =
-          withOrder(simplDecl.getDeclarators.filter(_.getInitializer != null)) { (d, o) =>
-            astForInitializer(d, d.getInitializer, locals.size + order + o - 1)
+          withOrder(simplDecl.getDeclarators.filter(_.getInitializer != null)) { (d, _) =>
+            astForInitializer(d, d.getInitializer)
           }
         locals ++ calls
-      case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, order))
+      case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, -1))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
-      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias, order))
-      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, order))
-      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, order))
-      case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, order))
+      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias, -1))
+      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func, -1))
+      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias, -1))
+      case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm, -1))
       case _: ICPPASTUsingDirective                  => Seq.empty
-      case decl                                      => Seq(astForNode(decl, order))
+      case decl                                      => Seq(astForNode(decl, -1))
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement, order: Int): Ast = {
@@ -170,7 +170,7 @@ trait AstForStatementsCreator {
       case defStmt: IASTDefaultStatement          => Seq(astForDefaultStatement(defStmt, order))
       case tryStmt: ICPPASTTryBlockStatement      => Seq(astForTryStatement(tryStmt, order))
       case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt, order)
-      case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl, order)
+      case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl)
       case label: IASTLabelStatement              => astsForLabelStatement(label, order)
       case _: IASTNullStatement                   => Seq.empty
       case _                                      => Seq(astForNode(statement, order))

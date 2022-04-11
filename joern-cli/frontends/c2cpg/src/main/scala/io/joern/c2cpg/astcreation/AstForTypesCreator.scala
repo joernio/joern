@@ -96,30 +96,26 @@ trait AstForTypesCreator {
     Ast(cpgNamespace)
   }
 
-  protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, order: Int): Ast = {
+  protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Ast = {
     val declTypeName = registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
     val tpe          = typeFor(declarator)
     val name         = ASTStringUtil.getSimpleName(declarator.getName)
     declaration match {
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
-        Ast(
-          newTypeDecl(name, registerType(name), filename, nodeSignature(d), alias = Some(declTypeName), order = order)
-        )
+        Ast(newTypeDecl(name, registerType(name), filename, nodeSignature(d), alias = Some(declTypeName)))
       case d if parentIsClassDef(d) =>
         Ast(
           NewMember()
             .code(nodeSignature(declarator))
             .name(name)
             .typeFullName(declTypeName)
-            .order(order)
         )
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
         val l = NewLocal()
           .code(s"$tpe $name")
           .name(name)
           .typeFullName(registerType(tpe))
-          .order(order)
           .lineNumber(line(declarator))
         scope.addToScope(name, (l, tpe))
         Ast(l)
@@ -128,7 +124,6 @@ trait AstForTypesCreator {
           .code(s"$declTypeName $name")
           .name(name)
           .typeFullName(registerType(tpe))
-          .order(order)
           .lineNumber(line(declarator))
         scope.addToScope(name, (l, tpe))
         Ast(l)
@@ -136,10 +131,10 @@ trait AstForTypesCreator {
 
   }
 
-  protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer, order: Int): Ast = init match {
+  protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {
     case i: IASTEqualsInitializer =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
+      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, -1)
       val left         = astForNode(declarator.getName, 1)
       val right        = astForNode(i.getInitializerClause, 2)
       Ast(callNode)
@@ -149,12 +144,12 @@ trait AstForTypesCreator {
         .withArgEdge(callNode, right.root)
     case i: ICPPASTConstructorInitializer =>
       val name     = ASTStringUtil.getSimpleName(declarator.getName)
-      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, order)
+      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, -1)
       val args     = withOrder(i.getArguments) { case (a, o) => astForNode(a, o) }
       Ast(callNode).withChildren(args).withArgEdges(callNode, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order)
+      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, -1)
       val left         = astForNode(declarator.getName, 1)
       val right        = astForNode(i, 2)
       Ast(callNode)
@@ -162,7 +157,7 @@ trait AstForTypesCreator {
         .withChild(right)
         .withArgEdge(callNode, left.root)
         .withArgEdge(callNode, right.root)
-    case _ => astForNode(init, order)
+    case _ => astForNode(init, -1)
   }
 
   protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
@@ -246,7 +241,7 @@ trait AstForTypesCreator {
               case d: IASTSimpleDeclaration if d.getInitializer != null =>
                 Ast() // we do the AST for this down below with initAsts
               case d =>
-                astForDeclarator(declaration, d, order)
+                astForDeclarator(declaration, d)
             }
           case _ if nodeSignature(declaration) == ";" =>
             Seq.empty // dangling decls from unresolved macros; we ignore them
@@ -269,12 +264,11 @@ trait AstForTypesCreator {
       case _                                               => Seq(astForNode(decl, order))
     }
 
-    val lastOrder = declAsts.length
     val initAsts = decl match {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         withOrder(declaration.getDeclarators) {
-          case (d: IASTDeclarator, o) if d.getInitializer != null =>
-            astForInitializer(d, d.getInitializer, order + lastOrder + o - 1)
+          case (d: IASTDeclarator, _) if d.getInitializer != null =>
+            astForInitializer(d, d.getInitializer)
           case _ => Ast()
         }
       case _ => Nil
@@ -293,8 +287,8 @@ trait AstForTypesCreator {
     order: Int
   ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withOrder(decls) { (d, o) =>
-      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
+    val declAsts = withOrder(decls) { (d, _) =>
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
@@ -344,8 +338,8 @@ trait AstForTypesCreator {
     order: Int
   ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withOrder(decls) { (d, o) =>
-      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
+    val declAsts = withOrder(decls) { (d, _) =>
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
@@ -393,8 +387,8 @@ trait AstForTypesCreator {
     order: Int
   ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withOrder(decls) { (d, o) =>
-      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, order + o)
+    val declAsts = withOrder(decls) { (d, _) =>
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 
     val (name, fullname) =

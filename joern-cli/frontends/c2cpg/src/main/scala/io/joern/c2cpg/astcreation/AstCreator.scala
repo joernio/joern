@@ -97,7 +97,6 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
     val blockNode = NewBlock()
       .typeFullName("ANY")
 
-    var currOrder = 1
     val declsAsts = allDecls.flatMap { stmt =>
       val r =
         CGlobal.getAstsFromAstCache(
@@ -106,9 +105,8 @@ class AstCreator(val filename: String, val config: Config, val global: CGlobal, 
           filename,
           line(stmt),
           column(stmt),
-          astsForDeclaration(stmt, currOrder)
+          astsForDeclaration(stmt, -1)
         )
-      currOrder = currOrder + r.length
       r
     }.toIndexedSeq
 
