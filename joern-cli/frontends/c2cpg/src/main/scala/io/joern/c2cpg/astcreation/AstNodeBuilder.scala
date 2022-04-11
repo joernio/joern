@@ -51,15 +51,12 @@ trait AstNodeBuilder {
   protected def newControlStructureNode(
     node: IASTNode,
     controlStructureType: String,
-    code: String,
-    order: Int
+    code: String
   ): NewControlStructure =
     NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(controlStructureType)
       .code(code)
-      .order(order)
-      .argumentIndex(order)
       .lineNumber(line(node))
       .columnNumber(column(node))
 
