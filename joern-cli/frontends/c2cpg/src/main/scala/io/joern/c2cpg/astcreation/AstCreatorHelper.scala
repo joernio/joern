@@ -390,7 +390,6 @@ trait AstCreatorHelper {
     lineNumber: Option[Integer],
     astParentType: String,
     astParentFullName: String,
-    order: Int,
     childrenAsts: Seq[Ast]
   ): Ast = {
     val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
@@ -403,18 +402,14 @@ trait AstCreatorHelper {
         .lineNumber(lineNumber)
         .astParentType(astParentType)
         .astParentFullName(astParentFullName)
-        .order(order)
 
     val blockNode = NewBlock()
-      .order(1)
-      .argumentIndex(1)
       .typeFullName("ANY")
 
     val methodReturn = NewMethodReturn()
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName("ANY")
-      .order(2)
     Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
   }
 

@@ -333,14 +333,7 @@ trait AstForTypesCreator {
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
-      val init = astForFakeStaticInitMethod(
-        fullname,
-        line(typeSpecifier),
-        NodeTypes.TYPE_DECL,
-        fullname,
-        member.length + 1,
-        calls
-      )
+      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), NodeTypes.TYPE_DECL, fullname, calls)
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
   }
@@ -424,14 +417,7 @@ trait AstForTypesCreator {
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
-      val init = astForFakeStaticInitMethod(
-        fullname,
-        line(typeSpecifier),
-        NodeTypes.TYPE_DECL,
-        fullname,
-        member.length + 1,
-        calls
-      )
+      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), NodeTypes.TYPE_DECL, fullname, calls)
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
   }
