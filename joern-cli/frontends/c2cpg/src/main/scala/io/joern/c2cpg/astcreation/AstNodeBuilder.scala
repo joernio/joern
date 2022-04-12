@@ -35,15 +35,14 @@ trait AstNodeBuilder {
     name: String,
     fullname: String,
     dispatchType: String,
-    order: Int
+    argIndex: Int = -1
   ): NewCall = {
     NewCall()
       .name(name)
       .dispatchType(dispatchType)
       .methodFullName(fullname)
       .code(nodeSignature(node))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }

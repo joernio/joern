@@ -28,7 +28,7 @@ trait AstForPrimitivesCreator {
     Ast(litNode)
   }
 
-  protected def astForIdentifier(ident: IASTNode, order: Int): Ast = {
+  protected def astForIdentifier(ident: IASTNode, argIndex: Int): Ast = {
     val identifierName = ident match {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
@@ -57,8 +57,8 @@ trait AstForPrimitivesCreator {
       .name(identifierName)
       .typeFullName(registerType(cleanType(identifierTypeName)))
       .code(nodeSignature(ident))
-      .order(order)
-      .argumentIndex(order)
+      .order(argIndex)
+      .argumentIndex(argIndex)
       .lineNumber(line(ident))
       .columnNumber(column(ident))
 
@@ -135,13 +135,12 @@ trait AstForPrimitivesCreator {
     val owner = if (qualifier != Ast()) {
       qualifier
     } else {
-      Ast(NewLiteral().code("<global>").order(1).argumentIndex(1).typeFullName("ANY"))
+      Ast(NewLiteral().code("<global>").argumentIndex(1).typeFullName("ANY"))
     }
 
     val member = NewFieldIdentifier()
       .canonicalName(qualId.getLastName.toString)
       .code(qualId.getLastName.toString)
-      .order(2)
       .argumentIndex(2)
       .lineNumber(line(qualId.getLastName))
       .columnNumber(column(qualId.getLastName))

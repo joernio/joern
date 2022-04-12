@@ -107,12 +107,12 @@ trait AstForStatementsCreator {
 
     val doNode = newControlStructureNode(doStmt, ControlStructureTypes.DO, code)
 
-    val conditionAst = nullSafeAst(doStmt.getCondition, 2)
-    val stmtAsts     = nullSafeAst(doStmt.getBody, 1)
+    val conditionAst = nullSafeAst(doStmt.getCondition)
+    val stmtAsts     = nullSafeAst(doStmt.getBody)
 
     Ast(doNode)
-      .withChild(conditionAst)
       .withChildren(stmtAsts)
+      .withChild(conditionAst)
       .withConditionEdge(doNode, conditionAst.root)
   }
 
@@ -121,8 +121,8 @@ trait AstForStatementsCreator {
 
     val switchNode = newControlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
 
-    val conditionAst = nullSafeAst(switchStmt.getControllerExpression, 1)
-    val stmtAsts     = nullSafeAst(switchStmt.getBody, 2)
+    val conditionAst = nullSafeAst(switchStmt.getControllerExpression)
+    val stmtAsts     = nullSafeAst(switchStmt.getBody)
 
     Ast(switchNode)
       .withChild(conditionAst)

@@ -273,9 +273,9 @@ trait AstForExpressionsCreator {
       .withArgEdge(cpgCastExpression, expr.root)
   }
 
-  private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression, order: Int): Ast = {
+  private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression): Ast = {
     val name     = c.getDeclSpecifier.toString
-    val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
+    val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH)
     val arg      = astForNode(c.getInitializer, 1)
     Ast(callNode).withChild(arg).withArgEdge(callNode, arg.root)
   }
@@ -307,7 +307,7 @@ trait AstForExpressionsCreator {
       case newExpression: ICPPASTNewExpression                => astForNewExpression(newExpression, order)
       case delExpression: ICPPASTDeleteExpression             => astForDeleteExpression(delExpression, order)
       case typeIdInit: IASTTypeIdInitializerExpression        => astForTypeIdInitExpression(typeIdInit, order)
-      case c: ICPPASTSimpleTypeConstructorExpression          => astForConstructorExpression(c, order)
+      case c: ICPPASTSimpleTypeConstructorExpression          => astForConstructorExpression(c)
       case lambdaExpression: ICPPASTLambdaExpression          => astForMethodRefForLambda(lambdaExpression)
       case compoundExpression: IGNUASTCompoundStatementExpression =>
         astForCompoundStatementExpression(compoundExpression, order)
