@@ -180,6 +180,9 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
       m.methodReturn.code shouldBe "RET"
       m.methodReturn.lineNumber shouldBe Some(3)
       m.methodReturn.columnNumber shouldBe Some(9)
+
+      m.block.size shouldBe 1
+      m.block.astChildren.size shouldBe 0
     }
 
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
@@ -190,6 +193,9 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
       m.methodReturn.code shouldBe "RET"
       m.methodReturn.lineNumber shouldBe Some(5)
       m.methodReturn.columnNumber shouldBe Some(4)
+
+      m.block.size shouldBe 1
+      m.block.astChildren.map(_.code).l shouldBe List("this.bar = bar")
     }
   }
 }
