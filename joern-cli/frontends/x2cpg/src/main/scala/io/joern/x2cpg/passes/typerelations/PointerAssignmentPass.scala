@@ -16,8 +16,6 @@ import scala.collection.mutable.ListBuffer
   */
 class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  // TODO: Replace with POINTS_TO from PR #1627 in codepropertygraph
-  val edge                   = "DATA_FLOW"
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[Method] = cpg.method.toArray
@@ -38,7 +36,7 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
         .foreach { varDecl =>
           pointsToGraph.get(varDecl) match {
             case Some(tgtNode) =>
-              builder.addEdge(varDecl.node, tgtNode.node, edge)
+              builder.addEdge(varDecl.node, tgtNode.node, EdgeTypes.POINTS_TO)
             case None =>
           }
         }
@@ -64,7 +62,7 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
       }
 
       // TODO: See if we can use something else instead of adding cfgChildren
-      Traversal(alloc).cfgChildren
+      Traversal(alloc).method.ast
         .collect {
           case x: Identifier      => x
           case y: FieldIdentifier => y
@@ -117,16 +115,7 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
     */
   class VarInCtx(val node: CfgNode) {
 
-    // TODO: Use parentBlock from PR #1248 in Joern
-    def parentBlock(traversal: AstNode): Traversal[Block] =
-      Traversal(traversal)
-        .repeat(_.in(EdgeTypes.AST))(
-          _.emit
-            .until(_.hasLabel(NodeTypes.BLOCK))
-        )
-        .collectAll[Block]
-
-    val block: Block = parentBlock(node).head
+    val block: Option[Block] = node.parentBlock.nextOption()
 
     def canEqual(other: Any): Boolean = other.isInstanceOf[VarInCtx]
 

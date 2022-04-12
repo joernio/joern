@@ -10,7 +10,8 @@ object DotPagGenerator {
 
   def dotPag(method: Method): String = {
     val pag = new PagGenerator().generate(method)
-    DotSerializer.dotGraph(method, pag)
+    val cfg = new CfgGenerator().generate(method)
+    DotSerializer.dotGraph(method, pag ++ cfg, withEdgeTypes = true)
   }
 
 }

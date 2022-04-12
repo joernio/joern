@@ -62,12 +62,6 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     }
   }
 
-  def cfgChildren: Traversal[CfgNode] = {
-    expandExhaustively { v =>
-      Iterator(v.cfgNext.nextOption()).flatten
-    }
-  }
-
   /** Recursively determine all nodes by which this node is dominated
     */
   def dominatedBy: Traversal[CfgNode] = {

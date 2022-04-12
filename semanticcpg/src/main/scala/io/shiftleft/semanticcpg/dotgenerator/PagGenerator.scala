@@ -11,6 +11,8 @@ import scala.jdk.CollectionConverters._
 
 class PagGenerator {
 
+  val edgeType: String = EdgeTypes.POINTS_TO
+
   def generate(astRoot: AstNode): Graph = {
     def shouldBeDisplayed(v: AstNode): Boolean = v match {
       case _: MethodParameterOut => false
@@ -28,8 +30,8 @@ class PagGenerator {
       }
     )
     val pagEdges = vertices.flatMap(v =>
-      v.out(EdgeTypes.DATA_FLOW).asScala.collectAll[AstNode].map { dstV =>
-        Edge(v, dstV, label = "POINTS_TO")
+      v.out(edgeType).asScala.collectAll[AstNode].map { dstV =>
+        Edge(v, dstV, edgeType = edgeType)
       }
     )
     Graph(vertices, astEdges ++ pagEdges)
