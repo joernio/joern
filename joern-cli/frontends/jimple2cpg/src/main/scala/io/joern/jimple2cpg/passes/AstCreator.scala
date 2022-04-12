@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
-import soot.tagkit.Host
+import soot.tagkit._
 import soot.{Local => _, _}
 
 import scala.collection.mutable
@@ -132,6 +132,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       if (!methodDeclaration.isConcrete) {
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
+          .withChildren(astsForMethodTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
         val methodBody = Try(methodDeclaration.getActiveBody) match {
@@ -146,6 +147,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
+          .withChildren(astsForMethodTags(methodDeclaration))
           .withChild(astForMethodBody(methodBody, lastOrder))
           .withChild(astForMethodReturn(methodDeclaration))
       }
@@ -154,6 +156,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         logger.warn(s"Unexpected exception while parsing method body! Will stub the method ${methodNode.fullName}", e)
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
+          .withChildren(astsForMethodTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
@@ -191,6 +194,74 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .columnNumber(column(methodDeclaration))
       .evaluationStrategy(getEvaluationStrategy(parameter.getType))
     Ast(parameterNode)
+  }
+
+  private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {
+    methodDeclaration.getTags.asScala.flatMap {
+      case x: VisibilityAnnotationTag => x.getAnnotations.asScala.map(a => astsForAnnotations(a, methodDeclaration))
+      case _: AnnotationDefaultTag    => Seq(Ast())
+      case x =>
+        logger.warn(s"Unhandled method tag '${x.getClass}' skipping...'")
+        Seq(Ast())
+    }.toSeq
+  }
+
+  private def astsForAnnotations(annotation: AnnotationTag, methodDeclaration: SootMethod): Ast = {
+    val annoType = registerType(parseAsmType(annotation.getType))
+    val name     = if (annoType.contains('.')) annoType.substring(annoType.indexOf('.'), annoType.length) else annoType
+    val elementNodes = annotation.getElems.asScala.map { a => astForAnnotationElement(a, methodDeclaration) }.toSeq
+    val annotationNode = NewAnnotation()
+      .name(name)
+      .code(s"@$name(${elementNodes.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")})")
+      .fullName(annoType)
+    Ast(annotationNode)
+      .withChildren(elementNodes)
+  }
+
+  private def astForAnnotationElement(annoElement: AnnotationElem, parentMethod: SootMethod): Ast = {
+    def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
+      case x: AnnotationClassElem =>
+        val desc = registerType(parseAsmType(x.getDesc))
+        (desc, desc)
+      case x: AnnotationBooleanElem => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationDoubleElem  => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationEnumElem    => (x.getConstantName, x.getConstantName)
+      case x: AnnotationFloatElem   => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationIntElem     => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationLongElem    => (x.getValue.toString, x.getValue.toString)
+      case _                        => ("", "")
+    }
+    val lineNo      = line(parentMethod)
+    val columnNo    = column(parentMethod)
+    val codeBuilder = new StringBuilder()
+    val lhsNode = Ast(
+      NewAnnotationParameter()
+        .code(annoElement.getName)
+        .lineNumber(lineNo)
+        .columnNumber(columnNo)
+    )
+    codeBuilder.append(s"${annoElement.getName} = ")
+    val rhsNode =
+      annoElement match {
+        case x: AnnotationAnnotationElem => astForAnnotationElement(x, parentMethod)
+        case x: AnnotationArrayElem      => Ast()
+        case x: AnnotationStringElem =>
+          val (name, code) = (x.getValue, x.getValue)
+          codeBuilder.append(s"\"${x.getValue}\"")
+          Ast(NewAnnotationLiteral().name(name).code(code).argumentIndex(2))
+        case x =>
+          val (name, code) = getLiteralElementNameAndCode(x)
+          codeBuilder.append(code)
+          Ast(NewAnnotationLiteral().name(name).code(code).argumentIndex(2))
+      }
+
+    val paramAssign = NewAnnotationParameterAssign()
+      .code(codeBuilder.toString)
+      .lineNumber(lineNo)
+      .columnNumber(columnNo)
+
+    Ast(paramAssign)
+      .withChildren(Seq(lhsNode, rhsNode))
   }
 
   private def astForMethodBody(body: Body, order: Int): Ast = {
@@ -993,4 +1064,73 @@ object AstCreator {
       f(x, i + 1)
     }.toSeq
   }
+
+  private val PRIMITIVES: Map[Char, String] = Map[Char, String](
+    'Z' -> "boolean",
+    'C' -> "char",
+    'B' -> "byte",
+    'S' -> "short",
+    'I' -> "int",
+    'F' -> "float",
+    'J' -> "long",
+    'D' -> "double",
+    'V' -> "void"
+  )
+
+  def parseAsmType(signature: String): String = {
+    val sigArr = signature.toCharArray
+    val sb     = new StringBuilder()
+    sigArr.toSeq.foreach { c: Char =>
+      if (c == ';') {
+        val prefix = sb
+          .toString()
+          .replace("[", "")
+          .substring(1)
+          .replace("/", ".")
+        val suffix = sb.toSeq
+          .filter { _ == '[' }
+          .map { _ => "[]" }
+          .mkString("")
+        return s"$prefix$suffix"
+      } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
+        return s"${PRIMITIVES(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
+      } else if (isObject(c)) {
+        sb.append(c)
+      } else if (isArray(c)) {
+        sb.append(c)
+      } else sb.append(c)
+    }
+    sb.toString()
+  }
+
+  /** Checks if the given character is associated with a primitive or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. I, D, F, etc.
+    * @return
+    *   true if the character is associated with a primitive, false if otherwise.
+    */
+  def isPrimitive(c: Char): Boolean =
+    PRIMITIVES.contains(c)
+
+  /** Checks if the given character is associated an object or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. L
+    * @return
+    *   true if the character is associated with an object, false if otherwise.
+    */
+  def isObject(c: Char): Boolean =
+    c == 'L'
+
+  /** Checks if the given character is associated an array or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. [
+    * @return
+    *   true if the character is associated with an array, false if otherwise.
+    */
+  def isArray(c: Char): Boolean =
+    c == '['
+
 }
