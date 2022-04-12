@@ -89,6 +89,31 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with destructuring declaration and a variable as RHS, plus one `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package main
+        |
+        |data class AClass(val a: String, val b: Int)
+        |fun main() {
+        |    val aClass = AClass("AMESSAGE", 41414141)
+        |    val (myA, _) = aClass
+        |    println(myA)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
+    }
+  }
+
   "CPG for code with destructuring expression with a ctor-invocation RHS" - {
     lazy val cpg = TestContext.buildCpg("""
         |package main
@@ -214,6 +239,31 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with destructuring expression with a ctor-invocation RHS and an `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package main
+        |
+        |data class AClass(val a: String, val b: Int)
+        |fun main() {
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, _) = AClass(aMessage, 41414141)
+        |    println(myA)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
+    }
+  }
+
   "CPG for code with destructuring expression with a non-ctor-call RHS" - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
@@ -328,6 +378,37 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       secondDestructRHSCallArgument.code should startWith("tmp_")
       secondDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
       secondDestructRHSCallArgument.refsTo.size shouldBe 1
+    }
+  }
+
+  "CPG for code with destructuring expression with a non-ctor-call RHS and an `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val a: String, val b: Int)
+        |
+        |fun makeA(x: String): AClass {
+        |    val a = AClass(x, 41414141)
+        |    return a
+        |}
+        |
+        |fun main() {
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, _) = makeA(aMessage)
+        |    println(myA)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
     }
   }
 
@@ -461,4 +542,38 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with destructuring expression with a DQE call RHS and an `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val a: String, val b: Int)
+        |
+        |class AFactory {
+        |    fun makeA(x: String): AClass {
+        |        val a = AClass(x, 41414141)
+        |        return a
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val aFactory = AFactory()
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, _) = aFactory.makeA(aMessage)
+        |    println(myA)
+        |//prints:
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
+    }
+  }
 }
