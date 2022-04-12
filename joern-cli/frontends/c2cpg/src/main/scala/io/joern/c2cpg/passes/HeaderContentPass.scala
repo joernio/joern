@@ -34,7 +34,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
   }
 
   private def createGlobalBlock(dstGraph: DiffGraphBuilder): NewBlock = {
-    val includesFile = NewFile().name(filename).order(0)
+    val includesFile = NewFile().name(filename)
 
     val namespaceBlock = NewNamespaceBlock()
       .name(globalName)

@@ -150,7 +150,7 @@ trait AstForStatementsCreator {
 
   protected def astsForStatement(statement: IASTStatement, order: Int = -1): Seq[Ast] = {
     val r = statement match {
-      case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression, order))
+      case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
       case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, order))
       case ifStmt: IASTIfStatement                => Seq(astForIf(ifStmt))
       case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
