@@ -103,10 +103,10 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
         val alloc = assign.argument(2).asInstanceOf[Call]
-        alloc.name shouldBe "<operator>.alloc"
+        alloc.name shouldBe Operators.alloc
         alloc.code shouldBe "new Bar"
         alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
-        alloc.methodFullName shouldBe "<operator>.alloc"
+        alloc.methodFullName shouldBe Operators.alloc
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
@@ -141,10 +141,10 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
         val alloc = assign.argument(2).asInstanceOf[Call]
-        alloc.name shouldBe "<operator>.alloc"
+        alloc.name shouldBe Operators.alloc
         alloc.code shouldBe "new Bar"
         alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
-        alloc.methodFullName shouldBe "<operator>.alloc"
+        alloc.methodFullName shouldBe Operators.alloc
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
@@ -183,8 +183,8 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         temp.code shouldBe "$stack1"
 
         val alloc = allocAssign.argument(2).asInstanceOf[Call]
-        alloc.name shouldBe "<operator>.alloc"
-        alloc.methodFullName shouldBe "<operator>.alloc"
+        alloc.name shouldBe Operators.alloc
+        alloc.methodFullName shouldBe Operators.alloc
         alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar"

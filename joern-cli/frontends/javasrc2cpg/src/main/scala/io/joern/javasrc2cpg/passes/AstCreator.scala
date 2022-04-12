@@ -1367,7 +1367,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     order: Int,
     expectedType: Option[String]
   ): AstWithCtx = {
-    val name = "<operator>.arrayCreator"
+    val name = Operators.alloc
     val callNode = NewCall()
       .name(name)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1943,7 +1943,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astsForExpression(x, scopeContext, o, expectedArgType)
     }.flatten
 
-    val name = "<operator>.alloc"
+    val name = Operators.alloc
     val typeFullName = typeInfoProvider
       .getTypeFullName(expr)
       .orElse(expectedType)
