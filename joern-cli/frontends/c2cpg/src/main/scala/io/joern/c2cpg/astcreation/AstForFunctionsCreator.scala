@@ -148,8 +148,8 @@ trait AstForFunctionsCreator {
 
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withIndex(parameters(funcDecl)) { (p, order) =>
-      parameterNode(p, order)
+    val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
+      parameterNode(p, i)
     }
 
     parameterNodes.lastOption.foreach {
@@ -195,8 +195,8 @@ trait AstForFunctionsCreator {
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withIndex(parameters(funcDef)) { (p, order) =>
-      parameterNode(p, order)
+    val parameterNodes = withIndex(parameters(funcDef)) { (p, i) =>
+      parameterNode(p, i)
     }
 
     parameterNodes.lastOption.foreach {
@@ -221,7 +221,7 @@ trait AstForFunctionsCreator {
     r.merge(typeDeclAst)
   }
 
-  private def parameterNode(parameter: IASTNode, childNum: Int): NewMethodParameterIn = {
+  private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
     val (name, code, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (
@@ -254,7 +254,7 @@ trait AstForFunctionsCreator {
       .name(name)
       .code(code)
       .typeFullName(registerType(tpe))
-      .order(childNum)
+      .index(paramIndex)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .isVariadic(variadic)
       .lineNumber(line(parameter))
@@ -267,9 +267,9 @@ trait AstForFunctionsCreator {
 
   private def astForMethodBody(body: Option[IASTStatement]): Ast = {
     body match {
-      case Some(b: IASTCompoundStatement) => astForBlockStatement(b, -1)
+      case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
       case None                           => Ast(NewBlock())
-      case Some(b)                        => astForNode(b, -1)
+      case Some(b)                        => astForNode(b)
     }
   }
 

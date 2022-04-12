@@ -130,7 +130,7 @@ trait AstForTypesCreator {
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {
     case i: IASTEqualsInitializer =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, -1)
+      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
       val left         = astForNode(declarator.getName, 1)
       val right        = astForNode(i.getInitializerClause, 2)
       Ast(callNode)
@@ -140,20 +140,20 @@ trait AstForTypesCreator {
         .withArgEdge(callNode, right.root)
     case i: ICPPASTConstructorInitializer =>
       val name     = ASTStringUtil.getSimpleName(declarator.getName)
-      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH, -1)
-      val args     = withOrder(i.getArguments) { case (a, o) => astForNode(a, o) }
+      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH)
+      val args     = withIndex(i.getArguments) { case (a, i) => astForNode(a, i) }
       Ast(callNode).withChildren(args).withArgEdges(callNode, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, -1)
-      val left         = astForNode(declarator.getName, 1)
-      val right        = astForNode(i, 2)
+      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+      val left         = astForNode(declarator.getName)
+      val right        = astForNode(i)
       Ast(callNode)
         .withChild(left)
         .withChild(right)
         .withArgEdge(callNode, left.root)
         .withArgEdge(callNode, right.root)
-    case _ => astForNode(init, -1)
+    case _ => astForNode(init)
   }
 
   protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
@@ -202,8 +202,9 @@ trait AstForTypesCreator {
       .columnNumber(column(structuredBindingDeclaration))
 
     scope.pushNewScope(cpgBlock)
-    val childAsts = withOrder(structuredBindingDeclaration.getNames) { case (name, o) =>
-      astForNode(name, o)
+
+    val childAsts = structuredBindingDeclaration.getNames.toList.map { name =>
+      astForNode(name)
     }
 
     val blockAst = Ast(cpgBlock).withChildren(childAsts)
@@ -258,7 +259,7 @@ trait AstForTypesCreator {
 
     val initAsts = decl match {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
-        withOrder(declaration.getDeclarators) {
+        withIndex(declaration.getDeclarators) {
           case (d: IASTDeclarator, _) if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer)
           case _ => Ast()
@@ -269,9 +270,9 @@ trait AstForTypesCreator {
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =
-    withOrder(l.getDeclarations) { case (d, _) =>
+    l.getDeclarations.toList.flatMap { d =>
       astsForDeclaration(d)
-    }.flatten
+    }
 
   private def astsForCompositeType(typeSpecifier: IASTCompositeTypeSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
@@ -296,7 +297,7 @@ trait AstForTypesCreator {
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val memberAsts = withOrder(typeSpecifier.getDeclarations(true)) { (m, _) =>
+    val memberAsts = withIndex(typeSpecifier.getDeclarations(true)) { (m, _) =>
       astsForDeclaration(m)
     }.flatten
 
@@ -317,7 +318,7 @@ trait AstForTypesCreator {
     decls: List[IASTDeclarator]
   ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withIndex(decls) { (d, _) =>
+    val declAsts = decls.map { d =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
     }
 
@@ -331,7 +332,7 @@ trait AstForTypesCreator {
     Ast(typeDecl) +: declAsts
   }
 
-  private def astsForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator, order: Int): Seq[Ast] = {
+  private def astsForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Seq[Ast] = {
     val tpe = enumerator.getParent match {
       case enumeration: ICPPASTEnumerationSpecifier if enumeration.getBaseType != null =>
         enumeration.getBaseType.toString
@@ -341,11 +342,10 @@ trait AstForTypesCreator {
       .code(nodeSignature(enumerator))
       .name(ASTStringUtil.getSimpleName(enumerator.getName))
       .typeFullName(registerType(cleanType(tpe)))
-      .order(order)
 
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, order + 1)
+      val callNode     = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
       val left         = astForNode(enumerator.getName, 1)
       val right        = astForNode(enumerator.getValue, 2)
       val ast = Ast(callNode)
@@ -362,9 +362,7 @@ trait AstForTypesCreator {
 
   private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = withIndex(decls) { (d, _) =>
-      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d)
-    }
+    val declAsts = decls.map { d => astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d) }
 
     val (name, fullname) =
       uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
@@ -373,11 +371,8 @@ trait AstForTypesCreator {
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    var currentOrder = 0
     val memberAsts = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
-      val eCpg = astsForEnumerator(e, currentOrder)
-      currentOrder = eCpg.size + currentOrder
-      eCpg
+      astsForEnumerator(e)
     }
     methodAstParentStack.pop()
     scope.popScope()

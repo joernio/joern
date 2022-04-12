@@ -45,11 +45,9 @@ trait AstForStatementsCreator {
         Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
-          withOrder(simplDecl.getDeclarators) { (d, _) =>
-            astForDeclarator(simplDecl, d)
-          }
+          simplDecl.getDeclarators.toList.map { d => astForDeclarator(simplDecl, d) }
         val calls =
-          withOrder(simplDecl.getDeclarators.filter(_.getInitializer != null)) { (d, _) =>
+          simplDecl.getDeclarators.filter(_.getInitializer != null).toList.map { d =>
             astForInitializer(d, d.getInitializer)
           }
         locals ++ calls
@@ -185,8 +183,6 @@ trait AstForStatementsCreator {
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
     val initAstBlock = NewBlock()
-      .order(1)
-      .argumentIndex(1)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(forStmt))
       .columnNumber(column(forStmt))
@@ -250,8 +246,6 @@ trait AstForStatementsCreator {
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = NewBlock()
-          .order(1)
-          .argumentIndex(1)
           .typeFullName(registerType(Defines.voidTypeName))
           .lineNumber(line(s.getConditionDeclaration))
           .columnNumber(column(s.getConditionDeclaration))
@@ -263,11 +257,11 @@ trait AstForStatementsCreator {
     }
 
     val ifNode   = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code)
-    val stmtAsts = nullSafeAst(ifStmt.getThenClause, 2)
+    val stmtAsts = nullSafeAst(ifStmt.getThenClause)
 
     val elseChild = if (ifStmt.getElseClause != null) {
       val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-      val elseAsts = astsForStatement(ifStmt.getElseClause, 1)
+      val elseAsts = astsForStatement(ifStmt.getElseClause)
       Ast(elseNode).withChildren(elseAsts)
     } else Ast()
 

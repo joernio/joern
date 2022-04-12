@@ -127,7 +127,7 @@ trait AstCreatorHelper {
       f(x, i + 1)
     }
 
-  protected def withOrder[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
+  protected def withIndex[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
     nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
@@ -205,8 +205,8 @@ trait AstCreatorHelper {
     Option(node).map(astForNode(_, -1)).getOrElse(Ast())
   }
 
-  protected def nullSafeAst(node: IASTExpression, order: Int): Ast = {
-    Option(node).map(astForNode(_, order)).getOrElse(Ast())
+  protected def nullSafeAst(node: IASTExpression, argIndex: Int): Ast = {
+    Option(node).map(astForNode(_, argIndex)).getOrElse(Ast())
   }
 
   protected def nullSafeAst(node: IASTStatement, order: Int = -1): Seq[Ast] = {
@@ -329,9 +329,9 @@ trait AstCreatorHelper {
     }
   }
 
-  private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, order: Int): Ast = {
+  private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, argIndex: Int): Ast = {
     val op       = "<operator>.typeOf"
-    val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
     val operand  = nullSafeAst(decl.getDecltypeExpression, 1)
     Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
   }
@@ -343,8 +343,9 @@ trait AstCreatorHelper {
       .columnNumber(column(d))
     scope.pushNewScope(b)
     val op = Operators.assignment
-    val calls = withOrder(d.getDesignators) { (des, o) =>
-      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
+
+    val calls = d.getDesignators.toList.map { des =>
+      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH)
       val left     = astForNode(des, 1)
       val right    = astForNode(d.getOperand, 2)
       Ast(callNode)
@@ -353,20 +354,20 @@ trait AstCreatorHelper {
         .withArgEdge(callNode, left.root)
         .withArgEdge(callNode, right.root)
     }
+
     scope.popScope()
     Ast(b).withChildren(calls)
   }
 
-  private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer, order: Int): Ast = {
+  private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer, argIndex: Int): Ast = {
     val b = NewBlock()
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(d))
       .columnNumber(column(d))
     scope.pushNewScope(b)
     val op = Operators.assignment
-    val calls = withOrder(d.getDesignators) { (des, o) =>
+    val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left     = astForNode(des, 1)
       val right    = astForNode(d.getOperand, 2)
@@ -383,7 +384,7 @@ trait AstCreatorHelper {
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer, order: Int): Ast = {
     val name     = "<operator>.constructorInitializer"
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val args     = withOrder(c.getArguments) { case (a, o) => astForNode(a, o) }
+    val args     = withIndex(c.getArguments) { case (a, i) => astForNode(a, i) }
     Ast(callNode).withChildren(args).withArgEdges(callNode, args)
   }
 

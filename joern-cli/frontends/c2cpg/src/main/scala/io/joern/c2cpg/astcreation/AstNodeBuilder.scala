@@ -8,12 +8,11 @@ trait AstNodeBuilder {
 
   this: AstCreator =>
 
-  protected def newUnknown(node: IASTNode, order: Int): NewUnknown =
+  protected def newUnknown(node: IASTNode, argIndex: Int): NewUnknown =
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(nodeSignature(node))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
 
@@ -59,7 +58,7 @@ trait AstNodeBuilder {
       .lineNumber(line(node))
       .columnNumber(column(node))
 
-  protected def newJumpTarget(node: IASTNode, order: Int = -1): NewJumpTarget = {
+  protected def newJumpTarget(node: IASTNode): NewJumpTarget = {
     val code = nodeSignature(node)
     val name = node match {
       case label: IASTLabelStatement    => ASTStringUtil.getSimpleName(label.getName)
@@ -70,8 +69,6 @@ trait AstNodeBuilder {
       .parserTypeName(node.getClass.getSimpleName)
       .name(name)
       .code(code)
-      .order(order)
-      .argumentIndex(order)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
