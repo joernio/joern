@@ -9,20 +9,21 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  // TODO: Convert to a Solidity equivalent
   override val code: String =
     """
-      | class Foo {
-      |   static void main(int argc, char argv) {
-      |     int a = 3;
-      |     double b = 2.0;
-      |     double c = a + b;
-      |     double d = c - a;
-      |     double e = a * b;
-      |     double f = b / a;
-      |     long g = 1L;
-      |     float h = 3.4f;
-      |   }
+      | // SPDX-License-Identifier: GPL-3.0
+      | pragma solidity ^0.8.0;
+      |
+      | contract Additive{
+      |
+      |    function Foo(uint256 argc, string memory argv ) public pure {
+      |        int256 a = 3;
+      |        int256 b = 2.0;
+      |        int256 c = a + b;
+      |        int256 e = a * b;
+      |        int256 f = b/a;
+      |    }
+      |
       | }
       |""".stripMargin
 
