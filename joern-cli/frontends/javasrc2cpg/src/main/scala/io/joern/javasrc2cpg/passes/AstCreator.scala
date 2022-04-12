@@ -483,7 +483,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       val body = Ast(NewBlock().order(1)).withChildren(staticInits.map(_.ast))
 
-      val methodReturn = methodReturnNode(None, None, 2, "void")
+      val methodReturn = methodReturnNode(None, None, "void")
 
       val methodAst =
         Ast(methodNode)
