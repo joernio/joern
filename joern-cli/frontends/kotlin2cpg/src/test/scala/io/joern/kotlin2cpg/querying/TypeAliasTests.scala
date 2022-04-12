@@ -127,4 +127,32 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
       cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "java.util.List"
     }
   }
+
+  "CPG for code with call to ctor of typealiased user-defined class" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |class AClass(val x: String)
+        |typealias ATypeAlias = AClass
+        |
+        |fun doSomething(p1: String): String {
+        |    val aClass = ATypeAlias(p1)
+        |    return aClass.x
+        |}
+        |
+        |fun main() {
+        |    val aMessage = "AMESSAGE"
+        |    val out = doSomething(aMessage)
+        |    println(out)
+        |//prints:
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the ctor invocation with the name of the aliased type in it" in {
+      cpg.call.methodFullName(".*<init>.*").methodFullName.l shouldBe List("mypkg.AClass.<init>:void(java.lang.String)")
+    }
+  }
 }
