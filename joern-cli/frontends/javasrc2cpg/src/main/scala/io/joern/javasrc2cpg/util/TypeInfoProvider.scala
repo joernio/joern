@@ -139,7 +139,11 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(node: NodeWithType[_, _ <: Resolvable[ResolvedType]]): Option[String] = {
     val typeFullName = Try(node.getType.resolve()) match {
-      case Success(resolvedType: ResolvedReferenceType) => resolvedReferenceTypeFullName(resolvedType)
+      case Success(resolvedType: ResolvedParameterDeclaration) =>
+        getTypeFullName(resolvedType)
+
+      case Success(resolvedType: ResolvedReferenceType) =>
+        resolvedReferenceTypeFullName(resolvedType)
 
       case Success(resolvedType: ResolvedType) => simpleResolvedTypeFullName(resolvedType)
 
@@ -158,6 +162,20 @@ class TypeInfoProvider(global: Global) {
       case Failure(_) =>
         logger.debug(s"Failed to resolve class type ${typ.getNameAsString}. Falling back to imports info.")
         importInfo.getType(typ.getNameAsString)
+    }
+
+    typeFullName.map(registerType)
+  }
+
+  def getTypeFullName(annotationExpr: AnnotationExpr): Option[String] = {
+    val typeFullName = Try(annotationExpr.resolve()) match {
+      case Success(resolvedType) => Some(resolvedTypeDeclFullName(resolvedType))
+
+      case Failure(_) =>
+        logger.debug(
+          s"Failed to resolve annotation type ${annotationExpr.getNameAsString}. Falling back to imports info."
+        )
+        importInfo.getType(annotationExpr.getNameAsString)
     }
 
     typeFullName.map(registerType)
@@ -258,8 +276,13 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(resolvedParam: ResolvedParameterDeclaration): Option[String] = {
     val typeFullName = resolvedTypeFullName(resolvedParam.getType)
+    val arraySuffix = if (resolvedParam.isVariadic) {
+      "[]"
+    } else {
+      ""
+    }
 
-    typeFullName.map(registerType)
+    typeFullName.map(_ ++ arraySuffix).map(registerType)
   }
 
   def getTypeForExpression(expr: Expression): Option[String] = {

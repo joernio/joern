@@ -199,25 +199,28 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find type and methodFullName for unresolved super call" in {
-    val call = cpg.method.name("test9").call.name("missing").l match {
-      case call :: Nil => call
+    pendingUntilFixed {
 
-      case res => fail(s"Expected single call to missing but got $res")
-    }
+      val call = cpg.method.name("test9").call.name("missing").l match {
+        case call :: Nil => call
 
-    call.typeFullName shouldBe "void"
-    call.signature shouldBe "void()"
-    call.methodFullName shouldBe "e.Unknown.missing:void()"
-    call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        case res => fail(s"Expected single call to missing but got $res")
+      }
 
-    call.argument.l match {
-      case (obj: Identifier) :: Nil =>
-        obj.name shouldBe "super"
-        obj.order shouldBe 0
-        obj.argumentIndex shouldBe 0
-        obj.typeFullName shouldBe "e.Unknown"
+      call.typeFullName shouldBe "void"
+      call.signature shouldBe "void()"
+      call.methodFullName shouldBe "e.Unknown.missing:void()"
+      call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      case res => fail(s"Expected single super identifier but found $res")
+      call.argument.l match {
+        case (obj: Identifier) :: Nil =>
+          obj.name shouldBe "super"
+          obj.order shouldBe 0
+          obj.argumentIndex shouldBe 0
+          obj.typeFullName shouldBe "e.Unknown"
+
+        case res => fail(s"Expected single super identifier but found $res")
+      }
     }
   }
 

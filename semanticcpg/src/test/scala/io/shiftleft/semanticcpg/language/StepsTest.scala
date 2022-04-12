@@ -97,6 +97,23 @@ class StepsTest extends AnyWordSpec with Matchers {
     cpg.method.id.l should not be empty
   }
 
+  "when calling for an AST node's parent block" should {
+
+    "return the parent block for a block's AST child" in {
+      val List(block: Block)        = cpg.method("woo").block.l
+      val blockDirectChild: AstNode = cpg.method("woo").block.ast.head
+      val blockLeafChild: AstNode   = cpg.method("woo").block.ast.last
+
+      blockDirectChild.parentBlock.head shouldBe block
+      blockLeafChild.parentBlock.head shouldBe block
+    }
+
+    "return an empty traversal if no block is found" in {
+      cpg.method("woo").parentBlock.map(_.label).isEmpty shouldBe true
+    }
+
+  }
+
   "toJson" when {
     "operating on StoredNode" in {
       val json   = cpg.method.nameExact("foo").toJson

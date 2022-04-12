@@ -1,10 +1,10 @@
-package io.joern.javasrc2cpg.querying
+package io.joern.jimple2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
 
-class FieldAccessTests extends JavaSrcCodeToCpgFixture {
+class FieldAccessTests extends JimpleCodeToCpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
@@ -47,14 +47,21 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   "should handle static member accesses" in {
-    val List(access: Call)                                             = cpg.method(".*foo.*").call(".*fieldAccess").l
+    val List(assign: Call) = cpg.method(".*foo.*").call(".*assignment").l
+    assign.code shouldBe "x = Foo.MAX_VALUE"
+    val List(access: Call) = cpg.method(".*foo.*").call(".*fieldAccess").l
+    access.code shouldBe "Foo.MAX_VALUE"
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l
+    identifier.code shouldBe "Foo"
     identifier.name shouldBe "Foo"
     identifier.typeFullName shouldBe "Foo"
     fieldIdentifier.canonicalName shouldBe "MAX_VALUE"
+    fieldIdentifier.code shouldBe "MAX_VALUE"
   }
 
   "should handle object field accesses on RHS of assignments" in {
+    val List(_: Call, _: Call, assign: Call) = cpg.method(".*bar.*").call(".*assignment").l
+    assign.code shouldBe "y = f.value"
     val List(access: Call)                                             = cpg.method(".*bar.*").call(".*fieldAccess").l
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l
     identifier.name shouldBe "f"
@@ -63,6 +70,8 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should handle object field accesses on LHS of assignments" in {
+    val List(_: Call, _: Call, assign: Call) = cpg.method(".*baz.*").call(".*assignment").l
+    assign.code shouldBe "g.value = 66"
     val List(access: Call)                                             = cpg.method(".*baz.*").call(".*fieldAccess").l
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l
     identifier.name shouldBe "g"

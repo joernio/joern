@@ -32,7 +32,7 @@ class MethodParameterTests extends AnyWordSpec with Matchers {
       "finding parameter by index" when {
         "specifying number" in {
           val args: List[MethodParameterIn] =
-            cpg.method.name("foo").parameter.index(num = 1).toList
+            cpg.method.name("foo").parameter.index(1).toList
 
           args.size shouldBe 1
           args.head.typ.head.name shouldBe "paramtype"
@@ -56,7 +56,7 @@ class MethodParameterTests extends AnyWordSpec with Matchers {
 
     "find method that a MethodParameter belongs to" in {
       val methods: List[Method] =
-        cpg.method.name("foo").parameter.index(num = 1).method.toList
+        cpg.method.name("foo").parameter.index(1).method.toList
 
       methods.size shouldBe 1
       methods.head.name shouldBe "foo"

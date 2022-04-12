@@ -113,12 +113,15 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForField(v: SootField, order: Int): Ast = {
     val typeFullName = registerType(v.getType.toQuotedString)
     val name         = v.getName
+    val code         = if (v.getDeclaration.contains("enum")) name else s"$typeFullName $name"
     Ast(
       NewMember()
         .name(name)
+        .lineNumber(line(v))
+        .columnNumber(column(v))
         .typeFullName(typeFullName)
         .order(order)
-        .code(s"$typeFullName $name")
+        .code(code)
     )
   }
 
@@ -183,6 +186,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .code(s"$typeFullName ${parameter.getName}")
       .typeFullName(typeFullName)
       .order(childNum)
+      .index(childNum)
       .lineNumber(line(methodDeclaration))
       .columnNumber(column(methodDeclaration))
       .evaluationStrategy(getEvaluationStrategy(parameter.getType))
@@ -202,9 +206,17 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }
     Ast(block)
       .withChildren(locals)
-      .withChildren(withOrder(body.getUnits.asScala) { (x, order) =>
+      .withChildren(withOrder(body.getUnits.asScala.filterNot(isIgnoredUnit)) { (x, order) =>
         astsForStatement(x, order + locals.size)
       }.flatten)
+  }
+
+  private def isIgnoredUnit(unit: soot.Unit): Boolean = {
+    unit match {
+      case _: IdentityStmt => true
+      case _: NopStmt      => true
+      case _               => false
+    }
   }
 
   private def astsForStatement(statement: soot.Unit, order: Int): Seq[Ast] = {
@@ -218,12 +230,12 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case x: LookupSwitchStmt => astsForLookupSwitchStmt(x, order)
       case x: TableSwitchStmt  => astsForTableSwitchStmt(x, order)
       case x: ThrowStmt        => astsForThrowStmt(x, order)
-      case x: MonitorStmt      => Seq(astForUnknownStmt(x, x.getOp, order))
+      case x: MonitorStmt      => astsForMonitorStmt(x, order)
       case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
       case _: NopStmt          => Seq() // Ignore NOP statements
       case x =>
         logger.warn(s"Unhandled soot.Unit type ${x.getClass}")
-        Seq()
+        Seq(astForUnknownStmt(x, None, order))
     }
     unitToAsts.put(statement, stmt)
     stmt
@@ -479,7 +491,31 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
-    val valueAsts = astsForValue(op, 1, parentUnit)
+
+    def astForTypeRef(t: String, order: Int) = {
+      Seq(
+        Ast(
+          NewTypeRef()
+            .code(if (t.contains('.')) t.substring(t.lastIndexOf('.') + 1, t.length) else t)
+            .order(order)
+            .argumentIndex(order)
+            .lineNumber(line(parentUnit))
+            .columnNumber(column(parentUnit))
+            .typeFullName(t)
+        )
+      )
+    }
+
+    val valueAsts = unaryExpr match {
+      case instanceOfExpr: InstanceOfExpr =>
+        val t = registerType(instanceOfExpr.getCheckType.toQuotedString)
+        astsForValue(op, 1, parentUnit) ++ astForTypeRef(t, 2)
+      case castExpr: CastExpr =>
+        val t = registerType(castExpr.getCastType.toQuotedString)
+        astForTypeRef(t, 1) ++ astsForValue(op, 2, parentUnit)
+      case _ => astsForValue(op, 1, parentUnit)
+    }
+
     Ast(callBlock)
       .withChildren(valueAsts)
       .withArgEdges(callBlock, valueAsts.flatMap(_.root))
@@ -542,26 +578,24 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astsForDefinition(assignStmt: DefinitionStmt, order: Int): Seq[Ast] = {
     val initializer = assignStmt.getRightOp
     val leftOp      = assignStmt.getLeftOp
-    val name = assignStmt.getLeftOp match {
-      case x: soot.Local => x.getName
-      case x: FieldRef   => x.getFieldRef.name
-      case x: ArrayRef   => x.toString()
-      case x             => logger.warn(s"Unhandled LHS type in definition ${x.getClass}"); x.toString()
-    }
+
     val identifier = leftOp match {
       case x: soot.Local => Seq(astForLocal(x, 1, assignStmt))
       case x: FieldRef   => Seq(astForFieldRef(x, 1, assignStmt))
       case x             => astsForValue(x, 1, assignStmt)
     }
+    val lhsCode = identifier.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
+
     val initAsts = astsForValue(initializer, 2, assignStmt)
-    val assignmentRhsCode = initAsts
+    val rhsCode = initAsts
       .flatMap(_.root)
       .map(_.properties.getOrElse(PropertyNames.CODE, ""))
       .mkString(", ")
+
     val assignment = NewCall()
       .name(Operators.assignment)
       .methodFullName(Operators.assignment)
-      .code(s"$name = $assignmentRhsCode")
+      .code(s"$lhsCode = $rhsCode")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
@@ -671,7 +705,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     )
   }
 
-  def astsForThrowStmt(throwStmt: ThrowStmt, order: Int): Seq[Ast] = {
+  private def astsForThrowStmt(throwStmt: ThrowStmt, order: Int): Seq[Ast] = {
     val opAst = astsForValue(throwStmt.getOp, 1, throwStmt)
     val throwNode = NewCall()
       .name("<operator>.throw")
@@ -688,8 +722,31 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     )
   }
 
-  private def astForUnknownStmt(stmt: Stmt, op: Value, order: Int): Ast = {
-    val opAst = astsForValue(op, 1, stmt)
+  private def astsForMonitorStmt(monitorStmt: MonitorStmt, order: Int): Seq[Ast] = {
+    val opAst      = astsForValue(monitorStmt.getOp, 1, monitorStmt)
+    val typeString = opAst.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString
+    val code = monitorStmt match {
+      case _: EnterMonitorStmt => s"entermonitor $typeString"
+      case _: ExitMonitorStmt  => s"exitmonitor $typeString"
+      case _                   => s"<unknown>monitor $typeString"
+    }
+    Seq(
+      Ast(
+        NewUnknown()
+          .order(order)
+          .argumentIndex(order)
+          .code(code)
+          .lineNumber(line(monitorStmt))
+          .columnNumber(column(monitorStmt))
+      ).withChildren(opAst)
+    )
+  }
+
+  private def astForUnknownStmt(stmt: Unit, maybeOp: Option[Value], order: Int): Ast = {
+    val opAst = maybeOp match {
+      case Some(op) => astsForValue(op, 1, stmt)
+      case None     => Seq()
+    }
     val unknown = NewUnknown()
       .order(order)
       .code(stmt.toString())
@@ -701,9 +758,18 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   }
 
   private def astsForReturnNode(returnStmt: ReturnStmt, order: Int): Seq[Ast] = {
+    val astChildren = astsForValue(returnStmt.getOp, 1, returnStmt)
+    val returnNode = NewReturn()
+      .argumentIndex(order)
+      .order(order)
+      .code(s"return ${astChildren.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
+      .lineNumber(line(returnStmt))
+      .columnNumber(column(returnStmt))
+
     Seq(
-      Ast(NewReturn().order(order).lineNumber(line(returnStmt)).columnNumber(column(returnStmt)))
-        .withChildren(astsForValue(returnStmt.getOp, order + 1, returnStmt))
+      Ast(returnNode)
+        .withChildren(astChildren)
+        .withArgEdges(returnNode, astChildren.flatMap(_.root))
     )
   }
 
@@ -711,7 +777,9 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     Seq(
       Ast(
         NewReturn()
+          .argumentIndex(order)
           .order(order)
+          .code(s"return;")
           .lineNumber(line(returnVoidStmt))
           .columnNumber(column(returnVoidStmt))
       )
@@ -729,9 +797,10 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case x: InstanceFieldRef => x.getBase.getType
       case _                   => fieldRef.getFieldRef.declaringClass().getType
     }
+
     val fieldAccessBlock = NewCall()
       .name(Operators.fieldAccess)
-      .code(s"${registerType(leftOpType.toQuotedString)}.${fieldRef.getFieldRef.name()}")
+      .code(s"$leftOpString.${fieldRef.getFieldRef.name()}")
       .typeFullName(registerType(fieldRef.getType.toQuotedString))
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -754,7 +823,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         .argumentIndex(2)
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
-        .canonicalName(fieldRef.getFieldRef.getSignature)
+        .canonicalName(fieldRef.getFieldRef.name())
         .code(fieldRef.getFieldRef.name())
     ).map(Ast(_))
 

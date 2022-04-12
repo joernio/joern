@@ -243,8 +243,8 @@ object Engine {
     argToMethods(arg)
       .to(Traversal)
       .parameter
+      .index(arg.argumentIndex)
       .asOutput
-      .order(arg.order)
   }
 
   def methodsForCall(call: Call): List[Method] = {
@@ -256,7 +256,7 @@ object Engine {
       .getMethodCallsites(param.method)
       .to(Traversal)
       .collectAll[Call]
-      .argument(param.order)
+      .argument(param.index)
       .l
 
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {

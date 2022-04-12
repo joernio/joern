@@ -195,7 +195,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
-      .map(_.getUnderlyingType)
+      .map(_.getExpandedType)
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
@@ -330,11 +330,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           case _: TypeAliasConstructorDescriptorImpl => true
           case _                                     => false
         }
+
         val relevantDesc =
-          if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty) {
-            originalDesc.getOverriddenDescriptors.asScala.toList.head
-          } else {
-            originalDesc
+          originalDesc match {
+            case typedDesc: TypeAliasConstructorDescriptorImpl =>
+              typedDesc.getUnderlyingConstructorDescriptor
+            case typedDesc: FunctionDescriptor =>
+              if (!typedDesc.isActual && typedDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+                typedDesc.getOverriddenDescriptors.asScala.toList.head
+              } else {
+                typedDesc
+              }
           }
 
         // TODO: write descriptor renderer instead of working with the existing ones
