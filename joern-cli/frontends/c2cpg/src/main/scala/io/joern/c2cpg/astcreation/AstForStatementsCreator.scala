@@ -148,10 +148,10 @@ trait AstForStatementsCreator {
     Ast(cpgTry).withChildren(body).withChildren(catches)
   }
 
-  protected def astsForStatement(statement: IASTStatement, order: Int = -1): Seq[Ast] = {
+  protected def astsForStatement(statement: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     val r = statement match {
       case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
-      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, order))
+      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, argIndex))
       case ifStmt: IASTIfStatement                => Seq(astForIf(ifStmt))
       case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
       case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
@@ -171,7 +171,7 @@ trait AstForStatementsCreator {
       case _: IASTNullStatement                   => Seq.empty
       case _                                      => Seq(astForNode(statement))
     }
-    r.map(x => asChildOfMacroCall(statement, x, order))
+    r.map(x => asChildOfMacroCall(statement, x, argIndex))
   }
 
   private def astForFor(forStmt: IASTForStatement): Ast = {

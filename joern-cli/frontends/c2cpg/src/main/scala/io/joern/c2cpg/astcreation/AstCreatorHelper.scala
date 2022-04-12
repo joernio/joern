@@ -209,8 +209,8 @@ trait AstCreatorHelper {
     Option(node).map(astForNode(_, argIndex)).getOrElse(Ast())
   }
 
-  protected def nullSafeAst(node: IASTStatement, order: Int = -1): Seq[Ast] = {
-    Option(node).map(astsForStatement(_, order)).getOrElse(Seq.empty)
+  protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
+    Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
 
   protected def fixQualifiedName(name: String): String =
