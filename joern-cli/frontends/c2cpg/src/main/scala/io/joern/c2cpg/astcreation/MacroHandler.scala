@@ -24,17 +24,16 @@ trait MacroHandler {
   /** For the given node, determine if it is expanded from a macro, and if so, create a Call node to represent the macro
     * invocation and attach `ast` as its child.
     */
-  def asChildOfMacroCall(node: IASTNode, ast: Ast, order: Int): Ast = {
+  def asChildOfMacroCall(node: IASTNode, ast: Ast, argIndex: Int): Ast = {
     val macroCallAst = extractMatchingMacro(node).map { case (mac, args) =>
-      createMacroCallAst(ast, node, mac, args, order)
+      createMacroCallAst(ast, node, mac, args, argIndex)
     }
     if (macroCallAst.isDefined) {
-      val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], order = 1)
+      val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
       // We need to wrap the copied AST as it may contain CPG nodes not being allowed
       // to be connected via AST edges under a CALL. E.g., LOCALs.
       val b = Ast(
         NewBlock()
-          .order(1)
           .argumentIndex(1)
           .typeFullName(registerType(Defines.voidTypeName))
       )
@@ -108,7 +107,7 @@ trait MacroHandler {
     node: IASTNode,
     macroDef: IASTPreprocessorMacroDefinition,
     arguments: List[String],
-    order: Int
+    argIndex: Int
   ): Ast = {
     val name    = ASTStringUtil.getSimpleName(macroDef.getName)
     val code    = node.getRawSignature.replaceAll(";$", "")
@@ -122,8 +121,7 @@ trait MacroHandler {
       .columnNumber(column(node))
       .typeFullName(typeFor(node))
       .dispatchType(DispatchTypes.INLINED)
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
 
     Ast(callNode)
       .withChildren(argAsts)

@@ -53,14 +53,14 @@ trait AstForStatementsCreator {
             astForInitializer(d, d.getInitializer)
           }
         locals ++ calls
-      case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s, -1))
+      case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
       case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))
       case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func))
       case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias))
       case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm))
       case _: ICPPASTUsingDirective                  => Seq.empty
-      case decl                                      => Seq(astForNode(decl, -1))
+      case decl                                      => Seq(astForNode(decl))
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
@@ -68,7 +68,7 @@ trait AstForStatementsCreator {
       .code(nodeSignature(ret))
       .lineNumber(line(ret))
       .columnNumber(column(ret))
-    val expr = nullSafeAst(ret.getReturnValue, 1)
+    val expr = nullSafeAst(ret.getReturnValue)
     Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
   }
 
@@ -96,9 +96,9 @@ trait AstForStatementsCreator {
     Seq(gotoNode, exprNode)
   }
 
-  private def astsForLabelStatement(label: IASTLabelStatement, order: Int): Seq[Ast] = {
-    val cpgLabel    = newJumpTarget(label, order)
-    val nestedStmts = nullSafeAst(label.getNestedStatement, order + 1)
+  private def astsForLabelStatement(label: IASTLabelStatement): Seq[Ast] = {
+    val cpgLabel    = newJumpTarget(label)
+    val nestedStmts = nullSafeAst(label.getNestedStatement)
     Ast(cpgLabel) +: nestedStmts
   }
 
@@ -169,9 +169,9 @@ trait AstForStatementsCreator {
       case tryStmt: ICPPASTTryBlockStatement      => Seq(astForTryStatement(tryStmt))
       case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt)
       case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl)
-      case label: IASTLabelStatement              => astsForLabelStatement(label, order)
+      case label: IASTLabelStatement              => astsForLabelStatement(label)
       case _: IASTNullStatement                   => Seq.empty
-      case _                                      => Seq(astForNode(statement, order))
+      case _                                      => Seq(astForNode(statement))
     }
     r.map(x => asChildOfMacroCall(statement, x, order))
   }
@@ -213,9 +213,9 @@ trait AstForStatementsCreator {
     val code    = s"for ($codeDecl:$codeInit)"
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
-    val initAst = astForNode(forStmt.getInitializerClause, 1)
+    val initAst = astForNode(forStmt.getInitializerClause)
     val declAst = astsForDeclaration(forStmt.getDeclaration)
-    val stmtAst = nullSafeAst(forStmt.getBody, 3)
+    val stmtAst = nullSafeAst(forStmt.getBody)
 
     Ast(forNode)
       .withChild(initAst)
@@ -228,8 +228,8 @@ trait AstForStatementsCreator {
 
     val whileNode = newControlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
 
-    val conditionAst = nullSafeAst(whileStmt.getCondition, 1)
-    val stmtAsts     = nullSafeAst(whileStmt.getBody, 2)
+    val conditionAst = nullSafeAst(whileStmt.getCondition)
+    val stmtAsts     = nullSafeAst(whileStmt.getBody)
 
     Ast(whileNode)
       .withChild(conditionAst)
