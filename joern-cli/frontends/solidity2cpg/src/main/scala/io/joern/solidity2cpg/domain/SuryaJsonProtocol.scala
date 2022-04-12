@@ -114,7 +114,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-   implicit object PragmaDirectiveJsonFormat extends JsonFormat[PragmaDirective] with DefaultJsonProtocol {
+  implicit object PragmaDirectiveJsonFormat extends JsonFormat[PragmaDirective] with DefaultJsonProtocol {
 
     def write(c: PragmaDirective): JsValue = JsNull
 
@@ -128,7 +128,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-   implicit object ImportDirectiveJsonFormat extends JsonFormat[ImportDirective] with DefaultJsonProtocol {
+  implicit object ImportDirectiveJsonFormat extends JsonFormat[ImportDirective] with DefaultJsonProtocol {
 
     def write(c: ImportDirective): JsValue = JsNull
 
@@ -138,24 +138,24 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("ImportDirective object expected")
       } else {
         ImportDirective(
-            fields("path").convertTo[String],
-            fields("unitAlias") match {
-              case x: JsString => x.convertTo[String]
-              case _ => null
-            },
-            fields("unitAliasIdentifier") match {
-              case x: JsString => x.convertTo[String]
-              case _ => null
-            },
-            fields("symbolAliases") match {
-              case x: JsString => x.convertTo[String]
-              case _ => null
-            },
-            fields("symbolAliasesIdentifiers") match {
-              case x: JsString => x.convertTo[String]
-              case _ => null
-            }
-          )
+          fields("path").convertTo[String],
+          fields("unitAlias") match {
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          },
+          fields("unitAliasIdentifier") match {
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          },
+          fields("symbolAliases") match {
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          },
+          fields("symbolAliasesIdentifiers") match {
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          }
+        )
       }
     }
   }
@@ -233,8 +233,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("body").convertTo[BaseASTNode],
           fields("isVirtual").convertTo[Boolean],
           fields("override") match {
-            case x : BaseASTNode => x.convertTo[BaseASTNode]
-            case _ => null
+            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case _              => null
           }
         )
       }
@@ -253,22 +253,22 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         VariableDeclaration(
           fields("typeName").convertTo[BaseASTNode],
           fields("name") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
-            },
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          },
           fields("identifier") match {
             case x => x.convertTo[BaseASTNode]
             case _ => null
-            },
+          },
           fields("storageLocation") match {
-            case x : JsString => x.convertTo[String]
-            case _      => null
+            case x: JsString => x.convertTo[String]
+            case _           => null
           },
           fields("isStateVar").convertTo[Boolean],
           fields("isIndexed").convertTo[Boolean],
           fields("expression") match {
-            case x : BaseASTNode => x.convertTo[BaseASTNode]
-            case _      => null
+            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case _              => null
           }
         )
       }
@@ -286,12 +286,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         ElementaryTypeName(
           fields("name") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
-            },
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          },
           fields("stateMutability") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
+            case x: JsString => x.convertTo[String]
+            case _           => null
           }
         )
       }
@@ -350,14 +350,14 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("FunctionCall object expected")
       } else {
         FunctionCall(
-          fields("expression").convertTo[BaseASTNode], 
+          fields("expression").convertTo[BaseASTNode],
           fields("arguments") match {
             case x => x.convertTo[List[BaseASTNode]]
             case _ => null
           },
           fields("names").convertTo[List[String]],
           fields("identifiers").convertTo[List[String]]
-          )
+        )
       }
     }
   }
@@ -421,8 +421,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("value").convertTo[String],
           fields("parts").convertTo[List[String]],
           fields("isUnicode") match {
-            case x : List[JsBoolean] => x
-            case _ => null
+            case x: List[JsBoolean] => x
+            case _                  => null
           }
         )
       }
@@ -460,23 +460,23 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("name").convertTo[String],
           fields("parameters").convertTo[List[BaseASTNode]],
           fields("returnParameters") match {
-            case x : BaseASTNode => x.convertTo[BaseASTNode]
-            case _ => null
+            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case _              => null
           },
           fields("body").convertTo[BaseASTNode],
           fields("visibility").convertTo[String],
           fields("modifiers").convertTo[List[BaseASTNode]],
           fields("override") match {
-            case x : BaseASTNode => x.convertTo[BaseASTNode]
-            case _ => null
+            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case _              => null
           },
           fields("isConstructor").convertTo[Boolean],
           fields("isReceiveEther").convertTo[Boolean],
           fields("isFallback").convertTo[Boolean],
           fields("isVirtual").convertTo[Boolean],
           fields("stateMutability") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
+            case x: JsString => x.convertTo[String]
+            case _           => null
           }
         )
       }
@@ -495,9 +495,10 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         ModifierInvocation(
           fields("name").convertTo[String],
           fields("arguments") match {
-            case x : List[BaseASTNode] => x.convertTo[List[BaseASTNode]]
-            case _ => null
-          })
+            case x: List[BaseASTNode] => x.convertTo[List[BaseASTNode]]
+            case _                    => null
+          }
+        )
       }
     }
   }
@@ -585,8 +586,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("condition").convertTo[BaseASTNode],
           fields("trueBody").convertTo[BaseASTNode],
           fields("falseBody") match {
-            case x : BaseASTNode => x.convertTo[BaseASTNode]
-            case _ => null
+            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case _              => null
           }
         )
       }
@@ -617,11 +618,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("ArrayTypeName object expected")
       } else {
         ArrayTypeName(
-          fields("baseTypeName").convertTo[BaseASTNode], 
+          fields("baseTypeName").convertTo[BaseASTNode],
           fields("length") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
-          })
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          }
+        )
       }
     }
   }
@@ -638,9 +640,10 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         NumberLiteral(
           fields("number").convertTo[String],
           fields("subdenomination") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
-          })
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          }
+        )
       }
     }
   }

@@ -52,42 +52,42 @@ class Solidity2Cpg {
   def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
     val sourceFile = File(sourceCodePath)
     if (sourceFile.isDirectory) {
-      val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
-      val dir = File.newTemporaryDirectory("solidity").deleteOnExit()
-      val matches : Iterator[File] = sourceFile.glob("*.sol")
+      val sourceFileNames         = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
+      val dir                     = File.newTemporaryDirectory("solidity").deleteOnExit()
+      val matches: Iterator[File] = sourceFile.glob("*.sol")
       matches.foreach(file => file.copyToDirectory(dir))
-      val names : Array[String] = new Array(1000)
+      val names: Array[String]           = new Array(1000)
       var pathOfParseFiles: List[String] = List()
-      var counter = 0
+      var counter                        = 0
       sourceFileNames.foreach(fName => {
-        names(counter) = (fName.split("/")(fName.split("/").length-1))
+        names(counter) = (fName.split("/")(fName.split("/").length - 1))
         ExternalCommand.run(s"surya parse -j ${names(counter)}", dir.pathAsString) match {
           case Success(stdOut: Seq[String]) =>
-            val path = dir.pathAsString+s"/${names(counter).substring(0,(names(counter).length - 3))}"+"json"
+            val path   = dir.pathAsString + s"/${names(counter).substring(0, (names(counter).length - 3))}" + "json"
             val writer = new PrintWriter(new javaFile(path))
             writer.write(stdOut.toString().substring(5, (stdOut.toString().length - 1)))
             writer.close()
-            pathOfParseFiles = pathOfParseFiles:+ (path)
+            pathOfParseFiles = pathOfParseFiles :+ (path)
           case Failure(e) =>
             println(s"Could not parse Solidity source code at $sourceCodePath", e)
 
         }
         counter += 1
-      } )
+      })
       (dir.toString(), pathOfParseFiles)
     } else {
-      val dir = File.newTemporaryDirectory("solidity").deleteOnExit()
-      var list : List[String] = List()
+      val dir                = File.newTemporaryDirectory("solidity").deleteOnExit()
+      var list: List[String] = List()
       sourceFile.copyToDirectory(dir)
-      val name = sourceFile.pathAsString.split("/")(sourceFile.pathAsString.split("/").length-1)
+      val name = sourceFile.pathAsString.split("/")(sourceFile.pathAsString.split("/").length - 1)
       ExternalCommand.run(s"surya parse -j ${name}", dir.pathAsString) match {
         case Success(stdOut: Seq[String]) =>
-          val path = dir.pathAsString+s"/${name.substring(0,name.length-3)+"json"}"
+          val path   = dir.pathAsString + s"/${name.substring(0, name.length - 3) + "json"}"
           val writer = new PrintWriter(new javaFile(path))
           val output = stdOut.toString()
           writer.write(output.substring(5, (output.length - 1)))
           writer.close()
-          list = list:+ (path)
+          list = list :+ (path)
         case Failure(e) =>
           println("Failure when executing Surya on :", e.printStackTrace())
       }

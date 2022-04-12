@@ -32,7 +32,8 @@ class AstCreationPass(codeDir: String, filenames: List[String], cpg: Cpg) extend
       Try(lines.parseJson.convertTo[SourceUnit]) match {
         case Failure(e) => logger.error(s"Unable to convert JSON to SourceUnit $part due to an exception", e)
         case Success(sourceUnit) =>
-          val localDiff = new AstCreator(part, sourceUnit, global).createAst()
+          val filePathFromTempDir = part.stripPrefix(codeDir)
+          val localDiff           = new AstCreator(filePathFromTempDir, sourceUnit, global).createAst()
           builder.absorb(localDiff)
       }
     }

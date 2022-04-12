@@ -1,5 +1,6 @@
 package io.joern.solidity2cpg.domain
 import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsString, JsValue, JsonFormat}
+
 /** Represents objects in the Surya JSON. This allows them to be easily grouped together and used in match statements.
   */
 sealed trait SuryaObject
@@ -65,8 +66,13 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class ModifierDefinition(name: String, parameters: List[BaseASTNode], body: BaseASTNode, isVirtual: Boolean, `override`: BaseASTNode)
-      extends BaseASTNode() {
+  case class ModifierDefinition(
+    name: String,
+    parameters: List[BaseASTNode],
+    body: BaseASTNode,
+    isVirtual: Boolean,
+    `override`: BaseASTNode
+  ) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -98,7 +104,12 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class FunctionCall(expression: BaseASTNode, arguments: List[BaseASTNode], names: List[String], identifiers: List[String]) extends BaseASTNode() {
+  case class FunctionCall(
+    expression: BaseASTNode,
+    arguments: List[BaseASTNode],
+    names: List[String],
+    identifiers: List[String]
+  ) extends BaseASTNode() {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -193,5 +204,4 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
- 
 }
