@@ -188,6 +188,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
+      m.name shouldBe "<init>"
       m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(4)
       m.methodReturn.code shouldBe "RET"
@@ -196,6 +197,29 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
 
       m.block.size shouldBe 1
       m.block.astChildren.map(_.code).l shouldBe List("this.bar = bar")
+
+      val List(mThisParam: MethodParameterIn, firstParam: MethodParameterIn, secondParam: MethodParameterIn) =
+        m.parameter.l
+      mThisParam.name shouldBe "this"
+      firstParam.name shouldBe "foo"
+      secondParam.name shouldBe "bar"
+
+      val List(b)                     = m.block.l
+      val List(firstBlockChild: Call) = b.astChildren.l
+      firstBlockChild.methodFullName shouldBe Operators.assignment
+      firstBlockChild.code shouldBe "this.bar = bar"
+      firstBlockChild.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(assignmentLhs: Call, assignmentRhs: Identifier) = firstBlockChild.argument.l
+      assignmentLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      assignmentRhs.code shouldBe "bar"
+      secondParam.referencingIdentifiers.id.l.contains(assignmentRhs.id) shouldBe true
+      val List(thisIdentifier: Identifier, relevantFieldIdentifier: FieldIdentifier) = assignmentLhs.argument.l
+      thisIdentifier.code shouldBe "this"
+      thisIdentifier.argumentIndex shouldBe 1
+      mThisParam.referencingIdentifiers.id.l.contains(thisIdentifier.id) shouldBe true
+      relevantFieldIdentifier.code shouldBe "bar"
+      relevantFieldIdentifier.argumentIndex shouldBe 2
     }
   }
 }
