@@ -2,7 +2,7 @@
 object Versions {
   val cpg           = parseVersion("cpgVersion")
   val js2cpg        = parseVersion("js2cpgVersion")
-  val antlr         = "4.9.3"
+  val antlr         = "4.10"
   val scalatest     = "3.2.11"
   val cats          = "3.3.11"
   val log4j         = "2.17.2"
