@@ -16,19 +16,18 @@ trait AstForPrimitivesCreator {
   protected def astForComment(comment: IASTComment): Ast =
     Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
 
-  protected def astForLiteral(lit: IASTLiteralExpression, order: Int): Ast = {
+  protected def astForLiteral(lit: IASTLiteralExpression, argIndex: Int): Ast = {
     val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
     val litNode = NewLiteral()
       .typeFullName(registerType(tpe))
       .code(nodeSignature(lit))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(lit))
       .columnNumber(column(lit))
     Ast(litNode)
   }
 
-  protected def astForIdentifier(ident: IASTNode, order: Int): Ast = {
+  protected def astForIdentifier(ident: IASTNode, argIndex: Int): Ast = {
     val identifierName = ident match {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
@@ -57,8 +56,7 @@ trait AstForPrimitivesCreator {
       .name(identifierName)
       .typeFullName(registerType(cleanType(identifierTypeName)))
       .code(nodeSignature(ident))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(ident))
       .columnNumber(column(ident))
 
@@ -69,37 +67,35 @@ trait AstForPrimitivesCreator {
     }
   }
 
-  protected def astForFieldReference(fieldRef: IASTFieldReference, order: Int): Ast = {
+  protected def astForFieldReference(fieldRef: IASTFieldReference, argIndex: Int): Ast = {
     val op    = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma    = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val ma    = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
     val owner = astForExpression(fieldRef.getFieldOwner, 1)
     val member = NewFieldIdentifier()
       .canonicalName(fieldRef.getFieldName.toString)
       .code(fieldRef.getFieldName.toString)
-      .order(2)
       .argumentIndex(2)
       .lineNumber(line(fieldRef.getFieldName))
       .columnNumber(column(fieldRef.getFieldName))
     Ast(ma).withChild(owner).withChild(Ast(member)).withArgEdge(ma, owner.root).withArgEdge(ma, member)
   }
 
-  protected def astForInitializerList(l: IASTInitializerList, order: Int): Ast = {
+  protected def astForInitializerList(l: IASTInitializerList, argIndex: Int): Ast = {
     // TODO re-use from Operators once it there
     val op           = "<operator>.arrayInitializer"
-    val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
 
     val MAX_INITIALIZERS = 1000
     val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
 
-    val args = withOrder(clauses) { case (c, o) =>
-      astForNode(c, o)
+    val args = withIndex(clauses) { case (c, i) =>
+      astForNode(c, i)
     }
     val ast = Ast(initCallNode).withChildren(args).withArgEdges(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
         .typeFullName("ANY")
         .code("<too-many-initializers>")
-        .order(MAX_INITIALIZERS)
         .argumentIndex(MAX_INITIALIZERS)
         .lineNumber(line(l))
         .columnNumber(column(l))
@@ -109,9 +105,9 @@ trait AstForPrimitivesCreator {
     }
   }
 
-  protected def astForQualifiedName(qualId: CPPASTQualifiedName, order: Int): Ast = {
+  protected def astForQualifiedName(qualId: CPPASTQualifiedName, argIndex: Int): Ast = {
     val op = Operators.fieldAccess
-    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH, order)
+    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
 
     def fieldAccesses(names: List[IASTNode], order: Int): Ast = names match {
       case Nil => Ast()
@@ -135,13 +131,12 @@ trait AstForPrimitivesCreator {
     val owner = if (qualifier != Ast()) {
       qualifier
     } else {
-      Ast(NewLiteral().code("<global>").order(1).argumentIndex(1).typeFullName("ANY"))
+      Ast(NewLiteral().code("<global>").argumentIndex(1).typeFullName("ANY"))
     }
 
     val member = NewFieldIdentifier()
       .canonicalName(qualId.getLastName.toString)
       .code(qualId.getLastName.toString)
-      .order(2)
       .argumentIndex(2)
       .lineNumber(line(qualId.getLastName))
       .columnNumber(column(qualId.getLastName))

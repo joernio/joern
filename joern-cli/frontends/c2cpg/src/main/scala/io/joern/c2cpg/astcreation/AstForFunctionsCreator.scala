@@ -101,8 +101,8 @@ trait AstForFunctionsCreator {
       .filename(filename)
 
     scope.pushNewScope(methodNode)
-    val parameterNodes = withOrder(parameters(lambdaExpression.getDeclarator)) { (p, o) =>
-      parameterNode(p, o)
+    val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
+      parameterNode(p, i)
     }
 
     parameterNodes.lastOption.foreach {
@@ -112,8 +112,7 @@ trait AstForFunctionsCreator {
       case _ =>
     }
 
-    val lastOrder = 1 + parameterNodes.size
-    val r         = methodStubAst(methodNode, parameterNodes, methodReturnNode(lambdaExpression, lastOrder, returnType))
+    val r = methodStubAst(methodNode, parameterNodes, methodReturnNode(lambdaExpression, returnType))
 
     scope.popScope()
     val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode, name, fullname, signature)
@@ -123,7 +122,7 @@ trait AstForFunctionsCreator {
     Ast(newMethodRefNode(code, fullname, methodNode.astParentFullName, lambdaExpression))
   }
 
-  protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator, order: Int): Ast = {
+  protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     val linenumber   = line(funcDecl)
     val columnnumber = column(funcDecl)
     val filename     = fileName(funcDecl)
@@ -146,12 +145,11 @@ trait AstForFunctionsCreator {
       .columnNumberEnd(columnEnd(funcDecl))
       .signature(signature)
       .filename(filename)
-      .order(order)
 
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withOrder(parameters(funcDecl)) { (p, order) =>
-      parameterNode(p, order)
+    val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
+      parameterNode(p, i)
     }
 
     parameterNodes.lastOption.foreach {
@@ -161,9 +159,7 @@ trait AstForFunctionsCreator {
       case _ =>
     }
 
-    val lastOrder = 1 + parameterNodes.size
-
-    val r = methodStubAst(methodNode, parameterNodes, methodReturnNode(funcDecl, lastOrder, returnType))
+    val r = methodStubAst(methodNode, parameterNodes, methodReturnNode(funcDecl, returnType))
 
     scope.popScope()
 
@@ -172,7 +168,7 @@ trait AstForFunctionsCreator {
     r.merge(typeDeclAst)
   }
 
-  protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition, order: Int): Ast = {
+  protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val linenumber   = line(funcDef)
     val columnnumber = column(funcDef)
     val filename     = fileName(funcDef)
@@ -195,13 +191,12 @@ trait AstForFunctionsCreator {
       .columnNumberEnd(columnEnd(funcDef))
       .signature(signature)
       .filename(filename)
-      .order(order)
 
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)
 
-    val parameterNodes = withOrder(parameters(funcDef)) { (p, order) =>
-      parameterNode(p, order)
+    val parameterNodes = withIndex(parameters(funcDef)) { (p, i) =>
+      parameterNode(p, i)
     }
 
     parameterNodes.lastOption.foreach {
@@ -211,13 +206,11 @@ trait AstForFunctionsCreator {
       case _ =>
     }
 
-    val lastOrder = 1 + parameterNodes.size
-
     val r = methodAst(
       methodNode,
       parameterNodes,
-      astForMethodBody(Option(funcDef.getBody), lastOrder),
-      methodReturnNode(funcDef, lastOrder + 1, typeForDeclSpecifier(funcDef.getDeclSpecifier))
+      astForMethodBody(Option(funcDef.getBody)),
+      methodReturnNode(funcDef, typeForDeclSpecifier(funcDef.getDeclSpecifier))
     )
 
     scope.popScope()
@@ -228,7 +221,7 @@ trait AstForFunctionsCreator {
     r.merge(typeDeclAst)
   }
 
-  private def parameterNode(parameter: IASTNode, childNum: Int): NewMethodParameterIn = {
+  private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
     val (name, code, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (
@@ -261,7 +254,7 @@ trait AstForFunctionsCreator {
       .name(name)
       .code(code)
       .typeFullName(registerType(tpe))
-      .order(childNum)
+      .index(paramIndex)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .isVariadic(variadic)
       .lineNumber(line(parameter))
@@ -272,15 +265,15 @@ trait AstForFunctionsCreator {
     parameterNode
   }
 
-  private def astForMethodBody(body: Option[IASTStatement], order: Int): Ast = {
+  private def astForMethodBody(body: Option[IASTStatement]): Ast = {
     body match {
-      case Some(b: IASTCompoundStatement) => astForBlockStatement(b, order)
+      case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
       case None                           => Ast(NewBlock())
-      case Some(b)                        => astForNode(b, order)
+      case Some(b)                        => astForNode(b)
     }
   }
 
-  private def methodReturnNode(func: IASTNode, order: Int, tpe: String): NewMethodReturn =
-    methodReturnNode(line(func), column(func), order, registerType(tpe))
+  private def methodReturnNode(func: IASTNode, tpe: String): NewMethodReturn =
+    methodReturnNode(line(func), column(func), registerType(tpe))
 
 }

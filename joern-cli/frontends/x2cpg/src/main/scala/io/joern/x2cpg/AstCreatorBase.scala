@@ -52,9 +52,8 @@ abstract class AstCreatorBase(filename: String) {
 
   /** Create a method return node
     */
-  def methodReturnNode(line: Option[Integer], column: Option[Integer], order: Int, tpe: String): NewMethodReturn =
+  def methodReturnNode(line: Option[Integer], column: Option[Integer], tpe: String): NewMethodReturn =
     NewMethodReturn()
-      .order(order)
       .typeFullName(tpe)
       .code(tpe)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)

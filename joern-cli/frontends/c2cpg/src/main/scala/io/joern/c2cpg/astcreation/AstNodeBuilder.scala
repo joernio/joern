@@ -8,12 +8,11 @@ trait AstNodeBuilder {
 
   this: AstCreator =>
 
-  protected def newUnknown(node: IASTNode, order: Int): NewUnknown =
+  protected def newUnknown(node: IASTNode, argIndex: Int): NewUnknown =
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(nodeSignature(node))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
 
@@ -35,15 +34,14 @@ trait AstNodeBuilder {
     name: String,
     fullname: String,
     dispatchType: String,
-    order: Int
+    argIndex: Int = -1
   ): NewCall = {
     NewCall()
       .name(name)
       .dispatchType(dispatchType)
       .methodFullName(fullname)
       .code(nodeSignature(node))
-      .order(order)
-      .argumentIndex(order)
+      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
@@ -51,19 +49,16 @@ trait AstNodeBuilder {
   protected def newControlStructureNode(
     node: IASTNode,
     controlStructureType: String,
-    code: String,
-    order: Int
+    code: String
   ): NewControlStructure =
     NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(controlStructureType)
       .code(code)
-      .order(order)
-      .argumentIndex(order)
       .lineNumber(line(node))
       .columnNumber(column(node))
 
-  protected def newJumpTarget(node: IASTNode, order: Int): NewJumpTarget = {
+  protected def newJumpTarget(node: IASTNode): NewJumpTarget = {
     val code = nodeSignature(node)
     val name = node match {
       case label: IASTLabelStatement    => ASTStringUtil.getSimpleName(label.getName)
@@ -74,8 +69,6 @@ trait AstNodeBuilder {
       .parserTypeName(node.getClass.getSimpleName)
       .name(name)
       .code(code)
-      .order(order)
-      .argumentIndex(order)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
@@ -87,7 +80,6 @@ trait AstNodeBuilder {
     code: String,
     astParentType: String = "",
     astParentFullName: String = "",
-    order: Int = -1,
     inherits: Seq[String] = Seq.empty,
     alias: Option[String] = None,
     line: Option[Integer] = None,
@@ -105,6 +97,5 @@ trait AstNodeBuilder {
       .aliasTypeFullName(alias)
       .lineNumber(line)
       .columnNumber(column)
-      .order(order)
 
 }
