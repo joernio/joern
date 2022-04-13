@@ -52,14 +52,11 @@ trait AstForExpressionsCreator {
       case IASTBinaryExpression.op_ellipses         => "<operator>.op_ellipses"
       case _                                        => "<operator>.unknown"
     }
+
     val callNode = newCallNode(bin, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
-    val left     = nullSafeAst(bin.getOperand1, 1)
-    val right    = nullSafeAst(bin.getOperand2, 2)
-    Ast(callNode)
-      .withChild(left)
-      .withChild(right)
-      .withArgEdge(callNode, left.root)
-      .withArgEdge(callNode, right.root)
+    val left     = nullSafeAst(bin.getOperand1)
+    val right    = nullSafeAst(bin.getOperand2)
+    callAst(callNode, List(left, right))
   }
 
   private def astForExpressionList(exprList: IASTExpressionList, argIndex: Int): Ast = {

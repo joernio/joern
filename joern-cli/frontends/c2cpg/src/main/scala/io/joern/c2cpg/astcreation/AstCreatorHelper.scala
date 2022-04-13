@@ -44,8 +44,6 @@ trait AstCreatorHelper {
 
   this: AstCreator =>
 
-  import AstCreatorHelper.OptionSafeAst
-
   private var usedNames: Int = 0
 
   protected def uniqueName(target: String, name: String, fullName: String): (String, String) = {
@@ -121,16 +119,6 @@ trait AstCreatorHelper {
       offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
     }
   }
-
-  protected def withIndex[T <: IASTNode, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
-    nodes.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }
-
-  protected def withIndex[T <: IASTNode, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
-    nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }
 
   protected def registerType(typeName: String): String = {
     val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
@@ -332,8 +320,8 @@ trait AstCreatorHelper {
   private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier, argIndex: Int): Ast = {
     val op       = "<operator>.typeOf"
     val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
-    val operand  = nullSafeAst(decl.getDecltypeExpression, 1)
-    Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
+    val operand  = nullSafeAst(decl.getDecltypeExpression)
+    callAst(cpgUnary, List(operand))
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
@@ -346,13 +334,9 @@ trait AstCreatorHelper {
 
     val calls = d.getDesignators.toList.map { des =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH)
-      val left     = astForNode(des, 1)
-      val right    = astForNode(d.getOperand, 2)
-      Ast(callNode)
-        .withChild(left)
-        .withChild(right)
-        .withArgEdge(callNode, left.root)
-        .withArgEdge(callNode, right.root)
+      val left     = astForNode(des)
+      val right    = astForNode(d.getOperand)
+      callAst(callNode, List(left, right))
     }
 
     scope.popScope()
@@ -369,13 +353,9 @@ trait AstCreatorHelper {
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
-      val left     = astForNode(des, 1)
-      val right    = astForNode(d.getOperand, 2)
-      Ast(callNode)
-        .withChild(left)
-        .withChild(right)
-        .withArgEdge(callNode, left.root)
-        .withArgEdge(callNode, right.root)
+      val left     = astForNode(des)
+      val right    = astForNode(d.getOperand)
+      callAst(callNode, List(left, right))
     }
     scope.popScope()
     Ast(b).withChildren(calls)
@@ -384,8 +364,8 @@ trait AstCreatorHelper {
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer, order: Int): Ast = {
     val name     = "<operator>.constructorInitializer"
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH, order)
-    val args     = withIndex(c.getArguments) { case (a, i) => astForNode(a, i) }
-    Ast(callNode).withChildren(args).withArgEdges(callNode, args)
+    val args     = c.getArguments.toList.map(a => astForNode(a))
+    callAst(callNode, args)
   }
 
   protected def astForFakeStaticInitMethod(
