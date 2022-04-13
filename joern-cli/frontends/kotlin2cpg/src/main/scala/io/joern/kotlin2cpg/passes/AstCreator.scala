@@ -1488,7 +1488,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
         val node =
           NewLocal()
-            .code(entry.getText)
+            .code(entry.getName)
             .name(entry.getName)
             .typeFullName(typeFullName)
             .order(orderForNode)
@@ -1679,7 +1679,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
         val node =
           NewLocal()
-            .code(entry.getText)
+            .code(entry.getName)
             .name(entry.getName)
             .typeFullName(typeFullName)
             .order(orderForNode)
@@ -1914,7 +1914,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
           val node =
             NewLocal()
-              .code(entry.getText)
+              .code(entry.getName)
               .name(entry.getName)
               .typeFullName(typeFullName)
               .order(orderForNode)
@@ -3425,7 +3425,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val localNode =
       NewLocal()
         .name(expr.getName)
-        .code(expr.getText)
+        .code(expr.getName)
         .typeFullName(typeFullName)
         .lineNumber(line(elem))
         .columnNumber(column(elem))
