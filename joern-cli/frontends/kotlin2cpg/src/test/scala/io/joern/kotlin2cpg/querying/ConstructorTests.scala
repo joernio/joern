@@ -212,6 +212,8 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
 
       val List(assignmentLhs: Call, assignmentRhs: Identifier) = firstBlockChild.argument.l
       assignmentLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      assignmentLhs.methodFullName shouldBe Operators.fieldAccess
+      assignmentLhs.name shouldBe Operators.fieldAccess
       assignmentRhs.code shouldBe "bar"
       secondParam.referencingIdentifiers.id.l.contains(assignmentRhs.id) shouldBe true
       val List(thisIdentifier: Identifier, relevantFieldIdentifier: FieldIdentifier) = assignmentLhs.argument.l

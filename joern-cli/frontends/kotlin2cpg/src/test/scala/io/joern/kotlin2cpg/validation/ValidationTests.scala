@@ -865,6 +865,35 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with `fieldAccess` call" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package main
+        |
+        |class AClass {
+        |    var x: String = "INITIAL"
+        |}
+        |
+        |fun doSomething(p1: String): String {
+        |    val aClass = AClass()
+        |    aClass.x = p1
+        |    return aClass.x
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething("AMESSAGE")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should not contain `fieldAccess` CALLs with an operator in the METHOD_FULL_NAME but no operator in the NAME" in {
+      cpg.call
+        .methodFullName(Operators.fieldAccess)
+        .name
+        .dedup
+        .l shouldBe List(Operators.fieldAccess)
+    }
+  }
+
   "CPG for code with `fieldAccess` call on implicit _this_" - {
     lazy val cpg = TestContext.buildCpg("""
         |package main
