@@ -9,9 +9,10 @@ object TypeConstants {
   val kotlinSuspendFunctionXPrefix      = "kotlin.coroutines.SuspendFunction"
   val kotlinApplyPrefix                 = "kotlin.apply"
   val kotlinUnit                        = "kotlin.Unit"
+  val javaLangBoolean                   = "java.lang.Boolean"
+  val javaLangClass                     = "java.lang.Class"
   val javaLangObject                    = "java.lang.Object"
   val javaLangString                    = "java.lang.String"
-  val javaLangBoolean                   = "java.lang.Boolean"
   val tType                             = "T"
   val void                              = "void"
 }

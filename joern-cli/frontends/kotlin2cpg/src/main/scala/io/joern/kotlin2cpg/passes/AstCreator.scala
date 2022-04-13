@@ -1073,6 +1073,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForBinaryExprWithTypeRHS(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, order, argIdx))
+      // TODO: callable reference
       case _: KtNameReferenceExpression =>
         // TODO: handle this
         Seq()
@@ -1100,8 +1101,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForArrayAccess(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtLambdaExpression =>
         Seq(astForLambda(typedExpr, scopeContext, order, argIdx))
-      case _: KtNamedFunction =>
-        Seq()
+      case typedExpr: KtNamedFunction =>
+        logger.debug(
+          "Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`"
+        )
+        Seq(astForUnknown(typedExpr, order, argIdx))
       case classExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(classExpr, scopeContext, order, argIdx))
       case sqExpr: KtSafeQualifiedExpression =>
@@ -1119,15 +1123,37 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         astsForDestructuringDeclaration(typedExpr, scopeContext, order)
       case typedExpr: KtLabeledExpression =>
         astsForExpression(typedExpr.getBaseExpression, scopeContext, order, argIdx)
+      case typedExpr: KtSuperExpression =>
+        Seq(astForSuperExpression(typedExpr, scopeContext, order, argIdx))
       case null =>
         logger.debug("Received null expression! Skipping...")
         Seq()
+      // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
       case unknownExpr =>
         logger.debug(
           "Creating empty AST node for unknown expression `" + unknownExpr.getClass + "` with text `" + unknownExpr.getText + "`"
         )
         Seq(astForUnknown(unknownExpr, order, argIdx))
     }
+  }
+
+  def astForSuperExpression(expr: KtSuperExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
+    fileInfo: FileInfo,
+    typeInfoProvider: TypeInfoProvider
+  ): AstWithCtx = {
+    val typeFullName = typeInfoProvider.expressionType(expr, TypeConstants.any)
+    registerType(typeFullName)
+
+    val node =
+      NewIdentifier()
+        .name(expr.getText)
+        .code(expr.getText)
+        .typeFullName(typeFullName)
+        .order(order)
+        .argumentIndex(argIdx)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+    AstWithCtx(Ast(node), Context(identifiers = Seq(node)))
   }
 
   def astForThisExpression(expr: KtThisExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
@@ -1153,15 +1179,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    val getClassMethodName = "getClass"
-
-    val fullNameWithSignature = typeInfoProvider.fullNameWithSignature(expr, ("", ""))
-    val typeFullName          = typeInfoProvider.expressionType(expr, "java.lang.Class")
+    val fullNameWithSignature = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
+    val typeFullName          = typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject)
     registerType(typeFullName)
 
     val callNode =
       NewCall()
-        .name(getClassMethodName)
+        .name(TypeConstants.classLiteralReplacementMethodName)
         .code(expr.getText)
         .order(order)
         .argumentIndex(argIdx)
@@ -2151,12 +2175,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         case _                    => false
       }
     val isStaticMethodCall = typeInfoProvider.isStaticMethodCall(expr)
-    val hasRefToClassReceiver = expr.getReceiverExpression match {
-      case r: KtNameReferenceExpression =>
-        typeInfoProvider.isReferenceToClass(r)
-      case _ =>
-        false
-    }
+    val hasRefToClassReceiver =
+      expr.getReceiverExpression match {
+        case r: KtNameReferenceExpression =>
+          typeInfoProvider.isReferenceToClass(r)
+        case _ =>
+          false
+      }
     val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
     val orderForReceiver = 1
     val argIdxForReceiver =
@@ -2166,93 +2191,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       else if (isExtensionCall) 0
       else if (isStaticCall) 1
       else 1
-    val receiverExpr = expr.getReceiverExpression
-
-    // TODO: check if it's possible to replace this large `match` with a call to `astsForExpression`
-    val receiverAstWithCtx: AstWithCtx =
-      receiverExpr match {
-        case typedExpr: KtConstantExpression =>
-          astForLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtNameReferenceExpression =>
-          astForNameReference(typedExpr, orderForReceiver, argIdxForReceiver)
-        case thisExpr: KtThisExpression =>
-          astForThisExpression(thisExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case superExpr: KtSuperExpression =>
-          val typeFullName = typeInfoProvider.expressionType(superExpr, TypeConstants.any)
-          registerType(typeFullName)
-
-          val node =
-            NewIdentifier()
-              .code(superExpr.getText)
-              .typeFullName(typeFullName)
-              .order(orderForReceiver)
-              .argumentIndex(argIdxForReceiver)
-              .lineNumber(line(superExpr))
-              .columnNumber(column(superExpr))
-          AstWithCtx(Ast(node), Context())
-        case typedExpr: KtDotQualifiedExpression =>
-          astForQualifiedExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtClassLiteralExpression =>
-          astForClassLiteral(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtIfExpression =>
-          astForIfAsExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtTryExpression =>
-          astForTry(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtPostfixExpression =>
-          astForPostfixExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtStringTemplateExpression =>
-          astForStringTemplate(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtParenthesizedExpression =>
-          val astsWithCtx = astsForExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-          // TODO: get to the root cause of why the asts here are empty; write unit tests
-          // e.g. for when this is the case in https://github.com/detekt/detekt
-          val astForExpr = {
-            if (astsWithCtx.nonEmpty) {
-              astsWithCtx.head.ast
-            } else {
-              val node =
-                NewUnknown()
-                  .code(typedExpr.getText)
-                  .typeFullName(TypeConstants.any)
-                  .order(orderForReceiver)
-                  .argumentIndex(argIdxForReceiver)
-                  .lineNumber(line(typedExpr))
-                  .columnNumber(column(typedExpr))
-              Ast(node)
-            }
-          }
-          AstWithCtx(astForExpr, Context())
-        case typedExpr: KtSafeQualifiedExpression =>
-          astForQualifiedExpression(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtWhenExpression =>
-          astForWhen(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        case typedExpr: KtCallExpression =>
-          val isCtorCall = typeInfoProvider.isConstructorCall(typedExpr)
-          if (isCtorCall.getOrElse(false)) {
-            astForCtorCall(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-          } else {
-            astForCall(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-          }
-        case typedExpr: KtArrayAccessExpression =>
-          astForArrayAccess(typedExpr, scopeContext, orderForReceiver, argIdxForReceiver)
-        // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
-        // KtObjectLiteralExpression
-        case unhandled: KtExpression =>
-          logger.debug(
-            "Creating UNKNOWN node in DQE for expression `" + unhandled.getText + "` of class `" + unhandled.getClass + "`."
-          )
-          val node =
-            NewUnknown()
-              .code(unhandled.getText)
-              .typeFullName(TypeConstants.any)
-              .order(orderForReceiver)
-              .argumentIndex(argIdxForReceiver)
-              .lineNumber(line(unhandled))
-              .columnNumber(column(unhandled))
-          AstWithCtx(Ast(node), Context())
-      }
-    val receiverAst = receiverAstWithCtx.ast
-
+    val receiverAstWithCtx =
+      astsForExpression(expr.getReceiverExpression, scopeContext, orderForReceiver, argIdxForReceiver).head
+    val receiverAst        = receiverAstWithCtx.ast
     val selectorOrderCount = argIdxForReceiver
     val argAsts =
       expr.getSelectorExpression match {
@@ -3771,7 +3712,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       } else {
         TypeConstants.any
       }
-    val code = name
 
     val explicitTypeName =
       decl.getOriginalElement match {
