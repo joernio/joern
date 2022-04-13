@@ -2126,6 +2126,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
+  // TODO: clean up this whole fn
   def astForQualifiedExpression(expr: KtQualifiedExpression, scopeContext: Context, order: Int, argIdx: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
@@ -2135,9 +2136,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val isDynamicCall   = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
 
-    val hasThisReceiver    = expr.getReceiverExpression.isInstanceOf[KtThisExpression]
+    val hasThisSuperOrNameRefReceiver =
+      expr.getReceiverExpression match {
+        case _: KtThisExpression          => true
+        case _: KtNameReferenceExpression => true
+        case _: KtSuperExpression         => true
+        case _                            => false
+      }
     val hasNameRefSelector = expr.getSelectorExpression.isInstanceOf[KtNameReferenceExpression]
-    val isFieldAccessCall  = hasThisReceiver && hasNameRefSelector
+    val isFieldAccessCall  = hasThisSuperOrNameRefReceiver && hasNameRefSelector
     val isCallToSuper =
       expr.getReceiverExpression match {
         case _: KtSuperExpression => true
@@ -2307,7 +2314,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     registerType(retType)
 
     val methodName =
-      if (isFieldAccessCall) {
+      if (isFieldAccessCall || fullNameWithSig._1 == Operators.fieldAccess) {
         Operators.fieldAccess
       } else {
         expr.getSelectorExpression.getFirstChild.getText
