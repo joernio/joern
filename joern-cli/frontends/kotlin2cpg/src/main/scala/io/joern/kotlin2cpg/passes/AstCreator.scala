@@ -1102,7 +1102,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtLambdaExpression =>
         Seq(astForLambda(typedExpr, scopeContext, order, argIdx))
       case typedExpr: KtNamedFunction =>
-        logger.debug("Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`")
+        logger.debug(
+          "Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`"
+        )
         Seq(astForUnknown(typedExpr, order, argIdx))
       case classExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(classExpr, scopeContext, order, argIdx))
