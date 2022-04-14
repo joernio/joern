@@ -686,7 +686,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val signature            = s"void(${parameterTypes.mkString(",")})"
     val fullName             = constructorFullName(scopeStack.getEnclosingTypeDecl, signature)
 
-    val constructorNode = createPartialMethod(constructorDeclaration, childNum)
+    val constructorNode = createPartialMethod(constructorDeclaration)
       .fullName(fullName)
       .signature(signature)
 
@@ -896,7 +896,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     val methodFullName = getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration, signature)
 
-    val methodNode = createPartialMethod(methodDeclaration, childNum)
+    val methodNode = createPartialMethod(methodDeclaration)
       .fullName(methodFullName)
       .signature(signature.getOrElse(""))
 
@@ -943,7 +943,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
     * `fullName` and `signature` are omitted
     */
-  private def createPartialMethod(declaration: CallableDeclaration[_], childNum: Int): NewMethod = {
+  private def createPartialMethod(declaration: CallableDeclaration[_]): NewMethod = {
     val code         = declaration.getDeclarationAsString.trim
     val columnNumber = declaration.getBegin.map(x => Integer.valueOf(x.column)).toScala
     val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
@@ -953,7 +953,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .name(declaration.getNameAsString)
       .code(code)
       .isExternal(false)
-      .order(childNum)
       .filename(filename)
       .lineNumber(line(declaration))
       .columnNumber(columnNumber)

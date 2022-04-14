@@ -24,9 +24,9 @@ trait MacroHandler {
   /** For the given node, determine if it is expanded from a macro, and if so, create a Call node to represent the macro
     * invocation and attach `ast` as its child.
     */
-  def asChildOfMacroCall(node: IASTNode, ast: Ast, argIndex: Int): Ast = {
+  def asChildOfMacroCall(node: IASTNode, ast: Ast): Ast = {
     val macroCallAst = extractMatchingMacro(node).map { case (mac, args) =>
-      createMacroCallAst(ast, node, mac, args, argIndex)
+      createMacroCallAst(ast, node, mac, args)
     }
     if (macroCallAst.isDefined) {
       val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
@@ -106,8 +106,7 @@ trait MacroHandler {
     ast: Ast,
     node: IASTNode,
     macroDef: IASTPreprocessorMacroDefinition,
-    arguments: List[String],
-    argIndex: Int
+    arguments: List[String]
   ): Ast = {
     val name    = ASTStringUtil.getSimpleName(macroDef.getName)
     val code    = node.getRawSignature.replaceAll(";$", "")
@@ -121,11 +120,8 @@ trait MacroHandler {
       .columnNumber(column(node))
       .typeFullName(typeFor(node))
       .dispatchType(DispatchTypes.INLINED)
-      .argumentIndex(argIndex)
 
-    Ast(callNode)
-      .withChildren(argAsts)
-      .withArgEdges(callNode, argAsts.flatMap(x => x.root))
+    callAst(callNode, argAsts)
   }
 
   private val nodeOffsetMacroPairs: mutable.Buffer[(Int, IASTPreprocessorMacroDefinition)] = {

@@ -14,8 +14,6 @@ trait AstForTypesCreator {
 
   this: AstCreator =>
 
-  import AstCreatorHelper.OptionSafeAst
-
   private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {
     case Some(_: IASTCompositeTypeSpecifier) => true
     case _                                   => false
@@ -131,28 +129,20 @@ trait AstForTypesCreator {
     case i: IASTEqualsInitializer =>
       val operatorName = Operators.assignment
       val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
-      val left         = astForNode(declarator.getName, 1)
-      val right        = astForNode(i.getInitializerClause, 2)
-      Ast(callNode)
-        .withChild(left)
-        .withChild(right)
-        .withArgEdge(callNode, left.root)
-        .withArgEdge(callNode, right.root)
+      val left         = astForNode(declarator.getName)
+      val right        = astForNode(i.getInitializerClause)
+      callAst(callNode, List(left, right))
     case i: ICPPASTConstructorInitializer =>
       val name     = ASTStringUtil.getSimpleName(declarator.getName)
       val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH)
-      val args     = withIndex(i.getArguments) { case (a, i) => astForNode(a, i) }
-      Ast(callNode).withChildren(args).withArgEdges(callNode, args)
+      val args     = i.getArguments.toList.map(x => astForNode(x))
+      callAst(callNode, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
       val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
       val left         = astForNode(declarator.getName)
       val right        = astForNode(i)
-      Ast(callNode)
-        .withChild(left)
-        .withChild(right)
-        .withArgEdge(callNode, left.root)
-        .withArgEdge(callNode, right.root)
+      callAst(callNode, List(left, right))
     case _ => astForNode(init)
   }
 
@@ -191,7 +181,7 @@ trait AstForTypesCreator {
     Ast(typeDeclNode)
   }
 
-  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknown(asm, -1))
+  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknown(asm))
 
   private def astForStructuredBindingDeclaration(
     structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration
@@ -346,13 +336,9 @@ trait AstForTypesCreator {
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
       val callNode     = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
-      val left         = astForNode(enumerator.getName, 1)
-      val right        = astForNode(enumerator.getValue, 2)
-      val ast = Ast(callNode)
-        .withChild(left)
-        .withChild(right)
-        .withArgEdge(callNode, left.root)
-        .withArgEdge(callNode, right.root)
+      val left         = astForNode(enumerator.getName)
+      val right        = astForNode(enumerator.getValue)
+      val ast          = callAst(callNode, List(left, right))
       Seq(Ast(cpgMember), ast)
     } else {
       Seq(Ast(cpgMember))

@@ -140,8 +140,9 @@ trait AstForStatementsCreator {
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
     val cpgTry = newControlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
-    val body   = nullSafeAst(tryStmt.getTryBody, -1)
+    val body   = nullSafeAst(tryStmt.getTryBody)
     // All catches must have order 2 for correct control flow generation.
+    // TODO fix this. Multiple siblings with the same order are invalid
     val catches = tryStmt.getCatchHandlers.flatMap { stmt =>
       astsForStatement(stmt.getCatchBody, 2)
     }.toIndexedSeq
@@ -171,7 +172,7 @@ trait AstForStatementsCreator {
       case _: IASTNullStatement                   => Seq.empty
       case _                                      => Seq(astForNode(statement))
     }
-    r.map(x => asChildOfMacroCall(statement, x, argIndex))
+    r.map(x => asChildOfMacroCall(statement, x))
   }
 
   private def astForFor(forStmt: IASTForStatement): Ast = {
@@ -237,11 +238,11 @@ trait AstForStatementsCreator {
     val (code, conditionAst) = ifStmt match {
       case s: CASTIfStatement =>
         val c = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val a = nullSafeAst(ifStmt.getConditionExpression, 1)
+        val a = nullSafeAst(ifStmt.getConditionExpression)
         (c, a)
       case s: CPPASTIfStatement if s.getConditionExpression != null =>
         val c = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val a = nullSafeAst(ifStmt.getConditionExpression, 1)
+        val a = nullSafeAst(ifStmt.getConditionExpression)
         (c, a)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"

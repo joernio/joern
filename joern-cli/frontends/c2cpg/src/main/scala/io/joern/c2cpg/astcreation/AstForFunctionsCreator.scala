@@ -45,7 +45,7 @@ trait AstForFunctionsCreator {
     case defn: IASTFunctionDefinition              => parameters(defn.getDeclarator)
     case lambdaExpression: ICPPASTLambdaExpression => parameters(lambdaExpression.getDeclarator)
     case knr: ICASTKnRFunctionDeclarator           => knr.getParameterDeclarations.toIndexedSeq
-    case other if other != null                    => notHandledYet(other, -1); Seq.empty
+    case other if other != null                    => notHandledYet(other); Seq.empty
     case null                                      => Seq.empty
   }
 
