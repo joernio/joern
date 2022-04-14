@@ -91,12 +91,12 @@ abstract class AstCreatorBase(filename: String) {
     }
   }
 
-  protected def withIndex[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
+  def withIndex[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
     nodes.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
 
-  protected def withIndex[T, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
+  def withIndex[T, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
     nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }

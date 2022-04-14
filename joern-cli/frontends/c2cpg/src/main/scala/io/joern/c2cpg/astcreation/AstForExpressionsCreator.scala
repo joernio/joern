@@ -12,7 +12,7 @@ trait AstForExpressionsCreator {
 
   this: AstCreator =>
 
-  private def astForBinaryExpression(bin: IASTBinaryExpression, argIndex: Int): Ast = {
+  private def astForBinaryExpression(bin: IASTBinaryExpression): Ast = {
     val op = bin.getOperator match {
       case IASTBinaryExpression.op_multiply         => Operators.multiplication
       case IASTBinaryExpression.op_divide           => Operators.division
@@ -51,38 +51,35 @@ trait AstForExpressionsCreator {
       case _                                        => "<operator>.unknown"
     }
 
-    val callNode = newCallNode(bin, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
+    val callNode = newCallNode(bin, op, op, DispatchTypes.STATIC_DISPATCH)
     val left     = nullSafeAst(bin.getOperand1)
     val right    = nullSafeAst(bin.getOperand2)
     callAst(callNode, List(left, right))
   }
 
-  private def astForExpressionList(exprList: IASTExpressionList, argIndex: Int): Ast = {
+  private def astForExpressionList(exprList: IASTExpressionList): Ast = {
     val b = NewBlock()
-      .argumentIndex(argIndex)
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(exprList))
       .columnNumber(column(exprList))
-    Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression(_, argIndex)))
+    Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression(_)))
   }
 
   private def astForCallExpression(call: IASTFunctionCallExpression, argIndex: Int): Ast = {
     val rec = call.getFunctionNameExpression match {
       case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTBinaryExpression] =>
-        astForBinaryExpression(unaryExpression.getOperand.asInstanceOf[IASTBinaryExpression], 0)
+        astForBinaryExpression(unaryExpression.getOperand.asInstanceOf[IASTBinaryExpression])
       case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTFieldReference] =>
-        astForFieldReference(unaryExpression.getOperand.asInstanceOf[IASTFieldReference], 0)
+        astForFieldReference(unaryExpression.getOperand.asInstanceOf[IASTFieldReference])
       case unaryExpression: IASTUnaryExpression
           if unaryExpression.getOperand.isInstanceOf[IASTArraySubscriptExpression] =>
-        astForArrayIndexExpression(unaryExpression.getOperand.asInstanceOf[IASTArraySubscriptExpression], 0)
+        astForArrayIndexExpression(unaryExpression.getOperand.asInstanceOf[IASTArraySubscriptExpression])
       case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTConditionalExpression] =>
-        astForUnaryExpression(unaryExpression, 0)
+        astForUnaryExpression(unaryExpression)
       case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTUnaryExpression] =>
-        astForUnaryExpression(unaryExpression.getOperand.asInstanceOf[IASTUnaryExpression], 0)
+        astForUnaryExpression(unaryExpression.getOperand.asInstanceOf[IASTUnaryExpression])
       case lambdaExpression: ICPPASTLambdaExpression =>
-        val methodRefAst = astForMethodRefForLambda(lambdaExpression)
-        methodRefAst.root.get.asInstanceOf[NewMethodRef].argumentIndex = 0
-        methodRefAst
+        astForMethodRefForLambda(lambdaExpression)
       case other => astForExpression(other, 0)
     }
 
@@ -116,7 +113,7 @@ trait AstForExpressionsCreator {
     }
   }
 
-  private def astForUnaryExpression(unary: IASTUnaryExpression, argIndex: Int): Ast = {
+  private def astForUnaryExpression(unary: IASTUnaryExpression): Ast = {
     val operatorMethod = unary.getOperator match {
       case IASTUnaryExpression.op_prefixIncr  => Operators.preIncrement
       case IASTUnaryExpression.op_prefixDecr  => Operators.preDecrement
@@ -135,9 +132,9 @@ trait AstForExpressionsCreator {
     }
 
     if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {
-      astForExpression(unary.getOperand, argIndex)
+      astForExpression(unary.getOperand)
     } else {
-      val cpgUnary = newCallNode(unary, operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH, argIndex)
+      val cpgUnary = newCallNode(unary, operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
       val operandExpr = unary.getOperand match {
         // special handling for operand expression in brackets - we simply ignore the brackets
         case opExpr: IASTUnaryExpression if opExpr.getOperator == IASTUnaryExpression.op_bracketedPrimary =>
@@ -160,7 +157,7 @@ trait AstForExpressionsCreator {
         val call = newCallNode(typeId, Operators.sizeOf, Operators.sizeOf, DispatchTypes.STATIC_DISPATCH, argIndex)
         val arg  = astForNode(typeId.getTypeId.getDeclSpecifier)
         callAst(call, List(arg))
-      case _ => notHandledYet(typeId, argIndex)
+      case _ => notHandledYet(typeId)
     }
   }
 
@@ -175,18 +172,17 @@ trait AstForExpressionsCreator {
     callAst(call, children)
   }
 
-  private def astForArrayIndexExpression(arrayIndexExpression: IASTArraySubscriptExpression, argIndex: Int): Ast = {
+  private def astForArrayIndexExpression(arrayIndexExpression: IASTArraySubscriptExpression): Ast = {
     val cpgArrayIndexing =
       newCallNode(
         arrayIndexExpression,
         Operators.indirectIndexAccess,
         Operators.indirectIndexAccess,
-        DispatchTypes.STATIC_DISPATCH,
-        argIndex
+        DispatchTypes.STATIC_DISPATCH
       )
 
-    val expr = astForExpression(arrayIndexExpression.getArrayExpression, 1)
-    val arg  = astForNode(arrayIndexExpression.getArgument, 2)
+    val expr = astForExpression(arrayIndexExpression.getArrayExpression)
+    val arg  = astForNode(arrayIndexExpression.getArgument)
     callAst(cpgArrayIndexing, List(expr, arg))
   }
 
@@ -196,7 +192,7 @@ trait AstForExpressionsCreator {
 
     val expr    = astForExpression(castExpression.getOperand, 2)
     val argNode = castExpression.getTypeId
-    val arg     = newUnknown(argNode, 1)
+    val arg     = newUnknown(argNode)
 
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
@@ -207,21 +203,19 @@ trait AstForExpressionsCreator {
 
     val typeId = newExpression.getTypeId
     if (newExpression.isArrayAllocation) {
-      val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier, 1)
+      val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier)
       Ast(cpgNewExpression).withChild(cpgTypeId).withArgEdge(cpgNewExpression, cpgTypeId.root.get)
     } else {
-      val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier, 1)
+      val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier)
       val args =
         if (
           newExpression.getInitializer != null && newExpression.getInitializer
             .isInstanceOf[ICPPASTConstructorInitializer]
         ) {
-          val args = newExpression.getInitializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments
-          withIndex(args) { (a, i) =>
-            astForNode(a, 1 + i)
-          }
+          val args = newExpression.getInitializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments.toList
+          args.map(x => astForNode(x))
         } else {
-          Seq.empty
+          List()
         }
 
       callAst(cpgNewExpression, List(cpgTypeId) ++ args)
@@ -231,7 +225,7 @@ trait AstForExpressionsCreator {
   private def astForDeleteExpression(delExpression: ICPPASTDeleteExpression, argIndex: Int): Ast = {
     val cpgDeleteNode =
       newCallNode(delExpression, Operators.delete, Operators.delete, DispatchTypes.STATIC_DISPATCH, argIndex)
-    val arg = astForExpression(delExpression.getOperand, 1)
+    val arg = astForExpression(delExpression.getOperand)
     callAst(cpgDeleteNode, List(arg))
   }
 
@@ -265,19 +259,19 @@ trait AstForExpressionsCreator {
 
   protected def astForExpression(expression: IASTExpression, argIndex: Int = -1): Ast = {
     val r = expression match {
-      case lit: IASTLiteralExpression   => astForLiteral(lit, argIndex)
-      case un: IASTUnaryExpression      => astForUnaryExpression(un, argIndex)
-      case bin: IASTBinaryExpression    => astForBinaryExpression(bin, argIndex)
-      case exprList: IASTExpressionList => astForExpressionList(exprList, argIndex)
+      case lit: IASTLiteralExpression   => astForLiteral(lit)
+      case un: IASTUnaryExpression      => astForUnaryExpression(un)
+      case bin: IASTBinaryExpression    => astForBinaryExpression(bin)
+      case exprList: IASTExpressionList => astForExpressionList(exprList)
       case qualId: IASTIdExpression if qualId.getName.isInstanceOf[CPPASTQualifiedName] =>
-        astForQualifiedName(qualId.getName.asInstanceOf[CPPASTQualifiedName], argIndex)
-      case ident: IASTIdExpression          => astForIdentifier(ident, argIndex)
+        astForQualifiedName(qualId.getName.asInstanceOf[CPPASTQualifiedName])
+      case ident: IASTIdExpression          => astForIdentifier(ident)
       case call: IASTFunctionCallExpression => astForCallExpression(call, argIndex)
       case typeId: IASTTypeIdExpression     => astForTypeIdExpression(typeId, argIndex)
-      case fieldRef: IASTFieldReference     => astForFieldReference(fieldRef, argIndex)
+      case fieldRef: IASTFieldReference     => astForFieldReference(fieldRef)
       case expr: IASTConditionalExpression  => astForConditionalExpression(expr, argIndex)
       case arrayIndexExpression: IASTArraySubscriptExpression =>
-        astForArrayIndexExpression(arrayIndexExpression, argIndex)
+        astForArrayIndexExpression(arrayIndexExpression)
       case castExpression: IASTCastExpression          => astForCastExpression(castExpression, argIndex)
       case newExpression: ICPPASTNewExpression         => astForNewExpression(newExpression, argIndex)
       case delExpression: ICPPASTDeleteExpression      => astForDeleteExpression(delExpression, argIndex)
@@ -288,7 +282,7 @@ trait AstForExpressionsCreator {
         astForCompoundStatementExpression(compoundExpression, argIndex)
       case packExpansionExpression: ICPPASTPackExpansionExpression =>
         astForPackExpansionExpression(packExpansionExpression, argIndex)
-      case _ => notHandledYet(expression, argIndex)
+      case _ => notHandledYet(expression)
     }
     asChildOfMacroCall(expression, r, argIndex)
   }

@@ -190,8 +190,8 @@ trait AstForStatementsCreator {
     val initAst = Ast(initAstBlock).withChildren(nullSafeAst(forStmt.getInitializerStatement, 1))
     scope.popScope()
 
-    val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
-    val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
+    val compareAst = nullSafeAst(forStmt.getConditionExpression)
+    val updateAst  = nullSafeAst(forStmt.getIterationExpression)
     val stmtAst    = nullSafeAst(forStmt.getBody, 4)
 
     Ast(forNode)
@@ -237,11 +237,11 @@ trait AstForStatementsCreator {
     val (code, conditionAst) = ifStmt match {
       case s: CASTIfStatement =>
         val c = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val a = nullSafeAst(ifStmt.getConditionExpression, 1)
+        val a = nullSafeAst(ifStmt.getConditionExpression)
         (c, a)
       case s: CPPASTIfStatement if s.getConditionExpression != null =>
         val c = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val a = nullSafeAst(ifStmt.getConditionExpression, 1)
+        val a = nullSafeAst(ifStmt.getConditionExpression)
         (c, a)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"

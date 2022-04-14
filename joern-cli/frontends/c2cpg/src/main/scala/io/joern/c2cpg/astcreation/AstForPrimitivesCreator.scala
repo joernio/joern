@@ -14,18 +14,17 @@ trait AstForPrimitivesCreator {
   protected def astForComment(comment: IASTComment): Ast =
     Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
 
-  protected def astForLiteral(lit: IASTLiteralExpression, argIndex: Int): Ast = {
+  protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
     val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
     val litNode = NewLiteral()
       .typeFullName(registerType(tpe))
       .code(nodeSignature(lit))
-      .argumentIndex(argIndex)
       .lineNumber(line(lit))
       .columnNumber(column(lit))
     Ast(litNode)
   }
 
-  protected def astForIdentifier(ident: IASTNode, argIndex: Int): Ast = {
+  protected def astForIdentifier(ident: IASTNode): Ast = {
     val identifierName = ident match {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
@@ -54,7 +53,6 @@ trait AstForPrimitivesCreator {
       .name(identifierName)
       .typeFullName(registerType(cleanType(identifierTypeName)))
       .code(nodeSignature(ident))
-      .argumentIndex(argIndex)
       .lineNumber(line(ident))
       .columnNumber(column(ident))
 
@@ -65,9 +63,9 @@ trait AstForPrimitivesCreator {
     }
   }
 
-  protected def astForFieldReference(fieldRef: IASTFieldReference, argIndex: Int): Ast = {
+  protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val op    = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma    = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
+    val ma    = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH)
     val owner = astForExpression(fieldRef.getFieldOwner)
     val member = NewFieldIdentifier()
       .canonicalName(fieldRef.getFieldName.toString)
@@ -77,10 +75,10 @@ trait AstForPrimitivesCreator {
     callAst(ma, List(owner, Ast(member)))
   }
 
-  protected def astForInitializerList(l: IASTInitializerList, argIndex: Int): Ast = {
+  protected def astForInitializerList(l: IASTInitializerList): Ast = {
     // TODO re-use from Operators once it there
     val op           = "<operator>.arrayInitializer"
-    val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
+    val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH)
 
     val MAX_INITIALIZERS = 1000
     val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
@@ -101,14 +99,14 @@ trait AstForPrimitivesCreator {
     }
   }
 
-  protected def astForQualifiedName(qualId: CPPASTQualifiedName, argIndex: Int): Ast = {
+  protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     val op = Operators.fieldAccess
-    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
+    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH)
 
     def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
       case Nil => Ast()
       case head :: Nil =>
-        astForNode(head, argIndex)
+        astForNode(head)
       case head :: tail =>
         val code     = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
         val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)

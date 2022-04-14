@@ -129,8 +129,8 @@ trait AstForTypesCreator {
     case i: IASTEqualsInitializer =>
       val operatorName = Operators.assignment
       val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
-      val left         = astForNode(declarator.getName, 1)
-      val right        = astForNode(i.getInitializerClause, 2)
+      val left         = astForNode(declarator.getName)
+      val right        = astForNode(i.getInitializerClause)
       callAst(callNode, List(left, right))
     case i: ICPPASTConstructorInitializer =>
       val name     = ASTStringUtil.getSimpleName(declarator.getName)
