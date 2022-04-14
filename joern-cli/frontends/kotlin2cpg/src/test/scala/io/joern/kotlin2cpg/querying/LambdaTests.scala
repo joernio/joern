@@ -72,7 +72,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a LOCAL node for the captured `baz`" in {
-      cpg.local.code("baz").size shouldBe 1
+      cpg.local.code("baz").size shouldBe 2
     }
 
     "should contain a CLOSURE_BINDING node for captured `baz`" in {

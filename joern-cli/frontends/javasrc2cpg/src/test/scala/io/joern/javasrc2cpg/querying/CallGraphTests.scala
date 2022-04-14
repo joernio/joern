@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 
@@ -24,13 +25,19 @@ class CallGraphTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find that main calls add and others" in {
-    cpg.method.name("main").callee.name.toSetMutable shouldBe Set("add", "println", "<operator>.addition")
+    cpg.method.name("main").callee.name.toSetMutable shouldBe Set(
+      "add",
+      "println",
+      Operators.fieldAccess,
+      Operators.addition
+    )
   }
 
   "should find three outgoing calls for main" in {
     cpg.method.name("main").call.code.toSetMutable shouldBe Set(
       "1 + 2",
       "this.add(1 + 2, 3)",
+      "System.out",
       "System.out.println(add(1 + 2, 3))"
     )
   }

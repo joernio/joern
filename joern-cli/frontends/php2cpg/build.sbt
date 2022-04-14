@@ -1,12 +1,12 @@
 name := "php2cpg"
 
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.1")
+crossScalaVersions := Seq("2.13.8", "3.1.2")
 
 dependsOn(Projects.x2cpg)
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"   %% "ujson"             % "1.5.0",
+  "com.lihaoyi"   %% "ujson"             % "1.6.0",
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )

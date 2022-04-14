@@ -48,7 +48,7 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
 
   "should handle static member accesses" in {
     val List(access: Call)                                             = cpg.method(".*foo.*").call(".*fieldAccess").l
-    val List(fieldIdentifier: FieldIdentifier, identifier: Identifier) = access.argument.l
+    val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l
     identifier.name shouldBe "Foo"
     identifier.typeFullName shouldBe "Foo"
     fieldIdentifier.canonicalName shouldBe "MAX_VALUE"
@@ -56,7 +56,7 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
 
   "should handle object field accesses on RHS of assignments" in {
     val List(access: Call)                                             = cpg.method(".*bar.*").call(".*fieldAccess").l
-    val List(fieldIdentifier: FieldIdentifier, identifier: Identifier) = access.argument.l
+    val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l
     identifier.name shouldBe "f"
     identifier.typeFullName shouldBe "Foo"
     fieldIdentifier.canonicalName shouldBe "value"
@@ -64,7 +64,7 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
 
   "should handle object field accesses on LHS of assignments" in {
     val List(access: Call)                                             = cpg.method(".*baz.*").call(".*fieldAccess").l
-    val List(fieldIdentifier: FieldIdentifier, identifier: Identifier) = access.argument.l
+    val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l
     identifier.name shouldBe "g"
     identifier.typeFullName shouldBe "Foo"
     fieldIdentifier.canonicalName shouldBe "value"
