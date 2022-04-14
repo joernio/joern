@@ -1,11 +1,15 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewMethod,
+  NewMethodReturn,
+  NewNode
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.joern.x2cpg.Ast
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
@@ -189,9 +193,18 @@ trait AstCreatorHelper {
     Option(node).map(nodeSignature).getOrElse("")
   }
 
-  protected def nullSafeAst(node: IASTExpression): Ast = {
-    Option(node).map(astForNode(_)).getOrElse(Ast())
+  protected def nullSafeAst(node: IASTExpression, argIndex: Int): Ast = {
+    val r = nullSafeAst(node)
+    r.root match {
+      case Some(x: ExpressionNew) =>
+        x.argumentIndex = argIndex
+      case _ =>
+    }
+    r
   }
+
+  protected def nullSafeAst(node: IASTExpression): Ast =
+    Option(node).map(astForNode(_)).getOrElse(Ast())
 
   protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)

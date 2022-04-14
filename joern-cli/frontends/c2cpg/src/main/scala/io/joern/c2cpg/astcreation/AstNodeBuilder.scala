@@ -8,11 +8,10 @@ trait AstNodeBuilder {
 
   this: AstCreator =>
 
-  protected def newUnknown(node: IASTNode, argIndex: Int = -1): NewUnknown =
+  protected def newUnknown(node: IASTNode): NewUnknown =
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(nodeSignature(node))
-      .argumentIndex(argIndex)
       .lineNumber(line(node))
       .columnNumber(column(node))
 

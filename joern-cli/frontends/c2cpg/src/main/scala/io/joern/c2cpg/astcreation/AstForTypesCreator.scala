@@ -181,7 +181,7 @@ trait AstForTypesCreator {
     Ast(typeDeclNode)
   }
 
-  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknown(asm, -1))
+  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknown(asm))
 
   private def astForStructuredBindingDeclaration(
     structuredBindingDeclaration: ICPPASTStructuredBindingDeclaration

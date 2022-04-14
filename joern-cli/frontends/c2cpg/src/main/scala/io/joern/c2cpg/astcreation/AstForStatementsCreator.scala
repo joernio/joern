@@ -140,8 +140,9 @@ trait AstForStatementsCreator {
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
     val cpgTry = newControlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
-    val body   = nullSafeAst(tryStmt.getTryBody, -1)
+    val body   = nullSafeAst(tryStmt.getTryBody)
     // All catches must have order 2 for correct control flow generation.
+    // TODO fix this. Multiple siblings with the same order are invalid
     val catches = tryStmt.getCatchHandlers.flatMap { stmt =>
       astsForStatement(stmt.getCatchBody, 2)
     }.toIndexedSeq
@@ -190,8 +191,8 @@ trait AstForStatementsCreator {
     val initAst = Ast(initAstBlock).withChildren(nullSafeAst(forStmt.getInitializerStatement, 1))
     scope.popScope()
 
-    val compareAst = nullSafeAst(forStmt.getConditionExpression)
-    val updateAst  = nullSafeAst(forStmt.getIterationExpression)
+    val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
+    val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
     val stmtAst    = nullSafeAst(forStmt.getBody, 4)
 
     Ast(forNode)
