@@ -50,7 +50,6 @@ import com.github.javaparser.ast.expr.{
   UnaryExpr,
   VariableDeclarationExpr
 }
-import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.{
   AssertStmt,
   BlockStmt,
@@ -95,7 +94,6 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  HasTypeFullName,
   NewAnnotation,
   NewAnnotationLiteral,
   NewAnnotationParameter,
@@ -129,8 +127,8 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util.UUID.randomUUID
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
@@ -1456,7 +1454,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astForArrayCreationExpr(expr: ArrayCreationExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
-    val name = "<operator>.arrayCreator"
+    val name = Operators.alloc
     val callNode = NewCall()
       .name(name)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -2024,7 +2022,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astsForExpression(x, o, expectedArgType)
     }.flatten
 
-    val name = "<operator>.alloc"
+    val name = Operators.alloc
     val typeFullName = typeInfoProvider
       .getTypeFullName(expr)
       .orElse(expectedType)
