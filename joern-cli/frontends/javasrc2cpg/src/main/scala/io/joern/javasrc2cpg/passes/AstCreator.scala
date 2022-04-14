@@ -1,79 +1,11 @@
 package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
-import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  BodyDeclaration,
-  CallableDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body._
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  AssignExpr,
-  BinaryExpr,
-  BooleanLiteralExpr,
-  CastExpr,
-  CharLiteralExpr,
-  ClassExpr,
-  ConditionalExpr,
-  DoubleLiteralExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  IntegerLiteralExpr,
-  LambdaExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MarkerAnnotationExpr,
-  MethodCallExpr,
-  NameExpr,
-  NormalAnnotationExpr,
-  NullLiteralExpr,
-  ObjectCreationExpr,
-  SingleMemberAnnotationExpr,
-  StringLiteralExpr,
-  SuperExpr,
-  TextBlockLiteralExpr,
-  ThisExpr,
-  UnaryExpr,
-  VariableDeclarationExpr
-}
-import com.github.javaparser.ast.nodeTypes.NodeWithType
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.expr._
+import com.github.javaparser.ast.stmt._
+import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
   ResolvedConstructorDeclaration,
@@ -83,54 +15,18 @@ import com.github.javaparser.resolution.declarations.{
 }
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
-import io.joern.javasrc2cpg.util.{NodeTypeInfo, Scope, TypeInfoProvider}
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{TypeConstants, UnresolvedTypeDefault}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  Operators,
-  PropertyNames
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  HasTypeFullName,
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
-import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.javasrc2cpg.util.{NodeTypeInfo, Scope, TypeInfoProvider}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{Expression, _}
+import io.shiftleft.codepropertygraph.generated._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util.UUID.randomUUID
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
@@ -1455,12 +1351,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, argsWithCtx)
   }
 
-  def astForArrayCreationExpr(
-    expr: ArrayCreationExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForArrayCreationExpr(expr: ArrayCreationExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val name = Operators.alloc
     val callNode = NewCall()
       .name(name)
