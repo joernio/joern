@@ -55,7 +55,6 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(4)
       p.code shouldBe "+x"
-      p.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a call node for `minus` op with correct fields" in {
@@ -65,7 +64,6 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(5)
       p.code shouldBe "-x"
-      p.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a call node for `logicalNot` op with correct fields" in {
@@ -84,7 +82,6 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(7)
       p.code shouldBe "++x"
-      p.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a call node for `preDecrement` op with correct fields" in {
@@ -94,7 +91,6 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(8)
       p.code shouldBe "--x"
-      p.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a call node for `postIncrement` op with correct fields" in {
@@ -104,7 +100,6 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "x++"
-      p.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a call node for `postDecrement` op with correct fields" in {
@@ -114,7 +109,6 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(10)
       p.code shouldBe "x--"
-      p.typeFullName shouldBe "java.lang.Integer"
     }
   }
 }
