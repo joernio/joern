@@ -50,6 +50,7 @@ import com.github.javaparser.ast.expr.{
   UnaryExpr,
   VariableDeclarationExpr
 }
+import com.github.javaparser.ast.nodeTypes.NodeWithType
 import com.github.javaparser.ast.stmt.{
   AssertStmt,
   BlockStmt,
@@ -82,7 +83,7 @@ import com.github.javaparser.resolution.declarations.{
 }
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
-import io.joern.javasrc2cpg.util.TypeInfoProvider
+import io.joern.javasrc2cpg.util.{NodeTypeInfo, Scope, TypeInfoProvider}
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{TypeConstants, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -94,6 +95,7 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  HasTypeFullName,
   NewAnnotation,
   NewAnnotationLiteral,
   NewAnnotationParameter,
@@ -190,34 +192,6 @@ object Context {
   }
 }
 
-case class ScopeContext(
-  typeDecl: Option[NewTypeDecl] = None,
-  methodParameters: Seq[NewMethodParameterIn] = List(),
-  locals: Seq[NewLocal] = List(),
-  identifiers: Map[String, NewIdentifier] = Map.empty
-) {
-  def withNewParams(newParams: Seq[NewMethodParameterIn]): ScopeContext = {
-    newParams match {
-      case Seq()     => this
-      case newParams => copy(methodParameters = methodParameters ++ newParams)
-    }
-  }
-
-  def withNewLocals(newLocals: Seq[NewLocal]): ScopeContext = {
-    newLocals match {
-      case Seq()     => this
-      case newLocals => copy(locals = locals ++ newLocals)
-    }
-  }
-
-  def withNewIdentifiers(newIdentifiers: Map[String, NewIdentifier]): ScopeContext = {
-    newIdentifiers match {
-      case m if m.isEmpty => this
-      case newIdentifiers => copy(identifiers = identifiers ++ newIdentifiers)
-    }
-  }
-}
-
 case class RefEdgePair(from: NewIdentifier, to: NewMethodParameterIn)
 
 case class AstWithCtx(ast: Ast, ctx: Context)
@@ -247,15 +221,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
-  val stack: mutable.Stack[NewNode] = mutable.Stack()
-
   private val typeInfoProvider: TypeInfoProvider = TypeInfoProvider(global)
+  private val scopeStack                         = Scope()
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
     */
   def createAst(): DiffGraphBuilder = {
-    typeInfoProvider.registerImports(javaParserAst.getImports.asScala.toList)
     val ast = astForTranslationUnit(javaParserAst)
     storeInDiffGraph(ast)
     diffGraph
@@ -284,15 +256,36 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def addImportsToScope(compilationUnit: CompilationUnit): Unit = {
+
+    typeInfoProvider.registerImports(compilationUnit.getImports.asScala.toList)
+    javaParserAst.getImports.asScala.foreach { importStmt =>
+      val name = importStmt.getName.getIdentifier
+      val importNode =
+        NewIdentifier()
+          .name(name)
+          .typeFullName(importStmt.getNameAsString) // fully qualified name
+      scopeStack.addToScope(name, NodeTypeInfo(importNode))
+    }
+  }
+
   /** Translate compilation unit into AST
     */
   private def astForTranslationUnit(compilationUnit: CompilationUnit): AstWithCtx = {
 
     try {
       val AstWithCtx(ast, ctx) = astForPackageDeclaration(compilationUnit.getPackageDeclaration.toScala)
+
       val namespaceBlockFullName = {
         ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
       }
+      val namespaceScopeNode = {
+        ast.root.collect { case x: NewNamespaceBlock => x }.getOrElse(NewUnknown())
+      }
+
+      scopeStack.pushNewScope(namespaceScopeNode)
+      addImportsToScope(compilationUnit)
+
       val typeDeclAstsWithCtx = withOrder(compilationUnit.getTypes) { (typ, order) =>
         astForTypeDecl(typ, order, astParentType = "NAMESPACE_BLOCK", astParentFullName = namespaceBlockFullName)
       }
@@ -309,6 +302,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         Ast(lambdaTypeDecl).withChild(lambdaAst)
       }
 
+      scopeStack.popScope()
       AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
     } catch {
       case t: UnsolvedSymbolException =>
@@ -337,10 +331,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(Ast(namespaceBlock.filename(absolutePath(filename)).order(1)), Context())
   }
 
-  private def bindingForMethod(maybeMethodNode: Option[NewMethod], scopeContext: ScopeContext): List[BindingInfo] = {
+  private def bindingForMethod(maybeMethodNode: Option[NewMethod]): List[BindingInfo] = {
     maybeMethodNode match {
       case Some(methodNode) =>
-        scopeContext.typeDecl match {
+        scopeStack.getEnclosingTypeDecl match {
           case Some(typeDecl) =>
             val node = NewBinding()
               .name(methodNode.name)
@@ -358,22 +352,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForTypeDeclMember(
     member: BodyDeclaration[_],
-    scopeContext: ScopeContext,
     order: Int,
     clinitOrder: Int,
     astParentFullName: String
   ): AstWithStaticInit = {
     member match {
       case constructor: ConstructorDeclaration =>
-        val AstWithCtx(ast, ctx) = astForConstructor(constructor, scopeContext, order)
+        val AstWithCtx(ast, ctx) = astForConstructor(constructor, order)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
-        val bindingInfo          = bindingForMethod(rootNode, scopeContext)
+        val bindingInfo          = bindingForMethod(rootNode)
         AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
 
       case method: MethodDeclaration =>
-        val AstWithCtx(ast, ctx) = astForMethod(method, scopeContext, order)
+        val AstWithCtx(ast, ctx) = astForMethod(method, order)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
-        val bindingInfo          = bindingForMethod(rootNode, scopeContext)
+        val bindingInfo          = bindingForMethod(rootNode)
         AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
 
       case typeDeclaration: TypeDeclaration[_] =>
@@ -387,7 +380,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val staticInitAsts = if (fieldDeclaration.isStatic) {
           val assignments = assignmentsForVarDecl(
             fieldDeclaration.getVariables.asScala.toList,
-            scopeContext,
             line(fieldDeclaration),
             column(fieldDeclaration),
             clinitOrder
@@ -401,8 +393,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       case initDeclaration: InitializerDeclaration =>
         val stmts = initDeclaration.getBody.getStatements.asScala
-        val (asts, _) = withOrderAndCtx(stmts, scopeContext, clinitOrder) { case (stmt, scope, order) =>
-          astsForStatement(stmt, scope, order)
+        val asts = withOrderAndCtx(stmts, clinitOrder) { case (stmt, order) =>
+          astsForStatement(stmt, order)
         }
         AstWithStaticInit(astWithCtx = Seq.empty, staticInits = asts)
 
@@ -434,7 +426,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Success(resolved) =>
         resolved.getTypeParameters.asScala.map { typeParam =>
           val name = typeParam.getName
-          // val typeFullName = typeInfoProvider.typeFullNameForResolvedTypeParam(typeParam)
           val typeFullName = Try(typeParam.getUpperBound) match {
             case Success(upperBound) =>
               typeInfoProvider
@@ -454,17 +445,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def clinitAstsFromStaticInits(
-    staticInits: Seq[AstWithCtx],
-    scopeContext: ScopeContext,
-    order: Int
-  ): Option[Ast] = {
+  private def clinitAstsFromStaticInits(staticInits: Seq[AstWithCtx], order: Int): Option[Ast] = {
     if (staticInits.isEmpty) {
       None
     } else {
       // TODO: Get rid of magic strings
       val signature = "void()"
-      val fullName = scopeContext.typeDecl
+      val fullName = scopeStack.getEnclosingTypeDecl
         .map { typeDecl =>
           s"${typeDecl.fullName}.<clinit>:$signature"
         }
@@ -536,9 +523,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .astParentType(astParentType)
       .astParentFullName(astParentFullName)
 
-    val typeParameterMap = getTypeParameterMap(Try(typ.resolve()))
+    scopeStack.pushNewScope(typeDecl)
 
-    val initScopeContext = ScopeContext(typeDecl = Some(typeDecl), identifiers = typeParameterMap)
+    val typeParameterMap = getTypeParameterMap(Try(typ.resolve()))
+    typeParameterMap.foreach { case (identifier, node) =>
+      scopeStack.addToScope(identifier, node)
+    }
 
     val enumEntryAsts = if (typ.isEnumDeclaration) {
       withOrder(typ.asEnumDeclaration().getEntries) { case (entry, order) =>
@@ -550,18 +540,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     var clinitOrder                             = 1
     val staticInits: mutable.Buffer[AstWithCtx] = mutable.Buffer()
-    val (memberAsts, _) = withOrderAndCtx(typ.getMembers.asScala, initScopeContext, initialOrder = enumEntryAsts.size) {
-      (member, scopeContext, idx) =>
-        val astWithInits =
-          astForTypeDeclMember(member, scopeContext, order + idx, clinitOrder, astParentFullName = typeFullName)
-        clinitOrder += astWithInits.staticInits.size
-        staticInits.appendAll(astWithInits.staticInits)
-        astWithInits.astWithCtx
+    val memberAsts = withOrderAndCtx(typ.getMembers.asScala, initialOrder = enumEntryAsts.size) { (member, idx) =>
+      val astWithInits =
+        astForTypeDeclMember(member, order + idx, clinitOrder, astParentFullName = typeFullName)
+      clinitOrder += astWithInits.staticInits.size
+      staticInits.appendAll(astWithInits.staticInits)
+      astWithInits.astWithCtx
     }
 
     val defaultConstructorAst = if (typ.getConstructors.isEmpty) {
       val order = memberAsts.size + 1
-      Some(astForDefaultConstructor(initScopeContext, order))
+      Some(astForDefaultConstructor(order))
     } else {
       None
     }
@@ -569,7 +558,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val annotationAsts = typ.getAnnotations.asScala.map(astForAnnotationExpr)
 
     val clinitAst =
-      clinitAstsFromStaticInits(staticInits.toSeq, initScopeContext, memberAsts.size + defaultConstructorAst.size + 1)
+      clinitAstsFromStaticInits(staticInits.toSeq, memberAsts.size + defaultConstructorAst.size + 1)
 
     val typeDeclAst = Ast(typeDecl)
       .withChildren(enumEntryAsts)
@@ -580,11 +569,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeDeclContext = Context.mergedCtx((memberAsts ++ defaultConstructorAst.toList).map(_.ctx))
 
+    scopeStack.popScope()
+
     AstWithCtx(typeDeclAst, typeDeclContext)
   }
 
-  private def astForDefaultConstructor(scopeContext: ScopeContext, order: Int): AstWithCtx = {
-    val typeFullName = scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>")
+  private def astForDefaultConstructor(order: Int): AstWithCtx = {
+    val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse("<empty>")
     val constructorNode = NewMethod()
       .name("<init>")
       .fullName(s"$typeFullName.<init>:void()")
@@ -604,7 +595,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       Ast(NewModifier().modifierType(ModifierTypes.PUBLIC))
     )
 
-    val bindingsInfo = bindingForMethod(Some(constructorNode), scopeContext)
+    val bindingsInfo = bindingForMethod(Some(constructorNode))
 
     val ast = Ast(constructorNode)
       .withChildren(modifiers)
@@ -628,7 +619,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .typeFullName(typeFullName)
 
     val args = withOrder(entry.getArguments) { case (x, o) =>
-      val children = astsForExpression(x, ScopeContext(), o, None)
+      val children = astsForExpression(x, o, None)
       val callNode =
         NewCall()
           .name(s"$typeFullName.<init>")
@@ -651,13 +642,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val annotations  = fieldDeclaration.getAnnotations
     val typeFullName = typeInfoProvider.getTypeFullName(v).getOrElse(UnresolvedTypeDefault)
     val name         = v.getName.toString
-    val memberAst = Ast(
+    val memberNode =
       NewMember()
         .name(name)
         .typeFullName(typeFullName)
         .order(order)
         .code(s"$typeFullName $name")
-    )
+    val memberAst      = Ast(memberNode)
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
 
     val staticModifier = if (fieldDeclaration.isStatic) {
@@ -682,32 +673,37 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .withChildren(staticModifier.map(Ast(_)).toSeq)
         .withChildren(accessModifier.map(Ast(_)).toSeq)
 
+    val nodeTypeInfo = NodeTypeInfo(memberNode, isField = true, isStatic = fieldDeclaration.isStatic)
+    scopeStack.addToScope(name, nodeTypeInfo)
     AstWithCtx(memberAstWithModifiers, Context())
   }
 
-  private def astForConstructor(
-    constructorDeclaration: ConstructorDeclaration,
-    scopeContext: ScopeContext,
-    childNum: Int
-  ): AstWithCtx = {
-    val parameterAstsWithCtx = astsForParameterList(constructorDeclaration.getParameters, scopeContext)
+  private def astForConstructor(constructorDeclaration: ConstructorDeclaration, childNum: Int): AstWithCtx = {
+    scopeStack.pushNewScope(NewMethod())
+
+    val parameterAstsWithCtx = astsForParameterList(constructorDeclaration.getParameters)
     val parameterTypes       = parameterAstsWithCtx.map(rootType(_).getOrElse(UnresolvedTypeDefault))
     val signature            = s"void(${parameterTypes.mkString(",")})"
-    val fullName             = constructorFullName(scopeContext.typeDecl, signature)
+    val fullName             = constructorFullName(scopeStack.getEnclosingTypeDecl, signature)
 
     val constructorNode = createPartialMethod(constructorDeclaration, childNum)
       .fullName(fullName)
       .signature(signature)
 
+    parameterAstsWithCtx.foreach { case AstWithCtx(ast, ctx) =>
+      ast.root match {
+        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p.name, p)
+        case _                             => // This should never happen
+      }
+    }
+
     val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(constructorDeclaration)
     val thisAst      = thisAstForMethod(typeFullName, line(constructorDeclaration))
 
     val lastOrder = 2 + parameterAstsWithCtx.size
-    val scopeWithParams =
-      scopeContext.copy(methodParameters = parameterAstsWithCtx.flatMap(_.ctx.methodParameters))
 
     val bodyAstWithCtx =
-      astForMethodBody(Some(constructorDeclaration.getBody), scopeWithParams, lastOrder)
+      astForMethodBody(Some(constructorDeclaration.getBody), lastOrder)
     val returnAstWithCtx = astForConstructorReturn(constructorDeclaration)
 
     val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
@@ -721,6 +717,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(Seq(thisAst.ctx) ++ parameterAstsWithCtx.map(_.ctx))
 
+    scopeStack.popScope()
     AstWithCtx(constructorAst, ctx)
   }
 
@@ -875,26 +872,29 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astForMethod(
-    methodDeclaration: MethodDeclaration,
-    scopeContext: ScopeContext,
-    childNum: Int
-  ): AstWithCtx = {
+  private def astForMethod(methodDeclaration: MethodDeclaration, childNum: Int): AstWithCtx = {
 
-    val typeParamMap         = getTypeParameterMap(methodDeclaration.getTypeParameters.asScala)
-    val scopeWithTypes       = scopeContext.withNewIdentifiers(typeParamMap)
-    val parameterAstsWithCtx = astsForParameterList(methodDeclaration.getParameters, scopeWithTypes)
+    scopeStack.pushNewScope(NewMethod())
+
+    val typeParamMap = getTypeParameterMap(methodDeclaration.getTypeParameters.asScala)
+    typeParamMap.foreach { case (identifier, typeParam) =>
+      scopeStack.addToScope(identifier, typeParam)
+    }
+
+    val parameterAstsWithCtx = astsForParameterList(methodDeclaration.getParameters)
 
     val returnType =
       typeInfoProvider
         .getReturnType(methodDeclaration)
-        .orElse(nameExprTypeFromScope(methodDeclaration.getTypeAsString, scopeWithTypes))
+        .orElse(
+          scopeStack.lookupVariable(methodDeclaration.getTypeAsString).map(_.node.typeFullName)
+        ) // TODO: TYPE_CLEANUP
 
     val parameterTypes = parameterAstsWithCtx.map(rootType(_).getOrElse(UnresolvedTypeDefault))
     val signature = returnType map { typ =>
       s"$typ(${parameterTypes.mkString(",")})"
     }
-    val methodFullName = getMethodFullName(scopeWithTypes.typeDecl, methodDeclaration, signature)
+    val methodFullName = getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration, signature)
 
     val methodNode = createPartialMethod(methodDeclaration, childNum)
       .fullName(methodFullName)
@@ -903,15 +903,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val thisAst = if (methodDeclaration.isStatic) {
       Seq()
     } else {
-      val typeFullName = scopeWithTypes.typeDecl.map(_.fullName).getOrElse(UnresolvedTypeDefault)
+      val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(UnresolvedTypeDefault)
       Seq(thisAstForMethod(typeFullName, line(methodDeclaration)))
     }
     val lastOrder = 1 + parameterAstsWithCtx.size
 
-    val scopeCtxWithParams =
-      scopeWithTypes.copy(methodParameters = parameterAstsWithCtx.flatMap(_.ctx.methodParameters))
     val bodyAstWithCtx =
-      astForMethodBody(methodDeclaration.getBody.toScala, scopeCtxWithParams, lastOrder)
+      astForMethodBody(methodDeclaration.getBody.toScala, lastOrder)
     val returnAstWithCtx = astForMethodReturn(methodDeclaration)
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
@@ -925,6 +923,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(parameterAstsWithCtx.map(_.ctx))
 
+    scopeStack.popScope()
     AstWithCtx(ast, ctx)
   }
 
@@ -964,23 +963,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     methodNode
   }
 
-  private def astForMethodBody(body: Option[BlockStmt], scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  private def astForMethodBody(body: Option[BlockStmt], order: Int): AstWithCtx = {
     body match {
-      case Some(b) => astForBlockStatement(b, scopeContext, order)
+      case Some(b) => astForBlockStatement(b, order)
       case None =>
         val blockNode = NewBlock()
         AstWithCtx(Ast(blockNode), Context())
     }
   }
 
-  def astsForLabeledStatement(stmt: LabeledStmt, scopeContext: ScopeContext, order: Int): Seq[AstWithCtx] = {
+  def astsForLabeledStatement(stmt: LabeledStmt, order: Int): Seq[AstWithCtx] = {
     val jumpTargetAst  = Ast(NewJumpTarget().name(stmt.getLabel.toString).order(order))
-    val stmtAstWithCtx = astsForStatement(stmt.getStatement, scopeContext, order = order + 1)
+    val stmtAstWithCtx = astsForStatement(stmt.getStatement, order = order + 1)
 
     Seq(AstWithCtx(jumpTargetAst, Context())) ++ stmtAstWithCtx
   }
 
-  def astForThrow(stmt: ThrowStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForThrow(stmt: ThrowStmt, order: Int): AstWithCtx = {
     val throwNode = NewCall()
       .name("<operator>.throw")
       .methodFullName("<operator>.throw")
@@ -991,16 +990,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .argumentIndex(order)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
-    val args = astsForExpression(stmt.getExpression, scopeContext, order = 1, None)
+    val args = astsForExpression(stmt.getExpression, order = 1, None)
 
     callAst(throwNode, args)
   }
 
-  def astForCatchClause(catchClause: CatchClause, scopeContext: ScopeContext, order: Int): AstWithCtx = {
-    astForBlockStatement(catchClause.getBody, scopeContext, order)
+  def astForCatchClause(catchClause: CatchClause, order: Int): AstWithCtx = {
+    astForBlockStatement(catchClause.getBody, order)
   }
 
-  def astForTry(stmt: TryStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForTry(stmt: TryStmt, order: Int): AstWithCtx = {
     val tryNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.TRY)
       .code("try")
@@ -1009,16 +1008,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val tryAst = astForBlockStatement(stmt.getTryBlock, scopeContext, 1, "try")
+    val tryAst = astForBlockStatement(stmt.getTryBlock, 1, "try")
     // Catch order must be 2 for CFG generation
     val catchAsts = withOrder(stmt.getCatchClauses) { (s, o) =>
-      astForCatchClause(s, scopeContext, o)
+      astForCatchClause(s, o)
     }
     val catchBlock = Ast(NewBlock().order(2).argumentIndex(2).code("catch"))
       .withChildren(catchAsts.map(_.ast))
     // Finally order must be 3 for CFG generation
     val finallyAst =
-      stmt.getFinallyBlock.toScala.map(astForBlockStatement(_, scopeContext, 3, "finally")).toList
+      stmt.getFinallyBlock.toScala.map(astForBlockStatement(_, 3, "finally")).toList
 
     val ast = Ast(tryNode)
       .withChild(tryAst.ast)
@@ -1030,7 +1029,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(ast, ctx)
   }
 
-  private def astsForStatement(statement: Statement, scopeContext: ScopeContext, order: Int): Seq[AstWithCtx] = {
+  private def astsForStatement(statement: Statement, order: Int): Seq[AstWithCtx] = {
     // TODO: Implement missing handlers
     // case _: LocalClassDeclarationStmt  => Seq()
     // case _: LocalRecordDeclarationStmt => Seq()
@@ -1038,31 +1037,31 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     // case _: YieldStmt                  => Seq()
     statement match {
       case x: ExplicitConstructorInvocationStmt =>
-        Seq(astForExplicitConstructorInvocation(x, scopeContext, order))
-      case x: AssertStmt       => Seq(astForAssertStatement(x, scopeContext, order))
-      case x: BlockStmt        => Seq(astForBlockStatement(x, scopeContext, order))
+        Seq(astForExplicitConstructorInvocation(x, order))
+      case x: AssertStmt       => Seq(astForAssertStatement(x, order))
+      case x: BlockStmt        => Seq(astForBlockStatement(x, order))
       case x: BreakStmt        => Seq(astForBreakStatement(x, order))
       case x: ContinueStmt     => Seq(astForContinueStatement(x, order))
-      case x: DoStmt           => Seq(astForDo(x, scopeContext, order))
+      case x: DoStmt           => Seq(astForDo(x, order))
       case _: EmptyStmt        => Seq() // Intentionally skipping this
-      case x: ExpressionStmt   => astsForExpression(x.getExpression, scopeContext, order, Some("void"))
-      case x: ForEachStmt      => Seq(astForForEach(x, scopeContext, order))
-      case x: ForStmt          => Seq(astForFor(x, scopeContext, order))
-      case x: IfStmt           => Seq(astForIf(x, scopeContext, order))
-      case x: LabeledStmt      => astsForLabeledStatement(x, scopeContext, order)
-      case x: ReturnStmt       => astsForReturnNode(x, scopeContext, order)
-      case x: SwitchStmt       => Seq(astForSwitchStatement(x, scopeContext, order))
-      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, scopeContext, order))
-      case x: ThrowStmt        => Seq(astForThrow(x, scopeContext, order))
-      case x: TryStmt          => Seq(astForTry(x, scopeContext, order))
-      case x: WhileStmt        => Seq(astForWhile(x, scopeContext, order))
+      case x: ExpressionStmt   => astsForExpression(x.getExpression, order, Some("void"))
+      case x: ForEachStmt      => Seq(astForForEach(x, order))
+      case x: ForStmt          => Seq(astForFor(x, order))
+      case x: IfStmt           => Seq(astForIf(x, order))
+      case x: LabeledStmt      => astsForLabeledStatement(x, order)
+      case x: ReturnStmt       => astsForReturnNode(x, order)
+      case x: SwitchStmt       => Seq(astForSwitchStatement(x, order))
+      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, order))
+      case x: ThrowStmt        => Seq(astForThrow(x, order))
+      case x: TryStmt          => Seq(astForTry(x, order))
+      case x: WhileStmt        => Seq(astForWhile(x, order))
       case x                   => Seq(unknownAst(x, order))
     }
   }
 
-  private def astForElse(maybeStmt: Option[Statement], scopeContext: ScopeContext): Option[AstWithCtx] = {
+  private def astForElse(maybeStmt: Option[Statement]): Option[AstWithCtx] = {
     maybeStmt.map { stmt =>
-      val elseAstsWithCtx = astsForStatement(stmt, scopeContext, 1)
+      val elseAstsWithCtx = astsForStatement(stmt, 1)
 
       val elseNode =
         NewControlStructure()
@@ -1077,7 +1076,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForIf(stmt: IfStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForIf(stmt: IfStmt, order: Int): AstWithCtx = {
     val ifNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.IF)
@@ -1088,11 +1087,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"if (${stmt.getCondition.toString})")
 
     val conditionAstWithCtx =
-      astsForExpression(stmt.getCondition, scopeContext, order = 1, Some("boolean")).headOption
+      astsForExpression(stmt.getCondition, order = 1, Some("boolean")).headOption
         .getOrElse(AstWithCtx.empty)
 
-    val thenAstsWithCtx = astsForStatement(stmt.getThenStmt, scopeContext, order = 2)
-    val elseAstWithCtx  = astForElse(stmt.getElseStmt.toScala, scopeContext)
+    val thenAstsWithCtx = astsForStatement(stmt.getThenStmt, order = 2)
+    val elseAstWithCtx  = astForElse(stmt.getElseStmt.toScala)
 
     val ast = Ast(ifNode)
       .withChild(conditionAstWithCtx.ast)
@@ -1113,7 +1112,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(ifAst, ctx)
   }
 
-  def astForWhile(stmt: WhileStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForWhile(stmt: WhileStmt, order: Int): AstWithCtx = {
     val whileNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.WHILE)
@@ -1124,9 +1123,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"while (${stmt.getCondition.toString})")
 
     val conditionAstWithCtx =
-      astsForExpression(stmt.getCondition, scopeContext, order = 1, Some("boolean")).headOption
+      astsForExpression(stmt.getCondition, order = 1, Some("boolean")).headOption
         .getOrElse(AstWithCtx.empty)
-    val stmtAstsWithCtx = astsForStatement(stmt.getBody, scopeContext, order = 2)
+    val stmtAstsWithCtx = astsForStatement(stmt.getBody, order = 2)
 
     val ast = Ast(whileNode)
       .withChild(conditionAstWithCtx.ast)
@@ -1143,13 +1142,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(whileAst, ctx)
   }
 
-  def astForDo(stmt: DoStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForDo(stmt: DoStmt, order: Int): AstWithCtx = {
     val doNode =
       NewControlStructure().controlStructureType(ControlStructureTypes.DO).order(order)
     val conditionAstWithCtx =
-      astsForExpression(stmt.getCondition, scopeContext, order = 0, Some("boolean")).headOption
+      astsForExpression(stmt.getCondition, order = 0, Some("boolean")).headOption
         .getOrElse(AstWithCtx.empty)
-    val stmtAstsWithCtx = astsForStatement(stmt.getBody, scopeContext, order = 1)
+    val stmtAstsWithCtx = astsForStatement(stmt.getBody, order = 1)
     val ast = Ast(doNode)
       .withChild(conditionAstWithCtx.ast)
       .withChildren(stmtAstsWithCtx.map(_.ast))
@@ -1191,7 +1190,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val update  = stmt.getUpdate.asScala.map(_.toString).mkString(", ")
     s"for ($init; $compare; $update)"
   }
-  def astForFor(stmt: ForStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForFor(stmt: ForStmt, order: Int): AstWithCtx = {
     val forNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.FOR)
@@ -1201,24 +1200,24 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
 
-    val (initAstsWithCtx, scopeCtxWithInit) =
-      withOrderAndCtx(stmt.getInitialization.asScala, scopeContext) { (s, scopeCtx, o) =>
-        astsForExpression(s, scopeCtx, o, None)
+    val initAstsWithCtx =
+      withOrderAndCtx(stmt.getInitialization.asScala) { (s, o) =>
+        astsForExpression(s, o, None)
       }
 
-    val (compareAstsWithCtx, scopeCtxWithComp) =
-      withOrderAndCtx(stmt.getCompare.toScala, scopeCtxWithInit, initAstsWithCtx.size + 1) { (x, scopeCtx, o) =>
-        astsForExpression(x, scopeCtx, o, Some("boolean"))
+    val compareAstsWithCtx =
+      withOrderAndCtx(stmt.getCompare.toScala, initAstsWithCtx.size + 1) { (x, o) =>
+        astsForExpression(x, o, Some("boolean"))
       }
 
     val newOrder = initAstsWithCtx.size + compareAstsWithCtx.size
-    val (updateAstsWithCtx, scopeCtxWithUpdt) =
-      withOrderAndCtx(stmt.getUpdate.asScala, scopeCtxWithComp, newOrder + 1) { (x, scopeCtx, o) =>
-        astsForExpression(x, scopeCtx, o, None)
+    val updateAstsWithCtx =
+      withOrderAndCtx(stmt.getUpdate.asScala, newOrder + 1) { (x, o) =>
+        astsForExpression(x, o, None)
       }
 
     val stmtAstsWithCtx =
-      astsForStatement(stmt.getBody, scopeCtxWithUpdt, newOrder + compareAstsWithCtx.size + 1)
+      astsForStatement(stmt.getBody, newOrder + compareAstsWithCtx.size + 1)
 
     val ast = Ast(forNode)
       .withChildren(initAstsWithCtx.map(_.ast))
@@ -1236,19 +1235,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(forAst, ctx)
   }
 
-  def astForForEach(stmt: ForEachStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForForEach(stmt: ForEachStmt, order: Int): AstWithCtx = {
     val forNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.FOR)
       .order(order)
 
-    val iterableAstsWithCtx = astsForExpression(stmt.getIterable, scopeContext, 1, None)
+    val iterableAstsWithCtx = astsForExpression(stmt.getIterable, 1, None)
     val variableAstsWithCtx =
-      astsForVariableDecl(stmt.getVariable, scopeContext, iterableAstsWithCtx.size + 1)
-    val initContext      = mergedCtx((iterableAstsWithCtx ++ variableAstsWithCtx).map(_.ctx))
-    val scopeCtxWithVars = scopeContext.withNewLocals(initContext.locals)
+      astsForVariableDecl(stmt.getVariable, iterableAstsWithCtx.size + 1)
+    val initContext = mergedCtx((iterableAstsWithCtx ++ variableAstsWithCtx).map(_.ctx))
 
     val bodyOrder       = iterableAstsWithCtx.size + variableAstsWithCtx.size + 1
-    val bodyAstsWithCtx = astsForStatement(stmt.getBody, scopeCtxWithVars, bodyOrder)
+    val bodyAstsWithCtx = astsForStatement(stmt.getBody, bodyOrder)
 
     val forEachAst = Ast(forNode)
       .withChildren(iterableAstsWithCtx.map(_.ast))
@@ -1259,7 +1257,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(forEachAst, ctx)
   }
 
-  def astForSwitchStatement(stmt: SwitchStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForSwitchStatement(stmt: SwitchStmt, order: Int): AstWithCtx = {
     val switchNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.SWITCH)
@@ -1267,11 +1265,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .argumentIndex(order)
         .code(s"switch(${stmt.getSelector.toString})")
 
-    val selectorAstsWithCtx = astsForExpression(stmt.getSelector, scopeContext, 1, None)
+    val selectorAstsWithCtx = astsForExpression(stmt.getSelector, 1, None)
     val selectorNode        = selectorAstsWithCtx.head.ast.root.get
 
-    val (entryAstsWithCtx, _) = withOrderAndCtx(stmt.getEntries.asScala, scopeContext) { (e, scopeCtx, o) =>
-      astForSwitchEntry(e, scopeCtx, o)
+    val entryAstsWithCtx = withOrderAndCtx(stmt.getEntries.asScala) { (e, o) =>
+      astForSwitchEntry(e, o)
     }
 
     val switchBodyAst =
@@ -1287,11 +1285,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(switchAst, ctx)
   }
 
-  private def astForSynchronizedStatement(
-    stmt: SynchronizedStmt,
-    scopeContext: ScopeContext,
-    order: Int
-  ): AstWithCtx = {
+  private def astForSynchronizedStatement(stmt: SynchronizedStmt, order: Int): AstWithCtx = {
     val parentNode =
       NewBlock()
         .lineNumber(line(stmt))
@@ -1301,8 +1295,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val modifier = Ast(NewModifier().modifierType("SYNCHRONIZED"))
 
-    val exprAsts = astsForExpression(stmt.getExpression, scopeContext, 1, None)
-    val bodyAst  = astForBlockStatement(stmt.getBody, scopeContext, 1 + exprAsts.size)
+    val exprAsts = astsForExpression(stmt.getExpression, 1, None)
+    val bodyAst  = astForBlockStatement(stmt.getBody, 1 + exprAsts.size)
 
     val ctx = bodyAst.ctx.mergeWith(exprAsts.map(_.ctx))
     val ast = Ast(parentNode)
@@ -1313,7 +1307,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(ast, ctx)
   }
 
-  private def astsForSwitchCases(entry: SwitchEntry, scopeContext: ScopeContext, order: Int): Seq[Ast] = {
+  private def astsForSwitchCases(entry: SwitchEntry, order: Int): Seq[Ast] = {
     entry.getLabels.asScala.toList match {
       case Nil =>
         val target = NewJumpTarget()
@@ -1331,27 +1325,27 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             .code(label.toString)
             .order(labelOrder)
             .argumentIndex(labelOrder)
-          val labelAsts = astsForExpression(label, scopeContext, labelOrder, None)
+          val labelAsts = astsForExpression(label, labelOrder, None)
 
           Seq(Ast(jumpTarget)) ++ labelAsts.map(_.ast)
         }
     }
   }
 
-  def astForSwitchEntry(entry: SwitchEntry, scopeContext: ScopeContext, order: Int): Seq[AstWithCtx] = {
-    val labelAsts = astsForSwitchCases(entry, scopeContext, order)
+  def astForSwitchEntry(entry: SwitchEntry, order: Int): Seq[AstWithCtx] = {
+    val labelAsts = astsForSwitchCases(entry, order)
 
     val statementOrder = order + entry.getLabels.size
-    val (statementAstsWithCtx, _) =
-      withOrderAndCtx(entry.getStatements.asScala, scopeContext, statementOrder) { (s, scopeCtx, o) =>
-        astsForStatement(s, scopeCtx, o)
+    val statementAstsWithCtx =
+      withOrderAndCtx(entry.getStatements.asScala, statementOrder) { (s, o) =>
+        astsForStatement(s, o)
       }
 
     val labelAstsWithCtx = labelAsts.map(AstWithCtx(_, Context()))
     labelAstsWithCtx ++ statementAstsWithCtx
   }
 
-  private def astForAssertStatement(stmt: AssertStmt, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  private def astForAssertStatement(stmt: AssertStmt, order: Int): AstWithCtx = {
     val callNode = NewCall()
       .name("assert")
       .methodFullName("assert")
@@ -1362,16 +1356,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val args = astsForExpression(stmt.getCheck, scopeContext, 1, Some("boolean"))
+    val args = astsForExpression(stmt.getCheck, 1, Some("boolean"))
     callAst(callNode, args)
   }
 
-  private def astForBlockStatement(
-    stmt: BlockStmt,
-    scopeContext: ScopeContext,
-    order: Int,
-    codeStr: String = "<empty>"
-  ): AstWithCtx = {
+  private def astForBlockStatement(stmt: BlockStmt, order: Int, codeStr: String = "<empty>"): AstWithCtx = {
     val block = NewBlock()
       .order(order)
       .code(codeStr)
@@ -1379,19 +1368,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val (stmtAstsWithCtx, _) = withOrderAndCtx(stmt.getStatements.asScala, scopeContext) { (x, scopeCtx, o) =>
-      astsForStatement(x, scopeCtx, o)
+    scopeStack.pushNewScope(block)
+
+    val stmtAstsWithCtx = withOrderAndCtx(stmt.getStatements.asScala) { (x, o) =>
+      astsForStatement(x, o)
     }
 
     val blockAst = Ast(block).withChildren(stmtAstsWithCtx.map(_.ast))
     val ctx      = mergedCtx(stmtAstsWithCtx.map(_.ctx))
 
+    scopeStack.popScope()
+
     AstWithCtx(blockAst, ctx)
   }
 
-  private def astsForReturnNode(ret: ReturnStmt, scopeContext: ScopeContext, order: Int): Seq[AstWithCtx] = {
+  private def astsForReturnNode(ret: ReturnStmt, order: Int): Seq[AstWithCtx] = {
     if (ret.getExpression.isPresent) {
-      val exprAstsWithCtx = astsForExpression(ret.getExpression.get(), scopeContext, order + 1, None)
+      val exprAstsWithCtx = astsForExpression(ret.getExpression.get(), order + 1, None)
       val returnNode = NewReturn()
         .lineNumber(line(ret))
         .columnNumber(column(ret))
@@ -1408,12 +1401,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForUnaryExpr(
-    expr: UnaryExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForUnaryExpr(expr: UnaryExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val operatorName = expr.getOperator match {
       case UnaryExpr.Operator.LOGICAL_COMPLEMENT => Operators.logicalNot
       case UnaryExpr.Operator.POSTFIX_DECREMENT  => Operators.postDecrement
@@ -1425,7 +1413,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case UnaryExpr.Operator.MINUS              => Operators.minus
     }
 
-    val argsWithCtx = astsForExpression(expr.getExpression, scopeContext, 1, expectedType)
+    val argsWithCtx = astsForExpression(expr.getExpression, 1, expectedType)
 
     val typeFullName =
       typeInfoProvider
@@ -1446,12 +1434,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, argsWithCtx)
   }
 
-  def astForArrayAccessExpr(
-    expr: ArrayAccessExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForArrayAccessExpr(expr: ArrayAccessExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val typeFullName = typeInfoProvider.getTypeForExpression(expr).orElse(expectedType).getOrElse(UnresolvedTypeDefault)
     val callNode = NewCall()
       .name(Operators.indexAccess)
@@ -1465,21 +1448,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .typeFullName(typeFullName)
 
     val argsWithCtx =
-      astsForExpression(expr.getName, scopeContext, 1, expectedType.map(_ ++ "[]")) ++ astsForExpression(
+      astsForExpression(expr.getName, 1, expectedType.map(_ ++ "[]")) ++ astsForExpression(
         expr.getIndex,
-        scopeContext,
         2,
         Some("int")
       )
     callAst(callNode, argsWithCtx)
   }
 
-  def astForArrayCreationExpr(
-    expr: ArrayCreationExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForArrayCreationExpr(expr: ArrayCreationExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val name = "<operator>.arrayCreator"
     val callNode = NewCall()
       .name(name)
@@ -1496,7 +1473,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val levelAsts = expr.getLevels.asScala.zipWithIndex.flatMap { case (lvl, idx) =>
       lvl.getDimension.toScala match {
-        case Some(dimension) => astsForExpression(dimension, scopeContext, idx + 1, Some("int"))
+        case Some(dimension) => astsForExpression(dimension, idx + 1, Some("int"))
 
         case None => Seq.empty
       }
@@ -1504,7 +1481,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val initializerAstWithCtx =
       expr.getInitializer.toScala
-        .map(astForArrayInitializerExpr(_, scopeContext, expr.getLevels.size() + 1, expectedType))
+        .map(astForArrayInitializerExpr(_, expr.getLevels.size() + 1, expectedType))
         .getOrElse(AstWithCtx.empty)
 
     val argsWithCtx = (levelAsts ++ List(initializerAstWithCtx)).toSeq
@@ -1512,12 +1489,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, argsWithCtx)
   }
 
-  def astForArrayInitializerExpr(
-    expr: ArrayInitializerExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForArrayInitializerExpr(expr: ArrayInitializerExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val typeFullName = typeInfoProvider.getTypeForExpression(expr).orElse(expectedType).getOrElse(UnresolvedTypeDefault)
     val callNode = NewCall()
       .name("<operator>.arrayInitializer")
@@ -1537,7 +1509,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .slice(0, MAX_INITIALIZERS)
       .zipWithIndex
       .flatMap { case (c, o) =>
-        astsForExpression(c, scopeContext, o, expectedValueType)
+        astsForExpression(c, o, expectedValueType)
       }
       .toSeq
 
@@ -1559,12 +1531,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(initAst, ctx)
   }
 
-  def astForBinaryExpr(
-    expr: BinaryExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForBinaryExpr(expr: BinaryExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val operatorName = expr.getOperator match {
       case BinaryExpr.Operator.OR                   => Operators.logicalOr
       case BinaryExpr.Operator.AND                  => Operators.logicalAnd
@@ -1588,12 +1555,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val argsWithCtx =
-      astsForExpression(expr.getLeft, scopeContext, 1, expectedType) ++ astsForExpression(
-        expr.getRight,
-        scopeContext,
-        2,
-        expectedType
-      )
+      astsForExpression(expr.getLeft, 1, expectedType) ++ astsForExpression(expr.getRight, 2, expectedType)
 
     val typeFullName =
       typeInfoProvider
@@ -1617,12 +1579,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, argsWithCtx)
   }
 
-  def astForCastExpr(
-    expr: CastExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForCastExpr(expr: CastExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val typeFullName =
       typeInfoProvider
         .getTypeFullName(expr)
@@ -1649,7 +1606,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(expr))
     val typeAst = AstWithCtx(Ast(typeNode), Context())
 
-    val exprAst = astsForExpression(expr.getExpression, scopeContext, 2, None)
+    val exprAst = astsForExpression(expr.getExpression, 2, None)
 
     callAst(callNode, Seq(typeAst) ++ exprAst)
   }
@@ -1658,12 +1615,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     astWithCtx.ast.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
   }
 
-  def astsForAssignExpr(
-    expr: AssignExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): Seq[AstWithCtx] = {
+  def astsForAssignExpr(expr: AssignExpr, order: Int, expectedType: Option[String]): Seq[AstWithCtx] = {
     val methodName = expr.getOperator match {
       case Operator.ASSIGN               => Operators.assignment
       case Operator.PLUS                 => Operators.assignmentPlus
@@ -1679,9 +1631,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Operator.UNSIGNED_RIGHT_SHIFT => Operators.assignmentLogicalShiftRight
     }
 
-    val targetAst  = astsForExpression(expr.getTarget, scopeContext, 1, None)
+    val targetAst  = astsForExpression(expr.getTarget, 1, None)
     val targetType = targetAst.headOption.flatMap(rootType)
-    val argsAsts   = astsForExpression(expr.getValue, scopeContext, 2, targetType)
+    val argsAsts   = astsForExpression(expr.getValue, 2, targetType)
     val valueType  = argsAsts.headOption.flatMap(rootType)
     val argsCtx    = mergedCtx(targetAst.map(_.ctx) ++ argsAsts.map(_.ctx))
 
@@ -1723,26 +1675,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def localsForVarDecl(
-    varDecl: VariableDeclarationExpr,
-    scopeContext: ScopeContext,
-    order: Int
-  ): List[NewLocal] = {
+  private def localsForVarDecl(varDecl: VariableDeclarationExpr, order: Int): List[NewLocal] = {
     varDecl.getVariables.asScala.zipWithIndex.map { case (variable, idx) =>
       val name = variable.getName.toString
       val typeFullName = typeInfoProvider
         .getTypeFullName(variable)
-        .orElse(nameExprTypeFromScope(variable.getTypeAsString, scopeContext))
+        .orElse(scopeStack.lookupVariable(variable.getTypeAsString).map(_.node.typeFullName)) // TODO: TYPE_CLEANUP
         .getOrElse(UnresolvedTypeDefault)
       val code = s"${variable.getType} $name"
 
-      NewLocal().name(name).code(code).typeFullName(typeFullName).order(order + idx)
+      val local = NewLocal().name(name).code(code).typeFullName(typeFullName).order(order + idx)
+      scopeStack.addToScope(name, local)
+      local
     }.toList
   }
 
   private def assignmentsForVarDecl(
     variables: Iterable[VariableDeclarator],
-    scopeContext: ScopeContext,
     lineNumber: Option[Integer],
     columnNumber: Option[Integer],
     order: Int
@@ -1757,7 +1706,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val variableTypeFullName =
         typeInfoProvider
           .getTypeFullName(variable)
-          .orElse(nameExprTypeFromScope(name, scopeContext))
+          .orElse(scopeStack.lookupVariable(name).map(_.node.typeFullName)) // TODO: TYPE_CLEANUP
 
       val typeFullName = variableTypeFullName match {
         case Some(typ) if TypeInfoProvider.isAutocastType(typ) => typ
@@ -1788,7 +1737,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val targetAst = AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
 
       // TODO Add expected type here if possible
-      val initializerAstsWithCtx = astsForExpression(initializer, scopeContext, 2, Some(typeFullName))
+      val initializerAstsWithCtx = astsForExpression(initializer, 2, Some(typeFullName))
       // Since all partial constructors will be dealt with here, don't pass them up.
       val initAstsWithoutConstructorCtx = initializerAstsWithCtx.map { case AstWithCtx(ast, ctx) =>
         AstWithCtx(ast, ctx.clearConstructors())
@@ -1834,17 +1783,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(ast, Context())
   }
 
-  def astsForVariableDecl(varDecl: VariableDeclarationExpr, scopeContext: ScopeContext, order: Int): Seq[AstWithCtx] = {
+  def astsForVariableDecl(varDecl: VariableDeclarationExpr, order: Int): Seq[AstWithCtx] = {
 
-    val locals = localsForVarDecl(varDecl, scopeContext, order)
+    val locals = localsForVarDecl(varDecl, order)
     val localAsts = locals.map { local =>
       AstWithCtx(Ast(local), Context(locals = Seq(local)))
     }
 
-    val assignOrder    = order + locals.size
-    val assignScopeCtx = scopeContext.withNewLocals(locals)
+    val assignOrder = order + locals.size
     val assignmentsWithCtx =
-      assignmentsForVarDecl(varDecl.getVariables.asScala, assignScopeCtx, line(varDecl), column(varDecl), assignOrder)
+      assignmentsForVarDecl(varDecl.getVariables.asScala, line(varDecl), column(varDecl), assignOrder)
 
     localAsts ++ assignmentsWithCtx
   }
@@ -1888,15 +1836,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, Seq(idAstWithCtx, fieldIdAstWithCtx))
   }
 
-  def astForConditionalExpr(
-    expr: ConditionalExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
-    val condAst = astsForExpression(expr.getCondition, scopeContext, 1, Some(TypeConstants.Boolean))
-    val thenAst = astsForExpression(expr.getThenExpr, scopeContext, 2, expectedType)
-    val elseAst = astsForExpression(expr.getElseExpr, scopeContext, 3, expectedType)
+  def astForConditionalExpr(expr: ConditionalExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
+    val condAst = astsForExpression(expr.getCondition, 1, Some(TypeConstants.Boolean))
+    val thenAst = astsForExpression(expr.getThenExpr, 2, expectedType)
+    val elseAst = astsForExpression(expr.getElseExpr, 3, expectedType)
 
     val typeFullName =
       typeInfoProvider
@@ -1920,21 +1863,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, condAst ++ thenAst ++ elseAst)
   }
 
-  def astForEnclosedExpression(
-    expr: EnclosedExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): Seq[AstWithCtx] = {
-    astsForExpression(expr.getInner, scopeContext, order, expectedType)
+  def astForEnclosedExpression(expr: EnclosedExpr, order: Int, expectedType: Option[String]): Seq[AstWithCtx] = {
+    astsForExpression(expr.getInner, order, expectedType)
   }
 
-  def astForFieldAccessExpr(
-    expr: FieldAccessExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForFieldAccessExpr(expr: FieldAccessExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val typeFullName =
       typeInfoProvider
         .getTypeForExpression(expr)
@@ -1953,7 +1886,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .typeFullName(typeFullName)
 
     val fieldIdentifier = expr.getName
-    val identifierAsts  = astsForExpression(expr.getScope, scopeContext, 1, None)
+    val identifierAsts  = astsForExpression(expr.getScope, 1, None)
     val fieldIdentifierNode = NewFieldIdentifier()
       .canonicalName(fieldIdentifier.toString)
       .argumentIndex(2)
@@ -1966,7 +1899,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, identifierAsts ++ Seq(fieldIdAstsWithCtx))
   }
 
-  def astForInstanceOfExpr(expr: InstanceOfExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  def astForInstanceOfExpr(expr: InstanceOfExpr, order: Int): AstWithCtx = {
     val callNode = NewCall()
       .name(Operators.instanceOf)
       .methodFullName(Operators.instanceOf)
@@ -1978,7 +1911,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(expr))
       .typeFullName("boolean")
 
-    val exprAst      = astsForExpression(expr.getExpression, scopeContext, order = 1, None)
+    val exprAst      = astsForExpression(expr.getExpression, order = 1, None)
     val typeFullName = typeInfoProvider.getTypeFullName(expr.getType).getOrElse(UnresolvedTypeDefault)
     val typeNode =
       NewTypeRef()
@@ -1993,19 +1926,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, exprAst ++ Seq(typeAst))
   }
 
-  private def nameExprTypeFromScope(name: String, scopeContext: ScopeContext): Option[String] = {
-    scopeContext.identifiers
-      .get(name)
-      .map(_.typeFullName)
-      .orElse(scopeContext.methodParameters.find(_.name == name).map(_.typeFullName))
-      .orElse(scopeContext.locals.find(_.name == name).map(_.typeFullName))
-  }
-
-  def astForNameExpr(x: NameExpr, scopeContext: ScopeContext, order: Int, expectedType: Option[String]): AstWithCtx = {
+  def astForNameExpr(x: NameExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val name = x.getName.toString
     val typeFullName = typeInfoProvider
       .getTypeFullName(x)
-      .orElse(nameExprTypeFromScope(name, scopeContext))
+      .orElse({
+        println(s"Looking for name $name in scope stack")
+        scopeStack.lookupVariable(name).map(_.node.typeFullName)
+      }) // TODO: TYPE_CLEANUP
       .orElse(expectedType)
       .getOrElse(UnresolvedTypeDefault)
 
@@ -2015,7 +1943,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val identifierName = if (value.asField.isStatic) {
           // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
           // from other classes are represented by a FieldAccessExpr instead.
-          scopeContext.typeDecl.map(_.name).getOrElse(UnresolvedTypeDefault)
+          scopeStack.getEnclosingTypeDecl.map(_.name).getOrElse(UnresolvedTypeDefault)
         } else {
           "this"
         }
@@ -2090,16 +2018,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     * This is not valid Java code, but this representation is a decent compromise between staying faithful to Java and
     * being consistent with the Java bytecode frontend.
     */
-  def astForObjectCreationExpr(
-    expr: ObjectCreationExpr,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): AstWithCtx = {
+  def astForObjectCreationExpr(expr: ObjectCreationExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val maybeResolvedExpr = Try(expr.resolve())
     val args = withOrder(expr.getArguments) { (x, o) =>
       val expectedArgType = getExpectedConsParamType(maybeResolvedExpr, o - 1)
-      astsForExpression(x, scopeContext, o, expectedArgType)
+      astsForExpression(x, o, expectedArgType)
     }.flatten
 
     val name = "<operator>.alloc"
@@ -2231,13 +2154,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(Ast(identifier), Context())
   }
 
-  private def astForExplicitConstructorInvocation(
-    stmt: ExplicitConstructorInvocationStmt,
-    scopeContext: ScopeContext,
-    order: Int
-  ): AstWithCtx = {
+  private def astForExplicitConstructorInvocation(stmt: ExplicitConstructorInvocationStmt, order: Int): AstWithCtx = {
     val args = withOrder(stmt.getArguments) { (s, o) =>
-      astsForExpression(s, scopeContext, o, None)
+      astsForExpression(s, o, None)
     }.flatten
 
     val typeFullName = typeInfoProvider.getTypeFullName(stmt)
@@ -2277,12 +2196,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astsForExpression(
-    expression: Expression,
-    scopeContext: ScopeContext,
-    order: Int,
-    expectedType: Option[String]
-  ): Seq[AstWithCtx] = {
+  private def astsForExpression(expression: Expression, order: Int, expectedType: Option[String]): Seq[AstWithCtx] = {
     // TODO: Implement missing handlers
     // case _: MethodReferenceExpr     => Seq()
     // case _: PatternExpr             => Seq()
@@ -2291,25 +2205,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     // case _: TypeExpr                => Seq()
     expression match {
       case _: AnnotationExpr          => Seq()
-      case x: ArrayAccessExpr         => Seq(astForArrayAccessExpr(x, scopeContext, order, expectedType))
-      case x: ArrayCreationExpr       => Seq(astForArrayCreationExpr(x, scopeContext, order, expectedType))
-      case x: ArrayInitializerExpr    => Seq(astForArrayInitializerExpr(x, scopeContext, order, expectedType))
-      case x: AssignExpr              => astsForAssignExpr(x, scopeContext, order, expectedType)
-      case x: BinaryExpr              => Seq(astForBinaryExpr(x, scopeContext, order, expectedType))
-      case x: CastExpr                => Seq(astForCastExpr(x, scopeContext, order, expectedType))
+      case x: ArrayAccessExpr         => Seq(astForArrayAccessExpr(x, order, expectedType))
+      case x: ArrayCreationExpr       => Seq(astForArrayCreationExpr(x, order, expectedType))
+      case x: ArrayInitializerExpr    => Seq(astForArrayInitializerExpr(x, order, expectedType))
+      case x: AssignExpr              => astsForAssignExpr(x, order, expectedType)
+      case x: BinaryExpr              => Seq(astForBinaryExpr(x, order, expectedType))
+      case x: CastExpr                => Seq(astForCastExpr(x, order, expectedType))
       case x: ClassExpr               => Seq(astForClassExpr(x, order))
-      case x: ConditionalExpr         => Seq(astForConditionalExpr(x, scopeContext, order, expectedType))
-      case x: EnclosedExpr            => astForEnclosedExpression(x, scopeContext, order, expectedType)
-      case x: FieldAccessExpr         => Seq(astForFieldAccessExpr(x, scopeContext, order, expectedType))
-      case x: InstanceOfExpr          => Seq(astForInstanceOfExpr(x, scopeContext, order))
-      case x: LambdaExpr              => Seq(astForLambdaExpr(x, scopeContext, order))
+      case x: ConditionalExpr         => Seq(astForConditionalExpr(x, order, expectedType))
+      case x: EnclosedExpr            => astForEnclosedExpression(x, order, expectedType)
+      case x: FieldAccessExpr         => Seq(astForFieldAccessExpr(x, order, expectedType))
+      case x: InstanceOfExpr          => Seq(astForInstanceOfExpr(x, order))
+      case x: LambdaExpr              => Seq(astForLambdaExpr(x, order))
       case x: LiteralExpr             => Seq(astForLiteralExpr(x, order))
-      case x: MethodCallExpr          => Seq(astForMethodCall(x, scopeContext, order, expectedType))
-      case x: NameExpr                => Seq(astForNameExpr(x, scopeContext, order, expectedType))
-      case x: ObjectCreationExpr      => Seq(astForObjectCreationExpr(x, scopeContext, order, expectedType))
+      case x: MethodCallExpr          => Seq(astForMethodCall(x, order, expectedType))
+      case x: NameExpr                => Seq(astForNameExpr(x, order, expectedType))
+      case x: ObjectCreationExpr      => Seq(astForObjectCreationExpr(x, order, expectedType))
       case x: ThisExpr                => Seq(astForThisExpr(x, order, expectedType))
-      case x: UnaryExpr               => Seq(astForUnaryExpr(x, scopeContext, order, expectedType))
-      case x: VariableDeclarationExpr => astsForVariableDecl(x, scopeContext, order)
+      case x: UnaryExpr               => Seq(astForUnaryExpr(x, order, expectedType))
+      case x: VariableDeclarationExpr => astsForVariableDecl(x, order)
       case x                          => Seq(unknownAst(x, order))
     }
   }
@@ -2342,13 +2256,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def getScopeType(expr: Expression, scopeContext: ScopeContext): Option[String] = {
+  private def getScopeType(expr: Expression): Option[String] = {
     expr match {
       case nameExpr: NameExpr =>
-        typeInfoProvider.getTypeFullName(nameExpr)
-        scopeContext.identifiers
-          .get(nameExpr.getName.toString)
-          .map(_.typeFullName)
+        // TODO: TYPE_CLEANUP
+        scopeStack
+          .lookupVariable(nameExpr.getNameAsString)
+          .map(_.node.typeFullName)
           .orElse(typeInfoProvider.getTypeFullName(nameExpr))
 
       case _ => typeInfoProvider.getTypeForExpression(expr)
@@ -2391,19 +2305,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astForLambdaExpr(expr: LambdaExpr, scopeContext: ScopeContext, order: Int): AstWithCtx = {
+  private def astForLambdaExpr(expr: LambdaExpr, order: Int): AstWithCtx = {
+    // TODO: Fix types in scope for lambdas
     // TODO: Fix class name (currently `com.github.javaparser.ast.expr.LambdaExpr`)
-    val className = scopeContext.typeDecl.map(_.fullName).getOrElse("<empty>")
+    val className = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse("<empty>")
     val fullName  = s"$className:${nextLambdaName()}"
 
-    val parameterAstsWithCtx = astsForParameterList(expr.getParameters, scopeContext)
+    val parameterAstsWithCtx = astsForParameterList(expr.getParameters)
     val namesToMethodParams  = mapNamesToParams(parameterAstsWithCtx)
 
-    val lambdaScopeCtx =
-      scopeContext.withNewParams(parameterAstsWithCtx.flatMap(_.ctx.methodParameters))
     val bodyOrder = parameterAstsWithCtx.size + 2
     val bodyAstWithCtx = if (expr.getBody.isBlockStmt) {
-      astsForStatement(expr.getBody, lambdaScopeCtx, bodyOrder).headOption
+      astsForStatement(expr.getBody, bodyOrder).headOption
         .getOrElse(emptyBlock(bodyOrder))
     } else {
       val blockNode =
@@ -2413,7 +2326,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .order(bodyOrder)
           .argumentIndex(bodyOrder)
 
-      val asts = astsForStatement(expr.getBody, lambdaScopeCtx, 1)
+      val asts = astsForStatement(expr.getBody, 1)
 
       AstWithCtx(Ast(blockNode).withChildren(asts.map(_.ast)), Context.mergedCtx(asts.map(_.ctx)))
     }
@@ -2437,7 +2350,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val methodRef = lambdaMethodRef(expr, fullName, order)
 
-    val closuresWithMeta = buildClosuresWithMeta(closureBindings, scopeContext, methodRef)
+    val closuresWithMeta = buildClosuresWithMeta(closureBindings, methodRef)
 
     AstWithCtx(
       Ast(methodRef),
@@ -2451,13 +2364,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def buildClosuresWithMeta(
     closureBindings: Seq[ClosureBindingInfo],
-    scopeContext: ScopeContext,
     methodRef: NewMethodRef
   ): Seq[ClosureBindingMeta] = {
-    val nameToNode: Map[String, NewNode] =
-      (scopeContext.methodParameters ++ scopeContext.locals).map { p =>
-        p.name -> p
-      }.toMap
+    // This is just to get javasrc to compile. Lambdas are completeley broken, so this will probably be rewritten
+    // completely
+    val nameToNode: Map[String, NewNode] = Map.empty
 
     closureBindings.map { closureBindingInfo =>
       val name  = closureBindingInfo.identifier.name
@@ -2616,23 +2527,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def targetTypeForCall(callExpr: MethodCallExpr, scopeContext: ScopeContext): Option[String] = {
+  private def targetTypeForCall(callExpr: MethodCallExpr): Option[String] = {
     callExpr.getScope.toScala match {
       case Some(scope: ThisExpr) =>
         typeInfoProvider
           .getTypeFullName(scope)
-          .orElse(scopeContext.typeDecl.map(_.fullName))
+          .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
 
       case Some(scope: SuperExpr) =>
         typeInfoProvider
           .getTypeForExpression(scope)
-          .orElse(scopeContext.typeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
+          .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
 
       case Some(scope) =>
-        getScopeType(scope, scopeContext)
+        getScopeType(scope)
 
       case None =>
-        scopeContext.typeDecl.map(_.fullName)
+        scopeStack.getEnclosingTypeDecl.map(_.fullName)
     }
   }
 
@@ -2671,17 +2582,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astForMethodCall(
-    call: MethodCallExpr,
-    scopeContext: ScopeContext,
-    order: Int = 1,
-    expectedReturnType: Option[String]
-  ): AstWithCtx = {
+  private def astForMethodCall(call: MethodCallExpr, order: Int = 1, expectedReturnType: Option[String]): AstWithCtx = {
     val maybeResolvedCall = Try(call.resolve())
     val argumentAsts = withOrder(call.getArguments) { (arg, o) =>
       // TODO: Verify index
       val expectedType = getExpectedParamType(maybeResolvedCall, o - 1)
-      astsForExpression(arg, scopeContext, o, expectedType)
+      astsForExpression(arg, o, expectedType)
     }.flatten
 
     val maybeReturnType = typeInfoProvider
@@ -2690,7 +2596,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
 
-    val maybeTargetType = targetTypeForCall(call, scopeContext)
+    val maybeTargetType = targetTypeForCall(call)
 
     val argumentTypes = argumentTypesForCall(maybeResolvedCall, argumentAsts)
 
@@ -2719,7 +2625,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val scopeAsts = call.getScope.toScala match {
       case Some(scope) =>
-        astsForExpression(scope, scopeContext, 0, maybeTargetType)
+        astsForExpression(scope, 0, maybeTargetType)
 
       case None =>
         val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
@@ -2745,21 +2651,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astsForParameterList(
-    parameters: NodeList[Parameter],
-    scopeContext: ScopeContext,
-    order: Int = 0
-  ): Seq[AstWithCtx] = {
+  private def astsForParameterList(parameters: NodeList[Parameter], order: Int = 0): Seq[AstWithCtx] = {
     withOrder(parameters) { (p, o) =>
-      astForParameter(p, scopeContext, order + o)
+      astForParameter(p, order + o)
     }
   }
 
-  private def astForParameter(parameter: Parameter, scopeContext: ScopeContext, childNum: Int): AstWithCtx = {
+  private def astForParameter(parameter: Parameter, childNum: Int): AstWithCtx = {
     val typeFullName =
       typeInfoProvider
         .getTypeFullName(parameter)
-        .orElse(nameExprTypeFromScope(parameter.getTypeAsString, scopeContext))
+        .orElse(scopeStack.lookupVariable(parameter.getTypeAsString).map(_.node.typeFullName)) // TODO: TYPE_CLEANUP
         .getOrElse(UnresolvedTypeDefault)
     val parameterNode = NewMethodParameterIn()
       .name(parameter.getName.toString)
@@ -2771,6 +2673,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
+
+    scopeStack.addToScope(parameter.getNameAsString, parameterNode)
     AstWithCtx(ast.withChildren(annotationAsts), Context(methodParameters = List(parameterNode)))
   }
 
@@ -2800,23 +2704,19 @@ object AstCreator {
     }.toSeq
   }
 
-  def withOrderAndCtx[T <: Node](nodeList: Iterable[T], initialCtx: ScopeContext, initialOrder: Int = 1)(
-    f: (T, ScopeContext, Int) => Seq[AstWithCtx]
-  ): (Seq[AstWithCtx], ScopeContext) = {
-    var scopeContext = initialCtx.copy()
-    var orderOffset  = 0
+  // TODO: Remove this completely when removing order setting
+  def withOrderAndCtx[T <: Node](nodeList: Iterable[T], initialOrder: Int = 1)(
+    f: (T, Int) => Seq[AstWithCtx]
+  ): Seq[AstWithCtx] = {
+    var orderOffset = 0
 
     val asts = nodeList.flatMap { x =>
-      val astsWithCtx = f(x, scopeContext, initialOrder + orderOffset)
+      val astsWithCtx = f(x, initialOrder + orderOffset)
       val ctx         = mergedCtx(astsWithCtx.map(_.ctx))
       orderOffset += astsWithCtx.size
-      scopeContext = scopeContext
-        .withNewLocals(ctx.locals)
-        .withNewParams(ctx.methodParameters)
-        .withNewIdentifiers(ctx.identifiers)
       astsWithCtx
     }.toSeq
 
-    (asts, scopeContext)
+    asts
   }
 }

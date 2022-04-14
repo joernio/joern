@@ -20,8 +20,14 @@ class Scope[I, V, S] {
     stack = ScopeElement[I, V, S](scopeNode) :: stack
   }
 
-  def popScope(): Unit = {
-    stack = stack.tail
+  def popScope(): Option[S] = {
+    stack match {
+      case Nil => None
+
+      case head :: tail =>
+        stack = tail
+        Some(head.scopeNode)
+    }
   }
 
   def addToScope(identifier: I, variable: V): S = {

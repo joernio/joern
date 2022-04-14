@@ -9,7 +9,6 @@ import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
 import com.github.javaparser.resolution.declarations._
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
-import io.joern.javasrc2cpg.passes.ScopeContext
 import io.joern.x2cpg.datastructures.Global
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{ImportInfo, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
@@ -93,16 +92,6 @@ class TypeInfoProvider(global: Global) {
 
   def getResolvedTypeFullName(resolvedType: ResolvedType): Option[String] = {
     resolvedTypeFullName(resolvedType).map(registerType)
-  }
-
-  private def resolvedTypeParameterTypeFullName(resolvedType: ResolvedTypeParameterDeclaration): String = {
-    val packageName = extractNullableName(Try(resolvedType.getPackageName))
-    val className   = extractNullableName(Try(resolvedType.getClassName))
-    buildTypeString(packageName, className)
-  }
-
-  def typeFullNameForResolvedTypeParam(typeParam: ResolvedTypeParameterDeclaration): String = {
-    registerType(resolvedTypeParameterTypeFullName(typeParam))
   }
 
   private def typeNameForTypeDecl(typeDecl: TypeDeclaration[_], fullName: Boolean): String = {
@@ -311,8 +300,8 @@ class TypeInfoProvider(global: Global) {
     typeFullName.map(registerType)
   }
 
-  def scopeType(scopeContext: ScopeContext, isSuper: Boolean = false): String = {
-    scopeContext.typeDecl match {
+  def scopeType(scopeStack: Scope, isSuper: Boolean = false): String = {
+    scopeStack.getEnclosingTypeDecl match {
       case Some(typ) if isSuper =>
         val parentType = typ.inheritsFromTypeFullName.headOption.getOrElse(UnresolvedTypeDefault)
         registerType(parentType)
