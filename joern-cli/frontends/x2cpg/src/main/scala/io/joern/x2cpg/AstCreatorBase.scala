@@ -66,18 +66,21 @@ abstract class AstCreatorBase(filename: String) {
     * main purpose of this method is to automatically assign the correct argument indices.
     */
   def callAst(callNode: NewCall, arguments: List[Ast] = List(), receiver: Option[Ast] = None): Ast = {
-    if (receiver.isDefined) {
-      receiver.get.root.collect { case x: ExpressionNew =>
+
+    val receiverRoot = receiver.flatMap(_.root).toList
+    val rcv          = receiver.getOrElse(Ast())
+    receiverRoot match {
+      case List(x: ExpressionNew) =>
         x.argumentIndex = 0
-      }
+      case _ =>
     }
-    val rcv = receiver.getOrElse(Ast())
+
     setArgumentIndices(arguments)
     Ast(callNode)
       .withChild(rcv)
       .withChildren(arguments)
-      .withArgEdges(callNode, receiver.flatMap(_.root).toList)
       .withArgEdges(callNode, arguments.flatMap(_.root))
+      .withReceiverEdges(callNode, receiverRoot)
   }
 
   private def setArgumentIndices(arguments: List[Ast]) = {

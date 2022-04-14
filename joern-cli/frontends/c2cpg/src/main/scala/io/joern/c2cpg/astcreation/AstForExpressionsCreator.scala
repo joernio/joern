@@ -101,8 +101,8 @@ trait AstForExpressionsCreator {
         (DispatchTypes.STATIC_DISPATCH, "")
     }
 
-    val cpgCall = Ast(newCallNode(call, name, name, dd, argIndex))
-    val args    = withIndex(call.getArguments) { case (a, o) => astForNode(a, o) }
+    val cpgCall = newCallNode(call, name, name, dd, argIndex)
+    val args    = call.getArguments.toList.map(a => astForNode(a))
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
       // e.g., for `f(x)`, don't include an `f` identifier node as a first child. Since we
@@ -110,14 +110,11 @@ trait AstForExpressionsCreator {
       // Moreover, the data flow tracker does not need to track `f`, which would not make
       // much sense anyway.
       case Some(r: NewIdentifier) if r.name == name =>
-        cpgCall.withChildren(args).withArgEdges(cpgCall.root.get, args)
-      case Some(r) =>
-        cpgCall
-          .withChild(rec)
-          .withChildren(args)
-          .withArgEdges(cpgCall.root.get, args)
-          .withReceiverEdge(cpgCall.root.get, r)
-      case None => cpgCall.withChildren(args).withArgEdges(cpgCall.root.get, args)
+        callAst(cpgCall, args)
+      case Some(_) =>
+        callAst(cpgCall, args, Some(rec))
+      case None =>
+        callAst(cpgCall, args)
     }
   }
 
@@ -149,8 +146,8 @@ trait AstForExpressionsCreator {
           opExpr.getOperand
         case opExpr => opExpr
       }
-      val operand = nullSafeAst(operandExpr, 1)
-      Ast(cpgUnary).withChild(operand).withArgEdge(cpgUnary, operand.root)
+      val operand = nullSafeAst(operandExpr)
+      callAst(cpgUnary, List(operand))
     }
   }
 
@@ -163,8 +160,8 @@ trait AstForExpressionsCreator {
             op == IASTTypeIdExpression.op_alignof ||
             op == IASTTypeIdExpression.op_typeof =>
         val call = newCallNode(typeId, Operators.sizeOf, Operators.sizeOf, DispatchTypes.STATIC_DISPATCH, argIndex)
-        val arg  = astForNode(typeId.getTypeId.getDeclSpecifier, 1)
-        Ast(call).withChild(arg).withArgEdge(call, arg.root)
+        val arg  = astForNode(typeId.getTypeId.getDeclSpecifier)
+        callAst(call, List(arg))
       case _ => notHandledYet(typeId, argIndex)
     }
   }
@@ -172,12 +169,12 @@ trait AstForExpressionsCreator {
   private def astForConditionalExpression(expr: IASTConditionalExpression, argIndex: Int): Ast = {
     val call = newCallNode(expr, Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH, argIndex)
 
-    val condAst = nullSafeAst(expr.getLogicalConditionExpression, 1)
-    val posAst  = nullSafeAst(expr.getPositiveResultExpression, 2)
-    val negAst  = nullSafeAst(expr.getNegativeResultExpression, 3)
+    val condAst = nullSafeAst(expr.getLogicalConditionExpression)
+    val posAst  = nullSafeAst(expr.getPositiveResultExpression)
+    val negAst  = nullSafeAst(expr.getNegativeResultExpression)
 
-    val children = Seq(condAst, posAst, negAst)
-    Ast(call).withChildren(children).withArgEdges(call, children)
+    val children = List(condAst, posAst, negAst)
+    callAst(call, children)
   }
 
   private def astForArrayIndexExpression(arrayIndexExpression: IASTArraySubscriptExpression, argIndex: Int): Ast = {

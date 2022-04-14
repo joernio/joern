@@ -342,6 +342,7 @@ class AstCreationPassTests
           ref.code shouldBe "int anonymous_lambda_1 (int n)"
           lit.code shouldBe "10"
         }
+
         inside(lambda2call.argument.l) { case List(lit: Literal) =>
           lit.code shouldBe "10"
         }
