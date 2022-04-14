@@ -8,7 +8,7 @@ trait AstNodeBuilder {
 
   this: AstCreator =>
 
-  protected def newUnknown(node: IASTNode, argIndex: Int): NewUnknown =
+  protected def newUnknown(node: IASTNode, argIndex: Int = -1): NewUnknown =
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(nodeSignature(node))
