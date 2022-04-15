@@ -82,6 +82,7 @@ import com.github.javaparser.resolution.declarations.{
 }
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{NodeTypeInfo, Scope, TypeInfoProvider}
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{TypeConstants, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.{
@@ -219,8 +220,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
-  private val typeInfoProvider: TypeInfoProvider = TypeInfoProvider(global)
   private val scopeStack                         = Scope()
+  private val typeInfoProvider: TypeInfoProvider = TypeInfoProvider(global, scopeStack)
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -255,15 +256,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def addImportsToScope(compilationUnit: CompilationUnit): Unit = {
-
-    typeInfoProvider.registerImports(compilationUnit.getImports.asScala.toList)
-    javaParserAst.getImports.asScala.foreach { importStmt =>
+    val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
+    specificImports.foreach { importStmt =>
       val name = importStmt.getName.getIdentifier
       val importNode =
         NewIdentifier()
           .name(name)
           .typeFullName(importStmt.getNameAsString) // fully qualified name
       scopeStack.addToScope(name, NodeTypeInfo(importNode))
+    }
+
+    asteriskImports match {
+      case imp :: Nil =>
+        val importNode = NewIdentifier().name(WildcardImportName).typeFullName(imp.getNameAsString)
+        scopeStack.addToScope(WildcardImportName, importNode)
+
+      case _ => // Only try to guess a wildcard import if exactly one is defined
     }
   }
 
@@ -506,8 +514,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       List.empty[String]
     }
 
-    val typeFullName = typeInfoProvider.getTypeName(typ)
-    val name         = typeInfoProvider.getTypeName(typ, fullName = false)
+    val typeFullName = typeInfoProvider.getTypeDeclType(typ)
+    val name         = typeInfoProvider.getTypeDeclType(typ, fullName = false)
 
     val typeDecl = NewTypeDecl()
       .name(name)
@@ -637,9 +645,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration, order: Int): AstWithCtx = {
     // TODO: Should be able to find expected type here
-    val annotations  = fieldDeclaration.getAnnotations
-    val typeFullName = typeInfoProvider.getTypeFullName(v).getOrElse(UnresolvedTypeDefault)
-    val name         = v.getName.toString
+    val annotations = fieldDeclaration.getAnnotations
+    val typeFullName =
+      typeInfoProvider
+        .getTypeFullName(v)
+        .orElse(scopeStack.getWildcardType(v.getTypeAsString))
+        .getOrElse(UnresolvedTypeDefault)
+    val name = v.getName.toString
     val memberNode =
       NewMember()
         .name(name)
@@ -695,7 +707,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
     }
 
-    val typeFullName = typeInfoProvider.getMethodLikeTypeFullName(constructorDeclaration)
+    val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(UnresolvedTypeDefault)
     val thisAst      = thisAstForMethod(typeFullName, line(constructorDeclaration))
 
     val lastOrder = 2 + parameterAstsWithCtx.size
@@ -825,7 +837,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     NewAnnotation()
       .code(annotationExpr.toString)
       .name(annotationExpr.getName.getIdentifier)
-      .fullName(typeInfoProvider.getTypeFullName(annotationExpr).getOrElse(UnresolvedTypeDefault))
+      .fullName(typeInfoProvider.getTypeForExpression(annotationExpr).getOrElse(UnresolvedTypeDefault))
       .order(order)
   }
 
@@ -884,9 +896,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val returnType =
       typeInfoProvider
         .getReturnType(methodDeclaration)
-        .orElse(
-          scopeStack.lookupVariable(methodDeclaration.getTypeAsString).map(_.node.typeFullName)
-        ) // TODO: TYPE_CLEANUP
+        .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString))
+        .orElse(scopeStack.getWildcardType(methodDeclaration.getTypeAsString))
 
     val parameterTypes = parameterAstsWithCtx.map(rootType(_).getOrElse(UnresolvedTypeDefault))
     val signature = returnType map { typ =>
@@ -933,7 +944,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForConstructorReturn(constructorDeclaration: ConstructorDeclaration): Ast = {
     val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
     val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-    val order  = constructorDeclaration.getParameters.size + 2
     val node   = methodReturnNode(line, column, "void")
     Ast(node)
   }
@@ -1699,11 +1709,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val assignments = variablesWithInitializers.zipWithIndex flatMap { case (variable, idx) =>
       val name                    = variable.getName.toString
       val initializer             = variable.getInitializer.toScala.get // Won't crash because of filter
-      val initializerTypeFullName = typeInfoProvider.getInitializerType(variable)
+      val initializerTypeFullName = variable.getInitializer.toScala.flatMap(typeInfoProvider.getTypeForExpression)
       val variableTypeFullName =
         typeInfoProvider
           .getTypeFullName(variable)
-          .orElse(scopeStack.lookupVariable(name).map(_.node.typeFullName)) // TODO: TYPE_CLEANUP
+          .orElse(scopeStack.lookupVariableType(name))
+          .orElse(scopeStack.getWildcardType(name))
 
       val typeFullName = variableTypeFullName match {
         case Some(typ) if TypeInfoProvider.isAutocastType(typ) => typ
@@ -1926,11 +1937,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForNameExpr(x: NameExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val name = x.getName.toString
     val typeFullName = typeInfoProvider
-      .getTypeFullName(x)
-      .orElse({
-        println(s"Looking for name $name in scope stack")
-        scopeStack.lookupVariable(name).map(_.node.typeFullName)
-      }) // TODO: TYPE_CLEANUP
+      .getTypeForExpression(x)
       .orElse(expectedType)
       .getOrElse(UnresolvedTypeDefault)
 
@@ -2134,7 +2141,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForThisExpr(expr: ThisExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
     val typeFullName =
       typeInfoProvider
-        .getTypeFullName(expr)
+        .getTypeForExpression(expr)
         .orElse(expectedType)
         .getOrElse(UnresolvedTypeDefault)
 
@@ -2156,7 +2163,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astsForExpression(s, o, None)
     }.flatten
 
-    val typeFullName = typeInfoProvider.getTypeFullName(stmt)
+    val typeFullName = typeInfoProvider.getTypeFullName(stmt).getOrElse(UnresolvedTypeDefault)
     val argTypes     = argumentTypesForCall(Try(stmt.resolve()), args)
 
     val signature = s"void(${argTypes.mkString(",")})"
@@ -2250,19 +2257,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case _ =>
         // If the call is unresolvable, we cannot make a good guess about what the prefix should be
         ""
-    }
-  }
-
-  private def getScopeType(expr: Expression): Option[String] = {
-    expr match {
-      case nameExpr: NameExpr =>
-        // TODO: TYPE_CLEANUP
-        scopeStack
-          .lookupVariable(nameExpr.getNameAsString)
-          .map(_.node.typeFullName)
-          .orElse(typeInfoProvider.getTypeFullName(nameExpr))
-
-      case _ => typeInfoProvider.getTypeForExpression(expr)
     }
   }
 
@@ -2485,7 +2479,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .order(order)
           .argumentIndex(order)
           .code(expr.toString)
-          .typeFullName(typeInfoProvider.getLiteralTypeFullName(expr))
+          .typeFullName(typeInfoProvider.getTypeForExpression(expr).getOrElse(UnresolvedTypeDefault))
           .lineNumber(line(expr))
           .columnNumber(column(expr))
       ),
@@ -2528,7 +2522,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callExpr.getScope.toScala match {
       case Some(scope: ThisExpr) =>
         typeInfoProvider
-          .getTypeFullName(scope)
+          .getTypeForExpression(scope)
           .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
 
       case Some(scope: SuperExpr) =>
@@ -2536,8 +2530,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .getTypeForExpression(scope)
           .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
 
-      case Some(scope) =>
-        getScopeType(scope)
+      case Some(scope) => typeInfoProvider.getTypeForExpression(scope)
 
       case None =>
         scopeStack.getEnclosingTypeDecl.map(_.fullName)
@@ -2658,7 +2651,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName =
       typeInfoProvider
         .getTypeFullName(parameter)
-        .orElse(scopeStack.lookupVariable(parameter.getTypeAsString).map(_.node.typeFullName)) // TODO: TYPE_CLEANUP
+        .orElse(scopeStack.lookupVariableType(parameter.getTypeAsString))
+        .orElse(scopeStack.getWildcardType(parameter.getTypeAsString))
         .getOrElse(UnresolvedTypeDefault)
     val parameterNode = NewMethodParameterIn()
       .name(parameter.getName.toString)

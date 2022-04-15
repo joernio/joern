@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.util
 
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.x2cpg.datastructures.Stack.Stack
 import io.joern.x2cpg.datastructures.{ScopeElement, Stack, Scope => X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.nodes.{HasTypeFullName, NewNode, NewTypeDecl}
@@ -40,8 +41,19 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, NewNode] {
   def getEnclosingTypeDecl: Option[NewTypeDecl] = {
     typeDeclStack.headOption
   }
+
+  def lookupVariableType(identifier: String): Option[String] = {
+    lookupVariable(identifier).map(_.node.typeFullName)
+  }
+
+  def getWildcardType(identifier: String): Option[String] = {
+    lookupVariableType(WildcardImportName) map { importName =>
+      s"$importName.$identifier"
+    }
+  }
 }
 
 object Scope {
-  def apply(): Scope = new Scope()
+  val WildcardImportName: String = "*"
+  def apply(): Scope             = new Scope()
 }
