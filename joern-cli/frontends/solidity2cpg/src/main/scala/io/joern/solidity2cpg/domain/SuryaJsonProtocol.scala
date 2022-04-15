@@ -1,7 +1,7 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsString, JsValue, JsonFormat, JsObject}
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -233,7 +233,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("body").convertTo[BaseASTNode],
           fields("isVirtual").convertTo[Boolean],
           fields("override") match {
-            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case x: JsObject => x.convertTo[BaseASTNode]
             case _              => null
           }
         )
@@ -257,7 +257,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             case _           => null
           },
           fields("identifier") match {
-            case x => x.convertTo[BaseASTNode]
+            case x : JsObject => x.convertTo[BaseASTNode]
             case _ => null
           },
           fields("storageLocation") match {
@@ -267,7 +267,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("isStateVar").convertTo[Boolean],
           fields("isIndexed").convertTo[Boolean],
           fields("expression") match {
-            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case x: JsObject => x.convertTo[BaseASTNode]
             case _              => null
           }
         )
@@ -352,7 +352,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         FunctionCall(
           fields("expression").convertTo[BaseASTNode],
           fields("arguments") match {
-            case x => x.convertTo[List[BaseASTNode]]
+            case x : JsObject => x.convertTo[List[BaseASTNode]]
             case _ => null
           },
           fields("names").convertTo[List[String]],
@@ -421,7 +421,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("value").convertTo[String],
           fields("parts").convertTo[List[String]],
           fields("isUnicode") match {
-            case x: List[JsBoolean] => x
+            case x : List[JsBoolean] => x
             case _                  => null
           }
         )
@@ -452,22 +452,59 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     def write(c: FunctionDefinition): JsValue = JsNull
 
     def read(json: JsValue): FunctionDefinition = {
+//      println(json)
       val fields = json.asJsObject("Unable to decode JSON as FunctionDefinition").fields
       if (fields("type").convertTo[String] != "FunctionDefinition") {
         throw new RuntimeException("FunctionDefinition object expected")
       } else {
+        // println(fields("name").convertTo[String])
+        // println(fields("parameters").convertTo[List[BaseASTNode]])
+        // println(fields("returnParameters")match {
+        //   case x : JsObject => x.convertTo[List[BaseASTNode]]
+        //   case _              => null
+        // })
+        // println(fields("body").convertTo[BaseASTNode])
+        // println(fields("visibility").convertTo[String])
+        // println(fields("modifiers").convertTo[List[BaseASTNode]])
+        // println(fields("override") match {
+        //   case x : JsObject => x.convertTo[BaseASTNode]
+        //   case _              => null
+        // })
+        // println(fields("isConstructor"))
+        // println(fields("isReceiveEther"))
+        // println(fields("isFallback"))
+        // println(fields("isVirtual"))
+        // println(fields("stateMutability") match {
+        //   case x: JsString => x.convertTo[String]
+        //   case _           => null
+        // })
+        // println(FunctionDefinition(
+        //   fields("name").convertTo[String],
+        //   fields("parameters").convertTo[List[BaseASTNode]],
+        //   null,
+        //   fields("body").convertTo[BaseASTNode],
+        //   fields("visibility").convertTo[String],
+        //   fields("modifiers").convertTo[List[BaseASTNode]],
+        //   null,
+        //   fields("isConstructor").convertTo[Boolean],
+        //   fields("isReceiveEther").convertTo[Boolean],
+        //   fields("isFallback").convertTo[Boolean],
+        //   fields("isVirtual").convertTo[Boolean],
+        //   null
+        // ))
+
         FunctionDefinition(
           fields("name").convertTo[String],
           fields("parameters").convertTo[List[BaseASTNode]],
           fields("returnParameters") match {
-            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case x : JsObject => x.convertTo[List[BaseASTNode]]
             case _              => null
           },
           fields("body").convertTo[BaseASTNode],
           fields("visibility").convertTo[String],
           fields("modifiers").convertTo[List[BaseASTNode]],
           fields("override") match {
-            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case x : JsObject => x.convertTo[BaseASTNode]
             case _              => null
           },
           fields("isConstructor").convertTo[Boolean],
@@ -586,7 +623,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("condition").convertTo[BaseASTNode],
           fields("trueBody").convertTo[BaseASTNode],
           fields("falseBody") match {
-            case x: BaseASTNode => x.convertTo[BaseASTNode]
+            case x: JsObject => x.convertTo[BaseASTNode]
             case _              => null
           }
         )

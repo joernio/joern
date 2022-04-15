@@ -136,7 +136,7 @@ object SuryaObject {
   case class FunctionDefinition(
     name: String,
     parameters: List[BaseASTNode],
-    returnParameters: BaseASTNode,
+    returnParameters: List[BaseASTNode],
     body: BaseASTNode,
     visibility: String,
     modifiers: List[BaseASTNode],

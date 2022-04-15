@@ -10,7 +10,30 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodReturn,
   NewNamespaceBlock,
-  NewTypeDecl
+  NewTypeDecl,
+  NewAnnotation,
+  NewAnnotationLiteral,
+  NewAnnotationParameter,
+  NewAnnotationParameterAssign,
+  NewArrayInitializer,
+  NewBinding,
+  NewCall,
+  NewClosureBinding,
+  NewControlStructure,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewJumpTarget,
+  NewLiteral,
+  NewLocal,
+  NewMember,
+  NewMethodParameterIn,
+  NewMethodRef,
+  NewModifier,
+  NewNode,
+  NewReturn,
+  NewTypeRef,
+  NewUnknown
+
 }
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -80,6 +103,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     packageDecl
       .withChildren(typeDecls)
+
   }
 
   private def astForPackageDeclaration(): Ast = {
@@ -101,10 +125,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForTypeDecl(contractDef: ContractDefinition, astParentFullName: String): Ast = {
     val fullName  = contractDef.name
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
-
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
     val superTypes = contractDef.baseContracts.map { contractDef => contractDef.getType }
-
+    println("before")
+    contractDef.subNodes.foreach( x => {
+      println(x.getType)
+    })
+    println("after")
     val typeDecl = NewTypeDecl()
       .name(shortName)
       .fullName(fullName)
