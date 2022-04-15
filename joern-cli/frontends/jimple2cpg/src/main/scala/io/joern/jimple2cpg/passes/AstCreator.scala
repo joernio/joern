@@ -128,6 +128,12 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
     val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
     val lastOrder  = 2 + methodDeclaration.getParameterCount
+    // Map params to their annotations
+    val mTags = methodDeclaration.getTags.asScala
+    val paramAnnos =
+      mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
+    val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
+    val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
     try {
       if (!methodDeclaration.isConcrete) {
         Ast(methodNode)
@@ -141,8 +147,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         }
         val parameterAsts =
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
-            (p, order) =>
-              astForParameter(p, order, methodDeclaration)
+            (p, order) => astForParameter(p, order, methodDeclaration, parameterAnnotations)
           }
         Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
           .withChildren(astsForModifiers(methodDeclaration))
@@ -182,18 +187,33 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case _              => EvaluationStrategies.BY_SHARING
     }
 
-  private def astForParameter(parameter: soot.Local, childNum: Int, methodDeclaration: SootMethod): Ast = {
+  private def astForParameter(
+    parameter: soot.Local,
+    childNum: Int,
+    methodDeclaration: SootMethod,
+    parameterAnnotations: Map[String, VisibilityAnnotationTag]
+  ): Ast = {
     val typeFullName = registerType(parameter.getType.toQuotedString)
-    val parameterNode = NewMethodParameterIn()
-      .name(parameter.getName)
-      .code(s"$typeFullName ${parameter.getName}")
-      .typeFullName(typeFullName)
-      .order(childNum)
-      .index(childNum)
-      .lineNumber(line(methodDeclaration))
-      .columnNumber(column(methodDeclaration))
-      .evaluationStrategy(getEvaluationStrategy(parameter.getType))
-    Ast(parameterNode)
+
+    val parameterNode = Ast(
+      NewMethodParameterIn()
+        .name(parameter.getName)
+        .code(s"$typeFullName ${parameter.getName}")
+        .typeFullName(typeFullName)
+        .order(childNum)
+        .index(childNum)
+        .lineNumber(line(methodDeclaration))
+        .columnNumber(column(methodDeclaration))
+        .evaluationStrategy(getEvaluationStrategy(parameter.getType))
+    )
+
+    parameterAnnotations.get(parameter.getName) match {
+      case Some(annoRoot) =>
+        parameterNode.withChildren(
+          annoRoot.getAnnotations.asScala.map(a => astsForAnnotations(a, methodDeclaration)).toSeq
+        )
+      case None => parameterNode
+    }
   }
 
   private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {

@@ -113,20 +113,24 @@ class AnnotationTestConstructor extends JimpleCodeToCpgFixture {
 
 class AnnotationTestParameter extends JimpleCodeToCpgFixture {
   override val code =
-    """
-      |import some.MarkerAnnotation;
-      |public class SomeClass {
+    """import java.lang.annotation.*;
       |
-      |  void function(@MarkerAnnotation int x) {
+      |@Retention(RetentionPolicy.RUNTIME)
+      |@Target(ElementType.PARAMETER)
+      |@interface MarkerAnnotation { }
+      |
+      |class SomeClass {
+      |
+      |  void function(@MarkerAnnotation int x, int y) {
       |
       |  }
       |}
       |""".stripMargin
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").parameter.name("x").annotation.head
-    annotationNode.code shouldBe "@MarkerAnnotation"
+    annotationNode.code shouldBe "@MarkerAnnotation()"
     annotationNode.name shouldBe "MarkerAnnotation"
-    annotationNode.fullName shouldBe "some.MarkerAnnotation"
+    annotationNode.fullName shouldBe "MarkerAnnotation"
   }
 }
 
