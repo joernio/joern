@@ -110,19 +110,23 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .withChildren(methodAsts)
   }
 
-  private def astForField(v: SootField, order: Int): Ast = {
-    val typeFullName = registerType(v.getType.toQuotedString)
-    val name         = v.getName
-    val code         = if (v.getDeclaration.contains("enum")) name else s"$typeFullName $name"
+  private def astForField(field: SootField, order: Int): Ast = {
+    val typeFullName = registerType(field.getType.toQuotedString)
+    val name         = field.getName
+    val code         = if (field.getDeclaration.contains("enum")) name else s"$typeFullName $name"
+    val annotations = field.getTags.asScala
+      .collect { case x: VisibilityAnnotationTag => x }
+      .flatMap(_.getAnnotations.asScala)
+
     Ast(
       NewMember()
         .name(name)
-        .lineNumber(line(v))
-        .columnNumber(column(v))
+        .lineNumber(line(field))
+        .columnNumber(column(field))
         .typeFullName(typeFullName)
         .order(order)
         .code(code)
-    )
+    ).withChildren(annotations.map(a => astsForAnnotations(a, field)).toSeq)
   }
 
   private def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
@@ -226,7 +230,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }.toSeq
   }
 
-  private def astsForAnnotations(annotation: AnnotationTag, methodDeclaration: SootMethod): Ast = {
+  private def astsForAnnotations(annotation: AnnotationTag, methodDeclaration: AbstractHost): Ast = {
     val annoType = registerType(parseAsmType(annotation.getType))
     val name     = if (annoType.contains('.')) annoType.substring(annoType.indexOf('.'), annoType.length) else annoType
     val elementNodes = annotation.getElems.asScala.map { a => astForAnnotationElement(a, methodDeclaration) }.toSeq
@@ -238,7 +242,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .withChildren(elementNodes)
   }
 
-  private def astForAnnotationElement(annoElement: AnnotationElem, parentMethod: SootMethod): Ast = {
+  private def astForAnnotationElement(annoElement: AnnotationElem, parent: AbstractHost): Ast = {
     def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
       case x: AnnotationClassElem =>
         val desc = registerType(parseAsmType(x.getDesc))
@@ -251,8 +255,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case x: AnnotationLongElem    => (x.getValue.toString, x.getValue.toString)
       case _                        => ("", "")
     }
-    val lineNo      = line(parentMethod)
-    val columnNo    = column(parentMethod)
+    val lineNo      = line(parent)
+    val columnNo    = column(parent)
     val codeBuilder = new StringBuilder()
     val lhsNode = Ast(
       NewAnnotationParameter()
@@ -263,8 +267,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     codeBuilder.append(s"${annoElement.getName} = ")
     val rhsNode =
       annoElement match {
-        case x: AnnotationAnnotationElem => astForAnnotationElement(x, parentMethod)
-        case x: AnnotationArrayElem      => Ast()
+        case x: AnnotationAnnotationElem => astForAnnotationElement(x, parent)
+        case x: AnnotationArrayElem      => Ast() // TODO
         case x: AnnotationStringElem =>
           val (name, code) = (x.getValue, x.getValue)
           codeBuilder.append(s"\"${x.getValue}\"")

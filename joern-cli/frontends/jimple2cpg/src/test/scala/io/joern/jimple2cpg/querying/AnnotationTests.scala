@@ -136,25 +136,37 @@ class AnnotationTestParameter extends JimpleCodeToCpgFixture {
 
 class AnnotationTestField extends JimpleCodeToCpgFixture {
   override val code =
-    """
-      |import some.MarkerAnnotation;
-      |public class SomeClass {
+    """import java.lang.annotation.*;
+      |
+      |@Retention(RetentionPolicy.RUNTIME)
+      |@Target(ElementType.FIELD)
+      |@interface MarkerAnnotation { }
+      |
+      |class SomeClass {
       |  @MarkerAnnotation int x;
       |}
       |""".stripMargin
   "test annotation node properties" in {
     val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.head
-    annotationNode.code shouldBe "@MarkerAnnotation"
+    annotationNode.code shouldBe "@MarkerAnnotation()"
     annotationNode.name shouldBe "MarkerAnnotation"
-    annotationNode.fullName shouldBe "some.MarkerAnnotation"
+    annotationNode.fullName shouldBe "MarkerAnnotation"
   }
 }
 
 class AnnotationTestValue1 extends JimpleCodeToCpgFixture {
   override val code =
-    """
-      |import some.NormalAnnotation;
-      |public class SomeClass {
+    """import java.lang.annotation.*;
+      |
+      |@Retention(RetentionPolicy.RUNTIME)
+      |@Target(ElementType.METHOD)
+      |@interface NormalAnnotation {
+      |
+      | public int value() default 0;
+      |
+      |}
+      |
+      |class SomeClass {
       |
       |  @NormalAnnotation(value = 2)
       |  void function() {
@@ -166,7 +178,7 @@ class AnnotationTestValue1 extends JimpleCodeToCpgFixture {
     val annotationNode = cpg.method.name("function").annotation.head
     annotationNode.code shouldBe "@NormalAnnotation(value = 2)"
     annotationNode.name shouldBe "NormalAnnotation"
-    annotationNode.fullName shouldBe "some.NormalAnnotation"
+    annotationNode.fullName shouldBe "NormalAnnotation"
   }
 
   "test annotation node parameter value" in {
