@@ -12,6 +12,7 @@ import soot.tagkit._
 import soot.{Local => _, _}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -126,7 +127,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         .typeFullName(typeFullName)
         .order(order)
         .code(code)
-    ).withChildren(annotations.map(a => astsForAnnotations(a, field)).toSeq)
+    ).withChildren(withOrder(annotations) { (a, aOrder) => astsForAnnotations(a, aOrder, field) })
   }
 
   private def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
@@ -213,36 +214,40 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
     parameterAnnotations.get(parameter.getName) match {
       case Some(annoRoot) =>
-        parameterNode.withChildren(
-          annoRoot.getAnnotations.asScala.map(a => astsForAnnotations(a, methodDeclaration)).toSeq
-        )
+        parameterNode.withChildren(withOrder(annoRoot.getAnnotations.asScala) { (a, order) =>
+          astsForAnnotations(a, order, methodDeclaration)
+        })
       case None => parameterNode
     }
   }
 
   private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {
     methodDeclaration.getTags.asScala.flatMap {
-      case x: VisibilityAnnotationTag => x.getAnnotations.asScala.map(a => astsForAnnotations(a, methodDeclaration))
-      case _: AnnotationDefaultTag    => Seq(Ast())
+      case x: VisibilityAnnotationTag =>
+        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, methodDeclaration) }
+      case _: AnnotationDefaultTag => Seq(Ast())
       case x =>
         logger.warn(s"Unhandled method tag '${x.getClass}' skipping...'")
         Seq(Ast())
     }.toSeq
   }
 
-  private def astsForAnnotations(annotation: AnnotationTag, methodDeclaration: AbstractHost): Ast = {
+  private def astsForAnnotations(annotation: AnnotationTag, order: Int, methodDeclaration: AbstractHost): Ast = {
     val annoType = registerType(parseAsmType(annotation.getType))
     val name     = if (annoType.contains('.')) annoType.substring(annoType.indexOf('.'), annoType.length) else annoType
-    val elementNodes = annotation.getElems.asScala.map { a => astForAnnotationElement(a, methodDeclaration) }.toSeq
+    val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
+      astForAnnotationElement(a, order, methodDeclaration)
+    }
     val annotationNode = NewAnnotation()
       .name(name)
       .code(s"@$name(${elementNodes.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")})")
       .fullName(annoType)
+      .order(order)
     Ast(annotationNode)
       .withChildren(elementNodes)
   }
 
-  private def astForAnnotationElement(annoElement: AnnotationElem, parent: AbstractHost): Ast = {
+  private def astForAnnotationElement(annoElement: AnnotationElem, order: Int, parent: AbstractHost): Ast = {
     def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
       case x: AnnotationClassElem =>
         val desc = registerType(parseAsmType(x.getDesc))
@@ -258,34 +263,57 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     val lineNo      = line(parent)
     val columnNo    = column(parent)
     val codeBuilder = new StringBuilder()
-    val lhsNode = Ast(
-      NewAnnotationParameter()
-        .code(annoElement.getName)
+    val astChildren = ListBuffer.empty[Ast]
+    if (annoElement.getName != null) {
+      astChildren.append(
+        Ast(
+          NewAnnotationParameter()
+            .code(annoElement.getName)
+            .lineNumber(lineNo)
+            .columnNumber(columnNo)
+            .order(1)
+        )
+      )
+      codeBuilder.append(s"${annoElement.getName} = ")
+    }
+    astChildren.append(annoElement match {
+      case x: AnnotationAnnotationElem =>
+        val rhsAst = astsForAnnotations(x.getValue, astChildren.size + 1, parent)
+        codeBuilder.append(s"${rhsAst.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}")
+        rhsAst
+      case x: AnnotationArrayElem =>
+        val (rhsAst, code) = astForAnnotationArrayElement(x, astChildren.size + 1, parent)
+        codeBuilder.append(code)
+        rhsAst
+      case x =>
+        val (name, code) = x match {
+          case y: AnnotationStringElem => (y.getValue, s"\"${y.getValue}\"")
+          case _                       => getLiteralElementNameAndCode(x)
+        }
+        val rhsOrder = if (annoElement.getName == null) order else astChildren.size + 1
+        codeBuilder.append(code)
+        Ast(NewAnnotationLiteral().name(name).code(code).order(rhsOrder).argumentIndex(rhsOrder))
+    })
+
+    if (astChildren.size == 1) {
+      astChildren.head
+    } else {
+      val paramAssign = NewAnnotationParameterAssign()
+        .code(codeBuilder.toString)
         .lineNumber(lineNo)
         .columnNumber(columnNo)
-    )
-    codeBuilder.append(s"${annoElement.getName} = ")
-    val rhsNode =
-      annoElement match {
-        case x: AnnotationAnnotationElem => astForAnnotationElement(x, parent)
-        case x: AnnotationArrayElem      => Ast() // TODO
-        case x: AnnotationStringElem =>
-          val (name, code) = (x.getValue, x.getValue)
-          codeBuilder.append(s"\"${x.getValue}\"")
-          Ast(NewAnnotationLiteral().name(name).code(code).argumentIndex(2))
-        case x =>
-          val (name, code) = getLiteralElementNameAndCode(x)
-          codeBuilder.append(code)
-          Ast(NewAnnotationLiteral().name(name).code(code).argumentIndex(2))
-      }
+        .order(order)
 
-    val paramAssign = NewAnnotationParameterAssign()
-      .code(codeBuilder.toString)
-      .lineNumber(lineNo)
-      .columnNumber(columnNo)
+      Ast(paramAssign)
+        .withChildren(astChildren)
+    }
+  }
 
-    Ast(paramAssign)
-      .withChildren(Seq(lhsNode, rhsNode))
+  private def astForAnnotationArrayElement(x: AnnotationArrayElem, order: Int, parent: AbstractHost): (Ast, String) = {
+    val elems = withOrder(x.getValues.asScala) { (elem, order) => astForAnnotationElement(elem, order, parent) }
+    val code  = s"{${elems.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}}"
+    val array = NewArrayInitializer().code(code).order(order).argumentIndex(order)
+    (Ast(array).withChildren(elems), code)
   }
 
   private def astForMethodBody(body: Body, order: Int): Ast = {

@@ -47,7 +47,7 @@ class AnnotationTestMethod1 extends JimpleCodeToCpgFixture {
 
   "test annotation node parameter value" in {
     val Seq(paramValue) = cpg.method.name("function").annotation.parameterAssign.value.l
-    paramValue.code shouldBe "classAnnotation"
+    paramValue.code shouldBe "\"classAnnotation\""
     paramValue.order shouldBe 2
     paramValue.argumentIndex shouldBe 2
   }
@@ -191,9 +191,17 @@ class AnnotationTestValue1 extends JimpleCodeToCpgFixture {
 
 class AnnotationTestValue2 extends JimpleCodeToCpgFixture {
   override val code =
-    """
-      |import some.NormalAnnotation;
-      |public class SomeClass {
+    """import java.lang.annotation.*;
+      |
+      |@Retention(RetentionPolicy.RUNTIME)
+      |@Target(ElementType.METHOD)
+      |@interface NormalAnnotation {
+      |
+      | public String[] value() default {};
+      |
+      |}
+      |
+      |class SomeClass {
       |
       |  @NormalAnnotation(value = {"aaa", "bbb"})
       |  void function() {
@@ -203,14 +211,14 @@ class AnnotationTestValue2 extends JimpleCodeToCpgFixture {
       |""".stripMargin
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
-    annotationNode.code shouldBe "@NormalAnnotation(value = { \"aaa\", \"bbb\" })"
+    annotationNode.code shouldBe "@NormalAnnotation(value = {\"aaa\", \"bbb\"})"
     annotationNode.name shouldBe "NormalAnnotation"
-    annotationNode.fullName shouldBe "some.NormalAnnotation"
+    annotationNode.fullName shouldBe "NormalAnnotation"
   }
 
   "test annotation node parameter assignment child" in {
     val Seq(paramAssign) = cpg.method.name("function").annotation.parameterAssign.l
-    paramAssign.code shouldBe "value = { \"aaa\", \"bbb\" }"
+    paramAssign.code shouldBe "value = {\"aaa\", \"bbb\"}"
     paramAssign.order shouldBe 1
   }
 
@@ -222,26 +230,37 @@ class AnnotationTestValue2 extends JimpleCodeToCpgFixture {
 
   "test annotation node parameter value" in {
     val Seq(paramValue: ArrayInitializer) = cpg.method.name("function").annotation.parameterAssign.value.l
-    paramValue.code shouldBe "{ \"aaa\", \"bbb\" }"
+    paramValue.code shouldBe "{\"aaa\", \"bbb\"}"
     paramValue.order shouldBe 2
     paramValue.argumentIndex shouldBe 2
   }
 
   "test annotation node array initializer children" in {
     val children = cpg.method.name("function").annotation.parameterAssign.value.astChildren.isExpression.s
-    children.find(_.code == "aaa").map(_.order) shouldBe Some(1)
-    children.find(_.code == "aaa").map(_.argumentIndex) shouldBe Some(1)
-    children.find(_.code == "bbb").map(_.order) shouldBe Some(2)
-    children.find(_.code == "bbb").map(_.argumentIndex) shouldBe Some(2)
+    children.find(_.code == "\"aaa\"").map(_.order) shouldBe Some(1)
+    children.find(_.code == "\"aaa\"").map(_.argumentIndex) shouldBe Some(1)
+    children.find(_.code == "\"bbb\"").map(_.order) shouldBe Some(2)
+    children.find(_.code == "\"bbb\"").map(_.argumentIndex) shouldBe Some(2)
   }
 }
 
 class AnnotationTestValue3 extends JimpleCodeToCpgFixture {
   override val code =
-    """
-      |import some.NormalAnnotation;
-      |import some.OtherAnnotation;
-      |public class SomeClass {
+    """import java.lang.annotation.*;
+      |
+      |@Retention(RetentionPolicy.RUNTIME)
+      |@Target(ElementType.METHOD)
+      |@interface NormalAnnotation {
+      |
+      | public OtherAnnotation value();
+      |
+      |}
+      |
+      |@Retention(RetentionPolicy.RUNTIME)
+      |@Target(ElementType.METHOD)
+      |@interface OtherAnnotation { }
+      |
+      |class SomeClass {
       |
       |  @NormalAnnotation(value = @OtherAnnotation)
       |  void function() {
@@ -251,9 +270,9 @@ class AnnotationTestValue3 extends JimpleCodeToCpgFixture {
       |""".stripMargin
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
-    annotationNode.code shouldBe "@NormalAnnotation(value = @OtherAnnotation)"
+    annotationNode.code shouldBe "@NormalAnnotation(value = @OtherAnnotation())"
     annotationNode.name shouldBe "NormalAnnotation"
-    annotationNode.fullName shouldBe "some.NormalAnnotation"
+    annotationNode.fullName shouldBe "NormalAnnotation"
   }
 
   "test annotation node parameter value" in {
