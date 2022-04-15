@@ -9,7 +9,6 @@ import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.Resolvable
 import com.github.javaparser.resolution.declarations._
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType}
-import io.joern.javasrc2cpg.passes.ScopeContext
 import io.joern.x2cpg.datastructures.Global
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{ImportInfo, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
@@ -95,16 +94,6 @@ class TypeInfoProvider(global: Global) {
     resolvedTypeFullName(resolvedType).map(registerType)
   }
 
-  private def resolvedTypeParameterTypeFullName(resolvedType: ResolvedTypeParameterDeclaration): String = {
-    val packageName = extractNullableName(Try(resolvedType.getPackageName))
-    val className   = extractNullableName(Try(resolvedType.getClassName))
-    buildTypeString(packageName, className)
-  }
-
-  def typeFullNameForResolvedTypeParam(typeParam: ResolvedTypeParameterDeclaration): String = {
-    registerType(resolvedTypeParameterTypeFullName(typeParam))
-  }
-
   private def typeNameForTypeDecl(typeDecl: TypeDeclaration[_], fullName: Boolean): String = {
     val javaParserName = if (fullName) {
       typeDecl.getFullyQualifiedName.toScala.getOrElse(typeDecl.getNameAsString)
@@ -139,7 +128,11 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(node: NodeWithType[_, _ <: Resolvable[ResolvedType]]): Option[String] = {
     val typeFullName = Try(node.getType.resolve()) match {
-      case Success(resolvedType: ResolvedReferenceType) => resolvedReferenceTypeFullName(resolvedType)
+      case Success(resolvedType: ResolvedParameterDeclaration) =>
+        getTypeFullName(resolvedType)
+
+      case Success(resolvedType: ResolvedReferenceType) =>
+        resolvedReferenceTypeFullName(resolvedType)
 
       case Success(resolvedType: ResolvedType) => simpleResolvedTypeFullName(resolvedType)
 
@@ -272,8 +265,13 @@ class TypeInfoProvider(global: Global) {
 
   def getTypeFullName(resolvedParam: ResolvedParameterDeclaration): Option[String] = {
     val typeFullName = resolvedTypeFullName(resolvedParam.getType)
+    val arraySuffix = if (resolvedParam.isVariadic) {
+      "[]"
+    } else {
+      ""
+    }
 
-    typeFullName.map(registerType)
+    typeFullName.map(_ ++ arraySuffix).map(registerType)
   }
 
   def getTypeForExpression(expr: Expression): Option[String] = {
@@ -302,8 +300,8 @@ class TypeInfoProvider(global: Global) {
     typeFullName.map(registerType)
   }
 
-  def scopeType(scopeContext: ScopeContext, isSuper: Boolean = false): String = {
-    scopeContext.typeDecl match {
+  def scopeType(scopeStack: Scope, isSuper: Boolean = false): String = {
+    scopeStack.getEnclosingTypeDecl match {
       case Some(typ) if isSuper =>
         val parentType = typ.inheritsFromTypeFullName.headOption.getOrElse(UnresolvedTypeDefault)
         registerType(parentType)

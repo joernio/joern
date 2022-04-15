@@ -504,8 +504,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         val parentType = registerType(x.getType.toQuotedString)
         Ast(
           NewCall()
-            .name("<operator>.alloc")
-            .methodFullName("<operator>.alloc")
+            .name(Operators.alloc)
+            .methodFullName(Operators.alloc)
             .typeFullName(parentType)
             .code(s"new ${x.getType}")
             .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -528,8 +528,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     val arrayBaseType = registerType(arrayInitExpr.getType.toQuotedString)
     val code = s"new ${arrayBaseType.substring(0, arrayBaseType.indexOf('['))}${sizes.map(s => s"[$s]").mkString}"
     val callBlock = NewCall()
-      .name("<operator>.arrayCreator")
-      .methodFullName("<operator>.arrayCreator")
+      .name(Operators.alloc)
+      .methodFullName(Operators.alloc)
       .code(code)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)

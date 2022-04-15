@@ -165,13 +165,13 @@ case class Ast(
   /** Returns a deep copy of the sub tree rooted in `node`. If `order` is set, then the `order` and `argumentIndex`
     * fields of the new root node are set to `order`.
     */
-  def subTreeCopy(node: AstNodeNew, order: Int = -1): Ast = {
+  def subTreeCopy(node: AstNodeNew, argIndex: Int = -1): Ast = {
     val newNode = node.copy
-    if (order != -1) {
-      newNode.order = order
+    if (argIndex != -1) {
+      // newNode.order = argIndex
       newNode match {
         case expr: ExpressionNew =>
-          expr.argumentIndex = order
+          expr.argumentIndex = argIndex
         case _ =>
       }
     }

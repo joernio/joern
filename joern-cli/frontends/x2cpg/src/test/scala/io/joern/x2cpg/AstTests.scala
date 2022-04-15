@@ -33,7 +33,6 @@ class AstTests extends AnyWordSpec with Matchers {
         case Some(root: NewCall) =>
           root should not be Some(moo)
           root.properties("NAME") shouldBe "moo"
-          root.order shouldBe 123
           root.argumentIndex shouldBe 123
         case _ => fail()
       }
