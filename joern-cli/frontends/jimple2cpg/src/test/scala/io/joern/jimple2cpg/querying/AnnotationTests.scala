@@ -277,8 +277,8 @@ class AnnotationTestValue3 extends JimpleCodeToCpgFixture {
 
   "test annotation node parameter value" in {
     val Seq(paramValue: Annotation) = cpg.method.name("function").annotation.parameterAssign.value.l
-    paramValue.code shouldBe "@OtherAnnotation"
-    paramValue.fullName shouldBe "some.OtherAnnotation"
+    paramValue.code shouldBe "@OtherAnnotation()"
+    paramValue.fullName shouldBe "OtherAnnotation"
     paramValue.order shouldBe 2
   }
 }
