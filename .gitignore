@@ -1,26 +1,27 @@
-###################
-# Joern-specifics #
-###################
+bazel-*
+.gradle/
+target/
 
-project/project
-project/target
-target
-.idea/
-tests/smoke-test-repos
-tests/**/node_modules
-tests/**/package-lock.json
-tests/**/package.json
-joern-cli/frontends/js2cpg
+# IDE
+.idea
+.ijwb
+
+# Vim.
+*.sw*
+*.vim
+
+# Vscode Settings
+.vscode/settings.json
+
+# Joern generated files
+.bsp/
+*defaultContentRootJars*
 joern-cli.zip
-joern-server.zip
-cpg.bin.zip
-cpg.bin
-ast-for-funcs.json
-cfg-for-funcs.json
-pdg-for-funcs.json
-joern-cli/workspace
-/workspace
-.bloop
-/.bsp
-/gnupg-*
-/joern-cli/${sys:LOG_DIR}/
+joern-cli/project/*
+joern-cli/workspace/*
+joern-cli/frontends/kotlin2cpg/cpg*.bin*
+*.fuse_hidden*
+out/*
+workspace/*
+
+
