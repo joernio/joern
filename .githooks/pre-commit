@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Pre-commit Git checks.
+# Set up:
+#  cp .githooks/pre-commit .git/hooks/pre-commit
+
+# Constants.
+BOLD="\e[1m"
+UNSET="\e[0m"
+WHITE="\e[97m"
+RED="\e[91m"
+BACK_MAGENTA="\e[45m"
+BACK_BLUE="\e[44m"
+BACK_RED="\e[41m"
+BACK_GREEN="\e[42m"
+
+# Methods.
+function echo_error {
+  ERR_MSG=$1
+  HELP_MSG=$2
+  echo -e "$BOLD $BACK_BLUE $WHITE Precommit:\t $BACK_RED Changes NOT committed. $UNSET"
+  echo -e "$BOLD $BACK_BLUE $WHITE Precommit:\t $BACK_RED $WHITE $ERR_MSG $BACK_BLUE $HELP_MSG $UNSET"
+}
+
+function echo_status {
+  STATUS_MSG=$1
+  echo -e "$BOLD $BACK_BLUE $WHITE Precommit:\t $STATUS_MSG $UNSET"
+}
+
+function echo_success {
+  echo -e "$BOLD $BACK_BLUE $WHITE Precommit:\t $BACK_GREEN $WHITE SUCCESS. $UNSET All checks passed!"
+}
+
+# Check only the staged files.
+NUM_TOTAL_FILES_CHANGED=$(git diff --cached --name-only | wc -l)
+NUM_SCALA_FILES_CHANGED=$(git diff --cached --name-only "*.scala" | wc -l)
+
+if [ $NUM_TOTAL_FILES_CHANGED -le 0 ]
+then
+  echo_error "No new files to commit." ""
+  exit 1
+fi
+
+# Check Scala format.
+# Modifies files.
+if [ $NUM_SCALA_FILES_CHANGED -gt 0 ]
+then
+  echo_status "Running Scala linter..."
+  sbt test:scalafmt
+  NEW_NUM_SCALA_FILES_CHANGED=$(git diff --cached --name-only | wc -l)
+  if [ $NEW_NUM_SCALA_FILES_CHANGED != 0 ]
+  then
+    echo_status "Linting changed $(($NEW_NUM_SCALA_FILES_CHANGED - $NUM_SCALA_FILES_CHANGED)) additional files"
+    git add *.scala
+  fi
+  echo_status "All files linted!"
+fi
+
+# Check tests.
+if [ $NUM_SCALA_FILES_CHANGED -gt 0 ]
+then
+  echo_status "Running tests..."
+  sbt test
+  TEST_STATUS=$?
+  if [ $TEST_STATUS != 0 ]
+  then
+    echo_error "Tests failed." "Please fix them and try again."
+    exit 1
+  fi
+fi
+
+echo_success
+
+
