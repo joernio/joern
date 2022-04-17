@@ -184,15 +184,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast()
   }
 
-//  private def astsForFunction(function: FunctionDefinition): Ast = {
-//    val functionNode = NewTypeDecl()
-//    .name(function.name)
-//    .fullName(function.name)
-//    .astParentType(NodeTypes.NAMESPACE_BLOCK)
-//      .
-//      .inheritsFromTypeFullName(function.getType)
-//    ;
-//
-//  }
+  private def astsForFunction(function: FunctionDefinition): Ast = {
+    val functionNode = NewTypeDecl()
+    .name(function.name)
+    .fullName(function.name)
+    .astParentType(NodeTypes.NAMESPACE_BLOCK)
+    .astParentFullName(function.name)
+    ;
+  Ast()
+  }
 
 }
