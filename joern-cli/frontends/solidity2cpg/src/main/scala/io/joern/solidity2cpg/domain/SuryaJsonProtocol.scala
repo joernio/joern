@@ -457,42 +457,6 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "FunctionDefinition") {
         throw new RuntimeException("FunctionDefinition object expected")
       } else {
-        // println(fields("name").convertTo[String])
-        // println(fields("parameters").convertTo[List[BaseASTNode]])
-        // println(fields("returnParameters")match {
-        //   case x : JsObject => x.convertTo[List[BaseASTNode]]
-        //   case _              => null
-        // })
-        // println(fields("body").convertTo[BaseASTNode])
-        // println(fields("visibility").convertTo[String])
-        // println(fields("modifiers").convertTo[List[BaseASTNode]])
-        // println(fields("override") match {
-        //   case x : JsObject => x.convertTo[BaseASTNode]
-        //   case _              => null
-        // })
-        // println(fields("isConstructor"))
-        // println(fields("isReceiveEther"))
-        // println(fields("isFallback"))
-        // println(fields("isVirtual"))
-        // println(fields("stateMutability") match {
-        //   case x: JsString => x.convertTo[String]
-        //   case _           => null
-        // })
-        // println(FunctionDefinition(
-        //   fields("name").convertTo[String],
-        //   fields("parameters").convertTo[List[BaseASTNode]],
-        //   null,
-        //   fields("body").convertTo[BaseASTNode],
-        //   fields("visibility").convertTo[String],
-        //   fields("modifiers").convertTo[List[BaseASTNode]],
-        //   null,
-        //   fields("isConstructor").convertTo[Boolean],
-        //   fields("isReceiveEther").convertTo[Boolean],
-        //   fields("isFallback").convertTo[Boolean],
-        //   fields("isVirtual").convertTo[Boolean],
-        //   null
-        // ))
-
         FunctionDefinition(
           fields("name").convertTo[String],
           fields("parameters").convertTo[List[BaseASTNode]],

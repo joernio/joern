@@ -126,12 +126,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val fullName  = contractDef.name
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
-    val superTypes = contractDef.baseContracts.map { contractDef => contractDef.getType }
-    println("before")
-    contractDef.subNodes.foreach( x => {
-      println(x.getType)
-    })
-    println("after")
+    val superTypes = contractDef.baseContracts.map { contractDef => contractDef.getType}
     val typeDecl = NewTypeDecl()
       .name(shortName)
       .fullName(fullName)
@@ -140,7 +135,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .filename(filename)
       .inheritsFromTypeFullName(superTypes)
 
-    val methods = contractDef.subNodes.collect { case x: ModifierDefinition => x }.map(astsForMethod)
+    val methods = contractDef.subNodes.collect {
+      case x: ModifierDefinition => x }.map(astsForMethod)
+    val functions = contractDef.subNodes.collect {
+      case x: FunctionDefinition => x }.map(astsForFunction)
 
     Ast(typeDecl)
       .withChildren(methods)
@@ -185,5 +183,16 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     // TODO: When a variable is referenced, it should always be referenced as an identifier
     Ast()
   }
+
+//  private def astsForFunction(function: FunctionDefinition): Ast = {
+//    val functionNode = NewTypeDecl()
+//    .name(function.name)
+//    .fullName(function.name)
+//    .astParentType(NodeTypes.NAMESPACE_BLOCK)
+//      .
+//      .inheritsFromTypeFullName(function.getType)
+//    ;
+//
+//  }
 
 }

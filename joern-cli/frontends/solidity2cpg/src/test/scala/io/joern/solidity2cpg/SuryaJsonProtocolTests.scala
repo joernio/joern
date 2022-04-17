@@ -14,8 +14,8 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
   private val logger = LoggerFactory.getLogger(classOf[SuryaJsonProtocolTests])
 
   val sampleAstFile: String =
-//    ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/sample_contract_ast.json")
-      ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/Test7364825853136063873.json")
+    ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/sample_contract_ast.json")
+//      ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/Test7364825853136063873.json")
   private val code: String = Using.resource(scala.io.Source.fromFile(sampleAstFile)) { source =>
     source.getLines() mkString "\n"
   }
@@ -27,18 +27,17 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 //    println(json._1)
 //    println(json._2)
 //  }
-
- "should be able to decode a string JSON input to a root SourceUnit" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-  val astRoot = Try(code.parseJson.convertTo[SourceUnit]) match {
-    case Failure(e)          => fail(s"Unable to convert JSON to SourceUnit due to an exception", e)
-    case Success(sourceUnit) => sourceUnit
-  }
-//   println(astRoot)
- }
-
-
+//
+// "should be able to decode a string JSON input to a root SourceUnit" in {
+//   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+//   import io.joern.solidity2cpg.domain.SuryaObject._
+//  val astRoot = Try(code.parseJson.convertTo[SourceUnit]) match {
+//    case Failure(e)          => fail(s"Unable to convert JSON to SourceUnit due to an exception", e)
+//    case Success(sourceUnit) => sourceUnit
+//  }
+// }
+//
+//
 //   // TODO: Write tests to spot check that important things are here in the AST ROOT
 // "should be able to decode a string JSON input to a root PragmaDirective" in {
 //   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
@@ -80,19 +79,18 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 //   }
 // }
 //
- "should be able to decode a string JSON input to a root ContractDefinition" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-
-   val newRoot = oldRoot.elements(1)
-         val astRoot = Try(newRoot.convertTo[ContractDefinition]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to ContractDefinition due to an exception", e)
-           case Success(pragmaDirective) => pragmaDirective
-         }
-//   println(newRoot)
-//   println(astRoot)
- }
+// "should be able to decode a string JSON input to a root ContractDefinition" in {
+//   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+//   import io.joern.solidity2cpg.domain.SuryaObject._
+//   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+//
+//   val newRoot = oldRoot.elements(1)
+//         val astRoot = Try(newRoot.convertTo[ContractDefinition]) match {
+//           case Failure(e)          => fail(s"Unable to convert JSON to ContractDefinition due to an exception", e)
+//           case Success(pragmaDirective) => pragmaDirective
+//         }
+//
+// }
 //
 // "should be able to decode a string JSON input to a root InheritanceSpecifier" in {
 //   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
@@ -134,71 +132,70 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 //   }
 // }
 //
- "should be able to decode a string JSON input to a root VariableDeclaration" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-//   3 for other one
-   val newRoot = oldRoot.elements(1).convertTo[JsObject].fields("subNodes").convertTo[JsArray];
-   var counter = 0
-   while (counter < newRoot.elements.size) {
-     try {
-       var counter2 = 0;
-       val newVariable = newRoot.elements(counter).convertTo[JsObject].fields("parameters").convertTo[JsArray];
-       while (counter2 < newVariable.elements.size) {
-         val astRoot = Try(newVariable.elements(counter2).convertTo[VariableDeclaration]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to VariableDeclaration due to an exception", e)
-           case Success(variableDeclaration) => variableDeclaration
-         }
-         counter2 += 1
-//         println(astRoot)
-       }
-       counter += 1
-     }
-
-   }
- }
+// "should be able to decode a string JSON input to a root VariableDeclaration" in {
+//   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+//   import io.joern.solidity2cpg.domain.SuryaObject._
+//   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+//   val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray];
+//   var counter = 0
+//   while (counter < newRoot.elements.size) {
+//     try {
+//       var counter2 = 0;
+//       val newVariable = newRoot.elements(counter).convertTo[JsObject].fields("parameters").convertTo[JsArray];
+//       while (counter2 < newVariable.elements.size) {
+//         val astRoot = Try(newVariable.elements(counter2).convertTo[VariableDeclaration]) match {
+//           case Failure(e)          => fail(s"Unable to convert JSON to VariableDeclaration due to an exception", e)
+//           case Success(variableDeclaration) => variableDeclaration
+//         }
+//         counter2 += 1
+//       }
+//       counter += 1
+//     }
 //
- "should be able to decode a string JSON input to a root Block" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-   val newRoot = oldRoot.elements(1).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
-   var counter = 0
-   while (counter < newRoot.elements.size) {
-     try {
-       val newBlock = newRoot.elements(counter).convertTo[JsObject].fields("body");
-       val astRoot = Try(newBlock.convertTo[Block]) match {
-         case Failure(e)          => fail(s"Unable to convert JSON to Block due to an exception", e)
-         case Success(block) => block
-       }
-       counter += 1
-//       println(astRoot)
-     }
-
-   }
- }
-
+//   }
+// }
+////
+// "should be able to decode a string JSON input to a root Block" in {
+//   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+//   import io.joern.solidity2cpg.domain.SuryaObject._
+//   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+//   val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
+//   var counter = 0
+//   while (counter < newRoot.elements.size) {
+//     try {
+//       val newBlock = newRoot.elements(counter).convertTo[JsObject].fields("body");
+//       val astRoot = Try(newBlock.convertTo[Block]) match {
+//         case Failure(e)          => fail(s"Unable to convert JSON to Block due to an exception", e)
+//         case Success(block) => block
+//       }
+//       counter += 1
+//     }
+//
+//   }
+// }
+//
   "should be able to decode a string JSON input to a root FunctionDefinition" in {
     import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
     import io.joern.solidity2cpg.domain.SuryaObject._
     val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-    val newRoot = oldRoot.elements(1).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
+    val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
     var counter = 0
     while (counter < newRoot.elements.size) {
       try {
+
         val newBlock = newRoot.elements(counter).convertTo[JsObject]
-//        println(newBlock)
-        val astRoot = Try(newBlock.convertTo[FunctionDefinition]) match {
-          case Failure(e)          => fail(s"Unable to convert JSON to Block due to an exception", e)
-          case Success(functionDefinition) => functionDefinition
+        if (newBlock.toString().contains("FunctionDefinition")) {
+          val astRoot = Try(newBlock.convertTo[FunctionDefinition]) match {
+                     case Failure(e)          => fail(s"Unable to convert JSON to FunctionDefinition due to an exception", e)
+                     case Success(block) => block
+                   }
+//          println(astRoot.getType)
         }
         counter += 1
-//        println(astRoot)
       }
 
     }
   }
 }
-
-
+//
+//

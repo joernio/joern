@@ -37,6 +37,13 @@ class SolidityAstTests extends SolidityCodeToCpgFixture {
     }
   }
 
+  "Identifies function names code" in {
+    val typeDecl = cpg.typeDecl.map(x => (x.fullName, x.code))
+    while (typeDecl.hasNext) {
+     println(typeDecl.next())
+    }
+  }
+
 //  "Identifies function names" in {
 //    val typeDecl = cpg.typeDecl.map(x => x.fullName)
 //    var counter = 0
