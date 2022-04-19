@@ -23,12 +23,10 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Obj
 import ujson.Value
@@ -37,7 +35,7 @@ import scala.collection.mutable
 import scala.util.Try
 
 class AstCreator(val config: Config, val parserResult: ParseResult, val global: Global)
-    extends AstCreatorBase(parserResult.filename)
+    extends AstCreatorBase(parserResult.fullPath)
     with AstNodeBuilder
     with AstCreatorHelper {
 
@@ -59,23 +57,18 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   protected val dynamicInstanceTypeStack: mutable.Stack[String] = mutable.Stack.empty[String]
 
   override def createAst(): DiffGraphBuilder = {
-    val name    = parserResult.filename
-    val cpgFile = Ast(NewFile().name(name).order(0))
-    val ast     = cpgFile.withChild(astForFileGlobal())
+    val namespaceBlock = globalNamespaceBlock()
+    methodAstParentStack.push(namespaceBlock)
+    val ast = Ast(namespaceBlock).withChild(createProgramMethod())
     Ast.storeInDiffGraph(ast, diffGraph)
     createVariableReferenceLinks()
     diffGraph
   }
 
-  protected def astsForExpressionStatement(exprStmt: BabelNodeInfo, order: Int): Seq[Ast] =
-    astsForNode(exprStmt.json("expression"), order)
+  protected def astsForExpressionStatement(exprStmt: BabelNodeInfo): List[Ast] =
+    astsForNode(exprStmt.json("expression"))
 
-  protected def createBuiltinStaticCall(
-    callExpr: BabelNodeInfo,
-    callee: BabelNodeInfo,
-    methodFullName: String,
-    order: Int
-  ): Ast = {
+  protected def createBuiltinStaticCall(callExpr: BabelNodeInfo, callee: BabelNodeInfo, methodFullName: String): Ast = {
     val methodName = callee.node match {
       case BabelAst.MemberExpression =>
         code(callee.json("property"))
@@ -84,9 +77,9 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
       case _ => callee.code
     }
     val callNode =
-      createStaticCallNode(callExpr.code, methodName, methodFullName, order, callee.lineNumber, callee.columnNumber)
-    val args = astsForNodes(callExpr.json("arguments").arr.toSeq)
-    Ast(callNode).withChildren(args).withArgEdges(callNode, args)
+      createStaticCallNode(callExpr.code, methodName, methodFullName, callee.lineNumber, callee.columnNumber)
+    val args = astsForNodes(callExpr.json("arguments").arr.toList)
+    callAst(callNode, args)
   }
 
   protected def handleCallNodeArgs(
@@ -95,8 +88,8 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     baseNode: NewNode,
     functionBaseNode: NewNode,
     functionPropertyNode: Option[NewFieldIdentifier]
-  ): Seq[Ast] = {
-    val args = astsForNodes(callExpr.json("arguments").arr.toSeq)
+  ): Ast = {
+    val args = astsForNodes(callExpr.json("arguments").arr.toList)
 
     val baseCode = codeOf(functionBaseNode)
     val propertyCode = functionPropertyNode match {
@@ -108,36 +101,14 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     val code     = s"$baseCode$propertyCode$argsCode"
 
     val callNode = createCallNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, callExpr.lineNumber, callExpr.columnNumber)
-
-    addOrder(receiverNode, 0)
-    addOrder(baseNode, 1)
-    addArgumentIndex(baseNode, 0)
-
-    var currOrder    = 2
-    var currArgIndex = 1
-    args.foreach { ast =>
-      addOrder(ast.nodes.head, currOrder)
-      addArgumentIndex(ast.nodes.head, currArgIndex)
-      currOrder += 1
-      currArgIndex += 1
-    }
-
-    Seq(
-      Ast(callNode)
-        .withChild(Ast(receiverNode))
-        .withReceiverEdge(callNode, receiverNode)
-        .withChild(Ast(baseNode))
-        .withArgEdge(callNode, baseNode)
-        .withChildren(args)
-        .withArgEdges(callNode, args)
-    )
+    callAst(callNode, Ast(baseNode) +: args, Some(Ast(receiverNode)))
   }
 
-  protected def astsForCallExpression(callExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForCallExpression(callExpr: BabelNodeInfo): List[Ast] = {
     val callee         = createBabelNodeInfo(callExpr.json("callee"))
     val methodFullName = callee.code
     val callNode = if (GlobalBuiltins.builtins.contains(methodFullName)) {
-      Seq(createBuiltinStaticCall(callExpr, callee, methodFullName, order))
+      createBuiltinStaticCall(callExpr, callee, methodFullName)
     } else {
       val (functionBaseAsts, functionPropertyNode, receiverAsts, baseNode) = callee.node match {
         case BabelAst.MemberExpression =>
@@ -145,7 +116,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
           val base = createBabelNodeInfo(callee.json("object"))
           base.node match {
             case BabelAst.Identifier =>
-              val receiverAsts = astsForNode(callee.json, 0)
+              val receiverAsts = astsForNode(callee.json)
               receiverAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
               val baseNode = createIdentifierNode(base.code, base).order(1).argumentIndex(1)
               scope.addVariableReference(base.code, baseNode)
@@ -155,15 +126,15 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
               val baseTmpNode = createIdentifierNode(tmpVarName, base)
               scope.addVariableReference(tmpVarName, baseTmpNode)
-              val baseAsts = astsForNode(base.json, 2)
+              val baseAsts = astsForNode(base.json)
               baseAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
               val code = s"(${codeOf(baseTmpNode)} = ${base.code})"
               val tmpAssignmentAst =
-                createAssignment(baseTmpNode, baseAsts.head.nodes.head, code, 1, base.lineNumber, base.columnNumber)
+                createAssignment(baseTmpNode, baseAsts.head.nodes.head, code, base.lineNumber, base.columnNumber)
               val member     = createBabelNodeInfo(callee.json("property"))
               val memberNode = createFieldIdentifierNode(member.code, member.lineNumber, member.columnNumber)
               val fieldAccessAst =
-                createFieldAccess(tmpAssignmentAst.nodes.head, memberNode, 0, callee.lineNumber, callee.columnNumber)
+                createFieldAccess(tmpAssignmentAst.nodes.head, memberNode, callee.lineNumber, callee.columnNumber)
               val thisTmpNode = createIdentifierNode(tmpVarName, callee)
               scope.addVariableReference(tmpVarName, thisTmpNode)
 
@@ -173,7 +144,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
               (baseAsts, Some(memberNode), Seq(fieldAccessAst), thisTmpNode)
           }
         case _ =>
-          val receiverAsts = astsForNode(callee.json, order)
+          val receiverAsts = astsForNode(callee.json)
           receiverAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
           val thisNode = createIdentifierNode("this", callee)
           scope.addVariableReference(thisNode.name, thisNode)
@@ -187,46 +158,44 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         functionPropertyNode
       )
     }
-    callNode
+    List(callNode)
   }
 
-  protected def astsForMemberExpression(memberExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
-    val baseAsts = astsForNode(memberExpr.json("object"), 1)
+  protected def astsForMemberExpression(memberExpr: BabelNodeInfo): List[Ast] = {
+    val baseAsts = astsForNode(memberExpr.json("object"))
     baseAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
     val memberNode =
       createFieldIdentifierNode(code(memberExpr.json("property")), memberExpr.lineNumber, memberExpr.columnNumber)
     val accessAst =
-      createFieldAccess(baseAsts.head.nodes.head, memberNode, order, memberExpr.lineNumber, memberExpr.columnNumber)
-    Seq(accessAst)
+      createFieldAccess(baseAsts.head.nodes.head, memberNode, memberExpr.lineNumber, memberExpr.columnNumber)
+    List(accessAst)
   }
 
-  protected def astsForIdentifier(ident: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForIdentifier(ident: BabelNodeInfo): List[Ast] = {
     val name      = ident.json("name").str
-    val identNode = createIdentifierNode(name, ident).order(order).argumentIndex(order)
+    val identNode = createIdentifierNode(name, ident)
     scope.addVariableReference(name, identNode)
-    Seq(Ast(identNode))
+    List(Ast(identNode))
   }
 
-  protected def astsForStringLiteral(stringLiteral: BabelNodeInfo, order: Int): Seq[Ast] =
-    Seq(
+  protected def astsForStringLiteral(stringLiteral: BabelNodeInfo): List[Ast] =
+    List(
       Ast(
         createLiteralNode(
           stringLiteral.code,
           Some(Defines.STRING.label),
-          order,
           stringLiteral.lineNumber,
           stringLiteral.columnNumber
         )
       )
     )
 
-  protected def astsForNumericLiteral(numericLiteral: BabelNodeInfo, order: Int): Seq[Ast] =
-    Seq(
+  protected def astsForNumericLiteral(numericLiteral: BabelNodeInfo): List[Ast] =
+    List(
       Ast(
         createLiteralNode(
           numericLiteral.code,
           Some(Defines.NUMBER.label),
-          order,
           numericLiteral.lineNumber,
           numericLiteral.columnNumber
         )
@@ -245,9 +214,9 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   protected def calcMethodNameAndFullName(func: BabelNodeInfo): (String, String) = {
     def calcMethodName(func: BabelNodeInfo): String = {
       val name = func match {
-        case _ if func.json("kind").str == "method" =>
+        case _ if hasKey(func.json, "kind") && func.json("kind").str == "method" =>
           func.json("key")("name").str
-        case _ if func.json("kind").str == "constructor" =>
+        case _ if hasKey(func.json, "kind") && func.json("kind").str == "constructor" =>
           "<constructor>"
         case _ if func.json("id").isNull =>
           "anonymous"
@@ -265,7 +234,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         nameAndFullName
       case None =>
         val intendedName   = calcMethodName(func)
-        val fullNamePrefix = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
+        val fullNamePrefix = parserResult.fullPath + ":" + computeScopePath(scope.getScopeHead) + ":"
         var name           = intendedName
         var fullName       = ""
 
@@ -289,10 +258,9 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
   private def createMethodNode(
     func: BabelNodeInfo,
-    order: Int,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): (Seq[Ast], NewMethod) = {
+  ): (List[Ast], NewMethod) = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None
@@ -300,17 +268,17 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
     val callAsts = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = createIdentifierNode(methodName, func)
-      val idLocal = createLocalNode(methodName, methodFullName, 0)
+      val idLocal = createLocalNode(methodName, methodFullName)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(methodName, idLocal, BlockScope)
       val code       = s"$methodName = ${func.code}"
-      val assignment = createAssignment(idNode, methodRefNode.get, code, order, func.lineNumber, func.columnNumber)
-      Seq(assignment)
+      val assignment = createAssignment(idNode, methodRefNode.get, code, func.lineNumber, func.columnNumber)
+      List(assignment)
     } else {
-      Seq.empty
+      List.empty
     }
 
-    val methodNode          = createMethodNode(methodName, methodFullName, func).order(order)
+    val methodNode          = createMethodNode(methodName, methodFullName, func)
     val virtualModifierNode = NewModifier().modifierType(ModifierTypes.VIRTUAL)
 
     methodAstParentStack.push(methodNode)
@@ -333,15 +301,22 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
       }
     scope.pushNewMethodScope(methodFullName, methodName, blockNode, capturingRefNode)
 
-    val thisNode = createParameterInNode("this", "this", 0, line = func.lineNumber, column = func.columnNumber)
+    val thisNode =
+      createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
 
-    val paramNodes = withOrder(func.json("params").arr.toSeq) { (p, o) =>
-      createBabelNodeInfo(p) match {
+    val paramNodes = withIndex(func.json("params").arr.toSeq) { (param, index) =>
+      createBabelNodeInfo(param) match {
         case rest @ BabelNodeInfo(BabelAst.RestElement) =>
-          createParameterInNode(rest.code.replace("...", ""), rest.code, o, rest.lineNumber, rest.columnNumber)
-            .isVariadic(true)
+          createParameterInNode(
+            rest.code.replace("...", ""),
+            rest.code,
+            index,
+            isVariadic = true,
+            rest.lineNumber,
+            rest.columnNumber
+          )
         case other =>
-          createParameterInNode(other.code, other.code, o, other.lineNumber, other.columnNumber)
+          createParameterInNode(other.code, other.code, index, isVariadic = false, other.lineNumber, other.columnNumber)
       }
     }
 
@@ -349,7 +324,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
     val bodyStmtAsts = createBlockStatementAsts(block("body"))
 
-    val methodReturnNode = createMethodReturnNode(func).order(2)
+    val methodReturnNode = createMethodReturnNode(func)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -361,28 +336,27 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         methodAstParentStack.head,
         methodName,
         methodFullName,
-        parserResult.filename
+        parserResult.fullPath
       )
 
     val mAst =
-      methodAst(methodNode, thisNode +: paramNodes, Ast(blockNode).withChildren(bodyStmtAsts), methodReturnNode)
+      methodAst(methodNode, thisNode +: paramNodes.toList, Ast(blockNode).withChildren(bodyStmtAsts), methodReturnNode)
         .withChild(Ast(virtualModifierNode))
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
 
-    (callAsts ++ methodRefNode.map(Ast(_)).toSeq, methodNode)
+    (callAsts ++ methodRefNode.map(Ast(_)), methodNode)
   }
 
   protected def astsForFunctionDeclaration(
     func: BabelNodeInfo,
-    order: Int,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): Seq[Ast] = createMethodNode(func, order, shouldCreateFunctionReference, shouldCreateAssignmentCall)._1
+  ): List[Ast] = createMethodNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall)._1
 
-  protected def astsForVariableDeclarator(declarator: Value, order: Int, scopeType: ScopeType): Seq[Ast] = {
+  protected def astsForVariableDeclarator(declarator: Value, scopeType: ScopeType): List[Ast] = {
     val id   = createBabelNodeInfo(declarator("id"))
     val init = Try(createBabelNodeInfo(declarator("init"))).toOption
 
@@ -393,54 +367,51 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
       case _ => Defines.ANY.label
     }
 
-    val localNode = createLocalNode(id.code, typeFullName, 0)
+    val localNode = createLocalNode(id.code, typeFullName)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(id.code, localNode, scopeType)
 
     init match {
       case Some(f @ BabelNodeInfo(BabelAst.FunctionDeclaration)) =>
-        val destAsts   = astsForNode(id.json, 1)
-        val sourceAsts = astsForFunctionDeclaration(f, 2, shouldCreateFunctionReference = true)
+        val destAsts   = astsForNode(id.json)
+        val sourceAsts = astsForFunctionDeclaration(f, shouldCreateFunctionReference = true)
         val assigmentCallAst =
           createAssignment(
             destAsts.head.nodes.head,
             sourceAsts.head.nodes.head,
             code(declarator),
-            order,
             line = line(declarator),
             column = column(declarator)
           )
-        Seq(assigmentCallAst) ++ destAsts ++ sourceAsts
+        List(assigmentCallAst) ++ destAsts ++ sourceAsts
       case Some(initExpr) =>
-        val destAsts   = astsForNode(id.json, 1)
-        val sourceAsts = astsForNode(initExpr.json, 2)
+        val destAsts   = astsForNode(id.json)
+        val sourceAsts = astsForNode(initExpr.json)
         val assigmentCallAst =
           createAssignment(
             destAsts.head.nodes.head,
             sourceAsts.head.nodes.head,
             code(declarator),
-            order,
             line = line(declarator),
             column = column(declarator)
           )
-        Seq(assigmentCallAst) ++ destAsts ++ sourceAsts
-      case None => Seq.empty
+        List(assigmentCallAst) ++ destAsts ++ sourceAsts
+      case None => List.empty
     }
   }
 
-  protected def astsForVariableDeclaration(declaration: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForVariableDeclaration(declaration: BabelNodeInfo): List[Ast] = {
     val scopeType = if (declaration.json("kind").str == "let") {
       BlockScope
     } else {
       MethodScope
     }
-
-    withOrder(declaration.json("declarations").arr.toSeq) { (d, o) =>
-      astsForVariableDeclarator(d, order + o - 1, scopeType)
-    }.flatten
+    declaration.json("declarations").arr.toList.flatMap { d =>
+      astsForVariableDeclarator(d, scopeType)
+    }
   }
 
-  protected def astsForAssignmentExpression(assignment: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForAssignmentExpression(assignment: BabelNodeInfo): List[Ast] = {
     val op = assignment.json("operator").str match {
       case "="    => Operators.assignment
       case "+="   => Operators.assignmentPlus
@@ -463,44 +434,35 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         Operators.assignment
     }
 
-    val lhsAsts = astsForNode(assignment.json("left"), 1)
-    val rhsAsts = astsForNode(assignment.json("right"), 2)
+    val lhsAsts = astsForNode(assignment.json("left"))
+    val rhsAsts = astsForNode(assignment.json("right"))
 
     val callNode =
       createCallNode(assignment.code, op, DispatchTypes.STATIC_DISPATCH, assignment.lineNumber, assignment.columnNumber)
-        .order(order)
 
-    Seq(
-      Ast(callNode)
-        .withChildren(lhsAsts)
-        .withChildren(rhsAsts)
-        .withArgEdges(callNode, lhsAsts)
-        .withArgEdges(callNode, rhsAsts)
-    )
+    List(callAst(callNode, lhsAsts ++ rhsAsts))
   }
 
-  protected def createBlockStatementAsts(json: Value): Seq[Ast] = {
-    val blockStmts = json.arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toSeq
-    withOrder(blockStmts) { (n, o) =>
-      n match {
-        case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-          astsForFunctionDeclaration(func, o, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-        case _ => astsForNode(n.json, o)
-      }
-    }.flatten
+  protected def createBlockStatementAsts(json: Value): List[Ast] = {
+    val blockStmts = json.arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toList
+    blockStmts.flatMap {
+      case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
+        astsForFunctionDeclaration(func, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+      case other => astsForNode(other.json)
+    }
   }
 
-  protected def astsForBlockStatement(block: BabelNodeInfo, order: Int): Seq[Ast] = {
-    val blockNode = createBlockNode(block.code, order, block.lineNumber, block.columnNumber)
+  protected def astsForBlockStatement(block: BabelNodeInfo): List[Ast] = {
+    val blockNode = createBlockNode(block.code, block.lineNumber, block.columnNumber)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
     localAstParentStack.pop()
     scope.popScope()
-    Seq(Ast(blockNode).withChildren(blockStatementAsts))
+    List(Ast(blockNode).withChildren(blockStatementAsts))
   }
 
-  protected def astsForBinaryExpression(binExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForBinaryExpression(binExpr: BabelNodeInfo): List[Ast] = {
     val op = binExpr.json("operator").str match {
       case "+"          => Operators.addition
       case "-"          => Operators.subtraction
@@ -529,23 +491,15 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         Operators.assignment
     }
 
-    val lhsAsts = astsForNode(binExpr.json("left"), 1)
-    val rhsAsts = astsForNode(binExpr.json("right"), 2)
+    val lhsAsts = astsForNode(binExpr.json("left"))
+    val rhsAsts = astsForNode(binExpr.json("right"))
 
     val callNode =
       createCallNode(binExpr.code, op, DispatchTypes.STATIC_DISPATCH, binExpr.lineNumber, binExpr.columnNumber)
-        .order(order)
-
-    Seq(
-      Ast(callNode)
-        .withChildren(lhsAsts)
-        .withChildren(rhsAsts)
-        .withArgEdges(callNode, lhsAsts)
-        .withArgEdges(callNode, rhsAsts)
-    )
+    List(callAst(callNode, lhsAsts ++ rhsAsts))
   }
 
-  protected def astsForUpdateExpression(updateExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForUpdateExpression(updateExpr: BabelNodeInfo): List[Ast] = {
     val op = updateExpr.json("operator").str match {
       case "++" => Operators.preIncrement
       case "--" => Operators.preDecrement
@@ -554,20 +508,14 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         Operators.assignment
     }
 
-    val argumentAsts = astsForNode(updateExpr.json("argument"), 1)
+    val argumentAsts = astsForNode(updateExpr.json("argument"))
 
     val callNode =
       createCallNode(updateExpr.code, op, DispatchTypes.STATIC_DISPATCH, updateExpr.lineNumber, updateExpr.columnNumber)
-        .order(order)
-
-    Seq(
-      Ast(callNode)
-        .withChildren(argumentAsts)
-        .withArgEdges(callNode, argumentAsts)
-    )
+    List(callAst(callNode, argumentAsts))
   }
 
-  protected def astsForUnaryExpression(unaryExpr: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForUnaryExpression(unaryExpr: BabelNodeInfo): List[Ast] = {
     val op = unaryExpr.json("operator").str match {
       case "void"   => "<operator>.void"
       case "throw"  => "<operator>.throw"
@@ -582,35 +530,29 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         Operators.assignment
     }
 
-    val argumentAsts = astsForNode(unaryExpr.json("argument"), 1)
+    val argumentAsts = astsForNode(unaryExpr.json("argument"))
 
     val callNode =
       createCallNode(unaryExpr.code, op, DispatchTypes.STATIC_DISPATCH, unaryExpr.lineNumber, unaryExpr.columnNumber)
-        .order(order)
-
-    Seq(
-      Ast(callNode)
-        .withChildren(argumentAsts)
-        .withArgEdges(callNode, argumentAsts)
-    )
+    List(callAst(callNode, argumentAsts))
   }
 
-  protected def astsForReturnStatement(ret: BabelNodeInfo, order: Int): Seq[Ast] = {
-    val retNode = createReturnNode(ret).order(order).argumentIndex(order)
+  protected def astsForReturnStatement(ret: BabelNodeInfo): List[Ast] = {
+    val retNode = createReturnNode(ret)
     safeObj(ret.json, "argument").map { argument =>
-      val argAsts = astsForNode(Obj(argument), 1)
+      val argAsts = astsForNode(Obj(argument))
       Ast(retNode).withChildren(argAsts).withArgEdges(retNode, argAsts)
-    }.toSeq
+    }.toList
   }
 
-  protected def astsForSequenceExpression(seq: BabelNodeInfo, order: Int): Seq[Ast] = {
-    val blockNode = createBlockNode(seq.code, order, seq.lineNumber, seq.columnNumber)
+  protected def astsForSequenceExpression(seq: BabelNodeInfo): List[Ast] = {
+    val blockNode = createBlockNode(seq.code, seq.lineNumber, seq.columnNumber)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
     localAstParentStack.pop()
     scope.popScope()
-    Seq(Ast(blockNode).withChildren(sequenceExpressionAsts))
+    List(Ast(blockNode).withChildren(sequenceExpressionAsts))
   }
 
   protected def calcTypeNameAndFullName(classNode: BabelNodeInfo): (String, String) = {
@@ -629,7 +571,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         nameAndFullName
       case None =>
         val name             = calcTypeName(classNode)
-        val fullNamePrefix   = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
+        val fullNamePrefix   = parserResult.fullPath + ":" + computeScopePath(scope.getScopeHead) + ":"
         val intendedFullName = fullNamePrefix + name
         val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
 
@@ -661,8 +603,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
     val maybeClassConstructor = classConstructor(classExpr)
     val methodNode = maybeClassConstructor match {
-      case Some(classConstructor) =>
-        createMethodNode(createBabelNodeInfo(classConstructor), 0)._2
+      case Some(classConstructor) => createMethodNode(createBabelNodeInfo(classConstructor))._2
       case _ =>
         val code = "constructor() {}"
         val fakeConstructorCode = """{
@@ -679,16 +620,15 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
             |   "body": []
             | }
             |}""".stripMargin
-        val methodNode = createMethodNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)), 0)._2
+        val methodNode = createMethodNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))._2
         methodNode.code(code)
     }
     val name     = methodNode.name.replace("<", s"$typeName<")
     val fullName = methodNode.fullName.replace("<", s"$typeName<")
     methodNode.name(name).fullName(fullName)
-
   }
 
-  protected def astsForClass(clazz: BabelNodeInfo, order: Int): Seq[Ast] = {
+  protected def astsForClass(clazz: BabelNodeInfo): List[Ast] = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
     val metaTypeName             = s"$typeName<meta>"
     val metaTypeFullName         = s"$typeFullName<meta>"
@@ -711,11 +651,10 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     val typeDeclNode = createTypeDeclNode(
       typeName,
       typeFullName,
-      parserResult.filename,
+      parserResult.fullPath,
       s"class $typeName",
       astParentType,
       astParentFullName,
-      order = order,
       inherits = superClass ++ implements ++ mixins
     )
 
@@ -725,11 +664,10 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     val metaTypeDeclNode = createTypeDeclNode(
       metaTypeName,
       metaTypeFullName,
-      parserResult.filename,
+      parserResult.fullPath,
       s"class $metaTypeName",
       astParentType,
-      astParentFullName,
-      order = order
+      astParentFullName
     )
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
@@ -751,10 +689,10 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
     val classBodyElements = classMembers(clazz, withConstructor = false)
 
-    withOrder(classBodyElements) { (classElement, o) =>
+    classBodyElements.foreach { classElement =>
       val memberId = createBabelNodeInfo(classElement) match {
         case m @ BabelNodeInfo(BabelAst.ClassMethod) =>
-          val function                = createMethodNode(m, o)._2
+          val function                = createMethodNode(m)._2
           val fullName                = function.fullName.replace(s":${function.name}", s":$typeName:${function.name}")
           val classMethod             = function.fullName(fullName)
           val functionFullName        = classMethod.fullName
@@ -776,48 +714,45 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     dynamicInstanceTypeStack.pop()
     metaTypeRefIdStack.pop()
 
-    Seq(Ast(metaTypeRefNode))
+    List(Ast(metaTypeRefNode))
   }
 
-  protected def astsForNode(json: Value, order: Int): Seq[Ast] = createBabelNodeInfo(json) match {
-    case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"), order)
+  protected def astsForNode(json: Value): List[Ast] = createBabelNodeInfo(json) match {
+    case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"))
     case program @ BabelNodeInfo(BabelAst.Program)                 => astsForProgram(program)
-    case exprStmt @ BabelNodeInfo(BabelAst.ExpressionStatement)    => astsForExpressionStatement(exprStmt, order)
-    case callExpr @ BabelNodeInfo(BabelAst.CallExpression)         => astsForCallExpression(callExpr, order)
-    case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)     => astsForMemberExpression(memberExpr, order)
-    case ident @ BabelNodeInfo(BabelAst.Identifier)                => astsForIdentifier(ident, order)
-    case stringLiteral @ BabelNodeInfo(BabelAst.StringLiteral)     => astsForStringLiteral(stringLiteral, order)
-    case numLiteral @ BabelNodeInfo(BabelAst.NumericLiteral)       => astsForNumericLiteral(numLiteral, order)
-    case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)        => astsForFunctionDeclaration(func, order)
-    case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)        => astsForVariableDeclaration(decl, order)
-    case assignment @ BabelNodeInfo(BabelAst.AssignmentExpression) => astsForAssignmentExpression(assignment, order)
-    case binExpr @ BabelNodeInfo(BabelAst.BinaryExpression)        => astsForBinaryExpression(binExpr, order)
-    case updateExpr @ BabelNodeInfo(BabelAst.UpdateExpression)     => astsForUpdateExpression(updateExpr, order)
-    case unaryExpr @ BabelNodeInfo(BabelAst.UnaryExpression)       => astsForUnaryExpression(unaryExpr, order)
-    case block @ BabelNodeInfo(BabelAst.BlockStatement)            => astsForBlockStatement(block, order)
-    case ret @ BabelNodeInfo(BabelAst.ReturnStatement)             => astsForReturnStatement(ret, order)
-    case seq @ BabelNodeInfo(BabelAst.SequenceExpression)          => astsForSequenceExpression(seq, order)
-    case classExpr @ BabelNodeInfo(BabelAst.ClassExpression)       => astsForClass(classExpr, order)
-    case classDecl @ BabelNodeInfo(BabelAst.ClassDeclaration)      => astsForClass(classDecl, order)
-    case other                                                     => Seq(notHandledYet(other, order))
+    case exprStmt @ BabelNodeInfo(BabelAst.ExpressionStatement)    => astsForExpressionStatement(exprStmt)
+    case callExpr @ BabelNodeInfo(BabelAst.CallExpression)         => astsForCallExpression(callExpr)
+    case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)     => astsForMemberExpression(memberExpr)
+    case ident @ BabelNodeInfo(BabelAst.Identifier)                => astsForIdentifier(ident)
+    case stringLiteral @ BabelNodeInfo(BabelAst.StringLiteral)     => astsForStringLiteral(stringLiteral)
+    case numLiteral @ BabelNodeInfo(BabelAst.NumericLiteral)       => astsForNumericLiteral(numLiteral)
+    case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)        => astsForFunctionDeclaration(func)
+    case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)        => astsForVariableDeclaration(decl)
+    case assignment @ BabelNodeInfo(BabelAst.AssignmentExpression) => astsForAssignmentExpression(assignment)
+    case binExpr @ BabelNodeInfo(BabelAst.BinaryExpression)        => astsForBinaryExpression(binExpr)
+    case updateExpr @ BabelNodeInfo(BabelAst.UpdateExpression)     => astsForUpdateExpression(updateExpr)
+    case unaryExpr @ BabelNodeInfo(BabelAst.UnaryExpression)       => astsForUnaryExpression(unaryExpr)
+    case block @ BabelNodeInfo(BabelAst.BlockStatement)            => astsForBlockStatement(block)
+    case ret @ BabelNodeInfo(BabelAst.ReturnStatement)             => astsForReturnStatement(ret)
+    case seq @ BabelNodeInfo(BabelAst.SequenceExpression)          => astsForSequenceExpression(seq)
+    case classExpr @ BabelNodeInfo(BabelAst.ClassExpression)       => astsForClass(classExpr)
+    case classDecl @ BabelNodeInfo(BabelAst.ClassDeclaration)      => astsForClass(classDecl)
+    case other                                                     => List(notHandledYet(other))
   }
 
-  protected def astsForProgram(program: BabelNodeInfo): Seq[Ast] =
-    createBlockStatementAsts(program.json("body"))
+  protected def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
 
-  protected def astsForNodes(jsons: Seq[Value]): Seq[Ast] = withOrder(jsons) { (n, o) =>
-    astsForNode(n, o)
-  }.flatten
+  protected def astsForNodes(jsons: List[Value]): List[Ast] = jsons.flatMap(astsForNode)
 
   protected def createProgramMethod(): Ast = {
-    val absolutePath    = parserResult.filename
+    val absolutePath    = parserResult.fullPath
     val ast             = parserResult.json("ast")
     val lineNumber      = line(ast)
     val columnNumber    = column(ast)
     val lineNumberEnd   = lineEnd(ast)
     val columnNumberEnd = columnEnd(ast)
     val name            = ":program"
-    val fullName        = parserResult.filename + ":" + name
+    val fullName        = parserResult.fullPath + ":" + name
 
     val programMethod =
       NewMethod()
@@ -834,23 +769,19 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
 
     methodAstParentStack.push(programMethod)
 
-    val blockNode = NewBlock()
-      .order(1)
-      .argumentIndex(1)
-      .typeFullName("ANY")
+    val blockNode = NewBlock().typeFullName("ANY")
 
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    val thisParam = createParameterInNode("this", "this", 0, lineNumber, columnNumber)
+    val thisParam = createParameterInNode("this", "this", 0, isVariadic = false, lineNumber, columnNumber)
 
-    val methodChildren = astsForNode(ast, 1)
+    val methodChildren = astsForNode(ast)
 
     val methodReturn = NewMethodReturn()
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName(Defines.ANY.label)
-      .order(2)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -860,20 +791,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
       createFunctionTypeAndTypeDecl(programMethod, methodAstParentStack.head, name, fullName, absolutePath)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
 
-    methodAst(programMethod, Seq(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
-  }
-
-  private def astForFileGlobal(): Ast = {
-    val absolutePath = parserResult.filename
-    val name         = NamespaceTraversal.globalNamespaceName
-    val fullName     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absolutePath))
-    val namespaceBlock = NewNamespaceBlock()
-      .name(name)
-      .fullName(fullName)
-      .filename(absolutePath)
-      .order(1)
-    methodAstParentStack.push(namespaceBlock)
-    Ast(namespaceBlock).withChild(createProgramMethod())
+    methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
   }
 
   protected def createVariableReferenceLinks(): Unit = {
@@ -907,7 +825,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
                     case None =>
                       val methodScopeNodeId = methodScope.scopeNode
                       val localId =
-                        createLocalNode(origin.variableName, Defines.ANY.label, 0, Some(closureBindingIdProperty))
+                        createLocalNode(origin.variableName, Defines.ANY.label, Some(closureBindingIdProperty))
                       diffGraph.addEdge(methodScopeNodeId, localId, EdgeTypes.AST)
                       val closureBindingId = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
                       methodScope.capturingRefId.foreach(ref =>
@@ -940,7 +858,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = createLocalNode(variableName, Defines.ANY.label, 0)
+    val local = createLocalNode(variableName, Defines.ANY.label)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }

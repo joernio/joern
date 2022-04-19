@@ -13,13 +13,10 @@ trait AstNodeBuilder {
 
   this: AstCreator =>
 
-  protected def newUnknown(node: BabelNodeInfo, order: Int): NewUnknown =
+  protected def newUnknown(node: BabelNodeInfo): NewUnknown =
     NewUnknown()
       .parserTypeName(node.node.toString)
       .code(node.code)
-      .order(order)
-      .argumentIndex(order)
-      .argumentIndex(order)
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
 
@@ -37,7 +34,6 @@ trait AstNodeBuilder {
     code: String,
     astParentType: String = "",
     astParentFullName: String = "",
-    order: Int = -1,
     inherits: Seq[String] = Seq.empty,
     alias: Option[String] = None,
     line: Option[Integer] = None,
@@ -55,7 +51,6 @@ trait AstNodeBuilder {
       .aliasTypeFullName(alias)
       .lineNumber(line)
       .columnNumber(column)
-      .order(order)
 
   protected def createReturnNode(ret: BabelNodeInfo): NewReturn =
     NewReturn()
@@ -78,7 +73,8 @@ trait AstNodeBuilder {
   protected def createParameterInNode(
     name: String,
     code: String,
-    order: Int,
+    index: Int,
+    isVariadic: Boolean,
     line: Option[Integer] = None,
     column: Option[Integer] = None,
     tpe: Option[String] = None
@@ -86,10 +82,11 @@ trait AstNodeBuilder {
     val param = NewMethodParameterIn()
       .name(name)
       .code(code)
+      .index(index)
+      .isVariadic(isVariadic)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
-      .order(order)
       .typeFullName(tpe.getOrElse(Defines.ANY.label))
     scope.addVariable(name, param, MethodScope)
     param
@@ -121,7 +118,7 @@ trait AstNodeBuilder {
     val code      = func.code
     NewMethod()
       .name(methodName)
-      .filename(parserResult.filename)
+      .filename(parserResult.fullPath)
       .code(code)
       .fullName(methodFullName)
       .isExternal(false)
@@ -139,22 +136,17 @@ trait AstNodeBuilder {
   protected def createFieldAccess(
     baseId: NewNode,
     partId: NewNode,
-    order: Int,
     line: Option[Integer] = None,
     column: Option[Integer] = None
   ): Ast = {
-    val call = createCallNode(
+    val callNode = createCallNode(
       codeOf(baseId) + "." + codeOf(partId),
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       line,
       column
-    ).order(order).argumentIndex(order)
-    addOrder(baseId, 1)
-    addArgumentIndex(baseId, 1)
-    addOrder(partId, 2)
-    addArgumentIndex(partId, 2)
-    Ast(call).withChild(Ast(baseId)).withChild(Ast(partId)).withArgEdge(call, baseId).withArgEdge(call, partId)
+    )
+    callAst(callNode, List(Ast(baseId), Ast(partId)))
   }
 
   protected def createCallNode(
@@ -185,14 +177,11 @@ trait AstNodeBuilder {
   protected def createLiteralNode(
     code: String,
     dynamicTypeOption: Option[String],
-    order: Int,
     line: Option[Integer] = None,
     column: Option[Integer] = None
   ): NewLiteral =
     NewLiteral()
       .code(code)
-      .order(order)
-      .argumentIndex(order)
       .typeFullName(Defines.ANY.label)
       .lineNumber(line)
       .columnNumber(column)
@@ -202,18 +191,11 @@ trait AstNodeBuilder {
     destId: NewNode,
     sourceId: NewNode,
     code: String,
-    order: Int,
     line: Option[Integer] = None,
     column: Option[Integer] = None
   ): Ast = {
-    val call = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
-      .order(order)
-      .argumentIndex(order)
-    addOrder(destId, 1)
-    addArgumentIndex(destId, 1)
-    addOrder(sourceId, 2)
-    addArgumentIndex(sourceId, 2)
-    Ast(call).withChild(Ast(destId)).withChild(Ast(sourceId)).withArgEdge(call, destId).withArgEdge(call, sourceId)
+    val callNode = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
+    callAst(callNode, List(Ast(destId), Ast(sourceId)))
   }
 
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
@@ -248,14 +230,11 @@ trait AstNodeBuilder {
     code: String,
     methodName: String,
     fullName: String,
-    order: Int,
     line: Option[Integer] = None,
     column: Option[Integer] = None
   ): NewCall = NewCall()
     .code(code)
     .name(methodName)
-    .order(order)
-    .argumentIndex(order)
     .methodFullName(fullName)
     .dispatchType(DispatchTypes.STATIC_DISPATCH)
     .signature("")
@@ -263,13 +242,8 @@ trait AstNodeBuilder {
     .columnNumber(column)
     .typeFullName(Defines.ANY.label)
 
-  protected def createLocalNode(
-    name: String,
-    typeFullName: String,
-    order: Int,
-    closureBindingId: Option[String] = None
-  ): NewLocal =
-    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(order)
+  protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
+    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
 
   protected def createClosureBindingNode(closureBindingId: String, closureOriginalName: String): NewClosureBinding =
     NewClosureBinding()
@@ -282,17 +256,12 @@ trait AstNodeBuilder {
 
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
-  protected def createBlockNode(
-    code: String,
-    order: Int,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewBlock = NewBlock()
-    .typeFullName(Defines.ANY.label)
-    .code(code)
-    .order(order)
-    .lineNumber(line)
-    .columnNumber(column)
+  protected def createBlockNode(code: String, line: Option[Integer] = None, column: Option[Integer] = None): NewBlock =
+    NewBlock()
+      .typeFullName(Defines.ANY.label)
+      .code(code)
+      .lineNumber(line)
+      .columnNumber(column)
 
   protected def createFunctionTypeAndTypeDecl(
     methodNode: NewMethod,
@@ -313,8 +282,7 @@ trait AstNodeBuilder {
         filename,
         methodName,
         astParentType = astParentType,
-        astParentFullName = astParentFullName,
-        order = 0
+        astParentFullName = astParentFullName
       ).inheritsFromTypeFullName(List(Defines.ANY.label))
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)

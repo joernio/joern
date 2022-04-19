@@ -53,7 +53,7 @@ class Scope {
     pendingReferences prepend PendingReference(variableName, referenceNode, stack)
   }
 
-  def resolve[A](unresolvedHandler: (NewNode, String) => (NewNode, ScopeType)): Iterator[ResolvedReference] = {
+  def resolve(unresolvedHandler: (NewNode, String) => (NewNode, ScopeType)): Iterator[ResolvedReference] = {
     pendingReferences.iterator.map { pendingReference =>
       val resolvedReferenceOption = pendingReference.tryResolve()
 

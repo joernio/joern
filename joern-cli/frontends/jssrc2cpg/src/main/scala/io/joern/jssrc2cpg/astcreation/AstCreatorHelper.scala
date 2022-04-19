@@ -39,16 +39,6 @@ trait AstCreatorHelper {
 
   this: AstCreator =>
 
-  protected def withOrder[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
-    nodes.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }
-
-  protected def withOrder[T, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
-    nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }
-
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
     val c     = shortenCode(code(json))
     val ln    = line(json)
@@ -59,19 +49,18 @@ trait AstCreatorHelper {
     BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 
-  private def notHandledText(node: BabelNodeInfo, order: Int): String =
+  private def notHandledText(node: BabelNodeInfo): String =
     s"""Node type '${node.node.toString}' not handled yet!
        |  Code: '${node.code}'
-       |  File: '${parserResult.filename}'
+       |  File: '${parserResult.fullPath}'
        |  Line: ${node.lineNumber.getOrElse(-1)}
        |  Column: ${node.columnNumber.getOrElse(-1)}
-       |  Order: $order
        |  """.stripMargin
 
-  protected def notHandledYet(node: BabelNodeInfo, order: Int): Ast = {
-    val text = notHandledText(node, order)
+  protected def notHandledYet(node: BabelNodeInfo): Ast = {
+    val text = notHandledText(node)
     logger.info(text)
-    Ast(newUnknown(node, order))
+    Ast(newUnknown(node))
   }
 
   protected def registerType(typeName: String): Unit =
@@ -99,44 +88,6 @@ trait AstCreatorHelper {
     currentVariableName
   }
 
-  protected def addOrder(node: NewNode, order: Int): Unit = node match {
-    case n: NewTypeDecl          => n.order = order
-    case n: NewBlock             => n.order = order
-    case n: NewCall              => n.order = order
-    case n: NewFieldIdentifier   => n.order = order
-    case n: NewFile              => n.order = order
-    case n: NewIdentifier        => n.order = order
-    case n: NewLocal             => n.order = order
-    case n: NewMethod            => n.order = order
-    case n: NewMethodParameterIn => n.order = order
-    case n: NewMethodRef         => n.order = order
-    case n: NewNamespaceBlock    => n.order = order
-    case n: NewTypeRef           => n.order = order
-    case n: NewUnknown           => n.order = order
-    case n: NewModifier          => n.order = order
-    case n: NewMethodReturn      => n.order = order
-    case n: NewMember            => n.order = order
-    case n: NewControlStructure  => n.order = order
-    case n: NewLiteral           => n.order = order
-    case n: NewReturn            => n.order = order
-    case n: NewJumpTarget        => n.order = order
-    case n                       => logger.warn(s"Unable to set ORDER for node: '$n'")
-  }
-
-  protected def addArgumentIndex(node: NewNode, argIndex: Int): Unit = node match {
-    case n: NewBlock            => n.argumentIndex = argIndex
-    case n: NewCall             => n.argumentIndex = argIndex
-    case n: NewFieldIdentifier  => n.argumentIndex = argIndex
-    case n: NewIdentifier       => n.argumentIndex = argIndex
-    case n: NewMethodRef        => n.argumentIndex = argIndex
-    case n: NewTypeRef          => n.argumentIndex = argIndex
-    case n: NewUnknown          => n.argumentIndex = argIndex
-    case n: NewControlStructure => n.argumentIndex = argIndex
-    case n: NewLiteral          => n.argumentIndex = argIndex
-    case n: NewReturn           => n.argumentIndex = argIndex
-    case n                      => logger.warn(s"Unable to set ARGUMENT_INDEX for node: '$n'")
-  }
-
   protected def code(node: Value): String = {
     val start = Try(node("start").num.toInt).getOrElse(0)
     val end   = Try(node("end").num.toInt).getOrElse(0)
@@ -149,6 +100,8 @@ trait AstCreatorHelper {
 
   protected def shortenCode(code: String, length: Int = MAX_CODE_LENGTH): String =
     StringUtils.abbreviate(code, math.max(MIN_CODE_LENGTH, length))
+
+  protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
 
   protected def safeObj(node: Value, key: String): Option[mutable.LinkedHashMap[String, Value]] = Try(
     node(key).obj

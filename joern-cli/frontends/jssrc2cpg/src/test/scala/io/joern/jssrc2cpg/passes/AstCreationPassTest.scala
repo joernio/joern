@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
+import io.joern.x2cpg.layers.Base
 import io.joern.x2cpg.testfixtures.CodeToCpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{
@@ -15,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import overflowdb.Node
 import overflowdb.traversal.Traversal
 
@@ -379,33 +381,33 @@ class AstCreationPassTest extends AbstractPassTest {
     }
 
     "have correct file name for empty file" in AstFixture("function method(x) {}") { cpg =>
-      def files = cpg.file
-      files.checkNodeCount(1)
-      files.checkProperty(PropertyNames.NAME, "code.js")
+      val List(file, tps) = cpg.file.toList
+      file.name should endWith("code.js")
+      tps.name shouldBe "builtintypes"
     }
 
     "have correct name space block for empty file" in AstFixture("") { cpg =>
-      def files = cpg.file
-      files.checkNodeCount(1)
-      files.checkProperty(PropertyNames.NAME, "code.js")
+      val List(file, tps) = cpg.file.toList
+      file.name should endWith("code.js")
+      tps.name shouldBe "builtintypes"
 
-      def namespaceBlock = files.expandAst(NodeTypes.NAMESPACE_BLOCK)
-      namespaceBlock.checkNodeCount(1)
-      namespaceBlock.checkProperty(PropertyNames.NAME, Defines.GLOBAL_NAMESPACE)
-      namespaceBlock.checkProperty(PropertyNames.FULL_NAME, "code.js:" + Defines.GLOBAL_NAMESPACE)
-      namespaceBlock.checkProperty(PropertyNames.ORDER, 1)
+      val List(ns, _) = cpg.namespaceBlock.toList
+      ns.name shouldBe Defines.GLOBAL_NAMESPACE
+      ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
+      ns.order shouldBe 1
+      Traversal(ns).expand(EdgeTypes.SOURCE_FILE).head shouldBe file
     }
 
     "have :program method correctly attached to files namespace block" in AstFixture("") { cpg =>
-      def files = cpg.file
-      files.checkNodeCount(1)
+      val List(file, tps) = cpg.file.toList
+      file.name should endWith("code.js")
+      tps.name shouldBe "builtintypes"
 
-      def namespaceBlock = files.expandAst(NodeTypes.NAMESPACE_BLOCK)
-      namespaceBlock.checkNodeCount(1)
-
-      def method = namespaceBlock.expandAst(NodeTypes.METHOD)
-      method.checkNodeCount(1)
-      method.checkProperty(PropertyNames.NAME, ":program")
+      val List(ns, _) = cpg.namespaceBlock.toList
+      ns.name shouldBe Defines.GLOBAL_NAMESPACE
+      ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
+      ns.order shouldBe 1
+      ns.method.head.name shouldBe ":program"
     }
 
     "have correct structure for empty method nested in top level method" in AstFixture("function method(x) {}") { cpg =>
@@ -511,17 +513,18 @@ class AstCreationPassTest extends AbstractPassTest {
       def receiver = fooCall.expandReceiver()
       receiver.checkNodeCount(1)
       receiver.checkProperty(PropertyNames.NAME, "foo")
-      receiver.checkProperty(PropertyNames.ORDER, 0)
+      receiver.checkProperty(PropertyNames.ORDER, 1)
+      receiver.checkProperty(PropertyNames.ARGUMENT_INDEX, 0)
 
       def argumentThis = fooCall.expandAst().filter(PropertyNames.NAME, "this")
       argumentThis.checkNodeCount(1)
-      argumentThis.checkProperty(PropertyNames.ORDER, 1)
-      argumentThis.checkProperty(PropertyNames.ARGUMENT_INDEX, 0)
+      argumentThis.checkProperty(PropertyNames.ORDER, 2)
+      argumentThis.checkProperty(PropertyNames.ARGUMENT_INDEX, 1)
 
       def argument1 = fooCall.expandAst().filter(PropertyNames.NAME, "x")
       argument1.checkNodeCount(1)
-      argument1.checkProperty(PropertyNames.ORDER, 2)
-      argument1.checkProperty(PropertyNames.ARGUMENT_INDEX, 1)
+      argument1.checkProperty(PropertyNames.ORDER, 3)
+      argument1.checkProperty(PropertyNames.ARGUMENT_INDEX, 2)
     }
 
     "be correct for chained calls" in AstFixture("x.foo(y).bar(z)") { cpg =>
@@ -542,12 +545,13 @@ class AstCreationPassTest extends AbstractPassTest {
       receiver.head shouldBe receiverViaAst.head
       receiver.checkProperty(PropertyNames.CODE, "(_tmp_0 = x.foo(y)).bar")
       receiver.checkProperty(PropertyNames.NAME, Operators.fieldAccess)
-      receiver.checkProperty(PropertyNames.ORDER, 0)
+      receiver.checkProperty(PropertyNames.ORDER, 1)
+      receiver.checkProperty(PropertyNames.ARGUMENT_INDEX, 0)
 
       def barIdentifier = receiver.expandAst(NodeTypes.FIELD_IDENTIFIER)
       barIdentifier.checkNodeCount(1)
       barIdentifier.checkProperty(PropertyNames.CANONICAL_NAME, "bar")
-      barIdentifier.checkProperty(PropertyNames.ORDER, 2)
+      barIdentifier.checkProperty(PropertyNames.ARGUMENT_INDEX, 2)
 
       def tmpAssignment = receiver.expandAst(NodeTypes.CALL)
       tmpAssignment.checkNodeCount(1)
@@ -558,25 +562,25 @@ class AstCreationPassTest extends AbstractPassTest {
       def tmpIdentifier = tmpAssignment.expandAst(NodeTypes.IDENTIFIER)
       tmpIdentifier.checkNodeCount(1)
       tmpIdentifier.checkProperty(PropertyNames.NAME, "_tmp_0")
-      tmpIdentifier.checkProperty(PropertyNames.ORDER, 1)
+      tmpIdentifier.checkProperty(PropertyNames.ARGUMENT_INDEX, 1)
 
       def barBaseTree = tmpAssignment.expandAst(NodeTypes.CALL)
       barBaseTree.checkNodeCount(1)
       barBaseTree.checkProperty(PropertyNames.CODE, "x.foo(y)")
       barBaseTree.checkProperty(PropertyNames.NAME, "")
-      barBaseTree.checkProperty(PropertyNames.ORDER, 2)
+      barBaseTree.checkProperty(PropertyNames.ARGUMENT_INDEX, 2)
 
       // barBaseTree constructs is tested for in another test.
 
-      def thisArg = barCall.expandAst(NodeTypes.IDENTIFIER).filter(PropertyNames.ARGUMENT_INDEX, 0)
+      def thisArg = barCall.expandAst(NodeTypes.IDENTIFIER).filter(PropertyNames.ARGUMENT_INDEX, 1)
       thisArg.checkNodeCount(1)
       thisArg.checkProperty(PropertyNames.NAME, "_tmp_0")
-      thisArg.checkProperty(PropertyNames.ORDER, 1)
+      thisArg.checkProperty(PropertyNames.ORDER, 2)
 
-      def zArg = barCall.expandAst(NodeTypes.IDENTIFIER).filter(PropertyNames.ARGUMENT_INDEX, 1)
+      def zArg = barCall.expandAst(NodeTypes.IDENTIFIER).filter(PropertyNames.ARGUMENT_INDEX, 2)
       zArg.checkNodeCount(1)
       zArg.checkProperty(PropertyNames.NAME, "z")
-      zArg.checkProperty(PropertyNames.ORDER, 2)
+      zArg.checkProperty(PropertyNames.ORDER, 3)
     }
 
     "be correct for call on object" in AstFixture("""
@@ -648,20 +652,18 @@ class AstCreationPassTest extends AbstractPassTest {
       def method = cpg.method.nameExact(":program")
       method.checkNodeCount(1)
 
-      def block = method.expandAst(NodeTypes.BLOCK)
+      def block = method.block
       block.checkNodeCount(1)
 
-      def localFoo = block.expandAst(NodeTypes.LOCAL)
-      localFoo.checkNodeCount(1)
-
-      localFoo.checkProperty(PropertyNames.NAME, "method")
-      localFoo.checkProperty(PropertyNames.TYPE_FULL_NAME, "code.js::program:method")
+      val localFoo = block.local.head
+      localFoo.name shouldBe "method"
+      localFoo.typeFullName should endWith("code.js::program:method")
     }
 
     "have corresponding type decl with correct bindings for function" in AstFixture("function method(x) {}") { cpg =>
       def typeDecl = cpg.typeDecl.nameExact("method")
       typeDecl.checkNodeCount(1)
-      typeDecl.checkProperty(PropertyNames.FULL_NAME, "code.js::program:method")
+      typeDecl.fullName.head should endWith("code.js::program:method")
 
       def binding = typeDecl.expand(EdgeTypes.BINDS, NodeTypes.BINDING)
       binding.checkNodeCount(1)
@@ -686,14 +688,14 @@ class AstCreationPassTest extends AbstractPassTest {
 
       method
         .expandAst(NodeTypes.METHOD_PARAMETER_IN)
-        .filter(PropertyNames.ORDER, 0)
+        .filter(PropertyNames.INDEX, 0)
         .checkNodeCount(1)
         .checkProperty(PropertyNames.NAME, "this")
         .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
 
       method
         .expandAst(NodeTypes.METHOD_PARAMETER_IN)
-        .filter(PropertyNames.ORDER, 1)
+        .filter(PropertyNames.INDEX, 1)
         .checkNodeCount(1)
         .checkProperty(PropertyNames.NAME, "x")
         .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
@@ -713,21 +715,21 @@ class AstCreationPassTest extends AbstractPassTest {
 
         method
           .expandAst(NodeTypes.METHOD_PARAMETER_IN)
-          .filter(PropertyNames.ORDER, 0)
+          .filter(PropertyNames.INDEX, 0)
           .checkNodeCount(1)
           .checkProperty(PropertyNames.NAME, "this")
           .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
 
         method
           .expandAst(NodeTypes.METHOD_PARAMETER_IN)
-          .filter(PropertyNames.ORDER, 1)
+          .filter(PropertyNames.INDEX, 1)
           .checkNodeCount(1)
           .checkProperty(PropertyNames.NAME, "x")
           .checkProperty(PropertyNames.TYPE_FULL_NAME, "ANY")
 
         method
           .expandAst(NodeTypes.METHOD_PARAMETER_IN)
-          .filter(PropertyNames.ORDER, 2)
+          .filter(PropertyNames.INDEX, 2)
           .checkNodeCount(1)
           .checkProperty(PropertyNames.NAME, "args")
           .checkProperty(PropertyNames.CODE, "...args")
@@ -746,12 +748,12 @@ class AstCreationPassTest extends AbstractPassTest {
       methodReturn.checkNodeCount(1)
 
       def parameterThis =
-        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.ORDER, 0)
+        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.INDEX, 0)
       parameterThis.checkNodeCount(1)
       parameterThis.checkProperty(PropertyNames.NAME, "this")
 
       def parameterX =
-        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.ORDER, 1)
+        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.INDEX, 1)
       parameterX.checkNodeCount(1)
       parameterX.checkProperty(PropertyNames.NAME, "x")
 
@@ -780,12 +782,12 @@ class AstCreationPassTest extends AbstractPassTest {
       methodReturn.checkNodeCount(1)
 
       def parameterThis =
-        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.ORDER, 0)
+        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.INDEX, 0)
       parameterThis.checkNodeCount(1)
       parameterThis.checkProperty(PropertyNames.NAME, "this")
 
       def parameterX =
-        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.ORDER, 1)
+        method.expandAst(NodeTypes.METHOD_PARAMETER_IN).filter(PropertyNames.INDEX, 1)
       parameterX.checkNodeCount(1)
       parameterX.checkProperty(PropertyNames.NAME, "x")
 
@@ -4873,14 +4875,18 @@ class AstCreationPassTest extends AbstractPassTest {
         val file = dir / "code.js"
         file.write(CodeToCpgFixture.codeToSystemLinebreaks(code))
         file.deleteOnExit()
-        val cpg = new JsSrc2CpgFrontend().execute(dir.toJava)
+        val cpg     = new JsSrc2CpgFrontend().execute(dir.toJava)
+        val context = new LayerCreatorContext(cpg)
+        new Base().run(context)
         f(cpg)
       }
     }
 
     def apply(testFile: File)(f: Cpg => Unit): Unit = {
-      val file = testFile
-      val cpg  = new JsSrc2CpgFrontend().execute(file.parent.toJava)
+      val file    = testFile
+      val cpg     = new JsSrc2CpgFrontend().execute(file.parent.toJava)
+      val context = new LayerCreatorContext(cpg)
+      new Base().run(context)
       f(cpg)
     }
   }
