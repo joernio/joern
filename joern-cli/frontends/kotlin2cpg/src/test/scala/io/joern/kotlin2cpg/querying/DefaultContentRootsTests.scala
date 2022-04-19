@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class DefaultContentRootsTest extends AnyFreeSpec with Matchers {
+class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
   "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" - {
     lazy val cpg = TestContext.buildCpg("""
@@ -22,11 +22,11 @@ class DefaultContentRootsTest extends AnyFreeSpec with Matchers {
       def params = cpg.parameter.filter(_.method.name == "add1mul")
 
       val List(x) = params.name("x").l
-      x.code shouldBe "x: Int"
+      x.code shouldBe "x"
       x.typeFullName shouldBe "java.lang.Integer"
 
       val List(y) = params.name("y").l
-      y.code shouldBe "y: Int"
+      y.code shouldBe "y"
       y.typeFullName shouldBe "java.lang.Integer"
     }
   }
@@ -47,11 +47,11 @@ class DefaultContentRootsTest extends AnyFreeSpec with Matchers {
       params.name.toSet shouldBe Set("x", "y")
 
       val List(x) = params.name("x").l
-      x.code shouldBe "x: Int"
+      x.code shouldBe "x"
       x.typeFullName shouldBe "java.lang.Integer"
 
       val List(y) = params.name("y").l
-      y.code shouldBe "y: Int"
+      y.code shouldBe "y"
       y.typeFullName shouldBe "java.lang.Integer"
     }
   }
@@ -83,16 +83,6 @@ class DefaultContentRootsTest extends AnyFreeSpec with Matchers {
     "should contain IDENTIFIER nodes for `x` with the correct typeFullNames set" in {
       val List(i) = cpg.identifier.codeExact("x").where(_.inCall.methodFullNameExact(Operators.assignment)).l
       i.typeFullName shouldBe "java.util.List"
-    }
-
-    "should contain a CALL node for `x[0]` with the correct typeFullNames set" in {
-      val List(c) = cpg.call.codeExact("x[0]").l
-      c.typeFullName shouldBe "java.lang.Integer"
-    }
-
-    "should contain a CALL node for `listOf(1, 2, 3)` with the correct typeFullName set" in {
-      val List(c) = cpg.call.codeExact("listOf(1, 2, 3)").l
-      c.typeFullName shouldBe "java.util.List"
     }
   }
 
