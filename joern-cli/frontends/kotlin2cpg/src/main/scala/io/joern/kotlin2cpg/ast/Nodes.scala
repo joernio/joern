@@ -129,14 +129,20 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def operatorCallNode(name: String, code: String, line: Int = -1, column: Int = -1): NewCall = {
+  def operatorCallNode(
+    name: String,
+    code: String,
+    typeFullName: Option[String] = None,
+    line: Int = -1,
+    column: Int = -1
+  ): NewCall = {
     NewCall()
       .name(name)
       .methodFullName(name)
       .code(code)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName("ANY")
+      .typeFullName(typeFullName.getOrElse("ANY"))
       .lineNumber(line)
       .columnNumber(column)
   }
