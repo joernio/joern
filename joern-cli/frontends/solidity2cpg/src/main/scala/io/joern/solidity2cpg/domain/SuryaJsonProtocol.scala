@@ -452,7 +452,6 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     def write(c: FunctionDefinition): JsValue = JsNull
 
     def read(json: JsValue): FunctionDefinition = {
-//      println(json)
       val fields = json.asJsObject("Unable to decode JSON as FunctionDefinition").fields
       if (fields("type").convertTo[String] != "FunctionDefinition") {
         throw new RuntimeException("FunctionDefinition object expected")
@@ -496,7 +495,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         ModifierInvocation(
           fields("name").convertTo[String],
           fields("arguments") match {
-            case x: List[BaseASTNode] => x.convertTo[List[BaseASTNode]]
+            case x: JsObject => x.convertTo[List[BaseASTNode]]
             case _                    => null
           }
         )
