@@ -1,9 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -49,66 +48,73 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a call node for `plus` op with correct fields" in {
-      cpg.call(Operators.plus).size shouldBe 1
+      val List(c) = cpg.call(Operators.plus).l
+      c.code shouldBe "+x"
+      c.typeFullName shouldBe "java.lang.Integer"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(4)
 
-      val List(p) = cpg.call(Operators.plus).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(4)
-      p.code shouldBe "+x"
+      c.argument.size shouldBe 1
     }
 
     "should contain a call node for `minus` op with correct fields" in {
-      cpg.call(Operators.minus).size shouldBe 1
+      val List(c) = cpg.call(Operators.minus).l
+      c.code shouldBe "-x"
+      c.typeFullName shouldBe "java.lang.Integer"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(5)
 
-      val List(p) = cpg.call(Operators.minus).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(5)
-      p.code shouldBe "-x"
+      c.argument.size shouldBe 1
     }
 
     "should contain a call node for `logicalNot` op with correct fields" in {
-      cpg.call(Operators.logicalNot).size shouldBe 1
+      val List(c) = cpg.call(Operators.logicalNot).l
+      c.code shouldBe "!y"
+      c.typeFullName shouldBe "java.lang.Boolean"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(6)
 
-      val List(p) = cpg.call(Operators.logicalNot).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(6)
-      p.code shouldBe "!y"
+      c.argument.size shouldBe 1
     }
 
     "should contain a call node for `preIncrement` op with correct fields" in {
-      cpg.call(Operators.preIncrement).size shouldBe 1
+      val List(c) = cpg.call(Operators.preIncrement).l
+      c.code shouldBe "++x"
+      c.typeFullName shouldBe "java.lang.Integer"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(7)
 
-      val List(p) = cpg.call(Operators.preIncrement).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(7)
-      p.code shouldBe "++x"
+      c.argument.size shouldBe 1
     }
 
     "should contain a call node for `preDecrement` op with correct fields" in {
-      cpg.call(Operators.preDecrement).size shouldBe 1
+      val List(c) = cpg.call(Operators.preDecrement).l
+      c.code shouldBe "--x"
+      c.typeFullName shouldBe "java.lang.Integer"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(8)
 
-      val List(p) = cpg.call(Operators.preDecrement).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(8)
-      p.code shouldBe "--x"
+      c.argument.size shouldBe 1
     }
 
     "should contain a call node for `postIncrement` op with correct fields" in {
-      cpg.call(Operators.postIncrement).size shouldBe 1
+      val List(c) = cpg.call(Operators.postIncrement).l
+      c.code shouldBe "x++"
+      c.typeFullName shouldBe "java.lang.Integer"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(9)
 
-      val List(p) = cpg.call(Operators.postIncrement).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(9)
-      p.code shouldBe "x++"
+      c.argument.size shouldBe 1
     }
 
-    "should contain a call node for `postDecrement` op with correct fields" in {
-      cpg.call(Operators.postDecrement).size shouldBe 1
+    "should contain a call node for `postDecrement` op with the correct props set" in {
+      val List(c) = cpg.call(Operators.postDecrement).l
+      c.code shouldBe "x--"
+      c.typeFullName shouldBe "java.lang.Integer"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.lineNumber shouldBe Some(10)
 
-      val List(p) = cpg.call(Operators.postDecrement).l
-      p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(10)
-      p.code shouldBe "x--"
+      c.argument.size shouldBe 1
     }
   }
 }
