@@ -15,7 +15,7 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
       |// Defining child contract
       |contract Bar is Woo {
       | function getValue() external view returns (uint) {
-      |   return sum
+      |   return sum;
       | }
       |}
       |
