@@ -2,8 +2,8 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion    = "1.3.524"
-val js2cpgVersion = "0.2.139"
+val cpgVersion    = "1.3.532"
+val js2cpgVersion = "0.2.140"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -44,7 +44,7 @@ ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Atlassian" at "https://packages.atlassian.com/mvn/maven-atlassian-external",
-  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases/",
+  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases/"
 )
 
 ThisBuild / Test / fork := true

@@ -34,12 +34,12 @@ class ArrayTests extends JimpleCodeToCpgFixture {
     def m = cpg.method(".*foo.*")
 
     val List(placeholderArg: Identifier, arrayInit: Call) =
-      m.assignment.codeExact("$stack2 = newarray (int)[3]").argument.l
+      m.assignment.codeExact("$stack2 = new int[3]").argument.l
     placeholderArg.code shouldBe "$stack2"
     placeholderArg.typeFullName shouldBe "int[]"
 
-    arrayInit.code shouldBe "newarray (int)[3]"
-    arrayInit.methodFullName shouldBe Operators.arrayInitializer
+    arrayInit.code shouldBe "new int[3]"
+    arrayInit.methodFullName shouldBe Operators.alloc
     arrayInit.astChildren.headOption match {
       case Some(alloc) =>
         alloc shouldBe a[Literal]
@@ -85,11 +85,11 @@ class ArrayTests extends JimpleCodeToCpgFixture {
     def m = cpg.method(".*bar.*")
 
     val List(arg1: Identifier, arg2: Call) =
-      m.assignment.codeExact("x = newmultiarray (int)[5][2]").argument.l
+      m.assignment.codeExact("x = new int[5][2]").argument.l
 
     arg1.typeFullName shouldBe "int[][]"
 
-    arg2.code shouldBe "newmultiarray (int)[5][2]"
+    arg2.code shouldBe "new int[5][2]"
     val List(lvl1: Literal, lvl2: Literal) = arg2.argument.l
     lvl1.code shouldBe "5"
     lvl2.code shouldBe "2"

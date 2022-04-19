@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -89,6 +89,31 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with destructuring declaration and a variable as RHS, plus one `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package main
+        |
+        |data class AClass(val a: String, val b: Int)
+        |fun main() {
+        |    val aClass = AClass("AMESSAGE", 41414141)
+        |    val (myA, _) = aClass
+        |    println(myA)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
+    }
+  }
+
   "CPG for code with destructuring expression with a ctor-invocation RHS" - {
     lazy val cpg = TestContext.buildCpg("""
         |package main
@@ -131,6 +156,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       tmpAssignmentToAlloc.order shouldBe (firstAstConstruct.order + 5)
 
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = tmpAssignmentToAlloc.argument.l
+      allocAssignmentLhs.argumentIndex shouldBe 1
       allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "main.AClass"
       tmpLocal.referencingIdentifiers.id.l.contains(allocAssignmentLhs.id) shouldBe true
@@ -210,6 +236,344 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       secondDestructRHSCallArgument.code should startWith("tmp_")
       secondDestructRHSCallArgument.typeFullName shouldBe "main.AClass"
       secondDestructRHSCallArgument.refsTo.size shouldBe 1
+    }
+  }
+
+  "CPG for code with destructuring expression with a ctor-invocation RHS and an `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package main
+        |
+        |data class AClass(val a: String, val b: Int)
+        |fun main() {
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, _) = AClass(aMessage, 41414141)
+        |    println(myA)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
+    }
+  }
+
+  "CPG for code with destructuring expression with a non-ctor-call RHS" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val a: String, val b: Int)
+        |
+        |fun makeA(x: String): AClass {
+        |    val a = AClass(x, 41414141)
+        |    return a
+        |}
+        |
+        |fun main() {
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, myB) = makeA(aMessage)
+        |    println(myA)
+        |    println(myB)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//41414141
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should contain a correctly-lowered representation" in {
+      val List(firstAstConstruct)  = cpg.call.code("val aMessage.*=.*").l
+      val List(firstDestructLocal) = cpg.local.nameExact("myA").l
+      firstDestructLocal.code shouldBe "myA"
+      firstDestructLocal.typeFullName shouldBe "java.lang.String"
+      firstDestructLocal.order shouldBe (firstAstConstruct.order + 1)
+
+      val List(secondDestructLocal) = cpg.local.nameExact("myB").l
+      secondDestructLocal.code shouldBe "myB"
+      secondDestructLocal.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLocal.order shouldBe (firstAstConstruct.order + 2)
+
+      val List(tmpLocal) = cpg.local.name("tmp_.*").where(_.method.fullName(".*main.*")).l
+      tmpLocal.code shouldBe "tmp_2"
+      tmpLocal.typeFullName shouldBe "mypkg.AClass"
+      tmpLocal.order shouldBe (firstAstConstruct.order + 4)
+
+      val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
+      tmpAssignmentToRhsCall.methodFullName shouldBe Operators.assignment
+      tmpAssignmentToRhsCall.typeFullName shouldBe ""
+      tmpAssignmentToRhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 5)
+
+      val List(allocAssignmentLhs: Identifier, rhsCall: Call) = tmpAssignmentToRhsCall.argument.l
+      allocAssignmentLhs.argumentIndex shouldBe 1
+      allocAssignmentLhs.code shouldBe "tmp_2"
+      allocAssignmentLhs.typeFullName shouldBe "mypkg.AClass"
+      tmpLocal.referencingIdentifiers.id.l.contains(allocAssignmentLhs.id) shouldBe true
+
+      rhsCall.code shouldBe "makeA(aMessage)"
+      rhsCall.signature shouldBe "mypkg.AClass(java.lang.String)"
+      rhsCall.methodFullName shouldBe "mypkg.makeA:mypkg.AClass(java.lang.String)"
+      rhsCall.typeFullName shouldBe "mypkg.AClass"
+      rhsCall.name shouldBe "makeA"
+      rhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      rhsCall.argumentIndex shouldBe 2
+
+      rhsCall.argument.size shouldBe 1
+      val List(rhsCallFirstArg: Identifier) = rhsCall.argument.l
+      rhsCallFirstArg.argumentIndex shouldBe 1
+      rhsCallFirstArg.code shouldBe "aMessage"
+      rhsCallFirstArg.typeFullName shouldBe "java.lang.String"
+
+      val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
+      firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      firstDestructAssignment.methodFullName shouldBe Operators.assignment
+      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
+
+      val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
+      firstDestructLHSIdentifier.name shouldBe "myA"
+      firstDestructLHSIdentifier.typeFullName shouldBe "java.lang.String"
+
+      val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
+      firstDestructRHSCall.code should startWith("tmp_")
+      firstDestructRHSCall.code should endWith("component1()")
+      firstDestructRHSCall.name shouldBe "component1"
+      firstDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component1:java.lang.String()"
+      firstDestructRHSCall.signature shouldBe "java.lang.String()"
+      firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
+
+      val List(firstDestructRHSCallArgument: Identifier) =
+        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l
+      firstDestructRHSCallArgument.argumentIndex shouldBe 0
+      firstDestructRHSCallArgument.code should startWith("tmp_")
+      firstDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
+      firstDestructRHSCallArgument.refsTo.size shouldBe 1
+
+      val List(secondDestructAssignment) = cpg.call.code("myB.*=.*component.*").l
+      secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      secondDestructAssignment.methodFullName shouldBe Operators.assignment
+      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
+
+      val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
+      secondDestructLHSIdentifier.name shouldBe "myB"
+      secondDestructLHSIdentifier.typeFullName shouldBe "java.lang.Integer"
+
+      val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
+      secondDestructRHSCall.code should startWith("tmp_")
+      secondDestructRHSCall.code should endWith("component2()")
+      secondDestructRHSCall.name shouldBe "component2"
+      secondDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component2:java.lang.Integer()"
+      secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
+      secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
+
+      val List(secondDestructRHSCallArgument: Identifier) =
+        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l
+      secondDestructRHSCallArgument.argumentIndex shouldBe 0
+      secondDestructRHSCallArgument.code should startWith("tmp_")
+      secondDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
+      secondDestructRHSCallArgument.refsTo.size shouldBe 1
+    }
+  }
+
+  "CPG for code with destructuring expression with a non-ctor-call RHS and an `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val a: String, val b: Int)
+        |
+        |fun makeA(x: String): AClass {
+        |    val a = AClass(x, 41414141)
+        |    return a
+        |}
+        |
+        |fun main() {
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, _) = makeA(aMessage)
+        |    println(myA)
+        |// prints
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
+    }
+  }
+
+  "CPG for code with destructuring expression with a DQE call RHS" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val a: String, val b: Int)
+        |
+        |class AFactory {
+        |    fun makeA(x: String): AClass {
+        |        val a = AClass(x, 41414141)
+        |        return a
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val aFactory = AFactory()
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, myB) = aFactory.makeA(aMessage)
+        |    println(myA)
+        |    println(myB)
+        |//prints:
+        |//```
+        |//AMESSAGE
+        |//41414141
+        |//```
+        |}
+        |
+        |""".stripMargin)
+
+    "should contain a correctly-lowered representation" in {
+      val List(firstAstConstruct)  = cpg.call.code("val aMessage.*=.*").l
+      val List(firstDestructLocal) = cpg.local.nameExact("myA").l
+      firstDestructLocal.code shouldBe "myA"
+      firstDestructLocal.typeFullName shouldBe "java.lang.String"
+      firstDestructLocal.order shouldBe (firstAstConstruct.order + 1)
+
+      val List(secondDestructLocal) = cpg.local.nameExact("myB").l
+      secondDestructLocal.code shouldBe "myB"
+      secondDestructLocal.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLocal.order shouldBe (firstAstConstruct.order + 2)
+
+      val irrelevantLocalCount = 2
+      val List(tmpLocal1: Local) =
+        cpg.local
+          .name("tmp_.*")
+          .drop(irrelevantLocalCount)
+          .where(_.method.fullName(".*main.*"))
+          .l
+      tmpLocal1.code shouldBe "tmp_3"
+      tmpLocal1.typeFullName shouldBe "mypkg.AClass"
+      tmpLocal1.order shouldBe (firstAstConstruct.order + 4)
+
+      val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
+      tmpAssignmentToRhsCall.methodFullName shouldBe Operators.assignment
+      tmpAssignmentToRhsCall.typeFullName shouldBe ""
+      tmpAssignmentToRhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 5)
+
+      val List(allocAssignmentLhs: Identifier, rhsCall: Call) = tmpAssignmentToRhsCall.argument.l
+      allocAssignmentLhs.argumentIndex shouldBe 1
+      allocAssignmentLhs.code shouldBe "tmp_3"
+      allocAssignmentLhs.typeFullName shouldBe "mypkg.AClass"
+      tmpLocal1.referencingIdentifiers.id.l.contains(allocAssignmentLhs.id) shouldBe true
+
+      rhsCall.code shouldBe "aFactory.makeA(aMessage)"
+      rhsCall.signature shouldBe "mypkg.AClass(java.lang.String)"
+      rhsCall.methodFullName shouldBe "mypkg.AFactory.makeA:mypkg.AClass(java.lang.String)"
+      rhsCall.typeFullName shouldBe "mypkg.AClass"
+      rhsCall.name shouldBe "makeA"
+      rhsCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      rhsCall.argumentIndex shouldBe 2
+      rhsCall.argument.size shouldBe 2
+
+      val List(rhsCallFirstArg: Identifier, rhsCallSecondArg: Identifier) = rhsCall.argument.l
+      rhsCallFirstArg.argumentIndex shouldBe 0
+      rhsCallFirstArg.code shouldBe "aFactory"
+      rhsCallFirstArg.typeFullName shouldBe "mypkg.AFactory"
+      rhsCallSecondArg.argumentIndex shouldBe 1
+      rhsCallSecondArg.code shouldBe "aMessage"
+      rhsCallSecondArg.typeFullName shouldBe "java.lang.String"
+
+      val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
+      firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      firstDestructAssignment.methodFullName shouldBe Operators.assignment
+      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
+
+      val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
+      firstDestructLHSIdentifier.name shouldBe "myA"
+      firstDestructLHSIdentifier.typeFullName shouldBe "java.lang.String"
+
+      val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
+      firstDestructRHSCall.code should startWith("tmp_")
+      firstDestructRHSCall.code should endWith("component1()")
+      firstDestructRHSCall.name shouldBe "component1"
+      firstDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component1:java.lang.String()"
+      firstDestructRHSCall.signature shouldBe "java.lang.String()"
+      firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
+
+      val List(firstDestructRHSCallArgument: Identifier) =
+        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l
+      firstDestructRHSCallArgument.argumentIndex shouldBe 0
+      firstDestructRHSCallArgument.code should startWith("tmp_")
+      firstDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
+      firstDestructRHSCallArgument.refsTo.size shouldBe 1
+
+      val List(secondDestructAssignment) = cpg.call.code("myB.*=.*component.*").l
+      secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      secondDestructAssignment.methodFullName shouldBe Operators.assignment
+      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
+
+      val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
+      secondDestructLHSIdentifier.name shouldBe "myB"
+      secondDestructLHSIdentifier.typeFullName shouldBe "java.lang.Integer"
+
+      val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
+      secondDestructRHSCall.code should startWith("tmp_")
+      secondDestructRHSCall.code should endWith("component2()")
+      secondDestructRHSCall.name shouldBe "component2"
+      secondDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component2:java.lang.Integer()"
+      secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
+      secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
+
+      val List(secondDestructRHSCallArgument: Identifier) =
+        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l
+      secondDestructRHSCallArgument.argumentIndex shouldBe 0
+      secondDestructRHSCallArgument.code should startWith("tmp_")
+      secondDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
+      secondDestructRHSCallArgument.refsTo.size shouldBe 1
+    }
+  }
+
+  "CPG for code with destructuring expression with a DQE call RHS and an `_`" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |data class AClass(val a: String, val b: Int)
+        |
+        |class AFactory {
+        |    fun makeA(x: String): AClass {
+        |        val a = AClass(x, 41414141)
+        |        return a
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val aFactory = AFactory()
+        |    val aMessage = "AMESSAGE"
+        |    val (myA, _) = aFactory.makeA(aMessage)
+        |    println(myA)
+        |//prints:
+        |//```
+        |//AMESSAGE
+        |//```
+        |}
+        |
+        |""".stripMargin)
+
+    "should not contain a CALL node for `component2`" in {
+      cpg.call.methodFullName(".*component2.*").size shouldBe 0
+    }
+
+    "should not contain a LOCAL node for `_`" in {
+      cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
     }
   }
 }

@@ -34,11 +34,11 @@ object GradleDependencies {
     try {
       if (!gradleInitDDir.exists) {
         logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
-        gradleInitDDir.createDirectory()
+        gradleInitDDir.createDirectories()
       }
     } catch {
       case t: Throwable =>
-        logger.warn(s"Caught exception while trying to create init script directory: '${t.getMessage}'.")
+        logger.warn(s"Caught exception while trying to create init script directory: '$t'.")
     }
 
     try {
@@ -51,7 +51,7 @@ object GradleDependencies {
     } catch {
       case t: Throwable =>
         // TODO: make sure this doesn't run if the previous step failed
-        logger.warn(s"Caught exception while trying to create init script: '${t.getMessage}'.")
+        logger.warn(s"Caught exception while trying to create init script: '$t'.")
     }
 
     val connectionOption =
@@ -65,7 +65,7 @@ object GradleDependencies {
         )
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while trying to estabish a Gradle connection: '${t.getMessage}'.")
+          logger.warn(s"Caught exception while trying to establish a Gradle connection: '$t'.")
           None
       }
 

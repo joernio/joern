@@ -64,7 +64,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
       case n @ (_: Return) => n -> List(exitNode)
       case n @ (param: MethodParameterIn) =>
         n -> {
-          val nextParam = param.method.parameter.order(param.order + 1).headOption
+          val nextParam = param.method.parameter.index(param.index + 1).headOption
           if (nextParam.isDefined) { nextParam.toList }
           else { param.method.cfgFirst.l }
         }
@@ -84,12 +84,12 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
     ns.map {
       case n @ (param: MethodParameterIn) =>
         n -> {
-          val prevParam = param.method.parameter.order(param.order - 1).headOption
+          val prevParam = param.method.parameter.index(param.index - 1).headOption
           if (prevParam.isDefined) { prevParam.toList }
           else { List(method) }
         }
       case n @ (_: CfgNode) if method.cfgFirst.headOption.contains(n) =>
-        n -> method.parameter.l.sortBy(_.order).lastOption.toList
+        n -> method.parameter.l.sortBy(_.index).lastOption.toList
 
       case n @ (cfgNode: CfgNode) => n -> cfgNode.cfgPrev.l
 
