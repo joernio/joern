@@ -23,7 +23,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
 
     "should contain type decl for alias `FooList` of `List<Int>`" in {
       val List(x) = cpg.typeDecl(".*MyInt.*").take(1).l
-      x.code shouldBe "typealias MyInt = Int"
+      x.code shouldBe "MyInt"
       x.name shouldBe "MyInt"
       x.fullName shouldBe "mypkg.MyInt"
       x.isExternal shouldBe false
@@ -75,7 +75,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
 
     "should contain a type decl for alias `MyInt` with the correct props set" in {
       val List(x) = cpg.typeDecl(".*MyInt.*").take(1).l
-      x.code shouldBe "typealias MyInt = Int"
+      x.code shouldBe "MyInt"
       x.name shouldBe "MyInt"
       x.fullName shouldBe "mypkg.MyInt"
       x.isExternal shouldBe false
@@ -100,7 +100,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
 
     "should contain type decl for alias Foo" in {
       val List(x) = cpg.typeDecl(".*Foo.*").l
-      x.code shouldBe "typealias Foo = List<Int>"
+      x.code shouldBe "Foo"
       x.name shouldBe "Foo"
       x.fullName shouldBe "mypkg.Foo"
       x.isExternal shouldBe false
