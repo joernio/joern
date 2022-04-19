@@ -34,13 +34,12 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
   }
 
   private def createGlobalBlock(dstGraph: DiffGraphBuilder): NewBlock = {
-    val includesFile = NewFile().name(filename).order(0)
+    val includesFile = NewFile().name(filename)
 
     val namespaceBlock = NewNamespaceBlock()
       .name(globalName)
       .fullName(fullName)
       .filename(filename)
-      .order(1)
 
     val fakeGlobalIncludesMethod =
       NewMethod()
@@ -53,15 +52,12 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
         .astParentFullName(fullName)
 
     val blockNode = NewBlock()
-      .order(1)
-      .argumentIndex(1)
       .typeFullName("ANY")
 
     val methodReturn = NewMethodReturn()
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName("ANY")
-      .order(2)
 
     val ast = Ast(includesFile).withChild(
       Ast(namespaceBlock)

@@ -151,7 +151,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(tmpAssignmentToAlloc) = cpg.call.code("tmp.*=.*alloc.*").l
       tmpAssignmentToAlloc.methodFullName shouldBe Operators.assignment
-      tmpAssignmentToAlloc.typeFullName shouldBe ""
+      tmpAssignmentToAlloc.typeFullName shouldBe "ANY"
       tmpAssignmentToAlloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       tmpAssignmentToAlloc.order shouldBe (firstAstConstruct.order + 5)
 
@@ -307,7 +307,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
       tmpAssignmentToRhsCall.methodFullName shouldBe Operators.assignment
-      tmpAssignmentToRhsCall.typeFullName shouldBe ""
+      tmpAssignmentToRhsCall.typeFullName shouldBe "ANY"
       tmpAssignmentToRhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 5)
 
@@ -465,7 +465,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
       tmpAssignmentToRhsCall.methodFullName shouldBe Operators.assignment
-      tmpAssignmentToRhsCall.typeFullName shouldBe ""
+      tmpAssignmentToRhsCall.typeFullName shouldBe "ANY"
       tmpAssignmentToRhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 5)
 

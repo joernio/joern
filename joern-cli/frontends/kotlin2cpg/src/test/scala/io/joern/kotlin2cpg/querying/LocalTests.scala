@@ -8,49 +8,27 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class LocalTests extends AnyFreeSpec with Matchers {
-
   "CPG for code simple local declarations" - {
     lazy val cpg = TestContext.buildCpg("""
-        |fun foo() {
+        |fun main() {
         |  val x: Int = 1
-        |  val y: Int = 2
-        |  println(x + y)
-        |}
-        |""".stripMargin)
-
-    "should contain locals `x` and `y` with correct fields set" in {
-      val List(x) = cpg.local("x").l
-      x.code shouldBe "val x: Int = 1" // TODO: decide whether to remove the `= 1`
-      x.typeFullName shouldBe "java.lang.Integer"
-      x.lineNumber shouldBe Some(2)
-      x.columnNumber shouldBe Some(6)
-      x.order shouldBe 1
-
-      val List(y) = cpg.local("y").l
-      y.code shouldBe "val y: Int = 2" // TODO: decide whether to remove the `= 2`
-      y.typeFullName shouldBe "java.lang.Integer"
-      y.lineNumber shouldBe Some(3)
-      y.columnNumber shouldBe Some(6)
-      y.order shouldBe 3
-    }
-  }
-
-  "CPG for code simple local declarations without explicit types" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |fun foo() {
-        |  val x = 1
         |  val y = 2
         |  println(x + y)
         |}
         |""".stripMargin)
 
-    "should contain locals `x` and `y` with correct TYPE_FULL_NAMEs set" in {
-      val List(x: Local) = cpg.local("x").l
-      x.typeFullName shouldBe "java.lang.Integer"
+    "should contain LOCAL node for `x` and `y` with correct props set" in {
+      val List(l1) = cpg.local("x").l
+      l1.code shouldBe "x"
+      l1.name shouldBe "x"
+      l1.typeFullName shouldBe "java.lang.Integer"
+      l1.order shouldBe 1
 
-      val List(y: Local) = cpg.local("y").l
-      y.typeFullName shouldBe "java.lang.Integer"
+      val List(l2) = cpg.local("y").l
+      l2.code shouldBe "y"
+      l2.name shouldBe "y"
+      l2.typeFullName shouldBe "java.lang.Integer"
+      l2.order shouldBe 3
     }
   }
-
 }
