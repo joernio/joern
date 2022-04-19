@@ -234,7 +234,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("isVirtual").convertTo[Boolean],
           fields("override") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _              => null
+            case _           => null
           }
         )
       }
@@ -257,8 +257,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             case _           => null
           },
           fields("identifier") match {
-            case x : JsObject => x.convertTo[BaseASTNode]
-            case _ => null
+            case x: JsObject => x.convertTo[BaseASTNode]
+            case _           => null
           },
           fields("storageLocation") match {
             case x: JsString => x.convertTo[String]
@@ -268,7 +268,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("isIndexed").convertTo[Boolean],
           fields("expression") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _              => null
+            case _           => null
           }
         )
       }
@@ -352,8 +352,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         FunctionCall(
           fields("expression").convertTo[BaseASTNode],
           fields("arguments") match {
-            case x : JsObject => x.convertTo[List[BaseASTNode]]
-            case _ => null
+            case x: JsObject => x.convertTo[List[BaseASTNode]]
+            case _           => null
           },
           fields("names").convertTo[List[String]],
           fields("identifiers").convertTo[List[String]]
@@ -421,7 +421,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("value").convertTo[String],
           fields("parts").convertTo[List[String]],
           fields("isUnicode") match {
-            case x : List[JsBoolean] => x
+            case x: List[JsBoolean] => x
             case _                  => null
           }
         )
@@ -460,15 +460,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("name").convertTo[String],
           fields("parameters").convertTo[List[BaseASTNode]],
           fields("returnParameters") match {
-            case x : JsObject => x.convertTo[List[BaseASTNode]]
-            case _              => null
+            case x: JsObject => x.convertTo[List[BaseASTNode]]
+            case _           => null
           },
           fields("body").convertTo[BaseASTNode],
           fields("visibility").convertTo[String],
           fields("modifiers").convertTo[List[BaseASTNode]],
           fields("override") match {
-            case x : JsObject => x.convertTo[BaseASTNode]
-            case _              => null
+            case x: JsObject => x.convertTo[BaseASTNode]
+            case _           => null
           },
           fields("isConstructor").convertTo[Boolean],
           fields("isReceiveEther").convertTo[Boolean],
@@ -496,7 +496,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("name").convertTo[String],
           fields("arguments") match {
             case x: JsObject => x.convertTo[List[BaseASTNode]]
-            case _                    => null
+            case _           => null
           }
         )
       }
@@ -587,7 +587,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("trueBody").convertTo[BaseASTNode],
           fields("falseBody") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _              => null
+            case _           => null
           }
         )
       }

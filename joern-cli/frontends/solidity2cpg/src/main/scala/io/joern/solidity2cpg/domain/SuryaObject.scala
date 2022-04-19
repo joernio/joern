@@ -54,7 +54,8 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class InheritanceSpecifier(baseName: BaseName, arguments: List[BaseASTNode]) extends BaseASTNode("InheritanceSpecifier") {
+  case class InheritanceSpecifier(baseName: BaseName, arguments: List[BaseASTNode])
+      extends BaseASTNode("InheritanceSpecifier") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -121,15 +122,18 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class BinaryOperation(operator: String, left: BaseASTNode, right: BaseASTNode) extends BaseASTNode("BinaryOperation") {
+  case class BinaryOperation(operator: String, left: BaseASTNode, right: BaseASTNode)
+      extends BaseASTNode("BinaryOperation") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class StringLiteral(value: String, parts: List[String], isUnicode: List[JsBoolean]) extends BaseASTNode("StringLiteral") {
+  case class StringLiteral(value: String, parts: List[String], isUnicode: List[JsBoolean])
+      extends BaseASTNode("StringLiteral") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class EventDefinition(name: String, parameters: List[BaseASTNode], isAnonymous: Boolean) extends BaseASTNode("EventDefinition") {
+  case class EventDefinition(name: String, parameters: List[BaseASTNode], isAnonymous: Boolean)
+      extends BaseASTNode("EventDefinition") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -172,11 +176,13 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class UnaryOperation(operator: String, subExpression: BaseASTNode, isPrefix: Boolean) extends BaseASTNode("UnaryOperation") {
+  case class UnaryOperation(operator: String, subExpression: BaseASTNode, isPrefix: Boolean)
+      extends BaseASTNode("UnaryOperation") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class IfStatement(condition: BaseASTNode, trueBody: BaseASTNode, falseBody: BaseASTNode) extends BaseASTNode("IfStatement") {
+  case class IfStatement(condition: BaseASTNode, trueBody: BaseASTNode, falseBody: BaseASTNode)
+      extends BaseASTNode("IfStatement") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -204,7 +210,8 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class UsingForDeclaration(typeName: BaseASTNode, libraryName: String) extends BaseASTNode("UsingForDeclaration") {
+  case class UsingForDeclaration(typeName: BaseASTNode, libraryName: String)
+      extends BaseASTNode("UsingForDeclaration") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 

@@ -33,7 +33,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewReturn,
   NewTypeRef,
   NewUnknown
-
 }
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -126,7 +125,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val fullName  = contractDef.name
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
-    val superTypes = contractDef.baseContracts.map { contractDef => contractDef.getType}
+    val superTypes = contractDef.baseContracts.map { contractDef => contractDef.getType }
     val typeDecl = NewTypeDecl()
       .name(shortName)
       .fullName(fullName)
@@ -135,10 +134,16 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .filename(filename)
       .inheritsFromTypeFullName(superTypes)
 
-    val methods = contractDef.subNodes.collect {
-      case x: ModifierDefinition => x }.map(astsForMethod)
-    val functions = contractDef.subNodes.collect {
-      case x: FunctionDefinition => x }.map(astsForFunction)
+    val methods = contractDef.subNodes
+      .collect { case x: ModifierDefinition =>
+        x
+      }
+      .map(astsForMethod)
+    val functions = contractDef.subNodes
+      .collect { case x: FunctionDefinition =>
+        x
+      }
+      .map(astsForFunction)
 
     Ast(typeDecl)
       .withChildren(methods)
@@ -186,12 +191,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astsForFunction(function: FunctionDefinition): Ast = {
     val functionNode = NewTypeDecl()
-    .name(function.name)
-    .fullName(function.name)
-    .astParentType(NodeTypes.NAMESPACE_BLOCK)
-    .astParentFullName(function.name)
-    ;
-  Ast()
+      .name(function.name)
+      .fullName(function.name)
+      .astParentType(NodeTypes.NAMESPACE_BLOCK)
+      .astParentFullName(function.name);
+    Ast()
   }
 
 }
