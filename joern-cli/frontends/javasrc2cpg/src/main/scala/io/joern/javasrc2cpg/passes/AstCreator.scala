@@ -2504,17 +2504,19 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def dispatchTypeForCall(maybeDecl: Try[ResolvedMethodDeclaration], maybeScope: Option[Expression]): String = {
-    maybeDecl match {
-      case Success(decl) =>
-        if (decl.isStatic) {
-          DispatchTypes.STATIC_DISPATCH
-        } else {
-          DispatchTypes.DYNAMIC_DISPATCH
-        }
-      case _ =>
-        maybeScope match {
-          case Some(_: SuperExpr) => DispatchTypes.STATIC_DISPATCH
-          case _                  => DispatchTypes.DYNAMIC_DISPATCH
+    maybeScope match {
+      case Some(_: SuperExpr) =>
+        DispatchTypes.STATIC_DISPATCH
+      case _                  =>
+        maybeDecl match {
+          case Success(decl) =>
+            if (decl.isStatic) {
+              DispatchTypes.STATIC_DISPATCH
+            } else {
+              DispatchTypes.DYNAMIC_DISPATCH
+            }
+          case _ =>
+            DispatchTypes.DYNAMIC_DISPATCH
         }
     }
   }
