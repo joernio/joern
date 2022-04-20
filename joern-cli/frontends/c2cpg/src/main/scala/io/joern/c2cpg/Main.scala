@@ -12,7 +12,7 @@ final case class Config(
   outputPath: String = X2CpgConfig.defaultOutputPath,
   includePaths: Set[String] = Set.empty,
   defines: Set[String] = Set.empty,
-  includeComments: Boolean = false,
+  includeComments: Boolean = true, // false,
   logProblems: Boolean = false,
   logPreprocessor: Boolean = false,
   printIfDefsOnly: Boolean = false,

@@ -14,6 +14,7 @@ import com.github.javaparser.ast.body.{
   TypeDeclaration,
   VariableDeclarator
 }
+import com.github.javaparser.ast.comments.{Comment, LineComment}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
 import com.github.javaparser.ast.expr.{
   AnnotationExpr,
@@ -104,6 +105,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewCall,
   NewClosureBinding,
+  NewComment,
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
@@ -278,7 +280,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   /** Translate compilation unit into AST
     */
   private def astForTranslationUnit(compilationUnit: CompilationUnit): AstWithCtx = {
-
     try {
       val AstWithCtx(ast, ctx) = astForPackageDeclaration(compilationUnit.getPackageDeclaration.toScala)
 
@@ -296,6 +297,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         astForTypeDecl(typ, order, astParentType = "NAMESPACE_BLOCK", astParentFullName = namespaceBlockFullName)
       }
 
+      val commentAsts  = astsForComments(compilationUnit, filename)
       val typeDeclAsts = typeDeclAstsWithCtx.map(_.ast)
       val mergedCtx    = ctx.mergeWith(typeDeclAstsWithCtx.map(_.ctx))
 
@@ -309,7 +311,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
 
       scopeStack.popScope()
-      AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
+      AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts).withChildren(commentAsts), mergedCtx)
     } catch {
       case t: UnsolvedSymbolException =>
         logger.error(s"Unsolved symbol exception caught in $filename")
@@ -318,6 +320,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         logger.error(s"Parsing file $filename failed with $t")
         throw t
     }
+  }
+
+  /** Parses comments.
+    */
+  private def astsForComments(compilationUnit: CompilationUnit, filename: String): Seq[Ast] = {
+    // TODO(miraleung): Add config option to (not) parse comments.
+    val lineComments = compilationUnit.getAllComments.asScala.toList.collect { case c: LineComment => c }
+    lineComments.map(c => {
+      Ast(NewComment().code(c.getContent()).filename(absolutePath(filename)).lineNumber(line(c)))
+    })
   }
 
   /** Translate package declaration into AST consisting of a corresponding namespace block.

@@ -19,11 +19,13 @@ package object cpgcreation {
     lazy val cCpgGenerator      = CCpgGenerator(config.withArgs(args), rootPath)
     lazy val fuzzycCpgGenerator = FuzzyCCpgGenerator(config.withArgs(args), rootPath)
     language match {
-      case Languages.CSHARP     => Some(CSharpCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.C          => Seq(fuzzycCpgGenerator, cCpgGenerator).find(_.isAvailable)
-      case Languages.LLVM       => Some(LlvmCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.GOLANG     => Some(GoCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JAVA       => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.CSHARP => Some(CSharpCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.C      => Seq(fuzzycCpgGenerator, cCpgGenerator).find(_.isAvailable)
+      case Languages.LLVM   => Some(LlvmCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.GOLANG => Some(GoCpgGenerator(config.withArgs(args), rootPath))
+      // Use JavaSrcCpgGenerator to get comments.
+      // case Languages.JAVA       => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.JAVA       => Some(JavaSrcCpgGenerator(config.withArgs(args), rootPath))
       case Languages.JAVASRC    => Some(JavaSrcCpgGenerator(config.withArgs(args), rootPath))
       case Languages.JAVASCRIPT => Some(JsCpgGenerator(config.withArgs(args), rootPath))
       case Languages.PYTHONSRC  => Some(PythonSrcCpgGenerator(config.withArgs(args), rootPath))
