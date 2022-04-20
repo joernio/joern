@@ -1057,7 +1057,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: ForStmt          => Seq(astForFor(x, order))
       case x: IfStmt           => Seq(astForIf(x, order))
       case x: LabeledStmt      => astsForLabeledStatement(x, order)
-      case x: ReturnStmt       => astsForReturnNode(x, order)
+      case x: ReturnStmt       => Seq(astForReturnNode(x, order))
       case x: SwitchStmt       => Seq(astForSwitchStatement(x, order))
       case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, order))
       case x: ThrowStmt        => Seq(astForThrow(x, order))
@@ -1390,22 +1390,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(blockAst, ctx)
   }
 
-  private def astsForReturnNode(ret: ReturnStmt, order: Int): Seq[AstWithCtx] = {
+  private def astForReturnNode(ret: ReturnStmt, order: Int): AstWithCtx = {
+    val returnNode = NewReturn()
+      .lineNumber(line(ret))
+      .columnNumber(column(ret))
+      .argumentIndex(order)
+      .order(order)
+      .code(ret.toString)
     if (ret.getExpression.isPresent) {
       val exprAstsWithCtx = astsForExpression(ret.getExpression.get(), order + 1, None)
-      val returnNode = NewReturn()
-        .lineNumber(line(ret))
-        .columnNumber(column(ret))
-        .argumentIndex(order)
-        .order(order)
-        .code(ret.toString)
       val returnAst = Ast(returnNode)
         .withChildren(exprAstsWithCtx.map(_.ast))
         .withArgEdges(returnNode, exprAstsWithCtx.flatMap(_.ast.root))
       val ctx = mergedCtx(exprAstsWithCtx.map(_.ctx))
-      Seq(AstWithCtx(returnAst, ctx))
+      AstWithCtx(returnAst, ctx)
     } else {
-      Seq()
+      AstWithCtx(Ast(returnNode), new Context())
     }
   }
 
