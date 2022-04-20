@@ -2,10 +2,7 @@ name: pr
 on: pull_request
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15, macos-11]
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
         with:
@@ -14,41 +11,5 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
-      - name: Compile and run tests
-        run: joern-cli/frontends/php2cpg/installdeps.sh
       - run: sbt clean +test
         shell: bash
-  formatting:
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-      - name: Set up JDK 1.11
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.11
-      - name: Check formatting
-        run: sbt ++2.13.7 scalafmtCheck test:scalafmtCheck
-      - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt'"
-        if: ${{ failure() }}
-  test-scripts:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-      - name: Set up JDK 1.11
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.11
-      - run: ./testDistro.sh
-      - run: |
-          mkdir /tmp/foo
-          echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
-          ./joern --src /tmp/foo --run scan
-          ./joern-scan /tmp/foo
-          ./joern-scan --dump
-      - run: |
-          cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
