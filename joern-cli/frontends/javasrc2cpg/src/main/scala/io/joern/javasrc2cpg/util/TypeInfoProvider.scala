@@ -32,6 +32,10 @@ class TypeInfoProvider(global: Global, scope: Scope) {
     JP2JavaSrcTypeAdapter.resolvedTypeFullName(resolvedType).map(registerType)
   }
 
+  def getResolvedTypeDeclFullName(resolveTypeDecl: ResolvedTypeDeclaration): String = {
+    JP2JavaSrcTypeAdapter.resolvedTypeDeclFullName(resolveTypeDecl)
+  }
+
   def getTypeDeclType(typeDecl: TypeDeclaration[_], fullName: Boolean = true): String = {
     val typeName = JP2JavaSrcTypeAdapter.typeNameForTypeDecl(typeDecl, fullName)
     if (fullName) {

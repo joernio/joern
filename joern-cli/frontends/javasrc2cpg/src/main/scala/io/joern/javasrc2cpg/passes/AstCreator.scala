@@ -80,6 +80,7 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedMethodLikeDeclaration,
   ResolvedReferenceTypeDeclaration
 }
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
@@ -1943,7 +1944,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     Try(x.resolve()) match {
       case Success(value) if value.isField =>
-        val typeName = typeFullName.split("\\.").lastOption.getOrElse("")
         val identifierName = if (value.asField.isStatic) {
           // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
           // from other classes are represented by a FieldAccessExpr instead.
@@ -1952,14 +1952,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           "this"
         }
 
+        val identifierTypeFullName =
+          value match {
+            case fieldDecl: JavaParserFieldDeclaration =>
+              // TODO It is not quite correct to use the declaring classes type.
+              // Instead we should take the using classes type which is either the same or a
+              // sub class of the declaring class.
+              typeInfoProvider.getResolvedTypeDeclFullName(fieldDecl.declaringType())
+          }
+
         val identifier = NewIdentifier()
           .name(identifierName)
-          .typeFullName(typeFullName)
+          .typeFullName(identifierTypeFullName)
           .order(1)
           .argumentIndex(1)
           .lineNumber(line(x))
           .columnNumber(column(x))
-          .code(typeName)
+          .code(identifierName)
 
         val fieldIdentifier = NewFieldIdentifier()
           .code(x.toString)
@@ -1973,10 +1982,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .name(Operators.fieldAccess)
           .methodFullName(Operators.fieldAccess)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code(s"$typeName $name")
+          .code(name)
           .argumentIndex(order)
           .order(order)
           .typeFullName(typeFullName)
+          .lineNumber(line(x))
+          .columnNumber(column(x))
 
         val identifierAst = AstWithCtx(Ast(identifier), Context())
         val fieldIdentAst = AstWithCtx(Ast(fieldIdentifier), Context())
@@ -2507,7 +2518,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     maybeScope match {
       case Some(_: SuperExpr) =>
         DispatchTypes.STATIC_DISPATCH
-      case _                  =>
+      case _ =>
         maybeDecl match {
           case Success(decl) =>
             if (decl.isStatic) {
