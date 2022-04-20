@@ -277,8 +277,8 @@ trait AstForStatementsCreator {
     val elseAst = ifStmt.getElseClause match {
       case block: IASTCompoundStatement =>
         val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-        val elseAsts = astsForStatement(block)
-        Ast(elseNode).withChildren(elseAsts)
+        val elseAst  = astForBlockStatement(block)
+        Ast(elseNode).withChild(elseAst)
       case other if other != null =>
         val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = NewBlock()

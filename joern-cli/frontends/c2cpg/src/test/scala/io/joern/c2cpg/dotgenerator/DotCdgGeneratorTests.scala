@@ -46,7 +46,7 @@ class DotCdgGeneratorTest2 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "A CdgDotGenerator" should {
-    "create correct dot graph for if-then without explicit block statement and a assignment" in {
+    "create correct dot graph for if-then without explicit block statement and an assignment" in {
       inside(cpg.method.name("foo").dotCdg.l) { case List(x) =>
         x should (
           startWith("digraph \"foo\"") and
