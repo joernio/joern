@@ -28,7 +28,10 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"          %% "ammonite"          % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi"          %% "os-lib"            % "0.8.1",
   "com.lihaoyi"          %% "cask"              % CaskVersion,
-  "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
+  "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test,
+
+  // only for windows build... https://github.com/joernio/joern/pull/1282#issuecomment-1103860896
+  "org.jboss.xnio"        % "xnio-api"          % "3.8.6.Final" % Test, 
 )
 
 Test / packageBin / publishArtifact := true
