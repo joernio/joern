@@ -2225,6 +2225,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: MethodCallExpr          => Seq(astForMethodCall(x, order, expectedType))
       case x: NameExpr                => Seq(astForNameExpr(x, order, expectedType))
       case x: ObjectCreationExpr      => Seq(astForObjectCreationExpr(x, order, expectedType))
+      case x: SuperExpr               => astForSuperExpr(x, order, expectedType)
       case x: ThisExpr                => Seq(astForThisExpr(x, order, expectedType))
       case x: UnaryExpr               => Seq(astForUnaryExpr(x, order, expectedType))
       case x: VariableDeclarationExpr => astsForVariableDecl(x, order)
@@ -2639,6 +2640,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Some(rootNode) =>
         AstWithCtx(ast.ast.withReceiverEdge(callNode, rootNode), ast.ctx)
     }
+  }
+
+  def astForSuperExpr(superExpr: SuperExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
+    val typeFullName =
+      typeInfoProvider
+        .getTypeForExpression(superExpr)
+        .orElse(expectedType)
+        .getOrElse(UnresolvedTypeDefault)
+
+    val thisIdentifier = NewIdentifier()
+      .name("this")
+      .code("super")
+      .typeFullName(typeFullName)
+      .order(order)
+      .argumentIndex(order)
+      .lineNumber(line(superExpr))
+      .columnNumber(column(superExpr))
+
+    AstWithCtx(Ast(thisIdentifier), new Context())
   }
 
   private def astsForParameterList(parameters: NodeList[Parameter], order: Int = 0): Seq[AstWithCtx] = {
