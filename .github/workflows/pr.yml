@@ -11,4 +11,5 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
+      - run: echo "TERM=xterm" >> $GITHUB_ENV
       - run: sbt clean 'console/testOnly io.joern.console.cpgqlserver.CPGQLServerTests'
