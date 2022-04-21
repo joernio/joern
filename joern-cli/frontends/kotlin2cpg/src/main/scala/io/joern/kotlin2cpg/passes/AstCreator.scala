@@ -719,7 +719,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val lastOrder = parametersWithCtx.size + 2
     val bodyAstWithCtx =
-      astForMethodBody(ktFn.getBodyBlockExpression, mergedScopeContext, lastOrder)
+      ktFn.getBodyBlockExpression match {
+        case blockExpr if blockExpr != null => astForBlock(blockExpr, mergedScopeContext, lastOrder)
+        case _ =>
+          val blockNode = NewBlock()
+          AstWithCtx(Ast(blockNode), Context())
+      }
     val returnAst = astForMethodReturn(ktFn, lastOrder + 1)
 
     val paramMap =
@@ -793,18 +798,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       _methodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
         .order(order)
     Ast(node)
-  }
-
-  private def astForMethodBody(body: KtBlockExpression, scopeContext: Context, order: Int)(implicit
-    fileInfo: FileInfo,
-    typeInfoProvider: TypeInfoProvider
-  ): AstWithCtx = {
-    body match {
-      case blockExpr if blockExpr != null => astForBlock(blockExpr, scopeContext, order)
-      case _ =>
-        val blockNode = NewBlock()
-        AstWithCtx(Ast(blockNode), Context())
-    }
   }
 
   private def astForBlock(expr: KtBlockExpression, scopeContext: Context, order: Int)(implicit
@@ -1119,7 +1112,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     val lastOrder = parametersWithCtx.size + 2
 
-    val bodyAstWithCtx = astForMethodBody(expr.getBodyExpression, scopeContext, lastOrder)
+    val bodyAstWithCtx =
+      expr.getBodyExpression match {
+        case blockExpr if blockExpr != null => astForBlock(blockExpr, scopeContext, lastOrder)
+        case _ =>
+          val blockNode = NewBlock()
+          AstWithCtx(Ast(blockNode), Context())
+      }
+
 
     val methodParameterNodes: Seq[NewMethodParameterIn] =
       parametersWithCtx
