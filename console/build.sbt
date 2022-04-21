@@ -28,7 +28,8 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"          %% "ammonite"          % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi"          %% "os-lib"            % "0.8.1",
   "com.lihaoyi"          %% "cask"              % CaskVersion,
-  "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
+  "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test,
+  "org.fusesource.jansi" % "jansi" % "2.4.0" % Test
 )
 
 Test / packageBin / publishArtifact := true
