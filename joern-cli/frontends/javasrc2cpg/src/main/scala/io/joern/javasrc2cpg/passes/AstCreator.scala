@@ -2543,21 +2543,26 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def targetTypeForCall(callExpr: MethodCallExpr): Option[String] = {
-    callExpr.getScope.toScala match {
-      case Some(scope: ThisExpr) =>
-        typeInfoProvider
-          .getTypeForExpression(scope)
-          .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
+    Try(callExpr.resolve()) match {
+      case Success(resolveMethodDecl) =>
+        Some(typeInfoProvider.getResolvedTypeDeclFullName(resolveMethodDecl.declaringType()))
+      case Failure(_) =>
+        callExpr.getScope.toScala match {
+          case Some(scope: ThisExpr) =>
+            typeInfoProvider
+              .getTypeForExpression(scope)
+              .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
 
-      case Some(scope: SuperExpr) =>
-        typeInfoProvider
-          .getTypeForExpression(scope)
-          .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
+          case Some(scope: SuperExpr) =>
+            typeInfoProvider
+              .getTypeForExpression(scope)
+              .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
 
-      case Some(scope) => typeInfoProvider.getTypeForExpression(scope)
+          case Some(scope) => typeInfoProvider.getTypeForExpression(scope)
 
-      case None =>
-        scopeStack.getEnclosingTypeDecl.map(_.fullName)
+          case None =>
+            scopeStack.getEnclosingTypeDecl.map(_.fullName)
+        }
     }
   }
 
