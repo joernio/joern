@@ -672,34 +672,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-    // TODO: add the annotations as soon as they're part of the open source schema
-    // ktFn.getModifierList.getAnnotationEntries().asScala.map(_.getText)
-    //
-    val paramTypesWithName =
-      try {
-        val nodeParams = ktFn.getValueParameters
-        nodeParams.asScala
-          .map { p =>
-            val paramTypeName =
-              if (p.getTypeReference != null) {
-                p.getTypeReference.getText
-              } else {
-                TypeConstants.any
-              }
-            val paramName = p.getName
-            paramName + ":" + paramTypeName
-          }
-      } catch {
-        case _: Throwable => List()
-      }
-    val returnTypeName =
-      if (ktFn.getTypeReference != null) {
-        ktFn.getTypeReference.getText
-      } else {
-        ""
-      }
     val fnWithSig = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
-    val code      = returnTypeName + "(" + paramTypesWithName.mkString(", ") + ")"
 
     val _methodNode =
       methodNode(ktFn.getName, fnWithSig._1, fnWithSig._2, relativizedPath, line(ktFn), column(ktFn))
