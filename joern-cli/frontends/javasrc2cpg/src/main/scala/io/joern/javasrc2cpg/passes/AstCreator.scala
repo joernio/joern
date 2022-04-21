@@ -924,11 +924,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
 
+    val modifiers =
+      if (!methodDeclaration.isStatic) {
+        Seq(Ast(NewModifier()
+          .modifierType(ModifierTypes.VIRTUAL)
+          .code(ModifierTypes.VIRTUAL)))
+      } else {
+        Seq()
+      }
+
     val ast = Ast(methodNode)
       .withChildren(thisAst.map(_.ast))
       .withChildren(parameterAstsWithCtx.map(_.ast))
       .withChild(bodyAstWithCtx.ast)
       .withChildren(annotationAsts)
+      .withChildren(modifiers)
       .withChild(returnAstWithCtx)
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(parameterAstsWithCtx.map(_.ctx))
