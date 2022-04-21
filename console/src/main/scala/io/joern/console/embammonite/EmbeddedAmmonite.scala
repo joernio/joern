@@ -118,6 +118,12 @@ object EmbeddedAmmonite {
 
   val predef: String =
     """class CustomFrontend extends ammonite.repl.AmmoniteFrontEnd(ammonite.compiler.Parsers) {
+      |
+      |import org.xnio.channels.Channels
+      |val outFile = new java.io.FileWriter("/tmp/ammonite-test", false)
+      |outFile.write("foo3\n")
+      |outFile.close
+      |
       |  override def width = 65536
       |  override def height = 65536
       |
