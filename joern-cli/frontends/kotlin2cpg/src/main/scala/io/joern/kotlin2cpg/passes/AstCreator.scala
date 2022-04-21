@@ -1093,7 +1093,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           AstWithCtx(Ast(blockNode), Context())
       }
 
-
     val methodParameterNodes: Seq[NewMethodParameterIn] =
       parametersWithCtx
         .map(_.ast)
