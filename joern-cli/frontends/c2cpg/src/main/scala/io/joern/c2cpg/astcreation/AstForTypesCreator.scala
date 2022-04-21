@@ -94,49 +94,31 @@ trait AstForTypesCreator {
     val declTypeName = registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
     val tpe          = typeFor(declarator)
     val name         = ASTStringUtil.getSimpleName(declarator.getName)
-    val lineNumber   = line(declarator)
-    val columnNumber = column(declarator)
     declaration match {
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
-        Ast(
-          newTypeDecl(
-            name,
-            registerType(name),
-            filename,
-            nodeSignature(d),
-            alias = Some(declTypeName),
-            line = lineNumber,
-            column = columnNumber
-          )
-        )
+        Ast(newTypeDecl(name, registerType(name), filename, nodeSignature(d), alias = Some(declTypeName)))
       case d if parentIsClassDef(d) =>
         Ast(
           NewMember()
             .code(nodeSignature(declarator))
             .name(name)
             .typeFullName(declTypeName)
-            .lineNumber(lineNumber)
-            .columnNumber(columnNumber)
         )
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        val codeTpe = typeFor(declarator, stripKeywords = false)
         val l = NewLocal()
-          .code(s"$codeTpe $name")
+          .code(s"$tpe $name")
           .name(name)
           .typeFullName(registerType(tpe))
-          .lineNumber(lineNumber)
-          .columnNumber(columnNumber)
+          .lineNumber(line(declarator))
         scope.addToScope(name, (l, tpe))
         Ast(l)
       case _ =>
-        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false)
         val l = NewLocal()
-          .code(s"$codeTpe $name")
+          .code(s"$declTypeName $name")
           .name(name)
           .typeFullName(registerType(tpe))
-          .lineNumber(lineNumber)
-          .columnNumber(columnNumber)
+          .lineNumber(line(declarator))
         scope.addToScope(name, (l, tpe))
         Ast(l)
     }

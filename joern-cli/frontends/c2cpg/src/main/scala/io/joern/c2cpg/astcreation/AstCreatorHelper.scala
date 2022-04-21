@@ -134,13 +134,8 @@ trait AstCreatorHelper {
   private val reservedTypeKeywords =
     List("const", "static", "volatile", "restrict", "extern", "typedef", "inline", "constexpr", "auto", "virtual")
 
-  protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
-    val tpe =
-      if (stripKeywords) {
-        reservedTypeKeywords.foldLeft(rawType)((cur, repl) => cur.replace(s"$repl ", ""))
-      } else {
-        rawType
-      }
+  protected def cleanType(rawType: String): String = {
+    val tpe = reservedTypeKeywords.foldLeft(rawType)((cur, repl) => cur.replace(s"$repl ", ""))
     StringUtils.normalizeSpace(tpe) match {
       case ""                   => Defines.anyTypeName
       case t if t.contains("?") => Defines.anyTypeName
@@ -158,7 +153,7 @@ trait AstCreatorHelper {
   }
 
   @nowarn
-  protected def typeFor(node: IASTNode, stripKeywords: Boolean = true): String = {
+  protected def typeFor(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
       case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).startsWith("? ") =>
@@ -172,16 +167,10 @@ trait AstCreatorHelper {
         s"$tpe$arr"
       case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node))
-      case s: IASTNamedTypeSpecifier =>
-        cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case s: IASTCompositeTypeSpecifier =>
-        cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case s: IASTEnumerationSpecifier =>
-        cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case s: IASTElaboratedTypeSpecifier =>
-        cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
+      case d: IASTDeclSpecifier =>
+        cleanType(ASTStringUtil.getReturnTypeString(d, null))
       case _ =>
-        cleanType(getNodeSignature(node), stripKeywords)
+        cleanType(getNodeSignature(node))
     }
   }
 
@@ -324,8 +313,8 @@ trait AstCreatorHelper {
     name
   }
 
-  private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator, stripKeywords: Boolean): String = {
-    val tpe      = typeFor(spec, stripKeywords)
+  private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
+    val tpe      = typeFor(spec)
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
       case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
@@ -436,34 +425,34 @@ trait AstCreatorHelper {
     }
   }
 
-  protected def typeForDeclSpecifier(spec: IASTNode, stripKeywords: Boolean = true): String = {
+  protected def typeForDeclSpecifier(spec: IASTNode): String = {
     val tpe = spec match {
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTFunctionDefinition] =>
         val parentDecl = s.getParent.asInstanceOf[IASTFunctionDefinition].getDeclarator
         ASTStringUtil.getReturnTypeString(s, parentDecl)
       case s: IASTSimpleDeclaration if s.getParent.isInstanceOf[ICASTKnRFunctionDeclarator] =>
         val decl = s.getDeclarators.head
-        pointersAsString(s.getDeclSpecifier, decl, stripKeywords)
+        pointersAsString(s.getDeclSpecifier, decl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.head
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier =>
         ASTStringUtil.getReturnTypeString(s, null)
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier     => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTEnumerationSpecifier   => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.head
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier => ASTStringUtil.getSignatureString(s, null)
       // TODO: handle other types of IASTDeclSpecifier
       case _ => Defines.anyTypeName
