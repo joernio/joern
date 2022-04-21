@@ -2003,7 +2003,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .typeFullName(typeFullName)
           .lineNumber(line(x.getName))
           .columnNumber(column(x.getName))
-        AstWithCtx(Ast(identifier), Context())
+
+        val variableOption = scopeStack
+          .lookupVariable(name)
+          .filter(variableInfo =>
+            variableInfo.node.isInstanceOf[NewMethodParameterIn] || variableInfo.node.isInstanceOf[NewLocal]
+          )
+        val ast = variableOption.foldLeft(Ast(identifier))((ast, variableInfo) =>
+          ast.withRefEdge(identifier, variableInfo.node)
+        )
+
+        AstWithCtx(ast, Context())
     }
 
   }
