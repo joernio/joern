@@ -3,7 +3,6 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.ast.Nodes._
 import io.joern.kotlin2cpg.ast.Nodes.{methodReturnNode => _methodReturnNode}
-
 import io.joern.kotlin2cpg.types.{CallKinds, NameReferenceKinds, TypeConstants, TypeInfoProvider}
 import io.joern.kotlin2cpg.psi.Extractor._
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -901,7 +900,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       astsForExpression(expr.getLeftHandSide, scopeContext, 1, 1) ++ Seq(
         astForTypeReference(expr.getTypeReference, scopeContext, 2, 2)
       )
-    val ast = callAst(callNode, args.map(_.ast))
+    val ast = callAst(callNode, args.map(_.ast).toList)
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
   }
 
@@ -919,7 +918,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       operatorCallNode(Operators.cast, expr.getText, None, line(expr), column(expr))
         .argumentIndex(argIdx)
         .order(order)
-    val ast = callAst(callNode, args.map(_.ast))
+    val ast = callAst(callNode, args.map(_.ast).toList)
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
   }
 
@@ -1078,7 +1077,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithCtx = {
-
     val parametersWithCtx =
       withIndex(expr.getValueParameters.asScala.toSeq) { (p, order) =>
         astForParameter(p, order)
@@ -1259,7 +1257,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       operatorCallNode(Operators.indexAccess, expr.getText, Some(typeFullName), line(expr), column(expr))
         .order(order)
         .argumentIndex(argIdx)
-    val call = callAst(callNode, Seq(Ast(identifier)))
+    val call = callAst(callNode, List(Ast(identifier)))
     val finalAst =
       call
         .withChildren(astsForIndexExpr.map(_.ast))
@@ -1867,13 +1865,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
                   .argumentIndex(idx + 1)
                   .order(idx + 1)
               val valueArgs = astsForExpression(entry.getExpression, scopeContext, idx + 1, idx + 1)
-              val call      = callAst(valueCallNode, valueArgs.map(_.ast))
+              val call      = callAst(valueCallNode, valueArgs.map(_.ast).toList)
               Seq(AstWithCtx(call, Context()))
             } else {
               Seq()
             }
           }
-      val ast = callAst(callNode, args.toIndexedSeq.map(_.ast))
+      val ast = callAst(callNode, args.toIndexedSeq.map(_.ast).toList)
       AstWithCtx(ast, mergedCtx(args.toIndexedSeq.map(_.ctx)))
     } else {
       val node =
@@ -2902,7 +2900,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     } else {
       astsForExpression(expr.getDelegateExpressionOrInitializer, scopeContext, 2, 2)
     }
-    val call = callAst(assignmentNode, Seq(Ast(identifier)) ++ rhsAsts.map(_.ast))
+    val call = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts.map(_.ast))
 
     val rhsCtx = mergedCtx(rhsAsts.map(_.ctx))
     val finalCtx = Context(
@@ -3109,14 +3107,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(order)
     val args =
       astsForExpression(expr.getLeft, scopeContext, 1, 1) ++ astsForExpression(expr.getRight, scopeContext, 2, 2)
-    val ast = callAst(_callNode, args.map(_.ast))
+    val ast = callAst(_callNode, args.map(_.ast).toList)
     AstWithCtx(ast, mergedCtx(args.map(_.ctx)))
-  }
-
-  def callAst(rootNode: NewNode, args: Seq[Ast]): Ast = {
-    Ast(rootNode)
-      .withChildren(args)
-      .withArgEdges(rootNode, args.flatMap(_.root))
   }
 
   private def astForCall(expr: KtCallExpression, scopeContext: Context, order: Int = 1, argIdx: Int)(implicit
