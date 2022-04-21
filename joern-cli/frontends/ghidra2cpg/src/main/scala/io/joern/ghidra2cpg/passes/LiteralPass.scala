@@ -36,7 +36,6 @@ class LiteralPass(cpg: Cpg, flatProgramAPI: FlatProgramAPI) extends ConcurrentWr
       .NewLiteral()
       .code(literal)
       .order(-1)
-      .argumentIndex(-1)
       .typeFullName(literal)
     diffGraph.addNode(node)
   }
