@@ -153,12 +153,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.asScala.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }.toSeq
-  }
-
   private def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): AstWithCtx = {
     val ktFile = fileWithMeta.f
     val classDecls =
@@ -172,7 +166,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     implicit val fileInfo: FileInfo = FileInfo(allImports, classDecls)
 
     val importAsts =
-      withOrder(allImports.asJava) { (entry, order) =>
+      withIndex(allImports) { (entry, order) =>
         astForImportEntry(entry, order)
       }
     val namespaceBlocksForImports =
@@ -185,7 +179,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val lastImportOrder = importAsts.size
     var idxEpsilon      = 0 // when multiple AST nodes are returned by `astForDeclaration`
     val declarationsAstsWithCtx =
-      withOrder(ktFile.getDeclarations) { (decl, order) =>
+      withIndex(ktFile.getDeclarations.asScala.toSeq) { (decl, order) =>
         val asts = astForDeclaration(decl, Context(), order + lastImportOrder + idxEpsilon)
         idxEpsilon += asts.size - 1
         asts
@@ -381,7 +375,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       */
     val scopeCtx = Context(typeDecl = Some(typeDecl))
     val methodAstsWithCtx =
-      withOrder(classFunctions) { (method, order) =>
+      withIndex(classFunctions.asScala.toSeq) { (method, order) =>
         astForMethod(method, scopeCtx, order)
       }
 
@@ -418,7 +412,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(0)
     val constructorParamsWithCtx = {
       Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
-        withOrder(constructorParams.asJava) { (p, order) =>
+        withIndex(constructorParams) { (p, order) =>
           astForParameter(p, order)
         }
     }
@@ -524,7 +518,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val orderAfterPrimaryCtorAndItsMemberDefs = membersFromPrimaryCtorAsts.size + primaryCtorOrder
     val secondaryConstructorAsts =
-      withOrder(ktClass.getSecondaryConstructors) { (secondaryCtor, order) =>
+      withIndex(ktClass.getSecondaryConstructors.asScala.toSeq) { (secondaryCtor, order) =>
         val constructorParams = secondaryCtor.getValueParameters.asScala.toList
         val defaultSignature  = typeInfoProvider.erasedSignature(constructorParams)
         val defaultFullName   = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
@@ -548,7 +542,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .order(0)
         val constructorParamsWithCtx =
           Seq(AstWithCtx(Ast(ctorThisParam), Context())) ++
-            withOrder(constructorParams.asJava) { (p, order) =>
+            withIndex(constructorParams) { (p, order) =>
               astForParameter(p, order)
             }
 
@@ -663,7 +657,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChildren(membersFromPrimaryCtorAsts)
         .withChildren(secondaryConstructorAsts)
         .withChildren(componentNMethodAsts.toList)
-        .withChildren(withOrder(classDeclarations) { (method, order) =>
+        .withChildren(withIndex(classDeclarations.asScala.toSeq) { (method, order) =>
           astForMember(method, orderAfterComponentN + order)
         })
 
@@ -712,7 +706,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(childNum)
 
     val parametersWithCtx =
-      withOrder(ktFn.getValueParameters) { (p, order) =>
+      withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, order) =>
         astForParameter(p, order)
       }
 
@@ -826,7 +820,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     var orderRemainder = 0
     var locals         = List[NewLocal]()
     val expressions =
-      withOrder(expr.getStatements) { (statement, order) =>
+      withIndex(expr.getStatements.asScala.toSeq) { (statement, order) =>
         val mergedScopeContext =
           Context(methodParameters = scopeContext.methodParameters, locals = scopeContext.locals ++ locals)
         val asts = astsForExpression(statement, mergedScopeContext, order + orderRemainder, order + orderRemainder)
@@ -1120,7 +1114,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   ): AstWithCtx = {
 
     val parametersWithCtx =
-      withOrder(expr.getValueParameters) { (p, order) =>
+      withIndex(expr.getValueParameters.asScala.toSeq) { (p, order) =>
         astForParameter(p, order)
       }
     val lastOrder = parametersWithCtx.size + 2
@@ -1598,7 +1592,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val args = ctorCall.getValueArguments
     val argAsts =
-      withOrder(args) { case (arg, argOrder) =>
+      withIndex(args.asScala.toSeq) { case (arg, argOrder) =>
         astsForExpression(arg.getArgumentExpression, scopeContext, argOrder + 1, argOrder)
       }.flatten
 
@@ -1966,7 +1960,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val argAsts =
       expr.getSelectorExpression match {
         case selectorExpression: KtCallExpression =>
-          withOrder(selectorExpression.getValueArguments) { case (arg, order) =>
+          withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, order) =>
             val selectorOrder    = if (isStaticCall) order else selectorOrderCount + order + 1
             val selectorArgIndex = if (isStaticCall) order else selectorOrder - 1
             val asts =
@@ -2114,7 +2108,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChild(tryAstWithCtx.ast)
 
     val clauseAstsWitCtx =
-      withOrder(expr.getCatchClauses) { (entry, order) =>
+      withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, order) =>
         astsForExpression(entry.getCatchBody, scopeContext, order + 1, order + 1)
       }.flatten
 
@@ -2161,7 +2155,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withArgEdge(callNode, tryAstWithCtx.ast.root.get)
 
     val clauseAstsWitCtx =
-      withOrder(expr.getCatchClauses) { (entry, order) =>
+      withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, order) =>
         astsForExpression(entry.getCatchBody, scopeContext, order + 1, order + 1)
       }.flatten
 
@@ -2504,7 +2498,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val destructuringDeclEntries = expr.getDestructuringDeclaration.getEntries
     val localsForDestructuringVars =
-      withOrder(destructuringDeclEntries) { (entry, order) =>
+      withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, order) =>
         val entryTypeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
         registerType(entryTypeFullName)
 
@@ -2568,7 +2562,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withArgEdge(tmpParameterNextAssignment, iteratorNextCall)
 
     val componentNCalls =
-      withOrder(destructuringDeclEntries) { (entry, order) =>
+      withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, order) =>
         val entryIdentifier =
           identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
             .argumentIndex(1)
@@ -2681,7 +2675,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .getOrElse(AstWithCtx(Ast(), Context()))
 
     val astsForEntries =
-      withOrder(expr.getEntries) { (e, order) =>
+      withIndex(expr.getEntries.asScala.toSeq) { (e, order) =>
         astsForWhenEntry(e, scopeContext, order)
       }.flatten
 
@@ -2854,7 +2848,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val args = expr.getValueArguments
     val argAsts =
-      withOrder(args) { case (arg, argOrder) =>
+      withIndex(args.asScala.toSeq) { case (arg, argOrder) =>
         astsForExpression(arg.getArgumentExpression, scopeContext, argOrder, argOrder)
       }.flatten
 
@@ -3162,7 +3156,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val args = expr.getValueArguments
     val argAsts =
-      withOrder(args) { case (arg, argOrder) =>
+      withIndex(args.asScala.toSeq) { case (arg, argOrder) =>
         astsForExpression(arg.getArgumentExpression, scopeContext, argOrder, argOrder)
       }.flatten
 
