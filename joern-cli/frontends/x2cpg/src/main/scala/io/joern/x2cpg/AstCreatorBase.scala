@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodReturn,
   NewNamespaceBlock
 }
+import io.shiftleft.codepropertygraph.generated.nodes.NewReturn
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -83,7 +84,14 @@ abstract class AstCreatorBase(filename: String) {
       .withReceiverEdges(callNode, receiverRoot)
   }
 
-  private def setArgumentIndices(arguments: List[Ast]) = {
+  def returnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
+    setArgumentIndices(arguments)
+    Ast(returnNode)
+      .withChildren(arguments)
+      .withArgEdges(returnNode, arguments.flatMap(_.root))
+  }
+
+  private def setArgumentIndices(arguments: List[Ast]): Unit = {
     withIndex(arguments) { case (a, i) =>
       a.root.collect { case x: ExpressionNew =>
         x.argumentIndex = i

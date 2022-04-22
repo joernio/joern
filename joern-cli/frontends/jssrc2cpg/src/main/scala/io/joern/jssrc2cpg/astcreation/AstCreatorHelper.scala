@@ -2,7 +2,6 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 import ujson.Value
@@ -10,30 +9,6 @@ import ujson.Value
 import scala.collection.mutable
 import scala.util.Success
 import scala.util.Try
-
-object AstCreatorHelper {
-  implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
-    def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
-      case Some(value) => ast.withArgEdge(src, value)
-      case None        => ast
-    }
-
-    def withConditionEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
-      case Some(value) => ast.withConditionEdge(src, value)
-      case None        => ast
-    }
-
-    def withArgEdges(src: NewNode, dsts: Seq[Ast]): Ast = {
-      val args = dsts.collect { case a if a.root.isDefined => a.root.get }
-      ast.withArgEdges(src, args)
-    }
-
-    def withReceiverEdges(src: NewNode, dsts: Seq[Ast]): Ast = {
-      val recvs = dsts.collect { case a if a.root.isDefined => a.root.get }
-      ast.withReceiverEdges(src, recvs.toList)
-    }
-  }
-}
 
 trait AstCreatorHelper {
 

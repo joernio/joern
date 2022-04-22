@@ -118,7 +118,7 @@ trait AstNodeBuilder {
     val code      = func.code
     NewMethod()
       .name(methodName)
-      .filename(parserResult.fullPath)
+      .filename(parserResult.filename)
       .code(code)
       .fullName(methodFullName)
       .isExternal(false)

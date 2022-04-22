@@ -2084,7 +2084,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def barLocals = barMethodBlock.expandAst(NodeTypes.LOCAL)
       barLocals.checkNodeCount(1)
-
       barLocals.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def identifierX =
@@ -2214,7 +2213,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def barLocalX = barMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       barLocalX.checkNodeCount(1)
-
       barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def barIdentifierX =
@@ -2245,7 +2243,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def bazLocalX = bazMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       bazLocalX.checkNodeCount(1)
-
       bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
 
       def bazIdentifierX =
@@ -2259,20 +2256,20 @@ class AstCreationPassTest extends AbstractPassTest {
     }
 
     "have correct closure binding for capturing over 2 levels with intermediate blocks" in AstFixture("""
-                                                                                                        | function foo()
-                                                                                                        | {
-                                                                                                        |   x = 1
-                                                                                                        |   function bar() {
-                                                                                                        |     x = 2
-                                                                                                        |     {
-                                                                                                        |       function baz() {
-                                                                                                        |         {
-                                                                                                        |            x = 3
-                                                                                                        |         }
-                                                                                                        |       }
-                                                                                                        |     }
-                                                                                                        |   }
-                                                                                                        | }
+          | function foo()
+          | {
+          |   x = 1
+          |   function bar() {
+          |     x = 2
+          |     {
+          |       function baz() {
+          |         {
+          |            x = 3
+          |         }
+          |       }
+          |     }
+          |   }
+          | }
         """.stripMargin) { cpg =>
       def fooMethod = cpg.method.nameExact("foo")
       fooMethod.checkNodeCount(1)
@@ -2302,7 +2299,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def barLocalX = barMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       barLocalX.checkNodeCount(1)
-
       barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def barIdentifierX =
@@ -2336,7 +2332,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def bazLocalX = bazMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       bazLocalX.checkNodeCount(1)
-
       bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
 
       def bazMethodInnerBlock = bazMethodBlock.expandAst(NodeTypes.BLOCK)
@@ -2391,7 +2386,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def barLocalX = barMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       barLocalX.checkNodeCount(1)
-
       barLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:x")
 
       def bazRef = barMethodBlock.expandAst(NodeTypes.CALL).expandAst(NodeTypes.METHOD_REF)
@@ -2413,7 +2407,6 @@ class AstCreationPassTest extends AbstractPassTest {
 
       def bazLocalX = bazMethodBlock.expandAst(NodeTypes.LOCAL).filter(PropertyNames.NAME, "x")
       bazLocalX.checkNodeCount(1)
-
       bazLocalX.checkProperty(PropertyNames.CLOSURE_BINDING_ID, "code.js::program:foo:bar:baz:x")
 
       def bazIdentifierX =
