@@ -58,6 +58,13 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
   val isWindows = System.getProperties.getProperty("os.name", "<unknown>").toLowerCase.contains("windows")
   val isGithubActionsWindowsRunner = isGithubActions && isWindows
 
+  println("XXXXXXXX0")
+  println(System.getenv("GITHUB_ACTIONS"))
+  println(isGithubActions)
+  println("XXXXXXXX1")
+  println(System.getProperties.getProperty("os.name", "<unknown>"))
+
+
   if (isGithubActionsWindowsRunner) {
     info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
   } else {
