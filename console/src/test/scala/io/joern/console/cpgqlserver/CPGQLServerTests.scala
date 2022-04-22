@@ -14,7 +14,6 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.jdk.CollectionConverters.MapHasAsScala
 
 class CPGQLServerTests extends AnyWordSpec with Matchers {
   private val validBasicAuthHeaderVal: String = "Basic dXNlcm5hbWU6cGFzc3dvcmQ="
@@ -55,16 +54,13 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
     * Explicitly adding a dependency on `org.jboss.xnio/xnio-api` didn't help,
     * as well as other debug attempts. So we gave up and disabled this specifically for github actions' windows runner.
     */
-  val isGithubActionsWindowsRunner = {
-    false
-  }
+  val isGithubActions = System.getenv("GITHUB_ACTIONS") == "TRUE"
+  val isWindows = System.getProperties.getProperty("os.name", "<unknown>").toLowerCase.contains("windows")
+  val isGithubActionsWindowsRunner = isGithubActions && isWindows
 
-  println("XXXXXXXX0")
-  System.getenv().asScala.foreach(println)
-  println("XXXXXXXX1")
-  System.getProperties.asScala.foreach(println)
-
-  if (!isGithubActionsWindowsRunner) {
+  if (isGithubActionsWindowsRunner) {
+    info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
+  } else {
     "CPGQLServer" should {
 
       "allow websocket connections to the `/connect` endpoint" in Fixture() { host =>
