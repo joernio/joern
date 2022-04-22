@@ -847,47 +847,29 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astForConstantExpr(constant: Constant, order: Int): Ast = {
     constant match {
-      case _: ClassConstant => Ast()
-      case _: NullConstant  => Ast()
-      case _: IntConstant =>
+      case x: ClassConstant =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("int"))
+            .code(s"${parseAsmType(x.value)}.class")
+            .typeFullName(registerType(x.getType.toQuotedString))
         )
-      case _: LongConstant =>
+      case _: NullConstant =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("long"))
+            .code("null")
+            .typeFullName(registerType("null"))
         )
-      case _: DoubleConstant =>
+      case _ =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
             .code(constant.toString)
-            .typeFullName(registerType("double"))
-        )
-      case _: FloatConstant =>
-        Ast(
-          NewLiteral()
-            .order(order)
-            .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("float"))
-        )
-      case _: StringConstant =>
-        Ast(
-          NewLiteral()
-            .order(order)
-            .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("java.lang.String"))
+            .typeFullName(registerType(constant.getType.toQuotedString))
         )
     }
   }
@@ -993,4 +975,73 @@ object AstCreator {
       f(x, i + 1)
     }.toSeq
   }
+
+  private val PRIMITIVES: Map[Char, String] = Map[Char, String](
+    'Z' -> "boolean",
+    'C' -> "char",
+    'B' -> "byte",
+    'S' -> "short",
+    'I' -> "int",
+    'F' -> "float",
+    'J' -> "long",
+    'D' -> "double",
+    'V' -> "void"
+  )
+
+  def parseAsmType(signature: String): String = {
+    val sigArr = signature.toCharArray
+    val sb     = new StringBuilder()
+    sigArr.toSeq.foreach { (c: Char) =>
+      if (c == ';') {
+        val prefix = sb
+          .toString()
+          .replace("[", "")
+          .substring(1)
+          .replace("/", ".")
+        val suffix = sb.toSeq
+          .filter { _ == '[' }
+          .map { _ => "[]" }
+          .mkString("")
+        return s"$prefix$suffix"
+      } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
+        return s"${PRIMITIVES(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
+      } else if (isObject(c)) {
+        sb.append(c)
+      } else if (isArray(c)) {
+        sb.append(c)
+      } else sb.append(c)
+    }
+    sb.toString()
+  }
+
+  /** Checks if the given character is associated with a primitive or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. I, D, F, etc.
+    * @return
+    *   true if the character is associated with a primitive, false if otherwise.
+    */
+  def isPrimitive(c: Char): Boolean =
+    PRIMITIVES.contains(c)
+
+  /** Checks if the given character is associated an object or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. L
+    * @return
+    *   true if the character is associated with an object, false if otherwise.
+    */
+  def isObject(c: Char): Boolean =
+    c == 'L'
+
+  /** Checks if the given character is associated an array or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. [
+    * @return
+    *   true if the character is associated with an array, false if otherwise.
+    */
+  def isArray(c: Char): Boolean =
+    c == '['
+
 }
