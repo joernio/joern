@@ -23,7 +23,7 @@ class MethodTests extends AnyFreeSpec with Matchers {
       x.size shouldBe 1
       x.name shouldBe "bar"
       x.fullName shouldBe "com.test.pkg.Foo.bar:java.lang.Integer(java.lang.Integer)"
-      x.code shouldBe "Int(x:Int)"
+      x.code shouldBe "bar"
       x.signature shouldBe "java.lang.Integer(java.lang.Integer)"
       x.isExternal shouldBe false
       x.lineNumber shouldBe Some(4)

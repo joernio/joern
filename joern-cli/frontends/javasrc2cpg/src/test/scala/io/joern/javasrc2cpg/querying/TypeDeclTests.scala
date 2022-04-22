@@ -74,7 +74,6 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
 
     val constructorReturn = constructor.methodReturn
     constructorReturn.typeFullName shouldBe "void"
-    constructorReturn.order shouldBe 2
   }
 
   "should contain a type decl for `foo` with correct fields" in {

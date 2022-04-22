@@ -152,16 +152,18 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(identifier: Identifier, argument: Identifier) = call.argument.l
+    val List(identifier: Identifier, argument: Call) = call.argument.l
     identifier.order shouldBe 0
     identifier.argumentIndex shouldBe 0
     identifier.code shouldBe "this"
     identifier.name shouldBe "this"
 
-    argument.order shouldBe 1
-    argument.argumentIndex shouldBe 1
-    argument.code shouldBe "obj"
-    argument.name shouldBe "obj"
+    argument.name shouldBe Operators.fieldAccess
+    argument.typeFullName shouldBe "test.MyObject"
+
+    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+    ident.name shouldBe "this"
+    fieldIdent.canonicalName shouldBe "obj"
   }
 
   "should create a call node for a call with an explicit `this`" in {
@@ -173,16 +175,19 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(objName: Identifier, argument: Identifier) = call.astChildren.l
+    val List(objName: Identifier, argument: Call) = call.astChildren.l
 
     objName.order shouldBe 0
     objName.argumentIndex shouldBe 0
     objName.name shouldBe "this"
     objName.code shouldBe "this"
 
-    argument.code shouldBe "obj"
-    argument.order shouldBe 1
-    argument.argumentIndex shouldBe 1
+    argument.name shouldBe Operators.fieldAccess
+    argument.typeFullName shouldBe "test.MyObject"
+
+    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+    ident.name shouldBe "this"
+    fieldIdent.canonicalName shouldBe "obj"
   }
 
   "should create correct code field for static call" in {

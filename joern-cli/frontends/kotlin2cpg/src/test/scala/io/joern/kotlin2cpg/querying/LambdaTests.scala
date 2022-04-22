@@ -72,7 +72,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain a LOCAL node for the captured `baz`" in {
-      cpg.local.code("baz").size shouldBe 1
+      cpg.local.code("baz").size shouldBe 2
     }
 
     "should contain a CLOSURE_BINDING node for captured `baz`" in {
@@ -147,7 +147,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
       td.isExternal shouldBe true
-      td.code shouldBe ""
+      td.code shouldBe "LAMBDA_TYPE_DECL"
       td.inheritsFromTypeFullName shouldBe Seq("kotlin.Function1")
       td.astParent.size shouldBe 1
 
@@ -214,7 +214,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
       td.isExternal shouldBe true
-      td.code shouldBe ""
+      td.code shouldBe "LAMBDA_TYPE_DECL"
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
@@ -287,7 +287,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
       td.isExternal shouldBe true
-      td.code shouldBe ""
+      td.code shouldBe "LAMBDA_TYPE_DECL"
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
       bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"

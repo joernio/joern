@@ -200,7 +200,6 @@ class AstCreationPassTests
       cpg.member.name("x").order.l shouldBe List(1)
 
       inside(cpg.assignment.l) { case List(assignment1) =>
-        assignment1.order shouldBe 2
         inside(assignment1.astMinusRoot.isMethodRef.l) { case List(ref) =>
           ref.methodFullName shouldBe lambdaFullName
         }
@@ -243,7 +242,6 @@ class AstCreationPassTests
       cpg.member.name("x").order.l shouldBe List(1)
 
       inside(cpg.assignment.l) { case List(assignment1) =>
-        assignment1.order shouldBe 2
         inside(assignment1.astMinusRoot.isMethodRef.l) { case List(ref) =>
           ref.methodFullName shouldBe lambdaFullName
         }
@@ -344,6 +342,7 @@ class AstCreationPassTests
           ref.code shouldBe "int anonymous_lambda_1 (int n)"
           lit.code shouldBe "10"
         }
+
         inside(lambda2call.argument.l) { case List(lit: Literal) =>
           lit.code shouldBe "10"
         }
@@ -1552,15 +1551,15 @@ class AstCreationPassTests
       localBar.name shouldBe "bar"
       localBar.order shouldBe 3
 
-      val List(assigment1, assigment2) = cpg.assignment.l
-      assigment1.order shouldBe 2
-      assigment1.code shouldBe "foo{1}"
-      assigment1.name shouldBe Operators.assignment
-      assigment1.methodFullName shouldBe Operators.assignment
-      assigment2.order shouldBe 4
-      assigment2.code shouldBe "bar[]{0, 1, 2}"
-      assigment2.name shouldBe Operators.assignment
-      assigment2.methodFullName shouldBe Operators.assignment
+      val List(assignment1, assignment2) = cpg.assignment.l
+      assignment1.order shouldBe 2
+      assignment1.code shouldBe "foo{1}"
+      assignment1.name shouldBe Operators.assignment
+      assignment1.methodFullName shouldBe Operators.assignment
+      assignment2.order shouldBe 4
+      assignment2.code shouldBe "bar[]{0, 1, 2}"
+      assignment2.name shouldBe Operators.assignment
+      assignment2.methodFullName shouldBe Operators.assignment
 
       inside(cpg.assignment.astChildren.l) {
         case List(identFoo: Identifier, identBar: Identifier, callFoo: Call, barCall: Call) =>

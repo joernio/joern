@@ -3,6 +3,8 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewCall,
   NewMethod,
   NewMethodParameterIn,
   NewMethodReturn,
@@ -52,14 +54,52 @@ abstract class AstCreatorBase(filename: String) {
 
   /** Create a method return node
     */
-  def methodReturnNode(line: Option[Integer], column: Option[Integer], order: Int, tpe: String): NewMethodReturn =
+  def methodReturnNode(line: Option[Integer], column: Option[Integer], tpe: String): NewMethodReturn =
     NewMethodReturn()
-      .order(order)
       .typeFullName(tpe)
       .code(tpe)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
+
+  /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
+    * main purpose of this method is to automatically assign the correct argument indices.
+    */
+  def callAst(callNode: NewCall, arguments: List[Ast] = List(), receiver: Option[Ast] = None): Ast = {
+
+    val receiverRoot = receiver.flatMap(_.root).toList
+    val rcv          = receiver.getOrElse(Ast())
+    receiverRoot match {
+      case List(x: ExpressionNew) =>
+        x.argumentIndex = 0
+      case _ =>
+    }
+
+    setArgumentIndices(arguments)
+    Ast(callNode)
+      .withChild(rcv)
+      .withChildren(arguments)
+      .withArgEdges(callNode, arguments.flatMap(_.root))
+      .withReceiverEdges(callNode, receiverRoot)
+  }
+
+  private def setArgumentIndices(arguments: List[Ast]) = {
+    withIndex(arguments) { case (a, i) =>
+      a.root.collect { case x: ExpressionNew =>
+        x.argumentIndex = i
+      }
+    }
+  }
+
+  def withIndex[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
+    nodes.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
+    }
+
+  def withIndex[T, X](nodes: Array[T])(f: (T, Int) => X): Seq[X] =
+    nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
+      f(x, i + 1)
+    }
 
   /** Absolute path for the given file name
     */
