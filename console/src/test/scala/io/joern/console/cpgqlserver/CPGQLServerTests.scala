@@ -51,11 +51,10 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
     * `org.jboss.xnio/xnio-api` didn't help, as well as other debug attempts. So we gave up and disabled this
     * specifically for github actions' windows runner.
     */
-  val isGithubActions = System.getenv("GITHUB_ACTIONS") == "TRUE"
-  val isWindows       = System.getProperties.getProperty("os.name", "<unknown>").toLowerCase.contains("windows")
-  val isGithubActionsWindowsRunner = isGithubActions && isWindows
+  val isGithubActions = scala.util.Properties.envOrElse("GITHUB_ACTIONS", "false").toLowerCase == "true"
+  val isWindows       = scala.util.Properties.isWin
 
-  if (isGithubActionsWindowsRunner) {
+  if (isGithubActions && isWindows) {
     info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
   } else {
     "CPGQLServer" should {
