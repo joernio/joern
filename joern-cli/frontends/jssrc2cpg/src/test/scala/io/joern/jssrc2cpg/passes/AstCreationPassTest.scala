@@ -4846,7 +4846,7 @@ class AstCreationPassTest extends AbstractPassTest {
     def pushCallReceiver = pushCall.expandReceiver(NodeTypes.CALL)
     pushCallReceiver.checkNodeCount(1)
     pushCallReceiver.checkProperty(PropertyNames.NAME, Operators.fieldAccess)
-    pushCallReceiver.checkProperty(PropertyNames.ORDER, 0)
+    pushCallReceiver.checkProperty(PropertyNames.ARGUMENT_INDEX, 0)
 
     def pushCallReceiverBase =
       pushCallReceiver.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ORDER, 1)
@@ -4858,15 +4858,13 @@ class AstCreationPassTest extends AbstractPassTest {
     pushCallReceiverMember.checkNodeCount(1)
     pushCallReceiverMember.checkProperty(PropertyNames.CANONICAL_NAME, "push")
 
-    def pushCallThis = pushCall.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ORDER, 1)
+    def pushCallThis = pushCall.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ARGUMENT_INDEX, 1)
     pushCallThis.checkNodeCount(1)
     pushCallThis.checkProperty(PropertyNames.NAME, "_tmp_0")
-    pushCallThis.checkProperty(PropertyNames.ARGUMENT_INDEX, 0)
 
-    def pushCallArg = pushCall.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ORDER, 2)
+    def pushCallArg = pushCall.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ARGUMENT_INDEX, 2)
     pushCallArg.checkNodeCount(1)
     pushCallArg.checkProperty(PropertyNames.CODE, s"$element")
-    pushCallArg.checkProperty(PropertyNames.ARGUMENT_INDEX, 1)
   }
 
   private object AstFixture extends Fixture {

@@ -17,6 +17,7 @@ import io.joern.jssrc2cpg.datastructures.scope.BlockScope
 import io.joern.jssrc2cpg.datastructures.scope.ScopeElement
 import io.joern.jssrc2cpg.datastructures.scope.ScopeElementIterator
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -383,7 +384,9 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
             line = line(declarator),
             column = column(declarator)
           )
-        List(assigmentCallAst) ++ destAsts ++ sourceAsts
+        destAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+        sourceAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+        List(assigmentCallAst)
       case Some(initExpr) =>
         val destAsts   = astsForNode(id.json)
         val sourceAsts = astsForNode(initExpr.json)
@@ -395,7 +398,9 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
             line = line(declarator),
             column = column(declarator)
           )
-        List(assigmentCallAst) ++ destAsts ++ sourceAsts
+        destAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+        sourceAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+        List(assigmentCallAst)
       case None => List.empty
     }
   }
@@ -717,6 +722,91 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     List(Ast(metaTypeRefNode))
   }
 
+  protected def astsForArrayExpression(arrExpr: BabelNodeInfo): List[Ast] = {
+    val lineNumber   = arrExpr.lineNumber
+    val columnNumber = arrExpr.columnNumber
+    val elements     = Try(arrExpr.json("elements").arr).toOption.toSeq.flatten
+    if (elements.isEmpty) {
+      List(
+        Ast(
+          createCallNode(
+            EcmaBuiltins.arrayFactory + "()",
+            EcmaBuiltins.arrayFactory,
+            DispatchTypes.STATIC_DISPATCH,
+            lineNumber,
+            columnNumber
+          )
+        )
+      )
+    } else {
+      val blockId = createBlockNode(arrExpr.code, lineNumber, columnNumber)
+      scope.pushNewBlockScope(blockId)
+      localAstParentStack.push(blockId)
+
+      val tmpName    = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+      val localTmpId = createLocalNode(tmpName, Defines.ANY.label)
+      diffGraph.addEdge(localAstParentStack.head, localTmpId, EdgeTypes.AST)
+
+      val tmpArrayId = createIdentifierNode(tmpName, arrExpr)
+
+      val arrayCallId = createCallNode(
+        EcmaBuiltins.arrayFactory + "()",
+        EcmaBuiltins.arrayFactory,
+        DispatchTypes.STATIC_DISPATCH,
+        lineNumber,
+        columnNumber
+      )
+
+      val assignmentCode = s"${localTmpId.code} = ${arrayCallId.code}"
+      val assignmentTmpArrayCallId =
+        createAssignment(tmpArrayId, arrayCallId, assignmentCode, lineNumber, columnNumber)
+      Ast.storeInDiffGraph(assignmentTmpArrayCallId, diffGraph)
+      diffGraph.addEdge(blockId, assignmentTmpArrayCallId.nodes.head, EdgeTypes.AST)
+
+      var index = 1
+      elements.foreach {
+        case element if !element.isNull =>
+          val elementNodeInfo     = createBabelNodeInfo(element)
+          val elementLineNumber   = elementNodeInfo.lineNumber
+          val elementColumnNumber = elementNodeInfo.columnNumber
+          val elementCode         = elementNodeInfo.code
+          val elementId           = astsForNode(element)
+
+          val pushCallId =
+            createCallNode(
+              tmpName + s".push($elementCode)",
+              "",
+              DispatchTypes.DYNAMIC_DISPATCH,
+              elementLineNumber,
+              elementColumnNumber
+            ).argumentIndex(index)
+
+          val nextBaseId = createIdentifierNode(tmpName, elementNodeInfo)
+
+          val nextMemberId = createFieldIdentifierNode("push", elementLineNumber, elementColumnNumber)
+
+          val nextReceiverId =
+            createFieldAccess(nextBaseId, nextMemberId, elementLineNumber, elementColumnNumber)
+
+          val thisPushId = createIdentifierNode(tmpName, elementNodeInfo)
+
+          val callNode = callAst(pushCallId, Ast(thisPushId) +: elementId, Some(nextReceiverId))
+          Ast.storeInDiffGraph(callNode, diffGraph)
+          diffGraph.addEdge(blockId, pushCallId, EdgeTypes.AST)
+          index = index + 1
+        case _ => // skip
+      }
+
+      val tmpArrayReturnId = createIdentifierNode(tmpName, arrExpr)
+      diffGraph.addEdge(blockId, tmpArrayReturnId, EdgeTypes.AST)
+
+      scope.popScope()
+      localAstParentStack.pop()
+
+      List(Ast(blockId))
+    }
+  }
+
   protected def astsForNode(json: Value): List[Ast] = createBabelNodeInfo(json) match {
     case BabelNodeInfo(BabelAst.File)                              => astsForNode(json("program"))
     case program @ BabelNodeInfo(BabelAst.Program)                 => astsForProgram(program)
@@ -737,6 +827,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     case seq @ BabelNodeInfo(BabelAst.SequenceExpression)          => astsForSequenceExpression(seq)
     case classExpr @ BabelNodeInfo(BabelAst.ClassExpression)       => astsForClass(classExpr)
     case classDecl @ BabelNodeInfo(BabelAst.ClassDeclaration)      => astsForClass(classDecl)
+    case arrExpr @ BabelNodeInfo(BabelAst.ArrayExpression)         => astsForArrayExpression(arrExpr)
     case other                                                     => List(notHandledYet(other))
   }
 
