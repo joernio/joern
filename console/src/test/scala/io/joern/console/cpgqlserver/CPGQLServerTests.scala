@@ -40,22 +40,19 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
     ujson.read(getResponse.bytes)
   }
 
-  /**
-    * These tests happen to fail on github actions for the windows runner with the following output:
-    *   WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
-    *   Apr 21, 2022 3:08:54 PM org.jboss.threads.Version <clinit>
-    *   INFO: JBoss Threads version 3.1.0.Final
-    *   Apr 21, 2022 3:08:55 PM io.undertow.server.HttpServerExchange endExchange
-    *   ERROR: UT005090: Unexpected failure
-    *   java.lang.NoClassDefFoundError: Could not initialize class org.xnio.channels.Channels
-    *   	at io.undertow.io.UndertowOutputStream.close(UndertowOutputStream.java:348)
+  /** These tests happen to fail on github actions for the windows runner with the following output: WARNING: Unable to
+    * create a system terminal, creating a dumb terminal (enable debug logging for more information) Apr 21, 2022
+    * 3:08:54 PM org.jboss.threads.Version <clinit> INFO: JBoss Threads version 3.1.0.Final Apr 21, 2022 3:08:55 PM
+    * io.undertow.server.HttpServerExchange endExchange ERROR: UT005090: Unexpected failure
+    * java.lang.NoClassDefFoundError: Could not initialize class org.xnio.channels.Channels at
+    * io.undertow.io.UndertowOutputStream.close(UndertowOutputStream.java:348)
     *
-    * This happens for both windows 2019 and 2022, and isn't reproducable elsewhere.
-    * Explicitly adding a dependency on `org.jboss.xnio/xnio-api` didn't help,
-    * as well as other debug attempts. So we gave up and disabled this specifically for github actions' windows runner.
+    * This happens for both windows 2019 and 2022, and isn't reproducable elsewhere. Explicitly adding a dependency on
+    * `org.jboss.xnio/xnio-api` didn't help, as well as other debug attempts. So we gave up and disabled this
+    * specifically for github actions' windows runner.
     */
   val isGithubActions = System.getenv("GITHUB_ACTIONS") == "TRUE"
-  val isWindows = System.getProperties.getProperty("os.name", "<unknown>").toLowerCase.contains("windows")
+  val isWindows       = System.getProperties.getProperty("os.name", "<unknown>").toLowerCase.contains("windows")
   val isGithubActionsWindowsRunner = isGithubActions && isWindows
 
   if (isGithubActionsWindowsRunner) {
