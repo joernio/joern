@@ -21,7 +21,7 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
   override def generateParts(): Array[Method] = cpg.method.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, method: Method): Unit = {
-    val allocSites = method.ast.isCall.name(Operators.alloc).l
+    val allocSites = method.ast.isCall.name(Operators.alloc, Operators.arrayInitializer).l
     if (allocSites.nonEmpty) {
       val assignmentGraph = buildAssignmentGraph(method)
       val pointsToGraph   = buildPointsToGraph(assignmentGraph)
@@ -44,8 +44,9 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
   }
 
   private def buildAssignmentGraph(m: Method): Map[VarInCtx, VarInCtx] = {
-    val assignmentGraph               = mutable.HashMap.empty[VarInCtx, VarInCtx]
-    var worklist: ListBuffer[CfgNode] = mutable.ListBuffer.from(m.ast.isCall.name(Operators.alloc).l)
+    val assignmentGraph = mutable.HashMap.empty[VarInCtx, VarInCtx]
+    var worklist: ListBuffer[CfgNode] =
+      mutable.ListBuffer.from(m.ast.isCall.name(Operators.alloc, Operators.arrayInitializer).l)
 
     while (worklist.nonEmpty) {
       val alloc = worklist.head
@@ -61,7 +62,6 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
         }
       }
 
-      // TODO: See if we can use something else instead of adding cfgChildren
       Traversal(alloc).method.ast
         .collect {
           case x: Identifier      => x
