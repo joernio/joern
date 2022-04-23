@@ -1117,7 +1117,7 @@ object AstCreator {
     }.toSeq
   }
 
-  private val PRIMITIVES: Map[Char, String] = Map[Char, String](
+  private val primitives: Map[Char, String] = Map[Char, String](
     'Z' -> "boolean",
     'C' -> "char",
     'B' -> "byte",
@@ -1145,7 +1145,7 @@ object AstCreator {
           .mkString("")
         return s"$prefix$suffix"
       } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
-        return s"${PRIMITIVES(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
+        return s"${primitives(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
       } else if (isObject(c)) {
         sb.append(c)
       } else if (isArray(c)) {
@@ -1163,7 +1163,7 @@ object AstCreator {
     *   true if the character is associated with a primitive, false if otherwise.
     */
   def isPrimitive(c: Char): Boolean =
-    PRIMITIVES.contains(c)
+    primitives.contains(c)
 
   /** Checks if the given character is associated an object or not according to Section 2.1.3 of the ASM docs.
     *
