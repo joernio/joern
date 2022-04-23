@@ -130,7 +130,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astsForMethod(methods: BaseASTNode): Ast = {
     methods match {
       case x: ModifierDefinition => {
-        println("modifierDef: "+x)
         val methodNode = NewMethod()
           .name(x.name)
         val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
@@ -142,7 +141,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(Ast(methodReturn))
       }
       case x: FunctionDefinition => {
-        println("funcDef: "+x)
         val methodNode = NewMethod()
           .name(x.name)
         val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
@@ -185,18 +183,21 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForVarDecl(varDecl: VariableDeclaration): Ast = {
     val newMember = NewMember();
     var typefullName = ""
+    var code = ""
     varDecl.typeName match  {
       case x: ElementaryTypeName => typefullName = x.name
+      case x: Mapping =>  {
+        typefullName = "mapping"
+        code = getMappingKeyAndValue(x)}
     }
     var visibility = "";
     varDecl.visibility match {
-      case x: String => visibility = x
+      case x: String => visibility = " "+x
       case _ => visibility = ""
     }
-    println(typefullName+ " "+visibility + " "+varDecl.name)
         newMember
           .name(varDecl.name)
-          .code(typefullName+" "+visibility+ " "+varDecl.name)
+          .code(typefullName + code +visibility+ " "+varDecl.name)
           .typeFullName(typefullName)
           .order(1)
 
@@ -218,21 +219,21 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //  }
 
   private def astForField(stateVariableDeclaration: StateVariableDeclaration):Ast = {
+    var counter = 0
     val fieldType = stateVariableDeclaration.variables.collect{case x: VariableDeclaration => x}.map(astForVarDecl);
-//    val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
-//    val tings = stateVariableDeclaration.variables.map()
     Ast().withChildren(fieldType)
-//    val fieldNode = NewMember()
-//      .name()
-//    Ast(
-//      NewMember()
-//        .name(name)
-//        .lineNumber(line(v))
-//        .columnNumber(column(v))
-//        .typeFullName(typeFullName)
-//        .order(order)
-//        .code(code)
-//    )
+  }
+
+  private def getMappingKeyAndValue (mapping: Mapping) : String = {
+    var key = mapping.keyType match {
+      case x: ElementaryTypeName => x.name
+      case x: Mapping => (getMappingKeyAndValue(x))
+    }
+    var value = mapping.valueType match {
+      case x: ElementaryTypeName => x.name
+      case x: Mapping => (getMappingKeyAndValue(x))
+    }
+    (" ("+key +" => " + value+")")
   }
 
 

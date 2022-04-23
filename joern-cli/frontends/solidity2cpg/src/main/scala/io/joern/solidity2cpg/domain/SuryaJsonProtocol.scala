@@ -1,7 +1,7 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsString, JsValue, JsonFormat, JsObject}
+import spray.json.{DefaultJsonProtocol, JsBoolean, JsFalse, JsNull, JsObject, JsString, JsValue, JsonFormat}
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -250,38 +250,69 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "VariableDeclaration") {
         throw new RuntimeException("VariableDeclaration object expected")
       } else {
-        VariableDeclaration(
-          fields("typeName").convertTo[BaseASTNode],
-          fields("name") match {
-            case x: JsString => x.convertTo[String]
-            case _           => null
-          },
-          fields("identifier") match {
-            case x: JsObject => x.convertTo[BaseASTNode]
-            case _           => null
-          },
-          fields("expression") match {
-            case x: JsObject => x.convertTo[BaseASTNode]
-            case _           => null
-          },
-          fields("visibility") match {
-            case x: JsString => x.convertTo[String]
-            case _           => null
-          },
-          fields("storageLocation") match {
-            case x: JsString => x.convertTo[String]
-            case _           => null
-          },
-          fields("isStateVar").convertTo[Boolean],
-          fields("isDeclaredConst").convertTo[Boolean],
-          fields("isIndexed").convertTo[Boolean],
-          fields("isImmutable").convertTo[Boolean],
-          fields("override") match {
-            case x: JsObject => x.convertTo[BaseASTNode]
-            case _ => null
-          }
+        try {
+          VariableDeclaration(
+            fields("typeName").convertTo[BaseASTNode],
+            fields("name") match {
+              case x: JsString => x.convertTo[String]
+              case _ => null
+            },
+            fields("identifier") match {
+              case x: JsObject => x.convertTo[BaseASTNode]
+              case _ => null
+            },
+            fields("expression") match {
+              case x: JsObject => x.convertTo[BaseASTNode]
+              case _ => null
+            },
+            fields("visibility") match {
+              case x: JsString => x.convertTo[String]
+              case _ => null
+            },
+            fields("storageLocation") match {
+              case x: JsString => x.convertTo[String]
+              case _ => null
+            },
+            fields("isStateVar").convertTo[Boolean],
+            fields("isDeclaredConst").convertTo[Boolean],
+            fields("isIndexed").convertTo[Boolean],
+            fields("isImmutable").convertTo[Boolean],
+            fields("override") match {
+              case x: JsObject => x.convertTo[BaseASTNode]
+              case _ => null
+            }
 
-        )
+          )
+        } catch {
+          case e : NoSuchElementException => {
+            VariableDeclaration(
+              fields("typeName").convertTo[BaseASTNode],
+              fields("name") match {
+                case x: JsString => x.convertTo[String]
+                case _ => null
+              },
+              fields("identifier") match {
+                case x: JsObject => x.convertTo[BaseASTNode]
+                case _ => null
+              },
+              fields("expression") match {
+                case x: JsObject => x.convertTo[BaseASTNode]
+                case _ => null
+              },
+              null,
+              fields("storageLocation") match {
+                case x: JsString => x.convertTo[String]
+                case _ => null
+              },
+              fields("isStateVar").convertTo[Boolean],
+              isDeclaredConst = false,
+              isIndexed = fields("isIndexed").convertTo[Boolean],
+              isImmutable = false,
+              null
+            )
+          }
+        }
+
       }
     }
   }
