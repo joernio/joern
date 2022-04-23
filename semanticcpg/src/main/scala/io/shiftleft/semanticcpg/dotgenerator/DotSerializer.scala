@@ -40,15 +40,17 @@ object DotSerializer {
 
   private def stringRepr(vertex: StoredNode): String = {
     escape(vertex match {
-      case call: Call               => (call.name, call.code).toString
-      case expr: Expression         => (expr.label, expr.code, toCfgNode(expr).code).toString
-      case method: Method           => (method.label, method.name).toString
-      case ret: MethodReturn        => (ret.label, ret.typeFullName).toString
-      case param: MethodParameterIn => ("PARAM", param.code).toString
-      case local: Local             => (local.label, s"${local.code}: ${local.typeFullName}").toString
-      case target: JumpTarget       => (target.label, target.name).toString
-      case modifier: Modifier       => ("MODIFIER", modifier.modifierType).toString()
-      case _                        => ""
+      case call: Call                            => (call.name, call.code).toString
+      case expr: Expression                      => (expr.label, expr.code, toCfgNode(expr).code).toString
+      case method: Method                        => (method.label, method.name).toString
+      case ret: MethodReturn                     => (ret.label, ret.typeFullName).toString
+      case param: MethodParameterIn              => ("PARAM", param.code).toString
+      case local: Local                          => (local.label, s"${local.code}: ${local.typeFullName}").toString
+      case target: JumpTarget                    => (target.label, target.name).toString
+      case modifier: Modifier                    => (modifier.label, modifier.modifierType).toString()
+      case annoAssign: AnnotationParameterAssign => (annoAssign.label, annoAssign.code).toString()
+      case annoParam: AnnotationParameter        => (annoParam.label, annoParam.code).toString()
+      case _                                     => ""
     })
   }
 
