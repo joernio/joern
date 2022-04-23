@@ -13,9 +13,10 @@ import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
-import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
-import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
-import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
+import io.joern.ghidra2cpg.passes.mips.LoHiPass
+import io.joern.ghidra2cpg.passes.x86.ReturnEdgesPass
+import io.joern.ghidra2cpg.processors.{ArmProcessor, MipsProcessor, X86Processor}
+import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
@@ -85,19 +86,12 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
   private def addProgramToCpg(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
     val transactionId: Int                       = program.startTransaction("Analysis")
-    try {
       autoAnalysisManager.initializeOptions()
       autoAnalysisManager.reAnalyzeAll(null)
       autoAnalysisManager.startAnalysis(TaskMonitor.DUMMY)
       GhidraProgramUtilities.setAnalyzedFlag(program, true)
       handleProgram(program, fileAbsolutePath, cpg)
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-    } finally {
       program.endTransaction(transactionId, true)
-    }
-
   }
 
   def handleProgram(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
@@ -123,14 +117,12 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
-        new MipsFunctionPass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, MipsProcessor).createAndApply()
         new LoHiPass(cpg).createAndApply()
       case "AARCH64" | "ARM" =>
-        new ArmFunctionPass(program, fileAbsolutePath, functions, cpg, decompiler)
-          .createAndApply()
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, ArmProcessor).createAndApply()
       case _ =>
-        new X86FunctionPass(program, fileAbsolutePath, functions, cpg, decompiler)
-          .createAndApply()
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, X86Processor).createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }
 

@@ -33,6 +33,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   "should find flows through `add*` instructions" in {
     def source = cpg.call.code("li t1,0x2a").argument(1)
+    println(cpg.call.code("li t1,0x2a").l)
     def sink =
       cpg.call
         .code("or t9,t6,zero")
