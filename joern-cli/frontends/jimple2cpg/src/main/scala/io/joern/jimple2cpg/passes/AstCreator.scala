@@ -970,47 +970,29 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astForConstantExpr(constant: Constant, order: Int): Ast = {
     constant match {
-      case _: ClassConstant => Ast()
-      case _: NullConstant  => Ast()
-      case _: IntConstant =>
+      case x: ClassConstant =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("int"))
+            .code(s"${parseAsmType(x.value)}.class")
+            .typeFullName(registerType(x.getType.toQuotedString))
         )
-      case _: LongConstant =>
+      case _: NullConstant =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("long"))
+            .code("null")
+            .typeFullName(registerType("null"))
         )
-      case _: DoubleConstant =>
+      case _ =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
             .code(constant.toString)
-            .typeFullName(registerType("double"))
-        )
-      case _: FloatConstant =>
-        Ast(
-          NewLiteral()
-            .order(order)
-            .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("float"))
-        )
-      case _: StringConstant =>
-        Ast(
-          NewLiteral()
-            .order(order)
-            .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("java.lang.String"))
+            .typeFullName(registerType(constant.getType.toQuotedString))
         )
     }
   }
