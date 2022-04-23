@@ -192,7 +192,7 @@ class PcodePass(
         // we need to "unpack" the def of the first input of the cast
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
         if (pcodeOp.getInput(0).getDef != null) {
-          resolveArgument(diffGraphBuilder, instruction, callNode, pcodeOp.getInput(0).getDef, index)
+          //resolveArgument(diffGraphBuilder, instruction, callNode, pcodeOp.getInput(0).getDef, index)
         }
       case PTRSUB | PTRADD => handlePtrSub(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, index)
       case _ => // handleDefault(pcodeAst)
@@ -217,11 +217,13 @@ class PcodePass(
     // we know it already
     val arguments = opCodes.head.getInputs.toList.drop(1)
     arguments.zipWithIndex.foreach { case (value, index) =>
-      if (value.getDef != null)
-        if(highFunction.getFunction.getName == "main") {
-          println(s"$instruction HIGHFUNCTION: " + opCodes.mkString(" ; "))
-        }
+      if (value.getDef != null ) {
         resolveArgument(diffGraphBuilder, instruction, callNode, value.getDef, index)
+      }
+      if(value.isConstant) {
+        val argument = resolveVarNode(instruction,  value, index)
+        connectCallToArgument(diffGraphBuilder,callNode, argument)
+      }
     }
   }
 
@@ -382,7 +384,6 @@ class PcodePass(
       diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
       instructions.drop(1).foreach { instruction =>
         val instructionNode = addCallOrReturnNode(instruction)
-        if(function.getName == "main"){println(instruction)}
         diffGraphBuilder.addNode(instructionNode)
         handleArguments(diffGraphBuilder, instruction, instructionNode, function)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)

@@ -45,10 +45,10 @@ class CallNodeTests extends GhidraBinToCpgSuite {
       .where(
         _.argument
           .order(1)
-          .code("w0")
+          .code("0x14")
       )
       .l
-    def y = cpg.method.name("main").call.map(x=>s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}").l.mkString("\n")
+    def y = cpg.method.name("main").call.map(x=>s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}").l//.mkString("\n")
     println(y)
     println(x)
     x match {
