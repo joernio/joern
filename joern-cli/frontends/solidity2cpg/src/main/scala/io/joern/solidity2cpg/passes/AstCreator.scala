@@ -4,36 +4,7 @@ import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewFile,
-  NewMethod,
-  NewMethodReturn,
-  NewNamespaceBlock,
-  NewTypeDecl,
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewModifier,
-  NewNode,
-  NewReturn,
-  NewTypeRef,
-  NewUnknown
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -134,31 +105,60 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .filename(filename)
       .inheritsFromTypeFullName(superTypes)
 
-    val methods = contractDef.subNodes
-      .collect { case x: ModifierDefinition =>
-        x
+    val methods= contractDef.subNodes
+      .collect {
+        case x: ModifierDefinition => x
+        case x: FunctionDefinition => x
       }
       .map(astsForMethod)
-    val functions = contractDef.subNodes
-      .collect { case x: FunctionDefinition =>
-        x
+
+    val memberAsts = contractDef.subNodes
+      .collect{
+        case x: StateVariableDeclaration => x
       }
-      .map(astsForFunction)
+      .map(astForField)
+//      .map { case (v, i) =>
+//        astForField(v, i + methodAsts.size + 1)
+//      }
+//      .toList
 
     Ast(typeDecl)
       .withChildren(methods)
+      .withChildren(memberAsts)
   }
 
-  private def astsForMethod(modifierDefinition: ModifierDefinition): Ast = {
-    val methodNode = NewMethod()
-      .name(modifierDefinition.name)
-    val parameters = modifierDefinition.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
-    // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
-    val methodReturn = NewMethodReturn().typeFullName("")
-    Ast(methodNode)
-      .withChildren(parameters)
-      .withChild(astForBody(modifierDefinition.body.asInstanceOf[Block]))
-      .withChild(Ast(methodReturn))
+  private def astsForMethod(methods: BaseASTNode): Ast = {
+    methods match {
+      case x: ModifierDefinition => {
+        println("modifierDef: "+x)
+        val methodNode = NewMethod()
+          .name(x.name)
+        val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
+        val methodReturn = NewMethodReturn().typeFullName("")
+        Ast(methodNode)
+          .withChildren(parameters)
+          .withChild(astForBody(x.body.asInstanceOf[Block]))
+          .withChild(Ast(methodReturn))
+      }
+      case x: FunctionDefinition => {
+        println("funcDef: "+x)
+        val methodNode = NewMethod()
+          .name(x.name)
+        val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
+        val methodReturn = NewMethodReturn().typeFullName("")
+        Ast(methodNode)
+          .withChildren(parameters)
+          .withChild(astForBody(x.body.asInstanceOf[Block]))
+          .withChild(Ast(methodReturn))
+      }
+      case x =>
+        logger.warn(s"Unhandled statement of type ${x.getClass}")
+        Ast() // etc
+    }
+
+
   }
 
   // TODO: I assume the only types coming into parameter are var decls but it's worth making sure in tests
@@ -183,19 +183,59 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForVarDecl(varDecl: VariableDeclaration): Ast = {
+    val newMember = NewMember();
+    var typefullName = ""
+    varDecl.typeName match  {
+      case x: ElementaryTypeName => typefullName = x.name
+    }
+    var visibility = "";
+    varDecl.visibility match {
+      case x: String => visibility = x
+      case _ => visibility = ""
+    }
+    println(typefullName+ " "+visibility + " "+varDecl.name)
+        newMember
+          .name(varDecl.name)
+          .code(typefullName+" "+visibility+ " "+varDecl.name)
+          .typeFullName(typefullName)
+          .order(1)
+
+      Ast(newMember)
+
     // TODO: VarDecls should be Local nodes in their block and NOT be duplicated
 
     // TODO: When a variable is referenced, it should always be referenced as an identifier
-    Ast()
+
   }
 
-  private def astsForFunction(function: FunctionDefinition): Ast = {
-    val functionNode = NewTypeDecl()
-      .name(function.name)
-      .fullName(function.name)
-      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-      .astParentFullName(function.name);
-    Ast()
+//  private def astsForFunction(function: FunctionDefinition): Ast = {
+//    val functionNode = NewTypeDecl()
+//      .name(function.name)
+//      .fullName(function.name)
+//      .astParentType(NodeTypes.NAMESPACE_BLOCK)
+//      .astParentFullName(function.name);
+//    Ast()
+//  }
+
+  private def astForField(stateVariableDeclaration: StateVariableDeclaration):Ast = {
+    val fieldType = stateVariableDeclaration.variables.collect{case x: VariableDeclaration => x}.map(astForVarDecl);
+//    val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+//    val tings = stateVariableDeclaration.variables.map()
+    Ast().withChildren(fieldType)
+//    val fieldNode = NewMember()
+//      .name()
+//    Ast(
+//      NewMember()
+//        .name(name)
+//        .lineNumber(line(v))
+//        .columnNumber(column(v))
+//        .typeFullName(typeFullName)
+//        .order(order)
+//        .code(code)
+//    )
   }
+
+
+
 
 }

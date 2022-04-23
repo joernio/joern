@@ -8,7 +8,9 @@ import java.io.File
 class MethodTests extends SolidityCodeToCpgFixture {
 
   override val code: String =
-    """ contract Foo {
+    """
+      | pragma solidity ^0.8.0;
+      | contract Foo {
       |   function foo(int param1, int param2) public returns (uint8) {
       |     return 1;
       |   }

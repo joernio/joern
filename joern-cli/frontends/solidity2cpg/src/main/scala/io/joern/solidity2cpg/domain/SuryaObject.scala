@@ -81,10 +81,14 @@ object SuryaObject {
     typeName: BaseASTNode,
     name: String,
     identifier: BaseASTNode,
+    expression: BaseASTNode,
+    visibility: String,
     storageLocation: String,
     isStateVar: Boolean,
+    isDeclaredConst: Boolean,
     isIndexed: Boolean,
-    expression: BaseASTNode
+    isImmutable: Boolean,
+    `override` : BaseASTNode
   ) extends BaseASTNode("VariableDeclaration") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }

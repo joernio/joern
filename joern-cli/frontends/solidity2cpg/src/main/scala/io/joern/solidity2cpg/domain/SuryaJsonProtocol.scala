@@ -260,16 +260,27 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             case x: JsObject => x.convertTo[BaseASTNode]
             case _           => null
           },
+          fields("expression") match {
+            case x: JsObject => x.convertTo[BaseASTNode]
+            case _           => null
+          },
+          fields("visibility") match {
+            case x: JsString => x.convertTo[String]
+            case _           => null
+          },
           fields("storageLocation") match {
             case x: JsString => x.convertTo[String]
             case _           => null
           },
           fields("isStateVar").convertTo[Boolean],
+          fields("isDeclaredConst").convertTo[Boolean],
           fields("isIndexed").convertTo[Boolean],
-          fields("expression") match {
+          fields("isImmutable").convertTo[Boolean],
+          fields("override") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _           => null
+            case _ => null
           }
+
         )
       }
     }
