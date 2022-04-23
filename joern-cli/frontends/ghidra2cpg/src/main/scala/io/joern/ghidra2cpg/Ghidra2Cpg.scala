@@ -85,13 +85,17 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
   private def addProgramToCpg(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
     val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
-    val transactionId: Int                       = program.startTransaction("Analysis")
+    try {
+      val transactionId: Int = program.startTransaction("Analysis")
       autoAnalysisManager.initializeOptions()
       autoAnalysisManager.reAnalyzeAll(null)
       autoAnalysisManager.startAnalysis(TaskMonitor.DUMMY)
       GhidraProgramUtilities.setAnalyzedFlag(program, true)
       handleProgram(program, fileAbsolutePath, cpg)
       program.endTransaction(transactionId, true)
+    } catch {
+      case e:Exception => e.printStackTrace()
+    }
   }
 
   def handleProgram(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
