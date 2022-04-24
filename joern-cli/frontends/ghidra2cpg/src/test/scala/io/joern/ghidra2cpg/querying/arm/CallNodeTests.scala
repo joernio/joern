@@ -39,7 +39,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
     // TODO this technically correct but we are interested in the 0x14
     // mov        w0,#0x14
     // bl         test
-    def x= cpg.call
+    def x = cpg.call
       .name("test")
       .where(_.method.name("main"))
       .where(
@@ -48,7 +48,11 @@ class CallNodeTests extends GhidraBinToCpgSuite {
           .code("0x14")
       )
       .l
-    def y = cpg.method.name("main").call.map(x=>s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}").l//.mkString("\n")
+    def y = cpg.method
+      .name("main")
+      .call
+      .map(x => s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}")
+      .l // .mkString("\n")
     println(y)
     println(x)
     x match {

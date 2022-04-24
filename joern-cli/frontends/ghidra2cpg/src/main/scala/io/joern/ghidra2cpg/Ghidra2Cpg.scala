@@ -94,7 +94,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       handleProgram(program, fileAbsolutePath, cpg)
       program.endTransaction(transactionId, true)
     } catch {
-      case e:Exception => e.printStackTrace()
+      case e: Exception => e.printStackTrace()
     }
   }
 
@@ -121,12 +121,15 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
-        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, MipsProcessor).createAndApply()
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, MipsProcessor)
+          .createAndApply()
         new LoHiPass(cpg).createAndApply()
       case "AARCH64" | "ARM" =>
-        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, ArmProcessor).createAndApply()
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, ArmProcessor)
+          .createAndApply()
       case _ =>
-        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, X86Processor).createAndApply()
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, X86Processor)
+          .createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }
 

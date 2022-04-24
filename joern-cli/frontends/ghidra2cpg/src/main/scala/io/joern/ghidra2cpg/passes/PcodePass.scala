@@ -20,14 +20,14 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class PcodePass(
-                 currentProgram: Program,
-                 address2Literal: Map[Long, String],
-                 fileName: String,
-                 functions: List[Function],
-                 cpg: Cpg,
-                 decompiler: Decompiler,
-                 processor: Processor
-               ) extends ConcurrentWriterCpgPass[Function](cpg) {
+  currentProgram: Program,
+  address2Literal: Map[Long, String],
+  fileName: String,
+  functions: List[Function],
+  cpg: Cpg,
+  decompiler: Decompiler,
+  processor: Processor
+) extends ConcurrentWriterCpgPass[Function](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[PcodePass])
 
@@ -118,28 +118,28 @@ class PcodePass(
   }
 
   def handleAssignment(
-                        diffGraphBuilder: DiffGraphBuilder,
-                        instruction: Instruction,
-                        callNode: CfgNodeNew,
-                        to: Varnode,
-                        index: Int
-                      ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    to: Varnode,
+    index: Int
+  ): Unit = {
     val node = resolveVarNode(instruction, to, index)
     connectCallToArgument(diffGraphBuilder, callNode, node)
   }
 
   def handleTwoArguments(
-                          diffGraphBuilder: DiffGraphBuilder,
-                          instruction: Instruction,
-                          callNode: CfgNodeNew,
-                          pcodeOp: PcodeOp,
-                          operand: String,
-                          name: String
-                        ): Unit = {
-    val firstOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    operand: String,
+    name: String
+  ): Unit = {
+    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val code = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+    val code     = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     connectCallToArgument(diffGraphBuilder, opNode, firstOp)
     connectCallToArgument(diffGraphBuilder, opNode, secondOp)
@@ -147,12 +147,12 @@ class PcodePass(
   }
 
   def handlePtrSub(
-                    diffGraphBuilder: DiffGraphBuilder,
-                    instruction: Instruction,
-                    callNode: CfgNodeNew,
-                    varNode: Varnode,
-                    index: Int
-                  ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    varNode: Varnode,
+    index: Int
+  ): Unit = {
     val arg = resolveVarNode(instruction, varNode, index)
     connectCallToArgument(diffGraphBuilder, callNode, arg)
   }
@@ -162,12 +162,12 @@ class PcodePass(
   }
 
   def resolveArgument(
-                       diffGraphBuilder: DiffGraphBuilder,
-                       instruction: Instruction,
-                       callNode: CfgNodeNew,
-                       pcodeOp: PcodeOp,
-                       index: Int
-                     ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    index: Int
+  ): Unit = {
     pcodeOp.getOpcode match {
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
@@ -192,19 +192,19 @@ class PcodePass(
         // we need to "unpack" the def of the first input of the cast
         // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
         if (pcodeOp.getInput(0).getDef != null) {
-          //resolveArgument(diffGraphBuilder, instruction, callNode, pcodeOp.getInput(0).getDef, index)
+          resolveArgument(diffGraphBuilder, instruction, callNode, pcodeOp.getInput(0).getDef, index)
         }
       case PTRSUB | PTRADD => handlePtrSub(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, index)
-      case _ => // handleDefault(pcodeAst)
+      case _               => // handleDefault(pcodeAst)
     }
   }
 
   def addCallArguments(
-                        diffGraphBuilder: DiffGraphBuilder,
-                        instruction: Instruction,
-                        callNode: CfgNodeNew,
-                        highFunction: HighFunction
-                      ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    highFunction: HighFunction
+  ): Unit = {
     val opCodes: Seq[PcodeOpAST] = highFunction
       .getPcodeOps(instruction.getAddress())
       .asScala
@@ -217,21 +217,21 @@ class PcodePass(
     // we know it already
     val arguments = opCodes.head.getInputs.toList.drop(1)
     arguments.zipWithIndex.foreach { case (value, index) =>
-      if (value.getDef != null ) {
+      if (value.getDef != null) {
         resolveArgument(diffGraphBuilder, instruction, callNode, value.getDef, index)
       }
-      if(value.isConstant) {
-        val argument = resolveVarNode(instruction,  value, index)
-        connectCallToArgument(diffGraphBuilder,callNode, argument)
+      if (value.isConstant) {
+        val argument = resolveVarNode(instruction, value, index)
+        connectCallToArgument(diffGraphBuilder, callNode, argument)
       }
     }
   }
 
   def addInstructionArguments(
-                               diffGraphBuilder: DiffGraphBuilder,
-                               instruction: Instruction,
-                               instructionNode: CfgNodeNew
-                             ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    instructionNode: CfgNodeNew
+  ): Unit = {
     for (index <- 0 until instruction.getNumOperands) {
       val opObjects = instruction.getOpObjects(index)
       for (opObject <- opObjects) {
@@ -272,11 +272,11 @@ class PcodePass(
 
   // Iterating over operands and add edges to call
   def handleArguments(
-                       diffGraphBuilder: DiffGraphBuilder,
-                       instruction: Instruction,
-                       callNode: CfgNodeNew,
-                       function: Function
-                     ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    function: Function
+  ): Unit = {
     if (instruction.getPcode.toList.isEmpty) {
       // nop && _nop
       return
@@ -371,11 +371,11 @@ class PcodePass(
     currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
 
   def handleBody(
-                  diffGraphBuilder: DiffGraphBuilder,
-                  function: Function,
-                  methodNode: NewMethod,
-                  blockNode: NewBlock
-                ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    function: Function,
+    methodNode: NewMethod,
+    blockNode: NewBlock
+  ): Unit = {
     val instructions = getInstructions(function)
     if (instructions.nonEmpty) {
       var prevInstructionNode = addCallOrReturnNode(instructions.head)
@@ -387,7 +387,11 @@ class PcodePass(
         diffGraphBuilder.addNode(instructionNode)
         handleArguments(diffGraphBuilder, instruction, instructionNode, function)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
-        diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+        // Not connecting the previous instruction, if it is an unconditional jump
+        // TODO: JMP is x86 specific
+        if (!prevInstructionNode.code.startsWith("JMP")) {
+          diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+        }
         prevInstructionNode = instructionNode
       }
     }
