@@ -48,7 +48,7 @@ class MemberTests extends SolidityCodeToCpgFixture {
   }
 
   "should allow traversing from MEMBER to TYPE_DECL" in {
-    val List(x) = cpg.member.l
+    val List(x) = cpg.member.typeDecl.l
     x.name shouldBe "Coin"
   }
 }
