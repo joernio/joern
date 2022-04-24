@@ -501,10 +501,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         FunctionDefinition(
           fields("name").convertTo[String],
           fields("parameters").convertTo[List[BaseASTNode]],
-          fields("returnParameters") match {
-            case x: JsObject => x.convertTo[List[BaseASTNode]]
-            case _           => null
-          },
+          fields("returnParameters").convertTo[List[BaseASTNode]],
           fields("body").convertTo[BaseASTNode],
           fields("visibility").convertTo[String],
           fields("modifiers").convertTo[List[BaseASTNode]],

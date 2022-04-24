@@ -110,24 +110,20 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         case x: ModifierDefinition => x
         case x: FunctionDefinition => x
       }
-      .map(astsForMethod)
+      .map({case (x, fullName) => astsForMethod(methods, fullName)})
 
     val memberAsts = contractDef.subNodes
       .collect{
         case x: StateVariableDeclaration => x
       }
       .map(astForField)
-//      .map { case (v, i) =>
-//        astForField(v, i + methodAsts.size + 1)
-//      }
-//      .toList
 
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
   }
 
-  private def astsForMethod(methods: BaseASTNode): Ast = {
+  private def astsForMethod(methods: BaseASTNode, contractname: String): Ast = {
     methods match {
       case x: ModifierDefinition => {
         val methodNode = NewMethod()
@@ -141,9 +137,36 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(Ast(methodReturn))
       }
       case x: FunctionDefinition => {
+        val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        var funcType = ""
+        if (x.returnParameters != null) {
+          x.returnParameters.collect { case y: VariableDeclaration => {
+            y.typeName match {
+              case z: ElementaryTypeName => funcType += z.name
+            }
+          }
+          }
+        }
+        var types = ""
+        x.parameters.collect( {
+          case x: VariableDeclaration => {
+            x.typeName match {
+              case x: ElementaryTypeName => {
+                types += x.name+ ","
+              }
+            }
+          }
+        })
+        if (types != "") {
+          types = types.substring(0, types.length - 2)
+        }
+
         val methodNode = NewMethod()
           .name(x.name)
-        val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+          .fullName(contractname+"."+x.name + " " + funcType + "("+types+")")
+          .signature(funcType + "("+types+")")
+
+
         // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
         val methodReturn = NewMethodReturn().typeFullName("")
         Ast(methodNode)
@@ -161,7 +184,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   // TODO: I assume the only types coming into parameter are var decls but it's worth making sure in tests
   private def astForParameter(varDecl: VariableDeclaration): Ast = {
-    Ast()
+   var parameter = astForVarDecl(varDecl)
+    (parameter)
   }
 
   private def astForBody(body: Block): Ast = {
@@ -208,15 +232,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     // TODO: When a variable is referenced, it should always be referenced as an identifier
 
   }
-
-//  private def astsForFunction(function: FunctionDefinition): Ast = {
-//    val functionNode = NewTypeDecl()
-//      .name(function.name)
-//      .fullName(function.name)
-//      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-//      .astParentFullName(function.name);
-//    Ast()
-//  }
 
   private def astForField(stateVariableDeclaration: StateVariableDeclaration):Ast = {
     var counter = 0
