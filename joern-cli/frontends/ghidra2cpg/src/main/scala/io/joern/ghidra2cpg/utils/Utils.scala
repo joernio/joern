@@ -1,7 +1,6 @@
 package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{Function, Instruction, Program}
-import ghidra.program.model.pcode.HighFunction
 import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
@@ -72,12 +71,12 @@ object Utils {
   }
   def createMethodNode(
     decompiler: Decompiler,
-    highFunction: HighFunction,
+    function: Function,
     fileName: String,
     isExternal: Boolean
   ): NewMethod = {
-    val code = decompiler.toDecompiledFunction(highFunction.getFunction).get.getC
-    val lineNumberEnd = Option(highFunction.getFunction.getReturn)
+    val code = decompiler.toDecompiledFunction(function).get.getC
+    val lineNumberEnd = Option(function.getReturn)
       .flatMap(x => Option(x.getMinAddress))
       .flatMap(x => Option(x.getOffsetAsBigInteger))
       .flatMap(x => Option(x.intValue()))
@@ -86,11 +85,11 @@ object Utils {
     nodes
       .NewMethod()
       .code(code)
-      .name(highFunction.getFunction.getName)
-      .fullName(highFunction.getFunction.getName)
+      .name(function.getName)
+      .fullName(function.getName)
       .isExternal(isExternal)
-      .signature(highFunction.getFunction.getSignature(true).toString)
-      .lineNumber(highFunction.getFunction.getEntryPoint.getOffsetAsBigInteger.intValue())
+      .signature(function.getSignature(true).toString)
+      .lineNumber(function.getEntryPoint.getOffsetAsBigInteger.intValue())
       .columnNumber(-1)
       .lineNumberEnd(lineNumberEnd)
       .order(0)
