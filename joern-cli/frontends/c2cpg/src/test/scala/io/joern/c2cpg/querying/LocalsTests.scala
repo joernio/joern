@@ -33,6 +33,7 @@ class LocalsTests extends CCodeToCpgSuite {
     | 
     | void test() {
     |   static int a, b, c;
+    |   wchar_t *foo;
     | }
     | """.stripMargin
 
@@ -56,7 +57,7 @@ class LocalsTests extends CCodeToCpgSuite {
   }
 
   "should prove correct (name, type, code) pairs for locals" in {
-    inside(cpg.method.name("test").local.l) { case List(a, b, c) =>
+    inside(cpg.method.name("test").local.l) { case List(a, b, c, foo) =>
       a.name shouldBe "a"
       a.typeFullName shouldBe "int"
       a.code shouldBe "static int a"
@@ -66,6 +67,9 @@ class LocalsTests extends CCodeToCpgSuite {
       c.name shouldBe "c"
       c.typeFullName shouldBe "int"
       c.code shouldBe "static int c"
+      foo.name shouldBe "foo"
+      foo.typeFullName shouldBe "wchar_t"
+      foo.code shouldBe "wchar_t* foo"
     }
   }
 
