@@ -1832,6 +1832,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForClassExpr(expr: ClassExpr, order: Int): AstWithCtx = {
     val callNode = NewCall()
       .name(Operators.fieldAccess)
+      .typeFullName(TypeConstants.Class)
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(expr.toString)
