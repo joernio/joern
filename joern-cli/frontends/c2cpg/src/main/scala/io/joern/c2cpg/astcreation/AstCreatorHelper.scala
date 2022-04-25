@@ -333,7 +333,8 @@ trait AstCreatorHelper {
     }
     if (pointers.isEmpty) { s"$tpe$arr" }
     else {
-      s"$tpe$arr${"*" * pointers.size}".strip()
+      val refs = "*" * (pointers.length - pointers.count(_.isInstanceOf[ICPPASTReferenceOperator]))
+      s"$tpe$arr$refs".strip()
     }
   }
 
@@ -454,6 +455,9 @@ trait AstCreatorHelper {
         ASTStringUtil.getReturnTypeString(s, null)
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
+        pointersAsString(s, parentDecl, stripKeywords)
+      case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.head
         pointersAsString(s, parentDecl, stripKeywords)
       case s: IASTNamedTypeSpecifier     => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)

@@ -86,3 +86,17 @@ class CMethodTest4 extends CCodeToCpgSuite {
     cpg.typeDecl.fullName.l should not contain "doFoo"
   }
 }
+
+class CMethodTest5 extends CCodeToCpgSuite(fileSuffix = ".cpp") {
+  override val code = "void foo(int &data) {};"
+
+  "should be correct for pointer dereference parameter" in {
+    inside(cpg.method("foo").parameter.l) { case List(data) =>
+      data.index shouldBe 1
+      data.name shouldBe "data"
+      data.code shouldBe "int &data"
+      data.typeFullName shouldBe "int"
+      data.isVariadic shouldBe false
+    }
+  }
+}
