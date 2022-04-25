@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.ast.Nodes._
 import io.joern.kotlin2cpg.ast.Nodes.{methodReturnNode => _methodReturnNode}
-import io.joern.kotlin2cpg.types.{CallKinds, NameReferenceKinds, TypeConstants, TypeInfoProvider}
+import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
 import io.joern.kotlin2cpg.psi.Extractor._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
@@ -975,6 +975,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithAdditionals = {
+
     val fullNameWithSig    = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
     val lambdaModifierNode = modifierNode(ModifierTypes.VIRTUAL)
     val lambdaNode =
@@ -1010,8 +1011,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
 
     val parametersWithCtx =
-      withIndex(expr.getValueParameters.asScala.toSeq) { (p, order) =>
-        astForParameter(p, order)
+      typeInfoProvider.implicitParameterName(expr) match {
+        case Some(implicitParamName) =>
+          val node = methodParameterNode(implicitParamName, TypeConstants.any)
+          scope.addToScope(implicitParamName, node)
+          Seq(AstWithAdditionals(Ast(node), Additionals()))
+        case None =>
+          withIndex(expr.getValueParameters.asScala.toSeq) { (p, order) =>
+            astForParameter(p, order)
+          }
       }
     val lastOrder = parametersWithCtx.size + 2
 
@@ -1726,6 +1734,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithAdditionals = {
+
     val callKind        = typeInfoProvider.bindingKind(expr)
     val isStaticCall    = callKind == CallKinds.StaticCall
     val isDynamicCall   = callKind == CallKinds.DynamicCall

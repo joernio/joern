@@ -368,11 +368,11 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain METHOD_REF nodes with the correct props set" in {
       val List(firstMethodRef: MethodRef, secondMethodRef: MethodRef) = cpg.methodRef.l
       firstMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
-      secondMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
+      secondMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 2
     }
 
-    "should contain two CLOSURE_BINDING nodes" in {
-      cpg.all.collectAll[ClosureBinding].size shouldBe 2
+    "should contain three CLOSURE_BINDING nodes" in {
+      cpg.all.collectAll[ClosureBinding].size shouldBe 3
     }
   }
 
@@ -431,8 +431,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*lambda.*1.*").block.astChildren.isLocal.size shouldBe 1
     }
 
-    "should contain a single LOCAL node inside the BLOCK of the second lambda" in {
-      cpg.method.fullName(".*lambda.*2.*").block.astChildren.isLocal.size shouldBe 1
+    "should contain two LOCAL nodes inside the BLOCK of the second lambda" in {
+      cpg.method.fullName(".*lambda.*2.*").block.astChildren.isLocal.size shouldBe 2
     }
   }
 }
