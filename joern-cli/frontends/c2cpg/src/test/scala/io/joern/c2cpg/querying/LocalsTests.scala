@@ -38,11 +38,7 @@ class LocalsTests extends CCodeToCpgSuite {
     | """.stripMargin
 
   "should allow to query for all locals" in {
-    cpg.local.name.toSetMutable shouldBe Set("a", "b", "c", "z", "x", "q", "p")
-  }
-
-  "should allow to query for all locals in method `free_list`" in {
-    cpg.method.name("free_list").local.name.toSetMutable shouldBe Set("q", "p")
+    cpg.local.name.toSetMutable shouldBe Set("a", "b", "c", "z", "x", "q", "p", "foo")
   }
 
   "should prove correct (name, type) pairs for locals" in {
