@@ -16,12 +16,12 @@ class CallGraphGenerator {
       srcMethod <- vertices
       _ = storeInSubgraph(srcMethod, subgraph)
       child <- srcMethod.call
-      tgt <- child.callOut
+      tgt   <- child.callOut
     } yield {
       storeInSubgraph(tgt, subgraph)
       Edge(srcMethod, tgt, label = child.dispatchType.stripSuffix("_DISPATCH"))
-    }.distinct
-    Graph(vertices, edges, subgraph.toMap)
+    }
+    Graph(vertices, edges.distinct, subgraph.toMap)
   }
 
   def storeInSubgraph(method: Method, subgraph: mutable.Map[String, Seq[StoredNode]]): Unit = {
