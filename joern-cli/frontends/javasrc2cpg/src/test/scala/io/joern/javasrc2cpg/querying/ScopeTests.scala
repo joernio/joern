@@ -150,10 +150,11 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
     cpg.method.name("test10").call.name("toString").argument.l match {
       case List(fieldAccess: Call) =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.typeFullName shouldBe "java.lang.Object"
         fieldAccess.argument.l match {
           case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
             identifier.name shouldBe "Test"
-            identifier.typeFullName shouldBe "java.lang.Object"
+            identifier.typeFullName shouldBe "Test"
             fieldIdentifier.canonicalName shouldBe "staticO"
           case res => fail(s"Expected field access args but got $res")
         }

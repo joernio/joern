@@ -75,3 +75,35 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
   }
 
 }
+
+class MethodTests2 extends JavaSrcCodeToCpgFixture {
+  override val code: String =
+    """
+      |class Foo {
+      |  static class Sub {
+      |    void foo() {
+      |      method(1);
+      |    }
+      |  }
+      |  static void method(Integer x) {
+      |  }
+      |}
+      |""".stripMargin
+  "test methodFullName for call to static method of different class without scope" in {
+    cpg.call("method").methodFullName.head shouldBe "Foo.method:void(java.lang.Integer)"
+  }
+}
+
+class MethodTests3 extends JavaSrcCodeToCpgFixture {
+  override val code: String =
+    """
+      |class Foo {
+      |  static void staticMethod(Integer x) { }
+      |  void virtualMethod(Integer x) { }
+      |}
+      |""".stripMargin
+  "test method virtual modifier" in {
+    cpg.method("staticMethod").isVirtual.size shouldBe 0
+    cpg.method("virtualMethod").isVirtual.fullName.head shouldBe "Foo.virtualMethod:void(java.lang.Integer)"
+  }
+}
