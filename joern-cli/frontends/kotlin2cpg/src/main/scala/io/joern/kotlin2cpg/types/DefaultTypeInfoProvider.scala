@@ -802,6 +802,43 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def implicitParameterName(expr: KtLambdaExpression): Option[String] = {
+    if (!expr.getValueParameters.isEmpty) {
+      return None
+    }
+
+    val containingQualifiedExpression =
+      Option(expr.getParent)
+        .map(_.getParent)
+        .map(_.getParent match {
+          case q: KtQualifiedExpression => Some(q)
+          case _                        => None
+        })
+        .getOrElse(None)
+    containingQualifiedExpression match {
+      case Some(qualifiedExpression) =>
+        resolvedCallDescriptor(qualifiedExpression) match {
+          case Some(fnDescriptor) =>
+            val originalDesc   = fnDescriptor.getOriginal
+            val renderedFqName = TypeRenderer.renderFqName(originalDesc)
+            if (
+              renderedFqName.startsWith(TypeConstants.kotlinLetPrefix) ||
+              renderedFqName.startsWith(TypeConstants.kotlinAlsoPrefix)
+            ) {
+              Some(TypeConstants.scopeFunctionItParameterName)
+            } else if (
+              renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
+              renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix)
+            ) {
+              Some(TypeConstants.scopeFunctionThisParameterName)
+            } else {
+              None
+            }
+          case None => None
+        }
+      case None => None
+    }
+  }
 }
 
 object DefaultTypeInfoProvider {

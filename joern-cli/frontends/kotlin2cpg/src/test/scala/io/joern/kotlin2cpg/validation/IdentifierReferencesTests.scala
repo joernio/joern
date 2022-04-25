@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 
 // TODO: also add test with refs inside TYPE_DECL
@@ -132,6 +132,74 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     "identifiers to the parameters exist" in {
       val param = cpg.method.name("foo").parameter.name("x").head
       param.referencingIdentifiers.toSet should not be Set()
+    }
+  }
+
+  "CPG for code with a call to `also` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.also { it + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _it_ parameter" in {
+      val List(itIdentifier) = cpg.identifier.nameExact("it").l
+      itIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = itIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "it"
+    }
+  }
+
+  "CPG for code with a call to `apply` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.apply { this + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(thisIdentifier) = cpg.identifier.nameExact("this").l
+      thisIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "this"
+    }
+  }
+
+  "CPG for code with a call to `let` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.let { it + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(itIdentifier) = cpg.identifier.nameExact("it").l
+      itIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = itIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "it"
+    }
+  }
+
+  "CPG for code call to `run` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.run { this + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(thisIdentifier) = cpg.identifier.nameExact("this").l
+      thisIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "this"
     }
   }
 }
