@@ -12,14 +12,14 @@ class CallGraphGenerator {
   def generate(cpg: Cpg): Graph = {
     val subgraph = mutable.HashMap.empty[String, Seq[StoredNode]]
     val vertices = cpg.all.collect { case m: Method => m }.l
-    val edges = vertices.flatMap { srcMethod =>
-      storeInSubgraph(srcMethod, subgraph)
-      srcMethod.call.flatMap { child =>
-        child.callOut.map { tgt =>
-          storeInSubgraph(tgt, subgraph)
-          Edge(srcMethod, tgt, label = child.dispatchType.stripSuffix("_DISPATCH"))
-        }
-      }
+    val edges = for {
+      srcMethod <- vertices
+      _ = storeInSubgraph(srcMethod, subgraph)
+      child <- srcMethod.call
+      tgt <- child.callOut
+    } yield {
+      storeInSubgraph(tgt, subgraph)
+      Edge(srcMethod, tgt, label = child.dispatchType.stripSuffix("_DISPATCH"))
     }.distinct
     Graph(vertices, edges, subgraph.toMap)
   }
