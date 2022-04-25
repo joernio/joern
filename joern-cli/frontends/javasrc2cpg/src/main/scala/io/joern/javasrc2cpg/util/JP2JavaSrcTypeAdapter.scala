@@ -30,7 +30,6 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-
 object JP2JavaSrcTypeAdapter {
 
   private val logger = LoggerFactory.getLogger(this.getClass)

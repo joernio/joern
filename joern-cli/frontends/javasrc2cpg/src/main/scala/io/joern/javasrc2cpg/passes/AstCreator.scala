@@ -926,9 +926,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val modifiers =
       if (!methodDeclaration.isStatic) {
-        Seq(Ast(NewModifier()
-          .modifierType(ModifierTypes.VIRTUAL)
-          .code(ModifierTypes.VIRTUAL)))
+        Seq(
+          Ast(
+            NewModifier()
+              .modifierType(ModifierTypes.VIRTUAL)
+              .code(ModifierTypes.VIRTUAL)
+          )
+        )
       } else {
         Seq()
       }
