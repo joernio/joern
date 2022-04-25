@@ -209,7 +209,6 @@ trait AstNodeBuilder {
       case _ =>
         None
     }
-
     createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
   }
 

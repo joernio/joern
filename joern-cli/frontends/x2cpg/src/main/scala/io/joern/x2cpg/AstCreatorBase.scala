@@ -67,7 +67,6 @@ abstract class AstCreatorBase(filename: String) {
     * main purpose of this method is to automatically assign the correct argument indices.
     */
   def callAst(callNode: NewCall, arguments: List[Ast] = List(), receiver: Option[Ast] = None): Ast = {
-
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcv          = receiver.getOrElse(Ast())
     receiverRoot match {
@@ -91,7 +90,7 @@ abstract class AstCreatorBase(filename: String) {
       .withArgEdges(returnNode, arguments.flatMap(_.root))
   }
 
-  private def setArgumentIndices(arguments: List[Ast]): Unit = {
+  protected def setArgumentIndices(arguments: List[Ast]): Unit = {
     withIndex(arguments) { case (a, i) =>
       a.root.collect { case x: ExpressionNew =>
         x.argumentIndex = i

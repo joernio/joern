@@ -1,8 +1,18 @@
 package io.joern.jssrc2cpg.astcreation
 
+import io.joern.jssrc2cpg.datastructures.scope.BlockScopeElement
+import io.joern.jssrc2cpg.datastructures.scope.MethodScope
+import io.joern.jssrc2cpg.datastructures.scope.MethodScopeElement
+import io.joern.jssrc2cpg.datastructures.scope.ResolvedReference
+import io.joern.jssrc2cpg.datastructures.scope.ScopeElement
+import io.joern.jssrc2cpg.datastructures.scope.ScopeElementIterator
+import io.joern.jssrc2cpg.datastructures.scope.ScopeType
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
@@ -97,4 +107,160 @@ trait AstCreatorHelper {
   protected def line(node: Value): Option[Integer] = {
     safeObj(node, "loc").flatMap(loc => safeObj(loc, "start").flatMap(start => start("line").numOpt.map(_.toInt)))
   }
+
+  protected def computeScopePath(stack: Option[ScopeElement]): String =
+    new ScopeElementIterator(stack)
+      .to(Seq)
+      .reverse
+      .collect { case methodScopeElement: MethodScopeElement =>
+        methodScopeElement.name
+      }
+      .mkString(":")
+
+  protected def calcMethodNameAndFullName(func: BabelNodeInfo): (String, String) = {
+    def calcMethodName(func: BabelNodeInfo): String = {
+      val name = func match {
+        case _ if hasKey(func.json, "kind") && func.json("kind").str == "method" =>
+          func.json("key")("name").str
+        case _ if hasKey(func.json, "kind") && func.json("kind").str == "constructor" =>
+          "<constructor>"
+        case _ if func.json("id").isNull =>
+          "anonymous"
+        case _ =>
+          func.json("id")("name").str
+      }
+      name
+    }
+
+    // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
+    // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
+    // in the same scope.
+    functionNodeToNameAndFullName.get(func) match {
+      case Some(nameAndFullName) =>
+        nameAndFullName
+      case None =>
+        val intendedName   = calcMethodName(func)
+        val fullNamePrefix = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
+        var name           = intendedName
+        var fullName       = ""
+
+        var isUnique = false
+        var i        = 1
+        while (!isUnique) {
+          fullName = fullNamePrefix + name
+          if (functionFullNames.contains(fullName)) {
+            name = intendedName + i.toString
+            i += 1
+          } else {
+            isUnique = true
+          }
+        }
+
+        functionFullNames.add(fullName)
+        functionNodeToNameAndFullName(func) = (name, fullName)
+        (name, fullName)
+    }
+  }
+
+  protected def calcTypeNameAndFullName(classNode: BabelNodeInfo): (String, String) = {
+    def calcTypeName(classNode: BabelNodeInfo): String = {
+      val typeName = Try(createBabelNodeInfo(classNode.json("id")).code).toOption match {
+        case Some(ident) => ident
+        // in JS it is possible to create anonymous classes; hence no name
+        case None =>
+          "_anon_cdecl"
+      }
+      typeName
+    }
+
+    typeToNameAndFullName.get(classNode) match {
+      case Some(nameAndFullName) =>
+        nameAndFullName
+      case None =>
+        val name             = calcTypeName(classNode)
+        val fullNamePrefix   = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
+        val intendedFullName = fullNamePrefix + name
+        val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
+
+        val resultingFullName =
+          if (postfix == 0) {
+            intendedFullName
+          } else {
+            intendedFullName + postfix.toString
+          }
+
+        typeFullNameToPostfix.put(intendedFullName, postfix + 1)
+        (name, resultingFullName)
+    }
+
+  }
+
+  protected def createVariableReferenceLinks(): Unit = {
+    val resolvedReferenceIt = scope.resolve(createMethodLocalForUnresolvedReference)
+    val capturedLocals      = mutable.HashMap.empty[String, NewNode]
+
+    resolvedReferenceIt.foreach { case ResolvedReference(variableNodeId, origin) =>
+      var currentScope             = origin.stack
+      var currentReferenceId       = origin.referenceNodeId
+      var nextReferenceId: NewNode = null
+
+      var done = false
+      while (!done) {
+        val localOrCapturedLocalIdOption =
+          if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
+            done = true
+            Some(variableNodeId)
+          } else {
+            currentScope.flatMap {
+              case methodScope: MethodScopeElement =>
+                // We have reached a MethodScope and still did not find a local variable to link to.
+                // For all non local references the CPG format does not allow us to link
+                // directly. Instead we need to create a fake local variable in method
+                // scope and link to this local which itself carries the information
+                // that it is a captured variable. This needs to be done for each
+                // method scope until we reach the originating scope.
+                val closureBindingIdProperty =
+                  methodScope.methodFullName + ":" + origin.variableName
+                capturedLocals
+                  .updateWith(closureBindingIdProperty) {
+                    case None =>
+                      val methodScopeNodeId = methodScope.scopeNode
+                      val localId =
+                        createLocalNode(origin.variableName, Defines.ANY.label, Some(closureBindingIdProperty))
+                      diffGraph.addEdge(methodScopeNodeId, localId, EdgeTypes.AST)
+                      val closureBindingId = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
+                      methodScope.capturingRefId.foreach(ref =>
+                        diffGraph.addEdge(ref, closureBindingId, EdgeTypes.CAPTURE)
+                      )
+                      nextReferenceId = closureBindingId
+                      Some(localId)
+                    case someLocalId =>
+                      // When there is already a LOCAL representing the capturing, we do not
+                      // need to process the surrounding scope element as this has already
+                      // been processed.
+                      done = true
+                      someLocalId
+                  }
+              case _: BlockScopeElement => None
+            }
+          }
+
+        localOrCapturedLocalIdOption.foreach { localOrCapturedLocalId =>
+          diffGraph.addEdge(currentReferenceId, localOrCapturedLocalId, EdgeTypes.REF)
+          currentReferenceId = nextReferenceId
+        }
+        currentScope = currentScope.get.surroundingScope
+      }
+    }
+  }
+
+  private def createMethodLocalForUnresolvedReference(
+    methodScopeNodeId: NewNode,
+    variableName: String
+  ): (NewNode, ScopeType) = {
+    val local = createLocalNode(variableName, Defines.ANY.label)
+    diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
+    (local, MethodScope)
+  }
+
 }

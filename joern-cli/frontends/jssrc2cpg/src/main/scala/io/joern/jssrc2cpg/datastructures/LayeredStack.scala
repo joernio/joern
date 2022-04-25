@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.datastructures
 
-import io.joern.jssrc2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack._
 
 class LayeredStack[ElementType] {
 
