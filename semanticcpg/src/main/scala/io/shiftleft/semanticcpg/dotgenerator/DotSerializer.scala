@@ -4,9 +4,15 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.utils.MemberAccess
 
+import scala.collection.immutable.HashMap
+
 object DotSerializer {
 
-  case class Graph(vertices: List[StoredNode], edges: List[Edge]) {
+  case class Graph(
+    vertices: List[StoredNode],
+    edges: List[Edge],
+    subgraph: Map[String, Seq[StoredNode]] = HashMap.empty[String, Seq[StoredNode]]
+  ) {
 
     def ++(other: Graph): Graph = {
       Graph((this.vertices ++ other.vertices).distinct, (this.edges ++ other.edges).distinct)
@@ -21,11 +27,17 @@ object DotSerializer {
     edgeType: String = ""
   )
 
-  def dotGraph(root: AstNode, graph: Graph, withEdgeTypes: Boolean = false): String = {
-    val sb          = namedGraphBegin(root)
+  def dotGraph(root: Option[AstNode] = None, graph: Graph, withEdgeTypes: Boolean = false): String = {
+    val sb = root match {
+      case Some(r) => namedGraphBegin(r)
+      case None    => defaultGraphBegin()
+    }
     val nodeStrings = graph.vertices.map(nodeToDot)
     val edgeStrings = graph.edges.map(e => edgeToDot(e, withEdgeTypes))
-    sb.append((nodeStrings ++ edgeStrings).mkString("\n"))
+    val subgraphStrings = graph.subgraph.zipWithIndex.map { case ((subgraph, nodes), idx) =>
+      nodesToSubGraphs(subgraph, nodes, idx)
+    }
+    sb.append((nodeStrings ++ edgeStrings ++ subgraphStrings).mkString("\n"))
     graphEnd(sb)
   }
 
@@ -35,6 +47,12 @@ object DotSerializer {
       case method: Method => method.name
       case _              => ""
     })
+    sb.append(s"""digraph "$name" {  \n""")
+  }
+
+  private def defaultGraphBegin(): StringBuilder = {
+    val sb   = new StringBuilder
+    val name = "CPG"
     sb.append(s"""digraph "$name" {  \n""")
   }
 
@@ -81,6 +99,16 @@ object DotSerializer {
     }
     val labelStr = Some(s""" [ label = "$edgeLabel"] """).filter(_ => edgeLabel != "").getOrElse("")
     s"""  "${edge.src.id}" -> "${edge.dst.id}" """ + labelStr
+  }
+
+  def nodesToSubGraphs(subgraph: String, children: Seq[StoredNode], idx: Int): String = {
+    val escapedName = escape(subgraph)
+    val childString = children.map { c => s"    \"${c.id()}\";" }.mkString("\n")
+    s"""  subgraph cluster_$idx {
+       |$childString
+       |    label = "$escapedName";
+       |  }
+       |""".stripMargin
   }
 
   private def escapedChar(ch: Char): String = ch match {
