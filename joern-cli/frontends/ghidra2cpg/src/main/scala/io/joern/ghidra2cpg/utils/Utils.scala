@@ -1,15 +1,16 @@
 package io.joern.ghidra2cpg.utils
 
-import ghidra.program.model.listing.{Function, Program}
+import ghidra.program.model.listing.{Function, Instruction, Program}
+import ghidra.program.model.pcode.HighFunction
 import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 
 import scala.jdk.CollectionConverters._
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 
-object Nodes {
+object Utils {
   def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
     nodes
       .NewCall()
@@ -69,21 +70,27 @@ object Nodes {
     nodes.NewMethodReturn().order(1)
 
   }
-  def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
-    val code = decompiler.toDecompiledFunction(function).get.getC
-    val lineNumberEnd = Option(function.getReturn)
+  def createMethodNode(
+    decompiler: Decompiler,
+    highFunction: HighFunction,
+    fileName: String,
+    isExternal: Boolean
+  ): NewMethod = {
+    val code = decompiler.toDecompiledFunction(highFunction.getFunction).get.getC
+    val lineNumberEnd = Option(highFunction.getFunction.getReturn)
       .flatMap(x => Option(x.getMinAddress))
       .flatMap(x => Option(x.getOffsetAsBigInteger))
       .flatMap(x => Option(x.intValue()))
       .getOrElse(-1)
+
     nodes
       .NewMethod()
       .code(code)
-      .name(function.getName)
-      .fullName(function.getName)
+      .name(highFunction.getFunction.getName)
+      .fullName(highFunction.getFunction.getName)
       .isExternal(isExternal)
-      .signature(function.getSignature(true).toString)
-      .lineNumber(function.getEntryPoint.getOffsetAsBigInteger.intValue())
+      .signature(highFunction.getFunction.getSignature(true).toString)
+      .lineNumber(highFunction.getFunction.getEntryPoint.getOffsetAsBigInteger.intValue())
       .columnNumber(-1)
       .lineNumberEnd(lineNumberEnd)
       .order(0)
@@ -98,4 +105,6 @@ object Nodes {
       .map(_.getName)
       .contains(functionName)
   }
+  def getInstructions(program: Program, function: Function): Seq[Instruction] =
+    program.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
 }
