@@ -80,6 +80,7 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedMethodLikeDeclaration,
   ResolvedReferenceTypeDeclaration
 }
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
@@ -923,11 +924,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
 
+    val modifiers =
+      if (!methodDeclaration.isStatic) {
+        Seq(
+          Ast(
+            NewModifier()
+              .modifierType(ModifierTypes.VIRTUAL)
+              .code(ModifierTypes.VIRTUAL)
+          )
+        )
+      } else {
+        Seq()
+      }
+
     val ast = Ast(methodNode)
       .withChildren(thisAst.map(_.ast))
       .withChildren(parameterAstsWithCtx.map(_.ast))
       .withChild(bodyAstWithCtx.ast)
       .withChildren(annotationAsts)
+      .withChildren(modifiers)
       .withChild(returnAstWithCtx)
 
     val ctx = bodyAstWithCtx.ctx.mergeWith(parameterAstsWithCtx.map(_.ctx))
@@ -1056,7 +1071,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: ForStmt          => Seq(astForFor(x, order))
       case x: IfStmt           => Seq(astForIf(x, order))
       case x: LabeledStmt      => astsForLabeledStatement(x, order)
-      case x: ReturnStmt       => astsForReturnNode(x, order)
+      case x: ReturnStmt       => Seq(astForReturnNode(x, order))
       case x: SwitchStmt       => Seq(astForSwitchStatement(x, order))
       case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, order))
       case x: ThrowStmt        => Seq(astForThrow(x, order))
@@ -1389,22 +1404,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(blockAst, ctx)
   }
 
-  private def astsForReturnNode(ret: ReturnStmt, order: Int): Seq[AstWithCtx] = {
+  private def astForReturnNode(ret: ReturnStmt, order: Int): AstWithCtx = {
+    val returnNode = NewReturn()
+      .lineNumber(line(ret))
+      .columnNumber(column(ret))
+      .argumentIndex(order)
+      .order(order)
+      .code(ret.toString)
     if (ret.getExpression.isPresent) {
       val exprAstsWithCtx = astsForExpression(ret.getExpression.get(), order + 1, None)
-      val returnNode = NewReturn()
-        .lineNumber(line(ret))
-        .columnNumber(column(ret))
-        .argumentIndex(order)
-        .order(order)
-        .code(ret.toString)
       val returnAst = Ast(returnNode)
         .withChildren(exprAstsWithCtx.map(_.ast))
         .withArgEdges(returnNode, exprAstsWithCtx.flatMap(_.ast.root))
       val ctx = mergedCtx(exprAstsWithCtx.map(_.ctx))
-      Seq(AstWithCtx(returnAst, ctx))
+      AstWithCtx(returnAst, ctx)
     } else {
-      Seq()
+      AstWithCtx(Ast(returnNode), new Context())
     }
   }
 
@@ -1817,6 +1832,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForClassExpr(expr: ClassExpr, order: Int): AstWithCtx = {
     val callNode = NewCall()
       .name(Operators.fieldAccess)
+      .typeFullName(TypeConstants.Class)
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(expr.toString)
@@ -1943,7 +1959,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     Try(x.resolve()) match {
       case Success(value) if value.isField =>
-        val typeName = typeFullName.split("\\.").lastOption.getOrElse("")
         val identifierName = if (value.asField.isStatic) {
           // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
           // from other classes are represented by a FieldAccessExpr instead.
@@ -1952,14 +1967,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           "this"
         }
 
+        val identifierTypeFullName =
+          value match {
+            case fieldDecl: JavaParserFieldDeclaration =>
+              // TODO It is not quite correct to use the declaring classes type.
+              // Instead we should take the using classes type which is either the same or a
+              // sub class of the declaring class.
+              typeInfoProvider.getResolvedTypeDeclFullName(fieldDecl.declaringType())
+          }
+
         val identifier = NewIdentifier()
           .name(identifierName)
-          .typeFullName(typeFullName)
+          .typeFullName(identifierTypeFullName)
           .order(1)
           .argumentIndex(1)
           .lineNumber(line(x))
           .columnNumber(column(x))
-          .code(typeName)
+          .code(identifierName)
 
         val fieldIdentifier = NewFieldIdentifier()
           .code(x.toString)
@@ -1973,10 +1997,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .name(Operators.fieldAccess)
           .methodFullName(Operators.fieldAccess)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code(s"$typeName $name")
+          .code(name)
           .argumentIndex(order)
           .order(order)
           .typeFullName(typeFullName)
+          .lineNumber(line(x))
+          .columnNumber(column(x))
 
         val identifierAst = AstWithCtx(Ast(identifier), Context())
         val fieldIdentAst = AstWithCtx(Ast(fieldIdentifier), Context())
@@ -1992,7 +2018,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .typeFullName(typeFullName)
           .lineNumber(line(x.getName))
           .columnNumber(column(x.getName))
-        AstWithCtx(Ast(identifier), Context())
+
+        val variableOption = scopeStack
+          .lookupVariable(name)
+          .filter(variableInfo =>
+            variableInfo.node.isInstanceOf[NewMethodParameterIn] || variableInfo.node.isInstanceOf[NewLocal]
+          )
+        val ast = variableOption.foldLeft(Ast(identifier))((ast, variableInfo) =>
+          ast.withRefEdge(identifier, variableInfo.node)
+        )
+
+        AstWithCtx(ast, Context())
     }
 
   }
@@ -2225,6 +2261,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: MethodCallExpr          => Seq(astForMethodCall(x, order, expectedType))
       case x: NameExpr                => Seq(astForNameExpr(x, order, expectedType))
       case x: ObjectCreationExpr      => Seq(astForObjectCreationExpr(x, order, expectedType))
+      case x: SuperExpr               => astForSuperExpr(x, order, expectedType)
       case x: ThisExpr                => Seq(astForThisExpr(x, order, expectedType))
       case x: UnaryExpr               => Seq(astForUnaryExpr(x, order, expectedType))
       case x: VariableDeclarationExpr => astsForVariableDecl(x, order)
@@ -2503,37 +2540,44 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def dispatchTypeForCall(maybeDecl: Try[ResolvedMethodDeclaration], maybeScope: Option[Expression]): String = {
-    maybeDecl match {
-      case Success(decl) =>
-        if (decl.isStatic) {
-          DispatchTypes.STATIC_DISPATCH
-        } else {
-          DispatchTypes.DYNAMIC_DISPATCH
-        }
+    maybeScope match {
+      case Some(_: SuperExpr) =>
+        DispatchTypes.STATIC_DISPATCH
       case _ =>
-        maybeScope match {
-          case Some(_: SuperExpr) => DispatchTypes.STATIC_DISPATCH
-          case _                  => DispatchTypes.DYNAMIC_DISPATCH
+        maybeDecl match {
+          case Success(decl) =>
+            if (decl.isStatic) {
+              DispatchTypes.STATIC_DISPATCH
+            } else {
+              DispatchTypes.DYNAMIC_DISPATCH
+            }
+          case _ =>
+            DispatchTypes.DYNAMIC_DISPATCH
         }
     }
   }
 
   private def targetTypeForCall(callExpr: MethodCallExpr): Option[String] = {
-    callExpr.getScope.toScala match {
-      case Some(scope: ThisExpr) =>
-        typeInfoProvider
-          .getTypeForExpression(scope)
-          .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
+    Try(callExpr.resolve()) match {
+      case Success(resolveMethodDecl) =>
+        Some(typeInfoProvider.getResolvedTypeDeclFullName(resolveMethodDecl.declaringType()))
+      case Failure(_) =>
+        callExpr.getScope.toScala match {
+          case Some(scope: ThisExpr) =>
+            typeInfoProvider
+              .getTypeForExpression(scope)
+              .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
 
-      case Some(scope: SuperExpr) =>
-        typeInfoProvider
-          .getTypeForExpression(scope)
-          .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
+          case Some(scope: SuperExpr) =>
+            typeInfoProvider
+              .getTypeForExpression(scope)
+              .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
 
-      case Some(scope) => typeInfoProvider.getTypeForExpression(scope)
+          case Some(scope) => typeInfoProvider.getTypeForExpression(scope)
 
-      case None =>
-        scopeStack.getEnclosingTypeDecl.map(_.fullName)
+          case None =>
+            scopeStack.getEnclosingTypeDecl.map(_.fullName)
+        }
     }
   }
 
@@ -2639,6 +2683,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Some(rootNode) =>
         AstWithCtx(ast.ast.withReceiverEdge(callNode, rootNode), ast.ctx)
     }
+  }
+
+  def astForSuperExpr(superExpr: SuperExpr, order: Int, expectedType: Option[String]): AstWithCtx = {
+    val typeFullName =
+      typeInfoProvider
+        .getTypeForExpression(superExpr)
+        .orElse(expectedType)
+        .getOrElse(UnresolvedTypeDefault)
+
+    val thisIdentifier = NewIdentifier()
+      .name("this")
+      .code("super")
+      .typeFullName(typeFullName)
+      .order(order)
+      .argumentIndex(order)
+      .lineNumber(line(superExpr))
+      .columnNumber(column(superExpr))
+
+    AstWithCtx(Ast(thisIdentifier), new Context())
   }
 
   private def astsForParameterList(parameters: NodeList[Parameter], order: Int = 0): Seq[AstWithCtx] = {
