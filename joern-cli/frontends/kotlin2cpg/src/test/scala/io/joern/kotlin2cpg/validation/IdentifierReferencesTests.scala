@@ -7,6 +7,8 @@ import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
 import io.shiftleft.semanticcpg.language._
 
+// TODO: also add test with refs inside TYPE_DECL
+
 class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
   "CPG for code with shadowed local inside lambda" - {
     lazy val cpg = TestContext.buildCpg("""
@@ -27,13 +29,13 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain LOCAL nodes with correctly-set referencing IDENTIFIERS" in {
-      val List(outerScopeX: Local) = cpg.local.nameExact("x").take(1).l
-      outerScopeX.referencingIdentifiers.size shouldBe 3 // TODO: fix, it should be `2`, not `3`
-      outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(4, 4, 6)
+      val List(outerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).take(1).l
+      outerScopeX.referencingIdentifiers.size shouldBe 2
+      outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(4, 6)
 
-      val List(innerScopeX: Local) = cpg.local.nameExact("x").drop(1).take(1).l
-      innerScopeX.referencingIdentifiers.size shouldBe 3 // TODO: fix, it should be `2`, not `3`
-      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7, 7, 9)
+      val List(innerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).drop(1).take(1).l
+      innerScopeX.referencingIdentifiers.size shouldBe 1
+      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7)
     }
   }
 
@@ -53,7 +55,7 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         .nameExact("x")
         .typeFullName("java.lang.Integer")
         .referencingIdentifiers
-        .size shouldBe 3 // TODO: fix, it should be `2`, not `3`
+        .size shouldBe 2
     }
 
     "should contain a local outside the scope function with a single referenced identifier" in {
@@ -61,7 +63,7 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         .nameExact("x")
         .typeFullName("java.lang.String")
         .referencingIdentifiers
-        .size shouldBe 2 // TODO: fix, it should be `1`, not `2`
+        .size shouldBe 1
     }
   }
 
