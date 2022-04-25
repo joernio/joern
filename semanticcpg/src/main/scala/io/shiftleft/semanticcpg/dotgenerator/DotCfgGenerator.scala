@@ -10,7 +10,7 @@ object DotCfgGenerator {
 
   def dotCfg(method: Method): String = {
     val cfg = new CfgGenerator().generate(method)
-    DotSerializer.dotGraph(Some(method), cfg)
+    DotSerializer.dotGraph(Option(method), cfg)
   }
 
 }
