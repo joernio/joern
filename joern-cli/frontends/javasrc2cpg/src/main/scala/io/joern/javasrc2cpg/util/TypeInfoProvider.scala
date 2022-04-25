@@ -163,6 +163,7 @@ object TypeInfoProvider {
     val Char: String    = "char"
     val Boolean: String = "boolean"
     val Object: String  = "java.lang.Object"
+    val Class: String   = "java.lang.Class"
   }
 
   val NumericTypes: Set[String] = Set(
