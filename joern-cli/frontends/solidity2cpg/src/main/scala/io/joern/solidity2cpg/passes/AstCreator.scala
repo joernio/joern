@@ -105,13 +105,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .filename(filename)
       .inheritsFromTypeFullName(superTypes)
 
-    val methods= contractDef.subNodes
-      .collect {
-        case x: ModifierDefinition => x
-        case x: FunctionDefinition => x
-      }
-      .map({case (x, fullName) => astsForMethod(methods, fullName)})
-
+    val methods= contractDef.subNodes.map(x => astsForMethod(x, fullName))
     val memberAsts = contractDef.subNodes
       .collect{
         case x: StateVariableDeclaration => x
