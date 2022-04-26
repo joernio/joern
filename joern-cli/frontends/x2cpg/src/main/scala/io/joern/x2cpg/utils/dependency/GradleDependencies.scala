@@ -97,7 +97,8 @@ object GradleDependencies {
   }
 
   private[dependency] def isGradleBuild(codeDir: Path): Boolean = {
-    Files.walk(codeDir).filter(_.toString.endsWith(".gradle")).count > 0
+    Files.walk(codeDir).filter(file =>
+      file.toString.endsWith(".gradle") || file.toString.endsWith(".gradle.kts")).count > 0
   }
 
 }
