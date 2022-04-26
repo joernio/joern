@@ -15,7 +15,7 @@ class TestCpg(frontend: LanguageFrontend, registerCleanup: (Path, TestCpg) => Un
   private var fileNameCounter   = 0
 
   def moreCode(code: String): TestCpg = {
-    val result = moreCode(code, s"Test$fileNameCounter.java")
+    val result = moreCode(code, s"Test$fileNameCounter${frontend.fileSuffix}")
     fileNameCounter += 1
     result
   }
