@@ -852,6 +852,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Seq(astForCall(typedExpr, order, argIdx))
         }
       case typedExpr: KtConstantExpression       => Seq(astForLiteral(typedExpr, order, argIdx))
+      case typedExpr: KtClass                    => Seq(astForClassOrObject(typedExpr, order))
       case typedExpr: KtClassLiteralExpression   => Seq(astForClassLiteral(typedExpr, order, argIdx))
       case typedExpr: KtSafeQualifiedExpression  => Seq(astForQualifiedExpression(typedExpr, order, argIdx))
       case typedExpr: KtContinueExpression       => Seq(astForContinue(typedExpr, order))

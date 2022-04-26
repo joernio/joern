@@ -345,7 +345,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
         // TODO: write descriptor renderer instead of working with the existing ones
         // that render comments in fqnames
-        val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
+
         val returnTypeFullName = {
           if (isCtor) {
             TypeConstants.void
@@ -361,6 +361,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             }
             .mkString(",")
         val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+
+        val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
         val fullName =
           if (isCtor) {
             s"$renderedFqName${TypeConstants.initPrefix}:$signature"
