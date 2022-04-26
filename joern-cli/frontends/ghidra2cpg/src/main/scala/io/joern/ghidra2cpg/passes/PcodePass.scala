@@ -6,7 +6,7 @@ import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
 import io.joern.ghidra2cpg.utils.Decompiler
-import io.joern.ghidra2cpg.utils.Utils._
+import io.joern.ghidra2cpg.utils.Utils.{createCallNode, _}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
@@ -46,65 +46,70 @@ class PcodePass(
 
   def getHighFunction(function: Function): HighFunction = decompiler.toHighFunction(function).orNull
 
-  def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
-    diffGraphBuilder.addNode(argument)
-    diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
-    diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
-  }
 
-  def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = if (input.isRegister) {
-    // TODO:
-    var name = ""
-    if (
-      input.getDef != null && input.getDef.getInputs != null
-    ) {
-      val symbol = input.getDef.getInputs.toList.lastOption
-        .flatMap(x => Option(x.getHigh))
-        .flatMap(x => Option(x.getSymbol))
-      if (symbol.isDefined) name = symbol.get.getName
-    }
-    if (name == null) name = input.getHigh.getSymbol.getName
+  def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     createIdentifier(
-      name,
-      name,
+      "TODO",
+      "TODO",
       index + 1,
-      Types.registerType(name),
-      instruction.getMinAddress.getOffsetAsBigInteger.intValue
-    )
-  } else if (input.isConstant)
-    createLiteral(
-      "0x" + input.getWordOffset.toHexString,
-      index + 1,
-      index + 1,
-      "0x" + input.getWordOffset.toHexString,
-      instruction.getMinAddress.getOffsetAsBigInteger.intValue
-    )
-  else if (input.isUnique) {
-    var valueString = ""
-    if (input.getDescendants.asScala.toList.head.getOutput == null)
-      valueString = input.getDef.getInputs.toList.head.getAddress.getOffset.toString
-    else valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
-
-    val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
-
-    createLiteral(
-      value,
-      index + 1,
-      index + 1,
-      input.getWordOffset.toHexString,
-      instruction.getMinAddress.getOffsetAsBigInteger.intValue
-    )
-  } else {
-    // we default to literal
-    // identifier could be useful too
-    createLiteral(
-      input.toString(),
-      index + 1,
-      index + 1,
-      input.toString(),
+      Types.registerType("TODO"),
       instruction.getMinAddress.getOffsetAsBigInteger.intValue
     )
   }
+
+  /*if (input.isRegister) {
+  // TODO:
+  var name = ""
+  if (
+    input.getDef != null && input.getDef.getInputs != null
+  ) {
+    val symbol = input.getDef.getInputs.toList.lastOption
+      .flatMap(x => Option(x.getHigh))
+      .flatMap(x => Option(x.getSymbol))
+    if (symbol.isDefined) name = symbol.get.getName
+  }
+  if (name == null) name = input.getHigh.getSymbol.getName
+  createIdentifier(
+    name,
+    name,
+    index + 1,
+    Types.registerType(name),
+    instruction.getMinAddress.getOffsetAsBigInteger.intValue
+  )
+} else if (input.isConstant)
+  createLiteral(
+    "0x" + input.getWordOffset.toHexString,
+    index + 1,
+    index + 1,
+    "0x" + input.getWordOffset.toHexString,
+    instruction.getMinAddress.getOffsetAsBigInteger.intValue
+  )
+else if (input.isUnique) {
+  var valueString = ""
+  if (input.getDescendants.asScala.toList.head.getOutput == null)
+    valueString = input.getDef.getInputs.toList.head.getAddress.getOffset.toString
+  else valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
+
+  val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
+
+  createLiteral(
+    value,
+    index + 1,
+    index + 1,
+    input.getWordOffset.toHexString,
+    instruction.getMinAddress.getOffsetAsBigInteger.intValue
+  )
+} else {
+  // we default to literal
+  // identifier could be useful too
+  createLiteral(
+    input.toString(),
+    index + 1,
+    index + 1,
+    input.toString(),
+    instruction.getMinAddress.getOffsetAsBigInteger.intValue
+  )
+}*/
 
   def handleAssignment(
                         diffGraphBuilder: DiffGraphBuilder,
@@ -243,13 +248,68 @@ class PcodePass(
     }
   }
 
-  def sanitizeMethodName(methodName: String): String =
-    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
-
   def handleStore(pcodeOps: List[PcodeOp]): Unit = {
     //pcodeOps.last.getInputs.zipWithIndex.foreach{case(varNode,index)=>resolveVarNode(varnode, index))}
     println("todo handleStore")
   }
+
+  def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
+    val pcodeOp = instruction.getPcode().toList.last
+    if (pcodeOp != null) {
+      pcodeOp.getOpcode match {
+        case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
+          println("TODO: INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
+          createCallNode(instruction.toString, instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case COPY =>
+          createCallNode(instruction.toString, instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          //handleAssignment(diffGraphBuilder, instruction, opNode, pcodeOp.getOutput, index)
+        case LOAD => println("TODO: LOAD ")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case SUBPIECE => println("TODO: SUBPIECE ")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case STORE => handleStore(instruction.getPcode.toList)
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case CALL => println("TODO: CALL")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case CALLIND => println("TODO: CALLIND")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case INT_ADD | FLOAT_ADD =>
+          //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "+", "<operator>.addition")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case INT_DIV | FLOAT_DIV | INT_SDIV =>
+          //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "/", "<operator>.division")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case INT_SUB | FLOAT_SUB =>
+          //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "-", "<operator>.subtraction")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case INT_MULT | FLOAT_MULT =>
+          //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "*", "<operator>.multiplication")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case MULTIEQUAL | INDIRECT | PIECE => // not handled
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case INT_XOR => println("TODO: ^")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "^", "<operator>.xor")
+        case INT_OR => println("TODO: |")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "|", "<operator>.or")
+        case CAST => println("TODO: CAST")
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        // we need to "unpack" the def of the first input of the cast
+        // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
+        //if (pcodeOp.getInput(0).getDef != null)
+        //  resolveArgument(diffGraphBuilder, instruction, opNode, pcodeOps.last.getInput(0).getDef, index)
+        case PTRSUB | PTRADD =>
+          //handlePtrSub(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, index)
+          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        case _ => createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      }
+    } else {
+      createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+    }
+  }
+
+
 
   def handleBody(
                   diffGraphBuilder: DiffGraphBuilder,
@@ -258,59 +318,23 @@ class PcodePass(
                   blockNode: NewBlock
                 ): Unit = {
     // get asm instructions
-    val instructions = currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
-    if (instructions.nonEmpty) {
-      // handle first instruction
-      //var prevInstructionNode = handleInstruction(diffGraphBuilder,instructions.head, methodNode, 0)
-      //handleArguments(diffGraphBuilder, instructions.head, prevInstructionNode, highFunction)
-      //diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
-      //diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
-      instructions.drop(1).foreach { instruction =>
-        // everything else
-        //  val instructionNode = addCallOrReturnNode(instruction)
-        //  diffGraphBuilder.addNode(instructionNode)
-        //  handleArguments(diffGraphBuilder, instruction, instructionNode, highFunction)
-        //  diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
-        //  // Not connecting the previous instruction, if it is an unconditional jump
-        //  // TODO: JMP is x86 specific
-        //  if (!prevInstructionNode.code.startsWith("JMP"))
-        //    diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
-        //  prevInstructionNode = instructionNode
-        val opNode = createCallNode(instruction.toString, instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-        val pcodeOps = instruction.getPcode().toList
-        if (pcodeOps.nonEmpty) {
-          pcodeOps.last.getOpcode match {
-            case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
-              println("TODO: INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
-            case COPY =>
-              handleAssignment(diffGraphBuilder, instruction, opNode, pcodeOps.last.getOutput, index)
-            case LOAD => println("TODO: LOAD ")
-            case SUBPIECE => println("TODO: SUBPIECE ")
-            case STORE => handleStore(pcodeOps)
-            case CALL => println("TODO: CALL")
-            case CALLIND => println("TODO: CALLIND")
-            case INT_ADD | FLOAT_ADD =>
-              handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOps.last, "+", "<operator>.addition")
-            case INT_DIV | FLOAT_DIV | INT_SDIV =>
-              handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOps.last, "/", "<operator>.division")
-            case INT_SUB | FLOAT_SUB =>
-              handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOps.last, "-", "<operator>.subtraction")
-            case INT_MULT | FLOAT_MULT =>
-              handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOps.last, "*", "<operator>.multiplication")
-            case MULTIEQUAL | INDIRECT | PIECE => // not handled
-            case INT_XOR => println("TODO: ^")
-              handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOps.last, "^", "<operator>.xor")
-            case INT_OR => println("TODO: |")
-              handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOps.last, "|", "<operator>.or")
-            case CAST => println("TODO: CAST")
-              // we need to "unpack" the def of the first input of the cast
-              // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
-              //if (pcodeOp.getInput(0).getDef != null)
-              //  resolveArgument(diffGraphBuilder, instruction, opNode, pcodeOps.last.getInput(0).getDef, index)
-            case PTRSUB | PTRADD => //  //handlePtrSub(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, index)
-            case _ => // handleDefault(pcodeAst)
-          }
-        }
+    val instructionNodes = currentProgram.getListing
+      .getInstructions(function.getBody, true)
+      .iterator()
+      .asScala
+      .toList
+      .map(instruction => handleInstruction(diffGraphBuilder, instruction ))
+
+    if(instructionNodes.nonEmpty) {
+      diffGraphBuilder.addEdge(blockNode, instructionNodes.head, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(methodNode, instructionNodes.head, EdgeTypes.CFG)
+      instructionNodes.sliding(2).foreach { nodes =>
+        val prevInstructionNode = nodes.head
+        val instructionNode = nodes.last
+        diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
+        diffGraphBuilder.addNode(instructionNode)
+        diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
       }
     }
   }
