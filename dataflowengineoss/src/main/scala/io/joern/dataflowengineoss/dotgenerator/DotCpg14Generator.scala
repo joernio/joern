@@ -15,7 +15,7 @@ object DotCpg14Generator {
     val cfg = new CfgGenerator().generate(method)
     val ddg = new DdgGenerator().generate(method)
     val cdg = new CdgGenerator().generate(method)
-    DotSerializer.dotGraph(method, ast ++ cfg ++ ddg ++ cdg, withEdgeTypes = true)
+    DotSerializer.dotGraph(Option(method), ast ++ cfg ++ ddg ++ cdg, withEdgeTypes = true)
   }
 
 }

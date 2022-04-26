@@ -1047,6 +1047,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .isExternal(false)
       .order(childNum)
       .filename(filename)
+      .astParentType(NodeTypes.TYPE_DECL)
+      .astParentFullName(typeDecl.toQuotedString)
       .lineNumber(line(methodDeclaration))
       .columnNumber(column(methodDeclaration))
   }
