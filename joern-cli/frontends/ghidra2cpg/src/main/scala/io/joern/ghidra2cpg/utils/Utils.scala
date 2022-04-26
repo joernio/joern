@@ -3,8 +3,9 @@ package io.joern.ghidra2cpg.utils
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
 import scala.language.{higherKinds, implicitConversions}
@@ -106,4 +107,13 @@ object Utils {
   }
   def getInstructions(program: Program, function: Function): Seq[Instruction] =
     program.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
+
+  def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
+    diffGraphBuilder.addNode(argument)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
+  }
+
+  def sanitizeMethodName(methodName: String): String =
+    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
 }
