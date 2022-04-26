@@ -132,8 +132,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
       case x: FunctionDefinition => {
         val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
+        var methodReturn = Ast()
         var funcType = ""
         if (x.returnParameters != null) {
+          methodReturn = astForMethodReturn(x.returnParameters);
           x.returnParameters.collect { case y: VariableDeclaration => {
             y.typeName match {
               case z: ElementaryTypeName => funcType += ":"+z.name
@@ -193,6 +196,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         } else {
           signature = funcType + "("+types+")"
         }
+        val thisNode = createThisParameterNode()
         val methodNode = NewMethod()
           .name(x.name)
           .fullName(contractname+"."+x.name + funcType + "("+types+")")
@@ -203,12 +207,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
 
 
-        // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
-        val methodReturn = NewMethodReturn().typeFullName("")
+
         Ast(methodNode)
+          .withChild(thisNode)
           .withChildren(parameters)
           .withChild(astForBody(x.body.asInstanceOf[Block]))
-          .withChild(Ast(methodReturn))
+          .withChild(methodReturn)
       }
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
@@ -220,8 +224,27 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   // TODO: I assume the only types coming into parameter are var decls but it's worth making sure in tests
   private def astForParameter(varDecl: VariableDeclaration): Ast = {
-   var parameter = astForVarDecl(varDecl)
-    (parameter)
+    val NewMethodParameter = NewMethodParameterIn();
+    var typefullName = ""
+    var code = ""
+    varDecl.typeName match  {
+      case x: ElementaryTypeName => typefullName = x.name
+      case x: Mapping =>  {
+        typefullName = "mapping"
+        code = getMappingKeyAndValue(x)}
+    }
+    var visibility = "";
+    varDecl.visibility match {
+      case x: String => visibility = " "+x
+      case _ => visibility = ""
+    }
+    NewMethodParameter
+      .name(varDecl.name)
+      .code(typefullName + code +visibility+ " "+varDecl.name)
+      .typeFullName(typefullName)
+      .order(1)
+
+    Ast(NewMethodParameter)
   }
 
   private def astForBody(body: Block): Ast = {
@@ -285,6 +308,47 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: Mapping => (getMappingKeyAndValue(x))
     }
     (" ("+key +" => " + value+")")
+  }
+
+  private def createThisParameterNode(/*method: ThisRef*/): Ast = {
+    Ast(
+      NewMethodParameterIn()
+        .name("this")
+        .code("this")
+//        .typeFullName(registerType(method.getType.toQuotedString))
+//        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
+        .order(0)
+    )
+  }
+
+  private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
+    val returnMethod= NewMethodReturn()
+    var typefullName = ""
+    var code = ""
+      value.collect{
+        case x: VariableDeclaration => {
+
+          x.typeName match  {
+            case x: ElementaryTypeName => typefullName = x.name
+            case x: Mapping =>  {
+              typefullName = "mapping"
+              code = getMappingKeyAndValue(x)}
+          }
+          var visibility = "";
+          x.visibility match {
+            case x: String => visibility = " "+x
+            case _ => visibility = ""
+          }
+          returnMethod
+            .code(typefullName + code +visibility+ " "+x.name)
+            .typeFullName(x.name)
+            .order(1)
+
+
+        }
+      }
+    Ast(returnMethod)
+
   }
 
 
