@@ -1,21 +1,21 @@
-package io.joern.x2cpg.utils
+package io.joern.x2cpg.utils.dependency
 
-import io.joern.x2cpg.utils.GradleDependencies.getClass
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success}
 
 object MavenDependencies {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def get(projectDir: String): List[String] = {
+  private[dependency] def get(projectDir: Path): List[String] = {
     val tmpFile = Files.createTempFile("mvnClassPass", ".txt")
     tmpFile.toFile.deleteOnExit()
     ExternalCommand.run(
       s"mvn dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=$tmpFile",
-      projectDir
+      projectDir.toString
     ) match {
       case Success(_) =>
         val classPath = new String(Files.readAllBytes(tmpFile), StandardCharsets.UTF_8)
@@ -29,4 +29,7 @@ object MavenDependencies {
     }
   }
 
+  private[dependency] def isMavenBuild(codeDir: Path): Boolean = {
+    Files.exists(codeDir.resolve("pom.xml"))
+  }
 }
