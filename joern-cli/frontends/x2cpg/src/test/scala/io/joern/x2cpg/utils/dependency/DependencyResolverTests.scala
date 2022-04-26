@@ -24,7 +24,6 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       }
     }
 
-
   }
 
   "test maven dependency resolution" in {
@@ -69,7 +68,9 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
         |        </dependency>
         |    </dependencies>
         |</project>
-        |""".stripMargin, "pom.xml")
+        |""".stripMargin,
+      "pom.xml"
+    )
 
     fixture.test { dependenciesFiles =>
       dependenciesFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty
@@ -90,7 +91,9 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
         |dependencies {
         |  implementation 'org.slf4j:slf4j-api:1.7.36'
         |}
-        |""".stripMargin, "build.gradle")
+        |""".stripMargin,
+      "build.gradle"
+    )
 
     fixture.test { dependenciesFiles =>
       dependenciesFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty

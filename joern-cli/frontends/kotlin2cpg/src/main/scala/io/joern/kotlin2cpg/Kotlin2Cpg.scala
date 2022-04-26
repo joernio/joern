@@ -7,7 +7,12 @@ import org.jetbrains.kotlin.psi.KtFile
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.kotlin2cpg.types.{CompilerAPI, ContentSourcesPicker, DefaultTypeInfoProvider, ErrorLoggingMessageCollector}
+import io.joern.kotlin2cpg.types.{
+  CompilerAPI,
+  ContentSourcesPicker,
+  DefaultTypeInfoProvider,
+  ErrorLoggingMessageCollector
+}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
