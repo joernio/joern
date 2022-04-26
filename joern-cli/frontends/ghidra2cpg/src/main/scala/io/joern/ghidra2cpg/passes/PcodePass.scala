@@ -111,7 +111,19 @@ else if (input.isUnique) {
   )
 }*/
 
+
   def handleAssignment(
+                        diffGraphBuilder: DiffGraphBuilder,
+                        instruction: Instruction,
+                        callNode: CfgNodeNew,
+                        to: Varnode,
+                        index: Int
+                      ): Unit = {
+    val node = resolveVarNode(instruction, to, index)
+    connectCallToArgument(diffGraphBuilder, callNode, node)
+  }
+
+  def handleAssignment1(
                         diffGraphBuilder: DiffGraphBuilder,
                         instruction: Instruction,
                         callNode: CfgNodeNew,
@@ -261,20 +273,27 @@ else if (input.isUnique) {
           println("TODO: INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
           createCallNode(instruction.toString, instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case COPY =>
-          createCallNode(instruction.toString, instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-          //handleAssignment(diffGraphBuilder, instruction, opNode, pcodeOp.getOutput, index)
-        case LOAD => println("TODO: LOAD ")
-          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-        case SUBPIECE => println("TODO: SUBPIECE ")
-          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          val callNode = createCallNode("<operator>.assignment", instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          handleAssignment1(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, 0)
+          callNode
+        case LOAD =>
+          val callNode = createCallNode("<operator>.assignment", instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          handleAssignment1(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, 0)
+          callNode
+        case SUBPIECE =>
+          val callNode = createCallNode("<operator>.assignment", instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          handleAssignment1(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, 0)
+          callNode
         case STORE => handleStore(instruction.getPcode.toList)
-          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          val callNode = createCallNode("<operator>.assignment", instruction.toString, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          handleAssignment1(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, 0)
+          callNode
         case CALL => println("TODO: CALL")
           createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case CALLIND => println("TODO: CALLIND")
           createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case INT_ADD | FLOAT_ADD =>
-          //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "+", "<operator>.addition")
+          handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "+", "<operator>.addition")
           createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case INT_DIV | FLOAT_DIV | INT_SDIV =>
           //handleTwoArguments(diffGraphBuilder, instruction, opNode, pcodeOp.last, "/", "<operator>.division")

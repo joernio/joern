@@ -11,13 +11,13 @@ import scala.jdk.CollectionConverters._
 import scala.language.{higherKinds, implicitConversions}
 
 object Utils {
-  def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
+  def createCallNode(code: String, name: String, lineNumber: Integer): NewCall = {
     nodes
       .NewCall()
-      .name(mnemonic)
+      .name(name)
       .code(code)
       .order(0)
-      .methodFullName(mnemonic)
+      .methodFullName(name)
       .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
       .lineNumber(lineNumber)
   }
@@ -32,7 +32,7 @@ object Utils {
     nodes
       .NewMethodParameterIn()
       .code(code)
-      .name(code)
+      .name(name)
       .order(order)
       .typeFullName(Types.registerType(typ))
       .lineNumber(lineNumber)
@@ -42,7 +42,7 @@ object Utils {
     nodes
       .NewIdentifier()
       .code(code)
-      .name(name) // parameter.getName)
+      .name(name)
       .order(index)
       .argumentIndex(index)
       .typeFullName(Types.registerType(typ))
