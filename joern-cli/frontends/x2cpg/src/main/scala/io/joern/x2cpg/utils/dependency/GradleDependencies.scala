@@ -1,10 +1,12 @@
-package io.joern.x2cpg.utils
+package io.joern.x2cpg.utils.dependency
 
 import better.files.File.home
 import org.gradle.tooling.GradleConnector
-
-import java.io.{File => JFile}
 import org.slf4j.LoggerFactory
+
+import java.nio.file.{Files, Path}
+import java.util.stream.Collectors
+import scala.jdk.CollectionConverters._
 
 // TODO: try to find out the version of gradle and generate the initScript based on that
 object GradleDependencies {
@@ -25,10 +27,14 @@ object GradleDependencies {
      |""".stripMargin
   }
 
-  def downloadRuntimeLibs(projectDirectory: String, destinationDir: String): Unit = {
+  private[dependency] def downloadRuntimeLibs(projectDir: Path): collection.Seq[String] = {
+    val destinationDir = Files.createTempDirectory("x2cpgRuntimeLibs")
+    destinationDir.toFile.deleteOnExit()
+
     // TODO: check if the directories exist
     // TODO: check if the build task already exists, and insert the init script only if it does not
-    logger.info(s"Attempting to download runtime libs for project at '$projectDirectory' into '$destinationDir'...")
+    logger.info(
+      s"Attempting to download runtime libs for project at '$projectDir' into '$destinationDir'...")
 
     val gradleInitDDir = home / ".gradle" / "init.d"
     try {
@@ -45,7 +51,7 @@ object GradleDependencies {
       val gradleInitScript = gradleInitDDir / initScriptName
       gradleInitScript.createFileIfNotExists()
       gradleInitScript.write(
-        gradle4OrLaterInitScript(destinationDir)
+        gradle4OrLaterInitScript(destinationDir.toString)
       ) // overwrite whatever is there, dirty solution, but also least likely to cause functional problems
       gradleInitScript.deleteOnExit()
     } catch {
@@ -56,11 +62,11 @@ object GradleDependencies {
 
     val connectionOption =
       try {
-        logger.info(s"Establishing gradle connection for project directory at '$projectDirectory'...")
+        logger.info(s"Establishing gradle connection for project directory at '$projectDir'...")
         Some(
           GradleConnector
             .newConnector()
-            .forProjectDirectory(new JFile(projectDirectory))
+            .forProjectDirectory(projectDir.toFile)
             .connect()
         )
       } catch {
@@ -86,5 +92,12 @@ object GradleDependencies {
         connection.close()
       }
     }
+
+    Files.list(destinationDir).collect(Collectors.toList[Path]).asScala.map(_.toAbsolutePath.toString)
   }
+
+  private[dependency] def isGradleBuild(codeDir: Path): Boolean = {
+    Files.walk(codeDir).filter(_.toString.endsWith(".gradle")).count > 0
+  }
+
 }
