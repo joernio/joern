@@ -14,12 +14,13 @@ class TypeHierarchyGenerator {
     val vertices         = cpg.all.collect { case m: TypeDecl => m }.l
     val typeToIsExternal = cpg.all.collect { case m: TypeDecl => m }.map { t => t.fullName -> t.isExternal }.toMap
     val edges = for {
-      srcType <- vertices
-      _ = storeInSubgraph(srcType._typeViaRefIn.head, subgraph, typeToIsExternal)
-      tgtType <- srcType.inheritsFromOut
+      srcTypeDecl <- vertices
+      srcType     <- srcTypeDecl._typeViaRefIn.l
+      _ = storeInSubgraph(srcType, subgraph, typeToIsExternal)
+      tgtType <- srcTypeDecl.inheritsFromOut
     } yield {
       storeInSubgraph(tgtType, subgraph, typeToIsExternal)
-      Edge(tgtType, srcType._typeViaRefIn.head)
+      Edge(tgtType, srcType)
     }
     Graph(vertices.flatMap(_._typeViaRefIn.l), edges.distinct, subgraph.toMap)
   }
