@@ -1,7 +1,7 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsBoolean, JsFalse, JsNull, JsObject, JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsArray, JsBoolean, JsFalse, JsNull, JsObject, JsString, JsValue, JsonFormat}
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -394,7 +394,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         FunctionCall(
           fields("expression").convertTo[BaseASTNode],
           fields("arguments") match {
-            case x: JsObject => x.convertTo[List[BaseASTNode]]
+            case x: JsArray => x.convertTo[List[BaseASTNode]]
             case _           => null
           },
           fields("names").convertTo[List[String]],
@@ -499,9 +499,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("FunctionDefinition object expected")
       } else {
         FunctionDefinition(
-          fields("name").convertTo[String],
+          fields("name") match {
+            case x: JsString => x.convertTo[String]
+            case _ => null
+          },
           fields("parameters").convertTo[List[BaseASTNode]],
-          fields("returnParameters").convertTo[List[BaseASTNode]],
+          fields("returnParameters") match {
+            case x: JsArray => x.convertTo[List[BaseASTNode]]
+            case _ => null
+          },
           fields("body").convertTo[BaseASTNode],
           fields("visibility").convertTo[String],
           fields("modifiers").convertTo[List[BaseASTNode]],
@@ -534,7 +540,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         ModifierInvocation(
           fields("name").convertTo[String],
           fields("arguments") match {
-            case x: JsObject => x.convertTo[List[BaseASTNode]]
+            case x: JsArray => x.convertTo[List[BaseASTNode]]
             case _           => null
           }
         )

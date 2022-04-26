@@ -136,12 +136,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         if (x.returnParameters != null) {
           x.returnParameters.collect { case y: VariableDeclaration => {
             y.typeName match {
-              case z: ElementaryTypeName => funcType += z.name
+              case z: ElementaryTypeName => funcType += ":"+z.name
             }
           }
           }
         }
         var types = ""
+        var variables = ""
         x.parameters.collect( {
           case x: VariableDeclaration => {
             x.typeName match {
@@ -149,16 +150,57 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
                 types += x.name+ ","
               }
             }
+            variables += x.name + ","
           }
         })
+
+
         if (types != "") {
-          types = types.substring(0, types.length - 2)
+          types = types.substring(0, types.length - 1)
+        }
+        val typeArr = types.split(",")
+        val varArr = variables.split(",")
+        var code = "function " +  x.name + "("
+        for (i <- 0 until  typeArr.length ) {
+          if (i == 0) {
+            code += typeArr(i)+ " " + varArr(i)
+          } else {
+            code += ", " + typeArr(i) + " "+ varArr(i)
+          }
+        }
+        code += ")";
+        if (x.visibility != null) {
+          code += " "+ x.visibility
         }
 
+        if (x.returnParameters != null) {
+          if (!funcType.equals("")) {
+            code += " returns" + " (" + funcType.substring(1, funcType.length) + ")"
+          } else {
+            code += " returns" + " (" + funcType + ")"
+          }
+        }
+        var vis = false
+//        if (x.visibility == null || x.visibility.equals("private")) {
+//          vis = false
+//        } else {
+//          vis = true
+//        }
+
+        var signature = ""
+        if (!funcType.equals("")) {
+          signature = funcType.substring(1,funcType.length) + "("+types+")"
+        } else {
+          signature = funcType + "("+types+")"
+        }
         val methodNode = NewMethod()
           .name(x.name)
-          .fullName(contractname+"."+x.name + " " + funcType + "("+types+")")
-          .signature(funcType + "("+types+")")
+          .fullName(contractname+"."+x.name + funcType + "("+types+")")
+          .signature(signature)
+          .code(code)
+//          .isExternal(vis)
+          .filename(filename.substring(0,filename.length -4 )+"sol")
+
 
 
         // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
