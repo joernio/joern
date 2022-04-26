@@ -6,7 +6,12 @@ import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{CombinedTypeSolver, JarTypeSolver, JavaParserTypeSolver, ReflectionTypeSolver}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.{
+  CombinedTypeSolver,
+  JarTypeSolver,
+  JavaParserTypeSolver,
+  ReflectionTypeSolver
+}
 import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, MavenDependencies}

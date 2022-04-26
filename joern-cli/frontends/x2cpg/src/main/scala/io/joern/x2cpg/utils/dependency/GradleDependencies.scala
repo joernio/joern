@@ -33,8 +33,7 @@ object GradleDependencies {
 
     // TODO: check if the directories exist
     // TODO: check if the build task already exists, and insert the init script only if it does not
-    logger.info(
-      s"Attempting to download runtime libs for project at '$projectDir' into '$destinationDir'...")
+    logger.info(s"Attempting to download runtime libs for project at '$projectDir' into '$destinationDir'...")
 
     val gradleInitDDir = home / ".gradle" / "init.d"
     try {
@@ -97,8 +96,10 @@ object GradleDependencies {
   }
 
   private[dependency] def isGradleBuild(codeDir: Path): Boolean = {
-    Files.walk(codeDir).filter(file =>
-      file.toString.endsWith(".gradle") || file.toString.endsWith(".gradle.kts")).count > 0
+    Files
+      .walk(codeDir)
+      .filter(file => file.toString.endsWith(".gradle") || file.toString.endsWith(".gradle.kts"))
+      .count > 0
   }
 
 }
