@@ -76,27 +76,4 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       dependenciesFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty
     }
   }
-
-  "test gradle dependency resolution on build.gradle file" in {
-    val fixture = new Fixture(
-      """
-        |apply plugin: 'java'
-        |sourceCompatibility = 1.8
-        |version = '0.1.0'
-        |
-        |repositories {
-        |    mavenCentral()
-        |}
-        |
-        |dependencies {
-        |  implementation 'org.slf4j:slf4j-api:1.7.36'
-        |}
-        |""".stripMargin,
-      "build.gradle"
-    )
-
-    fixture.test { dependenciesFiles =>
-      dependenciesFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty
-    }
-  }
 }
