@@ -1916,14 +1916,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithAdditionals(Ast(node), Additionals())
   }
 
-  private def astForTryAsStatement(expr: KtTryExpression, order: Int, argumentIndex: Int)(implicit
+  private def astForTryAsStatement(expr: KtTryExpression, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithAdditionals = {
     val tryNode =
       controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
         .order(order)
-        .argumentIndex(argumentIndex)
     val tryAstWithCtx = astsForExpression(expr.getTryBlock, 1, 1).headOption
       .getOrElse(AstWithAdditionals(Ast(), Additionals()))
     val tryAst =
@@ -1997,7 +1996,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeInfoProvider: TypeInfoProvider
   ): AstWithAdditionals = {
     if (KtPsiUtil.isStatement(expr)) {
-      astForTryAsStatement(expr, order, argumentIndex)
+      astForTryAsStatement(expr, order)
     } else {
       astForTryAsExpression(expr, order, argumentIndex)
     }
@@ -2561,20 +2560,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   ): AstWithAdditionals = {
     val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
     if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) {
-      astForIfAsControlStructure(expr, order, argIdx)
+      astForIfAsControlStructure(expr, order)
     } else {
       astForIfAsExpression(expr, order, argIdx)
     }
   }
 
-  def astForIfAsControlStructure(expr: KtIfExpression, order: Int, argIdx: Int)(implicit
+  def astForIfAsControlStructure(expr: KtIfExpression, order: Int)(implicit
     fileInfo: FileInfo,
     typeInfoProvider: TypeInfoProvider
   ): AstWithAdditionals = {
     val ifNode =
       controlStructureNode(expr.getText, ControlStructureTypes.IF, line(expr), column(expr))
         .order(order)
-        .argumentIndex(argIdx)
     val conditionAst = astsForExpression(expr.getCondition, 1, 1)
 
     val thenAsts =
