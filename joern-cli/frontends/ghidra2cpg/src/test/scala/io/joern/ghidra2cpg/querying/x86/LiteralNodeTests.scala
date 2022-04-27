@@ -24,6 +24,8 @@ class LiteralNodeTests extends GhidraBinToCpgSuite {
 
   "should contain exactly one call with literal arguments" in {
     // keep in mind = 0x64
+    val x = cpg.call.name("<operator>.assignment").argument.code("64").l
+    println(x)
     cpg.call.name("<operator>.assignment").argument.code("64").l match {
       case List(x) =>
         x.code shouldBe "64"
