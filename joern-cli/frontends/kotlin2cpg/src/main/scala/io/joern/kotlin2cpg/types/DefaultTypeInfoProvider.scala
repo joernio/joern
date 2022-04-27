@@ -147,6 +147,12 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
+  def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    mapForEntity.getKeys
+      .contains(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT.getKey)
+  }
+
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
@@ -218,6 +224,14 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def typeFullName(expr: KtClassOrObject, defaultValue: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      .map(_.getDefaultType)
+      .map(TypeRenderer.render(_))
+      .getOrElse(defaultValue)
+  }
+
   def inheritanceTypes(expr: KtClassOrObject, defaultValue: Seq[String]): Seq[String] = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey))
@@ -236,6 +250,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
+  }
+
+  def isCompanionObject(expr: KtClassOrObject): Boolean = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      .map(DescriptorUtils.isCompanionObject(_))
+      .getOrElse(false)
   }
 
   def typeFullName(expr: KtParameter, defaultValue: String): String = {
