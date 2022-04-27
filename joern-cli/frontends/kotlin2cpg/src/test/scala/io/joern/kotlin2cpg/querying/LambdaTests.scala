@@ -1,7 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.joern.kotlin2cpg.passes.Constants
+import io.joern.kotlin2cpg.{Constants, TestContext}
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, ClosureBinding, MethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
