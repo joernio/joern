@@ -7,6 +7,65 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class ScopeFunctionTests extends AnyFreeSpec with Matchers {
+  "CPG for code call to `also` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.also { it }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.name shouldBe "it"
+    }
+  }
+
+  "CPG for code call to `apply` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.apply { this }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.name shouldBe "this"
+    }
+  }
+
+  "CPG for code call to `let` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.let { it }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD_PARAMETER_IN node for the implicit parameter _it_" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.name shouldBe "it"
+    }
+  }
+
+  "CPG for code call to `run` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.run { this }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.name shouldBe "this"
+    }
+  }
 
   "CPG for code with simple `let` scope function" - {
     lazy val cpg = TestContext.buildCpg("""

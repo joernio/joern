@@ -237,7 +237,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       val List(iteratorLocal)       = cpg.local.nameExact(expectedIteratorLocalName).l
       iteratorLocal.name shouldBe expectedIteratorLocalName
       iteratorLocal.code shouldBe expectedIteratorLocalName
-      iteratorLocal.typeFullName shouldBe "" // TODO: maybe try to add a type here if possible to get it
+      iteratorLocal.typeFullName shouldBe "ANY"
 
       // TODO: add test for the block in here
       val List(iteratorAssignment: Call) = cpg.call.code("iterator.*itera.*").head.l
@@ -245,12 +245,11 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       iteratorAssignment.name shouldBe Operators.assignment
       iteratorAssignment.methodFullName shouldBe Operators.assignment
       iteratorAssignment.code shouldBe expectedIteratorLocalName + " = " + "l.iterator()"
-      iteratorAssignment.typeFullName shouldBe ""
 
       val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) = iteratorAssignment.argument.l
       iteratorAssignmentLhs.argumentIndex shouldBe 1
       iteratorAssignmentLhs.code shouldBe expectedIteratorLocalName
-      iteratorAssignmentLhs.typeFullName shouldBe ""
+      iteratorAssignmentLhs.typeFullName shouldBe "ANY"
       iteratorAssignmentRhs.argumentIndex shouldBe 2
       iteratorAssignmentRhs.code shouldBe "l.iterator()"
       iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -306,7 +305,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       getNextSecondArgFirstArg.order shouldBe 1
       getNextSecondArgFirstArg.argumentIndex shouldBe 0
       getNextSecondArgFirstArg.code shouldBe "iterator_1"
-      getNextSecondArgFirstArg.typeFullName shouldBe ""
+      getNextSecondArgFirstArg.typeFullName shouldBe "ANY"
       iteratorLocal.referencingIdentifiers.id.l.contains(getNextSecondArgFirstArg.id) shouldBe true
 
       blockInsideBody.order shouldBe 3 // ????
@@ -353,7 +352,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       val List(iteratorLocal)       = cpg.local.nameExact(expectedIteratorLocalName).l
       iteratorLocal.name shouldBe expectedIteratorLocalName
       iteratorLocal.code shouldBe expectedIteratorLocalName
-      iteratorLocal.typeFullName shouldBe "" // TODO: maybe try to add a type here if possible to get it
+      iteratorLocal.typeFullName shouldBe "ANY"
 
       // TODO: add test for the block in here
       val List(iteratorAssignment: Call) = cpg.call.code("iterator.*itera.*").head.l
@@ -361,12 +360,11 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       iteratorAssignment.name shouldBe Operators.assignment
       iteratorAssignment.methodFullName shouldBe Operators.assignment
       iteratorAssignment.code shouldBe expectedIteratorLocalName + " = " + "aList.iterator()"
-      iteratorAssignment.typeFullName shouldBe ""
 
       val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) = iteratorAssignment.argument.l
       iteratorAssignmentLhs.argumentIndex shouldBe 1
       iteratorAssignmentLhs.code shouldBe expectedIteratorLocalName
-      iteratorAssignmentLhs.typeFullName shouldBe ""
+      iteratorAssignmentLhs.typeFullName shouldBe "ANY"
       iteratorAssignmentRhs.argumentIndex shouldBe 2
       iteratorAssignmentRhs.code shouldBe "aList.iterator()"
       iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -449,7 +447,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       getNextSecondArgFirstArg.order shouldBe 1
       getNextSecondArgFirstArg.argumentIndex shouldBe 0
       getNextSecondArgFirstArg.code shouldBe "iterator_1"
-      getNextSecondArgFirstArg.typeFullName shouldBe ""
+      getNextSecondArgFirstArg.typeFullName shouldBe "ANY"
       iteratorLocal.referencingIdentifiers.id.l.contains(getNextSecondArgFirstArg.id) shouldBe true
 
       val List(component1FirstArg: Identifier, component1SecondArg: Call) = component1.argument.l

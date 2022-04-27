@@ -24,7 +24,6 @@ object Extractor {
       case _: Throwable => -1
     }
   }
-
 }
 
 class Extractor {}

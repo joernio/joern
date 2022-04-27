@@ -38,6 +38,7 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
       secondArg.argumentIndex shouldBe 2
       secondArg.code shouldBe "\"one\""
       secondArg.lineNumber shouldBe c.lineNumber
+      firstArg.refsTo.size shouldBe 1
     }
   }
 
@@ -53,12 +54,23 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain a CALL node for `map[\"one\"]` with the correct properties set" in {
-      val List(c) = cpg.call.code("val bar.*").argument.isCall.l
+      def callNodeQ = cpg.call.code("val bar.*").argument.isCall
+
+      val List(c) = callNodeQ.l
       c.code shouldBe "foo[1]"
       c.methodFullName shouldBe Operators.indexAccess
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(14)
+
+      val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l
+      firstArg.argumentIndex shouldBe 1
+      firstArg.code shouldBe "foo"
+      firstArg.lineNumber shouldBe c.lineNumber
+      secondArg.argumentIndex shouldBe 2
+      secondArg.code shouldBe "1"
+      secondArg.lineNumber shouldBe c.lineNumber
+      firstArg.refsTo.size shouldBe 1
     }
   }
 }

@@ -345,7 +345,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
         // TODO: write descriptor renderer instead of working with the existing ones
         // that render comments in fqnames
-        val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
+
         val returnTypeFullName = {
           if (isCtor) {
             TypeConstants.void
@@ -361,6 +361,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             }
             .mkString(",")
         val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+
+        val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
         val fullName =
           if (isCtor) {
             s"$renderedFqName${TypeConstants.initPrefix}:$signature"
@@ -802,6 +804,43 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def implicitParameterName(expr: KtLambdaExpression): Option[String] = {
+    if (!expr.getValueParameters.isEmpty) {
+      return None
+    }
+
+    val containingQualifiedExpression =
+      Option(expr.getParent)
+        .map(_.getParent)
+        .map(_.getParent match {
+          case q: KtQualifiedExpression => Some(q)
+          case _                        => None
+        })
+        .getOrElse(None)
+    containingQualifiedExpression match {
+      case Some(qualifiedExpression) =>
+        resolvedCallDescriptor(qualifiedExpression) match {
+          case Some(fnDescriptor) =>
+            val originalDesc   = fnDescriptor.getOriginal
+            val renderedFqName = TypeRenderer.renderFqName(originalDesc)
+            if (
+              renderedFqName.startsWith(TypeConstants.kotlinLetPrefix) ||
+              renderedFqName.startsWith(TypeConstants.kotlinAlsoPrefix)
+            ) {
+              Some(TypeConstants.scopeFunctionItParameterName)
+            } else if (
+              renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
+              renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix)
+            ) {
+              Some(TypeConstants.scopeFunctionThisParameterName)
+            } else {
+              None
+            }
+          case None => None
+        }
+      case None => None
+    }
+  }
 }
 
 object DefaultTypeInfoProvider {

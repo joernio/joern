@@ -10,7 +10,7 @@ object DotCdgGenerator {
 
   def dotCdg(method: Method): String = {
     val cdg = new CdgGenerator().generate(method)
-    DotSerializer.dotGraph(method, cdg)
+    DotSerializer.dotGraph(Option(method), cdg)
   }
 
 }
