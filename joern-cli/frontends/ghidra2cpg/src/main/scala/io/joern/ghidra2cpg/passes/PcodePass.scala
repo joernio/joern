@@ -322,6 +322,24 @@ class PcodePass(
           // handlePtrSub(diffGraphBuilder, instruction, callNode, pcodeOp.getOutput, index)
           createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case _ => createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        /* TODO:
+          BOOL_AND BOOL_NEGATE BOOL_OR
+          BOOL_XOR CPOOLREF EXTRACT
+          FLOAT_ABS FLOAT_CEIL FLOAT_EQUAL
+          FLOAT_FLOAT2FLOAT FLOAT_FLOOR FLOAT_INT2FLOAT
+          FLOAT_LESS FLOAT_LESSEQUAL
+          FLOAT_MULT FLOAT_NAN FLOAT_NEG
+          FLOAT_NOTEQUAL FLOAT_ROUND
+          FLOAT_SQRT FLOAT_TRUNC INSERT
+          INT_2COMP INT_CARRY INT_EQUAL
+          INT_LEFT INT_LESS INT_LESSEQUAL
+          INT_MULT INT_NEGATE INT_NOTEQUAL
+          INT_REM INT_RIGHT INT_SBORROW
+          INT_SCARRY INT_SEXT INT_SLESS
+          INT_SLESSEQUAL INT_SREM INT_SRIGHT
+          INT_ZEXT MULTIEQUAL NEW PCODE_MAX
+          POPCOUNT SEGMENTOP UNIMPLEMENTED
+         */
       }
     }
     callNode
