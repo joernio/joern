@@ -37,9 +37,9 @@ class MethodTests extends SolidityCodeToCpgFixture {
 //    x.columnNumberEnd shouldBe Some(4)
   }
 
-  "should return correct number of lines" in {
-    cpg.method.name("foo").numberOfLines.l shouldBe List(3)
-  }
+//  "should return correct number of lines" in {
+//    cpg.method.name("foo").numberOfLines.l shouldBe List(3)
+//  }
 
   "should allow traversing to parameters" in {
     cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("this", "param1", "param2")

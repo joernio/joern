@@ -132,6 +132,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
       case x: FunctionDefinition => {
         val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        var name = ""
+        if (x.name != null) {
+          name = x.name
+        } else {
+          name = "<init>"
+        }
         // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
         var methodReturn = Ast()
         var funcType = ""
@@ -143,6 +149,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
             }
           }
           }
+        } else {
+          methodReturn = Ast(NewMethodReturn())
+          funcType += ":void"
         }
         var types = ""
         var variables = ""
@@ -163,7 +172,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         }
         val typeArr = types.split(",")
         val varArr = variables.split(",")
-        var code = "function " +  x.name + "("
+        var code = "function " +  name + "("
         for (i <- 0 until  typeArr.length ) {
           if (i == 0) {
             code += typeArr(i)+ " " + varArr(i)
@@ -183,12 +192,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
             code += " returns" + " (" + funcType + ")"
           }
         }
-        var vis = false
-//        if (x.visibility == null || x.visibility.equals("private")) {
-//          vis = false
-//        } else {
-//          vis = true
-//        }
 
         var signature = ""
         if (!funcType.equals("")) {
@@ -197,16 +200,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           signature = funcType + "("+types+")"
         }
         val thisNode = createThisParameterNode()
+
         val methodNode = NewMethod()
-          .name(x.name)
-          .fullName(contractname+"."+x.name + funcType + "("+types+")")
+          .name(name)
+          .fullName(contractname+"."+name + funcType + "("+types+")")
           .signature(signature)
           .code(code)
-//          .isExternal(vis)
           .filename(filename.substring(0,filename.length -4 )+"sol")
-
-
-
+        println(methodNode.name +" : "+methodNode.fullName+" : "+methodNode.signature +" : "+methodNode.code +" : "+methodNode.filename)
 
         Ast(methodNode)
           .withChild(thisNode)
@@ -323,30 +324,31 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
     val returnMethod= NewMethodReturn()
-    var typefullName = ""
     var code = ""
+    var mapkey = ""
+    var visibility = ""
+    var name = ""
       value.collect{
         case x: VariableDeclaration => {
 
           x.typeName match  {
-            case x: ElementaryTypeName => typefullName = x.name
+            case x: ElementaryTypeName => name = x.name
             case x: Mapping =>  {
-              typefullName = "mapping"
-              code = getMappingKeyAndValue(x)}
+              name = "mapping"
+              mapkey = getMappingKeyAndValue(x)}
           }
-          var visibility = "";
+
           x.visibility match {
             case x: String => visibility = " "+x
             case _ => visibility = ""
           }
-          returnMethod
-            .code(typefullName + code +visibility+ " "+x.name)
-            .typeFullName(x.name)
-            .order(1)
-
-
         }
       }
+    code =  code +visibility+ " "+name
+    returnMethod
+      .code(code)
+      .typeFullName(name)
+      .order(1)
     Ast(returnMethod)
 
   }
