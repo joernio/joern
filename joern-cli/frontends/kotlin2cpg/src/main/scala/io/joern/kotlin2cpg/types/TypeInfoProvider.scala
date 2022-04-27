@@ -99,4 +99,8 @@ trait TypeInfoProvider {
   def implicitParameterName(expr: KtLambdaExpression): Option[String]
 
   def isCompanionObject(expr: KtClassOrObject): Boolean
+
+  def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean
+
+  def typeFullName(expr: KtClassOrObject, defaultValue: String): String
 }

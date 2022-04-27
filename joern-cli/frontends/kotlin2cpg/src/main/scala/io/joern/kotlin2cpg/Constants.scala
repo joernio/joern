@@ -6,6 +6,7 @@ object Constants {
   val caseNodePrefix                 = "case"
   val codeForLoweredForBlock         = "FOR-BLOCK" // TODO: improve this
   val collectionsIteratorName        = "kotlin.collections.Iterator"
+  val companionObjectMemberName      = "object"
   val componentNPrefix               = "component"
   val defaultCaseNode                = "default"
   val empty                          = "<empty>"

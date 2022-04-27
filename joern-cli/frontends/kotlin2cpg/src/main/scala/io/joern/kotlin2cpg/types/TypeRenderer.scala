@@ -58,16 +58,23 @@ object TypeRenderer {
             stripped(renderer.renderFqName(mappedType.asSingleFqName().toUnsafe))
           } else {
             val descriptor = TypeUtils.getClassDescriptor(t)
-            descriptor.getContainingDeclaration match {
-              case fn: SimpleFunctionDescriptor =>
-                val renderedFqName     = stripped(renderer.renderFqName(DescriptorUtils.getFqName(descriptor)))
-                val containingDescName = fn.getName
-                // replaces `apkg.containingMethodName.className` with `apkg.className$containingMethodName`
-                renderedFqName.replaceFirst(
-                  "\\." + containingDescName + "\\.([^.]+)",
-                  ".$1" + "\\$" + containingDescName
-                )
-              case _ => stripped(renderer.renderType(t))
+            if (DescriptorUtils.isCompanionObject(descriptor)) {
+              val rendered            = stripped(renderer.renderFqName(fqName))
+              val companionObjectName = descriptor.getName
+              // replaces `apkg.ContaininClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
+              rendered.replaceFirst("\\." + companionObjectName, "\\$" + companionObjectName)
+            } else {
+              descriptor.getContainingDeclaration match {
+                case fn: SimpleFunctionDescriptor =>
+                  val renderedFqName     = stripped(renderer.renderFqName(DescriptorUtils.getFqName(descriptor)))
+                  val containingDescName = fn.getName
+                  // replaces `apkg.containingMethodName.className` with `apkg.className$containingMethodName`
+                  renderedFqName.replaceFirst(
+                    "\\." + containingDescName + "\\.([^.]+)",
+                    ".$1" + "\\$" + containingDescName
+                  )
+                case _ => stripped(renderer.renderType(t))
+              }
             }
           }
         } else {
