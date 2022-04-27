@@ -5,10 +5,10 @@ import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
-import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
+import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, CfgNodeNew, NewBlock, NewMethod}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
@@ -227,16 +227,11 @@ class PcodePass(
     }
   }
 
-  def handleStore(pcodeOps: List[PcodeOp]): Unit = {
-    // pcodeOps.last.getInputs.zipWithIndex.foreach{case(varNode,index)=>resolveVarNode(varnode, index))}
-    // println("todo handleStore")
-  }
-
   def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
     val pcodeOp  = instruction.getPcode().toList.lastOption
     var callNode = createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     if (pcodeOp.nonEmpty) {
-      println(s"INSTRUCTION $instruction ${instruction.getPcode().mkString("\n\t")}")
+      //println(s"INSTRUCTION $instruction ${instruction.getPcode().mkString("\n\t")}")
       pcodeOp.get.getOpcode match {
         case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
           // println("TODO: INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
@@ -267,7 +262,6 @@ class PcodePass(
           )
           handleAssignment(diffGraphBuilder, instruction, callNode, pcodeOp.get)
         case STORE =>
-          handleStore(instruction.getPcode.toList)
           callNode = createCallNode(
             instruction.toString,
             "<operator>.assignment",
@@ -275,14 +269,20 @@ class PcodePass(
           )
           handleStore(diffGraphBuilder, instruction, callNode, pcodeOp.get)
         case CALL =>
-          // println("TODO: CALL")
-          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          val calledFunction =
+            codeUnitFormat.getOperandRepresentationString(instruction, 0)
+          println("TODO PARAMETER FOR " + calledFunction)
+          callNode = createCallNode("UNKNOWN", calledFunction, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case CALLOTHER =>
-          // println("TODO: CALLOTHER")
-          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          val calledFunction =
+            codeUnitFormat.getOperandRepresentationString(instruction, 0)
+          println("TODO PARAMETER FOR " + calledFunction)
+          callNode = createCallNode("UNKNOWN", calledFunction, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case CALLIND =>
-          // println("TODO: CALLIND")
-          createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+          val calledFunction =
+            codeUnitFormat.getOperandRepresentationString(instruction, 0).split(">").last.replace("[", "").replace("]", "")
+          println("TODO PARAMETER FOR " + calledFunction)
+          callNode = createCallNode("UNKNOWN", calledFunction, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case INT_ADD | FLOAT_ADD =>
           callNode = createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
           handleTwoArguments(diffGraphBuilder, instruction, callNode, pcodeOp.get, "+", "<operator>.addition")
@@ -311,10 +311,10 @@ class PcodePass(
         case CAST =>
           // println("TODO: CAST")
           createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-        // we need to "unpack" the def of the first input of the cast
-        // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
-        // if (pcodeOp.getInput(0).getDef != null)
-        //  resolveArgument(diffGraphBuilder, instruction, opNode, pcodeOps.last.getInput(0).getDef, index)
+          // we need to "unpack" the def of the first input of the cast
+          // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
+          // if (pcodeOp.getInput(0).getDef != null)
+          //  resolveArgument(diffGraphBuilder, instruction, opNode, pcodeOps.last.getInput(0).getDef, index)
         case BRANCH | BRANCHIND | CBRANCH =>
           // println("TODO BRANCH")
           createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
