@@ -238,6 +238,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def isCompanionObject(expr: KtClassOrObject): Boolean = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      .map(DescriptorUtils.isCompanionObject(_))
+      .getOrElse(false)
+  }
+
   def typeFullName(expr: KtParameter, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))

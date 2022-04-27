@@ -97,4 +97,6 @@ trait TypeInfoProvider {
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 
   def implicitParameterName(expr: KtLambdaExpression): Option[String]
+
+  def isCompanionObject(expr: KtClassOrObject): Boolean
 }
