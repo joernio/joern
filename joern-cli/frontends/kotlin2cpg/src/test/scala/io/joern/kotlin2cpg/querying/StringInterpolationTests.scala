@@ -30,9 +30,12 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.formattedValue).size should not be 0
 
       val List(firstCall, secondCall, thirdCall) = cpg.call(Operators.formattedValue).l
+      firstCall.code shouldBe "name"
       firstCall.typeFullName shouldBe "java.lang.String"
-      secondCall.typeFullName shouldBe "java.lang.String"
-      thirdCall.typeFullName shouldBe "java.lang.String"
+      secondCall.code shouldBe "age"
+      secondCall.typeFullName shouldBe "java.lang.Integer"
+      thirdCall.code shouldBe "name.length"
+      thirdCall.typeFullName shouldBe "java.lang.Integer"
     }
 
     "should contain a call node for `formatString` op with correct fields" in {

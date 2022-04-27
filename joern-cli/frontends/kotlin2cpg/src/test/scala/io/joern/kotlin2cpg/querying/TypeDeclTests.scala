@@ -160,4 +160,26 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe Operators.fieldAccess
     }
   }
+
+  "CPG for code with class defined inside user-defined function" - {
+    lazy val cpg = TestContext.buildCpg("""
+       |package mypkg
+       |
+       |fun doSomething(x: String): String {
+       |    class AClass(val m: String)
+       |    val aClass = AClass(x)
+       |    return aClass.m
+       |}
+       |
+       |fun main() {
+       |    println(doSomething("AMESSAGE"))
+       |}
+       | """.stripMargin)
+
+    "should contain a TYPE_DECL node for the class with the correct props set" in {
+      val List(td) = cpg.typeDecl.nameExact("AClass").l
+      td.isExternal shouldBe false
+      td.fullName shouldBe "mypkg.AClass$doSomething"
+    }
+  }
 }

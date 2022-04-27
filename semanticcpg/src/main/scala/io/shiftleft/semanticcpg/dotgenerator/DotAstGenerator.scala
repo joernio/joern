@@ -10,7 +10,7 @@ object DotAstGenerator {
 
   def dotAst(astRoot: AstNode): String = {
     val ast = new AstGenerator().generate(astRoot)
-    DotSerializer.dotGraph(astRoot, ast)
+    DotSerializer.dotGraph(Option(astRoot), ast)
   }
 
 }
