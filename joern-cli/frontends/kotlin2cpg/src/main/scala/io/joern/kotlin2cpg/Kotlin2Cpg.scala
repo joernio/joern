@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.psi.KtFile
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.GradleDependencies
 import io.joern.kotlin2cpg.types.{
   CompilerAPI,
   ContentSourcesPicker,
@@ -17,11 +16,13 @@ import io.joern.kotlin2cpg.types.{
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.joern.x2cpg.utils.dependency.{DependencyResolver, GradleDependencies}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
+
 import java.nio.file.{Files, Paths}
 import scala.util.Try
 
@@ -52,13 +53,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         }
         val copiedRuntimeLibsJarPaths =
           if (config.copyRuntimeLibs) {
-            val runtimeLibsDir = Files.createTempDirectory("x2cpgRuntimeLibs").toFile
-            runtimeLibsDir.deleteOnExit()
-            GradleDependencies.downloadRuntimeLibs(sourceDir, runtimeLibsDir.getAbsolutePath)
-            val paths =
-              File(runtimeLibsDir.getAbsolutePath).list.map { f =>
-                f.path.toAbsolutePath.toString
-              }.toList
+            val paths = DependencyResolver.getDependencies(Paths.get(sourceDir))
             logger.info(s"Using ${paths.size} runtime libs from the build system found at the input path.")
             paths
           } else {

@@ -14,9 +14,10 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
 }
 import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.MavenDependencies
+import io.joern.x2cpg.utils.dependency.{DependencyResolver, MavenDependencies}
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
@@ -80,7 +81,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
     }
 
     // Add solvers for inference jars
-    (jarsList ++ MavenDependencies.get(codeDir))
+    (jarsList ++ DependencyResolver.getDependencies(Paths.get(codeDir)))
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }
