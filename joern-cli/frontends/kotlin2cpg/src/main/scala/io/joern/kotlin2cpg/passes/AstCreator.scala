@@ -1,10 +1,11 @@
 package io.joern.kotlin2cpg.passes
 
-import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.ast.Nodes._
 import io.joern.kotlin2cpg.ast.Nodes.{methodReturnNode => _methodReturnNode}
-import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
+import io.joern.kotlin2cpg.Constants
+import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.psi.Extractor._
+import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.passes.IntervalKeyPool
@@ -20,39 +21,6 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
-
-object Constants {
-  val empty                          = "<empty>"
-  val lambdaName                     = "<lambda>"
-  val init                           = "<init>"
-  val root                           = "<root>"
-  val retCode                        = "RET"
-  val tryCode                        = "try"
-  val parserTypeName                 = "KOTLIN_PSI_PARSER"
-  val caseNodePrefix                 = "case"
-  val defaultCaseNode                = "default"
-  val caseNodeParserTypeName         = "CaseNode"
-  val unknownOperator                = "<operator>.unknown"
-  val operatorSuffix                 = "<operator>"
-  val paramNameLambdaDestructureDecl = "DESTRUCTURE_PARAM"
-  val wildcardImportName             = "*"
-  val lambdaBindingName              = "invoke"    // the underlying _invoke_ fn for Kotlin FunctionX types
-  val lambdaTypeDeclName             = "LAMBDA_TYPE_DECL"
-  val this_                          = "this"
-  val componentNPrefix               = "component"
-  val tmpLocalPrefix                 = "tmp_"
-  val ret                            = "RET"
-  val javaUtilIterator               = "java.util.Iterator"
-  val collectionsIteratorName        = "kotlin.collections.Iterator"
-  val getIteratorMethodName          = "iterator"
-  val iteratorPrefix                 = "iterator_"
-  val hasNextIteratorMethodName      = "hasNext"
-  val nextIteratorMethodName         = "next"
-  val codeForLoweredForBlock         = "FOR-BLOCK" // TODO: improve this
-  val underscore                     = "_"
-  val alloc                          = "alloc"
-  val when                           = "when"
-}
 
 case class ImportEntry(
   fqName: String,
@@ -212,7 +180,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         // TODO: add more test cases for import directives
         // e.g. of a project where parsing fails with NPE if the null check in isWildcard is not in:
         // https://github.com/CypherpunkArmory/UserLAnd
-        val isWildcard = entry.getLastChild.getText == "*" || entry.getImportedName == null
+        val isWildcard = entry.getLastChild.getText == Constants.wildcardImportName || entry.getImportedName == null
         val importedName =
           if (isWildcard) {
             Constants.wildcardImportName
@@ -240,7 +208,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .isWildcard(entry.isWildcard)
         .isExplicit(entry.explicit)
         .importedEntity(entry.fqName)
-        .code("import " + entry.fqName)
+        .code(Constants.importKeyword + " " + entry.fqName)
         .order(order)
         .lineNumber(entry.lineNumber)
         .columnNumber(entry.column)
