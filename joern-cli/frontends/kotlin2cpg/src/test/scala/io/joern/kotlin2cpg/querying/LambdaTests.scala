@@ -2,12 +2,13 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.TestContext
 import io.joern.kotlin2cpg.passes.Constants
-import io.shiftleft.codepropertygraph.generated.edges.Capture
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, ClosureBinding}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
+import io.shiftleft.codepropertygraph.generated.nodes.{Binding, ClosureBinding, MethodRef}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends AnyFreeSpec with Matchers {
 
@@ -17,8 +18,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
-        |import kotlin.collections.List
-        |
+        |// TODO: test with `fun foo(x: String, y: String): Int {`
         |fun foo(x: String): Int {
         |    1.let {
         |       println(x)
@@ -27,24 +27,23 @@ class LambdaTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a METHOD_REF node" in {
+    "should contain a single METHOD_REF node with a single CAPTURE edge" in {
       cpg.methodRef.size shouldBe 1
-    }
-
-    "should contain a capture edge for the methodRef" in {
-      cpg.methodRef.outE.filter(_.isInstanceOf[Capture]).size shouldBe 1
+      cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
     }
 
     "should contain a LOCAL node for the captured `x`" in {
-      cpg.local.code("x").size shouldBe 1
+      val List(l) = cpg.local.nameExact("x").l
+      l.typeFullName shouldBe "java.lang.String"
     }
 
-    "should contain a CLOSURE_BINDING node for captured `x`" in {
-      cpg.all.filter(_.isInstanceOf[ClosureBinding]).size shouldBe 1
-    }
+    "should contain a CLOSURE_BINDING node for `x` with the correct props set" in {
+      val List(cb) = cpg.all.collectAll[ClosureBinding].l
+      cb.closureOriginalName shouldBe Some("x")
+      cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      cb.closureBindingId should not be None
 
-    "should contain a CLOSURE_BINDING node contains REF edge to METHOD_PARAMETER_IN" in {
-      cpg.all.filter(_.isInstanceOf[ClosureBinding]).outE.size shouldBe 1
+      cb.outE.collectAll[Ref].size shouldBe 1
     }
   }
 
@@ -67,20 +66,21 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       cpg.methodRef.size shouldBe 1
     }
 
-    "should contain a capture edge for the methodRef" in {
-      cpg.methodRef.outE.filter(_.isInstanceOf[Capture]).size shouldBe 1
+    "should contain two CAPTURE edges for the METHOD_REF" in {
+      cpg.methodRef.outE.collectAll[Capture].size shouldBe 2
     }
 
     "should contain a LOCAL node for the captured `baz`" in {
       cpg.local.code("baz").size shouldBe 2
     }
 
-    "should contain a CLOSURE_BINDING node for captured `baz`" in {
-      cpg.all.filter(_.isInstanceOf[ClosureBinding]).size shouldBe 1
-    }
+    "should contain a CLOSURE_BINDING node for captured `baz` with the correct props set" in {
+      val List(cb) = cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.getOrElse("") == "baz").l
+      cb.closureOriginalName shouldBe Some("baz")
+      cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      cb.closureBindingId should not be None
 
-    "should contain a CLOSURE_BINDING node contains REF edge to LOCAL" in {
-      cpg.all.filter(_.isInstanceOf[ClosureBinding]).outE.size shouldBe 1
+      cb.outE.collectAll[Ref].size shouldBe 1
     }
   }
 
@@ -146,8 +146,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
-      td.isExternal shouldBe true
-      td.code shouldBe ""
+      td.isExternal shouldBe false
+      td.code shouldBe "LAMBDA_TYPE_DECL"
       td.inheritsFromTypeFullName shouldBe Seq("kotlin.Function1")
       td.astParent.size shouldBe 1
 
@@ -213,8 +213,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
-      td.isExternal shouldBe true
-      td.code shouldBe ""
+      td.isExternal shouldBe false
+      td.code shouldBe "LAMBDA_TYPE_DECL"
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
@@ -286,8 +286,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
-      td.isExternal shouldBe true
-      td.code shouldBe ""
+      td.isExternal shouldBe false
+      td.code shouldBe "LAMBDA_TYPE_DECL"
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
       bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
@@ -364,6 +364,16 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*lambda.*2.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
+
+    "should contain METHOD_REF nodes with the correct props set" in {
+      val List(firstMethodRef: MethodRef, secondMethodRef: MethodRef) = cpg.methodRef.l
+      firstMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
+      secondMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 2
+    }
+
+    "should contain three CLOSURE_BINDING nodes" in {
+      cpg.all.collectAll[ClosureBinding].size shouldBe 3
+    }
   }
 
   "CPG for code with call with lambda inside method definition" - {
@@ -396,6 +406,33 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should a METHOD node for the lambda" in {
       cpg.method.fullName(".*lambda.*").size shouldBe 1
+    }
+  }
+
+  "CPG for code with nested lambdas" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun doSomething(p: String): Int {
+        |    1.let {
+        |        2.let {
+        |            println(p)
+        |        }
+        |    }
+        |    return 0
+        |}
+        |
+        |fun main() {
+        |    doSomething("AMESSAGE")
+        |}
+        |""".stripMargin)
+
+    "should contain a single LOCAL node inside the BLOCK of the first lambda" in {
+      cpg.method.fullName(".*lambda.*1.*").block.astChildren.isLocal.size shouldBe 1
+    }
+
+    "should contain two LOCAL nodes inside the BLOCK of the second lambda" in {
+      cpg.method.fullName(".*lambda.*2.*").block.astChildren.isLocal.size shouldBe 2
     }
   }
 }

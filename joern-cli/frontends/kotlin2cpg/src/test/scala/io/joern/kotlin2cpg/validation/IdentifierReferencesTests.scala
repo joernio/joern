@@ -4,8 +4,10 @@ import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
+
+// TODO: also add test with refs inside TYPE_DECL
 
 class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
   "CPG for code with shadowed local inside lambda" - {
@@ -27,13 +29,41 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain LOCAL nodes with correctly-set referencing IDENTIFIERS" in {
-      val List(outerScopeX: Local) = cpg.local.nameExact("x").lineNumber(4).l
+      val List(outerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).take(1).l
       outerScopeX.referencingIdentifiers.size shouldBe 2
       outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(4, 6)
 
-      val List(innerScopeX: Local) = cpg.local.nameExact("x").lineNumber(7).l
-      innerScopeX.referencingIdentifiers.size shouldBe 2
-      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7, 9)
+      val List(innerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).drop(1).take(1).l
+      innerScopeX.referencingIdentifiers.size shouldBe 1
+      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7)
+    }
+  }
+
+  "CPG for code with identifier referencing two possible locals" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |fun foo() {
+        |  val x: String = "n"
+        |  1.let {
+        |    val x: Int = 1
+        |    println(x)
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should contain a local inside the scope function with two referencing identifiers" in {
+      cpg.local
+        .nameExact("x")
+        .typeFullName("java.lang.Integer")
+        .referencingIdentifiers
+        .size shouldBe 2
+    }
+
+    "should contain a local outside the scope function with a single referenced identifier" in {
+      cpg.local
+        .nameExact("x")
+        .typeFullName("java.lang.String")
+        .referencingIdentifiers
+        .size shouldBe 1
     }
   }
 
@@ -69,6 +99,107 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
       val List(thirdXUsage: Identifier) = cpg.call.methodFullName(Operators.addition).code(".*third.*").argument(2).l
       thirdX.referencingIdentifiers.id.l.contains(thirdXUsage.id) shouldBe true
       thirdXUsage.refsTo.size shouldBe 1
+    }
+  }
+
+  "should find references for simple case" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |fun foo(x: Int): Int {
+        |  val y = x
+        |  return y
+        |}
+        |""".stripMargin)
+
+    "identifiers to the parameters exist" in {
+      val param = cpg.method.name("foo").parameter.name("x").head
+      param.referencingIdentifiers.toSet should not be Set()
+    }
+
+    "identifiers to the locals exist" in {
+      val localNode = cpg.method.name("foo").local.name("y").head
+      localNode.referencingIdentifiers.toSet should not be Set()
+    }
+  }
+
+  "should find references inside expressions" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |fun foo(x: Int): Int {
+        |  val y = 1 + x
+        |  return y
+        |}
+        |""".stripMargin)
+
+    "identifiers to the parameters exist" in {
+      val param = cpg.method.name("foo").parameter.name("x").head
+      param.referencingIdentifiers.toSet should not be Set()
+    }
+  }
+
+  "CPG for code with a call to `also` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.also { it + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _it_ parameter" in {
+      val List(itIdentifier) = cpg.identifier.nameExact("it").l
+      itIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = itIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "it"
+    }
+  }
+
+  "CPG for code with a call to `apply` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.apply { this + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(thisIdentifier) = cpg.identifier.nameExact("this").l
+      thisIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "this"
+    }
+  }
+
+  "CPG for code with a call to `let` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.let { it + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(itIdentifier) = cpg.identifier.nameExact("it").l
+      itIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = itIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "it"
+    }
+  }
+
+  "CPG for code call to `run` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.run { this + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(thisIdentifier) = cpg.identifier.nameExact("this").l
+      thisIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "this"
     }
   }
 }

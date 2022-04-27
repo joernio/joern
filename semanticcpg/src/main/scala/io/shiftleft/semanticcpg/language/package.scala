@@ -34,7 +34,7 @@ import io.shiftleft.semanticcpg.language.bindingextension.{
   TypeDeclTraversal => BindingTypeDeclTraversal
 }
 import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
-import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot}
+import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
 import io.shiftleft.semanticcpg.language.nodemethods._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
   AstNodeTraversal,
@@ -180,6 +180,9 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new CfgNodeDot(Traversal.fromSingle(a))
   implicit def iterOnceToCfgNodeDot[A <: Method](a: IterableOnce[A]): CfgNodeDot =
     new CfgNodeDot(iterableToTraversal(a))
+
+  implicit def graphToInterproceduralDot(cpg: Cpg): InterproceduralNodeDot =
+    new InterproceduralNodeDot(cpg)
 
   implicit def toTraversal[NodeType <: AbstractNode](node: NodeType): Traversal[NodeType] =
     Traversal.fromSingle(node)

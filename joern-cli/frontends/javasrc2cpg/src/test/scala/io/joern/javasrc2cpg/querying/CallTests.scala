@@ -204,3 +204,25 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "void()"
   }
 }
+
+class CallTests2 extends JavaSrcCodeToCpgFixture {
+  override val code: String =
+    """
+      |class Foo {
+      |    public static class Ops {
+      |        public <T> T ident(T x) {
+      |            return x;
+      |        }
+      |    }
+      |    public Integer method(Integer aaa) {
+      |        Ops ops = new Ops();
+      |        Integer ret = ops.ident(aaa);
+      |        return ret;
+      |    }
+      |}
+      |""".stripMargin
+
+  "test methodFullName for call to generic function" in {
+    cpg.call(".*ident.*").methodFullName.head shouldBe "Foo$Ops.ident:java.lang.Object(java.lang.Object)"
+  }
+}

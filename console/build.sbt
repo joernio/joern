@@ -6,7 +6,7 @@ val ScoptVersion          = "4.0.1"
 val BetterFilesVersion    = "3.9.1"
 val CaskVersion           = "0.8.0"
 val CirceVersion          = "0.14.1"
-val AmmoniteVersion       = "2.5.2"
+val AmmoniteVersion       = "2.5.3"
 val ZeroturnaroundVersion = "1.15"
 
 dependsOn(

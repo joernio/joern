@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
   NewCall,

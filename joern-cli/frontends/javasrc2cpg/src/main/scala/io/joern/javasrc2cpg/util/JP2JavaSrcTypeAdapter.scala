@@ -17,11 +17,17 @@ import com.github.javaparser.ast.expr.{
 import com.github.javaparser.ast.stmt.Statement
 import com.github.javaparser.resolution.Resolvable
 import com.github.javaparser.resolution.declarations.{ResolvedMethodLikeDeclaration, ResolvedTypeDeclaration}
-import com.github.javaparser.resolution.types.{ResolvedArrayType, ResolvedReferenceType, ResolvedType}
-import io.joern.javasrc2cpg.util.TypeInfoProvider.UnresolvedTypeDefault
+import com.github.javaparser.resolution.types.{
+  ResolvedArrayType,
+  ResolvedReferenceType,
+  ResolvedType,
+  ResolvedTypeVariable
+}
+import io.joern.javasrc2cpg.util.TypeInfoProvider.{TypeConstants, UnresolvedTypeDefault}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.OptionConverters.RichOptional
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 object JP2JavaSrcTypeAdapter {
@@ -29,10 +35,17 @@ object JP2JavaSrcTypeAdapter {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def simpleResolvedTypeFullName(resolvedType: ResolvedType): Option[String] = {
-    if (resolvedType.isTypeVariable) {
-      None
-    } else {
-      Some(resolvedType.describe())
+    resolvedType match {
+      case resolvedTypeVariable: ResolvedTypeVariable =>
+        val extendsBoundOption = resolvedTypeVariable.asTypeParameter().getBounds.asScala.find(_.isExtends)
+        extendsBoundOption match {
+          case Some(extendsBound) =>
+            resolvedTypeFullName(extendsBound.getType)
+          case None =>
+            Some(TypeConstants.Object)
+        }
+      case _ =>
+        Some(resolvedType.describe())
     }
   }
 

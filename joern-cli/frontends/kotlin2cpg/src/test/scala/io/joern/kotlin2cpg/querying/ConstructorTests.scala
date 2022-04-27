@@ -95,7 +95,6 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
       assignmentLhs.methodFullName shouldBe Operators.fieldAccess
       assignmentLhs.name shouldBe Operators.fieldAccess
       assignmentLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      assignmentLhs.typeFullName shouldBe "java.lang.String"
       assignmentLhs.order shouldBe 1
       assignmentLhs.argumentIndex shouldBe 1
 
