@@ -1,46 +1,13 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AbstractNode,
-  Annotation,
-  AnnotationParameterAssign,
-  AstNode,
-  Call,
-  CfgNode,
-  ControlStructure,
-  Expression,
-  File,
-  Identifier,
-  Literal,
-  Local,
-  Member,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodRef,
-  MethodReturn,
-  Namespace,
-  NamespaceBlock,
-  NewNode,
-  StoredNode,
-  Tag,
-  Type,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, Annotation, AnnotationParameterAssign, AstNode, Call, CfgNode, ControlStructure, Expression, File, Identifier, Import, Literal, Local, Member, Method, MethodParameterIn, MethodParameterOut, MethodRef, MethodReturn, Namespace, NamespaceBlock, NewNode, StoredNode, Tag, Type, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
-import io.shiftleft.semanticcpg.language.bindingextension.{
-  MethodTraversal => BindingMethodTraversal,
-  TypeDeclTraversal => BindingTypeDeclTraversal
-}
+import io.shiftleft.semanticcpg.language.bindingextension.{MethodTraversal => BindingMethodTraversal, TypeDeclTraversal => BindingTypeDeclTraversal}
 import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
 import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
 import io.shiftleft.semanticcpg.language.nodemethods._
-import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
-  AstNodeTraversal,
-  CfgNodeTraversal,
-  ExpressionTraversal
-}
+import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{AstNodeTraversal, CfgNodeTraversal, ExpressionTraversal}
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, _}
 import io.shiftleft.semanticcpg.language.types.propertyaccessors._
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
@@ -148,6 +115,12 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new FileTraversal(Traversal.fromSingle(a))
   implicit def iterOnceToFileTrav[A <: File](a: IterableOnce[A]): FileTraversal =
     new FileTraversal(iterableToTraversal(a))
+
+  implicit def singleToImportTrav[A <: Import](a : A) : ImportTraversal =
+    new ImportTraversal(Traversal.fromSingle(a))
+
+  implicit def iterToImportTrav[A <: Import](a : IterableOnce[A]) : ImportTraversal =
+    new ImportTraversal(iterableToTraversal(a))
 
   // Call graph extension
   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
