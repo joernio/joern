@@ -297,7 +297,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         astForTypeDecl(typ, order, astParentType = "NAMESPACE_BLOCK", astParentFullName = namespaceBlockFullName)
       }
 
-      val commentAsts  = astsForComments(compilationUnit, filename)
       val typeDeclAsts = typeDeclAstsWithCtx.map(_.ast)
       val mergedCtx    = ctx.mergeWith(typeDeclAstsWithCtx.map(_.ctx))
 
@@ -311,7 +310,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
 
       scopeStack.popScope()
-      AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts).withChildren(commentAsts), mergedCtx)
+      AstWithCtx(ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts), mergedCtx)
     } catch {
       case t: UnsolvedSymbolException =>
         logger.error(s"Unsolved symbol exception caught in $filename")
@@ -324,12 +323,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   /** Parses comments.
     */
-  private def astsForComments(compilationUnit: CompilationUnit, filename: String): Seq[Ast] = {
-    // TODO(miraleung): Add config option to (not) parse comments.
-    val lineComments = compilationUnit.getAllComments.asScala.toList.collect { case c: LineComment => c }
-    lineComments.map(c => {
-      Ast(NewComment().code(c.getContent()).filename(absolutePath(filename)).lineNumber(line(c)))
-    })
+  private def astForComment(c: Comment, order: Int): Ast = {
+    val commentNode = NewComment()
+      .filename(absolutePath(filename))
+      .lineNumber(line(c))
+      .columnNumber(column(c))
+      .order(order)
+      .code(c.getContent())
+    Ast(commentNode)
   }
 
   /** Translate package declaration into AST consisting of a corresponding namespace block.
@@ -1049,32 +1050,40 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astsForStatement(statement: Statement, order: Int): Seq[AstWithCtx] = {
+    val stmtOrder    = if (statement.getComment.isPresent) order + 1 else order
+    val commentOrder = order
     // TODO: Implement missing handlers
     // case _: LocalClassDeclarationStmt  => Seq()
     // case _: LocalRecordDeclarationStmt => Seq()
     // case _: UnparsableStmt             => Seq() // TODO: log a warning
     // case _: YieldStmt                  => Seq()
-    statement match {
+    val asts = statement match {
       case x: ExplicitConstructorInvocationStmt =>
-        Seq(astForExplicitConstructorInvocation(x, order))
-      case x: AssertStmt       => Seq(astForAssertStatement(x, order))
-      case x: BlockStmt        => Seq(astForBlockStatement(x, order))
-      case x: BreakStmt        => Seq(astForBreakStatement(x, order))
-      case x: ContinueStmt     => Seq(astForContinueStatement(x, order))
-      case x: DoStmt           => Seq(astForDo(x, order))
+        Seq(astForExplicitConstructorInvocation(x, stmtOrder))
+      case x: AssertStmt       => Seq(astForAssertStatement(x, stmtOrder))
+      case x: BlockStmt        => Seq(astForBlockStatement(x, stmtOrder))
+      case x: BreakStmt        => Seq(astForBreakStatement(x, stmtOrder))
+      case x: ContinueStmt     => Seq(astForContinueStatement(x, stmtOrder))
+      case x: DoStmt           => Seq(astForDo(x, stmtOrder))
       case _: EmptyStmt        => Seq() // Intentionally skipping this
-      case x: ExpressionStmt   => astsForExpression(x.getExpression, order, Some("void"))
-      case x: ForEachStmt      => Seq(astForForEach(x, order))
-      case x: ForStmt          => Seq(astForFor(x, order))
-      case x: IfStmt           => Seq(astForIf(x, order))
-      case x: LabeledStmt      => astsForLabeledStatement(x, order)
-      case x: ReturnStmt       => astsForReturnNode(x, order)
-      case x: SwitchStmt       => Seq(astForSwitchStatement(x, order))
-      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, order))
-      case x: ThrowStmt        => Seq(astForThrow(x, order))
-      case x: TryStmt          => Seq(astForTry(x, order))
-      case x: WhileStmt        => Seq(astForWhile(x, order))
-      case x                   => Seq(unknownAst(x, order))
+      case x: ExpressionStmt   => astsForExpression(x.getExpression, stmtOrder, Some("void"))
+      case x: ForEachStmt      => Seq(astForForEach(x, stmtOrder))
+      case x: ForStmt          => Seq(astForFor(x, stmtOrder))
+      case x: IfStmt           => Seq(astForIf(x, stmtOrder))
+      case x: LabeledStmt      => astsForLabeledStatement(x, stmtOrder)
+      case x: ReturnStmt       => astsForReturnNode(x, stmtOrder)
+      case x: SwitchStmt       => Seq(astForSwitchStatement(x, stmtOrder))
+      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x, stmtOrder))
+      case x: ThrowStmt        => Seq(astForThrow(x, stmtOrder))
+      case x: TryStmt          => Seq(astForTry(x, stmtOrder))
+      case x: WhileStmt        => Seq(astForWhile(x, stmtOrder))
+      case x                   => Seq(unknownAst(x, stmtOrder))
+    }
+    if (statement.getComment.isPresent) {
+      // TODO(miraleung): Add (block) comments from  field decls, methods, classes, files, etc.
+      AstWithCtx(astForComment(statement.getComment.get(), commentOrder), mergedCtx(asts.map(_.ctx))) +: asts
+    } else {
+      asts
     }
   }
 

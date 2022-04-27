@@ -12,6 +12,8 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
     */
   def isControlStructure: Boolean = node.isInstanceOf[ControlStructure]
 
+  def isComment: Boolean = node.isInstanceOf[Comment]
+
   def isIdentifier: Boolean = node.isInstanceOf[Identifier]
 
   def isFieldIdentifier: Boolean = node.isInstanceOf[FieldIdentifier]

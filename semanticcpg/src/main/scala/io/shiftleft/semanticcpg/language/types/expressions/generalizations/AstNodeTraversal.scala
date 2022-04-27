@@ -95,6 +95,11 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def isBlock: Traversal[Block] =
     traversal.collectAll[Block]
 
+  /** Traverse only to those AST nodes that are comments
+    */
+  def isComment: Traversal[Comment] =
+    traversal.collectAll[Comment]
+
   /** Traverse only to those AST nodes that are control structures
     */
   def isControlStructure: Traversal[ControlStructure] =
