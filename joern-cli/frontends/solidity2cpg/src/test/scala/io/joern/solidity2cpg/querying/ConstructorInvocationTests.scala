@@ -58,15 +58,14 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
       case List(cons: Method) =>
         cons.fullName shouldBe "Foo.<init>:void(uint256)"
         cons.signature shouldBe "void(uint256)"
-        cons.code shouldBe "constructor (uint256 x)"
+        cons.code shouldBe "constructor (uint256 _x)"
         cons.parameter.size shouldBe 2
         val objParam = cons.parameter.index(0).head
         objParam.name shouldBe "this"
         objParam.typeFullName shouldBe "Foo"
-        objParam.dynamicTypeHintFullName shouldBe Seq("Foo")
         val otherParam = cons.parameter.index(1).head
-        otherParam.name shouldBe "x"
-        otherParam.typeFullName shouldBe "int"
+        otherParam.name shouldBe "_x"
+        otherParam.typeFullName shouldBe "uint256"
         otherParam.dynamicTypeHintFullName shouldBe Seq()
 
       case res =>
@@ -74,21 +73,13 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
     }
 
     cpg.method.name("<init>").where(_.fullName("^Bar.*")).l match {
-      case List(cons1: Method, cons2: Method) =>
-        cons1.fullName shouldBe "Bar.<init>:void(int)"
-        cons1.signature shouldBe "void(int)"
-        cons1.code shouldBe "Bar(int x)"
+      case List(cons1: Method) =>
+        cons1.fullName shouldBe "Bar.<init>:void(uint256)"
+        cons1.signature shouldBe "void(uint256)"
+        cons1.code shouldBe "constructor (uint256 _x)"
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "x"
-
-        cons2.fullName shouldBe "Bar.<init>:void(int,int)"
-        cons2.signature shouldBe "void(int,int)"
-        cons2.code shouldBe "Bar(int x, int y)"
-        cons2.parameter.size shouldBe 3
-        cons2.parameter.index(0).head.name shouldBe "this"
-        cons2.parameter.index(1).head.name shouldBe "x"
-        cons2.parameter.index(2).head.name shouldBe "y"
 
       case res =>
         fail(s"Expected 2 Bar constructors, but got $res")

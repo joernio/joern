@@ -172,7 +172,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         }
         val typeArr = types.split(",")
         val varArr = variables.split(",")
-        var code = "function " +  name + "("
+        var code = ""
+        if (x.name != null ) {
+          code = "function " + name + "("
+        } else {
+          code = "constructor "+ "("
+        }
         for (i <- 0 until  typeArr.length ) {
           if (i == 0) {
             code += typeArr(i)+ " " + varArr(i)
@@ -181,7 +186,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           }
         }
         code += ")";
-        if (x.visibility != null) {
+        if (x.visibility != null && !x.visibility.equals("default")) {
           code += " "+ x.visibility
         }
 
@@ -199,15 +204,20 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         } else {
           signature = funcType + "("+types+")"
         }
-        val thisNode = createThisParameterNode()
-
+        var thisNode = Ast()
+        if (x.name != null) {
+          thisNode = createThisParameterNode(null)
+        } else {
+          thisNode = createThisParameterNode(contractname)
+        }
         val methodNode = NewMethod()
           .name(name)
           .fullName(contractname+"."+name + funcType + "("+types+")")
           .signature(signature)
           .code(code)
           .filename(filename.substring(0,filename.length -4 )+"sol")
-        println(methodNode.name +" : "+methodNode.fullName+" : "+methodNode.signature +" : "+methodNode.code +" : "+methodNode.filename)
+        println(x)
+//        println(methodNode.name +" : "+methodNode.fullName+" : "+methodNode.signature +" : "+methodNode.code +" : "+methodNode.filename)
 
         Ast(methodNode)
           .withChild(thisNode)
@@ -311,15 +321,27 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     (" ("+key +" => " + value+")")
   }
 
-  private def createThisParameterNode(/*method: ThisRef*/): Ast = {
-    Ast(
-      NewMethodParameterIn()
-        .name("this")
-        .code("this")
-//        .typeFullName(registerType(method.getType.toQuotedString))
-//        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
-        .order(0)
-    )
+  private def createThisParameterNode(str : String): Ast = {
+    if (str != null) {
+      Ast(
+        NewMethodParameterIn()
+          .name("this")
+          .code("this")
+          .typeFullName(str)
+          //        .typeFullName(registerType(method.getType.toQuotedString))
+          //        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
+          .order(0)
+      )
+    } else {
+      Ast(
+        NewMethodParameterIn()
+          .name("this")
+          .code("this")
+          //        .typeFullName(registerType(method.getType.toQuotedString))
+          //        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
+          .order(0)
+      )
+    }
   }
 
   private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
