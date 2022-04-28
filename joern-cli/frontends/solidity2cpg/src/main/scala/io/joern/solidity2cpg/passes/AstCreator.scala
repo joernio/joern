@@ -137,11 +137,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         var funcType = ""
         var types = ""
         var variables = ""
-        val typeArr = types.split(",")
-        val varArr = variables.split(",")
         var code = ""
         var signature = ""
         var thisNode = Ast()
+        var modifiers = Ast()
         /**
           * allowing for constructors or functions
           */
@@ -167,6 +166,19 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           funcType += ":void"
         }
 
+        if (x.modifiers.nonEmpty) {
+          modifiers = astForModifiers(x.modifiers);
+        }
+
+        /**
+          * creating ast node "thisNode"
+          */
+        if (x.name != null) {
+          thisNode = createThisParameterNode(null)
+        } else {
+          thisNode = createThisParameterNode(contractname)
+        }
+
         /**
           * getting names of types and variable names
           */
@@ -180,7 +192,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
             variables += x.name + ","
           }
         })
-
+        val typeArr = types.split(",")
+        val varArr = variables.split(",")
         /**
           * checking if type is not declared and removing a "," from the
           * type.
@@ -237,14 +250,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           signature = funcType + "("+types+")"
         }
 
-        /**
-          * creating ast node "thisNode"
-          */
-        if (x.name != null) {
-          thisNode = createThisParameterNode(null)
-        } else {
-          thisNode = createThisParameterNode(contractname)
-        }
+
         /**
           * creating the new method
           */
@@ -254,7 +260,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .signature(signature)
           .code(code)
           .filename(filename.substring(0,filename.length -4 )+"sol")
-        println(x)
+//        println(x)
 //        println(methodNode.name +" : "+methodNode.fullName+" : "+methodNode.signature +" : "+methodNode.code +" : "+methodNode.filename)
 
         Ast(methodNode)
@@ -262,6 +268,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChildren(parameters)
           .withChild(astForBody(x.body.asInstanceOf[Block]))
           .withChild(methodReturn)
+          .withChild(modifiers)
       }
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
@@ -411,6 +418,29 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(1)
     Ast(returnMethod)
 
+  }
+
+  private def astForModifiers(modifiers: List[BaseASTNode]): Ast= {
+    val modifierNode = NewModifier()
+    var args = ""
+    modifiers.collect{
+      case x: ModifierInvocation => {
+//        println("modifierInvocation: "+x)
+        x.arguments.collect {
+            case x: Identifier => {
+              args += x.name + ","
+            }
+        }
+        if (!args.equals("")) {
+          args = args.substring(0, args.length - 1)
+        }
+        modifierNode
+          .modifierType(x.name)
+          .code(x.name +" ("+args+")")
+      }
+
+    }
+    (Ast(modifierNode))
   }
 
 
