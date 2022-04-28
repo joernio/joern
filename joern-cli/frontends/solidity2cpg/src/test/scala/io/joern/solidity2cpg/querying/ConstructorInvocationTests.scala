@@ -79,7 +79,7 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
         cons1.code shouldBe "constructor (uint256 _x)"
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
-        cons1.parameter.index(1).head.name shouldBe "x"
+        cons1.parameter.index(1).head.name shouldBe "_x"
 
       case res =>
         fail(s"Expected 2 Bar constructors, but got $res")

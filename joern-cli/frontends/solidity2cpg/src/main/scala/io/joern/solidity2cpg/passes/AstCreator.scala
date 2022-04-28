@@ -133,14 +133,27 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: FunctionDefinition => {
         val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
         var name = ""
+        var methodReturn = Ast()
+        var funcType = ""
+        var types = ""
+        var variables = ""
+        val typeArr = types.split(",")
+        val varArr = variables.split(",")
+        var code = ""
+        var signature = ""
+        var thisNode = Ast()
+        /**
+          * allowing for constructors or functions
+          */
         if (x.name != null) {
           name = x.name
         } else {
           name = "<init>"
         }
-        // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
-        var methodReturn = Ast()
-        var funcType = ""
+
+        /**
+          *  passing returnParameters if found
+          */
         if (x.returnParameters != null) {
           methodReturn = astForMethodReturn(x.returnParameters);
           x.returnParameters.collect { case y: VariableDeclaration => {
@@ -153,8 +166,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           methodReturn = Ast(NewMethodReturn())
           funcType += ":void"
         }
-        var types = ""
-        var variables = ""
+
+        /**
+          * getting names of types and variable names
+          */
         x.parameters.collect( {
           case x: VariableDeclaration => {
             x.typeName match {
@@ -166,18 +181,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           }
         })
 
-
+        /**
+          * checking if type is not declared and removing a "," from the
+          * type.
+          */
         if (types != "") {
           types = types.substring(0, types.length - 1)
         }
-        val typeArr = types.split(",")
-        val varArr = variables.split(",")
-        var code = ""
+
+        /**
+          * building the "code" variable
+          */
         if (x.name != null ) {
           code = "function " + name + "("
         } else {
           code = "constructor "+ "("
         }
+
+        /**
+          * adding the types and variables into "code"
+          */
         for (i <- 0 until  typeArr.length ) {
           if (i == 0) {
             code += typeArr(i)+ " " + varArr(i)
@@ -186,10 +209,17 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           }
         }
         code += ")";
+
+        /**
+          * adding visibility into "code"
+          */
         if (x.visibility != null && !x.visibility.equals("default")) {
           code += " "+ x.visibility
         }
 
+        /**
+          * adding returns into "code" if given
+          */
         if (x.returnParameters != null) {
           if (!funcType.equals("")) {
             code += " returns" + " (" + funcType.substring(1, funcType.length) + ")"
@@ -198,18 +228,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           }
         }
 
-        var signature = ""
+        /**
+          * adding to variable "signature"
+          */
         if (!funcType.equals("")) {
           signature = funcType.substring(1,funcType.length) + "("+types+")"
         } else {
           signature = funcType + "("+types+")"
         }
-        var thisNode = Ast()
+
+        /**
+          * creating ast node "thisNode"
+          */
         if (x.name != null) {
           thisNode = createThisParameterNode(null)
         } else {
           thisNode = createThisParameterNode(contractname)
         }
+        /**
+          * creating the new method
+          */
         val methodNode = NewMethod()
           .name(name)
           .fullName(contractname+"."+name + funcType + "("+types+")")
