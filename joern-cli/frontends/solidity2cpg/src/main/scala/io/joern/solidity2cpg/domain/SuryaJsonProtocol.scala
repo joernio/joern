@@ -92,6 +92,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           StructDefinitionJsonFormat.read(json)
         case "UsingForDeclaration" =>
           UsingForDeclarationJsonFormat.read(json)
+        case "ReturnStatement" =>
+          ReturnStatementJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
@@ -594,7 +596,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         VariableDeclarationStatement(
           fields("variables").convertTo[List[BaseASTNode]],
-          fields("initialValue").convertTo[BaseASTNode]
+          fields("initialValue") match {
+            case x: JsObject => x.convertTo[BaseASTNode]
+            case _ => null
+
+          }
         )
       }
     }
@@ -748,6 +754,20 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("UsingForDeclaration object expected")
       } else {
         UsingForDeclaration(fields("typeName").convertTo[BaseASTNode], fields("libraryName").convertTo[String])
+      }
+    }
+  }
+
+  implicit object ReturnStatementJsonFormat extends JsonFormat[ReturnStatement] with DefaultJsonProtocol {
+
+    def write(c: ReturnStatement): JsValue = JsNull
+
+    def read(json: JsValue): ReturnStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as ReturnStatement").fields
+      if (fields("type").convertTo[String] != "ReturnStatement") {
+        throw new RuntimeException("ReturnStatement object expected")
+      } else {
+        ReturnStatement(fields("expression").convertTo[BaseASTNode])
       }
     }
   }

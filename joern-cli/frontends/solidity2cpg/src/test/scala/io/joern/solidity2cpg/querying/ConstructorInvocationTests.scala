@@ -48,11 +48,6 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
       |""".stripMargin
 
   "it should create correct method nodes for constructors" in {
-////    println("hi")
-////    println(cpg.method)
-////    println("hey")
-//    cpg
-
     cpg.method.name("<init>").where(_.fullName("^Foo.*")).l match {
 
       case List(cons: Method) =>
@@ -81,15 +76,14 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "_x"
         cons1.modifier.size shouldBe 1
-        //TODO fix
-        cons1.modifier.modifierType shouldBe "Foo"
-        cons1.modifier.code shouldBe "Foo (_x)"
+        cons1.modifier.modifierType.next() shouldBe "Foo"
+        cons1.modifier.code.next() shouldBe "Foo (_x)"
 
       case res =>
         fail(s"Expected 2 Bar constructors, but got $res")
     }
   }
-//
+
 //  "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
 //    cpg.typeDecl.name("Bar").method.name("test1").l match {
 //      case List(method) =>

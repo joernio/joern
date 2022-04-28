@@ -3,10 +3,11 @@ package io.joern.solidity2cpg.passes
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import spray.json.JsString
 
 /** Creates an AST using [[createAst]].
   * @param filename
@@ -96,14 +97,21 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val fullName  = contractDef.name
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
-    val superTypes = contractDef.baseContracts.map { contractDef => contractDef.getType }
+    val superTypes = contractDef.baseContracts.map {
+      case x: InheritanceSpecifier => {
+        x.baseName.namePath
+      }
+    }
     val typeDecl = NewTypeDecl()
       .name(shortName)
       .fullName(fullName)
       .astParentType(NodeTypes.NAMESPACE_BLOCK)
       .astParentFullName(astParentFullName)
-      .filename(filename)
+      .filename(filename.substring(0,filename.length -4 )+"sol")
       .inheritsFromTypeFullName(superTypes)
+      .code(shortName)
+      .isExternal(false)
+
 
     val methods= contractDef.subNodes.map(x => astsForMethod(x, fullName))
     val memberAsts = contractDef.subNodes
@@ -111,7 +119,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         case x: StateVariableDeclaration => x
       }
       .map(astForField)
-
+//    println ("shorName: "+shortName+ " FullName: "+fullName )
+//    println(contractDef)
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
@@ -136,7 +145,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         var methodReturn = Ast()
         var funcType = ""
         var types = ""
-        var variables = ""
+        var params = ""
         var code = ""
         var signature = ""
         var thisNode = Ast()
@@ -173,54 +182,23 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         /**
           * creating ast node "thisNode"
           */
-        if (x.name != null) {
-          thisNode = createThisParameterNode(null)
-        } else {
+//        if (x.name != null) {
+//          thisNode = createThisParameterNode(x.name)
+//        } else {
           thisNode = createThisParameterNode(contractname)
-        }
+//        }
 
         /**
           * getting names of types and variable names
           */
-        x.parameters.collect( {
-          case x: VariableDeclaration => {
-            x.typeName match {
-              case x: ElementaryTypeName => {
-                types += x.name+ ","
-              }
-            }
-            variables += x.name + ","
-          }
-        })
-        val typeArr = types.split(",")
-        val varArr = variables.split(",")
-        /**
-          * checking if type is not declared and removing a "," from the
-          * type.
-          */
-        if (types != "") {
-          types = types.substring(0, types.length - 1)
-        }
-
-        /**
-          * building the "code" variable
-          */
+        params =  parameters.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
+        types = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString(",")
         if (x.name != null ) {
           code = "function " + name + "("
         } else {
           code = "constructor "+ "("
         }
-
-        /**
-          * adding the types and variables into "code"
-          */
-        for (i <- 0 until  typeArr.length ) {
-          if (i == 0) {
-            code += typeArr(i)+ " " + varArr(i)
-          } else {
-            code += ", " + typeArr(i) + " "+ varArr(i)
-          }
-        }
+        code += params
         code += ")";
 
         /**
@@ -283,22 +261,43 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val NewMethodParameter = NewMethodParameterIn();
     var typefullName = ""
     var code = ""
+    var visibility = "";
+    var storage = ""
     varDecl.typeName match  {
       case x: ElementaryTypeName => typefullName = x.name
       case x: Mapping =>  {
         typefullName = "mapping"
         code = getMappingKeyAndValue(x)}
+      case x: ArrayTypeName => {
+        x.baseTypeName match {
+          case x: ElementaryTypeName => typefullName += x.name
+        }
+        typefullName += "["
+        if (x.length != null) {
+          typefullName += x.length
+        }
+        typefullName += "]"
+      }
     }
-    var visibility = "";
+
     varDecl.visibility match {
       case x: String => visibility = " "+x
       case _ => visibility = ""
     }
+
+    varDecl.storageLocation match {
+      case x: String => storage = " "+x
+      case _=> storage = ""
+    }
+
+
+
     NewMethodParameter
       .name(varDecl.name)
-      .code(typefullName + code +visibility+ " "+varDecl.name)
+      .code(typefullName + code +visibility + storage + " "+varDecl.name)
       .typeFullName(typefullName)
       .order(1)
+      .evaluationStrategy(getEvaluationStrategy(varDecl.typeName.getType))
 
     Ast(NewMethodParameter)
   }
@@ -310,9 +309,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForStatement(statement: BaseASTNode): Ast = {
+    // TODO : Finish all of these statements
     statement match {
       case x: ExpressionStatement => Ast()
       case x: VariableDeclaration => astForVarDecl(x)
+      case x: EmitStatement => Ast()
+      case x: ForStatement => Ast()
+      case x: IfStatement => Ast()
+      case x: ReturnStatement => astForReturn(x)
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
@@ -376,6 +380,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           //        .typeFullName(registerType(method.getType.toQuotedString))
           //        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
           .order(0)
+          .evaluationStrategy(getEvaluationStrategy("constructor"))
       )
     } else {
       Ast(
@@ -411,13 +416,23 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           }
         }
       }
-    code =  code +visibility+ " "+name
+    code =  code +visibility+name
     returnMethod
       .code(code)
       .typeFullName(name)
       .order(1)
     Ast(returnMethod)
 
+  }
+
+  private def astForReturn(returnStatement: ReturnStatement): Ast = {
+    val exprAst = astForExpression(returnStatement.expression)
+    val returnNode = NewReturn()
+      .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
+    Ast(
+      returnNode
+    ).withChild(exprAst)
+      .withArgEdges(returnNode, exprAst.root.toList)
   }
 
   private def astForModifiers(modifiers: List[BaseASTNode]): Ast= {
@@ -443,7 +458,74 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     (Ast(modifierNode))
   }
 
+  private def astForExpression(expr : BaseASTNode): Ast = {
 
+    expr match {
+      case x: MemberAccess => astForMemberAccess(x)
+      case x: Identifier => astForIdentifier(x)
+      case x: FunctionCall => astForFunctionCall(x)
+      case x: BinaryOperation => astForBinaryOperation(x)
+      case x: UnaryOperation => astForUnaryOperation(x)
+      case x: NumberLiteral => astForNumberLiteral(x)
+    }
+  }
+  private def astForNumberLiteral(numberLiteral: NumberLiteral): Ast ={
+    var code = ""
+    if (numberLiteral.subdenomination != null) {
+      code = numberLiteral.number + numberLiteral.subdenomination
+    } else {
+      code = numberLiteral.number
+    }
+    Ast(NewCall()
+      .name(numberLiteral.number)
+      .code(code)
+      .typeFullName(numberLiteral.number)
+    )
+  }
 
+  private def astForUnaryOperation(operation: UnaryOperation): Ast = {
+    //TODO : finx all cases with "Ast()"
+    Ast()
+  }
+
+  private def astForBinaryOperation(operation: BinaryOperation): Ast = {
+    //TODO : finx all cases with "Ast()"
+    Ast()
+  }
+
+  private def astForFunctionCall(call: FunctionCall): Ast = {
+    //TODO : finx all cases with "Ast()"
+    Ast()
+  }
+
+  private def astForIdentifier(identifier: Identifier): Ast = {
+    Ast()
+  }
+
+  private def astForMemberAccess(memberAccess: MemberAccess): Ast = {
+    Ast()
+  }
+
+  private def getEvaluationStrategy(typ: String): String =
+    typ match {
+      case x: String  => {
+        if (x.equals("ElementaryTypeName")) {
+          EvaluationStrategies.BY_VALUE
+        } else if (x.equals("UserDefinedTypeName")) {
+          EvaluationStrategies.BY_VALUE
+        } else if (x.equals("ArrayTypeName")) {
+          EvaluationStrategies.BY_REFERENCE
+        } else if (x.equals("Mapping")) {
+          EvaluationStrategies.BY_REFERENCE
+        } else {
+          EvaluationStrategies.BY_SHARING
+        }
+      }
+      case _              => EvaluationStrategies.BY_SHARING
+    }
+
+//  private def astForInheritanceSpecifier(inheritanceSpecifier: InheritanceSpecifier) : Ast = {
+//
+//  }
 
 }

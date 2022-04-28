@@ -219,4 +219,9 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
+case class ReturnStatement(expression: BaseASTNode)
+  extends BaseASTNode("ReturnStatement") {
+  override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+}
+
 }
