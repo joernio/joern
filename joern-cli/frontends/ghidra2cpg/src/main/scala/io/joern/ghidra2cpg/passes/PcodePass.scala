@@ -113,7 +113,12 @@ class PcodePass(
   //  connectCallToArgument(diffGraphBuilder, callNode, node)
   // }
 
-  def handleStore(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction, callNode: CfgNodeNew, pcodeOp: PcodeOp): Unit = {
+  def handleStore(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp
+  ): Unit = {
     val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(2), 1)
     connectCallToArgument(diffGraphBuilder, callNode, firstOp)
@@ -227,7 +232,7 @@ class PcodePass(
   }
 
   def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
-    val p = new PCodeMapper(instruction)
+    val p        = new PCodeMapper(instruction)
     val pcodeOp  = instruction.getPcode().toList.lastOption
     var callNode = createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     if (pcodeOp.nonEmpty) {
@@ -271,13 +276,13 @@ class PcodePass(
         case CALL =>
           val calledFunction =
             codeUnitFormat.getOperandRepresentationString(instruction, 0)
-          //TODO PARAMETER
+          // TODO PARAMETER
           callNode =
             createCallNode(calledFunction, calledFunction, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case CALLOTHER =>
           val calledFunction =
             codeUnitFormat.getOperandRepresentationString(instruction, 0)
-          //TODO PARAMETER
+          // TODO PARAMETER
           callNode =
             createCallNode(calledFunction, calledFunction, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case CALLIND =>
@@ -288,7 +293,7 @@ class PcodePass(
               .last
               .replace("[", "")
               .replace("]", "")
-          //TODO PARAMETER
+          // TODO PARAMETER
           callNode =
             createCallNode(calledFunction, calledFunction, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
         case INT_ADD | FLOAT_ADD =>
