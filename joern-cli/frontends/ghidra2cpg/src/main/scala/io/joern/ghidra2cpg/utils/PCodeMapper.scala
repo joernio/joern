@@ -1,19 +1,20 @@
 package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Instruction}
+import ghidra.program.model.pcode.PcodeOp
 import ghidra.program.model.pcode.PcodeOp._
-import ghidra.program.model.pcode.{PcodeOp, Varnode}
-import io.joern.ghidra2cpg.utils.Utils.createCallNode
+import io.joern.ghidra2cpg.Types
+import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 
 import scala.collection.mutable
-import scala.collection.mutable.HashMap
+
 /*
   TODO: resolve the unique arguments of the pcodeOps
  */
 class PCodeMapper(nativeInstruction: Instruction) {
-  var resolvedPcodeInstructions: HashMap[String, String] = new mutable.HashMap[String, String]()
-  private val pcodeOps: Array[PcodeOp]                   = nativeInstruction.getPcode()
+  var resolvedPcodeInstructions: mutable.HashMap[String, String] = new mutable.HashMap[String, String]()
+  private val pcodeOps: Array[PcodeOp] = nativeInstruction.getPcode()
   try {
     if (pcodeOps.lastOption.nonEmpty) {
       getCallNode(pcodeOps.last)
@@ -36,14 +37,15 @@ class PCodeMapper(nativeInstruction: Instruction) {
       true
     )
   )
-  resolveArgument(pcodeOps.lastOption.orNull)
 
   def getInstruction: Instruction = nativeInstruction
+
   def getPcodeOps: Array[PcodeOp] = pcodeOps
-  def getOpcode: Int              = pcodeOps.lastOption.get.getOpcode
+
+  def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
   def getCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
-    pcodeOp.getOpcode match {
+     val callNode = pcodeOp.getOpcode match {
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         createCallNode(
           nativeInstruction.toString,
@@ -80,7 +82,7 @@ class PCodeMapper(nativeInstruction: Instruction) {
         try {
           calledFunction = codeUnitFormat.getOperandRepresentationString(nativeInstruction, 1)
         } catch {
-          case e: Exception => // e.printStackTrace()
+          case _: Exception => // e.printStackTrace()
         }
         createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
       case CALLOTHER =>
@@ -88,7 +90,7 @@ class PCodeMapper(nativeInstruction: Instruction) {
         try {
           calledFunction = codeUnitFormat.getOperandRepresentationString(nativeInstruction, 1)
         } catch {
-          case e: Exception => // e.printStackTrace()
+          case _: Exception => // e.printStackTrace()
         }
         createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
       case CALLIND =>
@@ -102,7 +104,7 @@ class PCodeMapper(nativeInstruction: Instruction) {
             .replace("[", "")
             .replace("]", "")
         } catch {
-          case e: Exception => // e.printStackTrace()
+          case _: Exception => // e.printStackTrace()
         }
         createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
       case INT_ADD | FLOAT_ADD | PTRADD =>
@@ -160,11 +162,14 @@ class PCodeMapper(nativeInstruction: Instruction) {
 
       case CAST =>
         // println("TODO: CAST")
-        createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        //createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
       // we need to "unpack" the def of the first input of the cast
       // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
-      // if (pcodeOp.getInput(0).getDef != null)
-      //  resolveArgument(diffGraphBuilder, nativeInstruction, opNode, pcodeOps.last.getInput(0).getDef, index)
+       if (pcodeOp.getInput(0).getDef != null)
+         createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+       else
+         createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        //resolveArgument(diffGraphBuilder, nativeInstruction, opNode, pcodeOps.last.getInput(0).getDef, index)
       case BRANCH | BRANCHIND | CBRANCH =>
         createCallNode(
           nativeInstruction.toString,
@@ -191,32 +196,35 @@ class PCodeMapper(nativeInstruction: Instruction) {
           POPCOUNT SEGMENTOP UNIMPLEMENTED
        */
     }
+    resolveArgument(pcodeOps.lastOption.orNull)
+    callNode
   }
 
-  private def resolveArgument(pcodeOp: PcodeOp): String = {
+  private def resolveArgument(pcodeOp: PcodeOp): Unit = {
     // sometimes there no pcodes
-    if (pcodeOp == null) return "no"
+    if (pcodeOp == null) return //"no"
     // Iterating over the parameter of the last nativeInstruction
-    pcodeOp.getInputs.foreach { input =>
+    pcodeOp.getInputs.map{ input =>
       if (input.isRegister) {
         // we only care about the name
-        return nativeInstruction.getProgram.getRegister(input).getName
+        createIdentifier(
+          nativeInstruction.getProgram.getRegister(input).getName,
+          nativeInstruction.getProgram.getRegister(input).getName,
+          -1,
+          Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
+          input.getAddress.getOffsetAsBigInteger.intValue
+        )
       } else if (input.isUnique) {
-        // TODO: Check the list of pcodes if the unique is present
-        println(pcodeOp.getInputs.map(_.getDef).mkString("   ;;   "))
-        "Todo resolve unique"
-      } else if (input.isConstant) {
-        "0x" + input.getWordOffset.toHexString
-      } else if (input.isAddress) {
-        "0x" + input.getWordOffset.toHexString
+        val x = pcodeOps.filter(_.getOutput == input).head.getInputs.filter(x=>x != input).map(getCallNode).head //foreach(println)
+        println(x)
+        x
+      } else if (input.isConstant || input.isAddress) {
+        createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
       } else {
-        println(" UNKNOWN " + input.toString())
-        "UNKNOWN"
+        createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
       }
     }
-    ""
   }
-  // }
 }
 
 //private def resolveVarNode(varNode: Varnode): String = {
