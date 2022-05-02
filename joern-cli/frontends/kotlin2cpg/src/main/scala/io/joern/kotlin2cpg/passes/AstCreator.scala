@@ -997,6 +997,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         relativizedPath,
         Seq(lambdaTypeDeclInheritsFromTypeFullName)
       )
+    registerType(lambdaTypeDeclInheritsFromTypeFullName)
+
     val lambdaBinding = bindingNode(Constants.lambdaBindingName, fullNameWithSig._2)
     val bindingInfo = BindingInfo(
       lambdaBinding,
