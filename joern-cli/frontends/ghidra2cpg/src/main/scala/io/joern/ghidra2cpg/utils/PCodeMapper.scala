@@ -1,9 +1,8 @@
 package io.joern.ghidra2cpg.utils
 
-import ghidra.app.plugin.core.calltree.CallNode
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Instruction}
-import ghidra.program.model.pcode.{PcodeOp, Varnode}
 import ghidra.program.model.pcode.PcodeOp._
+import ghidra.program.model.pcode.{PcodeOp, Varnode}
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -11,22 +10,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
-
+import ghidra.program.model.listing.Function
 /*
   TODO: resolve the unique arguments of the pcodeOps
  */
-class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruction) {
+class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruction, functions: List[Function]) {
   var resolvedPcodeInstructions: mutable.HashMap[String, String] = new mutable.HashMap[String, String]()
   private val pcodeOps: Array[PcodeOp] = nativeInstruction.getPcode()
-  try {
-    if (pcodeOps.lastOption.nonEmpty) {
-      getCallNode(pcodeOps.last)
-    }
-  } catch {
-    case e: Exception => e.printStackTrace()
-  }
-  // needed by ghidra for decompiling reasons
-  protected val codeUnitFormat = new CodeUnitFormat(
+  val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
       CodeUnitFormatOptions.ShowNamespace.NEVER,
@@ -40,6 +31,14 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       true
     )
   )
+  try {
+    if (pcodeOps.lastOption.nonEmpty) {
+      getCallNode(pcodeOps.last)
+    }
+  } catch {
+    case e: Exception => e.printStackTrace()
+  }
+  // needed by ghidra for decompiling reasons
 
   def getInstruction: Instruction = nativeInstruction
 
@@ -80,36 +79,42 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
           "<operator>.assignment",
           nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
         )
-      case CALL =>
-        var calledFunction = "UNKNOWN"
-        try {
-          calledFunction = codeUnitFormat.getOperandRepresentationString(nativeInstruction, 1)
-        } catch {
-          case _: Exception => // e.printStackTrace()
-        }
-        createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-      case CALLOTHER =>
-        var calledFunction = "UNKNOWN"
-        try {
-          calledFunction = codeUnitFormat.getOperandRepresentationString(nativeInstruction, 1)
-        } catch {
-          case _: Exception => // e.printStackTrace()
-        }
-        createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-      case CALLIND =>
-        var calledFunction = "UNKNOWN"
-        try {
+      case CALL | CALLOTHER | CALLIND =>
 
-          calledFunction = codeUnitFormat
-            .getOperandRepresentationString(nativeInstruction, 1)
-            .split(">")
-            .last
-            .replace("[", "")
-            .replace("]", "")
-        } catch {
-          case _: Exception => // e.printStackTrace()
+        val calledFunction = codeUnitFormat
+          .getOperandRepresentationString(nativeInstruction, 0)
+          .split(">")
+          .last
+          .replace("[", "")
+          .replace("]", "")
+        val callee = functions.filter(_.getName == calledFunction).distinct.headOption
+        if(callee.nonEmpty) {
+          createCallNode(callee.get.getName, callee.get.getName, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        } else {
+          // first input is the address to the called function
+          // we know it already
+          //val arguments = opCodes.head.getInputs.toList.drop(1)
+          //arguments.zipWithIndex.foreach { case (value, index) =>
+          //  if (value.getDef != null)
+          //    resolveArgument(diffGraphBuilder, instruction, callNode, value.getDef, index)
+          //}
+          createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
         }
-        createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      //case CALLOTHER =>
+      //  //val calledFunction = codeUnitFormat.getOperandRepresentationString(nativeInstruction, 0)
+      //  //val callee = functions.filter(_.getName == calledFunction).distinct.head
+      //  //println("CALLEE "+callee.getName)
+      //  createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+      //case CALLIND =>
+      //  val calledFunction = codeUnitFormat
+      //    .getOperandRepresentationString(nativeInstruction, 0)
+      //    .split(">")
+      //    .last
+      //    .replace("[", "")
+      //    .replace("]", "")
+      //  val callee = functions.filter(_.getName == calledFunction).distinct.head
+      //  //println("CALLIND "+callee.getName)
+      //  createCallNode("UNKNOWN","UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
       case INT_ADD | FLOAT_ADD | PTRADD =>
         createCallNode(
           nativeInstruction.toString,
@@ -200,94 +205,40 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
        */
     }
     //resolveArgument(pcodeOps.lastOption.get.getIn orNull)
-    pcodeOps.last.getInputs.foreach{param=>
-      println("PARAM "+param)
-      resolveArguments(diffGraphBuilder , param, callNode)
+    pcodeOps.zipWithIndex.foreach{case(param, index)=>
+      //println("PARAM "+param)
+      resolveArguments(diffGraphBuilder , param.getInputs, callNode, index)
     }
     callNode
   }
-  private def resolveArguments(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew):Unit= {
+  private def resolveArguments(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew, index:Int):Unit= {
     if (input.isRegister) {
       // we only care about the name
       val n = createIdentifier(
         nativeInstruction.getProgram.getRegister(input).getName,
         nativeInstruction.getProgram.getRegister(input).getName,
-        -1,
+        index+1,
         Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
         input.getAddress.getOffsetAsBigInteger.intValue
       )
-      diffGraphBuilder.addNode(n)
-      diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+      connectCallToArgument(diffGraphBuilder,callNode,n)
     } else if (input.isUnique) {
       pcodeOps.filter(x=> x.getOutput == input && !x.getInputs.contains(input)).foreach{x=>
-        def n = getCallNode(x)
-
-        diffGraphBuilder.addNode(n)
-        diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
-        //println(node)
+        val n = getCallNode(x)
+        connectCallToArgument(diffGraphBuilder,callNode,n)
       }
-      //println(fo)
-      //foo.foreach(x=>println(x))
-        //.map(x=>x.getInputs
-        //  .filterNot(_ == input)
-        // .map(x=>resolveArguments(diffGraphBuilder,x, callNode))) //foreach(getCallNode)//filter(x => x != input).map(getCallNode).head //foreach(println)
-      //println(x)
-      ////val y = getCallNode(x)
-      //println(pcodeOps.filter(_.getOutput == input).size)
-      ////println(x.mkString(" :: "))
-      ////println(y)
-      //x
     } else if (input.isConstant || input.isAddress) {
-      val n = createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
-      diffGraphBuilder.addNode(n)
-      diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+      val n = createLiteral("0x" + input.getWordOffset.toHexString, index+1, index+1, Types.registerType(input.getWordOffset.toHexString), -1)
+      connectCallToArgument(diffGraphBuilder,callNode,n)
     } else {
-      val n = createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
-      diffGraphBuilder.addNode(n)
-      diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+      val n = createLiteral("0x" + input.getWordOffset.toHexString,  index+1, index+1, Types.registerType(input.getWordOffset.toHexString), -1)
+      connectCallToArgument(diffGraphBuilder,callNode,n)
     }
   }
 
-  private def resolveArgument(pcodeOp: PcodeOp): Unit = {
-    // sometimes there no pcodes
-    if (pcodeOp == null) return //"no"
-    // Iterating over the parameter of the last nativeInstruction
-    pcodeOp.getInputs.map{ input =>
-      if (input.isRegister) {
-        // we only care about the name
-        createIdentifier(
-          nativeInstruction.getProgram.getRegister(input).getName,
-          nativeInstruction.getProgram.getRegister(input).getName,
-          -1,
-          Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
-          input.getAddress.getOffsetAsBigInteger.intValue
-        )
-      } else if (input.isUnique) {
-        val x = pcodeOps.filter(_.getOutput == input).filter(x=>x != input).map(getCallNode).head //foreach(println)
-        //val y = getCallNode(x)
-        println(pcodeOps.filter(_.getOutput == input).size)
-        //println(x.mkString(" :: "))
-        //println(y)
-        x
-      } else if (input.isConstant || input.isAddress) {
-        createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
-      } else {
-        createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
-      }
-    }
+  def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
+    diffGraphBuilder.addNode(argument)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }
 }
-
-//private def resolveVarNode(varNode: Varnode): String = {
-//  if (varNode.isRegister)
-//    return nativeInstruction.getProgram.getRegister(varNode).getName
-//  if (varNode.isConstant)
-//    return "0x" + varNode.getWordOffset.toHexString
-//  if (varNode.isAddress) {
-//    // TODO: resolve the address?
-//    return varNode.getAddress.toString
-//  }
-//  if (varNode.isUnique)
-//    return "0x" + varNode.getWordOffset.toHexString
-//  "TODO: " + varNode.toString
-//}

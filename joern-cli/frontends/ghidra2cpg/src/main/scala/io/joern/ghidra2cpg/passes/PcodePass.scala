@@ -230,7 +230,7 @@ class PcodePass(
   }
 
   def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
-    val p        = new PCodeMapper(diffGraphBuilder, instruction)
+    val p        = new PCodeMapper(diffGraphBuilder, instruction, functions)
     val pcodeOp  = instruction.getPcode().toList.lastOption
     var callNode = createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     if (pcodeOp.nonEmpty) {
