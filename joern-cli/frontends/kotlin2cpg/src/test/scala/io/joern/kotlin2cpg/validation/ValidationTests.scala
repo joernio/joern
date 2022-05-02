@@ -33,6 +33,10 @@ class ValidationTests extends AnyFreeSpec with Matchers {
       cpg.typ.fullNameExact("kotlin.Function0").size should not be 0
       cpg.typ.fullNameExact("kotlin.Function1").size should not be 0
     }
+
+    "should contain CLOSURE_BINDING nodes for the lambdas" in {
+      cpg.all.collectAll[ClosureBinding].size should not be 0
+    }
   }
 
   "CPG for code with simple method containing if-expression" - {

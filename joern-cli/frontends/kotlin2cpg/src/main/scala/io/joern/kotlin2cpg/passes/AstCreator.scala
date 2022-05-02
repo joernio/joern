@@ -2690,10 +2690,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
     val call = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts.map(_.ast))
 
-    val rhsCtx   = mergedAdditionals(rhsAsts.map(_.additionals))
-    val finalCtx = Additionals(rhsCtx.bindingsInfo, rhsCtx.lambdaAsts, rhsCtx.lambdaBindingInfo)
+    val rhsCtx = mergedAdditionals(rhsAsts.map(_.additionals))
     Seq(AstWithAdditionals(call, Additionals())) ++
-      Seq(AstWithAdditionals(Ast(node).withRefEdge(identifier, node), finalCtx))
+      Seq(AstWithAdditionals(Ast(node).withRefEdge(identifier, node), rhsCtx))
   }
 
   def astForNameReference(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
