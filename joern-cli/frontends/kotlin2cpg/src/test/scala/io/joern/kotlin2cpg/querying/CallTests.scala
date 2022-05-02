@@ -356,7 +356,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `MyCaseClass(\\\"AN_ARGUMENT\\\")` with the correct props set" in {
       val List(c) = cpg.call.code("MyCaseClass.*AN_ARGUMENT.*").l
-      c.methodFullName shouldBe "no.such.CaseClass:ANY(ANY)"
+      c.methodFullName shouldBe "MyCaseClass:ANY(ANY)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(9)
       c.columnNumber shouldBe Some(17)
