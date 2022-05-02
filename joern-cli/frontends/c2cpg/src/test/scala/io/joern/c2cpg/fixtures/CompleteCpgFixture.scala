@@ -16,8 +16,8 @@ object CompleteCpgFixture {
       val file = dir / fileName
       file.write(code)
 
-      val cpg = Cpg.emptyCpg
-      val config =  Config(inputPaths = Set(dir.path.toString), includePathsAutoDiscovery = false)
+      val cpg    = Cpg.emptyCpg
+      val config = Config(inputPaths = Set(dir.path.toString), includePathsAutoDiscovery = false)
 
       new MetaDataPass(cpg, Languages.NEWC).createAndApply()
       val astCreationPass =

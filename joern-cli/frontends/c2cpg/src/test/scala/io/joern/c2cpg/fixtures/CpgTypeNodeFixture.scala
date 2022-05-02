@@ -15,7 +15,7 @@ object CpgTypeNodeFixture {
     File.usingTemporaryDirectory("c2cpgtest") { dir =>
       val file = dir / fileName
       file.write(code)
-      val config =  Config(inputPaths = Set(dir.path.toString), includePathsAutoDiscovery = false)
+      val config = Config(inputPaths = Set(dir.path.toString), includePathsAutoDiscovery = false)
 
       new MetaDataPass(cpg, Languages.NEWC).createAndApply()
       val astCreationPass =
