@@ -9,9 +9,10 @@ object CpgAstOnlyFixture {
   def apply(code: String, fileName: String = "file.c"): Cpg = {
     val cpg = Cpg.emptyCpg
     File.usingTemporaryDirectory("c2cpgtest") { dir =>
+      val config =  Config(inputPaths = Set(dir.path.toString), includePathsAutoDiscovery = false)
       val file = dir / fileName
       file.write(code)
-      new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPaths = Set(dir.path.toString)))
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, config)
         .createAndApply()
     }
     cpg
