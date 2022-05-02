@@ -64,14 +64,14 @@ class PointsToTests extends JimpleCodeToCpgFixture {
 
   "all identifiers should (conservatively) point to their allocation site" in {
     val List(newA, newB) = cpg.method("foo").call(Operators.alloc).l
-    newA.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack4", "p", "q")
-    newB.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack5", "r")
+    newA.pointsToIn.code.dedup.l shouldBe List("$stack4", "p", "q")
+    newB.pointsToIn.code.dedup.l shouldBe List("$stack5", "r")
   }
 
   "all identifiers should (conservatively) point to their allocation site for arrays" in {
     val List(newA, newB) = cpg.method("baz").call.name(Operators.alloc, Operators.arrayInitializer).l
-    newA.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("$stack3", "p", "q")
-    newB.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("r")
+    newA.pointsToIn.code.dedup.l shouldBe List("$stack3", "p", "q")
+    newB.pointsToIn.code.dedup.l shouldBe List("r")
   }
 
 }

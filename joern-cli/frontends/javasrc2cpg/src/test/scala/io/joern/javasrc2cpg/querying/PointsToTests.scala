@@ -64,14 +64,14 @@ class PointsToTests extends JavaSrcCodeToCpgFixture {
 
   "all identifiers should (conservatively) point to their allocation site for ordinary variables" in {
     val List(newA, newB) = cpg.method("foo").call(Operators.alloc).l
-    newA.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("p", "q")
-    newB.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("r")
+    newA.pointsToIn.code.dedup.l shouldBe List("p", "q")
+    newB.pointsToIn.code.dedup.l shouldBe List("r")
   }
 
   "all identifiers should (conservatively) point to their allocation site for arrays" in {
     val List(newA, newB) = cpg.method("baz").call.name(Operators.alloc, Operators.arrayInitializer).l
-    newA.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("p", "q")
-    newB.in(EdgeTypes.POINTS_TO).asScala.collectAll[AstNode].code.dedup.l shouldBe List("r")
+    newA.pointsToIn.code.dedup.l shouldBe List("p", "q")
+    newB.pointsToIn.code.dedup.l shouldBe List("r")
   }
 
 }
