@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
@@ -57,8 +57,25 @@ object TypeRenderer {
           if (mappedType != null) {
             stripped(renderer.renderFqName(mappedType.asSingleFqName().toUnsafe))
           } else {
-            val rendered = renderer.renderType(t)
-            stripped(rendered)
+            val descriptor = TypeUtils.getClassDescriptor(t)
+            if (DescriptorUtils.isCompanionObject(descriptor)) {
+              val rendered            = stripped(renderer.renderFqName(fqName))
+              val companionObjectName = descriptor.getName
+              // replaces `apkg.ContaininClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
+              rendered.replaceFirst("\\." + companionObjectName, "\\$" + companionObjectName)
+            } else {
+              descriptor.getContainingDeclaration match {
+                case fn: SimpleFunctionDescriptor =>
+                  val renderedFqName     = stripped(renderer.renderFqName(DescriptorUtils.getFqName(descriptor)))
+                  val containingDescName = fn.getName
+                  // replaces `apkg.containingMethodName.className` with `apkg.className$containingMethodName`
+                  renderedFqName.replaceFirst(
+                    "\\." + containingDescName + "\\.([^.]+)",
+                    ".$1" + "\\$" + containingDescName
+                  )
+                case _ => stripped(renderer.renderType(t))
+              }
+            }
           }
         } else {
           val relevantT =
@@ -69,6 +86,7 @@ object TypeRenderer {
         }
       }
     }
+
     if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) {
       primitiveArrayMappings.get(rendered).get
     } else if (rendered == TypeConstants.kotlinUnit) {

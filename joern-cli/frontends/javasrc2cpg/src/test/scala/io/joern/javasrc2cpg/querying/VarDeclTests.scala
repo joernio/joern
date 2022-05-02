@@ -1,44 +1,19 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Local}
 import io.shiftleft.semanticcpg.language._
 
-class VarDeclTests extends JavaSrcCodeToCpgFixture {
-
-  override val code: String =
-    """
-      |public class Foo {
-      |    public void test1() {
-      |        int x = 1;
-      |    }
-      |
-      |    public void test2() {
-      |        int x;
-      |        x = 1;
-      |    }
-      |
-      |    public void test3() {
-      |        int x, y;
-      |        x = 1;
-      |        y = 2;
-      |    }
-      |
-      |    public void test4() {
-      |        int x, y = 4, z;
-      |        x = 1;
-      |        z = 2;
-      |    }
-      |
-      |    public void test5() {
-      |        int x, y = 2;
-      |        int z = 3;
-      |        x = 1;
-      |    }
-      |}
-      |""".stripMargin
+class VarDeclTests extends JavaSrcCode2CpgFixture {
 
   "it should correctly parse a combined declaration and assignment" in {
+    val cpg = code("""
+        |public class Foo {
+        |      public void test1() {
+        |           int x = 1;
+        |      }
+        |}
+        |""".stripMargin)
     val methodBody = cpg.method.name("test1").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 2
 
@@ -56,6 +31,14 @@ class VarDeclTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should correctly parse separated declarations and assignments" in {
+    val cpg = code("""
+        |public class Foo {
+        |    public void test2() {
+        |        int x;
+        |        x = 1;
+        |    }
+        |}
+        |""".stripMargin)
     val methodBody = cpg.method.name("test2").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 2
 
@@ -73,6 +56,15 @@ class VarDeclTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should correctly parse multiple declarations in a single statement" in {
+    val cpg = code("""
+        |public class Foo {
+        |    public void test3() {
+        |        int x, y;
+        |        x = 1;
+        |        y = 2;
+        |    }
+        |}
+        |""".stripMargin)
     val methodBody = cpg.method.name("test3").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 4
 
@@ -94,6 +86,15 @@ class VarDeclTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should correctly parse mixed declarations and assignments in a single statement" in {
+    val cpg = code("""
+        |public class Foo {
+        |    public void test4() {
+        |        int x, y = 4, z;
+        |        x = 1;
+        |        z = 2;
+        |    }
+        |}
+        |""".stripMargin)
     val methodBody = cpg.method.name("test4").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 6
 
@@ -119,6 +120,15 @@ class VarDeclTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should correctly parse mixed declarations and assignments across statements" in {
+    val cpg = code("""
+        |public class Foo {
+        |    public void test5() {
+        |        int x, y = 2;
+        |        int z = 3;
+        |        x = 1;
+        |    }
+        |}
+        |""".stripMargin)
     val methodBody = cpg.method.name("test5").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 6
 

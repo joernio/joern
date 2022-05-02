@@ -4,8 +4,10 @@ import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
+
+// TODO: also add test with refs inside TYPE_DECL
 
 class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
   "CPG for code with shadowed local inside lambda" - {
@@ -27,13 +29,13 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain LOCAL nodes with correctly-set referencing IDENTIFIERS" in {
-      val List(outerScopeX: Local) = cpg.local.nameExact("x").take(1).l
-      outerScopeX.referencingIdentifiers.size shouldBe 3 // TODO: fix, it should be `2`, not `3`
-      outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(4, 4, 6)
+      val List(outerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).take(1).l
+      outerScopeX.referencingIdentifiers.size shouldBe 2
+      outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(4, 6)
 
-      val List(innerScopeX: Local) = cpg.local.nameExact("x").drop(1).take(1).l
-      innerScopeX.referencingIdentifiers.size shouldBe 3 // TODO: fix, it should be `2`, not `3`
-      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7, 7, 9)
+      val List(innerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).drop(1).take(1).l
+      innerScopeX.referencingIdentifiers.size shouldBe 1
+      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7)
     }
   }
 
@@ -53,7 +55,7 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         .nameExact("x")
         .typeFullName("java.lang.Integer")
         .referencingIdentifiers
-        .size shouldBe 3 // TODO: fix, it should be `2`, not `3`
+        .size shouldBe 2
     }
 
     "should contain a local outside the scope function with a single referenced identifier" in {
@@ -61,7 +63,7 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
         .nameExact("x")
         .typeFullName("java.lang.String")
         .referencingIdentifiers
-        .size shouldBe 2 // TODO: fix, it should be `1`, not `2`
+        .size shouldBe 1
     }
   }
 
@@ -130,6 +132,74 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     "identifiers to the parameters exist" in {
       val param = cpg.method.name("foo").parameter.name("x").head
       param.referencingIdentifiers.toSet should not be Set()
+    }
+  }
+
+  "CPG for code with a call to `also` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.also { it + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _it_ parameter" in {
+      val List(itIdentifier) = cpg.identifier.nameExact("it").l
+      itIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = itIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "it"
+    }
+  }
+
+  "CPG for code with a call to `apply` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.apply { this + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(thisIdentifier) = cpg.identifier.nameExact("this").l
+      thisIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "this"
+    }
+  }
+
+  "CPG for code with a call to `let` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.let { it + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(itIdentifier) = cpg.identifier.nameExact("it").l
+      itIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = itIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "it"
+    }
+  }
+
+  "CPG for code call to `run` scope function without an explicitly-defined parameter" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |fun foo() {
+        |  1.run { this + 41414141 }
+        |}
+        |""".stripMargin)
+
+    "should contain a REF edge for the IDENTIFIER referencing the implicit _this_ parameter" in {
+      val List(thisIdentifier) = cpg.identifier.nameExact("this").l
+      thisIdentifier.refsTo.size shouldBe 1
+      val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
+      methodParam.name shouldBe "this"
     }
   }
 }

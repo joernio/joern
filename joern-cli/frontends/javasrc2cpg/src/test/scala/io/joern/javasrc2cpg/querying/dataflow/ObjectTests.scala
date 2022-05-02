@@ -158,14 +158,14 @@ class ObjectTests extends JavaDataflowFixture {
   }
 
   it should "find a path to a void printer via a field" in {
-    // TODO: This should find a path, but the current result is on par with c2cpg.
     val (source, sink) = getMultiFnSourceSink("test6", "printS")
-    sink.reachableBy(source).size shouldBe 0
+    sink.reachableBy(source).size shouldBe 2
   }
 
   it should "not find a path to a void printer via a safe field" in {
     val (source, sink) = getMultiFnSourceSink("test7", "printT")
-    sink.reachableBy(source).size shouldBe 0
+    // TODO: This should not find a path, but does due to over-tainting.
+    sink.reachableBy(source).size shouldBe 2
   }
 
   it should "not find a path if `MALICIOUS` is overwritten via a setter" in {

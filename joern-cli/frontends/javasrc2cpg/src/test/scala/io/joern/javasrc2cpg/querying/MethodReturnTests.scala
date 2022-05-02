@@ -20,7 +20,7 @@ class MethodReturnTests extends JavaSrcCodeToCpgFixture {
     // we expect the METHOD_RETURN node to be the right-most
     // child so that when traversing the AST from left to
     // right in CFG construction, we visit it last.
-    x.order shouldBe 3
+    x.order shouldBe 4
   }
 
   "should have a RETURN node ith correct fields" in {

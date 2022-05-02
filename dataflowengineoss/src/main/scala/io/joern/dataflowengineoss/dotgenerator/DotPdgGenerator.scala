@@ -13,7 +13,7 @@ object DotPdgGenerator {
   private def dotGraphForMethod(method: Method)(implicit semantics: Semantics): String = {
     val ddg = new DdgGenerator().generate(method)
     val cdg = new CdgGenerator().generate(method)
-    DotSerializer.dotGraph(method, ddg.++(cdg), withEdgeTypes = true)
+    DotSerializer.dotGraph(Option(method), ddg.++(cdg), withEdgeTypes = true)
   }
 
 }
