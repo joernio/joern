@@ -4,7 +4,6 @@ import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Func
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import io.joern.ghidra2cpg._
-import io.joern.ghidra2cpg.processors._
 import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
 import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.Cpg
@@ -22,8 +21,7 @@ class PcodePass(
   fileName: String,
   functions: List[Function],
   cpg: Cpg,
-  decompiler: Decompiler,
-  processor: Processor
+  decompiler: Decompiler
 ) extends ConcurrentWriterCpgPass[Function](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[PcodePass])
@@ -232,7 +230,7 @@ class PcodePass(
   }
 
   def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
-    val p        = new PCodeMapper(instruction)
+    val p        = new PCodeMapper(diffGraphBuilder, instruction)
     val pcodeOp  = instruction.getPcode().toList.lastOption
     var callNode = createCallNode("UNKNOWN", "UNKNOWN", instruction.getMinAddress.getOffsetAsBigInteger.intValue)
     if (pcodeOp.nonEmpty) {

@@ -23,11 +23,16 @@ class CallArgumentsTest extends GhidraBinToCpgSuite {
     }
    */
   "The call to 'memcpy' should have three arguments " in {
-    cpg.call
+    val x = cpg.call
       .name("memcpy")
       .argument
       .code
-      .l shouldBe List("auStack180", "param_1 + 0x5", "param_2 - 0x5")
+      .l
+    val y = cpg.call.name("memcpy").l
+
+    println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "+y)
+    println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "+x)
+    x shouldBe List("auStack180", "param_1 + 0x5", "param_2 - 0x5")
   }
   "The call to 'test' should have two arguments " in {
     cpg.call

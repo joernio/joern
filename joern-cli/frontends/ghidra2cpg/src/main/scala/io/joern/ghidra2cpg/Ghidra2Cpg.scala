@@ -15,7 +15,6 @@ import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes._
 import io.joern.ghidra2cpg.passes.mips.LoHiPass
 import io.joern.ghidra2cpg.passes.x86.ReturnEdgesPass
-import io.joern.ghidra2cpg.processors.{ArmProcessor, MipsProcessor, X86Processor}
 import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
@@ -121,14 +120,14 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
-        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, MipsProcessor)
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler)
           .createAndApply()
         new LoHiPass(cpg).createAndApply()
       case "AARCH64" | "ARM" =>
-        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, ArmProcessor)
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler)
           .createAndApply()
       case _ =>
-        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler, X86Processor)
+        new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler)
           .createAndApply()
         new ReturnEdgesPass(cpg).createAndApply()
     }

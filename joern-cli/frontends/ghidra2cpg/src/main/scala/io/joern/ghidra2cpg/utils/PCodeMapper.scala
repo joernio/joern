@@ -1,18 +1,21 @@
 package io.joern.ghidra2cpg.utils
 
+import ghidra.app.plugin.core.calltree.CallNode
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Instruction}
-import ghidra.program.model.pcode.PcodeOp
+import ghidra.program.model.pcode.{PcodeOp, Varnode}
 import ghidra.program.model.pcode.PcodeOp._
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
 /*
   TODO: resolve the unique arguments of the pcodeOps
  */
-class PCodeMapper(nativeInstruction: Instruction) {
+class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruction) {
   var resolvedPcodeInstructions: mutable.HashMap[String, String] = new mutable.HashMap[String, String]()
   private val pcodeOps: Array[PcodeOp] = nativeInstruction.getPcode()
   try {
@@ -196,8 +199,53 @@ class PCodeMapper(nativeInstruction: Instruction) {
           POPCOUNT SEGMENTOP UNIMPLEMENTED
        */
     }
-    resolveArgument(pcodeOps.lastOption.orNull)
+    //resolveArgument(pcodeOps.lastOption.get.getIn orNull)
+    pcodeOps.last.getInputs.foreach{param=>
+      println("PARAM "+param)
+      resolveArguments(diffGraphBuilder , param, callNode)
+    }
     callNode
+  }
+  private def resolveArguments(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew):Unit= {
+    if (input.isRegister) {
+      // we only care about the name
+      val n = createIdentifier(
+        nativeInstruction.getProgram.getRegister(input).getName,
+        nativeInstruction.getProgram.getRegister(input).getName,
+        -1,
+        Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
+        input.getAddress.getOffsetAsBigInteger.intValue
+      )
+      diffGraphBuilder.addNode(n)
+      diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+    } else if (input.isUnique) {
+      pcodeOps.filter(x=> x.getOutput == input && !x.getInputs.contains(input)).foreach{x=>
+        def n = getCallNode(x)
+
+        diffGraphBuilder.addNode(n)
+        diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+        //println(node)
+      }
+      //println(fo)
+      //foo.foreach(x=>println(x))
+        //.map(x=>x.getInputs
+        //  .filterNot(_ == input)
+        // .map(x=>resolveArguments(diffGraphBuilder,x, callNode))) //foreach(getCallNode)//filter(x => x != input).map(getCallNode).head //foreach(println)
+      //println(x)
+      ////val y = getCallNode(x)
+      //println(pcodeOps.filter(_.getOutput == input).size)
+      ////println(x.mkString(" :: "))
+      ////println(y)
+      //x
+    } else if (input.isConstant || input.isAddress) {
+      val n = createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
+      diffGraphBuilder.addNode(n)
+      diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+    } else {
+      val n = createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
+      diffGraphBuilder.addNode(n)
+      diffGraphBuilder.addEdge(callNode, n, EdgeTypes.ARGUMENT)
+    }
   }
 
   private def resolveArgument(pcodeOp: PcodeOp): Unit = {
@@ -215,8 +263,11 @@ class PCodeMapper(nativeInstruction: Instruction) {
           input.getAddress.getOffsetAsBigInteger.intValue
         )
       } else if (input.isUnique) {
-        val x = pcodeOps.filter(_.getOutput == input).head.getInputs.filter(x=>x != input).map(getCallNode).head //foreach(println)
-        println(x)
+        val x = pcodeOps.filter(_.getOutput == input).filter(x=>x != input).map(getCallNode).head //foreach(println)
+        //val y = getCallNode(x)
+        println(pcodeOps.filter(_.getOutput == input).size)
+        //println(x.mkString(" :: "))
+        //println(y)
         x
       } else if (input.isConstant || input.isAddress) {
         createLiteral("0x" + input.getWordOffset.toHexString, -1, -1, Types.registerType(input.getWordOffset.toHexString), -1)
