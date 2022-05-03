@@ -23,11 +23,11 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
       val List(x) = params.name("x").l
       x.code shouldBe "x"
-      x.typeFullName shouldBe "java.lang.Integer"
+      x.typeFullName shouldBe "int"
 
       val List(y) = params.name("y").l
       y.code shouldBe "y"
-      y.typeFullName shouldBe "java.lang.Integer"
+      y.typeFullName shouldBe "int"
     }
   }
 
@@ -48,11 +48,11 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
       val List(x) = params.name("x").l
       x.code shouldBe "x"
-      x.typeFullName shouldBe "java.lang.Integer"
+      x.typeFullName shouldBe "int"
 
       val List(y) = params.name("y").l
       y.code shouldBe "y"
-      y.typeFullName shouldBe "java.lang.Integer"
+      y.typeFullName shouldBe "int"
     }
   }
 
@@ -119,7 +119,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
     "should contain a MEMBER node for `z` with the correct typeFullName set" in {
       val List(m) = cpg.typeDecl.fullName(".*Foo.*").member.name("z").l
-      m.typeFullName shouldBe "java.lang.Integer"
+      m.typeFullName shouldBe "int"
     }
   }
 
@@ -342,13 +342,13 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
     "should have the correct types inferred" in {
       val List(identifierForAliasedType) = cpg.identifier.codeExact("x").take(1).l
-      identifierForAliasedType.typeFullName shouldBe "java.lang.Integer"
+      identifierForAliasedType.typeFullName shouldBe "int"
 
       val List(identifierForOriginalType) = cpg.identifier.codeExact("y").take(1).l
-      identifierForOriginalType.typeFullName shouldBe "java.lang.Integer"
+      identifierForOriginalType.typeFullName shouldBe "int"
 
       val List(identifierForOpResult) = cpg.identifier.codeExact("bar").take(1).l
-      identifierForOpResult.typeFullName shouldBe "java.lang.Integer"
+      identifierForOpResult.typeFullName shouldBe "int"
     }
   }
 }

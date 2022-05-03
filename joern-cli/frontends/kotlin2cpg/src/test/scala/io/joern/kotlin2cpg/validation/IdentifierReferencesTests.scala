@@ -53,7 +53,7 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     "should contain a local inside the scope function with two referencing identifiers" in {
       cpg.local
         .nameExact("x")
-        .typeFullName("java.lang.Integer")
+        .typeFullName("int")
         .referencingIdentifiers
         .size shouldBe 2
     }

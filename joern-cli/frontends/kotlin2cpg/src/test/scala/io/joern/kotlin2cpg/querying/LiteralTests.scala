@@ -26,31 +26,31 @@ class LiteralTests extends AnyFreeSpec with Matchers {
 
     "should contain the literals" in {
       val List(a: Literal) = cpg.literal("1").l
-      a.typeFullName shouldBe "java.lang.Integer"
+      a.typeFullName shouldBe "int"
 
       val List(b: Literal) = cpg.literal("true").l
-      b.typeFullName shouldBe "java.lang.Boolean"
+      b.typeFullName shouldBe "boolean"
 
       val List(c: Literal) = cpg.literal("1.0").l
-      c.typeFullName shouldBe "java.lang.Double"
+      c.typeFullName shouldBe "double"
 
       val List(d: Literal) = cpg.literal("\'A\'").l
-      d.typeFullName shouldBe "java.lang.Character"
+      d.typeFullName shouldBe "char"
 
       val List(e: Literal) = cpg.literal("\"ABC\"").l
       e.typeFullName shouldBe "java.lang.String"
 
       val List(p: Literal) = cpg.literal("1_000_000").l
-      p.typeFullName shouldBe "java.lang.Integer"
+      p.typeFullName shouldBe "int"
 
       val List(q: Literal) = cpg.literal("9999L").l
-      q.typeFullName shouldBe "java.lang.Long"
+      q.typeFullName shouldBe "long"
 
       val List(r: Literal) = cpg.literal("0xB4DF00D").l
-      r.typeFullName shouldBe "java.lang.Integer"
+      r.typeFullName shouldBe "int"
 
       val List(s: Literal) = cpg.literal("0b010101").l
-      s.typeFullName shouldBe "java.lang.Integer"
+      s.typeFullName shouldBe "int"
     }
   }
 
@@ -71,31 +71,31 @@ class LiteralTests extends AnyFreeSpec with Matchers {
 
     "should literals with the correct TYPE_FULL_NAME" in {
       val List(a: Literal) = cpg.literal("1").l
-      a.typeFullName shouldBe "java.lang.Integer"
+      a.typeFullName shouldBe "int"
 
       val List(b: Literal) = cpg.literal("true").l
-      b.typeFullName shouldBe "java.lang.Boolean"
+      b.typeFullName shouldBe "boolean"
 
       val List(c: Literal) = cpg.literal("1.0").l
-      c.typeFullName shouldBe "java.lang.Double"
+      c.typeFullName shouldBe "double"
 
       val List(d: Literal) = cpg.literal("\'A\'").l
-      d.typeFullName shouldBe "java.lang.Character"
+      d.typeFullName shouldBe "char"
 
       val List(e: Literal) = cpg.literal("\"ABC\"").l
       e.typeFullName shouldBe "java.lang.String"
 
       val List(p: Literal) = cpg.literal("1_000_000").l
-      p.typeFullName shouldBe "java.lang.Integer"
+      p.typeFullName shouldBe "int"
 
       val List(q: Literal) = cpg.literal("9999L").l
-      q.typeFullName shouldBe "java.lang.Long"
+      q.typeFullName shouldBe "long"
 
       val List(r: Literal) = cpg.literal("0xB4DF00D").l
-      r.typeFullName shouldBe "java.lang.Integer"
+      r.typeFullName shouldBe "int"
 
       val List(s: Literal) = cpg.literal("0b010101").l
-      s.typeFullName shouldBe "java.lang.Integer"
+      s.typeFullName shouldBe "int"
     }
 
   }

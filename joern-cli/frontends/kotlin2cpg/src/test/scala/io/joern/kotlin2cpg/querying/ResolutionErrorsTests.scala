@@ -135,7 +135,7 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node with a MFN property starting with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName(".*getFileSize.*").l
-      m.fullName shouldBe "codepropertygraph.Unresolved.getFileSize:java.lang.Integer(java.lang.Boolean)"
+      m.fullName shouldBe "codepropertygraph.Unresolved.getFileSize:int(boolean)"
     }
   }
 
@@ -183,7 +183,7 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for `containsKey` with `java.lang.Object` in the place of the failed resolution" in {
       val List(m) = cpg.method.fullName(".*containsKey.*").l
-      m.fullName shouldBe "kotlin.collections.Map.containsKey:java.lang.Boolean(java.lang.Object)"
+      m.fullName shouldBe "kotlin.collections.Map.containsKey:boolean(java.lang.Object)"
     }
   }
 }

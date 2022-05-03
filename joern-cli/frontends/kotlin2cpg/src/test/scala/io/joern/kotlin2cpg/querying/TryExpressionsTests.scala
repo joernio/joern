@@ -43,7 +43,7 @@ class TryExpressionsTests extends AnyFreeSpec with Matchers {
       firstAstChildOfFirstArg.order shouldBe 1
       firstAstChildOfFirstArg.name shouldBe "x"
       firstAstChildOfFirstArg.code shouldBe "x"
-      firstAstChildOfFirstArg.typeFullName shouldBe "java.lang.Integer"
+      firstAstChildOfFirstArg.typeFullName shouldBe "int"
       firstAstChildOfFirstArg.lineNumber shouldBe Some(6)
       firstAstChildOfFirstArg.columnNumber shouldBe Some(8)
 
@@ -51,7 +51,7 @@ class TryExpressionsTests extends AnyFreeSpec with Matchers {
       firstAstChildOfSecondArg.order shouldBe 1
       firstAstChildOfSecondArg.name shouldBe "toInt"
       firstAstChildOfSecondArg.code shouldBe "r.toInt()"
-      firstAstChildOfSecondArg.methodFullName shouldBe "java.lang.String.toInt:java.lang.Integer()"
+      firstAstChildOfSecondArg.methodFullName shouldBe "java.lang.String.toInt:int()"
     }
   }
 }
