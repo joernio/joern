@@ -40,6 +40,30 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "CPG for code with usage of `Gson` external library" - {
+    lazy val cpg = TestContext.buildCpg(
+      """
+        |package mypkg
+        |
+        |import com.google.gson.Gson
+        |
+        |fun main() {
+        |   val l = ArrayList<String>()
+        |   l.add("ONE")
+        |   l.add("TWO")
+        |   val j = Gson().toJson(l)
+        |   println("json: " + j)
+        |}
+        |""".stripMargin,
+      withTestResourceClassPath = false
+    )
+
+    "should contain CALL node for the ctor-call with a METHOD_FULL_NAME starting with the package name" in {
+      val List(c) = cpg.call.codeExact("Gson()").l
+      c.methodFullName.startsWith("com.google.gson.Gson") shouldBe true
+    }
+  }
+
   "CPG for code with simple method containing if-expression" - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
