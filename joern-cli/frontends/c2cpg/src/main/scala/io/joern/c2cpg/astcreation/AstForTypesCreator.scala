@@ -90,7 +90,7 @@ trait AstForTypesCreator {
     Ast(cpgNamespace)
   }
 
-  protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index:Int): Ast = {
+  protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val declTypeName = registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
     val tpe          = typeFor(declarator)
     val name         = ASTStringUtil.getSimpleName(declarator.getName)
@@ -237,9 +237,9 @@ trait AstForTypesCreator {
             Seq(Ast(newTypeDecl(name, registerType(name), filename, name, alias = Some(name))))
           case _ if declaration.getDeclarators.nonEmpty =>
             declaration.getDeclarators.toIndexedSeq.zipWithIndex.map {
-              case (d: IASTFunctionDeclarator,_) =>
+              case (d: IASTFunctionDeclarator, _) =>
                 astForFunctionDeclarator(d)
-              case (d: IASTSimpleDeclaration,_) if d.getInitializer != null =>
+              case (d: IASTSimpleDeclaration, _) if d.getInitializer != null =>
                 Ast() // we do the AST for this down below with initAsts
               case (d, i) =>
                 astForDeclarator(declaration, d, i)
@@ -285,7 +285,7 @@ trait AstForTypesCreator {
   private def astsForCompositeType(typeSpecifier: IASTCompositeTypeSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
     val declAsts = decls.zipWithIndex.map { case (d, i) =>
-      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d,i)
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
@@ -326,8 +326,8 @@ trait AstForTypesCreator {
     decls: List[IASTDeclarator]
   ): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = decls.zipWithIndex.map { case(d,i) =>
-      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d,i)
+    val declAsts = decls.zipWithIndex.map { case (d, i) =>
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
@@ -366,7 +366,9 @@ trait AstForTypesCreator {
 
   private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
-    val declAsts = decls.zipWithIndex.map { case (d,i) => astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d,i) }
+    val declAsts = decls.zipWithIndex.map { case (d, i) =>
+      astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
+    }
 
     val (name, fullname) =
       uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
