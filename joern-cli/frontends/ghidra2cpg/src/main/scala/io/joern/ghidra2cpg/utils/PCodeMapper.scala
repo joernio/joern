@@ -32,9 +32,10 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
     )
   )
   try {
-    if (pcodeOps.lastOption.nonEmpty) {
-      getCallNode(pcodeOps.last)
-    }
+    pcodeOps.foreach(getCallNode)
+    //if (pcodeOps.lastOption.nonEmpty) {
+    //  getCallNode(pcodeOps.last)
+    //}
   } catch {
     case e: Exception => e.printStackTrace()
   }
@@ -90,11 +91,12 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       callCode,
       nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
     )
-    resolvedPcodeInstructions += (pcodeOp.getOutput.toString -> callNode)
+    if(pcodeOp.getOutput != null)
+      resolvedPcodeInstructions += (pcodeOp.getOutput.toString -> callNode)
     //resolveArgument(pcodeOps.lastOption.get.getIn orNull)
-    pcodeOps.drop(1).zipWithIndex.foreach { case (pop, index) =>
-      println("PARAM " + pop)
-      pop.getInputs.foreach(param => resolveArguments(diffGraphBuilder, param, callNode, index))
+    pcodeOp.getInputs.zipWithIndex.foreach { case (param, index) =>
+      println("PARAM " + param)
+      resolveArguments(diffGraphBuilder, param, callNode, index)
     }
     callNode
   }
@@ -111,7 +113,9 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       )
       connectCallToArgument(diffGraphBuilder, callNode, n)
     } else if (input.isUnique) {
-      getCallNode(input.getDef)
+      val n = resolvedPcodeInstructions(input.toString)
+      connectCallToArgument(diffGraphBuilder, callNode, n)
+      //getCallNode(input.getDef)
       //pcodeOps.filter(x=> x.getOutput == input && !x.getInputs.contains(input)).foreach{x=>
       //  val n = getCallNode(x)
       //  connectCallToArgument(diffGraphBuilder,callNode,n)
