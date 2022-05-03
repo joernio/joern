@@ -1371,7 +1371,10 @@ class AstCreationPassTests
         |  return sizeof(int);
         |}
         |""".stripMargin) { cpg =>
-      cpg.call.name(Operators.sizeOf).argument(1).code.l shouldBe List("int")
+      inside(cpg.call.name(Operators.sizeOf).argument(1).l) { case List(i: Identifier) =>
+        i.code shouldBe "int"
+        i.name shouldBe "int"
+      }
     }
 
     "be correct for label" in TestAstOnlyFixture("void foo() { label:; }") { cpg =>
