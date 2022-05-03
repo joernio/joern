@@ -20,7 +20,7 @@ class SubscriptTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call(Operators.indexAccess).l
       c.code shouldBe "names[0]"
       c.methodFullName shouldBe Operators.indexAccess
-      c.typeFullName shouldBe "java.lang.Integer"
+      c.typeFullName shouldBe "int"
       c.lineNumber shouldBe Some(3)
       c.columnNumber shouldBe Some(9)
     }

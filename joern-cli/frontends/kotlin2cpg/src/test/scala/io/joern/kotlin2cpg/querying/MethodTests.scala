@@ -22,9 +22,9 @@ class MethodTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.method.name("bar").isExternal(false).l
       x.size shouldBe 1
       x.name shouldBe "bar"
-      x.fullName shouldBe "com.test.pkg.Foo.bar:java.lang.Integer(java.lang.Integer)"
+      x.fullName shouldBe "com.test.pkg.Foo.bar:int(int)"
       x.code shouldBe "bar"
-      x.signature shouldBe "java.lang.Integer(java.lang.Integer)"
+      x.signature shouldBe "int(int)"
       x.isExternal shouldBe false
       x.lineNumber shouldBe Some(4)
       x.columnNumber shouldBe Some(6)

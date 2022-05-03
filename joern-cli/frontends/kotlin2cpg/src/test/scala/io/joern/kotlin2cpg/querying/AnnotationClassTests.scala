@@ -12,23 +12,23 @@ class AnnotationClassTests extends AnyFreeSpec with Matchers {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
-        |annotation class Special(val why: String)
-        |
-        |@Special("reason")
-        |fun foo() {
-        | println(1)
+        |fun doSomething(p: String): Boolean {
+        |   return if (p == "true") true else false
         |}
+        |
+        |fun main() {
+        |    val aMessage = "true"
+        |    println(doSomething(aMessage))
+        |}
+        |
         |""".stripMargin)
 
-    "should contain a TYPE_DECL node with the correct properties set" in {
-      val List(a) = cpg.typeDecl("Special").l
-      a.fullName shouldBe "mypkg.Special"
-      a.code shouldBe "Special"
-      a.lineNumber shouldBe Some(3)
-      a.columnNumber shouldBe Some(17)
+    "should XXXX" in {
+      val List(c) = cpg.call.code("doSomething.*").l
+      c.methodFullName shouldBe "mypkg.doSomething:boolean(java.lang.String)"
 
-      // TODO: test constructor
-      // TODO: test members
+      val List(m) = cpg.method.fullName("mypkg.doSomething.*").l
+      m.fullName shouldBe "mypkg.doSomething:boolean(java.lang.String)"
     }
   }
 }

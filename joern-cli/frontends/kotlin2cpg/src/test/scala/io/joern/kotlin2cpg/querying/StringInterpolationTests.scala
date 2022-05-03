@@ -33,9 +33,9 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
       firstCall.code shouldBe "name"
       firstCall.typeFullName shouldBe "java.lang.String"
       secondCall.code shouldBe "age"
-      secondCall.typeFullName shouldBe "java.lang.Integer"
+      secondCall.typeFullName shouldBe "int"
       thirdCall.code shouldBe "name.length"
-      thirdCall.typeFullName shouldBe "java.lang.Integer"
+      thirdCall.typeFullName shouldBe "int"
     }
 
     "should contain a call node for `formatString` op with correct fields" in {

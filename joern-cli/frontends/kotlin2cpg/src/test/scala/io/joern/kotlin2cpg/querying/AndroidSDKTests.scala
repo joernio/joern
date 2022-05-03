@@ -188,7 +188,7 @@ class AndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `Log.d` with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*Log.*").l
-      c.methodFullName shouldBe "android.util.Log.d:java.lang.Integer(java.lang.String,java.lang.String)"
+      c.methodFullName shouldBe "android.util.Log.d:int(java.lang.String,java.lang.String)"
 
       c.argument.size shouldBe 2
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -230,7 +230,7 @@ class AndroidSDKTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `findViewById` with the correct props set" in {
       val List(c) = cpg.call.code("findViewB.*").codeNot(".*as.*").l
-      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(java.lang.Integer)"
+      c.methodFullName shouldBe "android.app.Activity.findViewById:android.view.View(int)"
       c.argument.size shouldBe 1
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }

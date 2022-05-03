@@ -23,15 +23,15 @@ class TypeTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should create TYPE node with correct fields for return type" in {
-      val List(x) = cpg.typ.name("Integer").l
-      x.fullName shouldBe "java.lang.Integer"
-      x.typeDeclFullName shouldBe "java.lang.Integer"
+      val List(x) = cpg.typ.name("int").l
+      x.fullName shouldBe "int"
+      x.typeDeclFullName shouldBe "int"
     }
 
     "should create TYPE node with correct fields for class member" in {
-      val List(x) = cpg.typ.name("Long").l
-      x.fullName shouldBe "java.lang.Long"
-      x.typeDeclFullName shouldBe "java.lang.Long"
+      val List(x) = cpg.typ.name("long").l
+      x.fullName shouldBe "long"
+      x.typeDeclFullName shouldBe "long"
     }
 
     "should create TYPE node with correct fields for parameter type" in {
@@ -41,19 +41,19 @@ class TypeTests extends AnyFreeSpec with Matchers {
     }
 
     "should create TYPE node with correct fields for local type" in {
-      val List(x) = cpg.typ.name("Double").l
-      x.fullName shouldBe "java.lang.Double"
-      x.typeDeclFullName shouldBe "java.lang.Double"
+      val List(x) = cpg.typ.name("double").l
+      x.fullName shouldBe "double"
+      x.typeDeclFullName shouldBe "double"
     }
 
     "should allow traversing from member's TYPE to member" in {
-      val List(x) = cpg.typ("java.lang.Long").memberOfType.l
+      val List(x) = cpg.typ("long").memberOfType.l
       x.name shouldBe "bar"
     }
 
     "should allow traversing from return params TYPE to return param" in {
-      val List(x) = cpg.typ("java.lang.Integer").methodReturnOfType.l
-      x.typeFullName shouldBe "java.lang.Integer"
+      val List(x) = cpg.typ("int").methodReturnOfType.l
+      x.typeFullName shouldBe "int"
     }
 
     "should allow traversing from params TYPE to param" in {
@@ -62,7 +62,7 @@ class TypeTests extends AnyFreeSpec with Matchers {
     }
 
     "should allow traversing from local's TYPE to local" in {
-      val List(x) = cpg.typ("java.lang.Double").localOfType.l
+      val List(x) = cpg.typ("double").localOfType.l
       x.name shouldBe "l"
     }
   }

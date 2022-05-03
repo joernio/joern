@@ -42,18 +42,18 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
         .name("Foo")
         .method
         .fullName
-        .toSet shouldBe Set("mypkg.Foo.<init>:void()", "mypkg.Foo.add1:java.lang.Integer(java.lang.Integer)")
+        .toSet shouldBe Set("mypkg.Foo.<init>:void()", "mypkg.Foo.add1:int(int)")
     }
 
     "should contain a TYPE_DECL node for `Foo` with a correct member node" in {
       val List(m) = cpg.typeDecl.isExternal(false).name("Foo").member.l
       m.name shouldBe "z"
-      m.typeFullName shouldBe "java.lang.Integer"
+      m.typeFullName shouldBe "int"
     }
 
     "should contain TYPE_DECL node for the external type `Int`" in {
-      val List(x) = cpg.typeDecl.fullNameExact("java.lang.Integer").l
-      x.name shouldBe "Integer"
+      val List(x) = cpg.typeDecl.fullNameExact("int").l
+      x.name shouldBe "int"
       x.isExternal shouldBe true
       x.inheritsFromTypeFullName shouldBe List()
       x.aliasTypeFullName shouldBe None
@@ -128,7 +128,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     "should contain a BINDING node for X with the correct props set" in {
       val List(b) = cpg.all.collect { case b: Binding => b }.l
       b.name shouldBe "add1"
-      b.signature shouldBe "java.lang.Integer(java.lang.Integer)"
+      b.signature shouldBe "int(int)"
     }
   }
 
