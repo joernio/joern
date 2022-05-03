@@ -29,9 +29,10 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain TYPE nodes for `kotlin.Function0` and `kotlin.Function1`" in {
+    "should contain TYPE nodes for `kotlin.Function0`, `kotlin.Function1` and `kotlin.Pair`" in {
       cpg.typ.fullNameExact("kotlin.Function0").size should not be 0
       cpg.typ.fullNameExact("kotlin.Function1").size should not be 0
+      cpg.typ.fullNameExact("kotlin.Pair").size should not be 0
     }
 
     "should contain CLOSURE_BINDING nodes for the lambdas" in {
