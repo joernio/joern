@@ -49,7 +49,7 @@ class QualifiedExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the `.*containsKey.*` QE with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code(".*containsKey.*").methodFullNameNot(Operators.assignment).l
-      c.methodFullName shouldBe "java.util.HashMap.containsKey:java.lang.Boolean(java.lang.Object)"
+      c.methodFullName shouldBe "java.util.HashMap.containsKey:boolean(java.lang.Object)"
     }
 
     "should contain a CALL node for the `.*containsKey.*` QE with the correct arguments set" in {

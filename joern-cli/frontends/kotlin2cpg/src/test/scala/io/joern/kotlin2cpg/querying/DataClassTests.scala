@@ -23,8 +23,8 @@ class DataClassTests extends AnyFreeSpec with Matchers {
       val List(firstMethod, secondMethod) = cpg.typeDecl.nameExact("Result").method.name("component.*").l
 
       firstMethod.name shouldBe "component1"
-      firstMethod.fullName shouldBe "mypkg.Result.component1:java.lang.Integer()"
-      firstMethod.signature shouldBe "java.lang.Integer()"
+      firstMethod.fullName shouldBe "mypkg.Result.component1:int()"
+      firstMethod.signature shouldBe "int()"
       firstMethod.block.size shouldBe 1
 
       secondMethod.name shouldBe "component2"

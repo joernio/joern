@@ -38,7 +38,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLocal) = cpg.local.nameExact("myB").l
       secondDestructLocal.code shouldBe "myB"
-      secondDestructLocal.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLocal.typeFullName shouldBe "int"
       secondDestructLocal.order shouldBe (firstAstConstruct.order + 2)
 
       val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
@@ -72,13 +72,13 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"
-      secondDestructLHSIdentifier.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
       secondDestructRHSCall.code shouldBe "aClass.component2()"
-      secondDestructRHSCall.methodFullName shouldBe "main.AClass.component2:java.lang.Integer()"
-      secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
-      secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
+      secondDestructRHSCall.methodFullName shouldBe "main.AClass.component2:int()"
+      secondDestructRHSCall.signature shouldBe "int()"
+      secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
         secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l
@@ -141,7 +141,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLocal) = cpg.local.nameExact("myB").l
       secondDestructLocal.code shouldBe "myB"
-      secondDestructLocal.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLocal.typeFullName shouldBe "int"
       secondDestructLocal.order shouldBe (firstAstConstruct.order + 2)
 
       val List(tmpLocal) = cpg.local.name("tmp_.*").l
@@ -185,7 +185,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       initCallSecondArg.order shouldBe 2
 
       initCallThirdArg.code shouldBe "41414141"
-      initCallThirdArg.typeFullName shouldBe "java.lang.Integer"
+      initCallThirdArg.typeFullName shouldBe "int"
       initCallThirdArg.argumentIndex shouldBe 2
       initCallThirdArg.order shouldBe 3
 
@@ -220,15 +220,15 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"
-      secondDestructLHSIdentifier.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
       secondDestructRHSCall.name shouldBe "component2"
-      secondDestructRHSCall.methodFullName shouldBe "main.AClass.component2:java.lang.Integer()"
-      secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
-      secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
+      secondDestructRHSCall.methodFullName shouldBe "main.AClass.component2:int()"
+      secondDestructRHSCall.signature shouldBe "int()"
+      secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
         secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l
@@ -297,7 +297,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLocal) = cpg.local.nameExact("myB").l
       secondDestructLocal.code shouldBe "myB"
-      secondDestructLocal.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLocal.typeFullName shouldBe "int"
       secondDestructLocal.order shouldBe (firstAstConstruct.order + 2)
 
       val List(tmpLocal) = cpg.local.name("tmp_.*").where(_.method.fullName(".*main.*")).l
@@ -362,15 +362,15 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"
-      secondDestructLHSIdentifier.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
       secondDestructRHSCall.name shouldBe "component2"
-      secondDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component2:java.lang.Integer()"
-      secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
-      secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
+      secondDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component2:int()"
+      secondDestructRHSCall.signature shouldBe "int()"
+      secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
         secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l
@@ -449,7 +449,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLocal) = cpg.local.nameExact("myB").l
       secondDestructLocal.code shouldBe "myB"
-      secondDestructLocal.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLocal.typeFullName shouldBe "int"
       secondDestructLocal.order shouldBe (firstAstConstruct.order + 2)
 
       val irrelevantLocalCount = 2
@@ -523,15 +523,15 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"
-      secondDestructLHSIdentifier.typeFullName shouldBe "java.lang.Integer"
+      secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
       secondDestructRHSCall.name shouldBe "component2"
-      secondDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component2:java.lang.Integer()"
-      secondDestructRHSCall.signature shouldBe "java.lang.Integer()"
-      secondDestructRHSCall.typeFullName shouldBe "java.lang.Integer"
+      secondDestructRHSCall.methodFullName shouldBe "mypkg.AClass.component2:int()"
+      secondDestructRHSCall.signature shouldBe "int()"
+      secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
         secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l

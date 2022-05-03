@@ -148,7 +148,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
 
     "should contain an IDENTIFIER node for  " in {
       val List(i) = cpg.identifier.nameExact("foo").head.l
-      i.typeFullName shouldBe "java.lang.Integer"
+      i.typeFullName shouldBe "int"
     }
   }
 
@@ -165,7 +165,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
 
     "should contain an IDENTIFIER node for the result of the elvis operator call with the correct TYPE_FULL_NAME set" in {
       val List(i) = cpg.identifier.nameExact("isValid").head.l
-      i.typeFullName shouldBe "java.lang.Boolean"
+      i.typeFullName shouldBe "boolean"
     }
   }
 

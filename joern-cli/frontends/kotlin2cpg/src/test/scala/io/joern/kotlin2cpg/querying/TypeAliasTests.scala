@@ -28,7 +28,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.MyInt"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some("java.lang.Integer")
+      x.aliasTypeFullName shouldBe Some("int")
     }
   }
 
@@ -80,7 +80,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.MyInt"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some("java.lang.Integer")
+      x.aliasTypeFullName shouldBe Some("int")
     }
   }
 
