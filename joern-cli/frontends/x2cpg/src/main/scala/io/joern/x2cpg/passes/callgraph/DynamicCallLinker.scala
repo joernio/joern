@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.callgraph
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
@@ -17,6 +17,9 @@ import scala.jdk.CollectionConverters._
   *
   * This pass intentionally ignores the vtable mechanism based on BINDING nodes but does check for an existing call edge
   * before adding one. It assumes non-circular inheritance, on pain of endless recursion / stack overflow.
+  *
+  * This pass will attempt to use intra-procedural points-to information to refine possible call targets and can
+  * be best described as variable type analysis (VTA).
   *
   * Based on the algorithm by Jang, Dongseok & Tatlock, Zachary & Lerner, Sorin. (2014). SAFEDISPATCH: Securing C++
   * Virtual Calls from Memory Corruption Attacks. 10.14722/ndss.2014.23287.
@@ -118,7 +121,7 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call.callOut.fullName.toSetImmutable
-        tgts.foreach { destMethod =>
+        filterWithVariableTypeInformation(call, tgts).foreach { destMethod =>
           val tgtM = if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
             methodFullNameToNode(destMethod)
           } else {
@@ -131,6 +134,32 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
           }
         }
       case None => fallbackToStaticResolution(call, dstGraph)
+    }
+  }
+
+  /** Attempts to refine possible call targets using points-to information.
+    */
+  private def filterWithVariableTypeInformation(
+    call: Call,
+    tgts: mutable.LinkedHashSet[String]
+  ): mutable.LinkedHashSet[String] = {
+    // We can refine possible calls using the potential allocation site
+    if (call.receiver.nonEmpty) {
+      val allocatedSuperTypes =
+        call.receiver
+          .flatMap(_.pointsToOut)
+          .collect {
+            case x: Call if x.methodFullName == Operators.alloc            => x.typeFullName
+            case x: Call if x.methodFullName == Operators.arrayInitializer => x.typeFullName
+          }
+          .l
+
+      tgts.filter { t =>
+        val typeFullName = t.substring(0, t.lastIndexOf("."))
+        allocatedSuperTypes.contains(typeFullName)
+      }
+    } else {
+      tgts
     }
   }
 
