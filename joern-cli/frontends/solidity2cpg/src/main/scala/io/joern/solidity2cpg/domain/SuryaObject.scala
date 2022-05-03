@@ -224,4 +224,8 @@ case class ReturnStatement(expression: BaseASTNode)
   override def toString: String = scala.runtime.ScalaRunTime._toString(this)
 }
 
+  case class TupleExpression(components: List[BaseASTNode], isArray : Boolean)
+    extends BaseASTNode("TupleExpression") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 }

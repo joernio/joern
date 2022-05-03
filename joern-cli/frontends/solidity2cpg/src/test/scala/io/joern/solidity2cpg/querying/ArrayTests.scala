@@ -37,11 +37,11 @@ class ArrayTests extends SolidityCodeToCpgFixture {
     def m = cpg.method(".*foo.*")
 
     val List(placeholderArg: Identifier, arrayInit: Call) =
-      m.assignment.codeExact("$stack2 = new int[3]").argument.l
+      m.assignment.codeExact("$stack2 = uint8[3]").argument.l
     placeholderArg.code shouldBe "$stack2"
-    placeholderArg.typeFullName shouldBe "int[]"
+    placeholderArg.typeFullName shouldBe "uint8[]"
 
-    arrayInit.code shouldBe "new int[3]"
+    arrayInit.code shouldBe "uint8[3] memory"
     arrayInit.methodFullName shouldBe "<operator>.arrayCreator"
     arrayInit.astChildren.headOption match {
       case Some(alloc) =>

@@ -89,7 +89,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (tmp.contains(".json")) {
       tmp = filename.replace("json", "sol")
     }
-    println("namespaceBlock: "+namespaceBlock + " : "+ tmp+ " : "+ fullName)
+//    println("namespaceBlock: "+namespaceBlock + " : "+ tmp+ " : "+ fullName)
 
     Ast(
       NewNamespaceBlock()
@@ -186,12 +186,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         /**
           * creating ast node "thisNode"
           */
-//        if (x.name != null) {
-//          thisNode = createThisParameterNode(x.name)
-//        } else {
-          thisNode = createThisParameterNode(contractname)
-//        }
 
+          thisNode = createThisParameterNode(contractname)
         /**
           * getting names of types and variable names
           */
@@ -242,8 +238,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .signature(signature)
           .code(code)
           .filename(filename.substring(0,filename.length -4 )+"sol")
-//        println(x)
-//        println(methodNode.name +" : "+methodNode.fullName+" : "+methodNode.signature +" : "+methodNode.code +" : "+methodNode.filename)
 
         Ast(methodNode)
           .withChild(thisNode)
@@ -321,6 +315,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ForStatement => Ast()
       case x: IfStatement => Ast()
       case x: ReturnStatement => astForReturn(x)
+      case x: VariableDeclarationStatement=> astForVarDeclStat(x)
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
@@ -336,6 +331,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: Mapping =>  {
         typefullName = "mapping"
         code = getMappingKeyAndValue(x)}
+      case x : ArrayTypeName => x.baseTypeName match {
+        case x : ElementaryTypeName => typefullName = x.name
+      }
+      case x : UserDefinedTypeName => typefullName = x.namePath
     }
     var visibility = "";
     varDecl.visibility match {
@@ -446,10 +445,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var args = ""
     modifiers.collect{
       case x: ModifierInvocation => {
-        x.arguments.collect {
+        if (x.arguments != null) {
+          x.arguments.collect {
             case x: Identifier => {
               args += x.name + ","
             }
+          }
         }
         if (!args.equals("")) {
           args = args.substring(0, args.length - 1)
@@ -463,6 +464,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     (Ast(modifierNode))
   }
 
+
   private def astForExpression(expr : BaseASTNode): Ast = {
 
     expr match {
@@ -473,6 +475,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: UnaryOperation => astForUnaryOperation(x)
       case x: NumberLiteral => astForNumberLiteral(x)
       case x: BooleanLiteral => astForBooleanLiteral(x)
+      case x: StringLiteral => astForStringLiteral(x)
+      case x: IndexAccess => astForIndexAccess(x)
+      case x: TupleExpression => astForTupleExpression(x)
     }
   }
   private def astForNumberLiteral(numberLiteral: NumberLiteral): Ast ={
@@ -539,6 +544,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForBooleanLiteral(literal: BooleanLiteral): Ast = {
     Ast()
+  }
+
+
+  private def astForStringLiteral(x: StringLiteral): Ast = {
+    Ast()
+  }
+
+  private def astForIndexAccess (x: IndexAccess) : Ast = {
+    Ast()
+  }
+
+  private def astForTupleExpression(expression: TupleExpression) : Ast = {
+    Ast()
+  }
+
+  private def astForVarDeclStat(statement: VariableDeclarationStatement): Ast = {
+    val vars = statement.variables.map(x => astForStatement(x))
+
+
+  Ast().withChildren(vars)
   }
 
 

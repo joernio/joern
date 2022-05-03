@@ -94,6 +94,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           UsingForDeclarationJsonFormat.read(json)
         case "ReturnStatement" =>
           ReturnStatementJsonFormat.read(json)
+        case "TupleExpression" =>
+          TupleExpressionJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
@@ -771,4 +773,19 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
+  implicit object TupleExpressionJsonFormat extends JsonFormat[TupleExpression] with DefaultJsonProtocol {
+
+    def write(c: TupleExpression): JsValue = JsNull
+
+    def read(json: JsValue): TupleExpression = {
+      val fields = json.asJsObject("Unable to decode JSON as ReturnStatement").fields
+      if (fields("type").convertTo[String] != "TupleExpression") {
+        throw new RuntimeException("TupleExpression object expected")
+      } else {
+        TupleExpression(fields("components").convertTo[List[BaseASTNode]], fields("isArray").convertTo[Boolean])
+      }
+    }
+  }
+
 }
