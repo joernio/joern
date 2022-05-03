@@ -2954,9 +2954,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           .getOrElse(Constants.wildcardImportName)
       importedName -> imp
     }.toMap
+
     val methodFqName = {
       if (importedNames.isDefinedAt(referencedName)) {
-        importedNames(referencedName).getImportedName.toString
+        importedNames(referencedName).getImportedFqName.toString
       } else if (nameToClass.contains(expr.getCalleeExpression.getText)) {
         val klass = nameToClass(expr.getCalleeExpression.getText)
         klass.getContainingKtFile.getPackageFqName.toString + "." + referencedName
