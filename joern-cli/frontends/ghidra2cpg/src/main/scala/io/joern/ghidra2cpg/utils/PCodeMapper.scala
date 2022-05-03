@@ -13,6 +13,12 @@ import scala.collection.mutable
 
 /*
   TODO: resolve the unique arguments of the pcodeOps
+
+  steps:
+    1. Forward resolve all pcodes
+    2. replace all uniques with previous calls
+    3. last pcode is the actual instruction => create callnode
+    4. add previous calls to the last callnode
  */
 class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruction, functions: List[Function]) {
   var resolvedPcodeInstructions: mutable.HashMap[String, NewCall] = new mutable.HashMap[String, NewCall]()
@@ -31,60 +37,74 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       true
     )
   )
-  try {
-    pcodeOps.foreach(getCallNode)
-    //if (pcodeOps.lastOption.nonEmpty) {
-    //  getCallNode(pcodeOps.last)
-    //}
-  } catch {
-    case e: Exception => e.printStackTrace()
-  }
-  // needed by ghidra for decompiling reasons
 
   def getInstruction: Instruction = nativeInstruction
 
   def getPcodeOps: Array[PcodeOp] = pcodeOps
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
-
-  def getCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
+  def getCallNode: CfgNodeNew = {
+    pcodeOps.foreach(mapCallNode)
+    createCallNode("TODO","TODO", -1)
+  }
+  private def mapCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
     val callCode = pcodeOp.getOpcode match {
+      case BOOL_AND => "TODO"
+      case BOOL_NEGATE => "TODO"
+      case BOOL_OR => "TODO"
+      case BOOL_XOR => "TODO"
       case BRANCH | BRANCHIND | CBRANCH => "<operator>.goto"
       case CALL | CALLOTHER | CALLIND => codeUnitFormat.getOperandRepresentationString(nativeInstruction, 0).split(">").last.replace("[", "").replace("]", "")
       case CAST => "TODO CAST"
       case COPY => "<operator>.assignment"
+      case CPOOLREF => "TODO"
+      case EXTRACT => "TODO"
+      case FLOAT_ABS => "TODO"
+      case FLOAT_CEIL => "TODO"
+      case FLOAT_EQUAL | INT_EQUAL => "EQUAL TODO"
+      case FLOAT_FLOAT2FLOAT => "TODO"
+      case FLOAT_FLOOR => "TODO"
+      case FLOAT_INT2FLOAT => "TODO"
+      case FLOAT_LESS | INT_SLESS | INT_LESS => "LESS TODO"
+      case FLOAT_LESSEQUAL => "TODO"
+      case FLOAT_NAN => "TODO"
+      case FLOAT_NEG => "TODO"
+      case FLOAT_NOTEQUAL => "TODO"
+      case FLOAT_ROUND => "TODO"
+      case FLOAT_SQRT => "TODO"
+      case FLOAT_TRUNC => "TODO"
+      case INSERT => "TODO"
+      case INT_2COMP => "TODO"
       case INT_ADD | FLOAT_ADD | PTRADD => "<operator>.addition"
       case INT_AND => "<operator>.and"
+      case INT_CARRY => "TODO"
       case INT_DIV | FLOAT_DIV | INT_SDIV => "<operator>.division"
-      case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL => nativeInstruction.toString
+      case INT_EQUAL | INT_NOTEQUAL | INT_SLESSEQUAL | INT_LESSEQUAL => nativeInstruction.toString
+      case INT_LEFT => "TODO"
       case INT_MULT | FLOAT_MULT => "<operator>.multiplication"
+      case INT_NEGATE => "TODO"
       case INT_OR => "<operator>.or"
+      case INT_REM | INT_SREM => "TODO"
+      case INT_RIGHT => "TODO"
+      case INT_SBORROW => "TODO"
+      case INT_SCARRY => "TODO"
+      case INT_SEXT => "TODO"
+      case INT_SLESSEQUAL => "TODO"
+      case INT_SRIGHT => "TODO"
       case INT_SUB | FLOAT_SUB | PTRSUB => "<operator>.subtraction"
       case INT_XOR => "<operator>.xor"
+      case INT_ZEXT => "TODO"
       case LOAD => "<operator>.assignment"
+      case MULTIEQUAL => "TODO"
       case MULTIEQUAL | INDIRECT | PIECE => "NOT HANDLED"
+      case NEW => "TODO"
+      case PCODE_MAX => "TODO"
+      case POPCOUNT => "TODO"
       case RETURN => "RET" // TODO
+      case SEGMENTOP => "TODO"
       case STORE => "<operator>.assignment"
       case SUBPIECE => "<operator>.assignment"
-      case _ => "UNKNOWN"
-      /* TODO:
-          BOOL_AND BOOL_NEGATE BOOL_OR
-          BOOL_XOR CPOOLREF EXTRACT
-          FLOAT_ABS FLOAT_CEIL FLOAT_EQUAL
-          FLOAT_FLOAT2FLOAT FLOAT_FLOOR FLOAT_INT2FLOAT
-          FLOAT_LESS FLOAT_LESSEQUAL
-          FLOAT_MULT FLOAT_NAN FLOAT_NEG
-          FLOAT_NOTEQUAL FLOAT_ROUND
-          FLOAT_SQRT FLOAT_TRUNC INSERT
-          INT_2COMP INT_CARRY INT_EQUAL
-          INT_LEFT INT_LESS INT_LESSEQUAL
-          INT_MULT INT_NEGATE INT_NOTEQUAL
-          INT_REM INT_RIGHT INT_SBORROW
-          INT_SCARRY INT_SEXT INT_SLESS
-          INT_SLESSEQUAL INT_SREM INT_SRIGHT
-          INT_ZEXT MULTIEQUAL NEW PCODE_MAX
-          POPCOUNT SEGMENTOP UNIMPLEMENTED
-       */
+      case UNIMPLEMENTED => "UNIMPLEMENTED"
     }
     val callNode = createCallNode(
       nativeInstruction.toString,
@@ -92,10 +112,10 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
     )
     if(pcodeOp.getOutput != null)
-      resolvedPcodeInstructions += (pcodeOp.getOutput.toString -> callNode)
+      resolvedPcodeInstructions += (pcodeOp.getOutput.getWordOffset.toString -> callNode)
     //resolveArgument(pcodeOps.lastOption.get.getIn orNull)
     pcodeOp.getInputs.zipWithIndex.foreach { case (param, index) =>
-      println("PARAM " + param)
+      //println("PARAM " + param)
       resolveArguments(diffGraphBuilder, param, callNode, index)
     }
     callNode
@@ -113,7 +133,7 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       )
       connectCallToArgument(diffGraphBuilder, callNode, n)
     } else if (input.isUnique) {
-      val n = resolvedPcodeInstructions(input.toString)
+      val n = resolvedPcodeInstructions(input.getWordOffset.toString)
       connectCallToArgument(diffGraphBuilder, callNode, n)
       //getCallNode(input.getDef)
       //pcodeOps.filter(x=> x.getOutput == input && !x.getInputs.contains(input)).foreach{x=>
