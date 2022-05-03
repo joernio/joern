@@ -47,12 +47,48 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
     pcodeOps.foreach(mapCallNode)
     createCallNode("TODO","TODO", -1)
   }
+  def createCall(name: String): CfgNodeNew = {
+    createCallNode(nativeInstruction.toString, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+  }
+  def handleTwoArguments(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    //operand: String,
+    name: String
+  ): Unit = {
+    val firstOp  = resolveVarNode(diffGraphBuilder, pcodeOp.getInput(0), callNode, 1)
+    val secondOp = resolveVarNode(diffGraphBuilder, pcodeOp.getInput(1), callNode, 2)
+    //val code     = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode   = createCallNode(nativeInstruction.toString, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+
+    connectCallToArgument(diffGraphBuilder, opNode, firstOp)
+    connectCallToArgument(diffGraphBuilder, opNode, secondOp)
+    connectCallToArgument(diffGraphBuilder, callNode, opNode)
+  }
+  def handleSingleAssignment(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    varNode: Varnode,
+    index: Int
+  ): Unit = {
+    val arg = resolveVarNode(diffGraphBuilder, varNode,callNode, index)
+    connectCallToArgument(diffGraphBuilder, callNode, arg)
+  }
+
   private def mapCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
+    var callNode:CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
     val callCode = pcodeOp.getOpcode match {
       case BOOL_AND => "TODO"
       case BOOL_NEGATE => "TODO"
-      case BOOL_OR => "TODO"
-      case BOOL_XOR => "TODO"
+      case BOOL_OR =>
+        callNode = createCall("<operator>.or")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "||")
+      case BOOL_XOR => 
+        callNode = createCall("<operator>.xor")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "^^")
       case BRANCH | BRANCHIND | CBRANCH => "<operator>.goto"
       case CALL | CALLOTHER | CALLIND => codeUnitFormat.getOperandRepresentationString(nativeInstruction, 0).split(">").last.replace("[", "").replace("]", "")
       case CAST => "TODO CAST"
@@ -75,15 +111,27 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       case FLOAT_TRUNC => "TODO"
       case INSERT => "TODO"
       case INT_2COMP => "TODO"
-      case INT_ADD | FLOAT_ADD | PTRADD => "<operator>.addition"
-      case INT_AND => "<operator>.and"
+      case INT_ADD | FLOAT_ADD | PTRADD => 
+        callNode = createCall("<operator>.addition")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "+")
+      case INT_AND => 
+        callNode = createCall("<operator>.and")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "/")
       case INT_CARRY => "TODO"
-      case INT_DIV | FLOAT_DIV | INT_SDIV => "<operator>.division"
+      case INT_DIV | FLOAT_DIV | INT_SDIV =>
+        callNode = createCall("<operator>.division")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "/")
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESSEQUAL | INT_LESSEQUAL => nativeInstruction.toString
-      case INT_LEFT => "TODO"
+      case INT_LEFT => 
+        callNode = createCall("<operator>.shiftleft")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "<<")
       case INT_MULT | FLOAT_MULT => "<operator>.multiplication"
+        callNode = createCall("<operator>.multiplication")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "*")
       case INT_NEGATE => "TODO"
-      case INT_OR => "<operator>.or"
+      case INT_OR => 
+        callNode = createCall("<operator>.or")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "*")
       case INT_REM | INT_SREM => "TODO"
       case INT_RIGHT => "TODO"
       case INT_SBORROW => "TODO"
@@ -106,21 +154,40 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
       case SUBPIECE => "<operator>.assignment"
       case UNIMPLEMENTED => "UNIMPLEMENTED"
     }
-    val callNode = createCallNode(
-      nativeInstruction.toString,
-      callCode,
-      nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
-    )
-    if(pcodeOp.getOutput != null)
-      resolvedPcodeInstructions += (pcodeOp.getOutput.getWordOffset.toString -> callNode)
-    //resolveArgument(pcodeOps.lastOption.get.getIn orNull)
-    pcodeOp.getInputs.zipWithIndex.foreach { case (param, index) =>
-      //println("PARAM " + param)
-      resolveArguments(diffGraphBuilder, param, callNode, index)
-    }
+    //val callNode = createCallNode(
+    //  nativeInstruction.toString,
+    //  callCode,
+    //  nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
+    //)
+    //if(pcodeOp.getOutput != null)
+    //  resolvedPcodeInstructions += (pcodeOp.getOutput.getWordOffset.toString -> callNode)
+    ////resolveArgument(pcodeOps.lastOption.get.getIn orNull)
+    //pcodeOp.getInputs.zipWithIndex.foreach { case (param, index) =>
+    //  //println("PARAM " + param)
+    //  resolveArguments(diffGraphBuilder, param, callNode, index)
+    //}
     callNode
   }
 
+  def resolveVarNode(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew, index: Int): CfgNodeNew = {
+    if (input.isRegister) {
+      // we only care about the name
+      createIdentifier(
+        nativeInstruction.getProgram.getRegister(input).getName,
+        nativeInstruction.getProgram.getRegister(input).getName,
+        index + 1,
+        Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
+        input.getAddress.getOffsetAsBigInteger.intValue
+      )
+      //connectCallToArgument(diffGraphBuilder, callNode, n)
+    } else if (input.isConstant || input.isAddress || input.isUnique) {
+      createLiteral("0x" + input.getWordOffset.toHexString, index + 1, index + 1, Types.registerType(input.getWordOffset.toHexString), -1)
+      //connectCallToArgument(diffGraphBuilder, callNode, n)
+    } else {
+      createLiteral("0x" + input.getWordOffset.toHexString, index + 1, index + 1, Types.registerType(input.getWordOffset.toHexString), -1)
+      //connectCallToArgument(diffGraphBuilder, callNode, n)
+    }
+  }
   private def resolveArguments(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew, index: Int): Unit = {
     if (input.isRegister) {
       // we only care about the name
