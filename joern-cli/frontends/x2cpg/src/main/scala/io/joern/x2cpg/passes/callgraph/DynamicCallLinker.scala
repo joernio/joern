@@ -123,7 +123,7 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call.callOut.fullName.toSetImmutable
-        filterWithVariableTypeInformation(call, tgts).foreach { destMethod =>
+        filterWithVariableTypeInformation(call, tgts.toSet).foreach { destMethod =>
           val tgtM = if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
             methodFullNameToNode(destMethod)
           } else {
@@ -141,13 +141,10 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   /** Attempts to refine possible call targets using points-to information.
     */
-  private def filterWithVariableTypeInformation(
-    call: Call,
-    tgts: mutable.LinkedHashSet[String]
-  ): mutable.LinkedHashSet[String] = {
+  private def filterWithVariableTypeInformation(call: Call, tgts: Set[String]): Set[String] = {
     // We can refine possible calls using the potential allocation site
     val receivers      = call.receiver.l
-    val isThisReceiver = receivers.flatMap(x => Option(x.code)).exists(x => x.contains("this"))
+    val isThisReceiver = receivers.code(".*this.*").nonEmpty
     if (call.receiver.isEmpty) {
       // Unable to use receiver/points-to information, resort to CHA
       tgts
@@ -157,23 +154,22 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       filterTargets(tgts, thisType)
     } else {
       // Receiver is an object that may have points-to information, attempt to use it
+      println(s"Receivers ${receivers.flatMap(_.pointsToOut)}")
       val allocatedSuperTypes =
         receivers
           .flatMap(_.pointsToOut)
           .collect {
-            case x: Call if x.methodFullName == Operators.alloc || x.methodFullName == Operators.arrayInitializer => 
+            case x: Call if x.methodFullName == Operators.alloc || x.methodFullName == Operators.arrayInitializer =>
               x.typeFullName
           }
           .toSet
+      println(s"$tgts => $allocatedSuperTypes")
       filterTargets(tgts, allocatedSuperTypes)
     }
   }
 
   @inline
-  private def filterTargets(
-    tgts: mutable.LinkedHashSet[String],
-    allowedSet: Set[String]
-  ): mutable.LinkedHashSet[String] = {
+  private def filterTargets(tgts: Set[String], allowedSet: Set[String]): Set[String] = {
     if (allowedSet.isEmpty)
       tgts // if allowed set is empty then we likely failed to receive points-to information
     else
