@@ -161,8 +161,8 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
         receivers
           .flatMap(_.pointsToOut)
           .collect {
-            case x: Call if x.methodFullName == Operators.alloc            => x.typeFullName
-            case x: Call if x.methodFullName == Operators.arrayInitializer => x.typeFullName
+            case x: Call if x.methodFullName == Operators.alloc || x.methodFullName == Operators.arrayInitializer => 
+              x.typeFullName
           }
           .toSet
       filterTargets(tgts, allocatedSuperTypes)
