@@ -18,8 +18,8 @@ import scala.jdk.CollectionConverters._
   * This pass intentionally ignores the vtable mechanism based on BINDING nodes but does check for an existing call edge
   * before adding one. It assumes non-circular inheritance, on pain of endless recursion / stack overflow.
   *
-  * This pass will attempt to use intra-procedural points-to information to refine possible call targets and can
-  * be best described as variable type analysis (VTA).
+  * This pass will attempt to use intra-procedural points-to information to refine possible call targets and can be best
+  * described as variable type analysis (VTA).
   *
   * Based on the algorithm by Jang, Dongseok & Tatlock, Zachary & Lerner, Sorin. (2014). SAFEDISPATCH: Securing C++
   * Virtual Calls from Memory Corruption Attacks. 10.14722/ndss.2014.23287.
