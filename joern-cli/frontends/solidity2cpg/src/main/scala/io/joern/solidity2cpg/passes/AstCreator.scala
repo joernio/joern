@@ -76,20 +76,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(typeDecls)
 
   }
-
+//TODO: Fix
   private def astForPackageDeclaration(): Ast = {
     val fullName = filename.replace(java.io.File.separator, ".")
+    var tmp = filename
     val namespaceBlock = fullName
       .split("\\.")
       .lastOption
       .getOrElse("")
       .replace("\\.*.sol", "") // removes the .SolidityFile.sol at the end of the filename
 
+    if (tmp.contains(".json")) {
+      tmp = filename.replace("json", "sol")
+    }
+    println("namespaceBlock: "+namespaceBlock + " : "+ tmp+ " : "+ fullName)
+
     Ast(
       NewNamespaceBlock()
         .name(namespaceBlock)
         .fullName(fullName)
-        .filename(filename)
+        .filename(tmp)
     )
   }
 
@@ -119,8 +125,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         case x: StateVariableDeclaration => x
       }
       .map(astForField)
-//    println ("shorName: "+shortName+ " FullName: "+fullName )
-//    println(contractDef)
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
@@ -311,7 +315,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForStatement(statement: BaseASTNode): Ast = {
     // TODO : Finish all of these statements
     statement match {
-      case x: ExpressionStatement => Ast()
+      case x: ExpressionStatement => astForExpression(x.expression)
       case x: VariableDeclaration => astForVarDecl(x)
       case x: EmitStatement => Ast()
       case x: ForStatement => Ast()
@@ -344,6 +348,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .typeFullName(typefullName)
           .order(1)
 
+
       Ast(newMember)
 
     // TODO: VarDecls should be Local nodes in their block and NOT be duplicated
@@ -359,11 +364,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def getMappingKeyAndValue (mapping: Mapping) : String = {
-    var key = mapping.keyType match {
+    val key = mapping.keyType match {
       case x: ElementaryTypeName => x.name
       case x: Mapping => (getMappingKeyAndValue(x))
     }
-    var value = mapping.valueType match {
+    val value = mapping.valueType match {
       case x: ElementaryTypeName => x.name
       case x: Mapping => (getMappingKeyAndValue(x))
     }
@@ -426,6 +431,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForReturn(returnStatement: ReturnStatement): Ast = {
+
     val exprAst = astForExpression(returnStatement.expression)
     val returnNode = NewReturn()
       .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
@@ -440,7 +446,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var args = ""
     modifiers.collect{
       case x: ModifierInvocation => {
-//        println("modifierInvocation: "+x)
         x.arguments.collect {
             case x: Identifier => {
               args += x.name + ","
@@ -467,6 +472,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: BinaryOperation => astForBinaryOperation(x)
       case x: UnaryOperation => astForUnaryOperation(x)
       case x: NumberLiteral => astForNumberLiteral(x)
+      case x: BooleanLiteral => astForBooleanLiteral(x)
     }
   }
   private def astForNumberLiteral(numberLiteral: NumberLiteral): Ast ={
@@ -494,17 +500,48 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForFunctionCall(call: FunctionCall): Ast = {
-    //TODO : finx all cases with "Ast()"
-    Ast()
+    var name = ""
+    var code = ""
+    var args = ""
+    var methodFullNameText = ""
+    var sig = ""
+    val expr = astForExpression(call.expression)
+    val arguments = call.arguments.map(astForExpression)
+    name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
+    args = arguments.flatMap(_.root).map(_.properties(PropertyNames.NAME)).mkString(", ")
+
+//    methodFullNameText = expr.root.map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString("")
+//    sig = expr.root.map(_.properties(PropertyNames.SIGNATURE)).mkString("")
+    code = name + "(" + args + ")"
+    val func = NewCall()
+      .name(name)
+      .code(name)
+//      .methodFullName(methodFullNameText)
+//      .signature()
+
+//      .code()
+    Ast(func)
+      .withChild(expr)
+      .withChildren(arguments)
   }
 
   private def astForIdentifier(identifier: Identifier): Ast = {
-    Ast()
+    Ast(NewIdentifier()
+      .name(identifier.name)
+      .code(identifier.name)
+      .typeFullName(identifier.name)
+    )
   }
 
   private def astForMemberAccess(memberAccess: MemberAccess): Ast = {
     Ast()
   }
+
+  private def astForBooleanLiteral(literal: BooleanLiteral): Ast = {
+    Ast()
+  }
+
+
 
   private def getEvaluationStrategy(typ: String): String =
     typ match {

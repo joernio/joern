@@ -62,15 +62,11 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
     x.filename.endsWith(".sol") shouldBe true
   }
 
-  "should contain type decl for external type `int`" in {
-    val List(x) = cpg.typeDecl("uint").l
-    x.name shouldBe "uint"
-    x.fullName shouldBe "uint"
-    x.isExternal shouldBe true
-    x.inheritsFromTypeFullName shouldBe List()
-    x.aliasTypeFullName shouldBe None
-//    x.order shouldBe -1
-    x.filename shouldBe FileTraversal.UNKNOWN
+  "should contain type decl for external type `uint`" in {
+    val List(x) = cpg.member("sum").l
+    x.name shouldBe "sum"
+    x.typeFullName shouldBe "uint"
+    x.code shouldBe "uint internal sum"
   }
 
 }

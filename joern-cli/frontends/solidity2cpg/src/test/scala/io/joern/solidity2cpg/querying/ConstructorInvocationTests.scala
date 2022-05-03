@@ -78,7 +78,6 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
         cons1.modifier.size shouldBe 1
         cons1.modifier.modifierType.next() shouldBe "Foo"
         cons1.modifier.code.next() shouldBe "Foo (_x)"
-
       case res =>
         fail(s"Expected 2 Bar constructors, but got $res")
     }

@@ -18,6 +18,7 @@ class NamespaceBlockTests extends SolidityCodeToCpgFixture {
   }
 
   "should contain correct namespace block for known file" in {
+    println(cpg.namespaceBlock.fullName.l)
     val List(x) = cpg.namespaceBlock.filename(".*.sol").l
     x.name shouldBe "A"
     x.filename should not be ""

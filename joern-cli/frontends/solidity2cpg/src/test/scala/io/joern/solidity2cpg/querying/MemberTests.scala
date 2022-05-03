@@ -44,7 +44,7 @@ class MemberTests extends SolidityCodeToCpgFixture {
     z.code shouldBe "uint private storedData"
     z.typeFullName shouldBe "uint"
 //    z.order shouldBe 3
-    hasMod(y, ModifierTypes.PRIVATE)
+    hasMod(z, ModifierTypes.PRIVATE)
   }
 
   "should allow traversing from MEMBER to TYPE_DECL" in {
