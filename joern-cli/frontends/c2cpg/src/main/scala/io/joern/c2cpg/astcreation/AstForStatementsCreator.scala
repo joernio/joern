@@ -45,7 +45,7 @@ trait AstForStatementsCreator {
         Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
-          simplDecl.getDeclarators.toList.map { d => astForDeclarator(simplDecl, d) }
+          simplDecl.getDeclarators.zipWithIndex.toList.map { case (d,i) => astForDeclarator(simplDecl, d,i) }
         val calls =
           simplDecl.getDeclarators.filter(_.getInitializer != null).toList.map { d =>
             astForInitializer(d, d.getInitializer)
