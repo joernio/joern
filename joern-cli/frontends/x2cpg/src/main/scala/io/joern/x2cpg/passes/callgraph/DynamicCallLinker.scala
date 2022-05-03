@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -117,6 +117,8 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
+  /** Attempts to link a dynamic call to potential runtime callees. Does not consider inherited methods if not present.
+    */
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
@@ -144,23 +146,38 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     tgts: mutable.LinkedHashSet[String]
   ): mutable.LinkedHashSet[String] = {
     // We can refine possible calls using the potential allocation site
-    if (call.receiver.nonEmpty) {
+    val receivers      = call.receiver.l
+    val isThisReceiver = receivers.flatMap(x => Option(x.code)).exists(x => x.contains("this"))
+    if (call.receiver.isEmpty) {
+      // Unable to use receiver/points-to information, resort to CHA
+      tgts
+    } else if (isThisReceiver) {
+      // Receiver is the object itself, simply check object type
+      val thisType = receivers.collect { case x: Identifier => Option(x.typeFullName) }.flatten.toSet
+      filterTargets(tgts, thisType)
+    } else {
+      // Receiver is an object that may have points-to information, attempt to use it
       val allocatedSuperTypes =
-        call.receiver
+        receivers
           .flatMap(_.pointsToOut)
           .collect {
             case x: Call if x.methodFullName == Operators.alloc            => x.typeFullName
             case x: Call if x.methodFullName == Operators.arrayInitializer => x.typeFullName
           }
-          .l
-
-      tgts.filter { t =>
-        val typeFullName = t.substring(0, t.lastIndexOf("."))
-        allocatedSuperTypes.contains(typeFullName)
-      }
-    } else {
-      tgts
+          .toSet
+      filterTargets(tgts, allocatedSuperTypes)
     }
+  }
+
+  @inline
+  private def filterTargets(
+    tgts: mutable.LinkedHashSet[String],
+    allowedSet: Set[String]
+  ): mutable.LinkedHashSet[String] = {
+    if (allowedSet.isEmpty)
+      tgts // if allowed set is empty then we likely failed to receive points-to information
+    else
+      tgts.filter { t => allowedSet.contains(t.substring(0, t.lastIndexOf("."))) }
   }
 
   /** In the case where the method isn't an internal method and cannot be resolved by crawling TYPE_DECL nodes it can be
