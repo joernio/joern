@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -52,13 +51,19 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
       // Extract LHS and RHS of each expression
       val allocLhs: Set[VarInCtx] = assignment.astChildren
         .orderLte(1)
-        .collect { case x: Identifier => VarInCtx(x) }
+        .collect {
+          case x: Identifier => VarInCtx(x)
+          case x: Call if x.methodFullName == Operators.fieldAccess =>
+            x.astChildren.collect { case x: FieldIdentifier => VarInCtx(x) }.head
+        }
         .toSet
       val allocRhs: Set[VarInCtx] = assignment.astChildren
         .orderGt(1)
         .collect {
           case y: Call if y.methodFullName == Operators.alloc || y.methodFullName == Operators.arrayInitializer =>
             VarInCtx(y, isAllocNode = true)
+          case x: Call if x.methodFullName == Operators.fieldAccess =>
+            x.astChildren.collect { case x: FieldIdentifier => VarInCtx(x) }.head
           case y: Call                                          => VarInCtx(y)
           case y: Identifier if !allocLhs.contains(VarInCtx(y)) => VarInCtx(y)
         }
@@ -67,23 +72,6 @@ class PointerAssignmentPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
       allocLhs.foreach { idAtAlloc =>
         assignmentGraph.put(idAtAlloc, assignmentGraph.getOrElse(idAtAlloc, Set()) ++ allocRhs)
       }
-      // Point all instances of identifiers to where they may have been assigned/defined
-      Traversal(assignment).method.ast
-        .collect {
-          case x: Identifier      => x
-          case x: FieldIdentifier => x
-        }
-        .foreach { identifier =>
-          val varDecl                 = VarInCtx(identifier)
-          val siblings: List[CfgNode] = identifier.astParent.astChildren.isCfgNode.l
-          if (siblings.indexOf(identifier) >= 0 && allocLhs.contains(varDecl)) {
-            val assignee = VarInCtx(siblings.head)
-            if (!assignmentGraph.contains(assignee)) {
-              assignmentGraph.put(assignee, assignmentGraph.getOrElse(assignee, Set()) ++ Set(varDecl))
-              worklist += assignee.node
-            }
-          }
-        }
     }
 
     assignmentGraph.toMap
