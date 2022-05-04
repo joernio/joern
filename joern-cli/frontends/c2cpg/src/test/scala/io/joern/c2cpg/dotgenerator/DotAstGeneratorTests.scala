@@ -33,7 +33,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.name("my_func").dotAst.l) { case List(x) =>
         x should (
           startWith("digraph \"my_func\"") and
-            include("""[label = "(CONTROL_STRUCTURE,if (y > 42),if (y > 42))" ]""") and
+            include("""[label = <(CONTROL_STRUCTURE,if (y &gt; 42),if (y &gt; 42))<SUB>5</SUB>> ]""") and
             endWith("}\n")
         )
       }
@@ -53,7 +53,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
 
     "allow plotting sub trees of methods" in {
       inside(cpg.method.ast.isControlStructure.code(".*y > 42.*").dotAst.l) { case List(x, _) =>
-        x should (include("y > 42") and include("IDENTIFIER,y") and not include "x * 2")
+        x should (include("y &gt; 42") and include("IDENTIFIER,y") and not include "x * 2")
       }
     }
 
@@ -61,8 +61,8 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.name("lemon").dotAst.l) { case List(x) =>
         x should (
           startWith("digraph \"lemon\"") and
-            include("""[label = "(goog,goog(\"\\\"yes\\\"\"))" ]""") and
-            include("""[label = "(LITERAL,\"\\\"yes\\\"\",goog(\"\\\"yes\\\"\"))" ]""") and
+            include("""[label = <(goog,goog(&quot;\&quot;yes\&quot;&quot;))<SUB>18</SUB>> ]""") and
+            include("""[label = <(LITERAL,&quot;\&quot;yes\&quot;&quot;,goog(&quot;\&quot;yes\&quot;&quot;))<SUB>18</SUB>> ]""") and
             endWith("}\n")
         )
       }
