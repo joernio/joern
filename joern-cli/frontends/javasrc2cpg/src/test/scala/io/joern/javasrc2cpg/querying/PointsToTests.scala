@@ -83,7 +83,7 @@ class PointsToTests extends JavaSrcCodeToCpgFixture {
 
   "should display all possible allocations of an identifier" in {
     val List(q) = cpg.method("faz").call.codeExact("q.m()").receiver.l
-    q.pointsToOut.collect { case c: Call => c.code}.l shouldBe List("new A()", "new B()")
+    q.pointsToOut.collect { case c: Call => c.code }.l shouldBe List("new A()", "new B()")
   }
 
 }
