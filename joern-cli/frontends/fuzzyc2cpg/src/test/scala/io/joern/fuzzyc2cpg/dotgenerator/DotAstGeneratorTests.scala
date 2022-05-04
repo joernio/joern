@@ -33,7 +33,7 @@ class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
       cpg.method.name("my_func").dotAst.l match {
         case x :: _ =>
           x.startsWith("digraph \"my_func\"") shouldBe true
-          x.contains("""[label = "(CONTROL_STRUCTURE,if (y > 42),if (y > 42))" ]""") shouldBe true
+          x.contains("""[label = <(CONTROL_STRUCTURE,if (y &gt; 42),if (y &gt; 42))<SUB>5</SUB>> ]""") shouldBe true
           x.endsWith("}\n") shouldBe true
         case _ => fail()
       }
@@ -56,7 +56,7 @@ class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
     "allow plotting sub trees of methods" in {
       cpg.method.ast.isControlStructure.code(".*y > 42.*").dotAst.l match {
         case x :: _ =>
-          x.contains("y > 42") shouldBe true
+          x.contains("y &gt; 42") shouldBe true
           x.contains("IDENTIFIER,y") shouldBe true
           x.contains("x * 2") shouldBe false
         case _ => fail()
@@ -68,8 +68,10 @@ class DotAstGeneratorTests extends FuzzyCCodeToCpgSuite {
         case x :: _ =>
           x should (
             startWith("digraph \"lemon\"") and
-              include("""[label = "(goog,goog(\"\\\"yes\\\"\"))" ]""") and
-              include("""[label = "(LITERAL,\"\\\"yes\\\"\",goog(\"\\\"yes\\\"\"))" ]""") and
+              include("""[label = <(goog,goog(&quot;\&quot;yes\&quot;&quot;))<SUB>18</SUB>>""") and
+              include(
+                """[label = <(LITERAL,&quot;\&quot;yes\&quot;&quot;,goog(&quot;\&quot;yes\&quot;&quot;))<SUB>18</SUB>> ]"""
+              ) and
               endWith("}\n")
           )
         case _ => fail()

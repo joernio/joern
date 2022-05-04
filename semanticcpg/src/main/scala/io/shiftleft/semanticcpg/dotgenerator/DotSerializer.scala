@@ -1,10 +1,13 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.utils.MemberAccess
 
+import java.util.Optional
 import scala.collection.immutable.HashMap
+import scala.language.postfixOps
 
 object DotSerializer {
 
@@ -57,6 +60,7 @@ object DotSerializer {
   }
 
   private def stringRepr(vertex: StoredNode): String = {
+    val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
     escape(vertex match {
       case call: Call                            => (call.name, call.code).toString
       case expr: Expression                      => (expr.label, expr.code, toCfgNode(expr).code).toString
@@ -70,7 +74,7 @@ object DotSerializer {
       case annoParam: AnnotationParameter        => (annoParam.label, annoParam.code).toString()
       case typ: Type                             => (typ.label, typ.name).toString()
       case _                                     => ""
-    })
+    }) + (if (maybeLineNo.isPresent) s"<SUB>${maybeLineNo.get()}</SUB>" else "")
   }
 
   private def toCfgNode(node: StoredNode): CfgNode = {
@@ -89,7 +93,7 @@ object DotSerializer {
   }
 
   private def nodeToDot(node: StoredNode): String = {
-    s""""${node.id}" [label = "${stringRepr(node)}" ]""".stripMargin
+    s""""${node.id}" [label = <${stringRepr(node)}> ]""".stripMargin
   }
 
   private def edgeToDot(edge: Edge, withEdgeTypes: Boolean): String = {
@@ -112,15 +116,15 @@ object DotSerializer {
        |""".stripMargin
   }
 
+  /** Escapes common characters that do not conform to HTML character sets.
+    * @see
+    *   https://www.w3.org/TR/html4/sgml/entities.html
+    */
   private def escapedChar(ch: Char): String = ch match {
-    case '\b' => "\\b"
-    case '\t' => "\\t"
-    case '\n' => "\\n"
-    case '\f' => "\\f"
-    case '\r' => "\\r"
-    case '"'  => "\\\""
-    case '\'' => "\\\'"
-    case '\\' => "\\\\"
+    case '"' => "&quot;"
+    case '<' => "&lt;"
+    case '>' => "&gt;"
+    case '&' => "&amp;"
     case _ =>
       if (ch.isControl) "\\0" + Integer.toOctalString(ch.toInt)
       else String.valueOf(ch)
