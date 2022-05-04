@@ -154,7 +154,6 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       filterTargets(tgts, thisType)
     } else {
       // Receiver is an object that may have points-to information, attempt to use it
-      println(s"Receivers ${receivers.flatMap(_.pointsToOut)}")
       val allocatedSuperTypes =
         receivers
           .flatMap(_.pointsToOut)
@@ -163,7 +162,6 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
               x.typeFullName
           }
           .toSet
-      println(s"$tgts => $allocatedSuperTypes")
       filterTargets(tgts, allocatedSuperTypes)
     }
   }
