@@ -159,7 +159,7 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
           .flatMap(_.pointsToOut)
           .collect {
             case x: Call if x.methodFullName == Operators.alloc || x.methodFullName == Operators.arrayInitializer =>
-              Option(x.typeFullName)
+              x.evalType.toSeq
           }
           .flatten
           .toSet
