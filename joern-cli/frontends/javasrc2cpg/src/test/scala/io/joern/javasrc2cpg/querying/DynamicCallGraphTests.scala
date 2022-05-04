@@ -12,11 +12,11 @@ class DynamicCallGraphTests extends JavaSrcCodeToCpgFixture {
       |class Foo {
       |
       |	public static void main(String[] args){
-      |		A b1 = new B();
-      |		A c1 = new C();
+      |     A b1 = new B();
+      |     A c1 = new C();
       |
-      |		A b2 = b1;
-      |		A c2 = c1;
+      |     A b2 = b1;
+      |     A c2 = c1;
       |     A cOrD;
       |
       |     if (System.currentTimeMillis() > 100) {
@@ -25,8 +25,8 @@ class DynamicCallGraphTests extends JavaSrcCodeToCpgFixture {
       |       cOrD = new D();
       |     }
       |
-      |		// what will get printed?
-      |		b2.print(c2);
+      |     // what will get printed?
+      |     b2.print(c2);
       |     c2.print(b2);
       |     cOrD.print(b1);
       |	}
