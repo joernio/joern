@@ -139,12 +139,12 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-  /** Attempts to refine possible call targets using points-to information.
+  /** Attempts to refine possible call targets using points-to information. Treats properties as nullable to avoid NPE.
     */
   private def filterWithVariableTypeInformation(call: Call, tgts: Set[String]): Set[String] = {
     // We can refine possible calls using the potential allocation site
     val receivers      = call.receiver.l
-    val isThisReceiver = receivers.code(".*this.*").nonEmpty
+    val isThisReceiver = receivers.filter(_.code != null).code(".*this.*").nonEmpty
     if (call.receiver.isEmpty) {
       // Unable to use receiver/points-to information, resort to CHA
       tgts
@@ -159,8 +159,9 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
           .flatMap(_.pointsToOut)
           .collect {
             case x: Call if x.methodFullName == Operators.alloc || x.methodFullName == Operators.arrayInitializer =>
-              x.typeFullName
+              Option(x.typeFullName)
           }
+          .flatten
           .toSet
       filterTargets(tgts, allocatedSuperTypes)
     }
