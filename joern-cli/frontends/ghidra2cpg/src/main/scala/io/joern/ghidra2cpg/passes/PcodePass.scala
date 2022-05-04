@@ -230,7 +230,7 @@ class PcodePass(
   }
 
   def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
-    new PCodeMapper(diffGraphBuilder, instruction, functions).getCallNode
+    new PCodeMapper(diffGraphBuilder, instruction, functions, decompiler).getCallNode
   }
 
   def handleBody(

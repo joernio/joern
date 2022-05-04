@@ -11,6 +11,8 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
+import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 /*
   TODO: resolve the unique arguments of the pcodeOps
 
@@ -20,7 +22,7 @@ import scala.collection.mutable
     3. last pcode is the actual instruction => create callnode
     4. add previous calls to the last callnode
  */
-class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruction, functions: List[Function]) {
+class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruction, functions: List[Function], decompiler:Decompiler) {
   var resolvedPcodeInstructions: mutable.HashMap[String, NewCall] = new mutable.HashMap[String, NewCall]()
   private val pcodeOps: Array[PcodeOp] = nativeInstruction.getPcode()
   val codeUnitFormat = new CodeUnitFormat(
@@ -50,65 +52,157 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
   def createCall(name: String): CfgNodeNew = {
     createCallNode(nativeInstruction.toString, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
   }
+  def handleSingleArgument(
+                            diffGraphBuilder: DiffGraphBuilder,
+                            callNode: CfgNodeNew,
+                            pcodeOp: PcodeOp,
+                          ): Unit = {
+
+    val firstOp  = resolveVarNode(pcodeOp.getInput(0),  1)
+    connectCallToArgument(diffGraphBuilder, callNode, firstOp)
+  }
   def handleTwoArguments(
     diffGraphBuilder: DiffGraphBuilder,
     instruction: Instruction,
     callNode: CfgNodeNew,
     pcodeOp: PcodeOp,
-    //operand: String,
     name: String
   ): Unit = {
-    val firstOp  = resolveVarNode(diffGraphBuilder, pcodeOp.getInput(0), callNode, 1)
-    val secondOp = resolveVarNode(diffGraphBuilder, pcodeOp.getInput(1), callNode, 2)
-    //val code     = s"${firstOp.code} $operand ${secondOp.code}"
+    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+    val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
     val opNode   = createCallNode(nativeInstruction.toString, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     connectCallToArgument(diffGraphBuilder, opNode, firstOp)
     connectCallToArgument(diffGraphBuilder, opNode, secondOp)
     connectCallToArgument(diffGraphBuilder, callNode, opNode)
   }
-  def handleSingleAssignment(
+  def handleAssignment(
     diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
     callNode: CfgNodeNew,
     varNode: Varnode,
     index: Int
   ): Unit = {
-    val arg = resolveVarNode(diffGraphBuilder, varNode,callNode, index)
+    val arg = resolveVarNode(varNode, index)
     connectCallToArgument(diffGraphBuilder, callNode, arg)
   }
 
   private def mapCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
     var callNode:CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
-    val callCode = pcodeOp.getOpcode match {
-      case BOOL_AND => "TODO"
-      case BOOL_NEGATE => "TODO"
+    pcodeOp.getOpcode match {
+      case BOOL_AND =>
+        callNode = createCall("<operator>.and")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "&&")
+      case BOOL_NEGATE =>
+        callNode = createCall("<operator>.negate")
+        handleAssignment(diffGraphBuilder,  callNode, pcodeOp.getOutput, 0)
       case BOOL_OR =>
         callNode = createCall("<operator>.or")
         handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "||")
       case BOOL_XOR => 
         callNode = createCall("<operator>.xor")
         handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "^^")
-      case BRANCH | BRANCHIND | CBRANCH => "<operator>.goto"
-      case CALL | CALLOTHER | CALLIND => codeUnitFormat.getOperandRepresentationString(nativeInstruction, 0).split(">").last.replace("[", "").replace("]", "")
+      case BRANCH | BRANCHIND | CBRANCH =>
+        callNode = createCall("<operator>.goto")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case CALL | CALLOTHER | CALLIND =>
+        val calledFunction = codeUnitFormat.getOperandRepresentationString(nativeInstruction, 0)
+          .split(">")
+          .last
+          .replace("[", "")
+          .replace("]", "")
+        val callee = functions.filter(_.getName == calledFunction)
+        if (callee.nonEmpty) {
+          // Array of tuples containing (checked parameter name, parameter index, parameter data type)
+          var checkedParameters = Array.empty[(String, Int, String)]
+
+          if (callee.head.isThunk) {
+            // thunk functions contain parameters already
+            val parameters = callee.head.getParameters
+            // TODO:
+            checkedParameters = parameters.map { parameter =>
+              val checkedParameter =
+                if (parameter.getRegister == null) parameter.getName
+                else parameter.getRegister.getName
+
+              // checked parameter name, parameter index, parameter data type
+              (checkedParameter, parameter.getOrdinal + 1, parameter.getDataType.getName)
+            }
+          } else {
+            // non thunk functions do not contain function parameters by default
+            // need to decompile function to get parameter information
+            // decompilation for a function is cached so subsequent calls to decompile should be free
+            // TODO: replace this later on
+            val parameters = decompiler
+              .toHighFunction(callee.head)
+              .get
+              .getLocalSymbolMap
+              .getSymbols
+              .asScala
+              .toSeq
+              .filter(_.isParameter)
+              .toArray
+            checkedParameters = parameters.map { parameter =>
+              val checkedParameter =
+                if (parameter.getStorage.getRegister == null) parameter.getName
+                else parameter.getStorage.getRegister.getName
+
+              // checked parameter name, parameter index, parameter data type
+              (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
+            }
+          }
+          checkedParameters.foreach { case (checkedParameter, index, dataType) =>
+            val node = createIdentifier(
+              checkedParameter,
+              checkedParameter,
+              index,
+              Types.registerType(dataType),
+              nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
+            )
+            connectCallToArgument(diffGraphBuilder, callNode, node)
+          }
+        }
+
+        println("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "+calledFunction)
+        callNode = createCall(calledFunction)
       case CAST => "TODO CAST"
-      case COPY => "<operator>.assignment"
       case CPOOLREF => "TODO"
       case EXTRACT => "TODO"
-      case FLOAT_ABS => "TODO"
-      case FLOAT_CEIL => "TODO"
-      case FLOAT_EQUAL | INT_EQUAL => "EQUAL TODO"
-      case FLOAT_FLOAT2FLOAT => "TODO"
-      case FLOAT_FLOOR => "TODO"
-      case FLOAT_INT2FLOAT => "TODO"
-      case FLOAT_LESS | INT_SLESS | INT_LESS => "LESS TODO"
-      case FLOAT_LESSEQUAL => "TODO"
-      case FLOAT_NAN => "TODO"
-      case FLOAT_NEG => "TODO"
-      case FLOAT_NOTEQUAL => "TODO"
+      case FLOAT_ABS =>
+        callNode = createCall("<operator>.abs")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case FLOAT_CEIL =>
+        callNode = createCall("<operator>.ceil")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case FLOAT_FLOAT2FLOAT =>
+        callNode = createCall("<operator>.float2float")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case FLOAT_FLOOR =>
+        callNode = createCall("<operator>.floor")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case FLOAT_INT2FLOAT =>
+        callNode = createCall("<operator>.int2float")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case FLOAT_LESS | INT_SLESS | INT_LESS =>
+        callNode = createCall("<operator>.less")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "<")
+      case FLOAT_LESSEQUAL |INT_SLESSEQUAL | INT_LESSEQUAL  =>
+        callNode = createCall("<operator>.lessThanEqual")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "<=")
+      case FLOAT_NAN =>
+        callNode = createCall("<operator>.nan")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case FLOAT_NOTEQUAL =>
+        callNode = createCall("<operator>.notEqual")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "!=")
       case FLOAT_ROUND => "TODO"
+        callNode = createCall("<operator>.round")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
       case FLOAT_SQRT => "TODO"
+        callNode = createCall("<operator>.sqrt")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
       case FLOAT_TRUNC => "TODO"
+        callNode = createCall("<operator>.trunc")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
       case INSERT => "TODO"
       case INT_2COMP => "TODO"
       case INT_ADD | FLOAT_ADD | PTRADD => 
@@ -116,43 +210,56 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
         handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "+")
       case INT_AND => 
         callNode = createCall("<operator>.and")
-        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "/")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "&")
       case INT_CARRY => "TODO"
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
         callNode = createCall("<operator>.division")
         handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "/")
-      case INT_EQUAL | INT_NOTEQUAL | INT_SLESSEQUAL | INT_LESSEQUAL => nativeInstruction.toString
+      case FLOAT_EQUAL | INT_EQUAL | INT_NOTEQUAL  => nativeInstruction.toString
       case INT_LEFT => 
         callNode = createCall("<operator>.shiftleft")
         handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "<<")
-      case INT_MULT | FLOAT_MULT => "<operator>.multiplication"
+      case INT_MULT | FLOAT_MULT =>
         callNode = createCall("<operator>.multiplication")
         handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "*")
-      case INT_NEGATE => "TODO"
-      case INT_OR => 
+      case FLOAT_NEG | INT_NEGATE => "TODO"
+        callNode = createCall("<operator>.negate")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case INT_OR =>
         callNode = createCall("<operator>.or")
-        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "*")
-      case INT_REM | INT_SREM => "TODO"
-      case INT_RIGHT => "TODO"
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "|")
+      case INT_REM | INT_SREM =>
+        callNode = createCall("<operator>.modulo")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "%")
+      case INT_RIGHT | INT_SRIGHT =>
+        callNode = createCall("<operator>.shiftRight")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, ">>")
       case INT_SBORROW => "TODO"
+        //handleSingleArgument(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "%")
       case INT_SCARRY => "TODO"
-      case INT_SEXT => "TODO"
-      case INT_SLESSEQUAL => "TODO"
-      case INT_SRIGHT => "TODO"
-      case INT_SUB | FLOAT_SUB | PTRSUB => "<operator>.subtraction"
-      case INT_XOR => "<operator>.xor"
-      case INT_ZEXT => "TODO"
-      case LOAD => "<operator>.assignment"
-      case MULTIEQUAL => "TODO"
-      case MULTIEQUAL | INDIRECT | PIECE => "NOT HANDLED"
-      case NEW => "TODO"
-      case PCODE_MAX => "TODO"
-      case POPCOUNT => "TODO"
+      case INT_SEXT | INT_ZEXT=>
+        callNode = createCall("<operator>.extend")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
+      case INT_SLESSEQUAL =>
+        callNode = createCall("<operator>.lessEqual")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "<=")
+      case INT_SUB | FLOAT_SUB | PTRSUB =>
+        callNode = createCall("<operator>.subtraction")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "-")
+      case INT_XOR =>
+        callNode = createCall("<operator>.xor")
+        handleTwoArguments(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "^^")
+      case COPY | LOAD | STORE | SUBPIECE =>
+        callNode = createCall("<operator>.assignment")
+        //handleAssignment(diffGraphBuilder, nativeInstruction, callNode, pcodeOp, "*")
+      case NEW =>
+        callNode = createCall("<operator>.new")
+        handleSingleArgument(diffGraphBuilder, callNode, pcodeOp)
       case RETURN => "RET" // TODO
-      case SEGMENTOP => "TODO"
-      case STORE => "<operator>.assignment"
-      case SUBPIECE => "<operator>.assignment"
-      case UNIMPLEMENTED => "UNIMPLEMENTED"
+      case UNIMPLEMENTED | SEGMENTOP | MULTIEQUAL | INDIRECT | PIECE | PCODE_MAX | POPCOUNT =>
+        callNode = createCall("NOT HANDLED")
+      case _ =>
+        callNode = createCall("NOT HANDLED")
     }
     //val callNode = createCallNode(
     //  nativeInstruction.toString,
@@ -169,7 +276,7 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
     callNode
   }
 
-  def resolveVarNode(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew, index: Int): CfgNodeNew = {
+  def resolveVarNode(input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {
       // we only care about the name
       createIdentifier(
@@ -179,40 +286,10 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
         Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
         input.getAddress.getOffsetAsBigInteger.intValue
       )
-      //connectCallToArgument(diffGraphBuilder, callNode, n)
     } else if (input.isConstant || input.isAddress || input.isUnique) {
       createLiteral("0x" + input.getWordOffset.toHexString, index + 1, index + 1, Types.registerType(input.getWordOffset.toHexString), -1)
-      //connectCallToArgument(diffGraphBuilder, callNode, n)
     } else {
       createLiteral("0x" + input.getWordOffset.toHexString, index + 1, index + 1, Types.registerType(input.getWordOffset.toHexString), -1)
-      //connectCallToArgument(diffGraphBuilder, callNode, n)
-    }
-  }
-  private def resolveArguments(diffGraphBuilder: DiffGraphBuilder, input: Varnode, callNode: CfgNodeNew, index: Int): Unit = {
-    if (input.isRegister) {
-      // we only care about the name
-      val n = createIdentifier(
-        nativeInstruction.getProgram.getRegister(input).getName,
-        nativeInstruction.getProgram.getRegister(input).getName,
-        index + 1,
-        Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
-        input.getAddress.getOffsetAsBigInteger.intValue
-      )
-      connectCallToArgument(diffGraphBuilder, callNode, n)
-    } else if (input.isUnique) {
-      val n = resolvedPcodeInstructions(input.getWordOffset.toString)
-      connectCallToArgument(diffGraphBuilder, callNode, n)
-      //getCallNode(input.getDef)
-      //pcodeOps.filter(x=> x.getOutput == input && !x.getInputs.contains(input)).foreach{x=>
-      //  val n = getCallNode(x)
-      //  connectCallToArgument(diffGraphBuilder,callNode,n)
-      //}
-    } else if (input.isConstant || input.isAddress) {
-      val n = createLiteral("0x" + input.getWordOffset.toHexString, index + 1, index + 1, Types.registerType(input.getWordOffset.toHexString), -1)
-      connectCallToArgument(diffGraphBuilder, callNode, n)
-    } else {
-      val n = createLiteral("0x" + input.getWordOffset.toHexString, index + 1, index + 1, Types.registerType(input.getWordOffset.toHexString), -1)
-      connectCallToArgument(diffGraphBuilder, callNode, n)
     }
   }
 
@@ -222,13 +299,3 @@ class PCodeMapper(diffGraphBuilder: DiffGraphBuilder, nativeInstruction: Instruc
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }
 }
-//case CAST => "TODO CAST"
-//  // println("TODO: CAST")
-//  //createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-//// we need to "unpack" the def of the first input of the cast
-//// eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
-// if (pcodeOp.getInput(0).getDef != null)
-//  val node = createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-// else
-//  val node = createCallNode("UNKNOWN", "UNKNOWN", nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-//  //resolveArgument(diffGraphBuilder, nativeInstruction, opNode, pcodeOps.last.getInput(0).getDef, index)

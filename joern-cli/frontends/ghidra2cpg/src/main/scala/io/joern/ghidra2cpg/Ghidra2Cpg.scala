@@ -4,8 +4,8 @@ import ghidra.GhidraJarApplicationLayout
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager
 import ghidra.app.util.importer.{AutoImporter, MessageLog}
 import ghidra.framework.model.{Project, ProjectLocator}
-import ghidra.framework.project.{DefaultProject, DefaultProjectManager}
-import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
+import ghidra.framework.project.DefaultProjectManager
+import ghidra.framework.protocol.ghidra.Handler
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
@@ -116,13 +116,14 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       .toMap
 
     new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
+
     new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     new PcodePass(program, address2Literals, fileAbsolutePath, functions, cpg, decompiler)    .createAndApply()
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         new LoHiPass(cpg).createAndApply()
-      //case "AARCH64" | "ARM" =>
+      case "AARCH64" | "ARM" => "no passes"
       case _ =>
         new ReturnEdgesPass(cpg).createAndApply()
     }
