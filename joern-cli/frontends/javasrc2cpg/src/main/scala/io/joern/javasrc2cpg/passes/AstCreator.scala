@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.passes
 
-import com.github.javaparser.ast.`type`.TypeParameter
+import com.github.javaparser.ast.`type`.{ReferenceType, TypeParameter}
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.body.{
   BodyDeclaration,
@@ -75,16 +75,26 @@ import com.github.javaparser.ast.stmt.{
 }
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
+  ResolvedClassDeclaration,
   ResolvedConstructorDeclaration,
+  ResolvedInterfaceDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration
+  ResolvedReferenceTypeDeclaration,
+  ResolvedTypeDeclaration,
+  ResolvedTypeParameterDeclaration
 }
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
+import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.{
+  JavaParserClassDeclaration,
+  JavaParserFieldDeclaration
+}
+import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, ReferenceTypeImpl}
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
-import io.joern.javasrc2cpg.util.{NodeTypeInfo, Scope, TypeInfoProvider}
+import io.joern.javasrc2cpg.util.{JP2JavaSrcTypeAdapter, NodeTypeInfo, Scope, TypeInfoProvider}
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{TypeConstants, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -338,7 +348,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(Ast(namespaceBlock.filename(absolutePath(filename)).order(1)), Context())
   }
 
-  private def bindingForMethod(maybeMethodNode: Option[NewMethod]): List[BindingInfo] = {
+  private def bindingForMethod(
+    maybeMethodNode: Option[NewMethod],
+    bindingSignatures: Iterable[String]
+  ): List[BindingInfo] = {
     maybeMethodNode match {
       case Some(methodNode) =>
         scopeStack.getEnclosingTypeDecl match {
@@ -348,13 +361,87 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
               .methodFullName(methodNode.fullName)
               .signature(methodNode.signature)
 
-            BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF))) :: Nil
+            bindingSignatures.map { bindingSignature =>
+              val node = NewBinding()
+                .name(methodNode.name)
+                .methodFullName(methodNode.fullName)
+                .signature(bindingSignature)
+
+              BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
+            }.toList
 
           case None => Nil
         }
 
       case None => Nil
     }
+  }
+
+  private def substituteTypeVariable(resolvedType: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
+    substituteTypeVariableInternal(resolvedType, typeParamValues)
+  }
+
+  private def substituteTypeVariableInternal(
+    resolvedType: ResolvedType,
+    typeParamValues: ResolvedTypeParametersMap
+  ): String = {
+    resolvedType match {
+      case lazyType: LazyType if lazyType.isTypeVariable =>
+        substituteTypeVariableInternal(lazyType.asTypeVariable(), typeParamValues)
+      case typeParamVariable: ResolvedTypeVariable =>
+        val typeParamDecl = typeParamVariable.asTypeParameter()
+        val assignedType  = typeParamValues.getValue(typeParamDecl)
+        if (assignedType.isTypeVariable && assignedType.asTypeParameter() == typeParamDecl) {
+          // This is the way the library tells us there is no assigned type.
+          typeParamDecl.getBounds.asScala.find(_.isExtends).map(_.getType.describe()).getOrElse(TypeConstants.Object)
+        } else {
+          substituteTypeVariableInternal(assignedType, typeParamValues)
+        }
+      case typ =>
+        JP2JavaSrcTypeAdapter.resolvedTypeFullName(typ).get
+    }
+  }
+
+  private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
+    val parameterTypes =
+      Range(0, method.getNumberOfParams).map(method.getParam).map { param =>
+        substituteTypeVariable(param.getType, typeParamValues)
+      }
+
+    val returnType = substituteTypeVariable(method.getReturnType, typeParamValues)
+
+    s"$returnType(${parameterTypes.mkString(",")})"
+  }
+
+  // For methods which override a method from a super class or interface, we
+  // also need to add bindings with the erased signature of the overridden
+  // methods. This methods calculated those signatures as well as the signature
+  // of the overriding method itself.
+  private def bindingSignatures(method: MethodDeclaration): Iterable[String] = {
+    Try {
+      val result              = mutable.LinkedHashSet.empty[String]
+      val resolvedMethod      = method.resolve()
+      val declType            = resolvedMethod.declaringType()
+      val origMethodErasedSig = methodSignature(resolvedMethod, ResolvedTypeParametersMap.empty())
+      result.add(origMethodErasedSig)
+
+      val ancestors = declType.getAllAncestors()
+      ancestors.asScala.foreach { ancestorType =>
+        val typeParameters   = ancestorType.typeParametersMap()
+        val ancestorTypeDecl = ancestorType.getTypeDeclaration.get
+        ancestorTypeDecl.getDeclaredMethods.asScala
+          .filter(_.getName == resolvedMethod.getName)
+          .foreach { ancestorMethod =>
+            val ancestorSig = methodSignature(ancestorMethod, typeParameters)
+            if (ancestorSig == origMethodErasedSig) {
+              val erasedSig = methodSignature(ancestorMethod, ResolvedTypeParametersMap.empty())
+              result.add(erasedSig)
+            }
+            ancestorSig
+          }
+      }
+      result
+    }.getOrElse(Nil)
   }
 
   private def astForTypeDeclMember(
@@ -367,13 +454,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case constructor: ConstructorDeclaration =>
         val AstWithCtx(ast, ctx) = astForConstructor(constructor, order)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
-        val bindingInfo          = bindingForMethod(rootNode)
+        val bindingInfo          = bindingForMethod(rootNode, Nil)
         AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
 
       case method: MethodDeclaration =>
         val AstWithCtx(ast, ctx) = astForMethod(method, order)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
-        val bindingInfo          = bindingForMethod(rootNode)
+        val bindingInfo          = bindingForMethod(rootNode, bindingSignatures(method))
+
         AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
 
       case typeDeclaration: TypeDeclaration[_] =>
@@ -602,7 +690,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       Ast(NewModifier().modifierType(ModifierTypes.PUBLIC))
     )
 
-    val bindingsInfo = bindingForMethod(Some(constructorNode))
+    val bindingsInfo = bindingForMethod(Some(constructorNode), Nil)
 
     val ast = Ast(constructorNode)
       .withChildren(modifiers)
