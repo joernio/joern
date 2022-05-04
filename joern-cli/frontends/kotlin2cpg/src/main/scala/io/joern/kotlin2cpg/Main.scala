@@ -12,7 +12,7 @@ final case class Config(
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
   withAndroidJarsInClassPath: Boolean = true,
-  copyRuntimeLibs: Boolean = false
+  downloadDependencies: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -32,7 +32,7 @@ private object Frontend {
       programName("kotlin2cpg"),
       opt[String]("classpath")
         .unbounded()
-        .text("directories to be searched for type resolution jars")
+        .text("Add entry to classpath")
         .action((incl, c) => c.copy(classpath = c.classpath + incl)),
       opt[Unit]("no-stdlib-jars")
         .text("Do not add local versions of Kotlin stdlib jars to classpath")
@@ -40,9 +40,12 @@ private object Frontend {
       opt[Unit]("no-android-jars")
         .text("Do not add local versions of Android jars to classpath")
         .action((_, c) => c.copy(withAndroidJarsInClassPath = false)),
-      opt[Unit]("copy-runtime-libs")
+      opt[Unit]("copy-runtime-libs") // deprecated, remove the flag as soon it's not needed upstream
         .text("Attempt to copy the runtime libs using the build tool found at the input path")
-        .action((_, c) => c.copy(copyRuntimeLibs = true))
+        .action((_, c) => c.copy(downloadDependencies = true)),
+      opt[Unit]("download-dependencies")
+        .text("Download the dependencies of the target project and add them to the classpath")
+        .action((_, c) => c.copy(downloadDependencies = true))
     )
   }
 }
