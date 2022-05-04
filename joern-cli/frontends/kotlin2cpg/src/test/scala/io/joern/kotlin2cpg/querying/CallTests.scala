@@ -60,7 +60,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.argument.size shouldBe 1
       p.lineNumber shouldBe Some(9)
       p.code shouldBe "println(foo(argc, 1))"
-      p.methodFullName shouldBe "kotlin.io.println:void(java.lang.Integer)"
+      p.methodFullName shouldBe "kotlin.io.println:void(int)"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(2)
     }
@@ -133,9 +133,9 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.code shouldBe "x.add1(argc, \"AMESSAGE\")"
       p.columnNumber shouldBe Some(10)
       p.lineNumber shouldBe Some(12)
-      p.methodFullName shouldBe "mypkg.Foo.add1:java.lang.Integer(java.lang.Integer,java.lang.String)"
-      p.signature shouldBe "java.lang.Integer(java.lang.Integer,java.lang.String)"
-      p.typeFullName shouldBe "java.lang.Integer"
+      p.methodFullName shouldBe "mypkg.Foo.add1:int(int,java.lang.String)"
+      p.signature shouldBe "int(int,java.lang.String)"
+      p.typeFullName shouldBe "int"
 
       val List(firstArg, secondArg, thirdArg) = cpg.call("add1").argument.l
       firstArg.code shouldBe "x"
@@ -297,7 +297,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.codeExact("str.length").l
       c.methodFullName shouldBe Operators.fieldAccess
       c.signature shouldBe ""
-      c.typeFullName shouldBe "java.lang.Integer"
+      c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
@@ -375,7 +375,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code(".*toFloat.*").l
-      c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
+      c.methodFullName shouldBe "kotlin.Int.toFloat:float()"
     }
   }
 
@@ -393,7 +393,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for `.*toFloat()` with the correct props set" in {
       val List(c) = cpg.call.code("\\(.*toFloat.*").l
-      c.methodFullName shouldBe "kotlin.Int.toFloat:java.lang.Float()"
+      c.methodFullName shouldBe "kotlin.Int.toFloat:float()"
     }
   }
 

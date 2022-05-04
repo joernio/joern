@@ -5,12 +5,65 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, FieldIdentifier, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Declaration, FieldIdentifier, Identifier}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
 class ValidationTests extends AnyFreeSpec with Matchers {
+  "CPG for code with lambdas with no params and one param" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package com.example
+        |
+        |fun parseParams(name: String, msg: String): Map<String, String?> {
+        |    val checkedName = name.takeUnless { it -> it.contains('\\') }?.ifBlank { "default_name" }
+        |    val checkedMsg = msg.ifBlank { "default_msg" }
+        |    return mapOf("parsed_name" to checkedName, "parsed_msg" to checkedMsg)
+        |}
+        |
+        |fun main() {
+        |   val p1 = "PARAM_1"
+        |   val p2 = "PARAM_2"
+        |   val parsed = parseParams(p1, p2)
+        |   println("parsed: " + parsed)
+        |}
+        |""".stripMargin)
+
+    "should contain TYPE nodes for `kotlin.Function0`, `kotlin.Function1` and `kotlin.Pair`" in {
+      cpg.typ.fullNameExact("kotlin.Function0").size should not be 0
+      cpg.typ.fullNameExact("kotlin.Function1").size should not be 0
+      cpg.typ.fullNameExact("kotlin.Pair").size should not be 0
+    }
+
+    "should contain CLOSURE_BINDING nodes for the lambdas" in {
+      cpg.all.collectAll[ClosureBinding].size should not be 0
+    }
+  }
+
+  "CPG for code with usage of `Gson` external library" - {
+    lazy val cpg = TestContext.buildCpg(
+      """
+        |package mypkg
+        |
+        |import com.google.gson.Gson
+        |
+        |fun main() {
+        |   val l = ArrayList<String>()
+        |   l.add("ONE")
+        |   l.add("TWO")
+        |   val j = Gson().toJson(l)
+        |   println("json: " + j)
+        |}
+        |""".stripMargin,
+      withTestResourceClassPath = false
+    )
+
+    "should contain CALL node for the ctor-call with a METHOD_FULL_NAME starting with the package name" in {
+      val List(c) = cpg.call.codeExact("Gson()").l
+      c.methodFullName.startsWith("com.google.gson.Gson") shouldBe true
+    }
+  }
+
   "CPG for code with simple method containing if-expression" - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg

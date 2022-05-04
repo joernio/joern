@@ -513,7 +513,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
               if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) {
                 TypeConstants.javaLangObject
               } else {
-                TypeRenderer.render(extType, false)
+                TypeRenderer.render(extType, false, false)
               }
             s"$rendered.$extName"
           } else {
@@ -594,21 +594,25 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val returnT           = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
     val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
     val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
-    if (hasReturnTypeFromTypeParams) {
-      if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
-        val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
-        TypeRenderer.render(firstSuperType)
-      } else {
-        val renderedReturnT = TypeRenderer.render(returnT)
-        if (renderedReturnT == TypeConstants.tType) {
-          TypeConstants.javaLangObject
+
+    val out = {
+      if (hasReturnTypeFromTypeParams) {
+        if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
+          val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
+          TypeRenderer.render(firstSuperType)
         } else {
-          renderedReturnT
+          val renderedReturnT = TypeRenderer.render(returnT)
+          if (renderedReturnT == TypeConstants.tType) {
+            TypeConstants.javaLangObject
+          } else {
+            renderedReturnT
+          }
         }
+      } else {
+        TypeRenderer.render(fnDesc.getReturnType)
       }
-    } else {
-      TypeRenderer.render(fnDesc.getReturnType)
     }
+    out
   }
 
   def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {

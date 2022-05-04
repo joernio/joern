@@ -14,7 +14,7 @@ object TypeConstants {
   val scopeFunctionItParameterName      = "it"
   val scopeFunctionThisParameterName    = "this"
   val kotlinUnit                        = "kotlin.Unit"
-  val javaLangBoolean                   = "java.lang.Boolean"
+  val javaLangBoolean                   = "boolean"
   val javaLangClass                     = "java.lang.Class"
   val javaLangObject                    = "java.lang.Object"
   val javaLangString                    = "java.lang.String"

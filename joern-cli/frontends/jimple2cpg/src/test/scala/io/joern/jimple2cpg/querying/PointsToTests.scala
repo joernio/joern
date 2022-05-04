@@ -1,12 +1,9 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.iterableToTraversal
-
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class PointsToTests extends JimpleCodeToCpgFixture {
 
@@ -50,6 +47,16 @@ class PointsToTests extends JimpleCodeToCpgFixture {
       |   p = r;
       | }
       |
+      | static void faz() {
+      |   C q;
+      |   if (System.currentTimeMillis() > 100) {
+      |     q = new A();
+      |   } else {
+      |     q = new B();
+      |   }
+      |   q.m();
+      | }
+      |
       |}
       |""".stripMargin
 
@@ -72,6 +79,11 @@ class PointsToTests extends JimpleCodeToCpgFixture {
     val List(newA, newB) = cpg.method("baz").call.name(Operators.alloc, Operators.arrayInitializer).l
     newA.pointsToIn.code.dedup.l shouldBe List("$stack3", "p", "q")
     newB.pointsToIn.code.dedup.l shouldBe List("r")
+  }
+
+  "should display all possible allocations of an identifier" in {
+    val List(q) = cpg.method("faz").call.codeExact("q.m()").receiver.l
+    q.pointsToOut.collect { case c: Call => c.code }.l shouldBe List("new A", "new B")
   }
 
 }

@@ -9,11 +9,12 @@ import org.scalatest.matchers.should.Matchers
 
 class LiteralTests extends AnyFreeSpec with Matchers {
 
-  "CPG for code simple literal declarations" - {
+  "CPG for code simple literal declarations with explicit types" - {
     lazy val cpg = TestContext.buildCpg("""
         |fun main(args : Array<String>) {
         |  val a: Int = 1
         |  val b: Boolean = true
+        |  val bt: Byte = 127
         |  val c: Float = 1.0
         |  val d: Char = 'A'
         |  val e: String = "ABC"
@@ -24,33 +25,17 @@ class LiteralTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain the literals" in {
-      val List(a: Literal) = cpg.literal("1").l
-      a.typeFullName shouldBe "java.lang.Integer"
-
-      val List(b: Literal) = cpg.literal("true").l
-      b.typeFullName shouldBe "java.lang.Boolean"
-
-      val List(c: Literal) = cpg.literal("1.0").l
-      c.typeFullName shouldBe "java.lang.Double"
-
-      val List(d: Literal) = cpg.literal("\'A\'").l
-      d.typeFullName shouldBe "java.lang.Character"
-
-      val List(e: Literal) = cpg.literal("\"ABC\"").l
-      e.typeFullName shouldBe "java.lang.String"
-
-      val List(p: Literal) = cpg.literal("1_000_000").l
-      p.typeFullName shouldBe "java.lang.Integer"
-
-      val List(q: Literal) = cpg.literal("9999L").l
-      q.typeFullName shouldBe "java.lang.Long"
-
-      val List(r: Literal) = cpg.literal("0xB4DF00D").l
-      r.typeFullName shouldBe "java.lang.Integer"
-
-      val List(s: Literal) = cpg.literal("0b010101").l
-      s.typeFullName shouldBe "java.lang.Integer"
+    "should contain LITERAL nodes with the correct TYPE_FULL_NAME set" in {
+      cpg.literal("1").typeFullName.head shouldBe "int"
+      cpg.literal("true").typeFullName.head shouldBe "boolean"
+      cpg.literal("127").typeFullName.head shouldBe "byte"
+      cpg.literal("1.0").typeFullName.head shouldBe "double"
+      cpg.literal("\'A\'").typeFullName.head shouldBe "char"
+      cpg.literal("\"ABC\"").typeFullName.head shouldBe "java.lang.String"
+      cpg.literal("1_000_000").typeFullName.head shouldBe "int"
+      cpg.literal("9999L").typeFullName.head shouldBe "long"
+      cpg.literal("0xB4DF00D").typeFullName.head shouldBe "int"
+      cpg.literal("0b010101").typeFullName.head shouldBe "int"
     }
   }
 
@@ -69,34 +54,15 @@ class LiteralTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should literals with the correct TYPE_FULL_NAME" in {
-      val List(a: Literal) = cpg.literal("1").l
-      a.typeFullName shouldBe "java.lang.Integer"
-
-      val List(b: Literal) = cpg.literal("true").l
-      b.typeFullName shouldBe "java.lang.Boolean"
-
-      val List(c: Literal) = cpg.literal("1.0").l
-      c.typeFullName shouldBe "java.lang.Double"
-
-      val List(d: Literal) = cpg.literal("\'A\'").l
-      d.typeFullName shouldBe "java.lang.Character"
-
-      val List(e: Literal) = cpg.literal("\"ABC\"").l
-      e.typeFullName shouldBe "java.lang.String"
-
-      val List(p: Literal) = cpg.literal("1_000_000").l
-      p.typeFullName shouldBe "java.lang.Integer"
-
-      val List(q: Literal) = cpg.literal("9999L").l
-      q.typeFullName shouldBe "java.lang.Long"
-
-      val List(r: Literal) = cpg.literal("0xB4DF00D").l
-      r.typeFullName shouldBe "java.lang.Integer"
-
-      val List(s: Literal) = cpg.literal("0b010101").l
-      s.typeFullName shouldBe "java.lang.Integer"
+    "should contain LITERAL nodes with the correct TYPE_FULL_NAME set" in {
+      cpg.literal("1").typeFullName.head shouldBe "int"
+      cpg.literal("1.0").typeFullName.head shouldBe "double"
+      cpg.literal("\'A\'").typeFullName.head shouldBe "char"
+      cpg.literal("\"ABC\"").typeFullName.head shouldBe "java.lang.String"
+      cpg.literal("1_000_000").typeFullName.head shouldBe "int"
+      cpg.literal("9999L").typeFullName.head shouldBe "long"
+      cpg.literal("0xB4DF00D").typeFullName.head shouldBe "int"
+      cpg.literal("0b010101").typeFullName.head shouldBe "int"
     }
-
   }
 }

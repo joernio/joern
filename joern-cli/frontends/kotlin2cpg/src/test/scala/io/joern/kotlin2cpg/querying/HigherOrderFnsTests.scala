@@ -28,7 +28,7 @@ class HigherOrderFnsTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "java.lang.Iterable.fold:java.lang.Object(java.lang.Object,kotlin.Function2)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.Function2)"
-      c.typeFullName shouldBe "java.lang.Integer"
+      c.typeFullName shouldBe "int"
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(9)
     }
