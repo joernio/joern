@@ -72,7 +72,7 @@ class AstCreationPassTests
           x.order shouldBe 1
           args.name shouldBe "args"
           args.code shouldBe "int*... args"
-          args.typeFullName shouldBe "int*"
+          args.typeFullName shouldBe "int"
           args.isVariadic shouldBe true
           args.order shouldBe 2
         }
@@ -111,11 +111,11 @@ class AstCreationPassTests
         inside(m.parameter.l) { case List(x, y) =>
           x.name shouldBe "x"
           x.code shouldBe "int *x;"
-          x.typeFullName shouldBe "int*"
+          x.typeFullName shouldBe "int"
           x.order shouldBe 1
           y.name shouldBe "y"
           y.code shouldBe "int *y;"
-          y.typeFullName shouldBe "int*"
+          y.typeFullName shouldBe "int"
           y.order shouldBe 2
         }
       }
@@ -370,8 +370,9 @@ class AstCreationPassTests
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").parameter.l) { case List(param: MethodParameterIn) =>
-        param.typeFullName shouldBe "a_struct_type*"
+        param.typeFullName shouldBe "a_struct_type"
         param.name shouldBe "a_struct"
+        param.code shouldBe "a_struct_type *a_struct"
       }
     }
 
@@ -383,7 +384,8 @@ class AstCreationPassTests
        |}
        |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").parameter.l) { case List(param: MethodParameterIn) =>
-        param.typeFullName shouldBe "struct date*"
+        param.code shouldBe "struct date *date"
+        param.typeFullName shouldBe "date"
         param.name shouldBe "date"
       }
     }
@@ -1064,6 +1066,29 @@ class AstCreationPassTests
         |} abc;
       """.stripMargin) { cpg =>
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
+    }
+
+    "be correct for struct with local" in TestAstOnlyFixture("""
+        |struct A {
+        |  int x;
+        |} a;
+        |struct B b;
+      """.stripMargin) { cpg =>
+      inside(cpg.typeDecl("A").member.l) {
+        case List(x) =>
+          x.name shouldBe "x"
+          x.typeFullName shouldBe "int"
+      }
+      cpg.typeDecl.name("B").size shouldBe 1
+      inside(cpg.local.l) {
+        case List(a, b) =>
+          a.name shouldBe "a"
+          a.typeFullName shouldBe "A"
+          a.code shouldBe "struct A a"
+          b.name shouldBe "b"
+          b.typeFullName shouldBe "B"
+          b.code shouldBe "struct B b"
+      }
     }
 
     "be correct for global struct" in TestAstOnlyFixture("""
