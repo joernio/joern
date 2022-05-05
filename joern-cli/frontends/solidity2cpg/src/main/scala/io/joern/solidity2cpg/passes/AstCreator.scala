@@ -337,7 +337,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         case x : ElementaryTypeName => typefullName = registerType(x.name)
       }
       case x : UserDefinedTypeName => typefullName = registerType(x.namePath)
-      case x : FunctionTypeName => typefullName = registerType("function")
+      case x : FunctionTypeName => typefullName = registerType("function("+getParameters(x.parameterTypes)+")")
     }
     var visibility = "";
     varDecl.visibility match {
@@ -573,9 +573,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForStruct(structDefinition: StructDefinition, contractName : String): Ast = {
     val typeFullName = registerType(contractName+"."+structDefinition.name)
-    val memberNode = NewMember()
-      .typeFullName(contractName+"."+typeFullName)
+    val memberNode = NewTypeDecl()
       .name(typeFullName)
+      .fullName(typeFullName)
 
     val members = structDefinition.members.collect {
       case x: VariableDeclaration => astForVarDecl(x)
@@ -602,6 +602,25 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
       case _              => EvaluationStrategies.BY_SHARING
     }
+
+  private def getParameters(paramlist: List[BaseASTNode]): String = {
+    var params = ""
+    paramlist.collect {
+      case x: VariableDeclaration => x.typeName match {
+        case x: ElementaryTypeName => params += registerType(x.name)
+        case x: Mapping => {
+          params += registerType("mapping")
+        }
+        case x : ArrayTypeName => x.baseTypeName match {
+        case x : ElementaryTypeName => params += registerType(x.name)
+        }
+        case x : UserDefinedTypeName => params += registerType(x.namePath)
+        case x : FunctionTypeName => params += registerType("function("+getParameters(x.parameterTypes)+")")
+
+      }
+    }
+    (params)
+  }
 
 //  private def astForInheritanceSpecifier(inheritanceSpecifier: InheritanceSpecifier) : Ast = {
 //
