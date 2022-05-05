@@ -76,11 +76,9 @@ class PCodeMapper(
   def handleTwoArguments(callNode: CfgNodeNew, pcodeOp: PcodeOp): Unit = {
     val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
-    // val opNode   = createCallNode(nativeInstruction.toString, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
-    // connectCallToArgument(callNode, opNode)
   }
   def handleAssignment(callNode: CfgNodeNew, pcodeOp: PcodeOp): Unit = {
     val firstOp  = resolveVarNode(pcodeOp.getOutput, 0)
@@ -268,13 +266,9 @@ class PCodeMapper(
       case INT_XOR =>
         callNode = createCall("<operator>.xor")
         handleTwoArguments(callNode, pcodeOp)
-      case COPY => // | LOAD | STORE=>// | SUBPIECE =>
+      case COPY  | LOAD | STORE | SUBPIECE =>
         callNode = createCall("<operator>.assignment")
-        if (pcodeOp.getInputs.isEmpty) {
-          println("FFFFFFFFFFFFFFFFFFFFFFF")
-        } else {
-          handleAssignment(callNode, pcodeOp)
-        }
+        handleAssignment(callNode, pcodeOp)
       case NEW =>
         callNode = createCall("<operator>.new")
         handleSingleArgument(callNode, pcodeOp)
@@ -284,18 +278,6 @@ class PCodeMapper(
       case _ =>
         callNode = createCall("NOT HANDLED")
     }
-    // val callNode = createCallNode(
-    //  nativeInstruction.toString,
-    //  callCode,
-    //  nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
-    // )
-    // if(pcodeOp.getOutput != null)
-    //  resolvedPcodeInstructions += (pcodeOp.getOutput.getWordOffset.toString -> callNode)
-    //// resolveArgument(pcodeOps.lastOption.get.getIn orNull)
-    // pcodeOp.getInputs.zipWithIndex.foreach { case (param, index) =>
-    //  //println("PARAM " + param)
-    //  resolveArguments( param, callNode, index)
-    // }
     callNode
   }
 
