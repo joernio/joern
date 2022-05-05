@@ -134,7 +134,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewUnknown
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.datastructures.{Global, MutableQueue}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -158,29 +158,18 @@ case class Context(
   bindingsInfo: Seq[BindingInfo] = List(),
   lambdaAsts: Seq[Ast] = List(),
   closureBindingInfo: Seq[ClosureBindingMeta] = List(),
-  partialConstructors: Seq[PartialConstructor] = List(),
   staticInitializers: Seq[Ast] = List()
 ) {
   def ++(other: Context): Context = {
-    val newLocals           = locals ++ other.locals
-    val newIdentifiers      = identifiers ++ other.identifiers
-    val newParameters       = methodParameters ++ other.methodParameters
-    val newBindings         = bindingsInfo ++ other.bindingsInfo
-    val newLambdas          = lambdaAsts ++ other.lambdaAsts
-    val newClosureBindings  = closureBindingInfo ++ other.closureBindingInfo
-    val newConstructorInits = partialConstructors ++ other.partialConstructors
-    val newStaticInits      = staticInitializers ++ other.staticInitializers
+    val newLocals          = locals ++ other.locals
+    val newIdentifiers     = identifiers ++ other.identifiers
+    val newParameters      = methodParameters ++ other.methodParameters
+    val newBindings        = bindingsInfo ++ other.bindingsInfo
+    val newLambdas         = lambdaAsts ++ other.lambdaAsts
+    val newClosureBindings = closureBindingInfo ++ other.closureBindingInfo
+    val newStaticInits     = staticInitializers ++ other.staticInitializers
 
-    Context(
-      newLocals,
-      newIdentifiers,
-      newParameters,
-      newBindings,
-      newLambdas,
-      newClosureBindings,
-      newConstructorInits,
-      newStaticInits
-    )
+    Context(newLocals, newIdentifiers, newParameters, newBindings, newLambdas, newClosureBindings, newStaticInits)
   }
 
   def addBindings(bindings: Seq[BindingInfo]): Context = {
@@ -189,10 +178,6 @@ case class Context(
 
   def mergeWith(others: Iterable[Context]): Context = {
     Context.mergedCtx(Seq(this) ++ others)
-  }
-
-  def clearConstructors(): Context = {
-    this.copy(partialConstructors = Seq.empty)
   }
 }
 
@@ -231,8 +216,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
-  private val scopeStack                         = Scope()
-  private val typeInfoProvider: TypeInfoProvider = TypeInfoProvider(global, scopeStack)
+  private val scopeStack                                                = Scope()
+  private val typeInfoProvider: TypeInfoProvider                        = TypeInfoProvider(global, scopeStack)
+  private val partialConstructorQueue: MutableQueue[PartialConstructor] = MutableQueue.empty
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -1759,14 +1745,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(targetType.orElse(valueType).orElse(expectedType).getOrElse(UnresolvedTypeDefault))
 
-    if (argsCtx.partialConstructors.isEmpty) {
+    if (partialConstructorQueue.isEmpty) {
       val assignAst = callAst(callNode, targetAst ++ argsAsts)
       Seq(assignAst)
     } else {
-      if (argsCtx.partialConstructors.size > 1) {
+      if (partialConstructorQueue.size > 1) {
         logger.warn("BUG: Received multiple partial constructors from assignment. Dropping all but the first.")
       }
-      val partialConstructor = argsCtx.partialConstructors.head
+      val partialConstructor = partialConstructorQueue.dequeueAll.head
 
       targetAst.flatMap(_.ast.root).toList match {
         case List(identifier: NewIdentifier) =>
@@ -1850,14 +1836,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       // TODO Add expected type here if possible
       val initializerAstsWithCtx = astsForExpression(initializer, 2, Some(typeFullName))
       // Since all partial constructors will be dealt with here, don't pass them up.
-      val initAstsWithoutConstructorCtx = initializerAstsWithCtx.map { case AstWithCtx(ast, ctx) =>
-        AstWithCtx(ast, ctx.clearConstructors())
-      }
+      val declAst = callAst(callNode, Seq(targetAst) ++ initializerAstsWithCtx)
 
-      val declAst = callAst(callNode, Seq(targetAst) ++ initAstsWithoutConstructorCtx)
-
-      val constructorAsts = initializerAstsWithCtx
-        .flatMap(_.ctx.partialConstructors)
+      val constructorAsts = partialConstructorQueue.dequeueAll
         .map { partialConstructor =>
           constructorCount += 1
           completeInitForConstructor(partialConstructor, identifier, order + idx + constructorCount)
@@ -2190,8 +2171,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     expr.getParentNode.toScala match {
       case Some(parent) if parent.isInstanceOf[VariableDeclarator] || parent.isInstanceOf[AssignExpr] =>
-        val partialConstructor = List(PartialConstructor(initNode, args, blockAst))
-        AstWithCtx(Ast(allocNode), Context(partialConstructors = partialConstructor))
+        val partialConstructor = PartialConstructor(initNode, args, blockAst)
+        partialConstructorQueue.append(partialConstructor)
+        AstWithCtx(Ast(allocNode), Context())
 
       case _ =>
         blockAst

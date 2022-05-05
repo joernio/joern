@@ -11,7 +11,6 @@ case class NodeTypeInfo(node: NewNode with HasTypeFullName, isField: Boolean = f
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, NewNode] {
 
-  // Information about the
   private var typeDeclStack: List[NewTypeDecl] = Nil
 
   override def pushNewScope(scopeNode: NewNode): Unit = {
