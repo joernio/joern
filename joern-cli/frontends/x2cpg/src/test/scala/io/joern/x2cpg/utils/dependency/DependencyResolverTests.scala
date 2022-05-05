@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
+import io.joern.x2cpg.utils.ExternalCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -86,6 +87,11 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
   }
 
   "test maven dependency resolution" in {
+    // check that `mvn` is available - otherwise test will fail with only some logged warnings...
+    withClue("`mvn` must be installed in order for this test to work...") {
+      ExternalCommand.run("mvn --version", ".").get.exists(_.contains("Apache Maven")) shouldBe true
+    }
+
     val fixture = new Fixture(
       """
         |<project xmlns="http://maven.apache.org/POM/4.0.0"
