@@ -157,32 +157,35 @@ object Engine {
   def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
     curNode match {
       case argument: Expression =>
-        val (arguments, nonArguments) = ddgInE(curNode, path)
-          .filter { edge =>
-            !isCallRetvalThatShouldNotPropagate(edge.outNode().asInstanceOf[StoredNode])
-          }
-          .partition(_.outNode().isInstanceOf[Expression])
+        val (arguments, nonArguments) = ddgInE(curNode, path).partition(_.outNode().isInstanceOf[Expression])
         val elemsForArguments = arguments.flatMap { e =>
           elemForArgument(e, argument)
         }
-        val elems = elemsForArguments ++ nonArguments.map(edgeToPathElement)
+        val elems = elemsForArguments ++ nonArguments.flatMap(edgeToPathElement)
         elems
       case _ =>
-        ddgInE(curNode, path)
-          .filter { edge =>
-            !isCallRetvalThatShouldNotPropagate(edge.outNode().asInstanceOf[StoredNode])
-          }
-          .map(edgeToPathElement)
+        ddgInE(curNode, path).flatMap(edgeToPathElement)
     }
   }
 
-  private def edgeToPathElement(e: Edge): PathElement = {
+  /**
+    * Convert an edge to a path element. This function may return `None` if the edge is
+    * found to lead to an argument that isn't used, according to semantics.
+    * */
+  private def edgeToPathElement(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
     val parentNode = e.outNode().asInstanceOf[CfgNode]
+    val childNode  = e.inNode().asInstanceOf[CfgNode]
     val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
-    PathElement(parentNode, outEdgeLabel = outLabel)
+
+    childNode match {
+      case exp: Expression if !exp.isUsed =>
+        None
+      case _ =>
+        Some(PathElement(parentNode, outEdgeLabel = outLabel))
+    }
   }
 
-  private def ddgInE(dstNode: CfgNode, path: Vector[PathElement]): Vector[Edge] = {
+  private def ddgInE(dstNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[Edge] = {
     dstNode
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
@@ -192,16 +195,23 @@ object Engine {
       }
       .filter(e => !path.map(_.node).contains(e.outNode().asInstanceOf[CfgNode]))
       .toVector
+      .filter { edge =>
+        !isCallRetval(edge.outNode().asInstanceOf[StoredNode])
+      }
   }
 
-  def isCallRetvalThatShouldNotPropagate(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
+  def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
     parentNode match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
-        (sem.isDefined && !(sem.get.mappings.map(_._2).contains(-1)))
+        sem.isDefined && !destinationIsRetVal(sem.get)
       case _ =>
         false
     }
+  }
+
+  private def destinationIsRetVal(sem: FlowSemantic): Boolean = {
+    sem.mappings.map(_._2).contains(-1)
   }
 
   /** For a given `(parentNode, curNode)` pair, determine whether to expand into `parentNode`. If so, return a

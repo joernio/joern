@@ -219,8 +219,7 @@ class FunctionCallTests extends JavaDataflowFixture {
 
   it should "not find a path where the `MALICIOUS` arg is overwritten before the sink" in {
     val (source, sink) = getMultiFnSourceSink("test15", "overwrite")
-    // This isn't exactly the expected behaviour, but is on par with c2cpg.
-    sink.reachableBy(source).size shouldBe 1
+    sink.reachableBy(source).size shouldBe 0
   }
 
   it should "not find a path where `MALICIOUS` arg is not included in return" in {
