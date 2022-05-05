@@ -801,7 +801,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         FunctionTypeName(
           fields("parameterTypes").convertTo[List[BaseASTNode]],
-          fields("returnType").convertTo[List[BaseASTNode]],
+          fields("returnTypes").convertTo[List[BaseASTNode]],
           fields("visibility") match {
             case x : JsString => x.convertTo[String]
             case _ => null

@@ -123,7 +123,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val memberAsts = contractDef.subNodes
       .collect{
         case x: StateVariableDeclaration => astForField(x)
-        case x: StructDefinition => astForStruct(x)
+        case x: StructDefinition => astForStruct(x, contractDef.name)
       }
 
     Ast(typeDecl)
@@ -572,11 +572,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   Ast().withChildren(vars)
   }
 
-  private def astForStruct(structDefinition: StructDefinition): Ast = {
-    val typeFullName = registerType(structDefinition.name)
+  private def astForStruct(structDefinition: StructDefinition, contractName : String): Ast = {
+    val typeFullName = registerType(contractName+"."+structDefinition.name)
     val memberNode = NewMember()
-      .typeFullName(typeFullName)
+      .typeFullName(contractName+"."+typeFullName)
       .name(typeFullName)
+
     val members = structDefinition.members.collect {
       case x: VariableDeclaration => astForVarDecl(x)
     }
