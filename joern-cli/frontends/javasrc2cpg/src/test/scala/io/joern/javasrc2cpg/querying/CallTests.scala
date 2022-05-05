@@ -76,13 +76,13 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from call to arguments" in {
-    cpg.call("add").argument.size shouldBe 3
-    val List(arg0) = cpg.call("add").argument(0).l
-    arg0.isInstanceOf[nodes.Identifier] shouldBe true
-    arg0.asInstanceOf[nodes.Identifier].name shouldBe "this"
-    arg0.code shouldBe "this"
-    arg0.order shouldBe 0
-    arg0.argumentIndex shouldBe 0
+    cpg.call("add").argument.size shouldBe 2
+    val List(recv) = cpg.call("add").receiver.l
+    recv.isInstanceOf[nodes.Identifier] shouldBe true
+    recv.asInstanceOf[nodes.Identifier].name shouldBe "this"
+    recv.code shouldBe "this"
+    recv.order shouldBe 0
+    recv.argumentIndex shouldBe 0
 
     val List(arg1) = cpg.call("add").argument(1).l
     arg1.isInstanceOf[nodes.Identifier] shouldBe true
@@ -152,18 +152,28 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(identifier: Identifier, argument: Call) = call.argument.l
-    identifier.order shouldBe 0
-    identifier.argumentIndex shouldBe 0
-    identifier.code shouldBe "this"
-    identifier.name shouldBe "this"
+    call.receiver.l match {
+      case List(identifier: Identifier) =>
+        identifier.order shouldBe 0
+        identifier.argumentIndex shouldBe 0
+        identifier.code shouldBe "this"
+        identifier.name shouldBe "this"
 
-    argument.name shouldBe Operators.fieldAccess
-    argument.typeFullName shouldBe "test.MyObject"
+      case res => fail(s"Expected single identifier receiver but got $res")
+    }
 
-    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
-    ident.name shouldBe "this"
-    fieldIdent.canonicalName shouldBe "obj"
+    call.argument.l match {
+      case List(argument: Call) =>
+        argument.name shouldBe Operators.fieldAccess
+        argument.typeFullName shouldBe "test.MyObject"
+
+        val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+        ident.name shouldBe "this"
+        fieldIdent.canonicalName shouldBe "obj"
+
+      case res => fail(s"Expected single call argument but got $res")
+    }
+
   }
 
   "should create a call node for a call with an explicit `this`" in {

@@ -265,13 +265,22 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
-        val List(obj: Identifier, initArg1: Call) = init.argument.l
-        obj.name shouldBe "this"
-        obj.order shouldBe 0
-        obj.argumentIndex shouldBe 0
-        obj.typeFullName shouldBe "Bar"
+        init.receiver.l match {
+          case List(obj: Identifier) =>
+            obj.name shouldBe "this"
+            obj.order shouldBe 0
+            obj.argumentIndex shouldBe 0
+            obj.typeFullName shouldBe "Bar"
 
-        initArg1.code shouldBe "x + y"
+          case res => fail(s"Expected single identifier receiver but got $res")
+        }
+
+        init.argument.l match {
+          case List(arg: Call) =>
+            arg.code shouldBe "x + y"
+
+          case res => fail(s"Expected call arg but got $res")
+        }
 
       case res => fail(s"Expected Bar constructor but found $res")
     }

@@ -148,6 +148,7 @@ class ObjectTests extends JavaDataflowFixture {
 
   it should "find a path for malicious input via a getter" in {
     val (source, sink) = getConstSourceSink("test4")
+    println(s"Found sink: ${sink.mkString(", ")}")
     sink.reachableBy(source).size shouldBe 1
   }
 

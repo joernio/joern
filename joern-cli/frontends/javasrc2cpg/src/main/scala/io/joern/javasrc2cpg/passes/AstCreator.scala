@@ -1797,11 +1797,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     localAsts ++ assignmentsWithCtx
   }
 
-  def callAst(rootNode: NewCall, args: Seq[Ast]): Ast = {
-    Ast(rootNode)
-      .withChildren(args)
-      .withArgEdges(rootNode, args.flatMap(_.root))
-  }
+//  def callAst(rootNode: NewCall, args: Seq[Ast]): Ast = {
+//    Ast(rootNode)
+//      .withChildren(args)
+//      .withArgEdges(rootNode, args.flatMap(_.root))
+//  }
 
   def astForClassExpr(expr: ClassExpr, order: Int): Ast = {
     val callNode = NewCall()
@@ -2193,17 +2193,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .typeFullName(typeFullName)
     val thisAst = Ast(thisNode)
 
-    val ast = callAst(callNode, Seq(thisAst) ++ args)
-
-    // ast.root should just be `callNode`, but do a sanity check in any case.
-    ast.root match {
-      case None =>
-        logger.warn("Attempting to create constructor invocation without root")
-        ast
-
-      case Some(root) =>
-        ast.withReceiverEdge(root, thisNode)
-    }
+    callAst(callNode, args, Some(thisAst))
   }
 
   private def astsForExpression(expression: Expression, order: Int, expectedType: Option[String]): Seq[Ast] = {
@@ -2617,14 +2607,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         objectNode.map(Ast(_)).toList
     }
 
-    val ast = callAst(callNode, scopeAsts ++ argumentAsts)
-
-    scopeAsts.headOption.flatMap(_.root) match {
-      case None => ast
-
-      case Some(rootNode) =>
-        ast.withReceiverEdge(callNode, rootNode)
-    }
+    callAst(callNode, argumentAsts, scopeAsts.headOption)
   }
 
   def astForSuperExpr(superExpr: SuperExpr, order: Int, expectedType: Option[String]): Ast = {
