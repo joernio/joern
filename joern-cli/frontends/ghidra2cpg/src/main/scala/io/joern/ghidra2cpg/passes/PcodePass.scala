@@ -4,8 +4,8 @@ import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Func
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import io.joern.ghidra2cpg._
-import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
 import io.joern.ghidra2cpg.utils.Utils._
+import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
@@ -248,7 +248,7 @@ class PcodePass(
       .map { instruction =>
         handleInstruction(diffGraphBuilder, instruction)
       }
-
+    instructionNodes.foreach(diffGraphBuilder.addNode)
     if (instructionNodes.nonEmpty) {
       diffGraphBuilder.addEdge(blockNode, instructionNodes.head, EdgeTypes.AST)
       diffGraphBuilder.addEdge(methodNode, instructionNodes.head, EdgeTypes.CFG)
@@ -257,7 +257,6 @@ class PcodePass(
         val instructionNode     = nodes.last
         diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
         diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
-        diffGraphBuilder.addNode(prevInstructionNode)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
       }
     }
