@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.passes
 
-import com.github.javaparser.ast.`type`.{ReferenceType, TypeParameter}
+import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.body.{
   BodyDeclaration,
@@ -75,22 +75,15 @@ import com.github.javaparser.ast.stmt.{
 }
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
-  ResolvedClassDeclaration,
   ResolvedConstructorDeclaration,
-  ResolvedInterfaceDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeDeclaration,
-  ResolvedTypeParameterDeclaration
+  ResolvedReferenceTypeDeclaration
 }
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.{
-  JavaParserClassDeclaration,
-  JavaParserFieldDeclaration
-}
-import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, ReferenceTypeImpl}
+import com.github.javaparser.resolution.types.{ResolvedType, ResolvedTypeVariable}
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
+import com.github.javaparser.symbolsolver.model.typesystem.LazyType
 import io.joern.javasrc2cpg.passes.AstWithCtx.astWithCtxToSeq
 import io.joern.javasrc2cpg.passes.Context.mergedCtx
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
@@ -139,6 +132,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util.UUID.randomUUID
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
@@ -151,25 +145,12 @@ case class ClosureBindingMeta(node: NewClosureBinding, edgeMeta: Seq[(NewNode, N
 
 case class PartialConstructor(initNode: NewCall, initArgs: Seq[AstWithCtx], blockAst: AstWithCtx)
 
-case class Context(
-  identifiers: Map[String, NewIdentifier] = Map.empty,
-  bindingsInfo: Seq[BindingInfo] = List(),
-  lambdaAsts: Seq[Ast] = List(),
-  closureBindingInfo: Seq[ClosureBindingMeta] = List(),
-  staticInitializers: Seq[Ast] = List()
-) {
+case class Context(lambdaAsts: Seq[Ast] = List(), closureBindingInfo: Seq[ClosureBindingMeta] = List()) {
   def ++(other: Context): Context = {
-    val newIdentifiers     = identifiers ++ other.identifiers
-    val newBindings        = bindingsInfo ++ other.bindingsInfo
     val newLambdas         = lambdaAsts ++ other.lambdaAsts
     val newClosureBindings = closureBindingInfo ++ other.closureBindingInfo
-    val newStaticInits     = staticInitializers ++ other.staticInitializers
 
-    Context(newIdentifiers, newBindings, newLambdas, newClosureBindings, newStaticInits)
-  }
-
-  def addBindings(bindings: Seq[BindingInfo]): Context = {
-    this.copy(bindingsInfo = this.bindingsInfo ++ bindings)
+    Context(newLambdas, newClosureBindings)
   }
 
   def mergeWith(others: Iterable[Context]): Context = {
@@ -215,6 +196,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val scopeStack                                                = Scope()
   private val typeInfoProvider: TypeInfoProvider                        = TypeInfoProvider(global, scopeStack)
   private val partialConstructorQueue: MutableQueue[PartialConstructor] = MutableQueue.empty
+  private val bindingsQueue: MutableQueue[BindingInfo]                  = MutableQueue.empty
+  private val lambdaContextQueue: MutableQueue[Context]                 = MutableQueue.empty
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -231,7 +214,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val ast = astWithCtx.ast
     Ast.storeInDiffGraph(ast, diffGraph)
 
-    astWithCtx.ctx.bindingsInfo.foreach { bindingInfo =>
+    bindingsQueue.foreach { bindingInfo =>
       diffGraph.addNode(bindingInfo.node)
 
       bindingInfo.edgeMeta.foreach { case (src, dst, label) =>
@@ -239,7 +222,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
     }
 
-    astWithCtx.ctx.closureBindingInfo.foreach { closureBindingInfo =>
+    lambdaContextQueue.flatMap(_.closureBindingInfo).foreach { closureBindingInfo =>
       diffGraph.addNode(closureBindingInfo.node)
 
       closureBindingInfo.edgeMeta.foreach { case (src, dest, label) =>
@@ -292,7 +275,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val typeDeclAsts = typeDeclAstsWithCtx.map(_.ast)
       val mergedCtx    = ctx.mergeWith(typeDeclAstsWithCtx.map(_.ctx))
 
-      val lambdaTypeDeclAsts = mergedCtx.lambdaAsts.map { lambdaAst =>
+      val lambdaTypeDeclAsts = lambdaContextQueue.flatMap(_.lambdaAsts).map { lambdaAst =>
         val root = lambdaAst.root.get.asInstanceOf[NewMethod]
         // TODO: Inherit from implemented interface and bind to implemented method
         val lambdaTypeDecl = NewTypeDecl()
@@ -338,11 +321,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Some(methodNode) =>
         scopeStack.getEnclosingTypeDecl match {
           case Some(typeDecl) =>
-            val node = NewBinding()
-              .name(methodNode.name)
-              .methodFullName(methodNode.fullName)
-              .signature(methodNode.signature)
-
             bindingSignatures.map { bindingSignature =>
               val node = NewBinding()
                 .name(methodNode.name)
@@ -363,6 +341,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     substituteTypeVariableInternal(resolvedType, typeParamValues)
   }
 
+  @tailrec
   private def substituteTypeVariableInternal(
     resolvedType: ResolvedType,
     typeParamValues: ResolvedTypeParametersMap
@@ -434,17 +413,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): AstWithStaticInit = {
     member match {
       case constructor: ConstructorDeclaration =>
-        val AstWithCtx(ast, ctx) = astForConstructor(constructor, order)
+        val AstWithCtx(ast, ctx) = astForConstructor(constructor)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo          = bindingForMethod(rootNode, Nil)
-        AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
+        bindingsQueue.enqueueAll(bindingInfo)
+
+        AstWithStaticInit(AstWithCtx(ast, ctx))
 
       case method: MethodDeclaration =>
-        val AstWithCtx(ast, ctx) = astForMethod(method, order)
+        val AstWithCtx(ast, ctx) = astForMethod(method)
         val rootNode             = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo          = bindingForMethod(rootNode, bindingSignatures(method))
+        bindingsQueue.enqueueAll(bindingInfo)
 
-        AstWithStaticInit(AstWithCtx(ast, ctx.addBindings(bindingInfo)))
+        AstWithStaticInit(AstWithCtx(ast, ctx))
 
       case typeDeclaration: TypeDeclaration[_] =>
         AstWithStaticInit(astForTypeDecl(typeDeclaration, order, "TYPE_DECL", astParentFullName))
@@ -673,6 +655,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     )
 
     val bindingsInfo = bindingForMethod(Some(constructorNode), Nil)
+    bindingsQueue.enqueueAll(bindingsInfo)
 
     val ast = Ast(constructorNode)
       .withChildren(modifiers)
@@ -680,7 +663,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChild(bodyAst)
       .withChild(returnAst)
 
-    val ctx = Context(bindingsInfo = bindingsInfo)
+    val ctx = Context()
 
     AstWithCtx(ast, ctx)
   }
@@ -759,7 +742,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     AstWithCtx(memberAstWithModifiers, Context())
   }
 
-  private def astForConstructor(constructorDeclaration: ConstructorDeclaration, childNum: Int): AstWithCtx = {
+  private def astForConstructor(constructorDeclaration: ConstructorDeclaration): AstWithCtx = {
     scopeStack.pushNewScope(NewMethod())
 
     val parameterAstsWithCtx = astsForParameterList(constructorDeclaration.getParameters)
@@ -771,7 +754,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .fullName(fullName)
       .signature(signature)
 
-    parameterAstsWithCtx.foreach { case AstWithCtx(ast, ctx) =>
+    parameterAstsWithCtx.foreach { case AstWithCtx(ast, _) =>
       ast.root match {
         case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p.name, p)
         case _                             => // This should never happen
@@ -953,7 +936,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astForMethod(methodDeclaration: MethodDeclaration, childNum: Int): AstWithCtx = {
+  private def astForMethod(methodDeclaration: MethodDeclaration): AstWithCtx = {
 
     scopeStack.pushNewScope(NewMethod())
 
@@ -1335,7 +1318,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val iterableAstsWithCtx = astsForExpression(stmt.getIterable, 1, None)
     val variableAstsWithCtx =
       astsForVariableDecl(stmt.getVariable, iterableAstsWithCtx.size + 1)
-    val initContext = mergedCtx((iterableAstsWithCtx ++ variableAstsWithCtx).map(_.ctx))
 
     val bodyOrder       = iterableAstsWithCtx.size + variableAstsWithCtx.size + 1
     val bodyAstsWithCtx = astsForStatement(stmt.getBody, bodyOrder)
@@ -1727,7 +1709,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val targetType = targetAst.headOption.flatMap(rootType)
     val argsAsts   = astsForExpression(expr.getValue, 2, targetType)
     val valueType  = argsAsts.headOption.flatMap(rootType)
-    val argsCtx    = mergedCtx(targetAst.map(_.ctx) ++ argsAsts.map(_.ctx))
 
     val callNode =
       NewCall()
@@ -1827,7 +1808,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .typeFullName(typeFullName)
         .lineNumber(line(variable))
         .columnNumber(column(variable))
-      val targetAst = AstWithCtx(Ast(identifier), Context(identifiers = Map(identifier.name -> identifier)))
+      val targetAst = AstWithCtx(Ast(identifier), Context())
 
       // TODO Add expected type here if possible
       val initializerAstsWithCtx = astsForExpression(initializer, 2, Some(typeFullName))
@@ -2426,7 +2407,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val (identifiersMatchingParams, identifiersNotMatchingParams) = {
-      bodyAstWithCtx.ctx.identifiers.values.toSeq.partition(identifier => namesToMethodParams.contains(identifier.name))
+      // bodyAstWithCtx.ctx.identifiers.values.toSeq.partition(identifier => namesToMethodParams.contains(identifier.name))
+      (Nil, Nil)
     }
 
     val closureBindings = closureBindingsForLambdas(identifiersNotMatchingParams)
@@ -2445,15 +2427,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val methodRef = lambdaMethodRef(expr, fullName, order)
 
     val closuresWithMeta = buildClosuresWithMeta(closureBindings, methodRef)
+    lambdaContextQueue.append(Context(lambdaAsts = Seq(methodAst), closureBindingInfo = closuresWithMeta))
 
-    AstWithCtx(
-      Ast(methodRef),
-      Context(
-        lambdaAsts = Seq(methodAst),
-        identifiers = bodyAstWithCtx.ctx.identifiers,
-        closureBindingInfo = closuresWithMeta
-      )
-    )
+    AstWithCtx(Ast(methodRef), Context())
   }
 
   private def buildClosuresWithMeta(
@@ -2548,7 +2524,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .filename(filename)
 
     val localsForCapturedIdentifiers =
-      closureBindings.zipWithIndex.map { case (bindingWithInfo, idx) =>
+      closureBindings.map { bindingWithInfo =>
         val identifier = bindingWithInfo.identifier
         Ast(
           NewLocal()
@@ -2730,16 +2706,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case None =>
         val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
         objectNode.map { objIdentifier =>
-          AstWithCtx(Ast(objIdentifier), Context(identifiers = Map(objIdentifier.name -> objIdentifier)))
+          AstWithCtx(Ast(objIdentifier), Context())
         }.toSeq
     }
-//    val maybeScopeAst = call.getScope.toScala.toList.flatMap(astsForExpression(_, scopeContext, 0, maybeTargetType))
-//    val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
-//    val objectAst = objectNode
-//      .map(objIdentifier =>
-//        AstWithCtx(Ast(objIdentifier), Context(identifiers = Map(objIdentifier.name -> objIdentifier)))
-//      )
-//      .getOrElse(AstWithCtx.empty)
 
     val ast = callAst(callNode, scopeAsts ++ argumentAsts)
 
