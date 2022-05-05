@@ -36,3 +36,14 @@
 "free" 1->1
 "scanf" 2->2
 "strcmp" 1->-1 2->-1
+
+# some of those operators have duplicate mappings due to a typo - see https://github.com/ShiftLeftSecurity/codepropertygraph/pull/1630
+# these can be deleted once the typos are fixed
+"<operators>.assignmentExponentiation" 2->1 1->1
+"<operators>.assignmentModulo" 2->1 1->1
+"<operators>.assignmentShiftLeft" 2->1 1->1
+"<operators>.assignmentLogicalShiftRight" 2->1 1->1
+"<operators>.assignmentArithmeticShiftRight" 2->1 1->1
+"<operators>.assignmentAnd" 2->1 1->1
+"<operators>.assignmentOr" 2->1 1->1
+"<operators>.assignmentXor" 2->1 1->1
