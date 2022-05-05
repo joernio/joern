@@ -125,7 +125,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewUnknown
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.joern.x2cpg.datastructures.{Global, MutableQueue}
+import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -181,11 +181,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
-  private val scopeStack                                                = Scope()
-  private val typeInfoProvider: TypeInfoProvider                        = TypeInfoProvider(global, scopeStack)
-  private val partialConstructorQueue: MutableQueue[PartialConstructor] = MutableQueue.empty
-  private val bindingsQueue: MutableQueue[BindingInfo]                  = MutableQueue.empty
-  private val lambdaContextQueue: MutableQueue[Context]                 = MutableQueue.empty
+  private val scopeStack                                                       = Scope()
+  private val typeInfoProvider: TypeInfoProvider                               = TypeInfoProvider(global, scopeStack)
+  private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
+  private val bindingsQueue: mutable.ArrayBuffer[BindingInfo]                  = mutable.ArrayBuffer.empty
+  private val lambdaContextQueue: mutable.ArrayBuffer[Context]                 = mutable.ArrayBuffer.empty
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -400,7 +400,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val ast         = astForConstructor(constructor)
         val rootNode    = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo = bindingForMethod(rootNode, Nil)
-        bindingsQueue.enqueueAll(bindingInfo)
+        bindingsQueue.addAll(bindingInfo)
 
         AstWithStaticInit(ast)
 
@@ -408,7 +408,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val ast         = astForMethod(method)
         val rootNode    = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
         val bindingInfo = bindingForMethod(rootNode, bindingSignatures(method))
-        bindingsQueue.enqueueAll(bindingInfo)
+        bindingsQueue.addAll(bindingInfo)
 
         AstWithStaticInit(ast)
 
@@ -642,7 +642,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     )
 
     val bindingsInfo = bindingForMethod(Some(constructorNode), Nil)
-    bindingsQueue.enqueueAll(bindingsInfo)
+    bindingsQueue.addAll(bindingsInfo)
 
     Ast(constructorNode)
       .withChildren(modifiers)
@@ -1662,7 +1662,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       if (partialConstructorQueue.size > 1) {
         logger.warn("BUG: Received multiple partial constructors from assignment. Dropping all but the first.")
       }
-      val partialConstructor = partialConstructorQueue.dequeueAll.head
+      val partialConstructor = partialConstructorQueue.head
+      partialConstructorQueue.clear()
 
       targetAst.flatMap(_.root).toList match {
         case List(identifier: NewIdentifier) =>
@@ -1748,11 +1749,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       // Since all partial constructors will be dealt with here, don't pass them up.
       val declAst = callAst(callNode, Seq(targetAst) ++ initializerAstsWithCtx)
 
-      val constructorAsts = partialConstructorQueue.dequeueAll
+      val constructorAsts = partialConstructorQueue
         .map { partialConstructor =>
           constructorCount += 1
           completeInitForConstructor(partialConstructor, identifier, order + idx + constructorCount)
         }
+      partialConstructorQueue.clear()
 
       Seq(declAst) ++ constructorAsts
     }
