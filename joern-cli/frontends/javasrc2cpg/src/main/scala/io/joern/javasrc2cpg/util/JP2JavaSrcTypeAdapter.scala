@@ -23,6 +23,7 @@ import com.github.javaparser.resolution.types.{
   ResolvedType,
   ResolvedTypeVariable
 }
+import com.github.javaparser.symbolsolver.model.typesystem.LazyType
 import io.joern.javasrc2cpg.util.TypeInfoProvider.{TypeConstants, UnresolvedTypeDefault}
 import org.slf4j.LoggerFactory
 
@@ -77,6 +78,8 @@ object JP2JavaSrcTypeAdapter {
   def resolvedTypeFullName(resolvedType: ResolvedType): Option[String] = {
     resolvedType match {
       case resolvedReferenceType: ResolvedReferenceType => resolvedReferenceTypeFullName(resolvedReferenceType)
+
+      case lazyType: LazyType if lazyType.isReferenceType => resolvedTypeFullName(lazyType.asReferenceType())
 
       case _ => simpleResolvedTypeFullName(resolvedType)
     }
