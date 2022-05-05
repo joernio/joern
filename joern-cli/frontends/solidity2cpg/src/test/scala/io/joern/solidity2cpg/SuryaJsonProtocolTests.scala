@@ -15,7 +15,6 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 
   val sampleAstFile: String =
     ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/sample_contract_ast.json")
-//      ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/Test7364825853136063873.json")
   private val code: String = Using.resource(scala.io.Source.fromFile(sampleAstFile)) { source =>
     source.getLines() mkString "\n"
   }

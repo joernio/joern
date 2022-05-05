@@ -228,4 +228,9 @@ case class ReturnStatement(expression: BaseASTNode)
     extends BaseASTNode("TupleExpression") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
+
+  case class   FunctionTypeName(parameterTypes: List[BaseASTNode], returnTypes : List[BaseASTNode], visibility : String, stateMutability : String)
+    extends BaseASTNode("  FunctionTypeName") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 }

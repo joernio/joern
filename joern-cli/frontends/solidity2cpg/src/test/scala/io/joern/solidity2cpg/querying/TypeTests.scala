@@ -24,6 +24,7 @@ class TypeTests extends SolidityCodeToCpgFixture {
       |""".stripMargin
 
   "should create TYPE node with correct fields for class member" in {
+    println(cpg.typ.name.l)
     val List(x) = cpg.typ.name("address").l
     x.name shouldBe "address"
     x.fullName shouldBe "address"

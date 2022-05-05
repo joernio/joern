@@ -96,6 +96,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           ReturnStatementJsonFormat.read(json)
         case "TupleExpression" =>
           TupleExpressionJsonFormat.read(json)
+        case "FunctionTypeName" =>
+          FunctionTypeNameJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
@@ -788,4 +790,28 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
+  implicit object FunctionTypeNameJsonFormat extends JsonFormat[FunctionTypeName] with DefaultJsonProtocol {
+
+    def write(c: FunctionTypeName): JsValue = JsNull
+
+    def read(json: JsValue): FunctionTypeName = {
+      val fields = json.asJsObject("Unable to decode JSON as FunctionTypeName").fields
+      if (fields("type").convertTo[String] != "FunctionTypeName") {
+        throw new RuntimeException("FunctionTypeName object expected")
+      } else {
+        FunctionTypeName(
+          fields("parameterTypes").convertTo[List[BaseASTNode]],
+          fields("returnType").convertTo[List[BaseASTNode]],
+          fields("visibility") match {
+            case x : JsString => x.convertTo[String]
+            case _ => null
+          },
+          fields("stateMutability") match {
+            case x : JsString => x.convertTo[String]
+            case _ => null
+          }
+        )
+      }
+    }
+  }
 }

@@ -264,7 +264,7 @@ class TempararyLargeContractCpg extends SolidityCodeToCpgFixture {
     """.stripMargin
 
   "Identifies function names" in {
-    println(cpg.typeDecl.dotAst.head)
+//    println(cpg.typeDecl.dotAst.head)
     }
 
 }

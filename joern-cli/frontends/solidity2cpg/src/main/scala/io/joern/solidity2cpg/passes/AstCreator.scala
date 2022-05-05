@@ -100,7 +100,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForTypeDecl(contractDef: ContractDefinition, astParentFullName: String): Ast = {
-    val fullName  = contractDef.name
+    val fullName  = registerType(contractDef.name)
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
     val superTypes = contractDef.baseContracts.map {
@@ -122,9 +122,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val methods= contractDef.subNodes.map(x => astsForMethod(x, fullName))
     val memberAsts = contractDef.subNodes
       .collect{
-        case x: StateVariableDeclaration => x
+        case x: StateVariableDeclaration => astForField(x)
+        case x: StructDefinition => astForStruct(x)
       }
-      .map(astForField)
+
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
@@ -262,9 +263,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var visibility = "";
     var storage = ""
     varDecl.typeName match  {
-      case x: ElementaryTypeName => typefullName = x.name
+      case x: ElementaryTypeName => typefullName = registerType(x.name)
       case x: Mapping =>  {
-        typefullName = "mapping"
+        typefullName = registerType("mapping")
         code = getMappingKeyAndValue(x)}
       case x: ArrayTypeName => {
         x.baseTypeName match {
@@ -275,7 +276,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           typefullName += x.length
         }
         typefullName += "]"
+        registerType(typefullName)
       }
+//      case x:
     }
 
     varDecl.visibility match {
@@ -327,14 +330,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var typefullName = ""
     var code = ""
     varDecl.typeName match  {
-      case x: ElementaryTypeName => typefullName = x.name
+      case x: ElementaryTypeName => typefullName = registerType(x.name)
       case x: Mapping =>  {
-        typefullName = "mapping"
+        typefullName = registerType("mapping")
         code = getMappingKeyAndValue(x)}
       case x : ArrayTypeName => x.baseTypeName match {
-        case x : ElementaryTypeName => typefullName = x.name
+        case x : ElementaryTypeName => typefullName = registerType(x.name)
       }
-      case x : UserDefinedTypeName => typefullName = x.namePath
+      case x : UserDefinedTypeName => typefullName = registerType(x.namePath)
+      case x : FunctionTypeName => typefullName = registerType("function")
     }
     var visibility = "";
     varDecl.visibility match {
@@ -408,9 +412,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         case x: VariableDeclaration => {
 
           x.typeName match  {
-            case x: ElementaryTypeName => name = x.name
+            case x: ElementaryTypeName => name = registerType(x.name)
             case x: Mapping =>  {
-              name = "mapping"
+              name = registerType("mapping")
               mapkey = getMappingKeyAndValue(x)}
           }
 
@@ -482,6 +486,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
   private def astForNumberLiteral(numberLiteral: NumberLiteral): Ast ={
     var code = ""
+    val typeFullName = registerType(numberLiteral.number)
     if (numberLiteral.subdenomination != null) {
       code = numberLiteral.number + numberLiteral.subdenomination
     } else {
@@ -490,7 +495,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(NewCall()
       .name(numberLiteral.number)
       .code(code)
-      .typeFullName(numberLiteral.number)
+      .typeFullName(typeFullName)
     )
   }
 
@@ -531,10 +536,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForIdentifier(identifier: Identifier): Ast = {
+    val typeFullName = registerType(identifier.name)
     Ast(NewIdentifier()
       .name(identifier.name)
       .code(identifier.name)
-      .typeFullName(identifier.name)
+      .typeFullName(typeFullName)
     )
   }
 
@@ -564,6 +570,17 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
 
   Ast().withChildren(vars)
+  }
+
+  private def astForStruct(structDefinition: StructDefinition): Ast = {
+    val typeFullName = registerType(structDefinition.name)
+    val memberNode = NewMember()
+      .typeFullName(typeFullName)
+      .name(typeFullName)
+    val members = structDefinition.members.collect {
+      case x: VariableDeclaration => astForVarDecl(x)
+    }
+    Ast(memberNode).withChildren(members)
   }
 
 
