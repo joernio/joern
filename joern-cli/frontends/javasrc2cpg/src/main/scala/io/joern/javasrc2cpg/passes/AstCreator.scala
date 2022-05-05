@@ -581,11 +581,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       List.empty
     }
 
-    var clinitOrder                             = 1
+    var clinitOrder                      = 1
     val staticInits: mutable.Buffer[Ast] = mutable.Buffer()
     val memberAsts = withOrder(typ.getMembers) { (member, idx) =>
       val astWithInits =
-        astForTypeDeclMember(member, order + enumEntryAsts.size + idx - 1, clinitOrder, astParentFullName = typeFullName)
+        astForTypeDeclMember(
+          member,
+          order + enumEntryAsts.size + idx - 1,
+          clinitOrder,
+          astParentFullName = typeFullName
+        )
       clinitOrder += astWithInits.staticInits.size
       staticInits.appendAll(astWithInits.staticInits)
       astWithInits.ast
@@ -756,7 +761,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(annotationAsts)
   }
 
-  private def thisAstForMethod(typeFullName: String, lineNumber: Option[Integer]): Ast= {
+  private def thisAstForMethod(typeFullName: String, lineNumber: Option[Integer]): Ast = {
     val node = NewMethodParameterIn()
       .name("this")
       .lineNumber(lineNumber)
@@ -1014,8 +1019,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astsForLabeledStatement(stmt: LabeledStmt, order: Int): Seq[Ast] = {
-    val jumpTargetAst  = Ast(NewJumpTarget().name(stmt.getLabel.toString).order(order))
-    val stmtAst = astsForStatement(stmt.getStatement, order = order + 1).toList
+    val jumpTargetAst = Ast(NewJumpTarget().name(stmt.getLabel.toString).order(order))
+    val stmtAst       = astsForStatement(stmt.getStatement, order = order + 1).toList
 
     jumpTargetAst :: stmtAst
   }
@@ -1134,7 +1139,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(elseAst)
 
     conditionAst.flatMap(_.root.toList) match {
-      case r :: Nil=>
+      case r :: Nil =>
         ast.withConditionEdge(ifNode, r)
       case _ =>
         ast
@@ -1260,8 +1265,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val variableAsts =
       astsForVariableDecl(stmt.getVariable, iterableAsts.size + 1)
 
-    val bodyOrder       = iterableAsts.size + variableAsts.size + 1
-    val bodyAsts = astsForStatement(stmt.getBody, bodyOrder)
+    val bodyOrder = iterableAsts.size + variableAsts.size + 1
+    val bodyAsts  = astsForStatement(stmt.getBody, bodyOrder)
 
     Ast(forNode)
       .withChildren(iterableAsts)
@@ -1278,10 +1283,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"switch(${stmt.getSelector.toString})")
 
     val selectorAsts = astsForExpression(stmt.getSelector, 1, None)
-    val selectorNode        = selectorAsts.head.root.get
+    val selectorNode = selectorAsts.head.root.get
 
+    var orderOffset = 0
     val entryAstsWithCtx = withOrder(stmt.getEntries) { (e, o) =>
-      astForSwitchEntry(e, o)
+      val asts = astForSwitchEntry(e, o + orderOffset)
+      orderOffset += asts.size - 1
+      asts
     }.flatten
 
     val switchBodyAst =
@@ -1374,8 +1382,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.pushNewScope(block)
 
+    var orderOffset = 0
     val stmtAsts = withOrder(stmt.getStatements) { (x, o) =>
-      astsForStatement(x, o)
+      val asts = astsForStatement(x, o + orderOffset)
+      orderOffset += asts.size - 1
+      asts
     }.flatten
 
     scopeStack.popScope()
@@ -1715,7 +1726,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .name(Operators.assignment)
         .methodFullName(Operators.assignment)
         .code(s"$name = ${initializer.toString()}")
-        .order(order + idx)
+        .order(order + idx + constructorCount)
         .argumentIndex(order + idx + constructorCount)
         .lineNumber(lineNumber)
         .columnNumber(columnNumber)
@@ -1774,7 +1785,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   def astsForVariableDecl(varDecl: VariableDeclarationExpr, order: Int): Seq[Ast] = {
 
-    val locals = localsForVarDecl(varDecl, order)
+    val locals    = localsForVarDecl(varDecl, order)
     val localAsts = locals.map { Ast(_) }
 
     val assignOrder = order + locals.size
@@ -1986,9 +1997,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             variableInfo.node.isInstanceOf[NewMethodParameterIn] || variableInfo.node.isInstanceOf[NewLocal]
           )
 
-        variableOption.foldLeft(Ast(identifier))((ast, variableInfo) =>
-          ast.withRefEdge(identifier, variableInfo.node)
-        )
+        variableOption.foldLeft(Ast(identifier))((ast, variableInfo) => ast.withRefEdge(identifier, variableInfo.node))
     }
 
   }
@@ -2298,8 +2307,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val className = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse("<empty>")
     val fullName  = s"$className:${nextLambdaName()}"
 
-    val parameterAsts = astsForParameterList(expr.getParameters)
-    val namesToMethodParams  = mapNamesToParams(parameterAsts)
+    val parameterAsts       = astsForParameterList(expr.getParameters)
+    val namesToMethodParams = mapNamesToParams(parameterAsts)
 
     val bodyOrder = parameterAsts.size + 2
     val bodyAst = if (expr.getBody.isBlockStmt) {
@@ -2327,14 +2336,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val refEdgePairs    = buildRefEdgePairs(identifiersMatchingParams, namesToMethodParams)
 
     val methodAst =
-      lambdaMethodAst(
-        expr,
-        fullName,
-        parameterAsts,
-        bodyAst,
-        closureBindings,
-        refEdgePairs
-      )
+      lambdaMethodAst(expr, fullName, parameterAsts, bodyAst, closureBindings, refEdgePairs)
 
     val methodRef = lambdaMethodRef(expr, fullName, order)
 
@@ -2535,10 +2537,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     ast.root.flatMap(_.properties.get(PropertyNames.NAME).map(_.toString))
   }
 
-  private def argumentTypesForCall(
-    maybeMethod: Try[ResolvedMethodLikeDeclaration],
-    argAsts: Seq[Ast]
-  ): List[String] = {
+  private def argumentTypesForCall(maybeMethod: Try[ResolvedMethodLikeDeclaration], argAsts: Seq[Ast]): List[String] = {
     maybeMethod match {
       case Success(resolved) =>
         val matchingArgs = argAsts.headOption match {
