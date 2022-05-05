@@ -129,7 +129,9 @@ trait AstForTypesCreator {
         scope.addToScope(name, (l, tpe))
         Ast(l)
       case _ =>
-        val tpe     = registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = true, index)))
+        val tpe = registerType(
+          cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = true, index))
+        )
         val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
         val l = NewLocal()
           .code(s"$codeTpe $name")

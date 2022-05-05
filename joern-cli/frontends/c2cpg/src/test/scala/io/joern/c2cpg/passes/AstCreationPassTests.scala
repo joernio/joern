@@ -1074,20 +1074,18 @@ class AstCreationPassTests
         |} a;
         |struct B b;
       """.stripMargin) { cpg =>
-      inside(cpg.typeDecl("A").member.l) {
-        case List(x) =>
-          x.name shouldBe "x"
-          x.typeFullName shouldBe "int"
+      inside(cpg.typeDecl("A").member.l) { case List(x) =>
+        x.name shouldBe "x"
+        x.typeFullName shouldBe "int"
       }
       cpg.typeDecl.name("B").size shouldBe 1
-      inside(cpg.local.l) {
-        case List(a, b) =>
-          a.name shouldBe "a"
-          a.typeFullName shouldBe "A"
-          a.code shouldBe "struct A a"
-          b.name shouldBe "b"
-          b.typeFullName shouldBe "B"
-          b.code shouldBe "struct B b"
+      inside(cpg.local.l) { case List(a, b) =>
+        a.name shouldBe "a"
+        a.typeFullName shouldBe "A"
+        a.code shouldBe "struct A a"
+        b.name shouldBe "b"
+        b.typeFullName shouldBe "B"
+        b.code shouldBe "struct B b"
       }
     }
 
