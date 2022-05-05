@@ -152,24 +152,20 @@ case class ClosureBindingMeta(node: NewClosureBinding, edgeMeta: Seq[(NewNode, N
 case class PartialConstructor(initNode: NewCall, initArgs: Seq[AstWithCtx], blockAst: AstWithCtx)
 
 case class Context(
-  locals: Seq[NewLocal] = List(),
   identifiers: Map[String, NewIdentifier] = Map.empty,
-  methodParameters: Seq[NewMethodParameterIn] = List(),
   bindingsInfo: Seq[BindingInfo] = List(),
   lambdaAsts: Seq[Ast] = List(),
   closureBindingInfo: Seq[ClosureBindingMeta] = List(),
   staticInitializers: Seq[Ast] = List()
 ) {
   def ++(other: Context): Context = {
-    val newLocals          = locals ++ other.locals
     val newIdentifiers     = identifiers ++ other.identifiers
-    val newParameters      = methodParameters ++ other.methodParameters
     val newBindings        = bindingsInfo ++ other.bindingsInfo
     val newLambdas         = lambdaAsts ++ other.lambdaAsts
     val newClosureBindings = closureBindingInfo ++ other.closureBindingInfo
     val newStaticInits     = staticInitializers ++ other.staticInitializers
 
-    Context(newLocals, newIdentifiers, newParameters, newBindings, newLambdas, newClosureBindings, newStaticInits)
+    Context(newIdentifiers, newBindings, newLambdas, newClosureBindings, newStaticInits)
   }
 
   def addBindings(bindings: Seq[BindingInfo]): Context = {
@@ -816,7 +812,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .dynamicTypeHintFullName(Seq(typeFullName))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-    AstWithCtx(Ast(node), Context(methodParameters = Seq(node)))
+    AstWithCtx(Ast(node), Context())
   }
 
   private def convertAnnotationValueExpr(expr: Expression, order: Int): Option[Ast] = {
@@ -1879,7 +1875,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val locals = localsForVarDecl(varDecl, order)
     val localAsts = locals.map { local =>
-      AstWithCtx(Ast(local), Context(locals = Seq(local)))
+      AstWithCtx(Ast(local), Context())
     }
 
     val assignOrder = order + locals.size
@@ -2799,7 +2795,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val ast            = Ast(parameterNode)
 
     scopeStack.addToScope(parameter.getNameAsString, parameterNode)
-    AstWithCtx(ast.withChildren(annotationAsts), Context(methodParameters = List(parameterNode)))
+    AstWithCtx(ast.withChildren(annotationAsts), Context())
   }
 
   private def constructorFullName(typeDecl: Option[NewTypeDecl], signature: String): String = {
