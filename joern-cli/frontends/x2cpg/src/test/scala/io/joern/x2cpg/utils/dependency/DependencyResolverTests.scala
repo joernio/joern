@@ -23,7 +23,54 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
           .forEach(Files.delete(_))
       }
     }
+  }
 
+  "test gradle dependency resolution for a simple `build.gradle`" in {
+    val fixture = new Fixture(
+      """
+        |repositories { mavenCentral() }
+        |dependencies { implementation 'log4j:log4j:1.2.17' }
+        |""".stripMargin,
+      "build.gradle"
+    )
+
+    fixture.test { dependenciesFiles =>
+      dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    }
+  }
+
+  "test gradle dependency resolution for a simple `build.gradle.kts`" in {
+    val fixture = new Fixture(
+      """
+        |
+        |repositories { mavenCentral() }
+        |dependencies { implementation("log4j:log4j:1.2.17") }
+        |""".stripMargin,
+      "build.gradle.kts"
+    )
+
+    fixture.test { dependenciesFiles =>
+      dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    }
+  }
+
+  "test gradle dependency resolution for `build.gradle` using `kotlin-gradle-plugin`" in {
+    val fixture = new Fixture(
+      """
+        |buildscript {
+        |    repositories { mavenCentral() }
+        |    dependencies { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0" }
+        |}
+        |repositories { mavenCentral() }
+        |apply plugin: 'kotlin'
+        |dependencies { implementation 'log4j:log4j:1.2.17' }
+        |""".stripMargin,
+      "build.gradle"
+    )
+
+    fixture.test { dependenciesFiles =>
+      dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    }
   }
 
   "test maven dependency resolution" in {
