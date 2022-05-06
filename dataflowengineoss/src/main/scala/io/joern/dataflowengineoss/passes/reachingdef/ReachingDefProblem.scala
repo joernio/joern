@@ -45,7 +45,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   val allNodesReversePostOrder: List[StoredNode] =
     List(entryNode) ++ method.parameter.toList ++ method.reversePostOrder.toList.filter(x =>
       x.id != entryNode.id && x.id != exitNode.id
-    ) ++ List(exitNode)
+    ) ++ method.parameter.asOutput.toList ++ List(exitNode)
 
   private val allNodesEvenUnreachable =
     allNodesReversePostOrder ++ method.cfgNode.l.filterNot(x => allNodesReversePostOrder.contains(x))
@@ -60,6 +60,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   /** Create a map that allows CFG successors to be retrieved for each node
     */
   private def initSucc(ns: List[StoredNode]): Map[StoredNode, List[StoredNode]] = {
+    val firstOutputParam = ns.collect { case x: MethodParameterOut => x }.sortBy(_.order).headOption
     ns.map {
       case n @ (_: Return) => n -> List(exitNode)
       case n @ (param: MethodParameterIn) =>
@@ -68,10 +69,22 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
           if (nextParam.isDefined) { nextParam.toList }
           else { param.method.cfgFirst.l }
         }
+      case n @ (paramOut: MethodParameterOut) =>
+        n -> {
+          val nextParam = paramOut.method.parameter.index(paramOut.index.head + 1).headOption
+          if (nextParam.isDefined) { nextParam.toList }
+          else { List(exitNode) }
+        }
       case n @ (cfgNode: CfgNode) =>
-        n ->
+        n -> {
           // `.cfgNext` would be wrong here because it filters `METHOD_RETURN`
-          cfgNode.out(EdgeTypes.CFG).map(_.asInstanceOf[StoredNode]).l
+          val successors = cfgNode.out(EdgeTypes.CFG).map(_.asInstanceOf[StoredNode]).l
+          if (successors == List(exitNode) && firstOutputParam.isDefined) {
+            List(firstOutputParam.get)
+          } else {
+            successors
+          }
+        }
       case n =>
         logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG");
         n -> List()
@@ -81,6 +94,8 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   /** Create a map that allows CFG predecessors to be retrieved for each node
     */
   private def initPred(ns: List[StoredNode], method: Method): Map[StoredNode, List[StoredNode]] = {
+    val lastActualCfgNode = exitNode._cfgIn.nextOption()
+    val lastOutputParam   = ns.collect { case x: MethodParameterOut => x }.sortBy(_.order).lastOption
     ns.map {
       case n @ (param: MethodParameterIn) =>
         n -> {
@@ -88,9 +103,20 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
           if (prevParam.isDefined) { prevParam.toList }
           else { List(method) }
         }
+      case n @ (paramOut: MethodParameterOut) =>
+        n -> {
+          val prevParam = paramOut.method.parameter.index(paramOut.index.head - 1).headOption
+          if (prevParam.isDefined) { prevParam.toList }
+          else { lastActualCfgNode.toList }
+        }
       case n @ (_: CfgNode) if method.cfgFirst.headOption.contains(n) =>
         n -> method.parameter.l.sortBy(_.index).lastOption.toList
 
+      case n if n == exitNode =>
+        n -> {
+          if (lastOutputParam.isDefined) { lastOutputParam.toList }
+          else { lastActualCfgNode.toList }
+        }
       case n @ (cfgNode: CfgNode) => n -> cfgNode.cfgPrev.l
 
       case n =>

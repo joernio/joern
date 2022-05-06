@@ -20,7 +20,6 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
   override def runOnPart(dstGraph: DiffGraphBuilder, method: Method): Unit = {
     logger.info("Calculating reaching definitions for: {} in {}", method.fullName, method.filename)
     val problem = ReachingDefProblem.create(method)
-
     if (shouldBailOut(problem)) {
       logger.warn("Skipping.")
       return
