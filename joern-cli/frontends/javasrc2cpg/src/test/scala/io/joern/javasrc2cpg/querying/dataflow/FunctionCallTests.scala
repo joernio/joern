@@ -214,7 +214,6 @@ class FunctionCallTests extends JavaDataflowFixture {
   it should "find a path where `MALICIOUS` is added to safe input via a called function" in {
     val (source, sink) = getConstSourceSink("test14")
     sink.reachableBy(source).size shouldBe 1
-
   }
 
   it should "not find a path where the `MALICIOUS` arg is overwritten before the sink" in {
@@ -224,8 +223,7 @@ class FunctionCallTests extends JavaDataflowFixture {
 
   it should "not find a path where `MALICIOUS` arg is not included in return" in {
     val (source, sink) = getConstSourceSink("test16")
-    // This isn't exactly the expected behaviour, but is on par with c2cpg.
-    sink.reachableBy(source).size shouldBe 1
+    sink.reachableBy(source).size shouldBe 0
   }
 
   it should "find a path through a cast expression" in {

@@ -2,8 +2,11 @@ package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import overflowdb.traversal.toNodeTraversal
 
 class DataFlowTest1 extends DataFlowCodeToCpgSuite {
@@ -1395,6 +1398,9 @@ class DataFlowTest45 extends DataFlowCodeToCpgSuite {
 
   "should provide correct flow for source in sibling callee" in {
     cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 2
+
+    println(cpg.call("sink").reachableByFlows(cpg.call("source")).p)
+
   }
 
 }
@@ -1786,6 +1792,147 @@ class DataFlowTests60 extends DataFlowCodeToCpgSuite {
     def source = cpg.call("taint1").argument
     def sink   = cpg.call("sink").argument
     sink.reachableByFlows(source).size shouldBe 0
+  }
+
+}
+
+class DataFlowTests61 extends DataFlowCodeToCpgSuite {
+  override val code: String =
+    """
+      |void reassignThenFree(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |free(ptr);
+      |return;
+      |}
+      |
+      |void reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return;
+      |}
+      |
+      |// This flow from `free` to `free` should be returned
+      |int case0()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |free(data);
+      |return 0;
+      |}
+      |
+      |""".stripMargin
+
+  "should find flow from `free` to `free`" in {
+    def sink   = cpg.call("free").argument(1).l
+    def source = cpg.call("free").argument(1).l
+    val List(flow: Path) = sink
+      .reachableByFlows(source)
+      .filter(path => path.elements.size > 1)
+      .l
+    flow.elements match {
+      case List(i1: Identifier, i2: Identifier) =>
+        i1.name shouldBe "data"
+        i1.lineNumber shouldBe Some(19)
+        i2.name shouldBe "data"
+        i2.lineNumber shouldBe Some(20)
+    }
+  }
+}
+
+class DataFlowTests62 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |void reassignThenFree(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |free(ptr);
+      |return;
+      |}
+      |
+      |void reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return;
+      |}
+      |
+      |// This flow should NOT be returned
+      |int case1()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |data = malloc(0x80);
+      |free(data);
+      |return 0;
+      |}
+      |
+      |""".stripMargin
+
+  "should not report flow" in {
+    def sink   = cpg.call("free").argument(1).l
+    def source = cpg.call("free").argument(1).l
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+  }
+}
+
+class DataFlowTests63 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |void reassignThenFree(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |free(ptr);
+      |return;
+      |}
+      |
+      |// This flow should NOT be returned
+      |int case2()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |reassignThenFree(data);
+      |return 0;
+      |}
+      |
+      |""".stripMargin
+
+  "should not report flow" in {
+    def sink   = cpg.call("free").argument(1).l
+    def source = cpg.call("free").argument(1).l
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+  }
+}
+
+class DataFlowTests64 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |void reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return;
+      |}
+      |
+      |// This flow should NOT be returned
+      |int case3()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |reassign(data);
+      |free(data);
+      |return 0;
+      |}
+      |""".stripMargin
+
+  "should not report flow" in {
+    def sink   = cpg.call("free").argument(1).l
+    def source = cpg.call("free").argument(1).l
+
+    println(sink.reachableByFlows(source).filter(path => path.elements.size > 1).p)
+
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
   }
 
 }

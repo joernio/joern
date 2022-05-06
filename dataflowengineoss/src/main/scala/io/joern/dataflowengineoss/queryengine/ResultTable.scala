@@ -5,18 +5,20 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, StoredNode
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
+/** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
+  */
 class ResultTable(
   val table: mutable.Map[StoredNode, Vector[ReachableByResult]] =
     new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
 ) {
 
-  /** Add all results in `value` to table entry at `key`, appending to existing results.
+  /** Add all results in `results` to table at `key`, appending to existing results.
     */
-  def add(key: StoredNode, value: Vector[ReachableByResult]): Unit = {
+  def add(key: StoredNode, results: Vector[ReachableByResult]): Unit = {
     table.asJava.compute(
       key,
       { (_, existingValue) =>
-        Option(existingValue).toVector.flatten ++ value
+        Option(existingValue).toVector.flatten ++ results
       }
     )
   }
@@ -30,7 +32,7 @@ class ResultTable(
       res.map { r =>
         val pathToFirstNode = r.path.slice(0, r.path.map(_.node).indexOf(first.node))
         val completePath    = pathToFirstNode ++ (first +: remainder)
-        r.copy(path = completePath)
+        r.copy(path = Vector(completePath.head.copy(resolved = true)) ++ completePath.tail)
       }
     }
   }
@@ -53,9 +55,9 @@ class ResultTable(
   *   this is the main result - a known path
   * @param table
   *   the result table - kept to allow for detailed inspection of intermediate paths
-  * @param callSite
-  *   the call site that was expanded to kick off the task. We require this to match call sites to exclude
-  *   non-realizable paths through other callers
+  * @param callSiteStack
+  *   the call site stack containing the call sites that were expanded to kick off the task. We require this to match
+  *   call sites to exclude non-realizable paths through other callers
   * @param partial
   *   indicate whether this result stands on its own or requires further analysis, e.g., by expanding output arguments
   *   backwards into method output parameters.
@@ -63,17 +65,18 @@ class ResultTable(
 case class ReachableByResult(
   path: Vector[PathElement],
   table: ResultTable,
-  callSite: Option[Call],
+  callSiteStack: mutable.Stack[Call],
   callDepth: Int = 0,
   partial: Boolean = false
 ) {
   def source: CfgNode = path.head.node
 
-  def unresolvedArgs: Vector[CfgNode] =
+  def unresolvedArgs: Vector[CfgNode] = {
     path.collect {
       case elem if !elem.resolved =>
         elem.node
     }.distinct
+  }
 }
 
 /** We represent data flows as sequences of path elements, where each path element consists of a node, flags and the

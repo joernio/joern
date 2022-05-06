@@ -11,18 +11,23 @@ import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.util.concurrent._
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-private case class ReachableByTask(
+case class ReachableByTask(
   sink: CfgNode,
   sources: Set[CfgNode],
   table: ResultTable,
   initialPath: Vector[PathElement] = Vector(),
   callDepth: Int = 0,
-  callSite: Option[Call] = None
+  callSiteStack: mutable.Stack[Call] = mutable.Stack()
 )
 
+/** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
+  * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
+  * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`.
+  */
 class Engine(context: EngineContext) {
 
   import Engine._
@@ -36,8 +41,8 @@ class Engine(context: EngineContext) {
     executorService.shutdown()
   }
 
-  /** Determine flows from sources to sinks by analyzing backwards from sinks. Returns the list of results along with
-    * the ResultTable, a cache of known paths created during the analysis.
+  /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
+    * results along with a ResultTable, a cache of known paths created during the analysis.
     */
   def backwards(sinks: List[CfgNode], sources: List[CfgNode]): List[ReachableByResult] = {
     if (sources.isEmpty) {
@@ -47,27 +52,54 @@ class Engine(context: EngineContext) {
       logger.warn("Attempting to determine flows to empty list of sinks.")
     }
     val sourcesSet = sources.toSet
-    val tasks = sinks.map { sink =>
-      val table = context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
-      ReachableByTask(sink, sourcesSet, table)
-    }
+    val tasks      = createOneTaskPerSink(sourcesSet, sinks)
     solveTasks(tasks, sourcesSet)
   }
 
+  /** Create one task per sink where each task has its own result table.
+    */
+  private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
+
+    /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
+      */
+    def newResultTable() = {
+      context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
+    }
+    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
+  }
+
+  /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
+    * submitted accordingly. Once no more tasks can be created, the list of results is returned.
+    */
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
 
-    tasks.foreach(submitTask)
     var result = List[ReachableByResult]()
+
+    def submitTask(task: ReachableByTask): Unit = {
+      numberOfTasksRunning += 1
+      completionService.submit(
+        new ReachableByCallable(
+          if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
+          context
+        )
+      )
+    }
+
+    def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
+      val complete = resultsOfTask.filterNot(_.partial)
+      result ++= complete
+      new TaskCreator(sources).createFromResults(resultsOfTask).foreach(submitTask)
+    }
+
+    tasks.foreach(submitTask)
+
     while (numberOfTasksRunning > 0) {
       Try {
         completionService.take.get
       } match {
         case Success(resultsOfTask) =>
           numberOfTasksRunning -= 1
-          val complete = resultsOfTask.filterNot(_.partial)
-          result ++= complete
-          newTasksFromResults(resultsOfTask, sources)
-            .foreach(submitTask)
+          handleResultsOfTask(resultsOfTask)
         case Failure(exception) =>
           numberOfTasksRunning -= 1
           logger.warn(s"SolveTask failed with exception: ${exception}")
@@ -75,79 +107,6 @@ class Engine(context: EngineContext) {
       }
     }
     deduplicate(result.toVector).toList
-  }
-
-  private def newTasksFromResults(
-    resultsOfTask: Vector[ReachableByResult],
-    sources: Set[CfgNode]
-  ): Vector[ReachableByTask] = {
-    tasksForParams(resultsOfTask, sources) ++ tasksForUnresolvedOutArgs(resultsOfTask, sources)
-  }
-
-  private def submitTask(task: ReachableByTask): Unit = {
-    numberOfTasksRunning += 1
-    completionService.submit(
-      new ReachableByCallable(
-        if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
-        context
-      )
-    )
-  }
-
-  private def tasksForParams(
-    resultsOfTask: Vector[ReachableByResult],
-    sources: Set[CfgNode]
-  ): Vector[ReachableByTask] = {
-    val pathsFromParams = resultsOfTask.map(x => (x, x.path, x.callDepth))
-    pathsFromParams.flatMap { case (result, path, callDepth) =>
-      val param = path.head.node
-      Some(param)
-        .collect { case p: MethodParameterIn =>
-          val args = if (result.callSite.isDefined) {
-            List()
-          } else {
-            paramToArgs(p)
-          }
-          args.map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, path, callDepth + 1)
-          }
-        }
-        .getOrElse(Vector())
-    }
-  }
-
-  private def tasksForUnresolvedOutArgs(
-    resultsOfTask: Vector[ReachableByResult],
-    sources: Set[CfgNode]
-  ): Vector[ReachableByTask] = {
-
-    val outArgsAndCalls = resultsOfTask
-      .map(x => (x, x.unresolvedArgs.collect { case e: Expression => e }, x.path, x.callDepth))
-      .distinct
-
-    val forCalls = outArgsAndCalls.flatMap { case (_, args, path, callDepth) =>
-      val outCalls = args.collect { case n: Call => n }
-      val methodReturns = outCalls
-        .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
-        .to(Traversal)
-
-      methodReturns.map { case (call, ret) =>
-        ReachableByTask(ret, sources, new ResultTable, path, callDepth + 1, Some(call))
-      }
-    }
-
-    val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args.flatMap { arg =>
-        val outParams = if (result.callSite.isDefined) {
-          List[MethodParameterOut]()
-        } else {
-          argToOutputParams(arg).l
-        }
-        outParams
-          .map(p => ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, arg.inCall.headOption))
-      }
-    }
-    forCalls ++ forArgs
   }
 
 }
@@ -168,10 +127,23 @@ object Engine {
     }
   }
 
-  /**
-    * Convert an edge to a path element. This function may return `None` if the edge is
-    * found to lead to an argument that isn't used, according to semantics.
-    * */
+  private def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
+    arg.inCall.l match {
+      case List(call) =>
+        methodsForCall(call)
+          .to(Traversal)
+          .internal
+          .isNotStub
+          .nonEmpty && semanticsForCall(call).isEmpty
+      case _ =>
+        false
+    }
+  }
+
+  /** Convert an edge to a path element. This function may return `None` if the edge is found to lead to an argument
+    * that isn't used, according to semantics. It may also return `None` if the child node is an output argument of an
+    * internal function.
+    */
   private def edgeToPathElement(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
     val parentNode = e.outNode().asInstanceOf[CfgNode]
     val childNode  = e.inNode().asInstanceOf[CfgNode]
@@ -236,8 +208,10 @@ object Engine {
       } else {
         parentNode.isDefined
       }
-
-      Some(PathElement(parentNode, visible, outEdgeLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")))
+      val resolved = !isOutputArgOfInternalMethod(parentNode)
+      Some(
+        PathElement(parentNode, visible, resolved, outEdgeLabel = Some(e.property(Properties.VARIABLE)).getOrElse(""))
+      )
     } else {
       None
     }
@@ -261,13 +235,21 @@ object Engine {
     NoResolve.getCalledMethods(call).toList
   }
 
-  def paramToArgs(param: MethodParameterIn): List[Expression] =
-    NoResolve
-      .getMethodCallsites(param.method)
+  def isCallToInternalMethod(call: Call): Boolean = {
+    methodsForCall(call)
       .to(Traversal)
-      .collectAll[Call]
-      .argument(param.index)
-      .l
+      .internal
+      .nonEmpty
+  }
+  def isCallToInternalMethodWithoutSemantic(call: Call)(implicit semantics: Semantics): Boolean = {
+    isCallToInternalMethod(call) && semanticsForCall(call).isEmpty
+  }
+
+  def semanticsForCall(call: Call)(implicit semantics: Semantics): List[FlowSemantic] = {
+    Engine.methodsForCall(call).flatMap { method =>
+      semantics.forMethod(method.fullName)
+    }
+  }
 
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
@@ -326,8 +308,7 @@ case class EngineConfig(
   * @param context
   *   state of the data flow engine
   */
-private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
-    extends Callable[Vector[ReachableByResult]] {
+class ReachableByCallable(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
 
   import Engine._
 
@@ -338,7 +319,8 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
       Vector()
     } else {
       implicit val sem: Semantics = context.semantics
-      results(PathElement(task.sink) +: task.initialPath, task.sources, task.table, task.callSite)
+      val path                    = PathElement(task.sink) +: task.initialPath
+      results(path, task.sources, task.table, task.callSiteStack)
       task.table.get(task.sink).get.map { r =>
         r.copy(callDepth = task.callDepth)
       }
@@ -358,11 +340,15 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
     path: Vector[PathElement],
     sources: Set[NodeType],
     table: ResultTable,
-    callSite: Option[Call]
+    callSiteStack: mutable.Stack[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
+
     val curNode = path.head.node
 
-    val resultsForParents: Vector[ReachableByResult] = {
+    /** For each parent of the current node, determined via `expandIn`, check if results are available in the result
+      * table. If not, determine results recursively.
+      */
+    def computeResultsForParents() = {
       expandIn(curNode, path).iterator.flatMap { parent =>
         val cachedResult = table.createFromTable(parent, path)
         if (cachedResult.isDefined) {
@@ -370,56 +356,61 @@ private class ReachableByCallable(task: ReachableByTask, context: EngineContext)
           cachedResult.get
         } else {
           QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
-          results(parent +: path, sources, table, callSite)
+          results(parent +: path, sources, table, callSiteStack)
         }
       }.toVector
     }
 
-    val resultsForCurNode = {
+    /** Determine results for the current node
+      */
+    def computeResultsForCurrentNode() = {
       val endStates = if (sources.contains(curNode.asInstanceOf[NodeType])) {
-        List(ReachableByResult(path, table, callSite))
+        List(ReachableByResult(path, table, callSiteStack))
       } else if (
         (task.callDepth != context.config.maxCallDepth) && curNode
-          .isInstanceOf[MethodParameterIn] && callSite.isEmpty
+          .isInstanceOf[MethodParameterIn] && callSiteStack.isEmpty
       ) {
-        List(ReachableByResult(path, table, callSite, partial = true))
+        List(ReachableByResult(path, table, callSiteStack, partial = true))
       } else {
         List()
       }
 
-      val retsToResolve = curNode match {
-        case call: Call =>
-          if (
-            (task.callDepth != context.config.maxCallDepth) && methodsForCall(call)
-              .to(Traversal)
-              .internal
-              .nonEmpty && semanticsForCall(call).isEmpty && callSite.isEmpty
-          ) {
-            List(
-              ReachableByResult(
-                PathElement(path.head.node, resolved = false) +: path.tail,
-                table,
-                callSite,
-                partial = true
-              )
+      def createPartialResult(call: Call) = {
+        if (
+          (task.callDepth != context.config.maxCallDepth) && isCallToInternalMethodWithoutSemantic(
+            call
+          ) && callSiteStack.isEmpty
+        ) {
+          List(
+            ReachableByResult(
+              PathElement(path.head.node, resolved = false) +: path.tail,
+              table,
+              callSiteStack,
+              partial = true
             )
-          } else {
-            List()
+          )
+        } else {
+          List()
+        }
+      }
+
+      val retsAndArgsToResolve = curNode match {
+        case call: Call =>
+          createPartialResult(call)
+        case arg: Expression =>
+          arg.inCall.l match {
+            case List(call) =>
+              createPartialResult(call)
+            case _ =>
+              List()
           }
         case _ => List()
       }
-      endStates ++ retsToResolve
+      endStates ++ retsAndArgsToResolve
     }
-
-    val res = deduplicate(resultsForParents ++ resultsForCurNode)
+    val res = deduplicate(computeResultsForParents() ++ computeResultsForCurrentNode())
     table.add(curNode, res)
     res
-  }
-
-  private def semanticsForCall(call: Call)(implicit semantics: Semantics): List[FlowSemantic] = {
-    Engine.methodsForCall(call).flatMap { method =>
-      semantics.forMethod(method.fullName)
-    }
   }
 
 }
