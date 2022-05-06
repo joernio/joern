@@ -158,13 +158,22 @@ object Engine {
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
+        // The DDG has edges from non-return statements to METHOD_RETURN since METHOD_RETURN
+        // is also the exit node. I think we should change that at some point. For now, just
+        // filter these edges.
+        val srcNode = e.outNode()
+        val dstNode = e.inNode()
+        !(dstNode.isInstanceOf[MethodReturn] && !srcNode.isInstanceOf[Return])
+      }
+      .filter { e =>
         val outNode = e.outNode()
         outNode.isInstanceOf[CfgNode] && !outNode.isInstanceOf[Method]
       }
       .filter(e => !path.map(_.node).contains(e.outNode().asInstanceOf[CfgNode]))
       .toVector
       .filter { edge =>
-        !isCallRetval(edge.outNode().asInstanceOf[StoredNode])
+        val srcNode = edge.outNode().asInstanceOf[StoredNode]
+        !isCallRetval(srcNode)
       }
   }
 

@@ -2,11 +2,9 @@ package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import overflowdb.traversal.toNodeTraversal
 
 class DataFlowTest1 extends DataFlowCodeToCpgSuite {
