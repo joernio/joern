@@ -1397,10 +1397,7 @@ class DataFlowTest45 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should provide correct flow for source in sibling callee" in {
-    cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 2
-
-    println(cpg.call("sink").reachableByFlows(cpg.call("source")).p)
-
+    cpg.call("sink").argument(1).reachableByFlows(cpg.call("source")).size shouldBe 2
   }
 
 }

@@ -75,7 +75,7 @@ case class ReachableByResult(
     */
   def outputArgument: Option[CfgNode] = {
     path.headOption.collect {
-      case elem: Expression if !elem.isOutputArg =>
+      case elem: PathElement if elem.isOutputArg =>
         elem.node
     }
   }

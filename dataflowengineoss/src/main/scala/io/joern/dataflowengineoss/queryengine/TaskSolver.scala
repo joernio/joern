@@ -1,6 +1,5 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.queryengine.Engine.isCallToInternalMethodWithoutSemantic
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, MethodParameterIn}
@@ -128,7 +127,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
     table.add(curNode, res)
     res
-
   }
 
 }
