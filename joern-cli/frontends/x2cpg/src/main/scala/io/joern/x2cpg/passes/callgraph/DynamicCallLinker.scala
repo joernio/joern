@@ -1,11 +1,12 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, MethodParameterIn, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.traversal.Traversal
 import overflowdb.{NodeDb, NodeRef}
 
 import scala.collection.mutable
@@ -143,8 +144,11 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     */
   private def filterWithVariableTypeInformation(call: Call, tgts: Set[String]): Set[String] = {
     // We can refine possible calls using the potential allocation site
-    val receivers      = call.receiver.l
-    val isThisReceiver = receivers.filter(_.code != null).code(".*this.*").nonEmpty
+    val receivers = call.receiver.l
+    val isThisReceiver = Traversal(receivers).isIdentifier.refsTo.collect {
+      case p: MethodParameterIn if p.index == 0 => p
+    }.nonEmpty
+
     if (call.receiver.isEmpty) {
       // Unable to use receiver/points-to information, resort to CHA
       tgts
@@ -171,8 +175,14 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private def filterTargets(tgts: Set[String], allowedSet: Set[String]): Set[String] = {
     if (allowedSet.isEmpty)
       tgts // if allowed set is empty then we likely failed to receive points-to information
-    else
-      tgts.filter { t => allowedSet.contains(t.substring(0, t.lastIndexOf("."))) }
+    else {
+      tgts.filter { methodFullName =>
+        methodMap(methodFullName).definingTypeDecl.fullName.headOption match {
+          case Some(tgtTypeDecl) => allowedSet.contains(tgtTypeDecl)
+          case None              => false
+        }
+      }
+    }
   }
 
   /** In the case where the method isn't an internal method and cannot be resolved by crawling TYPE_DECL nodes it can be
