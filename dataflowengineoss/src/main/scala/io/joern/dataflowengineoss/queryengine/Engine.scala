@@ -78,7 +78,7 @@ class Engine(context: EngineContext) {
     def submitTask(task: ReachableByTask): Unit = {
       numberOfTasksRunning += 1
       completionService.submit(
-        new ReachableByCallable(
+        new TaskSolver(
           if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
           context
         )
@@ -308,7 +308,7 @@ case class EngineConfig(
   * @param context
   *   state of the data flow engine
   */
-class ReachableByCallable(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
+class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
 
   import Engine._
 
@@ -383,7 +383,7 @@ class ReachableByCallable(task: ReachableByTask, context: EngineContext) extends
         ) {
           List(
             ReachableByResult(
-              PathElement(path.head.node, resolved = false) +: path.tail,
+              PathElement(path.head.node, isOutputArg = false) +: path.tail,
               table,
               callSiteStack,
               partial = true

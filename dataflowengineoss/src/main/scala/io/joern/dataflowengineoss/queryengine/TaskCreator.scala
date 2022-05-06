@@ -6,8 +6,6 @@ import io.shiftleft.semanticcpg.language.NoResolve
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language._
 
-import scala.collection.mutable
-
 /** Creation of new tasks from results of completed tasks.
   */
 class TaskCreator(sources: Set[CfgNode]) {
@@ -17,10 +15,12 @@ class TaskCreator(sources: Set[CfgNode]) {
   def createFromResults(results: Vector[ReachableByResult]): Vector[ReachableByTask] =
     tasksForParams(results) ++ tasksForUnresolvedOutArgs(results)
 
-  /** Determine all results that provide paths that start in a parameter. There are two cases here:
+  /** Create new tasks from all results that start in a parameter. In essence, we want to traverse to corresponding
+    * arguments of call sites, but we need to be careful here not to create unrealizable paths. We achieve this
+    * by holding a call stack in results.
     *
-    * Case 1: walking backward from the sink, we have only expanded into callers to far. In this case, the next tasks
-    * need to explore each call site to the method.
+    * Case 1: walking backward from the sink, we have only expanded into callers so far, that is, the call stack
+    * is empty. In this case, the next tasks need to explore each call site to the method.
     *
     * Case 2: we expanded into a callee that we identified on the way, e.g., a method `y = transform(x)`, and we have
     * reached the parameter of that method (`transform`). Upon doing so, we recorded the call site that we expanded in
@@ -36,8 +36,10 @@ class TaskCreator(sources: Set[CfgNode]) {
         }
       } else {
         // Case 2
-        // TODO generate new task here
-        List()
+        val callSite = result.callSiteStack.pop()
+        paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
+            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1, result.callSiteStack.clone())
+        }
       }
     }
   }
@@ -59,38 +61,43 @@ class TaskCreator(sources: Set[CfgNode]) {
       .argument(param.index)
       .l
 
+  /**
+    * Create new tasks from all results that end in an output argument, including return arguments.
+    * In this case, we want to traverse to corresponding method output parameters and method return
+    * nodes respectively.
+    * */
   private def tasksForUnresolvedOutArgs(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
 
     val outArgsAndCalls = results
-      .map(x => (x, x.unresolvedArgs.collect { case e: Expression => e }, x.path, x.callDepth))
+      .map(x => (x, x.outputArgument, x.path, x.callDepth))
       .distinct
 
-    val forCalls = outArgsAndCalls.flatMap { case (_, args, path, callDepth) =>
-      val outCalls = args.collect { case n: Call => n }
-      val methodReturns = outCalls
+    val forCalls = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth) =>
+      val outCall = outArg.collect { case n: Call => n }
+      val methodReturns = outCall.toList
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
         .to(Traversal)
 
       methodReturns.map { case (call, ret) =>
-        val newPath = Vector(path.head.copy(resolved = true)) ++ path.tail
-        // TODO here, we need to add to the call site stack, not just initialize a 1-elemented stack
-        val callSiteStack = mutable.Stack(call)
+        val newPath = Vector(path.head.copy(isOutputArg = true)) ++ path.tail
+        val callSiteStack = result.callSiteStack.clone()
+        callSiteStack.push(call)
         ReachableByTask(ret, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
       }
     }
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args.flatMap { arg =>
+      args.toList.flatMap { arg =>
         val outParams = if (result.callSiteStack.nonEmpty) {
           List[MethodParameterOut]()
         } else {
-          argToOutputParams(arg).l
+          argToOutputParams(arg.asInstanceOf[Expression]).l
         }
-        val newPath = Vector(path.head.copy(resolved = true)) ++ path.tail
+        val newPath = Vector(path.head.copy(isOutputArg = true)) ++ path.tail
         outParams
           .map { p =>
-            // TODO here, we need to add to the call site stack, not just initialize a 1-elemented stack
-            val callSiteStack = arg.inCall.headOption.map(x => mutable.Stack(x)).getOrElse(mutable.Stack())
+            val callSiteStack = result.callSiteStack.clone()
+            arg.asInstanceOf[Expression].inCall.headOption.foreach{x => callSiteStack.push(x)}
             ReachableByTask(p, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
           }
       }
