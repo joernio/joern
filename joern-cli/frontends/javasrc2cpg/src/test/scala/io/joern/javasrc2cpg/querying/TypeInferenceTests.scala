@@ -129,7 +129,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     call.methodFullName shouldBe "a.b.c.Bar.bar:int()"
     call.signature shouldBe "int()"
 
-    call.argument.l match {
+    call.receiver.l match {
       case (obj: Identifier) :: Nil =>
         obj.name shouldBe "b"
         obj.code shouldBe "b"
@@ -160,18 +160,22 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "void(d.Baz,int)"
     call.methodFullName shouldBe "a.b.c.Bar.bar:void(d.Baz,int)"
 
-    call.argument.l match {
-      case List(obj: Identifier, arg1: Identifier, arg2: Literal) =>
+    call.receiver.l match {
+      case List(obj: Identifier) =>
         obj.name shouldBe "b"
         obj.typeFullName shouldBe "a.b.c.Bar"
 
+      case res => fail(s"Expected identifier receiver but got $res")
+    }
+    call.argument.l match {
+      case List(arg1: Identifier, arg2: Literal) =>
         arg1.name shouldBe "z"
         arg1.typeFullName shouldBe "d.Baz"
 
         arg2.code shouldBe "1"
         arg2.typeFullName shouldBe "int"
 
-      case res => fail(s"Expected 3 arguments but got $res")
+      case res => fail(s"Expected 2 arguments but got $res")
     }
   }
 
@@ -187,7 +191,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     call.methodFullName shouldBe "pakfoo.Foo.missing:void()"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    call.argument.l match {
+    call.receiver.l match {
       case (obj: Identifier) :: Nil =>
         obj.name shouldBe "this"
         obj.order shouldBe 0

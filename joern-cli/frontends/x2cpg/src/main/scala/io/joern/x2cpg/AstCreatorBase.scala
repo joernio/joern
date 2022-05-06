@@ -79,7 +79,6 @@ abstract class AstCreatorBase(filename: String) {
     Ast(callNode)
       .withChild(rcv)
       .withChildren(arguments)
-      // .withArgEdges(callNode, receiverRoot)
       .withArgEdges(callNode, arguments.flatMap(_.root))
       .withReceiverEdges(callNode, receiverRoot)
   }

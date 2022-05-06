@@ -1797,12 +1797,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     localAsts ++ assignmentsWithCtx
   }
 
-//  def callAst(rootNode: NewCall, args: Seq[Ast]): Ast = {
-//    Ast(rootNode)
-//      .withChildren(args)
-//      .withArgEdges(rootNode, args.flatMap(_.root))
-//  }
-
   def astForClassExpr(expr: ClassExpr, order: Int): Ast = {
     val callNode = NewCall()
       .name(Operators.fieldAccess)

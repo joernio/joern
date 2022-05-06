@@ -117,7 +117,7 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   "it should create field access for simple non-static access as call scope" in {
-    cpg.method.name("test8").call.name("toString").argument.l match {
+    cpg.method.name("test8").call.name("toString").receiver.l match {
       case List(fieldAccess: Call) =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.argument.l match {
@@ -132,7 +132,7 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create field access for simple non-static access with explicit this as call scope" in {
-    cpg.method.name("test9").call.name("toString").argument.l match {
+    cpg.method.name("test9").call.name("toString").receiver.l match {
       case List(fieldAccess: Call) =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.argument.l match {
@@ -147,7 +147,7 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create field access for implicit static member as call scope" in {
-    cpg.method.name("test10").call.name("toString").argument.l match {
+    cpg.method.name("test10").call.name("toString").receiver.l match {
       case List(fieldAccess: Call) =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.typeFullName shouldBe "java.lang.Object"
@@ -164,7 +164,7 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create field access for explicit static member as call scope" in {
-    cpg.method.name("test11").call.name("toString").argument.l match {
+    cpg.method.name("test11").call.name("toString").receiver.l match {
       case List(fieldAccess: Call) =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.argument.l match {
@@ -179,7 +179,7 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create nested field accesses as call scope" in {
-    cpg.method.name("test12").call.name("toString").argument.l match {
+    cpg.method.name("test12").call.name("toString").receiver.l match {
       case List(boAccess: Call) =>
         boAccess.methodFullName shouldBe Operators.fieldAccess
         boAccess.argument.l match {
