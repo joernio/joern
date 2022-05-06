@@ -11,12 +11,15 @@ lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
+lazy val benchmarks        = Projects.benchmarks
 lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
 lazy val pysrc2cpg         = Projects.pysrc2cpg
 lazy val php2cpg           = Projects.php2cpg
+lazy val javasrc2cpg       = Projects.javasrc2cpg
+lazy val jimple2cpg        = Projects.jimple2cpg
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
