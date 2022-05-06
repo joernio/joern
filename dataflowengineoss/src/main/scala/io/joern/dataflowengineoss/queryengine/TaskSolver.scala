@@ -2,8 +2,8 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, MethodParameterIn}
-import io.shiftleft.semanticcpg.language.toExpressionMethods
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, MethodParameterIn, MethodReturn}
+import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
 import scala.collection.mutable
@@ -104,21 +104,36 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       * source) => return a partial result * Case 3: we have reached an argument/call and the path is not empty =>
       * consider this an output argument and create a partial result
       */
+
     val res = curNode match {
-      // Case 1: we have reached a source => return result and stop traversing
+      // Case 1: we have reached a source => return result and continue traversing
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path, table, callSiteStack))
+        Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+      // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
+      // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
+      // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
+      // it is the exit node.
+      case _
+          if path.size > 1 && path(1).node
+            .isInstanceOf[MethodReturn] && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
+        Vector(ReachableByResult(path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
         Vector(ReachableByResult(path, table, callSiteStack, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
-      case call: Call if path.size > 1 && isCallToInternalMethodWithoutSemantic(call) =>
+      case call: Call
+          if path.size > 1 && isCallToInternalMethodWithoutSemantic(call) && !isArgOrRetOfMethodWeCameFrom(
+            call,
+            path
+          ) =>
         createPartialResultForOutputArgOrRet()
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
-      // this isn't the stat node => return partial result and stop traversing
+      // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
       case arg: Expression
-          if path.size > 1 && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c)) =>
+          if path.size > 1 && arg.inCall.toList.exists(c =>
+            isCallToInternalMethodWithoutSemantic(c)
+          ) && arg.inCall.headOption.filter(x => isArgOrRetOfMethodWeCameFrom(x, path)).isEmpty =>
         createPartialResultForOutputArgOrRet()
       // All other cases: expand into parents
       case _ =>
@@ -127,6 +142,20 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
     table.add(curNode, res)
     res
+  }
+
+  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean = {
+    if (path.size <= 1) {
+      false
+    } else {
+      path(1).node match {
+        case x: MethodParameterIn =>
+          methodsForCall(call).contains(x.method)
+        case x: MethodReturn =>
+          methodsForCall(call).contains(x.method)
+        case _ => false
+      }
+    }
   }
 
 }

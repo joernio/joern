@@ -1252,29 +1252,6 @@ class DataFlowTest38 extends DataFlowCodeToCpgSuite {
   }
 }
 
-class DataFlowTest39 extends DataFlowCodeToCpgSuite {
-
-  override val code: String =
-    """
-      |int foo(int y, int x) {
-      |  free(y);
-      |  free(x);
-      |}
-      |
-      |""".stripMargin
-
-  "find flows of last statements to METHOD_RETURN" in {
-    val source = cpg.call("free").argument(1)
-    val sink   = cpg.method("foo").methodReturn
-    val flows  = sink.reachableByFlows(source)
-
-    flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-      List(("free(x)", Some(4)), ("int", Some(2))),
-      List(("free(y)", Some(3)), ("int", Some(2)))
-    )
-  }
-}
-
 class DataFlowTest40 extends DataFlowCodeToCpgSuite {
 
   override val code: String =
@@ -1395,7 +1372,7 @@ class DataFlowTest45 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should provide correct flow for source in sibling callee" in {
-    cpg.call("sink").argument(1).reachableByFlows(cpg.call("source")).size shouldBe 2
+    cpg.call("sink").argument(1).reachableByFlows(cpg.call("source")).size shouldBe 1
   }
 
 }
@@ -1439,24 +1416,6 @@ class DataFlowTest47 extends DataFlowCodeToCpgSuite {
     val flows  = sink.reachableByFlows(source)
 
     flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("source()", Some(6)), ("sink(source())", Some(6))))
-  }
-}
-
-class DataFlowTest48 extends DataFlowCodeToCpgSuite {
-
-  override val code: String =
-    """
-      | void foo(int x) {
-      |   woo(x);
-      | }
-      |""".stripMargin
-
-  "should find flow of call return value to exit node" in {
-    val source = cpg.call("woo")
-    val sink   = cpg.method("foo").methodReturn
-    val flows  = sink.reachableByFlows(source)
-
-    flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("woo(x)", Some(3)), ("void", Some(2))))
   }
 }
 

@@ -1,9 +1,16 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, MethodParameterIn, MethodParameterOut}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  Expression,
+  MethodParameterIn,
+  MethodParameterOut,
+  Return
+}
 import io.shiftleft.semanticcpg.language.NoResolve
-import overflowdb.traversal.Traversal
+import overflowdb.traversal.{Traversal, jIteratortoTraversal}
 import io.shiftleft.semanticcpg.language._
 
 /** Creation of new tasks from results of completed tasks.
@@ -82,11 +89,21 @@ class TaskCreator(sources: Set[CfgNode]) {
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
         .to(Traversal)
 
-      methodReturns.map { case (call, ret) =>
-        val newPath       = Vector(path.head.copy(isOutputArg = true)) ++ path.tail
-        val callSiteStack = result.callSiteStack.clone()
-        callSiteStack.push(call)
-        ReachableByTask(ret, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
+      methodReturns.flatMap { case (call, methodReturn) =>
+        val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
+        if (returnStatements.isEmpty) {
+          val newPath       = path
+          val callSiteStack = result.callSiteStack.clone()
+          callSiteStack.push(call)
+          List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
+        } else {
+          returnStatements.map { returnStatement =>
+            val newPath       = Vector(PathElement(methodReturn)) ++ path
+            val callSiteStack = result.callSiteStack.clone()
+            callSiteStack.push(call)
+            ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
+          }
+        }
       }
     }
 
@@ -97,12 +114,11 @@ class TaskCreator(sources: Set[CfgNode]) {
         } else {
           argToOutputParams(arg.asInstanceOf[Expression]).l
         }
-        val newPath = Vector(path.head.copy(isOutputArg = true)) ++ path.tail
         outParams
           .map { p =>
             val callSiteStack = result.callSiteStack.clone()
             arg.asInstanceOf[Expression].inCall.headOption.foreach { x => callSiteStack.push(x) }
-            ReachableByTask(p, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
+            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, callSiteStack)
           }
       }
     }
