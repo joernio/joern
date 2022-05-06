@@ -16,11 +16,11 @@ class TaskCreator(sources: Set[CfgNode]) {
     tasksForParams(results) ++ tasksForUnresolvedOutArgs(results)
 
   /** Create new tasks from all results that start in a parameter. In essence, we want to traverse to corresponding
-    * arguments of call sites, but we need to be careful here not to create unrealizable paths. We achieve this
-    * by holding a call stack in results.
+    * arguments of call sites, but we need to be careful here not to create unrealizable paths. We achieve this by
+    * holding a call stack in results.
     *
-    * Case 1: walking backward from the sink, we have only expanded into callers so far, that is, the call stack
-    * is empty. In this case, the next tasks need to explore each call site to the method.
+    * Case 1: walking backward from the sink, we have only expanded into callers so far, that is, the call stack is
+    * empty. In this case, the next tasks need to explore each call site to the method.
     *
     * Case 2: we expanded into a callee that we identified on the way, e.g., a method `y = transform(x)`, and we have
     * reached the parameter of that method (`transform`). Upon doing so, we recorded the call site that we expanded in
@@ -38,7 +38,14 @@ class TaskCreator(sources: Set[CfgNode]) {
         // Case 2
         val callSite = result.callSiteStack.pop()
         paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1, result.callSiteStack.clone())
+          ReachableByTask(
+            arg,
+            sources,
+            new ResultTable,
+            result.path,
+            result.callDepth + 1,
+            result.callSiteStack.clone()
+          )
         }
       }
     }
@@ -50,7 +57,6 @@ class TaskCreator(sources: Set[CfgNode]) {
     results.collect { case r: ReachableByResult if r.path.head.node.isInstanceOf[MethodParameterIn] => r }
   }
 
-
   /** For a given parameter of a method, determine all corresponding arguments at all call sites to the method.
     */
   private def paramToArgs(param: MethodParameterIn): List[Expression] =
@@ -61,11 +67,9 @@ class TaskCreator(sources: Set[CfgNode]) {
       .argument(param.index)
       .l
 
-  /**
-    * Create new tasks from all results that end in an output argument, including return arguments.
-    * In this case, we want to traverse to corresponding method output parameters and method return
-    * nodes respectively.
-    * */
+  /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
+    * want to traverse to corresponding method output parameters and method return nodes respectively.
+    */
   private def tasksForUnresolvedOutArgs(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
 
     val outArgsAndCalls = results
@@ -79,7 +83,7 @@ class TaskCreator(sources: Set[CfgNode]) {
         .to(Traversal)
 
       methodReturns.map { case (call, ret) =>
-        val newPath = Vector(path.head.copy(isOutputArg = true)) ++ path.tail
+        val newPath       = Vector(path.head.copy(isOutputArg = true)) ++ path.tail
         val callSiteStack = result.callSiteStack.clone()
         callSiteStack.push(call)
         ReachableByTask(ret, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
@@ -97,7 +101,7 @@ class TaskCreator(sources: Set[CfgNode]) {
         outParams
           .map { p =>
             val callSiteStack = result.callSiteStack.clone()
-            arg.asInstanceOf[Expression].inCall.headOption.foreach{x => callSiteStack.push(x)}
+            arg.asInstanceOf[Expression].inCall.headOption.foreach { x => callSiteStack.push(x) }
             ReachableByTask(p, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
           }
       }

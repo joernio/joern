@@ -1,7 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
@@ -78,10 +77,7 @@ class Engine(context: EngineContext) {
     def submitTask(task: ReachableByTask): Unit = {
       numberOfTasksRunning += 1
       completionService.submit(
-        new TaskSolver(
-          if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
-          context
-        )
+        new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
       )
     }
 
@@ -172,7 +168,7 @@ object Engine {
       }
   }
 
-  def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
+  private def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
     parentNode match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
@@ -217,18 +213,18 @@ object Engine {
     }
   }
 
-  def argToMethods(arg: Expression): List[Method] = {
-    arg.inCall.l.flatMap { call =>
-      methodsForCall(call)
-    }
-  }
-
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
     argToMethods(arg)
       .to(Traversal)
       .parameter
       .index(arg.argumentIndex)
       .asOutput
+  }
+
+  private def argToMethods(arg: Expression): List[Method] = {
+    arg.inCall.l.flatMap { call =>
+      methodsForCall(call)
+    }
   }
 
   def methodsForCall(call: Call): List[Method] = {
@@ -297,123 +293,6 @@ case class EngineConfig(
   initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )
-
-/** Callable for solving a ReachableByTask
-  *
-  * A Java Callable is "a task that returns a result and may throw an exception", and this is the callable for
-  * calculating the result for `task`.
-  *
-  * @param task
-  *   the data flow problem to solve
-  * @param context
-  *   state of the data flow engine
-  */
-class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
-
-  import Engine._
-
-  /** Entry point of callable.
-    */
-  override def call(): Vector[ReachableByResult] = {
-    if (task.callDepth > context.config.maxCallDepth) {
-      Vector()
-    } else {
-      implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink) +: task.initialPath
-      results(path, task.sources, task.table, task.callSiteStack)
-      task.table.get(task.sink).get.map { r =>
-        r.copy(callDepth = task.callDepth)
-      }
-    }
-  }
-
-  /** Recursively expand the DDG backwards and return a list of all results, given by at least a source node in
-    * `sourceSymbols` and the path between the source symbol and the sink.
-    *
-    * This method stays within the method (intra-procedural analysis) but call sites which should be resolved are marked
-    * as such in the ResultTable.
-    *
-    * @param path
-    *   This is a path from a node to the sink. The first node of the path is expanded by this method
-    */
-  private def results[NodeType <: CfgNode](
-    path: Vector[PathElement],
-    sources: Set[NodeType],
-    table: ResultTable,
-    callSiteStack: mutable.Stack[Call]
-  )(implicit semantics: Semantics): Vector[ReachableByResult] = {
-
-    val curNode = path.head.node
-
-    /** For each parent of the current node, determined via `expandIn`, check if results are available in the result
-      * table. If not, determine results recursively.
-      */
-    def computeResultsForParents() = {
-      expandIn(curNode, path).iterator.flatMap { parent =>
-        val cachedResult = table.createFromTable(parent, path)
-        if (cachedResult.isDefined) {
-          QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
-          cachedResult.get
-        } else {
-          QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
-          results(parent +: path, sources, table, callSiteStack)
-        }
-      }.toVector
-    }
-
-    /** Determine results for the current node
-      */
-    def computeResultsForCurrentNode() = {
-      val endStates = if (sources.contains(curNode.asInstanceOf[NodeType])) {
-        List(ReachableByResult(path, table, callSiteStack))
-      } else if (
-        (task.callDepth != context.config.maxCallDepth) && curNode
-          .isInstanceOf[MethodParameterIn] && callSiteStack.isEmpty
-      ) {
-        List(ReachableByResult(path, table, callSiteStack, partial = true))
-      } else {
-        List()
-      }
-
-      def createPartialResult(call: Call) = {
-        if (
-          (task.callDepth != context.config.maxCallDepth) && isCallToInternalMethodWithoutSemantic(
-            call
-          ) && callSiteStack.isEmpty
-        ) {
-          List(
-            ReachableByResult(
-              PathElement(path.head.node, isOutputArg = false) +: path.tail,
-              table,
-              callSiteStack,
-              partial = true
-            )
-          )
-        } else {
-          List()
-        }
-      }
-
-      val retsAndArgsToResolve = curNode match {
-        case call: Call =>
-          createPartialResult(call)
-        case arg: Expression =>
-          arg.inCall.l match {
-            case List(call) =>
-              createPartialResult(call)
-            case _ =>
-              List()
-          }
-        case _ => List()
-      }
-      endStates ++ retsAndArgsToResolve
-    }
-    val res = deduplicate(computeResultsForParents() ++ computeResultsForCurrentNode())
-    table.add(curNode, res)
-    res
-  }
-
-}
 
 /** Tracks various performance characteristics of the query engine.
   */

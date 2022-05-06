@@ -32,7 +32,7 @@ class ResultTable(
       res.map { r =>
         val pathToFirstNode = r.path.slice(0, r.path.map(_.node).indexOf(first.node))
         val completePath    = pathToFirstNode ++ (first +: remainder)
-        r.copy(path = Vector(completePath.head.copy(isOutputArg = true)) ++ completePath.tail)
+        r.copy(path = Vector(completePath.head) ++ completePath.tail)
       }
     }
   }
@@ -71,12 +71,11 @@ case class ReachableByResult(
 ) {
   def source: CfgNode = path.head.node
 
-  /**
-    * If the result begins in an output argument, return it.
-    * */
+  /** If the result begins in an output argument, return it.
+    */
   def outputArgument: Option[CfgNode] = {
     path.headOption.collect {
-      case elem : Expression if !elem.isOutputArg =>
+      case elem: Expression if !elem.isOutputArg =>
         elem.node
     }
   }
@@ -90,11 +89,9 @@ case class ReachableByResult(
   * @param visible
   *   whether this path element should be shown in the flow
   * @param isOutputArg
-  *   input and output arguments are the same node in the CPG, so, we need this
-  *   additional flag to determine whether we are on an input or output argument.
-  *   By default, we consider arguments to be input arguments, meaning that when
-  *   tracking `x` at `f(x)`, we do not expand into `f` but rather upwards to
-  *   producers of `x`.
+  *   input and output arguments are the same node in the CPG, so, we need this additional flag to determine whether we
+  *   are on an input or output argument. By default, we consider arguments to be input arguments, meaning that when
+  *   tracking `x` at `f(x)`, we do not expand into `f` but rather upwards to producers of `x`.
   * @param outEdgeLabel
   *   label of the outgoing DDG edge
   */
