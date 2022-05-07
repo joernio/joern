@@ -28,7 +28,7 @@ class PCodeMapper(
   decompiler: Decompiler
 ) {
   private val logger                                              = LoggerFactory.getLogger(getClass)
-  var resolvedPcodeInstructions: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
+  var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
   private val pcodeOps: Array[PcodeOp]                            = nativeInstruction.getPcode()
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
@@ -87,48 +87,50 @@ class PCodeMapper(
         } else {
           ret = pcodeOp.getOutput.toString
         }
-        resolvedPcodeInstructions += ret -> mapCallNode(pcodeOp)
+        nodeStack += ret -> mapCallNode(pcodeOp)
       }
       // at this point we have mapped the individual PCodeOps
       // to nodes, now replace the unique arguments with the calls
-      //diffGraphBuilder.r
-      resolvedPcodeInstructions.foreach { case (key, value) =>
+      nodeStack.foreach { case (key, value) =>
         if (key.contains("unique")) {
           //println(key + " => " + value.code)
           // replace unique
+          diffGraphBuilder
         }
       }
-      //println("=============")
-      //createCallNode("UNKNOWN", "UNKNOWN", -1)
-      resolvedPcodeInstructions.last._2
+      nodeStack.last._2
     }
   }
   def createCall(name: String, code:String): CfgNodeNew = {
     createCallNode(code, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
   }
-  def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName:String, operation:String): Unit = {
+
+  def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName: String, operation: String): CfgNodeNew = {
     val firstOp = resolveVarNode(pcodeOp.getInput(0), 1)
-    val callNode = createCall("<operator>.trunc", s"$operation(${firstOp.code})" )
+    val callNode = createCall("<operator>.trunc", s"$operation(${firstOp.code})")
     connectCallToArgument(callNode, firstOp)
+    callNode
   }
-  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName:String, operation:String): Unit = {
+  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName:String, operation:String): CfgNodeNew = {
     val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
     val callNode = createCall(cpgOperationName, s"${firstOp.code} $operation ${secondOp.code}")
     connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
+    callNode
   }
-  def handleAssignment(pcodeOp: PcodeOp): Unit = {
+  def handleAssignment(pcodeOp: PcodeOp): CfgNodeNew = {
     val firstOp  = resolveVarNode(pcodeOp.getOutput, 0)
     val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 1)
     val callNode = createCall("<operation>.assignment", s"${firstOp.code} = ${secondOp.code}")
     connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
+    callNode
   }
 
   private def mapCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
-    var callNode: CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
-    pcodeOp.getOpcode match {
+    //var callNode: CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
+    val callNode = pcodeOp.getOpcode match {
       case BOOL_AND =>
         handleTwoArguments(pcodeOp, "<operator>.and", "&&")
       case BOOL_NEGATE =>
@@ -147,8 +149,7 @@ class PCodeMapper(
           .replace("[", "")
           .replace("]", "")
         val callee = functions.filter(_.getName == calledFunction)
-        callNode =
-          createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+        val _callNode = createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
         if (callee.nonEmpty) {
           // Array of tuples containing (checked parameter name, parameter index, parameter data type)
           var checkedParameters = Array.empty[(String, Int, String)]
@@ -196,9 +197,10 @@ class PCodeMapper(
               Types.registerType(dataType),
               nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
             )
-            connectCallToArgument(callNode, node)
+            connectCallToArgument(_callNode, node)
           }
         }
+        _callNode
 
       case CAST =>
         handleSingleArgument(pcodeOp,"<operator>.cast", pcodeOp.getMnemonic )
@@ -242,7 +244,8 @@ class PCodeMapper(
         handleTwoArguments(pcodeOp, "<operator>.TODO", "TODO: INT_CARRY")
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
         handleTwoArguments(pcodeOp, "<operator>.division", "/")
-      case FLOAT_EQUAL | INT_EQUAL | INT_NOTEQUAL => nativeInstruction.toString
+      case FLOAT_EQUAL | INT_EQUAL | INT_NOTEQUAL =>
+        createCall("TODO EQUAL", "TODO EQUAL")
       case INT_LEFT =>
         handleTwoArguments(pcodeOp, "<operator>.shiftLeft", "<<")
       case INT_MULT | FLOAT_MULT =>
@@ -270,11 +273,12 @@ class PCodeMapper(
         handleAssignment(pcodeOp)
       case NEW =>
         handleSingleArgument(pcodeOp,"<operator>.new", pcodeOp.getMnemonic )
-      case RETURN => "RET" // TODO
+      case RETURN =>
+        createCall("TODO RET", "TODO RET")
       case UNIMPLEMENTED | SEGMENTOP | MULTIEQUAL | INDIRECT | PIECE | PCODE_MAX | POPCOUNT =>
-        callNode = createCall("NOT HANDLED", "NOT HANDLED")
+        createCall("NOT HANDLED", "NOT HANDLED")
       case _ =>
-        callNode = createCall("NOT HANDLED", "NOT HANDLED")
+        createCall("NOT HANDLED", "NOT HANDLED")
     }
     callNode
   }
@@ -289,6 +293,17 @@ class PCodeMapper(
         Types.registerType(nativeInstruction.getProgram.getRegister(input).getName),
         input.getAddress.getOffsetAsBigInteger.intValue
       )
+    } else if(input.isUnique){
+      // todo check recursion here
+      val literalNode = createLiteral(
+        "0x" + input.getWordOffset.toHexString,
+        index + 1,
+        index + 1,
+        Types.registerType(input.getWordOffset.toHexString),
+        -1
+      )
+      println("UNIQUE " + nodeStack.get(input.toString).orElse(Some("no")))
+      nodeStack.get(input.toString).orElse(Some(literalNode)).get
     } else {
       // input.isConstant || input.isAddress || input.isUnique
       createLiteral(
