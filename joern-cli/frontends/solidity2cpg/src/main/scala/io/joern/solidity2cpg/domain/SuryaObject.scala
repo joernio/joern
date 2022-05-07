@@ -113,7 +113,8 @@ object SuryaObject {
     expression: BaseASTNode,
     arguments: List[BaseASTNode],
     names: List[String],
-    identifiers: List[String]
+    identifiers: List[String],
+    methodFullName: String
   ) extends BaseASTNode("FunctionCall") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }

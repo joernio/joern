@@ -404,7 +404,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             case _           => null
           },
           fields("names").convertTo[List[String]],
-          fields("identifiers").convertTo[List[String]]
+          fields("identifiers").convertTo[List[String]],
+          fields("methodFullName") match {
+            case x: JsString => x.convertTo[String]
+            case _ => null
+          }
         )
       }
     }

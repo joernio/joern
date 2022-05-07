@@ -512,22 +512,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var name = ""
     var code = ""
     var args = ""
-    var methodFullNameText = ""
+    var argsArr = {}
+    var methodFullName = ""
     var sig = ""
     val expr = astForExpression(call.expression)
     val arguments = call.arguments.map(astForExpression)
     name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
     args = arguments.flatMap(_.root).map(_.properties(PropertyNames.NAME)).mkString(", ")
-
+    argsArr = args.split(",")
+    if (call.methodFullName!= null) {
+      methodFullName = call.methodFullName
+      sig = call.methodFullName.split(":")(1)
+    }
 //    methodFullNameText = expr.root.map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString("")
 //    sig = expr.root.map(_.properties(PropertyNames.SIGNATURE)).mkString("")
     code = name + "(" + args + ")"
     val func = NewCall()
       .name(name)
       .code(name)
-//      .methodFullName(methodFullNameText)
-//      .signature()
-
+      .methodFullName(methodFullName)
+      .signature(sig)
 //      .code()
     Ast(func)
       .withChild(expr)

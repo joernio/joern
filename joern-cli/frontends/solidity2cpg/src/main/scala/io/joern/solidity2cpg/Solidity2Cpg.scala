@@ -61,7 +61,7 @@ class Solidity2Cpg {
       var counter                        = 0
       sourceFileNames.foreach(fName => {
         names(counter) = (fName.split("/")(fName.split("/").length - 1))
-        ExternalCommand.run(s"surya parse -j ${names(counter)}", dir.pathAsString) match {
+        ExternalCommand.run(s"surya parse -jc ${names(counter)}", dir.pathAsString) match {
           case Success(stdOut: Seq[String]) =>
             val path   = dir.pathAsString + s"/${names(counter).substring(0, (names(counter).length - 3))}" + "json"
             val writer = new PrintWriter(new javaFile(path))
@@ -72,6 +72,7 @@ class Solidity2Cpg {
             println(s"Could not parse Solidity source code at $sourceCodePath", e)
 
         }
+//        ExternalCommand.run(s"npm -g","")
         counter += 1
       })
       (dir.toString(), pathOfParseFiles)
@@ -80,7 +81,7 @@ class Solidity2Cpg {
       var list: List[String] = List()
       sourceFile.copyToDirectory(dir)
       val name = sourceFile.pathAsString.split("/")(sourceFile.pathAsString.split("/").length - 1)
-      ExternalCommand.run(s"surya parse -j ${name}", dir.pathAsString) match {
+      ExternalCommand.run(s"surya parse -jc ${name}", dir.pathAsString) match {
         case Success(stdOut: Seq[String]) =>
           val path   = dir.pathAsString + s"/${name.substring(0, name.length - 3) + "json"}"
           val writer = new PrintWriter(new javaFile(path))
