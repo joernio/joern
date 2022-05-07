@@ -15,9 +15,8 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 /*
   TODO: resolve the unique arguments of the pcodeOps
-
   steps:
-    1. Forward resolve all pcodes
+    1. Forward resolve all pcodes => DONE
     2. replace all uniques with previous calls
     3. last pcode is the actual instruction => create callnode
     4. add previous calls to the last callnode
@@ -29,7 +28,7 @@ class PCodeMapper(
   decompiler: Decompiler
 ) {
   private val logger                                              = LoggerFactory.getLogger(getClass)
-  var resolvedPcodeInstructions: mutable.HashMap[String, NewCall] = new mutable.HashMap[String, NewCall]()
+  var resolvedPcodeInstructions: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
   private val pcodeOps: Array[PcodeOp]                            = nativeInstruction.getPcode()
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
@@ -61,29 +60,68 @@ class PCodeMapper(
         nativeInstruction.toString,
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
+    } else if(pcodeOps.length == 1) {
+      // we don't need to fill the hashmap for one PcodeOp
+      // map to node and return
+      mapCallNode(pcodeOps.head)
     } else {
-      pcodeOps.map(mapCallNode).headOption.getOrElse(createCallNode("UNKNOWN", "UNKNOWN", -1))
+      // Iterating over the pcodeOps and replace the "unique" outputs
+      // with the the according node
+      // e.g. the instruction "lw t9,-0x7ff0(gp)" results in the following pcodes:
+      //
+      // 0 : "(unique, 0x100, 4) INT_ADD (register, 0x70, 4) , (const, 0xffff8010, 4)"
+      // 1 : "(unique, 0x180, 4) COPY (const, 0x0, 4)"
+      // 2 : "(unique, 0x180, 4) COPY (unique, 0x100, 4)"
+      // 3 : "(register, 0x64, 4) LOAD (const, 0x1a1, 8) , (unique, 0x180, 4)"
+      //
+      // We want to return:
+      // NewCall(code=lw t9,-0x7ff0(gp),name="<operator>.assignment")
+      //   Parameter 1: NewIdentifier(code=t9)
+      //   Parameter 2: NewCall(code=-0x7ff0(gp), name="<operator>.addition")
+      //                  Parameter 1: NewIdentifier(gp)
+      //                  Parameter 2: NewLiteral(-0x7ff0)
+      pcodeOps.foreach{pcodeOp =>
+        var ret = ""
+        if(pcodeOp.getOutput == null) {
+          ret = pcodeOp.getMnemonic
+        } else {
+          ret = pcodeOp.getOutput.toString
+        }
+        resolvedPcodeInstructions += ret -> mapCallNode(pcodeOp)
+      }
+      // at this point we have mapped the individual PCodeOps
+      // to nodes, now replace the unique arguments with the calls
+      //diffGraphBuilder.r
+      resolvedPcodeInstructions.foreach { case (key, value) =>
+        if (key.contains("unique")) {
+          //println(key + " => " + value.code)
+          // replace unique
+        }
+      }
+      //println("=============")
+      //createCallNode("UNKNOWN", "UNKNOWN", -1)
+      resolvedPcodeInstructions.last._2
     }
   }
-  def createCall(name: String): CfgNodeNew = {
-    createCallNode(nativeInstruction.toString, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+  def createCall(name: String, code:String): CfgNodeNew = {
+    createCallNode(code, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
   }
-  def handleSingleArgument(callNode: CfgNodeNew, pcodeOp: PcodeOp): Unit = {
-
+  def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName:String, operation:String): Unit = {
     val firstOp = resolveVarNode(pcodeOp.getInput(0), 1)
+    val callNode = createCall("<operator>.trunc", s"$operation(${firstOp.code})" )
     connectCallToArgument(callNode, firstOp)
   }
-  def handleTwoArguments(callNode: CfgNodeNew, pcodeOp: PcodeOp): Unit = {
+  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName:String, operation:String): Unit = {
     val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
-
+    val callNode = createCall(cpgOperationName, s"${firstOp.code} $operation ${secondOp.code}")
     connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
   }
-  def handleAssignment(callNode: CfgNodeNew, pcodeOp: PcodeOp): Unit = {
+  def handleAssignment(pcodeOp: PcodeOp): Unit = {
     val firstOp  = resolveVarNode(pcodeOp.getOutput, 0)
     val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 1)
-
+    val callNode = createCall("<operation>.assignment", s"${firstOp.code} = ${secondOp.code}")
     connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
   }
@@ -92,21 +130,15 @@ class PCodeMapper(
     var callNode: CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
     pcodeOp.getOpcode match {
       case BOOL_AND =>
-        callNode = createCall("<operator>.and")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.and", "&&")
       case BOOL_NEGATE =>
-        callNode = createCall("<operator>.negate")
-        handleAssignment(callNode, pcodeOp)
-
+        handleSingleArgument(pcodeOp,"<operator>.negate", pcodeOp.getMnemonic )
       case BOOL_OR =>
-        callNode = createCall("<operator>.or")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.or", "||")
       case BOOL_XOR =>
-        callNode = createCall("<operator>.xor")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.xor", "^^")
       case BRANCH | BRANCHIND | CBRANCH =>
-        callNode = createCall("<operator>.goto")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.goto", pcodeOp.getMnemonic )
       case CALL | CALLOTHER | CALLIND =>
         val calledFunction = codeUnitFormat
           .getOperandRepresentationString(nativeInstruction, 0)
@@ -169,114 +201,80 @@ class PCodeMapper(
         }
 
       case CAST =>
-        callNode = createCall("TODO: CAST")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.cast", pcodeOp.getMnemonic )
       case CPOOLREF =>
-        callNode = createCall("TODO: CPOOLREF ")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.cpoolref", pcodeOp.getMnemonic )
       case EXTRACT =>
-        callNode = createCall("TODO: EXTRACT")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.extract", pcodeOp.getMnemonic )
       case FLOAT_ABS =>
-        callNode = createCall("<operator>.abs")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.abs", pcodeOp.getMnemonic )
       case FLOAT_CEIL =>
-        callNode = createCall("<operator>.ceil")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.ceil", pcodeOp.getMnemonic )
       case FLOAT_FLOAT2FLOAT =>
-        callNode = createCall("<operator>.float2float")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.float2float", pcodeOp.getMnemonic )
       case FLOAT_FLOOR =>
-        callNode = createCall("<operator>.floor")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.floor", pcodeOp.getMnemonic )
       case FLOAT_INT2FLOAT =>
-        callNode = createCall("<operator>.int2float")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.int2float", pcodeOp.getMnemonic )
       case FLOAT_LESS | INT_SLESS | INT_LESS =>
-        callNode = createCall("<operator>.less")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.less", "<")
       case FLOAT_LESSEQUAL | INT_SLESSEQUAL | INT_LESSEQUAL =>
-        callNode = createCall("<operator>.lessThanEqual")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.lessThanEqual", "<=")
       case FLOAT_NAN =>
-        callNode = createCall("<operator>.nan")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.nan", pcodeOp.getMnemonic )
       case FLOAT_NOTEQUAL =>
-        callNode = createCall("<operator>.notEqual")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.notEqual", "!=")
       case FLOAT_ROUND =>
-        callNode = createCall("<operator>.round")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.round", pcodeOp.getMnemonic )
       case FLOAT_SQRT =>
-        callNode = createCall("<operator>.sqrt")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.sqrt", pcodeOp.getMnemonic )
       case FLOAT_TRUNC =>
-        callNode = createCall("<operator>.trunc")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.trunc", pcodeOp.getMnemonic )
       case INSERT =>
-        callNode = createCall("TODO: INSERT")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.insert", pcodeOp.getMnemonic )
       case INT_2COMP =>
-        callNode = createCall("TODO: INT_2COMP")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.int2comp", pcodeOp.getMnemonic )
       case INT_ADD | FLOAT_ADD | PTRADD =>
-        callNode = createCall("<operator>.addition")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.addition", "+")
       case INT_AND =>
-        callNode = createCall("<operator>.and")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.and", "TODO: AND")
       case INT_CARRY =>
-        callNode = createCall("TODO: INT_CARRY")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.TODO", "TODO: INT_CARRY")
       case INT_DIV | FLOAT_DIV | INT_SDIV =>
-        callNode = createCall("<operator>.division")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.division", "/")
       case FLOAT_EQUAL | INT_EQUAL | INT_NOTEQUAL => nativeInstruction.toString
       case INT_LEFT =>
-        callNode = createCall("<operator>.shiftleft")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.shiftLeft", "<<")
       case INT_MULT | FLOAT_MULT =>
-        callNode = createCall("<operator>.multiplication")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.multiplication", "*")
       case FLOAT_NEG | INT_NEGATE =>
-        callNode = createCall("<operator>.negate")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.negation", pcodeOp.getMnemonic )
       case INT_OR =>
-        callNode = createCall("<operator>.or")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.or", "||")
       case INT_REM | INT_SREM =>
-        callNode = createCall("<operator>.modulo")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.modolo", "%")
       case INT_RIGHT | INT_SRIGHT =>
-        callNode = createCall("<operator>.shiftRight")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.shiftRight", ">>")
       case INT_SBORROW =>
-        callNode = createCall("TODO: INT_SBORROW")
-        handleSingleArgument(callNode, pcodeOp)
-      // handleSingleArgument( nativeInstruction, callNode, pcodeOp, "%")
+        handleSingleArgument(pcodeOp,"<operator>.sborrow", pcodeOp.getMnemonic )
       case INT_SCARRY =>
-        callNode = createCall("TODO: INT_SCARRY")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.scarry", pcodeOp.getMnemonic )
       case INT_SEXT | INT_ZEXT =>
-        callNode = createCall("<operator>.extend")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.extend", pcodeOp.getMnemonic )
       case INT_SUB | FLOAT_SUB | PTRSUB =>
-        callNode = createCall("<operator>.subtraction")
-        handleTwoArguments(callNode, pcodeOp)
+        handleTwoArguments(pcodeOp, "<operator>.subtraction", "-")
       case INT_XOR =>
-        callNode = createCall("<operator>.xor")
-        handleTwoArguments(callNode, pcodeOp)
-      case COPY  | LOAD | STORE | SUBPIECE =>
-        callNode = createCall("<operator>.assignment")
-        handleAssignment(callNode, pcodeOp)
+        // TODO
+        handleTwoArguments(pcodeOp, "<operator>.xor", "^")
+      case COPY  | LOAD => //| STORE | SUBPIECE =>
+        handleAssignment(pcodeOp)
       case NEW =>
-        callNode = createCall("<operator>.new")
-        handleSingleArgument(callNode, pcodeOp)
+        handleSingleArgument(pcodeOp,"<operator>.new", pcodeOp.getMnemonic )
       case RETURN => "RET" // TODO
       case UNIMPLEMENTED | SEGMENTOP | MULTIEQUAL | INDIRECT | PIECE | PCODE_MAX | POPCOUNT =>
-        callNode = createCall("NOT HANDLED")
+        callNode = createCall("NOT HANDLED", "NOT HANDLED")
       case _ =>
-        callNode = createCall("NOT HANDLED")
+        callNode = createCall("NOT HANDLED", "NOT HANDLED")
     }
     callNode
   }
