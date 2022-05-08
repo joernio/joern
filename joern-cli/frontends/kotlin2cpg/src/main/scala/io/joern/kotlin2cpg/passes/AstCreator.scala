@@ -629,8 +629,22 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeInfoProvider: TypeInfoProvider
   ): AstWithAdditionals = {
     val fnWithSig = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
+    val lineEndElement =
+      Option(ktFn.getBodyBlockExpression)
+        .filter(_ != null)
+        .map(_.getRBrace)
+        .getOrElse(ktFn)
     val _methodNode =
-      methodNode(ktFn.getName, fnWithSig._1, fnWithSig._2, relativizedPath, line(ktFn), column(ktFn))
+      methodNode(
+        ktFn.getName,
+        fnWithSig._1,
+        fnWithSig._2,
+        relativizedPath,
+        line(ktFn),
+        column(ktFn),
+        line(lineEndElement),
+        column(lineEndElement)
+      )
         .order(childNum)
     scope.pushNewScope(_methodNode)
 
