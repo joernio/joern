@@ -1,20 +1,23 @@
-package io.joern.dataflowengineoss.testfixtures
+package io.joern.benchmarks.testfixtures
 
 import io.joern.console.cpgcreation.guessLanguage
+import io.joern.benchmarks.BenchmarkTags._
+import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest._
+import overflowdb.traversal.Traversal
 
 import scala.util.Failure
 
@@ -36,6 +39,57 @@ class BenchmarkFixture extends AnyFlatSpec with Matchers with BeforeAndAfterAll 
   def constructTargetFilePath: String =
     s"benchmarks/src/$benchmarkName/resources/$pkg/$category/${category.capitalize}$benchmarkNo$fileExt"
 
+  /** Makes sure there are flows between the source and the sink
+    */
+  def assertIsInsecure(source: Traversal[CfgNode], sink: Traversal[CfgNode]): Assertion =
+    if (sink.reachableBy(source).isEmpty) {
+      fail("[False Negative] Source was not found to taint the sink")
+    } else {
+      succeed
+    }
+
+  /** Makes sure there are no flows between the source and the sink.
+    */
+  def assertIsSecure(source: Traversal[CfgNode], sink: Traversal[CfgNode]): Assertion =
+    if (sink.reachableBy(source).nonEmpty) {
+      fail("[False positive] Source was found to taint the sink")
+    } else {
+      succeed
+    }
+
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    val outcome = super.withFixture(test)
+    val idxToInc = outcome match {
+      case Failed(_) =>
+        val falseNegative = test.text.contains("insecure")
+        if (falseNegative)
+          Some(FN)
+        else
+          Some(FP)
+      case Succeeded =>
+        val truePositive = test.text.contains("insecure")
+        if (truePositive)
+          Some(TP)
+        else
+          Some(TN)
+      case _ => None
+    }
+
+    test.tags.foreach { tag =>
+      val arr: Array[Int] = confusionMatrix(tag)
+      idxToInc match {
+        case Some(idx) => arr(idx) += 1
+        case None      =>
+      }
+    }
+
+    outcome
+  }
+
+  override def afterAll(): Unit = {
+    cpg.close()
+  }
+
 }
 
 object BenchmarkCpgContext {
@@ -50,11 +104,12 @@ class BenchmarkCpgContext {
   private var inputPath: String = ""
 
   def buildCpg(): Cpg = {
+    val cpgPath = java.io.File.createTempFile("benchmark", ".odb").getAbsolutePath
     val cpg = (guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(inputPaths = Set(inputPath)))
-          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(inputPaths = Set(inputPath)))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(Set(inputPath), cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(Set(inputPath), cpgPath))
           case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>

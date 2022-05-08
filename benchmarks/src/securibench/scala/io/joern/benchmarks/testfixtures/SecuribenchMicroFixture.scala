@@ -1,4 +1,4 @@
-package io.joern.dataflowengineoss.testfixtures
+package io.joern.benchmarks.testfixtures
 
 class SecuribenchMicroFixture extends BenchmarkFixture {
 
