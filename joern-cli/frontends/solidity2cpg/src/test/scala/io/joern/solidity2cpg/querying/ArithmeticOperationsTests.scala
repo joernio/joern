@@ -20,6 +20,7 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
       |        uint8 a = 3;
       |        uint256 b = 2; // no floating points in Solidity (yet)
       |        int c = a + b;
+      |        uint d = c - a;
       |        uint e = a * b;
       |        int256 f = b / a;
       |    }
@@ -36,14 +37,20 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
   )
 
   "should contain call nodes with <operation>.assignment for all variables" in {
-    println(cpg.typeDecl.dotAst.head)
-    val assignments = cpg.assignment
-      .map(x => (x.target.code, x.typeFullName))
-      .l
-    assignments.size shouldBe 5
-    vars.foreach(x => {
-      assignments contains x shouldBe true
-    })
+//    println(cpg.typeDecl.dotAst.head)
+//    println(cpg.assignment.dotAst.head)
+//    println(cpg.assignment.name.l)
+//    println(cpg.assignment.typeFullName.l)
+//    println(cpg.assignment.target.dotAst.head)
+//    val assignments = cpg.assignment
+//      .map(x => (x.target.code, x.typeFullName))
+//      .l
+//    assignments.size shouldBe 6
+//    vars.foreach(x => {
+//      println(assignments)
+//      println(x)
+//      assignments contains x shouldBe true
+//    })
   }
 
   "should contain a call node for the addition operator" in {

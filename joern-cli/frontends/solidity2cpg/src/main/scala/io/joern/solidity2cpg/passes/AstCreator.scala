@@ -305,7 +305,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForBody(body: Block): Ast = {
     val blockNode = NewBlock()
     Ast(blockNode)
+      .withChildren(body.statements.map(astForLocalStatement))
       .withChildren(body.statements.map(astForStatement))
+
   }
 
   private def astForStatement(statement: BaseASTNode): Ast = {
@@ -321,6 +323,39 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
+    }
+  }
+  private def astForLocalStatement(statement: BaseASTNode) : Ast = {
+
+    val local =  statement match{
+      case x : VariableDeclarationStatement => x.variables.map(x => astForLocal(x))
+      case _=> null
+    }
+    if (local != null) {
+      Ast().withChildren(local)
+    } else {
+      Ast()
+    }
+  }
+
+  private def astForLocal(ids :BaseASTNode) : Ast = {
+    var name = ""
+    var fullTypeName =""
+    ids match {
+      case x : VariableDeclaration => {
+        name = x.name
+        fullTypeName = x.typeName match {
+          case x: ElementaryTypeName => x.name
+          case _ => null
+        }
+      }
+      case _ => null
+    }
+
+    if (name != null && fullTypeName != null && !name.equals("") && !fullTypeName.equals("")) {
+      Ast(NewLocal().name(name).code(fullTypeName + " " + name).typeFullName(fullTypeName))
+    } else {
+      Ast()
     }
   }
 
@@ -346,10 +381,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     newID
           .name(varDecl.name)
-          .code(typefullName + code +visibility+ " "+varDecl.name)
+          .code(code +visibility+ " "+varDecl.name)
           .typeFullName(varDecl.name)
           .order(1)
-
+//    println("vd: "+varDecl.name)
 
       Ast(newID)
 
@@ -513,8 +548,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: IndexAccess => astForIndexAccess(x)
       case x: TupleExpression => astForTupleExpression(x)
       case x: NewExpression => astForNewExpression(x)
+      case x: TypeNameExpression => astForTypeNameExpression(x)
       case _ => {
-      println(expr.getType)
+      println("name: "+expr.getType)
         Ast()
       }
     }
@@ -537,10 +573,66 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     //TODO : finx all cases with "Ast()"
     Ast()
   }
+  private def astForTypeNameExpression(expression: TypeNameExpression): Ast = {
+    Ast()
+  }
 
   private def astForBinaryOperation(operation: BinaryOperation): Ast = {
-    //TODO : finx all cases with "Ast()"
-    Ast()
+    var lft = Ast()
+    var rht = Ast()
+    val operatorName = operation.operator match {
+      case "+"  => Operators.addition
+      case "-" => Operators.subtraction
+      case "*" => Operators.multiplication
+      case "/" => Operators.division
+      case "%" => Operators.modulo
+      case ">="  => Operators.greaterEqualsThan
+      case ">"   => Operators.greaterThan
+      case "<="   => Operators.lessEqualsThan
+      case "<"   => Operators.lessThan
+//      case _: ShlExpr  => Operators.shiftLeft
+//      case _: ShrExpr  => Operators.logicalShiftRight
+//      case _: UshrExpr => Operators.arithmeticShiftRight
+//      case _: CmpExpr  => Operators.compare
+//      case _: CmpgExpr => Operators.compare
+//      case _: CmplExpr => Operators.compare
+//      case _: AndExpr  => Operators.and
+//      case _: OrExpr   => Operators.or
+//      case _: XorExpr  => Operators.xor
+//      case _: EqExpr   => Operators.equals
+      case _           => ""
+    }
+    lft = astForExpression(operation.left)
+
+//    operation.left match {
+//      case x: Identifier => lft = astForIdentifier(x)
+//      case x: NumberLiteral => lft = astForNumberLiteral(x)
+//      case x: BinaryOperation => lft = astForBinaryOperation(x)
+//    }
+    rht = astForExpression(operation.right)
+//    operation.right match {
+//      case x: Identifier => rht = astForIdentifier(x)
+//      case x: NumberLiteral => rht = astForNumberLiteral(x)
+//      case x: BinaryOperation =>rht = astForBinaryOperation(x)
+//    }
+    val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
+
+
+    val callNode = NewCall()
+      .name(operatorName)
+      .methodFullName(operatorName)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(lfteq + operation.operator + rhteq)
+//      .argumentIndex(order)
+//      .order(order)
+
+//    val args =
+//      astsForValue(binOp.getOp1, 1, parentUnit) ++ astsForValue(binOp.getOp2, 2, parentUnit)
+//    callAst(callNode, args)
+    Ast(callNode)
+      .withChild(lft)
+      .withChild(rht)
   }
   private def astForIfStatement(operation: IfStatement): Ast = {
     Ast()
@@ -559,9 +651,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val expr = astForExpression(call.expression)
     val arguments = call.arguments.map(astForExpression)
     name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
-    args = arguments.flatMap(_.root).map(_.properties(PropertyNames.NAME)).mkString(", ")
+    args = arguments.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
     argsArr = args.split(",")
-    if (call.methodFullName!= null && !call.methodFullName.contains("null")) {
+    if (call.methodFullName!= null && !call.methodFullName.contains("null") && !call.methodFullName.contains("undefined")) {
       methodFullName = call.methodFullName
       sig = call.methodFullName.split(":")(1)
     }
@@ -631,8 +723,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .methodFullName(Operators.assignment)
           .code(s"$lhsCode = $rhsCode")
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          //        .order(order)
-          //        .argumentIndex(order)
           .typeFullName(registerType(vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.NAME)).mkString))
       }
 
