@@ -3,7 +3,7 @@ package io.joern.solidity2cpg.passes
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -315,7 +315,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: VariableDeclaration => astForVarDecl(x)
       case x: EmitStatement => Ast()
       case x: ForStatement => Ast()
-      case x: IfStatement => Ast()
+      case x: IfStatement => astForIfStatement(x)
       case x: ReturnStatement => astForReturn(x)
       case x: VariableDeclarationStatement=> astForVarDeclStat(x)
       case x =>
@@ -325,7 +325,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForVarDecl(varDecl: VariableDeclaration): Ast = {
-    val newMember = NewMember();
+    val newID = NewIdentifier();
     var typefullName = ""
     var code = ""
     varDecl.typeName match  {
@@ -344,14 +344,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: String => visibility = " "+x
       case _ => visibility = ""
     }
-        newMember
+    newID
           .name(varDecl.name)
           .code(typefullName + code +visibility+ " "+varDecl.name)
-          .typeFullName(typefullName)
+          .typeFullName(varDecl.name)
           .order(1)
 
 
-      Ast(newMember)
+      Ast(newID)
 
     // TODO: VarDecls should be Local nodes in their block and NOT be duplicated
 
@@ -361,7 +361,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForField(stateVariableDeclaration: StateVariableDeclaration):Ast = {
     var counter = 0
-    val fieldType = stateVariableDeclaration.variables.collect{case x: VariableDeclaration => x}.map(astForVarDecl);
+    val fieldType = stateVariableDeclaration.variables.collect{case x: VariableDeclaration => x}.map(astForMemberVarDecl);
     Ast().withChildren(fieldType)
   }
 
@@ -399,6 +399,37 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .order(0)
       )
     }
+  }
+
+  private def astForMemberVarDecl(varDecl: VariableDeclaration): Ast = {
+    val newMember = NewMember();
+    var typefullName = ""
+    var code = ""
+    varDecl.typeName match  {
+      case x: ElementaryTypeName => typefullName = registerType(x.name)
+      case x: Mapping =>  {
+        typefullName = registerType("mapping")
+        code = getMappingKeyAndValue(x)}
+      case x : ArrayTypeName => x.baseTypeName match {
+        case x : ElementaryTypeName => typefullName = registerType(x.name)
+      }
+      case x : UserDefinedTypeName => typefullName = registerType(x.namePath)
+      case x : FunctionTypeName => typefullName = registerType("function("+getParameters(x.parameterTypes)+")")
+    }
+    var visibility = "";
+    varDecl.visibility match {
+      case x: String => visibility = " "+x
+      case _ => visibility = ""
+    }
+    newMember
+      .name(varDecl.name)
+      .code(typefullName + code +visibility+ " "+varDecl.name)
+      .typeFullName(typefullName)
+      .order(1)
+
+
+    Ast(newMember)
+
   }
 
   private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
@@ -481,6 +512,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: StringLiteral => astForStringLiteral(x)
       case x: IndexAccess => astForIndexAccess(x)
       case x: TupleExpression => astForTupleExpression(x)
+      case x: NewExpression => astForNewExpression(x)
+      case _ => {
+      println(expr.getType)
+        Ast()
+      }
     }
   }
   private def astForNumberLiteral(numberLiteral: NumberLiteral): Ast ={
@@ -491,8 +527,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     } else {
       code = numberLiteral.number
     }
-    Ast(NewCall()
-      .name(numberLiteral.number)
+    Ast(NewLiteral()
       .code(code)
       .typeFullName(typeFullName)
     )
@@ -505,6 +540,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForBinaryOperation(operation: BinaryOperation): Ast = {
     //TODO : finx all cases with "Ast()"
+    Ast()
+  }
+  private def astForIfStatement(operation: IfStatement): Ast = {
+    Ast()
+  }
+  private def astForNewExpression(x : NewExpression): Ast = {
     Ast()
   }
 
@@ -520,7 +561,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
     args = arguments.flatMap(_.root).map(_.properties(PropertyNames.NAME)).mkString(", ")
     argsArr = args.split(",")
-    if (call.methodFullName!= null) {
+    if (call.methodFullName!= null && !call.methodFullName.contains("null")) {
       methodFullName = call.methodFullName
       sig = call.methodFullName.split(":")(1)
     }
@@ -568,11 +609,42 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast()
   }
 
+  private def astsForDefinition(x: BaseASTNode) : Ast = {
+    x match {
+      case x : NumberLiteral => astForNumberLiteral(x)
+      case x : BinaryOperation => astForBinaryOperation(x)
+      case x: FunctionCall => astForFunctionCall(x)
+    }
+  }
+
   private def astForVarDeclStat(statement: VariableDeclarationStatement): Ast = {
+
     val vars = statement.variables.map(x => astForStatement(x))
+    val call = NewCall();
+    var initial = Ast()
+      if (statement.initialValue != null) {
+        initial = astsForDefinition(statement.initialValue)
+        val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
+        val rhsCode = initial.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString
+        call
+          .name(Operators.assignment)
+          .methodFullName(Operators.assignment)
+          .code(s"$lhsCode = $rhsCode")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          //        .order(order)
+          //        .argumentIndex(order)
+          .typeFullName(registerType(vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.NAME)).mkString))
+      }
 
+  if (statement.initialValue != null) {
+    Ast(call)
+      .withChildren(vars)
+      .withChild(initial)
+  } else {
+    Ast()
+      .withChildren(vars)
+  }
 
-  Ast().withChildren(vars)
   }
 
   private def astForStruct(structDefinition: StructDefinition, contractName : String): Ast = {

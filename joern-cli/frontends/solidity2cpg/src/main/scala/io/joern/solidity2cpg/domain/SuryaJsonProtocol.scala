@@ -98,6 +98,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           TupleExpressionJsonFormat.read(json)
         case "FunctionTypeName" =>
           FunctionTypeNameJsonFormat.read(json)
+        case "NewExpression" =>
+          NewExpressionJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
@@ -814,6 +816,21 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             case x : JsString => x.convertTo[String]
             case _ => null
           }
+        )
+      }
+    }
+  }
+  implicit object NewExpressionJsonFormat extends JsonFormat[NewExpression] with DefaultJsonProtocol {
+
+    def write(c: NewExpression): JsValue = JsNull
+
+    def read(json: JsValue): NewExpression = {
+      val fields = json.asJsObject("Unable to decode JSON as NewExpression").fields
+      if (fields("type").convertTo[String] != "NewExpression") {
+        throw new RuntimeException("NewExpression object expected")
+      } else {
+        NewExpression(
+          fields("typeName").convertTo[BaseASTNode]
         )
       }
     }

@@ -37,23 +37,23 @@ class CallTests extends SolidityCodeToCpgFixture {
 //    x.lineNumber shouldBe Some(8)
   }
 
-  "should allow traversing from call to arguments" in {
-    cpg.call("add").argument.size shouldBe 2
+//  "should allow traversing from call to arguments" in {
+//    cpg.call("add").argument.size shouldBe 2
 
-    val List(arg1) = cpg.call("add").argument(1).l
+//    val List(arg1) = cpg.call("add").argument(1).l
 //    arg1.isInstanceOf[nodes.Identifier] shouldBe true
 //    arg1.asInstanceOf[nodes.Identifier].name shouldBe "argc"
-    arg1.code shouldBe "argc"
-    arg1.order shouldBe 1
-    arg1.argumentIndex shouldBe 1
+//    arg1.code shouldBe "argc"
+//    arg1.order shouldBe 1
+//    arg1.argumentIndex shouldBe 1
 
-    val List(arg2) = cpg.call("add").argument(2).l
+//    val List(arg2) = cpg.call("add").argument(2).l
 //    arg2.asInstanceOf[nodes.Literal].code shouldBe "3"
 //    arg2.isInstanceOf[nodes.Literal] shouldBe true
-    arg2.code shouldBe "3"
-    arg2.order shouldBe 2
-    arg2.argumentIndex shouldBe 2
-  }
+//    arg2.code shouldBe "3"
+//    arg2.order shouldBe 2
+//    arg2.argumentIndex shouldBe 2
+//  }
 
   "should allow traversing from call to surrounding method" in {
     val List(x) = cpg.call.nameExact("add").method.l

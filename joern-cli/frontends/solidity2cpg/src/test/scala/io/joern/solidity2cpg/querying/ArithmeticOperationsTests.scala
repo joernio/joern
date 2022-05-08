@@ -36,6 +36,7 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
   )
 
   "should contain call nodes with <operation>.assignment for all variables" in {
+    println(cpg.typeDecl.dotAst.head)
     val assignments = cpg.assignment
       .map(x => (x.target.code, x.typeFullName))
       .l

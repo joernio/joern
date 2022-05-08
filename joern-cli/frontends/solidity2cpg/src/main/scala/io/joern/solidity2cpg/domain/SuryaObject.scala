@@ -234,4 +234,9 @@ case class ReturnStatement(expression: BaseASTNode)
     extends BaseASTNode("  FunctionTypeName") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
+
+  case class   NewExpression(typeName: BaseASTNode)
+    extends BaseASTNode("  NewExpression") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 }
