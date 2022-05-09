@@ -87,7 +87,7 @@ class PCodeMapper(
             createCallNode("TODO", "TODO", -1)
         }
         resolvedVars.foreach(x => connectCallToArgument(ret, x))
-        ret
+        return ret
       } catch {
         case _: Exception => println(nativeInstruction)
       }
@@ -101,7 +101,7 @@ class PCodeMapper(
 
   def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName: String, operation: String): CfgNodeNew = {
     val firstOp = resolveVarNode(pcodeOp.getInput(0), 1)
-    val callNode = createCall("<operator>.trunc", s"$operation(${firstOp.code})")
+    val callNode = createCall(cpgOperationName, s"$operation(${firstOp.code})")
     connectCallToArgument(callNode, firstOp)
     callNode
   }
