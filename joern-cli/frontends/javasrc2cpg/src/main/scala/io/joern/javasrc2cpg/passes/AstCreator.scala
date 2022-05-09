@@ -947,9 +947,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     val lastOrder = 1 + parameterAsts.size
 
-    val bodyAstWithCtx =
+    val bodyAst =
       astForMethodBody(methodDeclaration.getBody.toScala, lastOrder)
-    val returnAstWithCtx = astForMethodReturn(methodDeclaration)
+    val returnAst = astForMethodReturn(methodDeclaration)
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
 
@@ -971,10 +971,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Ast(methodNode)
       .withChildren(thisAst)
       .withChildren(parameterAsts)
-      .withChild(bodyAstWithCtx)
+      .withChild(bodyAst)
       .withChildren(annotationAsts)
       .withChildren(modifiers)
-      .withChild(returnAstWithCtx)
+      .withChild(returnAst)
   }
 
   private def astForMethodReturn(methodDeclaration: MethodDeclaration): Ast = {
@@ -1103,7 +1103,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForElse(maybeStmt: Option[Statement]): Option[Ast] = {
     maybeStmt.map { stmt =>
-      val elseAstsWithCtx = astsForStatement(stmt, 1)
+      val elseAsts = astsForStatement(stmt, 1)
 
       val elseNode =
         NewControlStructure()
@@ -1114,7 +1114,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .columnNumber(column(stmt))
           .code("else")
 
-      Ast(elseNode).withChildren(elseAstsWithCtx)
+      Ast(elseNode).withChildren(elseAsts)
     }
   }
 
@@ -1156,15 +1156,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .columnNumber(column(stmt))
         .code(s"while (${stmt.getCondition.toString})")
 
-    val conditionAstWithCtx =
+    val conditionAst =
       astsForExpression(stmt.getCondition, order = 1, Some("boolean")).headOption.toList
-    val stmtAstsWithCtx = astsForStatement(stmt.getBody, order = 2)
+    val stmtAsts = astsForStatement(stmt.getBody, order = 2)
 
     val ast = Ast(whileNode)
-      .withChildren(conditionAstWithCtx)
-      .withChildren(stmtAstsWithCtx)
+      .withChildren(conditionAst)
+      .withChildren(stmtAsts)
 
-    conditionAstWithCtx.flatMap(_.root.toList) match {
+    conditionAst.flatMap(_.root.toList) match {
       case r :: Nil =>
         ast.withConditionEdge(whileNode, r)
       case _ =>
@@ -1175,14 +1175,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForDo(stmt: DoStmt, order: Int): Ast = {
     val doNode =
       NewControlStructure().controlStructureType(ControlStructureTypes.DO).order(order)
-    val conditionAstWithCtx =
+    val conditionAst =
       astsForExpression(stmt.getCondition, order = 0, Some("boolean")).headOption.toList
-    val stmtAstsWithCtx = astsForStatement(stmt.getBody, order = 1)
+    val stmtAsts = astsForStatement(stmt.getBody, order = 1)
     val ast = Ast(doNode)
-      .withChildren(conditionAstWithCtx)
-      .withChildren(stmtAstsWithCtx)
+      .withChildren(conditionAst)
+      .withChildren(stmtAsts)
 
-    conditionAstWithCtx.flatMap(_.root.toList) match {
+    conditionAst.flatMap(_.root.toList) match {
       case r :: Nil =>
         ast.withConditionEdge(doNode, r)
       case _ =>
@@ -1286,14 +1286,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val selectorNode = selectorAsts.head.root.get
 
     var orderOffset = 0
-    val entryAstsWithCtx = withOrder(stmt.getEntries) { (e, o) =>
+    val entryAsts = withOrder(stmt.getEntries) { (e, o) =>
       val asts = astForSwitchEntry(e, o + orderOffset)
       orderOffset += asts.size - 1
       asts
     }.flatten
 
     val switchBodyAst =
-      Ast(NewBlock().order(2).argumentIndex(2)).withChildren(entryAstsWithCtx)
+      Ast(NewBlock().order(2).argumentIndex(2)).withChildren(entryAsts)
 
     Ast(switchNode)
       .withChildren(selectorAsts)
@@ -1561,14 +1561,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case BinaryExpr.Operator.REMAINDER            => Operators.modulo
     }
 
-    val argsWithCtx =
+    val args =
       astsForExpression(expr.getLeft, 1, expectedType) ++ astsForExpression(expr.getRight, 2, expectedType)
 
     val typeFullName =
       typeInfoProvider
         .getTypeForExpression(expr)
-        .orElse(argsWithCtx.headOption.flatMap(rootType))
-        .orElse(argsWithCtx.lastOption.flatMap(rootType))
+        .orElse(args.headOption.flatMap(rootType))
+        .orElse(args.lastOption.flatMap(rootType))
         .orElse(expectedType)
         .getOrElse(UnresolvedTypeDefault)
 
@@ -1583,7 +1583,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(expr))
       .typeFullName(typeFullName)
 
-    callAst(callNode, argsWithCtx)
+    callAst(callNode, args)
   }
 
   def astForCastExpr(expr: CastExpr, order: Int, expectedType: Option[String]): Ast = {
@@ -1745,9 +1745,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val targetAst = Ast(identifier)
 
       // TODO Add expected type here if possible
-      val initializerAstsWithCtx = astsForExpression(initializer, 2, Some(typeFullName))
+      val initializerAsts = astsForExpression(initializer, 2, Some(typeFullName))
       // Since all partial constructors will be dealt with here, don't pass them up.
-      val declAst = callAst(callNode, Seq(targetAst) ++ initializerAstsWithCtx)
+      val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
 
       val constructorAsts = partialConstructorQueue
         .map { partialConstructor =>
@@ -1791,10 +1791,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val localAsts = locals.map { Ast(_) }
 
     val assignOrder = order + locals.size
-    val assignmentsWithCtx =
+    val assignments =
       assignmentsForVarDecl(varDecl.getVariables.asScala, line(varDecl), column(varDecl), assignOrder)
 
-    localAsts ++ assignmentsWithCtx
+    localAsts ++ assignments
   }
 
   def callAst(rootNode: NewCall, args: Seq[Ast]): Ast = {
@@ -2395,8 +2395,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }.toList
   }
 
-  private def mapNamesToParams(parameterAstsWithCtx: Seq[Ast]): Map[String, Ast] = {
-    parameterAstsWithCtx
+  private def mapNamesToParams(parameterAsts: Seq[Ast]): Map[String, Ast] = {
+    parameterAsts
       .filter(_.root.get.isInstanceOf[NewMethodParameterIn])
       .map { paramAst =>
         val node = paramAst.root.get.asInstanceOf[NewMethodParameterIn]
