@@ -62,7 +62,15 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   private def initSucc(ns: List[StoredNode]): Map[StoredNode, List[StoredNode]] = {
     val firstOutputParam = ns.collect { case x: MethodParameterOut => x }.sortBy(_.order).headOption
     ns.map {
-      case n @ (_: Return) => n -> List(exitNode)
+      case n @ (_: Return) => {
+        n -> {
+          if (firstOutputParam.isEmpty) {
+            List(exitNode)
+          } else {
+            List(firstOutputParam.get)
+          }
+        }
+      }
       case n @ (param: MethodParameterIn) =>
         n -> {
           val nextParam = param.method.parameter.index(param.index + 1).headOption
@@ -71,7 +79,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
         }
       case n @ (paramOut: MethodParameterOut) =>
         n -> {
-          val nextParam = paramOut.method.parameter.index(paramOut.index.head + 1).headOption
+          val nextParam = paramOut.method.parameter.index(paramOut.index.head + 1).asOutput.headOption
           if (nextParam.isDefined) { nextParam.toList }
           else { List(exitNode) }
         }
@@ -105,7 +113,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
         }
       case n @ (paramOut: MethodParameterOut) =>
         n -> {
-          val prevParam = paramOut.method.parameter.index(paramOut.index.head - 1).headOption
+          val prevParam = paramOut.method.parameter.index(paramOut.index.head - 1).asOutput.headOption
           if (prevParam.isDefined) { prevParam.toList }
           else { lastActualCfgNode.toList }
         }

@@ -1883,9 +1883,6 @@ class DataFlowTests64 extends DataFlowCodeToCpgSuite {
   "should not report flow" in {
     def sink   = cpg.call("free").argument(1).l
     def source = cpg.call("free").argument(1).l
-
-    println(sink.reachableByFlows(source).filter(path => path.elements.size > 1).p)
-
     sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
   }
 
