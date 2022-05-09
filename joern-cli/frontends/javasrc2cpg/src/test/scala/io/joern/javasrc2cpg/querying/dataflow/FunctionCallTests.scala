@@ -1,8 +1,72 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
-import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
+
+class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
+  "Dataflow through function calls" should {
+
+    "find a path directly via a function argument" in {
+      val cpg = code("""
+          |class Foo {
+          |  public static void printSimpleString(String s) {
+          |    System.out.println(s);
+          |  }
+          |
+          |  public static void test() {
+          |    printSimpleString("MALICIOUS");
+          |  }
+          |}
+          |""".stripMargin)
+
+      val (source, sink) = getMultiFnSourceSink(cpg, "test", "printSimpleString")
+      sink.reachableBy(source).size shouldBe 1
+    }
+
+    "find paths through calls with varargs" when {
+      val cpg = code("""
+          |public class Foo {
+          |  public static void sink(String s) {}
+          |
+          |  public static void processAll(String item, String... moreItems) {
+          |    sink(item);
+          |    for (int i = 0; i < moreItems.length; i++) {
+          |      sink(moreItems[i]);
+          |    }
+          |  }
+          |
+          |  public static void test(String item0, String item1, String item2) {
+          |    processAll(item0, item1, item2);
+          |  }
+          |}
+          |""".stripMargin)
+
+      def sink = cpg.method.name("sink").parameter.l
+
+      "the source is not passed as a vararg argument" in {
+        def source = cpg.method.name("test").parameter.name("item0")
+
+        sink.reachableBy(source).size shouldBe 1
+        sink.reachableByFlows(source).size shouldBe 1
+      }
+
+      "the source is the first vararg argument" in {
+        def source = cpg.method.name("test").parameter.name("item1")
+
+        sink.reachableBy(source).size shouldBe 1
+        sink.reachableByFlows(source).size shouldBe 1
+      }
+
+      "the source is the second vararg argument" in {
+        def source = cpg.method.name("test").parameter.name("item2")
+
+        sink.reachableBy(source).size shouldBe 1
+        sink.reachableByFlows(source).size shouldBe 1
+      }
+    }
+  }
+}
 
 class FunctionCallTests extends JavaDataflowFixture {
 

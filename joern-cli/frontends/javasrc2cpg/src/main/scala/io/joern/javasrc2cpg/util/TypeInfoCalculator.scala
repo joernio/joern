@@ -226,6 +226,15 @@ object TypeInfoCalculator {
     val Boolean: String = "boolean"
     val Object: String  = "java.lang.Object"
     val Class: String   = "java.lang.Class"
+    val Void: String    = "void"
+  }
+
+  object UnresolvedConstants {
+    val UnresolvedType: String      = "<unresolvedType>"
+    val UnresolvedSignature: String = "<unresolvedSignature>"
+    val UnresolvedReceiver: String  = "<unresolvedReceiverType>"
+
+    val all: Set[String] = Set(UnresolvedType, UnresolvedSignature, UnresolvedReceiver)
   }
 
   object TypeNameConstants {
@@ -251,5 +260,9 @@ object TypeInfoCalculator {
     "java.lang.Boolean"
   )
 
-  val UnresolvedTypeDefault = "ANY"
+  def apply(global: Global, symbolResolver: SymbolResolver): TypeInfoCalculator = {
+    val typeInfoCalculator = new TypeInfoCalculator(global, symbolResolver)
+    UnresolvedConstants.all.foreach(typeInfoCalculator.registerType)
+    typeInfoCalculator
+  }
 }

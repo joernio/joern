@@ -1,9 +1,64 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
+
+class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
+
+  "constructors created from import info" should {
+    val cpg = code("""
+        |import a.b.c.Bar;
+        |
+        |class Foo {
+        |  public void test2() {
+        |    // Should create constructor for a.b.c.Bar
+        |    Bar b = new Bar(0);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a constructor based on import info" in {
+      cpg.method.name("test2").call.nameExact("<operator>.alloc").l match {
+        case alloc :: Nil =>
+          alloc.typeFullName shouldBe "a.b.c.Bar"
+          alloc.signature shouldBe "a.b.c.Bar()"
+          alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        case res => fail(s"Expected single alloc call but got $res")
+      }
+
+      val init = cpg.method.name("test2").call.nameExact("<init>").l match {
+        case init :: Nil => init
+        case res         => fail(s"Expected single init call but got $res")
+
+      }
+
+      init.typeFullName shouldBe "void"
+      init.signature shouldBe "void(int)"
+      init.methodFullName shouldBe "a.b.c.Bar.<init>:void(int)"
+
+      init.argument.size shouldBe 2
+
+      init.argument.l match {
+        case List(obj: Identifier, arg: Literal) =>
+          obj.name shouldBe "b"
+          obj.code shouldBe "b"
+          obj.typeFullName shouldBe "a.b.c.Bar"
+          obj.order shouldBe 0
+          obj.argumentIndex shouldBe 0
+
+          arg.typeFullName shouldBe "int"
+          arg.code shouldBe "0"
+          arg.order shouldBe 1
+          arg.argumentIndex shouldBe 1
+
+        case res => fail(s"Expected identifier and literal arguments for init but got $res")
+      }
+    }
+  }
+}
 
 class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
 
@@ -66,45 +121,6 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
       case b :: Nil => b.typeFullName shouldBe "a.b.c.Bar"
 
       case res => fail(s"Expected identifier b but got $res")
-    }
-  }
-
-  "should create a constructor based on import info" in {
-    cpg.method.name("test2").call.nameExact("<operator>.alloc").l match {
-      case alloc :: Nil =>
-        alloc.typeFullName shouldBe "a.b.c.Bar"
-        alloc.signature shouldBe "a.b.c.Bar()"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-      case res => fail(s"Expected single alloc call but got $res")
-    }
-
-    val init = cpg.method.name("test2").call.nameExact("<init>").l match {
-      case init :: Nil => init
-      case res         => fail(s"Expected single init call but got $res")
-
-    }
-
-    init.typeFullName shouldBe "void"
-    init.signature shouldBe "void(int)"
-    init.methodFullName shouldBe "a.b.c.Bar.<init>:void(int)"
-
-    init.argument.size shouldBe 2
-
-    init.argument.l match {
-      case List(obj: Identifier, arg: Literal) =>
-        obj.name shouldBe "b"
-        obj.code shouldBe "b"
-        obj.typeFullName shouldBe "a.b.c.Bar"
-        obj.order shouldBe 0
-        obj.argumentIndex shouldBe 0
-
-        arg.typeFullName shouldBe "int"
-        arg.code shouldBe "0"
-        arg.order shouldBe 1
-        arg.argumentIndex shouldBe 1
-
-      case res => fail(s"Expected identifier and literal arguments for init but got $res")
     }
   }
 

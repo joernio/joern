@@ -9,8 +9,7 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   CombinedTypeSolver,
   JarTypeSolver,
-  JavaParserTypeSolver,
-  ReflectionTypeSolver
+  JavaParserTypeSolver
 }
 import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.util.{CachingReflectionTypeSolver, SourceRootFinder}
