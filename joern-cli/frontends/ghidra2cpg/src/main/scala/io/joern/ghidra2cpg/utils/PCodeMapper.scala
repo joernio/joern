@@ -90,10 +90,9 @@ class PCodeMapper(
         ret
       } catch {
         case _: Exception => println(nativeInstruction)
-      } finally {
-        createCallNode("TODO", "TODO", -1)
       }
     }
+    createCallNode("UNKNOWN", "UNKNOWN", -1)
   }
 
   def createCall(name: String, code: String): CfgNodeNew = {
