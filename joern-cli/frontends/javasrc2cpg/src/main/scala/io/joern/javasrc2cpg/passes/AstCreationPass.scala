@@ -12,7 +12,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JavaParserTypeSolver,
   ReflectionTypeSolver
 }
-import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
+import io.joern.javasrc2cpg.util.{SourceRootFinder}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, MavenDependencies}
 import org.slf4j.LoggerFactory

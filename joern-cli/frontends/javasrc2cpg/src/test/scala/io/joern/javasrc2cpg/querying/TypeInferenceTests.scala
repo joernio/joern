@@ -56,7 +56,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
       |
       |    public void test10() {
       |        // Should find arg type
-      |        Foo f = new Foo(
+      |        Foo f = new Foo();
       |    }
       |}
       |""".stripMargin
