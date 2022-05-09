@@ -75,23 +75,23 @@ class AliasingBenchmark6 extends SecuribenchMicroAliasingFixture {
   }
 
   s"Aliasing$benchmarkNo line 50" should "report insecure" taggedAs Aliasing in {
-    assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(50))
+    assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(50))
   }
 
   s"Aliasing$benchmarkNo line 51" should "report insecure" taggedAs Aliasing in {
-    assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(51))
+    assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(51))
   }
 
   s"Aliasing$benchmarkNo line 52" should "report insecure" taggedAs Aliasing in {
-    assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(52))
+    assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(52))
   }
 
   s"Aliasing$benchmarkNo line 53" should "report insecure" taggedAs Aliasing in {
-    assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(53))
+    assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(53))
   }
 
   s"Aliasing$benchmarkNo line 54" should "report insecure" taggedAs Aliasing in {
-    assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(54))
+    assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(54))
   }
 
 }
