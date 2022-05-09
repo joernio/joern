@@ -3,7 +3,7 @@ package io.joern.solidity2cpg.passes
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -604,17 +604,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     lft = astForExpression(operation.left)
 
-//    operation.left match {
-//      case x: Identifier => lft = astForIdentifier(x)
-//      case x: NumberLiteral => lft = astForNumberLiteral(x)
-//      case x: BinaryOperation => lft = astForBinaryOperation(x)
-//    }
     rht = astForExpression(operation.right)
-//    operation.right match {
-//      case x: Identifier => rht = astForIdentifier(x)
-//      case x: NumberLiteral => rht = astForNumberLiteral(x)
-//      case x: BinaryOperation =>rht = astForBinaryOperation(x)
-//    }
+
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
 
@@ -623,19 +614,64 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .name(operatorName)
       .methodFullName(operatorName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(lfteq + operation.operator + rhteq)
+      .code(lfteq +" "+ operation.operator +" "+ rhteq)
 //      .argumentIndex(order)
 //      .order(order)
 
-//    val args =
-//      astsForValue(binOp.getOp1, 1, parentUnit) ++ astsForValue(binOp.getOp2, 2, parentUnit)
-//    callAst(callNode, args)
     Ast(callNode)
       .withChild(lft)
       .withChild(rht)
   }
   private def astForIfStatement(operation: IfStatement): Ast = {
-    Ast()
+    val opNode = operation.condition match {
+      case x: BinaryOperation => astForBinaryOperation(x)
+    }
+    var tb = Ast()
+    var fb = Ast()
+    var foundt = false
+    var foundf = false
+    if (operation.trueBody != null) {
+      operation.trueBody match {
+        case x: Block => {
+          tb = astForBody(x)
+          foundt = true
+        }
+      }
+    }
+    if (operation.falseBody != null) {
+      operation.falseBody match {
+        case x: Block => {
+            fb = astForBody(x)
+            foundf = true
+            }
+        }
+    }
+    val code = opNode.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    if (foundt && foundf) {
+      Ast(NewControlStructure()
+        .controlStructureType(ControlStructureTypes.IF)
+        .code("if ("+code+")"))
+        .withChild(opNode)
+        .withChild(fb)
+        .withChild(tb)
+    } else if (foundt && !foundf) {
+      Ast(NewControlStructure()
+        .controlStructureType(ControlStructureTypes.IF)
+        .code("if ("+code+")"))
+        .withChild(opNode)
+        .withChild(tb)
+    } else if (!foundt && foundf) {
+
+      Ast(NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .code("if ("+code+")"))
+      .withChild(opNode).withChild(fb)
+    } else {
+      Ast(NewControlStructure()
+        .controlStructureType(ControlStructureTypes.IF)
+        .code("if ("+code+")"))
+    }
+
   }
   private def astForNewExpression(x : NewExpression): Ast = {
     Ast()
@@ -706,6 +742,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x : NumberLiteral => astForNumberLiteral(x)
       case x : BinaryOperation => astForBinaryOperation(x)
       case x: FunctionCall => astForFunctionCall(x)
+      case x: TupleExpression => astForTupleExpression(x)
     }
   }
 
