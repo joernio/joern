@@ -50,6 +50,13 @@ class ReachingDefFlowGraphTest1 extends ReachingDefCodeToCpgSuite {
     flowGraph.succ(ret) shouldBe List(fooMethod.methodReturn)
   }
 
+  "should create ReachingDefFlowGraph with correct predecessors" in {
+    val List(ret: Return) = cpg.method("foo").ast.isReturn.l
+    flowGraph.pred(fooMethod.methodReturn) shouldBe List(ret)
+    val List(id: Identifier) = flowGraph.succ(fooMethod)
+    flowGraph.pred(id) shouldBe List(fooMethod)
+  }
+
 }
 
 class ReachingDefFlowGraphTest2 extends ReachingDefCodeToCpgSuite {
@@ -63,18 +70,33 @@ class ReachingDefFlowGraphTest2 extends ReachingDefCodeToCpgSuite {
       |""".stripMargin
 
   "should create ReachingDefFlowGraph with correct successors" in {
-    val param1 = fooMethod.parameter.index(1).head
-    val param2 = fooMethod.parameter.index(2).head
+    val param1    = fooMethod.parameter.index(1).head
+    val param2    = fooMethod.parameter.index(2).head
+    val paramOut1 = param1.asOutput.head
+    val paramOut2 = param2.asOutput.head
+
+    flowGraph.succ(fooMethod) shouldBe List(param1)
     flowGraph.succ(param1) shouldBe List(param2)
     val List(id: Identifier) = flowGraph.succ(param2)
     id.name shouldBe "y"
     val List(ret: Return) = cpg.method("foo").ast.isReturn.l
-    val paramOut1         = param1.asOutput.head
-    val paramOut2         = param2.asOutput.head
 
     flowGraph.succ(ret).toSet shouldBe Set(paramOut1)
     flowGraph.succ(paramOut1) shouldBe List(paramOut2)
     flowGraph.succ(paramOut2) shouldBe List(fooMethod.methodReturn)
+  }
+
+  "should create ReachingDefFlowGraph with correct predecessors" in {
+    val param1            = fooMethod.parameter.index(1).head
+    val param2            = fooMethod.parameter.index(2).head
+    val paramOut1         = param1.asOutput.head
+    val paramOut2         = param2.asOutput.head
+    val List(ret: Return) = cpg.method("foo").ast.isReturn.l
+
+    flowGraph.pred(param2) shouldBe List(param1)
+    flowGraph.pred(param1) shouldBe List(fooMethod)
+    flowGraph.pred(paramOut1) shouldBe List(ret)
+    flowGraph.pred(paramOut2) shouldBe List(paramOut1)
   }
 
 }
