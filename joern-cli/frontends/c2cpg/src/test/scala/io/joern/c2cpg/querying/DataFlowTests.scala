@@ -1887,3 +1887,24 @@ class DataFlowTests64 extends DataFlowCodeToCpgSuite {
   }
 
 }
+
+class DataFlowTests56 extends DataFlowCodeToCpgSuite {
+
+  override val code: String = """
+  int foo(int x) {
+    x = 10;
+  }
+  """
+
+  "should report flow from method assignment to method parameter out" in {
+    def sink   = cpg.method("foo").parameter.asOutput.l
+    def source = cpg.method("foo").call.l
+
+    cpg.method("foo").parameter.asOutput.inE.l.foreach(println)
+
+    println(sink.size)
+    println(source.size)
+    println(sink.reachableByFlows(source).size)
+  }
+
+}

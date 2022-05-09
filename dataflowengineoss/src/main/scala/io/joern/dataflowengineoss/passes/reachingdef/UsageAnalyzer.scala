@@ -42,11 +42,11 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
     * `ptr->foo`.
     */
-  private def isContainer(use: Expression, inElement: StoredNode): Boolean = {
+  private def isContainer(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
         call.argument.headOption.exists { base =>
-          base.code == use.code
+          nodeToString(use).contains(base.code)
         }
       case _ => false
     }
@@ -54,7 +54,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
 
   /** Determine whether `use` is a part of `inElement`, e.g., use = `argv[0]` while inElement = `argv`
     */
-  private def isPart(use: Expression, inElement: StoredNode): Boolean = {
+  private def isPart(use: StoredNode, inElement: StoredNode): Boolean = {
     use match {
       case call: Call if containerSet.contains(call.name) =>
         inElement match {
@@ -72,7 +72,7 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     }
   }
 
-  private def isAlias(use: Expression, inElement: StoredNode): Boolean = {
+  private def isAlias(use: StoredNode, inElement: StoredNode): Boolean = {
     use match {
       case useCall: Call =>
         inElement match {
@@ -86,12 +86,14 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
     }
   }
 
-  def uses(node: StoredNode): Set[Expression] = {
-    val n: Set[Expression] = node match {
+  def uses(node: StoredNode): Set[StoredNode] = {
+    val n: Set[StoredNode] = node match {
       case ret: Return =>
         ret.astChildren.collect { case x: Expression => x }.toSet
       case call: Call =>
         call.argument.toSet
+      case paramOut: MethodParameterOut =>
+        Set(paramOut)
       case _ => Set()
     }
     n.filterNot(_.isInstanceOf[FieldIdentifier])
@@ -99,16 +101,25 @@ class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode
 
   /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
     */
-  def sameVariable(use: Expression, inElement: StoredNode): Boolean = {
+  def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case param: MethodParameterIn =>
-        use.code == param.name
+        nodeToString(use).contains(param.name)
       case call: Call if indirectionAccessSet.contains(call.name) =>
-        call.argument(1).headOption.exists(use.code == _.code)
+        call.argument(1).headOption.exists(x => nodeToString(use).contains(x.code))
       case call: Call =>
-        use.code == call.code
-      case identifier: Identifier => use.code == identifier.code
+        nodeToString(use).contains(call.code)
+      case identifier: Identifier => nodeToString(use).contains(identifier.code)
       case _                      => false
+    }
+  }
+
+  private def nodeToString(node: StoredNode): Option[String] = {
+    node match {
+      case exp: Expression       => Some(exp.code)
+      case p: MethodParameterIn  => Some(p.name)
+      case p: MethodParameterOut => Some(p.name)
+      case _                     => None
     }
   }
 

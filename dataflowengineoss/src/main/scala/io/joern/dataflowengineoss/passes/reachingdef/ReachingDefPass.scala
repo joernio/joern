@@ -105,6 +105,14 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
         }
         addEdge(ret, method.methodReturn, "<RET>")
 
+      case paramOut: MethodParameterOut =>
+        usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
+          inElements.foreach { inElement =>
+            val inElemNode = numberToNode(inElement)
+            addEdge(inElemNode, paramOut, nodeToEdgeLabel(inElemNode))
+          }
+        }
+
       case exitNode: MethodReturn =>
         in(exitNode).foreach { i =>
           val iNode = numberToNode(i)
