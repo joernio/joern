@@ -90,6 +90,7 @@ class AliasingBenchmark6 extends SecuribenchMicroAliasingFixture {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(53))
   }
 
+  // This passes since this is the root of the alias propagation
   s"Aliasing$benchmarkNo line 54" should "report insecure" taggedAs Aliasing in {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(54))
   }
