@@ -190,9 +190,14 @@ object Engine {
     * at both the parent and the child.
     */
   private def elemForArgument(e: Edge, curNode: Expression)(implicit semantics: Semantics): Option[PathElement] = {
+
     val parentNode     = e.outNode().asInstanceOf[Expression]
     val parentNodeCall = parentNode.inCall.l
     val sameCallSite   = parentNode.inCall.l == curNode.start.inCall.l
+
+    if (sameCallSite && isOutputArgOfInternalMethod(parentNode)) {
+      return None
+    }
 
     if (
       sameCallSite && parentNode.isUsed && curNode.isDefined ||

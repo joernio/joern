@@ -134,13 +134,7 @@ class ObjectTests extends JavaDataflowFixture {
   it should "find a path through the constructor and field of an object" in {
     val source = cpg.method("test1").literal.l
     val sink   = cpg.method("test1").ast.isCall.name("println").argument(1).l
-
-    implicit val s = defaultSemantics
-    cpg.method("Bar").dotDdg.foreach(println)
-
-    println(sink.reachableByFlows(source).p)
-
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path if a safe field is accessed (approximation)" in {

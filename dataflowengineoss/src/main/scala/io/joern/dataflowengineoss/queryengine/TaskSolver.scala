@@ -134,7 +134,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       case arg: Expression
           if path.size > 1 && arg.inCall.toList.exists(c =>
             isCallToInternalMethodWithoutSemantic(c)
-          ) && arg.inCall.headOption.filter(x => isArgOrRetOfMethodWeCameFrom(x, path)).isEmpty =>
+          ) && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
       // All other cases: expand into parents
       case _ =>
