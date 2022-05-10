@@ -27,6 +27,11 @@ object SuryaObject {
     def getType: String = `type`
   }
 
+  trait LocInfo {
+    def lineNumber: Option[Int]   = None
+    def columnNumber: Option[Int] = None
+  }
+
   case class SourceUnit(children: List[BaseASTNode]) extends BaseASTNode("SourceUnit") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
@@ -88,8 +93,11 @@ object SuryaObject {
     isDeclaredConst: Boolean,
     isIndexed: Boolean,
     isImmutable: Boolean,
-    `override` : BaseASTNode
-  ) extends BaseASTNode("VariableDeclaration") {
+    `override`: BaseASTNode,
+    override val lineNumber: Option[Int] = None,
+    override val columnNumber: Option[Int] = None
+  ) extends BaseASTNode("VariableDeclaration")
+      with LocInfo {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -220,28 +228,28 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-case class ReturnStatement(expression: BaseASTNode)
-  extends BaseASTNode("ReturnStatement") {
-  override def toString: String = scala.runtime.ScalaRunTime._toString(this)
-}
-
-  case class TupleExpression(components: List[BaseASTNode], isArray : Boolean)
-    extends BaseASTNode("TupleExpression") {
+  case class ReturnStatement(expression: BaseASTNode) extends BaseASTNode("ReturnStatement") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class   FunctionTypeName(parameterTypes: List[BaseASTNode], returnTypes : List[BaseASTNode], visibility : String, stateMutability : String)
-    extends BaseASTNode("  FunctionTypeName") {
+  case class TupleExpression(components: List[BaseASTNode], isArray: Boolean) extends BaseASTNode("TupleExpression") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class   NewExpression(typeName: BaseASTNode)
-    extends BaseASTNode("  NewExpression") {
+  case class FunctionTypeName(
+    parameterTypes: List[BaseASTNode],
+    returnTypes: List[BaseASTNode],
+    visibility: String,
+    stateMutability: String
+  ) extends BaseASTNode("  FunctionTypeName") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class   TypeNameExpression(typeName: BaseASTNode)
-    extends BaseASTNode("  TypeNameExpression") {
+  case class NewExpression(typeName: BaseASTNode) extends BaseASTNode("  NewExpression") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  case class TypeNameExpression(typeName: BaseASTNode) extends BaseASTNode("  TypeNameExpression") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 }

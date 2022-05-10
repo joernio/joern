@@ -1,7 +1,7 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsArray, JsBoolean, JsFalse, JsNull, JsObject, JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsArray, JsBoolean, JsFalse, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat}
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -290,8 +290,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             fields("override") match {
               case x: JsObject => x.convertTo[BaseASTNode]
               case _ => null
+            },
+            fields("lineNumber") match {
+              case JsNumber(value) => Option(value.toIntExact)
+              case JsNull => None
+            },
+            fields("columnNumber") match {
+              case JsNumber(value) => Option(value.toIntExact)
+              case JsNull => None
             }
-
           )
         } catch {
           case e : NoSuchElementException => {
