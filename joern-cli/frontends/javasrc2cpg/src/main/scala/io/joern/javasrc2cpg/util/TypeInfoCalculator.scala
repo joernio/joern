@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.util
 
 import com.github.javaparser.ast.`type`.{PrimitiveType, Type}
+import com.github.javaparser.resolution.SymbolResolver
 import com.github.javaparser.resolution.declarations.{
   ResolvedDeclaration,
   ResolvedEnumConstantDeclaration,
@@ -27,7 +28,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-class TypeInfoCalculator(global: Global) {
+class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
   private val resolveCache = mutable.HashMap.empty[Type, Option[ResolvedType]]
 
   def name(typ: ResolvedType): String = {
@@ -76,7 +77,17 @@ class TypeInfoCalculator(global: Global) {
         Some(primitiveType.toString)
       case _ =>
         resolveCache
-          .getOrElseUpdate(typ, Try(typ.resolve()).toOption)
+          .getOrElseUpdate(
+            typ,
+            // We are using symbolResolver.toResolvedType() instead of typ.resolve() because
+            // the resolve() is just a wrapper for a call to symbolResolver.toResolvedType()
+            // with a specific class given as argument to which the result is casted to.
+            // It appears to be that ClassOrInterfaceType.resolve() is using a too restrictive
+            // bound (ResolvedReferenceType.class) which invalidates an otherwise successful
+            // resolve. Since we anyway dont care about the type cast, we directly access the
+            // symbolResolver and specifiy the most generic type ResolvedType.
+            Try(symbolResolver.toResolvedType(typ, classOf[ResolvedType])).toOption
+          )
           .map(resolvedType => nameOrFullName(resolvedType, fullyQualified))
     }
   }

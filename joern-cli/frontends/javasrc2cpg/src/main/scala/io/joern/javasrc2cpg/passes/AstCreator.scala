@@ -74,7 +74,7 @@ import com.github.javaparser.ast.stmt.{
   TryStmt,
   WhileStmt
 }
-import com.github.javaparser.resolution.UnsolvedSymbolException
+import com.github.javaparser.resolution.{SymbolResolver, UnsolvedSymbolException}
 import com.github.javaparser.resolution.declarations.{
   ResolvedConstructorDeclaration,
   ResolvedMethodDeclaration,
@@ -177,13 +177,14 @@ object AstWithStaticInit {
 
 /** Translate a Java Parser AST into a CPG AST
   */
-class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global) extends AstCreatorBase(filename) {
+class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolResolver: SymbolResolver)
+    extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
-  private val scopeStack                                                       = Scope()
-  private val typeInfoCalc: TypeInfoCalculator                                 = new TypeInfoCalculator(global)
+  private val scopeStack                       = Scope()
+  private val typeInfoCalc: TypeInfoCalculator = new TypeInfoCalculator(global, symbolResolver)
   private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
   private val bindingsQueue: mutable.ArrayBuffer[BindingInfo]                  = mutable.ArrayBuffer.empty
   private val lambdaContextQueue: mutable.ArrayBuffer[Context]                 = mutable.ArrayBuffer.empty
