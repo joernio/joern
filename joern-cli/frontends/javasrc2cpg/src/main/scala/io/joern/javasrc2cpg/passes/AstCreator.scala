@@ -349,15 +349,37 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def erasedMethodSignature(method: ResolvedMethodDeclaration): String = {
+    methodSignature(method, ResolvedTypeParametersMap.empty())
+  }
+
+  // Invoking this method with an empty typeParamValues results in the erased signature.
   private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
+    val parameterSignature = methodParameterSignature(method, typeParamValues)
+    val returnType = substituteTypeVariable(method.getReturnType, typeParamValues)
+
+    s"$returnType$parameterSignature"
+  }
+
+  private def erasedConstructorSignature(constructor: ResolvedConstructorDeclaration): String = {
+    constructorSignature(constructor, ResolvedTypeParametersMap.empty())
+  }
+
+  // Invoking this method with an empty typeParamValues results in the erased signature.
+  private def constructorSignature(constructor: ResolvedConstructorDeclaration,
+                                   typeParamValues: ResolvedTypeParametersMap): String = {
+    val parameterSignature = methodParameterSignature(constructor, typeParamValues)
+
+    s"void$parameterSignature"
+  }
+
+  private def methodParameterSignature(method: ResolvedMethodLikeDeclaration,
+                                       typeParamValues: ResolvedTypeParametersMap): String = {
     val parameterTypes =
       Range(0, method.getNumberOfParams).map(method.getParam).map { param =>
         substituteTypeVariable(param.getType, typeParamValues)
       }
-
-    val returnType = substituteTypeVariable(method.getReturnType, typeParamValues)
-
-    s"$returnType(${parameterTypes.mkString(",")})"
+    s"(${parameterTypes.mkString(",")})"
   }
 
   // For methods which override a method from a super class or interface, we
@@ -369,7 +391,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val result              = mutable.LinkedHashSet.empty[String]
       val resolvedMethod      = method.resolve()
       val declType            = resolvedMethod.declaringType()
-      val origMethodErasedSig = methodSignature(resolvedMethod, ResolvedTypeParametersMap.empty())
+      val origMethodErasedSig = erasedMethodSignature(resolvedMethod)
       result.add(origMethodErasedSig)
 
       val ancestors = declType.getAllAncestors()
@@ -381,7 +403,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .foreach { ancestorMethod =>
             val ancestorSig = methodSignature(ancestorMethod, typeParameters)
             if (ancestorSig == origMethodErasedSig) {
-              val erasedSig = methodSignature(ancestorMethod, ResolvedTypeParametersMap.empty())
+              val erasedSig = erasedMethodSignature(ancestorMethod)
               result.add(erasedSig)
             }
             ancestorSig
