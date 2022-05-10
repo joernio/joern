@@ -20,7 +20,7 @@ import scala.util.Try
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
   var semanticsFilename =
-    ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+    ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
   var semantics: Semantics            = _
   implicit var context: EngineContext = _
 

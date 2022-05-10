@@ -18,7 +18,7 @@ import scala.util.Try
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
   var semanticsFilename: String =
-    ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+    ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
 
   var semantics: Semantics = _
 
