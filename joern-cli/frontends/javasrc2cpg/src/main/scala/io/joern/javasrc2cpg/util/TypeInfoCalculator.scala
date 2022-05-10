@@ -10,6 +10,7 @@ import com.github.javaparser.resolution.declarations.{
 }
 import com.github.javaparser.resolution.types.{
   ResolvedArrayType,
+  ResolvedLambdaConstraintType,
   ResolvedPrimitiveType,
   ResolvedReferenceType,
   ResolvedType,
@@ -56,6 +57,8 @@ class TypeInfoCalculator(global: Global) {
         extendsBoundOption
           .map(bound => fullName(bound.getType))
           .getOrElse(if (fullyQualified) TypeConstants.Object else TypeNameConstants.Object)
+      case lambdaConstraintType: ResolvedLambdaConstraintType =>
+        nameOrFullName(lambdaConstraintType.getBound, fullyQualified)
     }
   }
 
