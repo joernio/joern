@@ -132,7 +132,7 @@ class ObjectTests extends JavaDataflowFixture {
       |""".stripMargin
 
   it should "find a path through the constructor and field of an object" in {
-    val source = cpg.method("test1").literal.l
+    val source = cpg.method("test1").literal
     val sink   = cpg.method("test1").ast.isCall.name("println").argument(1).l
     sink.reachableBy(source).size shouldBe 1
   }

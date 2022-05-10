@@ -1777,8 +1777,8 @@ class DataFlowTests61 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should find flow from `free` to `free`" in {
-    def sink   = cpg.call("free").argument(1).l
-    def source = cpg.call("free").argument(1).l
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
     val List(flow: Path) = sink
       .reachableByFlows(source)
       .filter(path => path.elements.size > 1)
@@ -1823,8 +1823,8 @@ class DataFlowTests62 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should not report flow" in {
-    def sink   = cpg.call("free").argument(1).l
-    def source = cpg.call("free").argument(1).l
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
     sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
   }
 }
@@ -1852,8 +1852,8 @@ class DataFlowTests63 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should not report flow" in {
-    def sink   = cpg.call("free").argument(1).l
-    def source = cpg.call("free").argument(1).l
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
     sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
   }
 }
@@ -1883,8 +1883,8 @@ class DataFlowTests64 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should not report flow" in {
-    def sink   = cpg.call("free").argument(1).l
-    def source = cpg.call("free").argument(1).l
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
     sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 1
   }
 
@@ -1899,7 +1899,7 @@ class DataFlowTests56 extends DataFlowCodeToCpgSuite {
   """
 
   "should report flow from method assignment to method parameter out" in {
-    def sink   = cpg.method("foo").parameter.asOutput.l
+    def sink   = cpg.method("foo").parameter.asOutput
     def source = cpg.method("foo").ast.isIdentifier.name("x")
     sink.reachableByFlows(source).size shouldBe 1
   }
