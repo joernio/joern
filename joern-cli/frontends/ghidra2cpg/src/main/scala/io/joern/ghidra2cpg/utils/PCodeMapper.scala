@@ -18,7 +18,8 @@ class PCodeMapper(
                    diffGraphBuilder: DiffGraphBuilder,
                    nativeInstruction: Instruction,
                    functions: List[Function],
-                   decompiler: Decompiler
+                   decompiler: Decompiler,
+                   address2Literal: Map[Long, String]
                  ) {
   private val logger = LoggerFactory.getLogger(getClass)
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
@@ -261,14 +262,26 @@ class PCodeMapper(
         input.getAddress.getOffsetAsBigInteger.intValue
       )
     } else if (input.isUnique) {
-      val uniques = pcodeOps.toList
-        // If the argument is a unique,
-        // we try to resolve it
-        .filter(x => x.getOutput == input)
-        // Sometimes the first parameter is equal to the return value
-        // filtering those out for now
-        .filterNot(x=>x.getInput(0) == input)
-      mapCallNode(uniques.last)
+      // unique could point to a string
+      if(address2Literal.contains(input.getOffset)){
+        val value = address2Literal(input.getDef.getInputs.toList.head.getAddress.getOffset)
+        createLiteral(
+          value,
+          index + 1,
+          index + 1,
+          input.getWordOffset.toHexString,
+          nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
+        )
+      } else {
+        val uniques = pcodeOps.toList
+          // If the argument is a unique,
+          // we try to resolve it
+          .filter(x => x.getOutput == input)
+          // Sometimes the first parameter is equal to the return value
+          // filtering those out for now
+          .filterNot(x => x.getInput(0) == input)
+        mapCallNode(uniques.last)
+      }
     } else {
       // input.isConstant || input.isAddress || input.isUnique
       createLiteral(
