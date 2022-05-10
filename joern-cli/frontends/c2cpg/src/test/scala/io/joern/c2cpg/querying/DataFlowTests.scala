@@ -1858,6 +1858,11 @@ class DataFlowTests63 extends DataFlowCodeToCpgSuite {
   }
 }
 
+// TODO this case is actually a double-free that we probably should return,
+// the reason being that modifying `ptr` does not modify `data` as arguments
+// are passed by value. We'd want the METHOD_PARAMETER_OUT for `ptr` to only
+// be influenced by nodes that modify a field of `ptr` rather than `ptr` itself.
+
 class DataFlowTests64 extends DataFlowCodeToCpgSuite {
 
   override val code: String =
