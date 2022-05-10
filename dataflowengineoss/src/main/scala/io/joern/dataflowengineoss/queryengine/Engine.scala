@@ -84,7 +84,8 @@ class Engine(context: EngineContext) {
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
       val (partial, complete) = resultsOfTask.partition(_.partial)
       result ++= complete
-      new TaskCreator(sources).createFromResults(partial).foreach(submitTask)
+      val newTasks = new TaskCreator(sources).createFromResults(partial)
+      newTasks.foreach(submitTask)
     }
 
     tasks.foreach(submitTask)
