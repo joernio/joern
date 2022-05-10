@@ -89,7 +89,7 @@ object UseAfterFree extends QueryBundle {
           |The function sets a field of a function parameter to a value of a local
           |variable.
           |This variable is then freed in some paths. Unless the value set in the
-          |function |parameter is overridden later on, the caller has access to the
+          |function parameter is overridden later on, the caller has access to the
           |free'd memory, which is undefined behavior.
           |
           |Finds bugs like CVE-2019-18902.
@@ -98,7 +98,7 @@ object UseAfterFree extends QueryBundle {
       withStrRep({ cpg =>
         def outParams =
           cpg.parameter
-            .typeFullName(".+\\*")
+            .code(".+\\*.+")
             .whereNot(
               _.referencingIdentifiers
                 .argumentIndex(1)

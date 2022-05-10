@@ -154,7 +154,9 @@ object Nodes {
     signature: String,
     fileName: String,
     line: Int = -1,
-    column: Int = -1
+    column: Int = -1,
+    lineEnd: Int = -1,
+    columnEnd: Int = -1
   ): NewMethod = {
     NewMethod()
       .code(name)
@@ -165,6 +167,8 @@ object Nodes {
       .isExternal(false)
       .lineNumber(line)
       .columnNumber(column)
+      .lineNumberEnd(lineEnd)
+      .columnNumberEnd(columnEnd)
   }
 
   def memberNode(name: String, typeFullName: String, line: Int = -1, column: Int = -1): NewMember = {

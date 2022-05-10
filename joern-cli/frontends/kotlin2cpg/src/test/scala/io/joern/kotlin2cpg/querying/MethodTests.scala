@@ -18,18 +18,20 @@ class MethodTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a method node for `bar` with the correct fields" in {
-      val List(x) = cpg.method.name("bar").isExternal(false).l
-      x.size shouldBe 1
-      x.name shouldBe "bar"
-      x.fullName shouldBe "com.test.pkg.Foo.bar:int(int)"
-      x.code shouldBe "bar"
-      x.signature shouldBe "int(int)"
-      x.isExternal shouldBe false
-      x.lineNumber shouldBe Some(4)
-      x.columnNumber shouldBe Some(6)
-      x.order shouldBe 1
-      x.filename.endsWith(".kt") shouldBe true
+    "should contain a METHOD node for `bar` with the props set" in {
+      val List(m) = cpg.method.name("bar").l
+      m.size shouldBe 1
+      m.name shouldBe "bar"
+      m.fullName shouldBe "com.test.pkg.Foo.bar:int(int)"
+      m.code shouldBe "bar"
+      m.signature shouldBe "int(int)"
+      m.isExternal shouldBe false
+      m.lineNumber shouldBe Some(4)
+      m.columnNumber shouldBe Some(6)
+      m.lineNumberEnd shouldBe Some(6)
+      m.columnNumberEnd shouldBe Some(2)
+      m.order shouldBe 1
+      m.filename.endsWith(".kt") shouldBe true
     }
 
     "should allow traversing to parameters" in {

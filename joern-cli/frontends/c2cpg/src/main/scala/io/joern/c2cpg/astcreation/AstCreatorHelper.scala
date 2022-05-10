@@ -131,8 +131,23 @@ trait AstCreatorHelper {
   }
 
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
-  private val reservedTypeKeywords =
-    List("const", "static", "volatile", "restrict", "extern", "typedef", "inline", "constexpr", "auto", "virtual")
+  private val reservedTypeKeywords: List[String] =
+    List(
+      "const",
+      "static",
+      "volatile",
+      "restrict",
+      "extern",
+      "typedef",
+      "inline",
+      "constexpr",
+      "auto",
+      "virtual",
+      "enum",
+      "struct",
+      "interface",
+      "class"
+    )
 
   protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
     val tpe =
@@ -170,8 +185,8 @@ trait AstCreatorHelper {
         val nodeType = ASTTypeUtil.getNodeType(node)
         val arr      = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
         s"$tpe$arr"
-      case _: IASTIdExpression | _: IASTName | _: IASTArrayDeclarator =>
-        cleanType(ASTTypeUtil.getNodeType(node))
+      case _: IASTIdExpression | _: IASTName | _: IASTDeclarator =>
+        cleanType(ASTTypeUtil.getNodeType(node), stripKeywords)
       case s: IASTNamedTypeSpecifier =>
         cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
       case s: IASTCompositeTypeSpecifier =>
@@ -459,9 +474,15 @@ trait AstCreatorHelper {
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
         pointersAsString(s, parentDecl, stripKeywords)
-      case s: IASTNamedTypeSpecifier     => ASTStringUtil.getSimpleName(s.getName)
+      case s: IASTNamedTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
+      case s: IASTCompositeTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        pointersAsString(s, parentDecl, stripKeywords)
       case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
-      case s: IASTEnumerationSpecifier   => ASTStringUtil.getSimpleName(s.getName)
+      case s: IASTEnumerationSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        pointersAsString(s, parentDecl, stripKeywords)
+      case s: IASTEnumerationSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl, stripKeywords)

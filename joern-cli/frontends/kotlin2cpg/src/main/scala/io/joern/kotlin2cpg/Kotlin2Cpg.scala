@@ -44,20 +44,20 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       if (config.inputPaths.size == 1) {
         val sourceDir = config.inputPaths.head
         if (!Files.exists(Paths.get(sourceDir))) {
-          println("The input path provided does not exist `" + sourceDir + "`. Exiting.")
+          println("The specified input path `" + sourceDir + "` is not a file that exists. Exiting.")
           System.exit(1)
         }
         if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println("The input path provided is not a directory `" + sourceDir + "`. Exiting.")
+          println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
           System.exit(1)
         }
         val copiedRuntimeLibsJarPaths =
-          if (config.copyRuntimeLibs) {
+          if (config.downloadDependencies) {
             val paths = DependencyResolver.getDependencies(Paths.get(sourceDir))
-            logger.info(s"Using ${paths.size} runtime libs from the build system found at the input path.")
+            logger.info(s"Using ${paths.size} dependency jars.")
             paths
           } else {
-            logger.info(s"Not using any runtime libs from the build system found at the input path.")
+            logger.info(s"Not using any dependency jars.")
             Seq()
           }
 

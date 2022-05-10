@@ -227,14 +227,14 @@ trait AstForFunctionsCreator {
         (
           ASTStringUtil.getSimpleName(p.getDeclarator.getName),
           nodeSignature(p),
-          typeForDeclSpecifier(p.getDeclSpecifier),
+          cleanType(typeForDeclSpecifier(p.getDeclSpecifier)),
           false
         )
       case p: CPPASTParameterDeclaration =>
         (
           ASTStringUtil.getSimpleName(p.getDeclarator.getName),
           nodeSignature(p),
-          typeForDeclSpecifier(p.getDeclSpecifier),
+          cleanType(typeForDeclSpecifier(p.getDeclSpecifier)),
           p.getDeclarator.declaresParameterPack()
         )
       case s: IASTSimpleDeclaration =>
@@ -243,11 +243,11 @@ trait AstForFunctionsCreator {
             .map(n => ASTStringUtil.getSimpleName(n.getName))
             .getOrElse(uniqueName("parameter", "", "")._1),
           nodeSignature(s),
-          typeForDeclSpecifier(s),
+          cleanType(typeForDeclSpecifier(s)),
           false
         )
       case other =>
-        (nodeSignature(other), nodeSignature(other), typeForDeclSpecifier(other), false)
+        (nodeSignature(other), nodeSignature(other), cleanType(typeForDeclSpecifier(other)), false)
     }
 
     val parameterNode = NewMethodParameterIn()
