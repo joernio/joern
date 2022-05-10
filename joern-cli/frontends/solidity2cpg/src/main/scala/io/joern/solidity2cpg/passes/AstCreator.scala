@@ -625,6 +625,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForIfStatement(operation: IfStatement): Ast = {
     val opNode = operation.condition match {
       case x: BinaryOperation => astForBinaryOperation(x)
+      case x: FunctionCall => astForFunctionCall(x)
     }
     var tb = Ast()
     var fb = Ast()

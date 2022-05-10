@@ -21,6 +21,7 @@ class CfgTests extends JavaSrcCodeToCpgFixture {
     """.stripMargin
 
   "should find that sink is control dependent on condition" in {
+    println(cpg.typeDecl.dotAst.head)
     val controllers = cpg.call("sink").controlledBy.isCall.toSetMutable
     controllers.map(_.code) should contain("y < 10")
     controllers.map(_.code) should contain("x < 10")
