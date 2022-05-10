@@ -27,7 +27,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val semanticsFilename               = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  val semanticsFilename               = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
   val semantics: Semantics            = Semantics.fromList(new Parser().parseFile(semanticsFilename))
   implicit var context: EngineContext = EngineContext(semantics)
 
