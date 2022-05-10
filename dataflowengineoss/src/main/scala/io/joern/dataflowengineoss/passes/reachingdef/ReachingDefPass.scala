@@ -49,7 +49,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     }
   }
 
-  /** Once reaching definitions have been computed, we create a data dependence graph by seeing which of these reaching
+  /** Once reaching definitions have been computed, we create a data dependence graph by checking which reaching
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
     */
   private def addReachingDefEdges(
@@ -58,9 +58,9 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     method: Method,
     solution: Solution[mutable.BitSet]
   ): Unit = {
-    implicit val implicitDst = dstGraph
-    val numberToNode         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in                   = solution.in
+    implicit val implicitDst: DiffGraphBuilder = dstGraph
+    val numberToNode                           = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val in                                     = solution.in
     val gen = solution.problem.transferFunction
       .asInstanceOf[ReachingDefTransferFunction]
       .gen
@@ -68,102 +68,114 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     val allNodes      = in.keys.toList
     val usageAnalyzer = new UsageAnalyzer(problem, in)
 
-    allNodes.foreach {
-      case call: Call =>
-        // Edges between arguments of call sites
-        usageAnalyzer.usedIncomingDefs(call).foreach { case (use, ins) =>
-          ins.foreach { in =>
-            val inNode = numberToNode(in)
-            if (inNode != use) {
-              addEdge(inNode, use, nodeToEdgeLabel(inNode))
-            }
-          }
-        }
-
-        // For all calls, assume that input arguments
-        // taint corresponding output arguments
-        // and the return value
-        usageAnalyzer.uses(call).foreach { use =>
-          gen(call).foreach { g =>
-            val genNode = numberToNode(g)
-            if (use != genNode && nodeMayBeSource(use)) {
-              addEdge(use, genNode, nodeToEdgeLabel(use))
-            }
-          }
-        }
-
-      case ret: Return =>
-        usageAnalyzer.usedIncomingDefs(ret).foreach { case (use, inElements) =>
-          addEdge(use, ret, use.asInstanceOf[CfgNode].code)
-          inElements.filter(x => numberToNode(x) != use).foreach { inElement =>
-            val inElemNode = numberToNode(inElement)
-            addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
-          }
-          if (inElements.isEmpty) {
-            addEdge(method, ret)
-          }
-        }
-        addEdge(ret, method.methodReturn, "<RET>")
-
-      case paramOut: MethodParameterOut =>
-        // There is always an edge from the method input parameter
-        // to the corresponding method output parameter as modifications
-        // of the input parameter only affect a copy.
-        paramOut.paramIn.foreach { paramIn =>
-          addEdge(paramIn, paramOut, paramIn.name)
-        }
-        usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
-          inElements.foreach { inElement =>
-            val inElemNode = numberToNode(inElement)
-            val edgeLabel  = nodeToEdgeLabel(inElemNode)
-            addEdge(inElemNode, paramOut, edgeLabel)
-          }
-        }
-
-      case exitNode: MethodReturn =>
-        in(exitNode).foreach { i =>
-          val iNode = numberToNode(i)
-          addEdge(iNode, exitNode, nodeToEdgeLabel(iNode))
-        }
-      case _ =>
-    }
-
-    // Add edges from the entry node
-    allNodes
-      .filter(nodeMayBeSource)
-      .foreach { node =>
-        if (usageAnalyzer.usedIncomingDefs(node).isEmpty) {
+    /** Add an edge from the entry node to each node that does not have other incoming definitions.
+      */
+    def addEdgesFromEntryNode(): Unit = {
+      // Add edges from the entry node
+      allNodes
+        .filter(n => isDdgNode(n) && usageAnalyzer.usedIncomingDefs(n).isEmpty)
+        .foreach { node =>
           addEdge(method, node)
         }
-      }
+    }
 
-    // Add edges for blocks used as arguments
-    allNodes
-      .collect { case c: Call => c }
-      .foreach { call =>
-        call.argument.isBlock.foreach { block =>
-          block.astChildren.lastOption match {
-            case None => // Do nothing
-            case Some(node: Identifier) =>
-              val edgesToAdd = in(node).toList.flatMap { inDef =>
-                numberToNode(inDef) match {
-                  case identifier: Identifier => Some(identifier)
-                  case _                      => None
-                }
-              }
-              edgesToAdd.foreach { inNode =>
-                addEdge(inNode, block, nodeToEdgeLabel(inNode))
-              }
-              if (edgesToAdd.nonEmpty) {
-                addEdge(block, call)
-              }
-            case Some(node: Call) =>
-              addEdge(node, call, nodeToEdgeLabel(node))
-              addEdge(block, call)
-            case _ => // Do nothing
+    /** Adds incoming edges to arguments of call sites, including edges between arguments of the same call site.
+      */
+    def addEdgesToCallSite(call: Call): Unit = {
+      // Edges between arguments of call sites
+      usageAnalyzer.usedIncomingDefs(call).foreach { case (use, ins) =>
+        ins.foreach { in =>
+          val inNode = numberToNode(in)
+          if (inNode != use) {
+            addEdge(inNode, use, nodeToEdgeLabel(inNode))
           }
         }
       }
+
+      // For all calls, assume that input arguments
+      // taint corresponding output arguments
+      // and the return value. We filter invalid
+      // edges at query time (according to the given semantic).
+      usageAnalyzer.uses(call).foreach { use =>
+        gen(call).foreach { g =>
+          val genNode = numberToNode(g)
+          if (use != genNode && isDdgNode(use)) {
+            addEdge(use, genNode, nodeToEdgeLabel(use))
+          }
+        }
+      }
+
+      // Handle block arguments
+      call.argument.isBlock.foreach { block =>
+        block.astChildren.lastOption match {
+          case None => // Do nothing
+          case Some(node: Identifier) =>
+            val edgesToAdd = in(node).toList.flatMap { inDef =>
+              numberToNode(inDef) match {
+                case identifier: Identifier => Some(identifier)
+                case _                      => None
+              }
+            }
+            edgesToAdd.foreach { inNode =>
+              addEdge(inNode, block, nodeToEdgeLabel(inNode))
+            }
+            if (edgesToAdd.nonEmpty) {
+              addEdge(block, call)
+            }
+          case Some(node: Call) =>
+            addEdge(node, call, nodeToEdgeLabel(node))
+            addEdge(block, call)
+          case _ => // Do nothing
+        }
+      }
+
+    }
+
+    def addEdgesToReturn(ret: Return): Unit = {
+      usageAnalyzer.usedIncomingDefs(ret).foreach { case (use, inElements) =>
+        addEdge(use, ret, use.asInstanceOf[CfgNode].code)
+        inElements.filter(x => numberToNode(x) != use).foreach { inElement =>
+          val inElemNode = numberToNode(inElement)
+          addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
+        }
+        if (inElements.isEmpty) {
+          addEdge(method, ret)
+        }
+      }
+      addEdge(ret, method.methodReturn, "<RET>")
+    }
+
+    def addEdgesToMethodParameterOut(paramOut: MethodParameterOut): Unit = {
+      // There is always an edge from the method input parameter
+      // to the corresponding method output parameter as modifications
+      // of the input parameter only affect a copy.
+      paramOut.paramIn.foreach { paramIn =>
+        addEdge(paramIn, paramOut, paramIn.name)
+      }
+      usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
+        inElements.foreach { inElement =>
+          val inElemNode = numberToNode(inElement)
+          val edgeLabel  = nodeToEdgeLabel(inElemNode)
+          addEdge(inElemNode, paramOut, edgeLabel)
+        }
+      }
+    }
+
+    def addEdgesToExitNode(exitNode: MethodReturn): Unit = {
+      in(exitNode).foreach { i =>
+        val iNode = numberToNode(i)
+        addEdge(iNode, exitNode, nodeToEdgeLabel(iNode))
+      }
+    }
+
+    addEdgesFromEntryNode()
+    allNodes.foreach {
+      case call: Call                   => addEdgesToCallSite(call)
+      case ret: Return                  => addEdgesToReturn(ret)
+      case paramOut: MethodParameterOut => addEdgesToMethodParameterOut(paramOut)
+      case _                            =>
+    }
+    addEdgesToExitNode(method.methodReturn)
   }
 
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
@@ -177,7 +189,11 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
   }
 
-  private def nodeMayBeSource(x: StoredNode): Boolean = {
+  /** There are a few node types that (a) are not to be considered in the DDG, or (b) are not standalone DDG nodes, or
+    * (c) have a special meaning in the DDG. This function indicates whether the given node is just a regular DDG node
+    * instead.
+    */
+  private def isDdgNode(x: StoredNode): Boolean = {
     !(
       x.isInstanceOf[Method] || x
         .isInstanceOf[ControlStructure] || x.isInstanceOf[FieldIdentifier] || x
