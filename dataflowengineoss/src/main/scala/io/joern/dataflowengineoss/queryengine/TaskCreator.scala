@@ -85,6 +85,7 @@ class TaskCreator(sources: Set[CfgNode]) {
 
     val forCalls = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth) =>
       val outCall = outArg.collect { case n: Call => n }
+
       val methodReturns = outCall.toList
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
         .to(Traversal)

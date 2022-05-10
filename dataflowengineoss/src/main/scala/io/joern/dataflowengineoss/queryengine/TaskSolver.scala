@@ -107,8 +107,9 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing
-      case x if sources.contains(x.asInstanceOf[NodeType]) =>
+      case x if sources.contains(x.asInstanceOf[NodeType]) => {
         Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+      }
       // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
       // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
       // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
