@@ -106,10 +106,17 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
         addEdge(ret, method.methodReturn, "<RET>")
 
       case paramOut: MethodParameterOut =>
+        // There is always an edge from the method input parameter
+        // to the corresponding method output parameter as modifications
+        // of the input parameter only affect a copy.
+        paramOut.paramIn.foreach { paramIn =>
+          addEdge(paramIn, paramOut, paramIn.name)
+        }
         usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
           inElements.foreach { inElement =>
             val inElemNode = numberToNode(inElement)
-            addEdge(inElemNode, paramOut, nodeToEdgeLabel(inElemNode))
+            val edgeLabel  = nodeToEdgeLabel(inElemNode)
+            addEdge(inElemNode, paramOut, edgeLabel)
           }
         }
 

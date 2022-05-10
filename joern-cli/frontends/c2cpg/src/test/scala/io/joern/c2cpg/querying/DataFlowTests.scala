@@ -1858,10 +1858,8 @@ class DataFlowTests63 extends DataFlowCodeToCpgSuite {
   }
 }
 
-// TODO this case is actually a double-free that we probably should return,
-// the reason being that modifying `ptr` does not modify `data` as arguments
-// are passed by value. We'd want the METHOD_PARAMETER_OUT for `ptr` to only
-// be influenced by nodes that modify a field of `ptr` rather than `ptr` itself.
+// This case is a double-free that we return, the reason being that modifying `ptr`
+// does not modify `data` as arguments  are passed by value.
 
 class DataFlowTests64 extends DataFlowCodeToCpgSuite {
 
@@ -1887,7 +1885,7 @@ class DataFlowTests64 extends DataFlowCodeToCpgSuite {
   "should not report flow" in {
     def sink   = cpg.call("free").argument(1).l
     def source = cpg.call("free").argument(1).l
-    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 1
   }
 
 }

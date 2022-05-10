@@ -110,6 +110,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           argToOutputParams(arg.asInstanceOf[Expression]).l
         }
         outParams
+          .filterNot(_.method.isExternal)
           .map { p =>
             val callSiteStack = result.callSiteStack.clone()
             arg.asInstanceOf[Expression].inCall.headOption.foreach { x => callSiteStack.push(x) }
