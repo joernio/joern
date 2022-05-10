@@ -83,6 +83,66 @@ class PCodeMapper(
             createCallNode(last.toString, "<operator>.goto", last.getSeqnum.getTarget.getOffsetAsBigInteger.intValue())
           case RETURN =>
             createCall("TODO RET", "TODO RET")
+          case CALL | CALLOTHER | CALLIND =>
+            val calledFunction = codeUnitFormat
+              .getOperandRepresentationString(nativeInstruction, 0)
+              .split(">")
+              .last
+              .replace("[", "")
+              .replace("]", "")
+            val callee = functions.filter(_.getName == calledFunction)
+            val _callNode = createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+            if (callee.nonEmpty) {
+              // Array of tuples containing (checked parameter name, parameter index, parameter data type)
+              var checkedParameters = Array.empty[(String, Int, String)]
+
+              if (callee.head.isThunk) {
+                // thunk functions contain parameters already
+                val parameters = callee.head.getParameters
+                // TODO:
+                checkedParameters = parameters.map { parameter =>
+                  val checkedParameter =
+                    if (parameter.getRegister == null) parameter.getName
+                    else parameter.getRegister.getName
+
+                  // checked parameter name, parameter index, parameter data type
+                  (checkedParameter, parameter.getOrdinal + 1, parameter.getDataType.getName)
+                }
+              } else {
+                // non thunk functions do not contain function parameters by default
+                // need to decompile function to get parameter information
+                // decompilation for a function is cached so subsequent calls to decompile should be free
+                // TODO: replace this later on
+                val parameters = decompiler
+                  .toHighFunction(callee.head)
+                  .get
+                  .getLocalSymbolMap
+                  .getSymbols
+                  .asScala
+                  .toSeq
+                  .filter(_.isParameter)
+                  .toArray
+                checkedParameters = parameters.map { parameter =>
+                  val checkedParameter =
+                    if (parameter.getStorage.getRegister == null) parameter.getName
+                    else parameter.getStorage.getRegister.getName
+
+                  // checked parameter name, parameter index, parameter data type
+                  (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
+                }
+              }
+              checkedParameters.foreach { case (checkedParameter, index, dataType) =>
+                val node = createIdentifier(
+                  checkedParameter,
+                  checkedParameter,
+                  index,
+                  Types.registerType(dataType),
+                  nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
+                )
+                connectCallToArgument(_callNode, node)
+              }
+            }
+            _callNode
           case _ =>
             createCallNode("TODO", "TODO", -1)
         }
@@ -135,66 +195,6 @@ class PCodeMapper(
         handleTwoArguments(pcodeOp, "<operator>.or", "||")
       case BOOL_XOR =>
         handleTwoArguments(pcodeOp, "<operator>.xor", "^^")
-      case CALL | CALLOTHER | CALLIND =>
-        val calledFunction = codeUnitFormat
-          .getOperandRepresentationString(nativeInstruction, 0)
-          .split(">")
-          .last
-          .replace("[", "")
-          .replace("]", "")
-        val callee = functions.filter(_.getName == calledFunction)
-        val _callNode = createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-        if (callee.nonEmpty) {
-          // Array of tuples containing (checked parameter name, parameter index, parameter data type)
-          var checkedParameters = Array.empty[(String, Int, String)]
-
-          if (callee.head.isThunk) {
-            // thunk functions contain parameters already
-            val parameters = callee.head.getParameters
-            // TODO:
-            checkedParameters = parameters.map { parameter =>
-              val checkedParameter =
-                if (parameter.getRegister == null) parameter.getName
-                else parameter.getRegister.getName
-
-              // checked parameter name, parameter index, parameter data type
-              (checkedParameter, parameter.getOrdinal + 1, parameter.getDataType.getName)
-            }
-          } else {
-            // non thunk functions do not contain function parameters by default
-            // need to decompile function to get parameter information
-            // decompilation for a function is cached so subsequent calls to decompile should be free
-            // TODO: replace this later on
-            val parameters = decompiler
-              .toHighFunction(callee.head)
-              .get
-              .getLocalSymbolMap
-              .getSymbols
-              .asScala
-              .toSeq
-              .filter(_.isParameter)
-              .toArray
-            checkedParameters = parameters.map { parameter =>
-              val checkedParameter =
-                if (parameter.getStorage.getRegister == null) parameter.getName
-                else parameter.getStorage.getRegister.getName
-
-              // checked parameter name, parameter index, parameter data type
-              (checkedParameter, parameter.getCategoryIndex + 1, parameter.getDataType.getName)
-            }
-          }
-          checkedParameters.foreach { case (checkedParameter, index, dataType) =>
-            val node = createIdentifier(
-              checkedParameter,
-              checkedParameter,
-              index,
-              Types.registerType(dataType),
-              nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
-            )
-            connectCallToArgument(_callNode, node)
-          }
-        }
-        _callNode
 
       case CAST =>
         handleSingleArgument(pcodeOp, "<operator>.cast", pcodeOp.getMnemonic)
