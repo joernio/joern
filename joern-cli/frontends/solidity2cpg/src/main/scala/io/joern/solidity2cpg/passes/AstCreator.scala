@@ -1,5 +1,6 @@
 package io.joern.solidity2cpg.passes
 
+import io.joern.solidity2cpg.domain.SuryaObject
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
@@ -7,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import scala.jdk.CollectionConverters._
 
 /** Creates an AST using [[createAst]].
   * @param filename
@@ -825,9 +827,31 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     (params)
   }
-
-//  private def astForInheritanceSpecifier(inheritanceSpecifier: InheritanceSpecifier) : Ast = {
+  object AstCreator {
+//    def line(node: SuryaObject): Option[Integer] = {
+//      if (node == null) None
+//      else if (node.getJavaSourceStartLineNumber == -1) None
+//      else Option(node.getJavaSourceStartLineNumber)
+//    }
 //
-//  }
+//    def column(node: SuryaObject): Option[Integer] = {
+//      if (node == null) None
+//      else if (node.getJavaSourceStartColumnNumber == -1) None
+//      else Option(node.getJavaSourceStartColumnNumber)
+//    }
+
+    def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
+      nodeList.asScala.zipWithIndex.map { case (x, i) =>
+        f(x, i + 1)
+      }.toSeq
+    }
+
+    def withOrder[T <: Any, X](nodeList: Iterable[T])(f: (T, Int) => X): Seq[X] = {
+      nodeList.zipWithIndex.map { case (x, i) =>
+        f(x, i + 1)
+      }.toSeq
+    }
+  }
+
 
 }
