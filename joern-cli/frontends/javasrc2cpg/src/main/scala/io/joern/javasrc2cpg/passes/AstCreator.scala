@@ -2518,24 +2518,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def targetTypeForCall(callExpr: MethodCallExpr): Option[String] = {
-    Try(callExpr.resolve()) match {
-      case Success(resolveMethodDecl) =>
-        Some(typeInfoCalc.fullName(resolveMethodDecl.declaringType()))
-      case Failure(_) =>
-        callExpr.getScope.toScala match {
-          case Some(scope: ThisExpr) =>
-            expressionReturnTypeFullName(scope)
-              .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
+    callExpr.getScope.toScala match {
+      case Some(scope: ThisExpr) =>
+        expressionReturnTypeFullName(scope)
+          .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
 
-          case Some(scope: SuperExpr) =>
-            expressionReturnTypeFullName(scope)
-              .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
+      case Some(scope: SuperExpr) =>
+        expressionReturnTypeFullName(scope)
+          .orElse(scopeStack.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption))
 
-          case Some(scope) => expressionReturnTypeFullName(scope)
+      case Some(scope) => expressionReturnTypeFullName(scope)
 
-          case None =>
+      case None =>
+        Try(callExpr.resolve()).toOption.flatMap { methodDeclOption =>
+          if (methodDeclOption.isStatic) {
+            Some(typeInfoCalc.fullName(methodDeclOption.declaringType()))
+          } else {
             scopeStack.getEnclosingTypeDecl.map(_.fullName)
-        }
+          }
+        } orElse (scopeStack.getEnclosingTypeDecl.map(_.fullName))
     }
   }
 
