@@ -21,23 +21,46 @@ import overflowdb.traversal.Traversal
 
 import scala.util.Failure
 
-class BenchmarkFixture extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+class BenchmarkFixture(
+  val benchmarkName: String = "",
+  val pkg: String = "",
+  val category: String = "",
+  val benchmarkNo: String = "1",
+  val fileExt: String = ""
+) extends AnyFlatSpec
+    with Matchers
+    with BeforeAndAfterAll {
 
   val semanticsFile: String = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
   lazy val defaultSemantics: Semantics           = Semantics.fromList(new Parser().parseFile(semanticsFile))
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
-  val benchmarkName: String = ""
-  val pkg: String           = ""
-  val category: String      = ""
-  val benchmarkNo: String   = "1"
-  val fileExt: String       = ""
-
-  lazy val cpg: Cpg = BenchmarkCpgContext.buildCpg(ProjectRoot.relativise(constructTargetFilePath))
+  private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
+  private lazy val targetDir = moveToTempDir(targetFiles)
+  lazy val cpg: Cpg          = BenchmarkCpgContext.buildCpg(targetDir)
 
   def constructTargetFilePath: String =
-    s"benchmarks/src/$benchmarkName/resources/$pkg/$category/${category.capitalize}$benchmarkNo$fileExt"
+    s"benchmarks/src/$benchmarkName/resources/$pkg/$category"
+
+  private def getListOfFiles(dir: String): List[java.io.File] = {
+    val d     = new java.io.File(dir)
+    // Regex is useful for class files containing subclasses
+    val regex = s".*${category.capitalize}$benchmarkNo.*$fileExt"
+    if (d.exists && d.isDirectory) {
+      d.listFiles.filter(f => f.isFile && f.getAbsolutePath.matches(regex)).toList
+    } else {
+      List.empty
+    }
+  }
+
+  private def moveToTempDir(files: List[java.io.File]): String = {
+    val tgt = java.nio.file.Files.createTempDirectory("benchmarks")
+    files.foreach { f =>
+      java.nio.file.Files.copy(f.toPath, java.nio.file.Paths.get(s"$tgt${java.io.File.separator}${f.getName}"))
+    }
+    tgt.toAbsolutePath.toString
+  }
 
   /** Makes sure there are flows between the source and the sink
     */
@@ -92,7 +115,17 @@ class BenchmarkFixture extends AnyFlatSpec with Matchers with BeforeAndAfterAll 
 
 }
 
+object BenchmarkFixture {
+  val JAVA_EXT       = ".java"
+  val JVM_EXT        = ".class"
+  val C_EXT          = ".c"
+  val CPP_EXT        = ".cpp"
+  val PYTHON_EXT     = ".py"
+  val JAVASCRIPT_EXT = ".js"
+}
+
 object BenchmarkCpgContext {
+
   def buildCpg(codePath: String): Cpg = {
     new BenchmarkCpgContext()
       .withSource(codePath)
@@ -101,20 +134,22 @@ object BenchmarkCpgContext {
 }
 
 class BenchmarkCpgContext {
-  private var inputPath: String = ""
+  private var inputPaths: String = ""
 
   def buildCpg(): Cpg = {
     val cpgPath = java.io.File.createTempFile("benchmark", ".odb").getAbsolutePath
-    val cpg = (guessLanguage(inputPath) match {
+    val cpg = (guessLanguage(inputPaths) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(Set(inputPath), cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(Set(inputPath), cpgPath))
-          case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(Set(inputPaths), cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(Set(inputPaths), cpgPath))
+          case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPaths'"))
         }
       case None =>
         Failure(
-          new RuntimeException(s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'")
+          new RuntimeException(
+            s"Unable to guess which language frontend to use to parse the benchmark at '$inputPaths'"
+          )
         )
     })
     applyDefaultOverlays(cpg.get)
@@ -125,7 +160,7 @@ class BenchmarkCpgContext {
   }
 
   private def withSource(codePath: String): BenchmarkCpgContext = {
-    this.inputPath = codePath
+    this.inputPaths = codePath
     this
   }
 }

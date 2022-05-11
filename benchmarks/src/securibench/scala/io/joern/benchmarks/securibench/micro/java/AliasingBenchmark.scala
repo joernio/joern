@@ -1,12 +1,11 @@
-package io.joern.benchmarks.securibench.micro
+package io.joern.benchmarks.securibench.micro.java
 
-import io.joern.benchmarks.testfixtures.SecuribenchMicroAliasingFixture
 import io.joern.benchmarks.BenchmarkTags.Aliasing
+import io.joern.benchmarks.testfixtures.SecuribenchMicroAliasingFixture
 import io.shiftleft.semanticcpg.language._
+import io.joern.benchmarks.testfixtures.BenchmarkFixture._
 
-class AliasingBenchmark1 extends SecuribenchMicroAliasingFixture {
-
-  override val benchmarkNo: String = "1"
+class AliasingBenchmark1 extends SecuribenchMicroAliasingFixture(JAVA_EXT, 1) {
 
   s"Aliasing$benchmarkNo" should "report insecure" taggedAs Aliasing in {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*"))
@@ -14,9 +13,7 @@ class AliasingBenchmark1 extends SecuribenchMicroAliasingFixture {
 
 }
 
-class AliasingBenchmark2 extends SecuribenchMicroAliasingFixture {
-
-  override val benchmarkNo: String = "2"
+class AliasingBenchmark2 extends SecuribenchMicroAliasingFixture(JAVA_EXT, 2) {
 
   s"Aliasing$benchmarkNo" should "report secure" taggedAs Aliasing in {
     assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*"))
@@ -24,9 +21,7 @@ class AliasingBenchmark2 extends SecuribenchMicroAliasingFixture {
 
 }
 
-class AliasingBenchmark3 extends SecuribenchMicroAliasingFixture {
-
-  override val benchmarkNo: String = "3"
+class AliasingBenchmark3 extends SecuribenchMicroAliasingFixture(JAVA_EXT, 3) {
 
   s"Aliasing$benchmarkNo" should "report insecure" taggedAs Aliasing in {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*"))
@@ -34,9 +29,7 @@ class AliasingBenchmark3 extends SecuribenchMicroAliasingFixture {
 
 }
 
-class AliasingBenchmark4 extends SecuribenchMicroAliasingFixture {
-
-  override val benchmarkNo: String = "4"
+class AliasingBenchmark4 extends SecuribenchMicroAliasingFixture(JAVA_EXT, 4) {
 
   s"Aliasing$benchmarkNo line 45" should "report insecure" taggedAs Aliasing in {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(45))
@@ -52,9 +45,7 @@ class AliasingBenchmark4 extends SecuribenchMicroAliasingFixture {
 
 }
 
-class AliasingBenchmark5 extends SecuribenchMicroAliasingFixture {
-
-  override val benchmarkNo: String = "5"
+class AliasingBenchmark5 extends SecuribenchMicroAliasingFixture(JAVA_EXT, 5) {
 
   s"Aliasing$benchmarkNo" should "report insecure" taggedAs Aliasing in {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*"))
@@ -62,9 +53,7 @@ class AliasingBenchmark5 extends SecuribenchMicroAliasingFixture {
 
 }
 
-class AliasingBenchmark6 extends SecuribenchMicroAliasingFixture {
-
-  override val benchmarkNo: String = "6"
+class AliasingBenchmark6 extends SecuribenchMicroAliasingFixture(JAVA_EXT, 6) {
 
   s"Aliasing$benchmarkNo line 48" should "report insecure" taggedAs Aliasing in {
     assertIsInsecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*").lineNumber(48))

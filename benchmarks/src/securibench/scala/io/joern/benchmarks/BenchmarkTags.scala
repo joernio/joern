@@ -8,6 +8,7 @@ object BenchmarkTags {
 
   object Aliasing         extends Tag("Aliasing")
   object Arrays           extends Tag("Arrays")
+  object Basic           extends Tag("Basic")
   object Casting          extends Tag("Casting")
   object ClassInitializer extends Tag("Class Initializer")
   object HighConditional  extends Tag("High Conditional")
@@ -22,6 +23,7 @@ object BenchmarkTags {
     ImplicitFlows.name,
     Aliasing.name,
     Arrays.name,
+    Basic.name,
     HighConditional.name,
     Library.name,
     Simple.name,
