@@ -18,8 +18,8 @@ class SecuribenchMicroArraysFixture(fileExt: String, benchmarkNo: Int)
 class SecuribenchMicroBasicFixture(fileExt: String, benchmarkNo: Int)
   extends SecuribenchMicroFixture(category = "Basic", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
 
-class SecuribenchMicroCollectionsFixture(fileExt: String, benchmarkNo: Int)
-  extends SecuribenchMicroFixture(category = "Collections", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
+class SecuribenchMicroCollectionsFixture(fileExt: String, benchmarkNo: String)
+  extends SecuribenchMicroFixture(category = "Collections", fileExt = fileExt, benchmarkNo = benchmarkNo)
 
 class SecuribenchMicroDatastructuresFixture(fileExt: String, benchmarkNo: Int)
   extends SecuribenchMicroFixture(category = "Datastructures", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)

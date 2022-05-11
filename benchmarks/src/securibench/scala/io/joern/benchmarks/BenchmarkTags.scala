@@ -8,8 +8,9 @@ object BenchmarkTags {
 
   object Aliasing         extends Tag("Aliasing")
   object Arrays           extends Tag("Arrays")
-  object Basic           extends Tag("Basic")
+  object Basic            extends Tag("Basic")
   object Casting          extends Tag("Casting")
+  object Collections      extends Tag("Collections")
   object ClassInitializer extends Tag("Class Initializer")
   object HighConditional  extends Tag("High Conditional")
   object ImplicitFlows    extends Tag("Implicit Flows")
@@ -24,6 +25,7 @@ object BenchmarkTags {
     Aliasing.name,
     Arrays.name,
     Basic.name,
+    Collections.name,
     HighConditional.name,
     Library.name,
     Simple.name,
@@ -50,7 +52,9 @@ object BenchmarkTags {
     TAGS.filter { tag => confusionMatrix(tag).sum > 0 }.foreach { tag =>
       val m = confusionMatrix(tag)
       println(s"| $tag ${(for (_ <- 0 until (catWhiteSpaceCount - tag.length))
-          yield ' ').mkString} | ${m.sum}   | ${countToString(m(FP))}   | ${countToString(m(TP))}   | ${countToString(m(TN))}   | ${countToString(m(FN))}   |")
+          yield ' ').mkString} | ${m.sum}   | ${countToString(m(FP))}   | ${countToString(m(TP))}   | ${countToString(
+          m(TN)
+        )}   | ${countToString(m(FN))}   |")
     }
     val FNs        = confusionMatrix.map(_._2(FN)).sum
     val TNs        = confusionMatrix.map(_._2(TN)).sum
