@@ -28,7 +28,7 @@ class ImportTests extends AnyFreeSpec with Matchers {
       val List(imp) = cpg.all.collect { case n: Import => n }.code(".*listOf.*").l
       imp.code shouldBe "import kotlin.io.collections.listOf"
       imp.importedEntity shouldBe Some("kotlin.io.collections.listOf")
-      imp.lineNumber shouldBe Some(3)
+      imp.lineNumber shouldBe Some(4)
       imp.columnNumber shouldBe Some(0)
       imp.isWildcard shouldBe Some(false)
       imp.isExplicit shouldBe Some(true)
@@ -38,7 +38,7 @@ class ImportTests extends AnyFreeSpec with Matchers {
       val List(imp) = cpg.all.collect { case n: Import => n }.code(".*comparisons.*").l
       imp.code shouldBe "import kotlin.comparisons.*"
       imp.importedEntity shouldBe Some("kotlin.comparisons.*")
-      imp.lineNumber shouldBe Some(4)
+      imp.lineNumber shouldBe Some(5)
       imp.columnNumber shouldBe Some(0)
       imp.isWildcard shouldBe Some(true)
       imp.isExplicit shouldBe Some(true)

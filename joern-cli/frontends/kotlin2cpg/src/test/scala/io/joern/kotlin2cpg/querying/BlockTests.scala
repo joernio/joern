@@ -19,7 +19,7 @@ class BlockTests extends AnyFreeSpec with Matchers {
 
     "should contain a BLOCK node with the correct props set" in {
       val List(b) = cpg.method.block.take(1).l
-      b.lineNumber shouldBe Some(3)
+      b.lineNumber shouldBe Some(4)
       b.columnNumber shouldBe Some(33)
       b.typeFullName shouldBe "java.lang.Void"
       b.code should not be ""

@@ -31,11 +31,11 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     "should contain LOCAL nodes with correctly-set referencing IDENTIFIERS" in {
       val List(outerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).take(1).l
       outerScopeX.referencingIdentifiers.size shouldBe 2
-      outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(4, 6)
+      outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(5, 7)
 
       val List(innerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).drop(1).take(1).l
       innerScopeX.referencingIdentifiers.size shouldBe 1
-      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(7)
+      innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(8)
     }
   }
 

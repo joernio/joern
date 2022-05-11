@@ -6,7 +6,7 @@ object Extractor {
   def line(element: PsiElement): Int = {
     try {
       element.getContainingFile.getViewProvider.getDocument
-        .getLineNumber(element.getTextOffset)
+        .getLineNumber(element.getTextOffset) + 1
     } catch {
       case _: Throwable => -1
     }

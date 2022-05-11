@@ -24,7 +24,7 @@ class SafeQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for `r?.exec.*` with the correct properties set" in {
       val List(c) = cpg.call.code(".*exec.*").take(1).l
       c.methodFullName shouldBe "java.lang.Runtime.exec:java.lang.Process(java.lang.String)"
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(2)
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }

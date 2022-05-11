@@ -26,9 +26,9 @@ class MethodTests extends AnyFreeSpec with Matchers {
       m.code shouldBe "bar"
       m.signature shouldBe "int(int)"
       m.isExternal shouldBe false
-      m.lineNumber shouldBe Some(4)
+      m.lineNumber shouldBe Some(5)
       m.columnNumber shouldBe Some(6)
-      m.lineNumberEnd shouldBe Some(6)
+      m.lineNumberEnd shouldBe Some(7)
       m.columnNumberEnd shouldBe Some(2)
       m.order shouldBe 1
       m.filename.endsWith(".kt") shouldBe true
