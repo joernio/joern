@@ -290,18 +290,20 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             fields("override") match {
               case x: JsObject => x.convertTo[BaseASTNode]
               case _ => null
-            },
-            fields("lineNumber") match {
-              case JsNumber(value) => Option(value.toIntExact)
-              case JsNull => None
-            },
-            fields("columnNumber") match {
-              case JsNumber(value) => Option(value.toIntExact)
-              case JsNull => None
             }
+//            ,
+//            fields("lineNumber") match {
+//              case JsNumber(value) => Option(value.toIntExact)
+//              case JsNull => None
+//            },
+//            fields("columnNumber") match {
+//              case JsNumber(value) => Option(value.toIntExact)
+//              case JsNull => None
+//            }
           )
         } catch {
           case e : NoSuchElementException => {
+//            println("var: "+fields("name") + " : "+e)
             VariableDeclaration(
               fields("typeName").convertTo[BaseASTNode],
               fields("name") match {

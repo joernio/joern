@@ -49,7 +49,7 @@ class TypeTests extends SolidityCodeToCpgFixture {
     y.typeDeclFullName shouldBe "bytes"
 
     // This may seem weird but makes sense in terms of callback types
-    val z = cpg.typ.name("function(uint)")
+    val z = cpg.typ.nameExact("function(uint)")
     z.name shouldBe "function(uint)"
     z.fullName shouldBe "function(uint)"
     z.typeDeclFullName shouldBe "function(uint)"

@@ -81,7 +81,7 @@ class Solidity2Cpg {
       var list: List[String] = List()
       sourceFile.copyToDirectory(dir)
       val name = sourceFile.pathAsString.split("/")(sourceFile.pathAsString.split("/").length - 1)
-      ExternalCommand.run(s"surya parse -jc ${name}", dir.pathAsString) match {
+      ExternalCommand.run(s"surya parse -jlc ${name}", dir.pathAsString) match {
         case Success(stdOut: Seq[String]) =>
           val path   = dir.pathAsString + s"/${name.substring(0, name.length - 3) + "json"}"
           val writer = new PrintWriter(new javaFile(path))

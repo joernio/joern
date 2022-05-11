@@ -452,6 +452,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
     }
     var visibility = "";
+    println(varDecl)
+    println(varDecl.visibility)
     varDecl.visibility match {
       case x: String => visibility = " " + x
       case _         => visibility = ""

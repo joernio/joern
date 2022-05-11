@@ -94,8 +94,8 @@ object SuryaObject {
     isIndexed: Boolean,
     isImmutable: Boolean,
     `override`: BaseASTNode,
-    override val lineNumber: Option[Int] = None,
-    override val columnNumber: Option[Int] = None
+//    override val lineNumber: Option[Int] = None,
+//    override val columnNumber: Option[Int] = None
   ) extends BaseASTNode("VariableDeclaration")
       with LocInfo {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)

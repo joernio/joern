@@ -38,7 +38,7 @@ class ReentrancyTest extends SolidityCodeToCpgFixture {
     """.stripMargin
 
   "Reentrancy" in {
-    println(cpg.typeDecl.dotAst.head)
+//    println(cpg.typeDecl.dotAst.head)
 //    println(cpg.typeDecl.fullName.l)
 //    println(cpg.method.fullName.l)
   }
