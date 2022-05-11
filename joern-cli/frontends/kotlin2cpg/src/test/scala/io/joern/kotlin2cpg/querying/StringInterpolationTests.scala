@@ -43,7 +43,7 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
 
       val List(c) = cpg.call(Operators.formatString).l
       c.argument.size shouldBe 3
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.code shouldBe "\"$name is $age years old. The string length is ${name.length}\""
     }
 
@@ -51,7 +51,7 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
       val List(a) = cpg.call(Operators.formatString).argument.argumentIndex(1).isCall.l
       a.name shouldBe Operators.formattedValue
       a.methodFullName shouldBe Operators.formattedValue
-      a.lineNumber shouldBe Some(4)
+      a.lineNumber shouldBe Some(5)
       a.columnNumber shouldBe Some(12)
       a.code shouldBe "name"
       a.argument.size shouldBe 1
@@ -61,7 +61,7 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
       val List(a) = cpg.call(Operators.formatString).argument.argumentIndex(2).isCall.l
       a.name shouldBe Operators.formattedValue
       a.methodFullName shouldBe Operators.formattedValue
-      a.lineNumber shouldBe Some(4)
+      a.lineNumber shouldBe Some(5)
       a.columnNumber shouldBe Some(21)
       a.code shouldBe "age"
       a.argument.size shouldBe 1
@@ -71,7 +71,7 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
       val List(a) = cpg.call(Operators.formatString).argument.argumentIndex(3).isCall.l
       a.name shouldBe Operators.formattedValue
       a.methodFullName shouldBe Operators.formattedValue
-      a.lineNumber shouldBe Some(4)
+      a.lineNumber shouldBe Some(5)
       a.columnNumber shouldBe Some(59)
       a.code shouldBe "name.length"
       a.argument.size shouldBe 1

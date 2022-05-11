@@ -32,7 +32,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.Foo"
       x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
-      x.lineNumber shouldBe Some(5)
+      x.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(6)
     }
 

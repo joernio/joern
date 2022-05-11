@@ -42,7 +42,7 @@ class CallbackTests extends AnyFreeSpec with Matchers {
     "method parameter should have the correct properties set" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.name shouldBe "token"
-      p.lineNumber shouldBe Some(9)
+      p.lineNumber shouldBe Some(10)
       p.columnNumber shouldBe Some(22)
     }
 
@@ -99,7 +99,7 @@ class CallbackTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the invocation of method with callback with the correct props" in {
       val List(c) = cpg.call.methodFullName(".*withCallback.*").l
-      c.lineNumber shouldBe Some(9)
+      c.lineNumber shouldBe Some(10)
       c.columnNumber shouldBe Some(8)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 1

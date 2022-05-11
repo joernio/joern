@@ -37,7 +37,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.argument.size shouldBe 2
       c.code shouldBe "val argc: Int = args.size"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(8)
+      c.lineNumber shouldBe Some(9)
       c.columnNumber shouldBe Some(6)
     }
 
@@ -48,7 +48,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.argument.size shouldBe 2
       c.code shouldBe "x + y"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(9)
     }
 
@@ -58,7 +58,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call("println").l
       p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(9)
+      p.lineNumber shouldBe Some(10)
       p.code shouldBe "println(foo(argc, 1))"
       p.methodFullName shouldBe "kotlin.io.println:void(int)"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -70,7 +70,7 @@ class CallTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call("foo").l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(9)
+      p.lineNumber shouldBe Some(10)
       p.code shouldBe "foo(argc, 1)"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       p.columnNumber shouldBe Some(10)
@@ -123,7 +123,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.signature shouldBe "void()"
       p.code shouldBe "Foo()"
       p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(11)
+      p.lineNumber shouldBe Some(12)
     }
 
     "should contain a CALL node for `add1` with the correct props set" in {
@@ -132,7 +132,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       p.code shouldBe "x.add1(argc, \"AMESSAGE\")"
       p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(12)
+      p.lineNumber shouldBe Some(13)
       p.methodFullName shouldBe "mypkg.Foo.add1:int(int,java.lang.String)"
       p.signature shouldBe "int(int,java.lang.String)"
       p.typeFullName shouldBe "int"
@@ -257,7 +257,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "kotlin.collections.mutableMapOf:java.util.Map(kotlin.Array)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "java.util.Map"
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(19)
     }
   }
@@ -349,7 +349,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.code("MyCaseClass.PROP").l
       c.methodFullName shouldBe Operators.fieldAccess
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(6)
+      c.lineNumber shouldBe Some(7)
       c.columnNumber shouldBe Some(12)
       c.signature shouldBe ""
     }
@@ -358,7 +358,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.code("MyCaseClass.*AN_ARGUMENT.*").l
       c.methodFullName shouldBe "no.such.CaseClass:ANY(ANY)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(9)
+      c.lineNumber shouldBe Some(10)
       c.columnNumber shouldBe Some(17)
       c.signature shouldBe "ANY(ANY)"
     }

@@ -196,12 +196,12 @@ class AndroidSDKTests extends AnyFreeSpec with Matchers {
       val List(firstArg: Literal, secondArg: Identifier) = cpg.call.methodFullName(".*Log.*").argument.l
       firstArg.code shouldBe "\"PREFIX\""
       firstArg.argumentIndex shouldBe 1
-      firstArg.lineNumber shouldBe Some(12)
+      firstArg.lineNumber shouldBe Some(13)
       firstArg.columnNumber shouldBe Some(10)
 
       secondArg.code shouldBe "username"
       secondArg.argumentIndex shouldBe 2
-      secondArg.lineNumber shouldBe Some(12)
+      secondArg.lineNumber shouldBe Some(13)
       secondArg.columnNumber shouldBe Some(20)
     }
   }

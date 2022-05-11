@@ -29,7 +29,7 @@ class HigherOrderFnsTests extends AnyFreeSpec with Matchers {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.Function2)"
       c.typeFullName shouldBe "int"
-      c.lineNumber shouldBe Some(6)
+      c.lineNumber shouldBe Some(7)
       c.columnNumber shouldBe Some(9)
     }
   }

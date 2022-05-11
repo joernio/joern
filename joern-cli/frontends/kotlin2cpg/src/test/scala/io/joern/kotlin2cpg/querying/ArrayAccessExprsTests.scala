@@ -28,7 +28,7 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "foo[\"one\"]"
       c.methodFullName shouldBe Operators.indexAccess
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(14)
 
       val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l
@@ -60,7 +60,7 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "foo[1]"
       c.methodFullName shouldBe Operators.indexAccess
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(14)
 
       val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l

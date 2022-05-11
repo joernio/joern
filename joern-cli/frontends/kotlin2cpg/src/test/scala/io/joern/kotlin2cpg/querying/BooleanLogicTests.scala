@@ -35,7 +35,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.logicalNot).l
       p.argument.size shouldBe 1
-      p.lineNumber shouldBe Some(3)
+      p.lineNumber shouldBe Some(4)
       p.code shouldBe "!w"
     }
 
@@ -48,7 +48,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.logicalOr).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(4)
+      p.lineNumber shouldBe Some(5)
       p.code shouldBe "(x < w) || (w < x)"
     }
 
@@ -61,7 +61,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.logicalAnd).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(5)
+      p.lineNumber shouldBe Some(6)
       p.code shouldBe "(x < w) && (w < x)"
     }
 
@@ -74,7 +74,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.and).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(6)
+      p.lineNumber shouldBe Some(7)
       p.code shouldBe "(1 shl 2) and 0x000FF000"
     }
 
@@ -87,7 +87,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.xor).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(7)
+      p.lineNumber shouldBe Some(8)
       p.code shouldBe "(1 shr 2) xor 0x000FF000"
     }
 
@@ -100,7 +100,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.or).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(8)
+      p.lineNumber shouldBe Some(9)
       p.code shouldBe "2.inv() or (1 ushr 3)"
     }
 
@@ -113,12 +113,12 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.shiftLeft).order(1).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(6)
+      p.lineNumber shouldBe Some(7)
       p.code shouldBe "1 shl 2"
 
       val List(q) = cpg.call(Operators.shiftLeft).order(2).l
       q.argument.size shouldBe 2
-      q.lineNumber shouldBe Some(9)
+      q.lineNumber shouldBe Some(10)
       q.code shouldBe "1 ushl 2"
     }
 
@@ -131,7 +131,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.logicalShiftRight).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(8)
+      p.lineNumber shouldBe Some(9)
       p.code shouldBe "1 ushr 3"
     }
 
@@ -144,7 +144,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
 
       val List(p) = cpg.call(Operators.arithmeticShiftRight).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(7)
+      p.lineNumber shouldBe Some(8)
       p.code shouldBe "1 shr 2"
     }
   }

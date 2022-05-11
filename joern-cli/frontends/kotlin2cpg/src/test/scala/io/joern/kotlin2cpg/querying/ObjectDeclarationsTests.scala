@@ -29,7 +29,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.Foo"
       x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
-      x.lineNumber shouldBe Some(3)
+      x.lineNumber shouldBe Some(4)
       x.columnNumber shouldBe Some(7)
     }
 
@@ -38,7 +38,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "bar"
       x.code shouldBe "bar"
       x.typeFullName shouldBe "java.lang.String"
-      x.lineNumber shouldBe Some(4)
+      x.lineNumber shouldBe Some(5)
       x.columnNumber shouldBe Some(8)
     }
 
@@ -47,7 +47,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "baz"
       x.code shouldBe "baz"
       x.typeFullName shouldBe "java.lang.String"
-      x.lineNumber shouldBe Some(5)
+      x.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(8)
     }
 
@@ -115,7 +115,7 @@ class ObjectDeclarationsTests extends AnyFreeSpec with Matchers {
       x.fullName shouldBe "mypkg.Prefs"
       x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
       x.isExternal shouldBe false
-      x.lineNumber shouldBe Some(6)
+      x.lineNumber shouldBe Some(7)
       x.columnNumber shouldBe Some(7)
     }
   }

@@ -31,7 +31,7 @@ class FieldAccessTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe Operators.fieldAccess
       c.code shouldBe "a.m"
       c.typeFullName shouldBe "java.lang.String"
-      c.lineNumber shouldBe Some(10)
+      c.lineNumber shouldBe Some(11)
       c.columnNumber shouldBe Some(4)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }

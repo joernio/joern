@@ -44,7 +44,7 @@ class TryExpressionsTests extends AnyFreeSpec with Matchers {
       firstAstChildOfFirstArg.name shouldBe "x"
       firstAstChildOfFirstArg.code shouldBe "x"
       firstAstChildOfFirstArg.typeFullName shouldBe "int"
-      firstAstChildOfFirstArg.lineNumber shouldBe Some(6)
+      firstAstChildOfFirstArg.lineNumber shouldBe Some(7)
       firstAstChildOfFirstArg.columnNumber shouldBe Some(8)
 
       val List(firstAstChildOfSecondArg: Call) = secondArg.astChildren.head.l

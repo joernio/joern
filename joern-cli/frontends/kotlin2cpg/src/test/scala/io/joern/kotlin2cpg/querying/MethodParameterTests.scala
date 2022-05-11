@@ -27,14 +27,14 @@ class MethodParameterTests extends AnyFreeSpec with Matchers {
       val List(x) = params.name("x").l
       x.code shouldBe "x"
       x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(3)
+      x.lineNumber shouldBe Some(4)
       x.columnNumber shouldBe Some(12)
       x.order shouldBe 1
 
       val List(y) = params.name("y").l
       y.code shouldBe "y"
       y.typeFullName shouldBe "int"
-      y.lineNumber shouldBe Some(3)
+      y.lineNumber shouldBe Some(4)
       y.columnNumber shouldBe Some(20)
       y.order shouldBe 2
     }
@@ -58,14 +58,14 @@ class MethodParameterTests extends AnyFreeSpec with Matchers {
       val List(x) = params.name("x").l
       x.code shouldBe "x"
       x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(4)
+      x.lineNumber shouldBe Some(5)
       x.columnNumber shouldBe Some(10)
       x.order shouldBe 1
 
       val List(y) = params.name("y").l
       y.code shouldBe "y"
       y.typeFullName shouldBe "double"
-      y.lineNumber shouldBe Some(4)
+      y.lineNumber shouldBe Some(5)
       y.columnNumber shouldBe Some(18)
       y.order shouldBe 2
     }

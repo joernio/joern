@@ -21,7 +21,7 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL for the `if`-expression with the correct props set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
       c.code shouldBe "if(argc > 0) argc else 0"
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(16)
       c.argument.size shouldBe 3
     }
@@ -29,19 +29,19 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     "should contain a ARGUMENT nodes for the `if`-expression CALL with the correct props set" in {
       val List(a1) = cpg.call.methodFullNameExact(Operators.conditional).argument(1).l
       a1.code shouldBe "argc > 0"
-      a1.lineNumber shouldBe Some(4)
+      a1.lineNumber shouldBe Some(5)
       a1.columnNumber shouldBe Some(19)
       a1.order shouldBe 1
 
       val List(a2) = cpg.call.methodFullNameExact(Operators.conditional).argument(2).l
       a2.code shouldBe "argc"
-      a2.lineNumber shouldBe Some(4)
+      a2.lineNumber shouldBe Some(5)
       a2.columnNumber shouldBe Some(29)
       a2.order shouldBe 2
 
       val List(a3) = cpg.call.methodFullNameExact(Operators.conditional).argument(3).l
       a3.code shouldBe "0"
-      a3.lineNumber shouldBe Some(4)
+      a3.lineNumber shouldBe Some(5)
       a3.columnNumber shouldBe Some(39)
       a3.order shouldBe 3
     }
@@ -110,7 +110,7 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL for the `if`-expression with the correct props set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
-      c.lineNumber shouldBe Some(12)
+      c.lineNumber shouldBe Some(13)
       c.columnNumber shouldBe Some(16)
       c.argument.size shouldBe 3
     }
@@ -118,19 +118,19 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     "should contain a ARGUMENT nodes for the `if`-expression CALL with the correct props set" in {
       val List(a1) = cpg.call.methodFullNameExact(Operators.conditional).argument(1).l
       a1.code shouldBe "argc == 0"
-      a1.lineNumber shouldBe Some(12)
+      a1.lineNumber shouldBe Some(13)
       a1.columnNumber shouldBe Some(19)
       a1.order shouldBe 1
 
       val List(a2) = cpg.call.methodFullNameExact(Operators.conditional).argument(2).l
       a2.code shouldBe "some1()"
-      a2.lineNumber shouldBe Some(12)
+      a2.lineNumber shouldBe Some(13)
       a2.columnNumber shouldBe Some(30)
       a2.order shouldBe 2
 
       val List(a3) = cpg.call.methodFullNameExact(Operators.conditional).argument(3).l
       a3.code shouldBe "some2()"
-      a3.lineNumber shouldBe Some(14)
+      a3.lineNumber shouldBe Some(15)
       a3.columnNumber shouldBe Some(10)
       a3.order shouldBe 3
     }
@@ -153,7 +153,7 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL for the `if`-expression with the correct props set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
       c.argument.size shouldBe 3
-      c.lineNumber shouldBe Some(7)
+      c.lineNumber shouldBe Some(8)
       c.columnNumber shouldBe Some(15)
     }
   }
@@ -189,24 +189,24 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL for the `if`-expression with the correct props set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
-      c.lineNumber shouldBe Some(19)
+      c.lineNumber shouldBe Some(20)
       c.columnNumber shouldBe Some(8)
       c.argument.size shouldBe 3
     }
 
     "should contain a ARGUMENT nodes for the `if`-expression CALL with the correct props set" in {
       val List(a1) = cpg.call.methodFullNameExact(Operators.conditional).argument(1).l
-      a1.lineNumber shouldBe Some(19)
+      a1.lineNumber shouldBe Some(20)
       a1.columnNumber shouldBe Some(12)
       a1.order shouldBe 1
 
       val List(a2) = cpg.call.methodFullNameExact(Operators.conditional).argument(2).l
-      a2.lineNumber shouldBe Some(19)
+      a2.lineNumber shouldBe Some(20)
       a2.columnNumber shouldBe Some(20)
       a2.order shouldBe 2
 
       val List(a3) = cpg.call.methodFullNameExact(Operators.conditional).argument(3).l
-      a3.lineNumber shouldBe Some(21)
+      a3.lineNumber shouldBe Some(22)
       a3.columnNumber shouldBe Some(15)
       a3.order shouldBe 3
     }
@@ -236,24 +236,24 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL for the `if`-expression with the correct props set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
-      c.lineNumber shouldBe Some(12)
+      c.lineNumber shouldBe Some(13)
       c.columnNumber shouldBe Some(8)
       c.argument.size shouldBe 3
     }
 
     "should contain a ARGUMENT nodes for the `if`-expression CALL with the correct props set" in {
       val List(a1) = cpg.call.methodFullNameExact(Operators.conditional).argument(1).l
-      a1.lineNumber shouldBe Some(12)
+      a1.lineNumber shouldBe Some(13)
       a1.columnNumber shouldBe Some(12)
       a1.order shouldBe 1
 
       val List(a2) = cpg.call.methodFullNameExact(Operators.conditional).argument(2).l
-      a2.lineNumber shouldBe Some(12)
+      a2.lineNumber shouldBe Some(13)
       a2.columnNumber shouldBe Some(20)
       a2.order shouldBe 2
 
       val List(a3) = cpg.call.methodFullNameExact(Operators.conditional).argument(3).l
-      a3.lineNumber shouldBe Some(14)
+      a3.lineNumber shouldBe Some(15)
       a3.columnNumber shouldBe Some(15)
       a3.order shouldBe 3
     }
@@ -287,24 +287,24 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL for the `if`-expression with the correct props set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.conditional).l
-      c.lineNumber shouldBe Some(9)
+      c.lineNumber shouldBe Some(10)
       c.columnNumber shouldBe Some(11)
       c.argument.size shouldBe 3
     }
 
     "should contain a ARGUMENT nodes for the `if`-expression CALL with the correct props set" in {
       val List(a1) = cpg.call.methodFullNameExact(Operators.conditional).argument(1).l
-      a1.lineNumber shouldBe Some(9)
+      a1.lineNumber shouldBe Some(10)
       a1.columnNumber shouldBe Some(15)
       a1.order shouldBe 1
 
       val List(a2) = cpg.call.methodFullNameExact(Operators.conditional).argument(2).l
-      a2.lineNumber shouldBe Some(9)
+      a2.lineNumber shouldBe Some(10)
       a2.columnNumber shouldBe Some(23)
       a2.order shouldBe 2
 
       val List(a3) = cpg.call.methodFullNameExact(Operators.conditional).argument(3).l
-      a3.lineNumber shouldBe Some(11)
+      a3.lineNumber shouldBe Some(12)
       a3.columnNumber shouldBe Some(18)
       a3.order shouldBe 3
     }

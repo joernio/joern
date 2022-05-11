@@ -106,7 +106,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
-      m.lineNumber shouldBe Some(5)
+      m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(14)
     }
 
@@ -114,7 +114,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
       mr.typeFullName shouldBe "java.lang.Object"
-      mr.lineNumber shouldBe Some(5)
+      mr.lineNumber shouldBe Some(6)
       mr.columnNumber shouldBe Some(14)
     }
 
@@ -126,7 +126,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "arg"
-      p.lineNumber shouldBe Some(5)
+      p.lineNumber shouldBe Some(6)
       p.columnNumber shouldBe Some(16)
       p.typeFullName shouldBe "java.lang.String"
     }
@@ -135,7 +135,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(".*forEach.*").l
       c.methodFullName shouldBe "java.lang.Iterable.forEach:void(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(4)
 
       val List(firstArg, secondArg) = cpg.call.methodFullName(".*forEach.*").argument.l
@@ -252,7 +252,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
-      m.lineNumber shouldBe Some(5)
+      m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(28)
     }
 
@@ -260,7 +260,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
       mr.typeFullName shouldBe "java.lang.Object"
-      mr.lineNumber shouldBe Some(5)
+      mr.lineNumber shouldBe Some(6)
       mr.columnNumber shouldBe Some(28)
     }
 
@@ -279,7 +279,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(".*map.*").take(1).l
       c.methodFullName shouldBe "java.lang.Iterable.map:java.util.List(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(20)
     }
 

@@ -176,7 +176,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
         c.signature shouldBe "java.lang.String()"
         c.typeFullName shouldBe "java.lang.String"
         c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        c.lineNumber shouldBe Some(4)
+        c.lineNumber shouldBe Some(5)
         c.columnNumber shouldBe Some(12)
       }
 
@@ -186,7 +186,7 @@ class StdLibTests extends AnyFreeSpec with Matchers {
         receiverArg.name shouldBe "p"
         receiverArg.code shouldBe "p"
         receiverArg.typeFullName shouldBe "java.lang.String"
-        receiverArg.lineNumber shouldBe Some(4)
+        receiverArg.lineNumber shouldBe Some(5)
         receiverArg.columnNumber shouldBe Some(12)
       }
     }
