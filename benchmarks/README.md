@@ -26,14 +26,18 @@ or JVM bytecode Jimple frontend:
 | Arrays             | 15   | 4    | 7    | 2    | 2    |
 | Basic              | 67   | 5    | 59   | 1    | 2    |
 | Collections        | 22   | 8    | 14   | 0    | 0    |
-| *Total*            | *118* | *18* | *84* | *4 * | *12* |
+| *Total*            | *118* | *18* | *84* | *4* | *12* |
+
+Total accuracy: 74,576%
 
 #### JVM Bytecode Results
 
-| Category           | #    | FP   | TP   | TN   | FN   |
-| ------------------ | ---- | ---- | ---- | ---- | ---- |
-| Aliasing           | 14   | 1    | 10   | 1    | 2    |
-| Arrays             | 15   | 5    | 7    | 1    | 2    |
-| Basic              | 67   | 5    | 60   | 1    | 1    |
-| Collections        | 22   | 8    | 14   | 0    | 0    |
-| *Total*            | *118* | *19* | *91* | *3 * | *5 * |
+| Category           | #    | FP   | TP   | TN  | FN  |
+| ------------------ | ---- | ---- | ---- | --- | --- |
+| Aliasing           | 14   | 1    | 10   | 1   | 2   |
+| Arrays             | 15   | 5    | 7    | 1   | 2   |
+| Basic              | 67   | 5    | 60   | 1   | 1   |
+| Collections        | 22   | 8    | 14   | 0   | 0   |
+| *Total*            | *118* | *19* | *91* | *3* | *5* |
+
+Total accuracy: 79,661%
