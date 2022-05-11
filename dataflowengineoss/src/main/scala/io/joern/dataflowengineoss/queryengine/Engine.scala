@@ -92,7 +92,7 @@ class Engine(context: EngineContext) {
             handleResultsOfTask(resultsOfTask)
           case Failure(exception) =>
             numberOfTasksRunning -= 1
-            logger.warn(s"SolveTask failed with exception: ${exception}")
+            logger.warn(s"SolveTask failed with exception:", exception)
             exception.printStackTrace()
         }
       }

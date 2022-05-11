@@ -37,7 +37,7 @@ class DdgGenerator {
     * @param problem
     *   the reaching definition problem
     * @param solution
-    *   the solution to `problem``
+    *   the solution to `problem`
     */
   def addReachingDefEdges(
     dstGraph: DiffGraphBuilder,
@@ -98,9 +98,9 @@ class DdgGenerator {
           case None => // Do nothing
           case Some(node: Identifier) =>
             val edgesToAdd = in(node).toList.flatMap { inDef =>
-              numberToNode(inDef) match {
-                case identifier: Identifier => Some(identifier)
-                case _                      => None
+              numberToNode.get(inDef) match {
+                case Some(identifier: Identifier) => Some(identifier)
+                case _                            => None
               }
             }
             edgesToAdd.foreach { inNode =>
@@ -119,12 +119,14 @@ class DdgGenerator {
     }
 
     def addEdgesToReturn(ret: Return): Unit = {
-      usageAnalyzer.usedIncomingDefs(ret).foreach { case (use, inElements) =>
-        addEdge(use, ret, use.asInstanceOf[CfgNode].code)
-        inElements.filter(x => numberToNode(x) != use).foreach { inElement =>
-          val inElemNode = numberToNode(inElement)
-          addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
-        }
+      usageAnalyzer.usedIncomingDefs(ret).foreach { case (use: CfgNode, inElements) =>
+        addEdge(use, ret, use.code)
+        inElements
+          .filterNot(x => numberToNode.get(x).contains(use))
+          .flatMap(numberToNode.get)
+          .foreach { inElemNode =>
+            addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
+          }
         if (inElements.isEmpty) {
           addEdge(method, ret)
         }
@@ -199,11 +201,15 @@ class DdgGenerator {
     * instead.
     */
   private def isDdgNode(x: StoredNode): Boolean = {
-    !(
-      x.isInstanceOf[Method] || x
-        .isInstanceOf[ControlStructure] || x.isInstanceOf[FieldIdentifier] || x
-        .isInstanceOf[JumpTarget] || x.isInstanceOf[MethodReturn] || x.isInstanceOf[Block]
-    )
+    x match {
+      case _: Method           => false
+      case _: ControlStructure => false
+      case _: FieldIdentifier  => false
+      case _: JumpTarget       => false
+      case _: MethodReturn     => false
+      case _: Block            => false
+      case _                   => true
+    }
   }
 
   private def nodeToEdgeLabel(node: StoredNode): String = {

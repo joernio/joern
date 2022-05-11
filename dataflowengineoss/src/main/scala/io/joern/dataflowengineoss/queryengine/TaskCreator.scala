@@ -103,17 +103,17 @@ class TaskCreator(sources: Set[CfgNode]) {
     }
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args.toList.flatMap { arg =>
+      args.toList.flatMap { case arg: Expression =>
         val outParams = if (result.callSiteStack.nonEmpty) {
           List[MethodParameterOut]()
         } else {
-          argToOutputParams(arg.asInstanceOf[Expression]).l
+          argToOutputParams(arg).l
         }
         outParams
           .filterNot(_.method.isExternal)
           .map { p =>
             val callSiteStack = result.callSiteStack.clone()
-            arg.asInstanceOf[Expression].inCall.headOption.foreach { x => callSiteStack.push(x) }
+            arg.inCall.headOption.foreach { x => callSiteStack.push(x) }
             ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, callSiteStack)
           }
       }
