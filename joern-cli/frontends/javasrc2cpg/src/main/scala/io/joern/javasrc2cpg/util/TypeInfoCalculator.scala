@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.util
 
-import com.github.javaparser.ast.`type`.{PrimitiveType, Type}
+import com.github.javaparser.ast.`type`.{PrimitiveType, Type, WildcardType}
 import com.github.javaparser.resolution.SymbolResolver
 import com.github.javaparser.resolution.declarations.{
   ResolvedDeclaration,
@@ -16,19 +16,22 @@ import com.github.javaparser.resolution.types.{
   ResolvedReferenceType,
   ResolvedType,
   ResolvedTypeVariable,
-  ResolvedVoidType
+  ResolvedVoidType,
+  ResolvedWildcard
 }
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserClassDeclaration
 import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, NullType}
 import com.github.javaparser.symbolsolver.reflectionmodel.{ReflectionClassDeclaration, ReflectionTypeParameter}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
+  private val logger = LoggerFactory.getLogger(this.getClass)
   def name(typ: ResolvedType): String = {
     nameOrFullName(typ, false)
   }
@@ -55,9 +58,26 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         val extendsBoundOption = typeVariable.asTypeParameter().getBounds.asScala.find(_.isExtends)
         extendsBoundOption
           .map(bound => fullName(bound.getType))
-          .getOrElse(if (fullyQualified) TypeConstants.Object else TypeNameConstants.Object)
+          .getOrElse(objectType(fullyQualified))
       case lambdaConstraintType: ResolvedLambdaConstraintType =>
         nameOrFullName(lambdaConstraintType.getBound, fullyQualified)
+      case wildcardType: ResolvedWildcard =>
+        if (wildcardType.isBounded) {
+          nameOrFullName(wildcardType.getBoundedType, fullyQualified)
+        } else {
+          objectType(fullyQualified)
+        }
+      case unhandledType =>
+        logger.warn(s"Attempting to get typeFullName for unhandled type $unhandledType. Defaulting to Object.")
+        objectType(fullyQualified)
+    }
+  }
+
+  private def objectType(fullyQualified: Boolean): String = {
+    if (fullyQualified) {
+      TypeConstants.Object
+    } else {
+      TypeNameConstants.Object
     }
   }
 
