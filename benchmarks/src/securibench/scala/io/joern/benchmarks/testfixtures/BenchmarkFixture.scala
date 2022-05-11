@@ -41,12 +41,12 @@ class BenchmarkFixture(
   lazy val cpg: Cpg          = BenchmarkCpgContext.buildCpg(targetDir)
 
   def constructTargetFilePath: String =
-    s"benchmarks/src/$benchmarkName/resources/$pkg/$category"
+    s"benchmarks/src/$benchmarkName/resources/$pkg/${category.toLowerCase}"
 
   private def getListOfFiles(dir: String): List[java.io.File] = {
     val d     = new java.io.File(dir)
     // Regex is useful for class files containing subclasses
-    val regex = s".*${category.capitalize}$benchmarkNo.*$fileExt"
+    val regex = s".*$category$benchmarkNo.*$fileExt"
     if (d.exists && d.isDirectory) {
       d.listFiles.filter(f => f.isFile && f.getAbsolutePath.matches(regex)).toList
     } else {
