@@ -45,10 +45,10 @@ class Engine(context: EngineContext) {
     */
   def backwards(sinks: List[CfgNode], sources: List[CfgNode]): List[ReachableByResult] = {
     if (sources.isEmpty) {
-      logger.warn("Attempting to determine flows from empty list of sources.")
+      logger.info("Attempting to determine flows from empty list of sources.")
     }
     if (sinks.isEmpty) {
-      logger.warn("Attempting to determine flows to empty list of sinks.")
+      logger.info("Attempting to determine flows to empty list of sinks.")
     }
     val sourcesSet = sources.toSet
     val tasks      = createOneTaskPerSink(sourcesSet, sinks)
@@ -61,9 +61,8 @@ class Engine(context: EngineContext) {
 
     /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
       */
-    def newResultTable() = {
+    def newResultTable() =
       context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
-    }
     sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
   }
 
@@ -71,16 +70,11 @@ class Engine(context: EngineContext) {
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
-
     var result = List[ReachableByResult]()
 
-    def submitTask(task: ReachableByTask): Unit = {
-      numberOfTasksRunning += 1
-      completionService.submit(
-        new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
-      )
-    }
-
+    /** For a list of results, determine partial and complete results. Store complete results and derive and submit
+      * tasks from partial results.
+      */
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
       val (partial, complete) = resultsOfTask.partition(_.partial)
       result ++= complete
@@ -88,28 +82,46 @@ class Engine(context: EngineContext) {
       newTasks.foreach(submitTask)
     }
 
-    tasks.foreach(submitTask)
-
-    while (numberOfTasksRunning > 0) {
-      Try {
-        completionService.take.get
-      } match {
-        case Success(resultsOfTask) =>
-          numberOfTasksRunning -= 1
-          handleResultsOfTask(resultsOfTask)
-        case Failure(exception) =>
-          numberOfTasksRunning -= 1
-          logger.warn(s"SolveTask failed with exception: ${exception}")
-          exception.printStackTrace()
+    def runUntilAllTasksAreSolved(): Unit = {
+      while (numberOfTasksRunning > 0) {
+        Try {
+          completionService.take.get
+        } match {
+          case Success(resultsOfTask) =>
+            numberOfTasksRunning -= 1
+            handleResultsOfTask(resultsOfTask)
+          case Failure(exception) =>
+            numberOfTasksRunning -= 1
+            logger.warn(s"SolveTask failed with exception: ${exception}")
+            exception.printStackTrace()
+        }
       }
     }
+
+    tasks.foreach(submitTask)
+    runUntilAllTasksAreSolved()
     deduplicate(result.toVector).toList
+  }
+
+  private def submitTask(task: ReachableByTask): Unit = {
+    numberOfTasksRunning += 1
+    completionService.submit(
+      new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
+    )
   }
 
 }
 
 object Engine {
 
+  /** Traverse from a node to incoming DDG nodes, taking into account semantics. This method is exposed via the `ddgIn`
+    * step, but is also called by the engine internally by the `TaskSolver`.
+    *
+    * @param curNode
+    *   the node to expand
+    * @param path
+    *   the path that has been expanded to reach the `curNode`
+    */
   def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
     curNode match {
       case argument: Expression =>
@@ -154,34 +166,32 @@ object Engine {
     }
   }
 
-  private def ddgInE(dstNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[Edge] = {
-    dstNode
+  /** For a given node `node`, return all incoming reaching definition edges, unless the source node is (a) a METHOD
+    * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
+    * propagated to it.
+    */
+  private def ddgInE(node: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[Edge] = {
+    node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
-        val outNode = e.outNode()
-        outNode.isInstanceOf[CfgNode] && !outNode.isInstanceOf[Method]
+        e.outNode() match {
+          case srcNode: CfgNode =>
+            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
+          case _ => false
+        }
       }
-      .filter(e => !path.map(_.node).contains(e.outNode().asInstanceOf[CfgNode]))
       .toVector
-      .filter { edge =>
-        val srcNode = edge.outNode().asInstanceOf[StoredNode]
-        !isCallRetval(srcNode)
-      }
   }
 
-  private def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
-    parentNode match {
+  private def isCallRetval(node: StoredNode)(implicit semantics: Semantics): Boolean = {
+    node match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
-        sem.isDefined && !destinationIsRetVal(sem.get)
+        sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
       case _ =>
         false
     }
-  }
-
-  private def destinationIsRetVal(sem: FlowSemantic): Boolean = {
-    sem.mappings.map(_._2).contains(-1)
   }
 
   /** For a given `(parentNode, curNode)` pair, determine whether to expand into `parentNode`. If so, return a
