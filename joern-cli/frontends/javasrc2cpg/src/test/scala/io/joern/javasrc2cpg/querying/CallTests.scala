@@ -59,6 +59,24 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       cpg.call.nameExact("method").methodFullName.head shouldBe "MoreDerived.method:void(int)"
     }
   }
+
+  "call to method with generic return type" should {
+    val cpg = code("""
+        |class Foo {
+        |  void method(java.util.function.Function<String, Integer> supplier) {
+        |     supplier.apply("abc");
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct substitute type as expression type" in {
+      cpg.call.name("apply").evalType.head shouldBe "java.lang.Integer"
+    }
+    "have correct methodFullName to erased method signature" in {
+      cpg.call.name("apply").methodFullName.head shouldBe
+        "java.util.function.Function.apply:java.lang.Object(java.lang.Object)"
+    }
+  }
 }
 
 class CallTests extends JavaSrcCodeToCpgFixture {
