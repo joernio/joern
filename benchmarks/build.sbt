@@ -25,15 +25,3 @@ scalacOptions ++= Seq() ++ (
     case _            => Seq("-target:jvm-1.8")
   }
 )
-
-lazy val scalatest            = "org.scalatest" %% "scalatest" % Versions.scalatest
-lazy val SecuribenchMicroTest = config("securibench") extend Test
-
-lazy val root = (project in file("."))
-  .configs(SecuribenchMicroTest)
-  .settings(
-    inConfig(SecuribenchMicroTest)(Defaults.testSettings),
-    libraryDependencies += scalatest    % SecuribenchMicroTest,
-    Test / testOptions                 := Seq(Tests.Filter(s => !s.endsWith("Benchmark"))),
-    SecuribenchMicroTest / testOptions := Seq(Tests.Filter(s => s.contains("securibench.micro")))
-  )
