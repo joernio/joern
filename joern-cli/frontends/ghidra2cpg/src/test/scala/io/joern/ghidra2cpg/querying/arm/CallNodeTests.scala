@@ -11,12 +11,13 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   }
 
   "CPG for binary of a simple program should not contain any CALL nodes with more than two arguments and the same ARGUMENT_INDEX value" in {
-    cpg.call
+    val result = cpg.call
       .filter { c =>
         c.argument.size > 1 && c.argument.argumentIndex.toSet.size == 1
       }
-      .code
-      .l shouldBe List()
+      //.code
+      .l
+    result shouldBe List()
   }
 
   "An assignment in the function 'main' should have 14 as second argument" in {

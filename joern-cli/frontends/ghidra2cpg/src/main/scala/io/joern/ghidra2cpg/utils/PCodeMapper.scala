@@ -2,7 +2,7 @@ package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction}
 import ghidra.program.model.pcode.PcodeOp._
-import ghidra.program.model.pcode.{PcodeOp, Varnode}
+import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -19,6 +19,7 @@ class PCodeMapper(
   nativeInstruction: Instruction,
   functions: List[Function],
   decompiler: Decompiler,
+  highFunction: HighFunction,
   address2Literal: Map[Long, String]
 ) {
   private val logger                                 = LoggerFactory.getLogger(getClass)
@@ -79,10 +80,12 @@ class PCodeMapper(
         resolveVarNode(variable, index)
       }
       val last = mapCallNode(pcodeOps.last)
-      resolvedVars.foreach(x => connectCallToArgument(last, x))
-      return last
+      resolvedVars.foreach { x =>
+        connectCallToArgument(last, x)
+      }
+      // println("================================================")
+      last
     }
-    // createCallNode("UNKNOWN", "UNKNOWN", -1)
   }
 
   def createCall(name: String, code: String): CfgNodeNew = {
@@ -148,7 +151,21 @@ class PCodeMapper(
         val callee = functions.filter(_.getName == calledFunction)
         val _callNode =
           createCallNode(calledFunction, calledFunction, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
-
+        val opCodes: Seq[PcodeOpAST] = highFunction
+          .getPcodeOps(nativeInstruction.getAddress())
+          .asScala
+          .toList
+        // if (opCodes.size < 2) {
+        //  return
+        // }
+        // first input is the address to the called function
+        // we know it already
+        // val arguments = opCodes.head.getInputs.toList.drop(1)
+        // arguments.zipWithIndex.foreach { case (value, index) =>
+        //  if (value.getDef != null)
+        //    //println("ARGGGGGGGGGGGGGGGGGGGG " + arguments.mkString(" ::: ") +" -> "+
+        //      connectCallToArgument(_callNode, resolveVarNode(value, index))
+        // }
         val parameters = decompiler
           .toHighFunction(callee.head)
           .get

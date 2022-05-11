@@ -229,8 +229,19 @@ class PcodePass(
     }
   }
 
-  def handleInstruction(diffGraphBuilder: DiffGraphBuilder, instruction: Instruction): CfgNodeNew = {
-    new PCodeMapper(diffGraphBuilder, instruction, functions, decompiler, address2Literal).getCallNode
+  def handleInstruction(
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    function: Function
+  ): CfgNodeNew = {
+    new PCodeMapper(
+      diffGraphBuilder,
+      instruction,
+      functions,
+      decompiler,
+      getHighFunction(function),
+      address2Literal
+    ).getCallNode
   }
 
   def handleBody(
@@ -246,7 +257,7 @@ class PcodePass(
       .asScala
       .toList
       .map { instruction =>
-        handleInstruction(diffGraphBuilder, instruction)
+        handleInstruction(diffGraphBuilder, instruction, function: Function)
       }
     instructionNodes.foreach(diffGraphBuilder.addNode)
     if (instructionNodes.nonEmpty) {
