@@ -2599,9 +2599,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         ("", "")
     }
 
-    val codePrefix = codePrefixForMethodCall(call)
+    val expressionTypeFullName = expressionReturnTypeFullName(call).orElse(expectedReturnType)
+    val codePrefix             = codePrefixForMethodCall(call)
     val callNode = NewCall()
-      .typeFullName(maybeReturnType.getOrElse(UnresolvedTypeDefault))
+      .typeFullName(expressionTypeFullName.getOrElse(UnresolvedTypeDefault))
       .name(call.getNameAsString)
       .methodFullName(methodFullName)
       .signature(signature)
