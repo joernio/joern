@@ -7,7 +7,7 @@ object DependencyResolver {
     if (MavenDependencies.isMavenBuild(projectDir)) {
       MavenDependencies.get(projectDir)
     } else if (GradleDependencies.isGradleBuild(projectDir)) {
-      GradleDependencies.downloadRuntimeLibs(projectDir)
+      GradleDependencies.get(projectDir)
     } else {
       Nil
     }

@@ -122,7 +122,7 @@ object GradleDependencies {
 
   // fetch the gradle project information first, then invoke a newly-defined gradle task to copy the necessary jars into
   // a destination directory.
-  private[dependency] def downloadRuntimeLibs(projectDir: Path): collection.Seq[String] = {
+  private[dependency] def get(projectDir: Path): collection.Seq[String] = {
     val gradleProjectInfoOption =
       try {
         logger.info(s"Attempting to fetch gradle project information from path `$projectDir`.")
