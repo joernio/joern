@@ -138,7 +138,7 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
 
-case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
+case class BindingInfo(newBinding: NewBinding, typeDecl: NewTypeDecl)
 case class ClosureBindingInfo(identifier: NewIdentifier, closure: NewClosureBinding, bindingId: String)
 case class ClosureBindingMeta(node: NewClosureBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
 
@@ -204,11 +204,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Ast.storeInDiffGraph(ast, diffGraph)
 
     bindingsQueue.foreach { bindingInfo =>
-      diffGraph.addNode(bindingInfo.node)
+      diffGraph.addNode(bindingInfo.newBinding)
 
-      bindingInfo.edgeMeta.foreach { case (src, dst, label) =>
-        diffGraph.addEdge(src, dst, label)
-      }
+      diffGraph.addEdge(bindingInfo.typeDecl, bindingInfo.newBinding, EdgeTypes.BINDS)
     }
 
     lambdaContextQueue.flatMap(_.closureBindingInfo).foreach { closureBindingInfo =>
@@ -313,7 +311,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
                 .methodFullName(methodNode.fullName)
                 .signature(bindingSignature)
 
-              BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
+              BindingInfo(node, typeDecl)
             }.toList
 
           case None => Nil
