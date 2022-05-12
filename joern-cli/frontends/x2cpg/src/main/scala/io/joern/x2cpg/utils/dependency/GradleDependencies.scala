@@ -14,7 +14,6 @@ import scala.util.Random
 
 case class GradleProjectInfo(
   gradleVersion: String,
-  gradleHome: String,
   tasks: Seq[String],
   hasAndroidSubproject: Boolean = false
 ) {
@@ -136,7 +135,6 @@ object GradleDependencies {
           }
         val info = GradleProjectInfo(
           buildEnv.getGradle.getGradleVersion,
-          buildEnv.getGradle.getGradleUserHome.toString,
           project.getTasks.asScala.map(_.getName).toSeq,
           hasAndroidPrefixGradleProperty
         )
