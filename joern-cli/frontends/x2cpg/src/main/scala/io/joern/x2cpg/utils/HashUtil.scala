@@ -13,7 +13,7 @@ object HashUtil {
     sha256(Seq(Path.of(file)))
 
   def sha256(files: Seq[Path]): String = {
-    val md = MessageDigest.getInstance("SHA-256")
+    val md     = MessageDigest.getInstance("SHA-256")
     val buffer = new Array[Byte](4096)
     files
       .filterNot(p => isDirectory(p.toRealPath()))
