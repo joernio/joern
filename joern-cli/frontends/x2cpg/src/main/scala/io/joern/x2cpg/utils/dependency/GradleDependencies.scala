@@ -57,11 +57,13 @@ object GradleDependencies {
        |    if (project.name.equals(gradleProjectName)) {
        |      def compileDepsCopyTaskName = taskName + "_compileDeps"
        |      tasks.register(compileDepsCopyTaskName, Copy) {
+       |        duplicatesStrategy = 'include'
        |        into destinationDir
        |        from project.configurations.find { it.name.equals(gradleConfigurationName) }
        |      }
        |      def androidDepsCopyTaskName = taskName + "_androidDeps"
        |      tasks.register(androidDepsCopyTaskName, Copy) {
+       |        duplicatesStrategy = 'include'
        |        into destinationDir
        |        from project.configurations.find { it.name.equals("androidApis") }
        |      }
