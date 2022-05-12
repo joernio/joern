@@ -1882,7 +1882,7 @@ class DataFlowTests64 extends DataFlowCodeToCpgSuite {
       |}
       |""".stripMargin
 
-  "should not report flow" in {
+  "should report flow" in {
     def sink   = cpg.call("free").argument(1)
     def source = cpg.call("free").argument(1)
     sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 1
@@ -1890,7 +1890,35 @@ class DataFlowTests64 extends DataFlowCodeToCpgSuite {
 
 }
 
-class DataFlowTests56 extends DataFlowCodeToCpgSuite {
+class DataFlowTests65 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |char * reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return ptr;
+      |}
+      |
+      |int case3()
+      |{
+      |char * data = malloc(0x80);
+      |free(data);
+      |data = reassign(data);
+      |free(data):
+      |return 0;
+      |}
+      |""".stripMargin
+
+  "should not report flow from free to free" in {
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+  }
+
+}
+
+class DataFlowTests66 extends DataFlowCodeToCpgSuite {
 
   override val code: String = """
   int foo(int x) {
