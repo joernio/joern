@@ -139,6 +139,7 @@ object GradleDependencies {
       } catch {
         case t: Throwable =>
           logger.warn(s"Caught exception while trying fetch gradle project information: `$t`.")
+          logger.debug("FULL_EXCEPTION: \n", t)
           None
       }
     if (gradleProjectInfoOption.isEmpty) {
@@ -192,8 +193,7 @@ object GradleDependencies {
       } catch {
         case t: Throwable =>
           logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'")
-          logger.debug(s"---- Cause: ${t.getCause}")
-          logger.debug(s"---- Stacktrace: ${t.getStackTrace}")
+          logger.debug(s"FULL_EXCEPTION: \n", t)
       } finally {
         logger.debug(s"Gradle task execution stdout: \n${stdoutStream.toString}")
         logger.debug(s"Gradle task execution stderr: \n${stderrStream.toString}")
