@@ -1,10 +1,62 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
+
+class NewTypeTests extends JavaSrcCode2CpgFixture {
+  "processing wildcard types should not crash (smoke test)" when {
+    "the type is unbounded" in {
+      val cpg = code("""
+          |import java.net.URLClassLoader;
+          |
+          |class Foo {
+          |  public void foo(URIClassLoader classLoader) {
+          |    Class<?> cls = Class.forName("testName", true, classLoader);
+          |    Object instance = cls.newInstance();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.identifier.name("instance").typeFullName.head shouldBe "java.lang.Object"
+      cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
+    }
+
+    "there is a lower bound" in {
+      val cpg = code("""
+          |import java.net.URLClassLoader;
+          |
+          |class Foo {
+          |  public void foo(URIClassLoader classLoader) {
+          |    Class<? super Integer> cls = Class.forName("testName", true, classLoader);
+          |    Object instance = cls.newInstance();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.identifier.name("instance").typeFullName.head shouldBe "java.lang.Object"
+      cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
+    }
+
+    "there is an upper bound" in {
+      val cpg = code("""
+          |import java.net.URLClassLoader;
+          |
+          |class Foo {
+          |  public void foo(URIClassLoader classLoader) {
+          |    Class<? extends Number> cls = Class.forName("testName", true, classLoader);
+          |    Object instance = cls.newInstance();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.identifier.name("instance").typeFullName.head shouldBe "java.lang.Object"
+      cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
+    }
+  }
+}
 
 class TypeTests extends JavaSrcCodeToCpgFixture {
 
