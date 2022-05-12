@@ -67,9 +67,6 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         } else {
           objectType(fullyQualified)
         }
-      case unhandledType =>
-        logger.warn(s"Attempting to get typeFullName for unhandled type $unhandledType. Defaulting to Object.")
-        objectType(fullyQualified)
     }
   }
 

@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
 class NewTypeTests extends JavaSrcCode2CpgFixture {
-  "wildcard types should be handled" when {
+  "processing wildcard types should not crash (smoke test)" when {
     "the type is unbounded" in {
       val cpg = code("""
           |import java.net.URLClassLoader;
