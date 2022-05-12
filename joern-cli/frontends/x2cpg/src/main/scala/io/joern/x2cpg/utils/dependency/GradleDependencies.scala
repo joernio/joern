@@ -86,12 +86,15 @@ object GradleDependencies {
      |""".stripMargin
   }
 
-  private def makeInitScript(destinationDir: Path, forAndroid: Boolean): GradleInitScript = {
+  private def makeInitScript(
+    destinationDir: Path,
+    forAndroid: Boolean,
+    gradleProjectName: String,
+    gradleConfigurationName: String
+  ): GradleInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
     val content =
       if (forAndroid) {
-        val gradleProjectName       = "app"                     // TODO: make configurable via CLI flag
-        val gradleConfigurationName = "releaseCompileClasspath" // TODO: make configurable via CLI flag
         gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectName, gradleConfigurationName)
       } else {
         gradle5OrLaterInitScript(taskName, destinationDir.toString)
@@ -101,7 +104,11 @@ object GradleDependencies {
 
   // fetch the gradle project information first, then invoke a newly-defined gradle task to copy the necessary jars into
   // a destination directory.
-  private[dependency] def get(projectDir: Path): collection.Seq[String] = {
+  private[dependency] def get(
+    projectDir: Path,
+    projectName: String,
+    configurationName: String
+  ): collection.Seq[String] = {
     val gradleProjectInfoOption =
       try {
         logger.info(s"Attempting to fetch gradle project information from path `$projectDir`.")
@@ -156,7 +163,8 @@ object GradleDependencies {
     logger.info(s"Creating gradle init script...")
     val destinationDir = Files.createTempDirectory(tempDirPrefix)
     destinationDir.toFile.deleteOnExit()
-    val initScript = makeInitScript(destinationDir, gradleProjectInfo.hasAndroidSubproject)
+    val initScript =
+      makeInitScript(destinationDir, gradleProjectInfo.hasAndroidSubproject, projectName, configurationName)
 
     val initScriptFile = File.newTemporaryFile(initScriptPrefix).deleteOnExit()
     initScriptFile.write(initScript.contents)
