@@ -169,7 +169,9 @@ object GradleDependencies {
     val initScriptFile = File.newTemporaryFile(initScriptPrefix).deleteOnExit()
     initScriptFile.write(initScript.contents)
 
-    logger.info(s"Downloading dependencies for project to '$projectDir'...")
+    logger.info(
+      s"Downloading dependencies for configuration `$configurationName` of project `$projectName` into '$projectDir'..."
+    )
     val connectionOption =
       try {
         logger.info(s"Establishing gradle connection for project directory at '$projectDir'...")
