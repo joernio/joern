@@ -52,12 +52,10 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       }
     }
 
-    /*
-    // TODO: reenable after the proper plugins have been applied
     "test gradle dependency resolution for a simple `build.gradle.kts`" in {
       val fixture = new Fixture(
         """
-          |apply plugin: 'java'
+          |plugins { kotlin("jvm") version "1.6.10" }
           |repositories { mavenCentral() }
           |dependencies { implementation("log4j:log4j:1.2.17") }
           |""".stripMargin,
@@ -68,7 +66,6 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
         dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
       }
     }
-     */
 
     "test gradle dependency resolution for `build.gradle` using `kotlin-gradle-plugin`" in {
       val fixture = new Fixture(
