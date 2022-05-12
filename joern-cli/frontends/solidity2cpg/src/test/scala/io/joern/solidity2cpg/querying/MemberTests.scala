@@ -31,19 +31,19 @@ class MemberTests extends SolidityCodeToCpgFixture {
     x.name shouldBe "minter"
     x.code shouldBe "address public minter"
     x.typeFullName shouldBe "address"
-//    x.order shouldBe 1
+    x.order shouldBe 1
     hasMod(x, ModifierTypes.PUBLIC)
 
     y.name shouldBe "balances"
     y.code shouldBe "mapping (address => uint) public balances"
     y.typeFullName shouldBe "mapping" // don't worry about dynamic key-val types for now
-//    y.order shouldBe 2
+    y.order shouldBe 2
     hasMod(y, ModifierTypes.PUBLIC)
 
     z.name shouldBe "storedData"
     z.code shouldBe "uint private storedData"
     z.typeFullName shouldBe "uint"
-//    z.order shouldBe 3
+    z.order shouldBe 3
     hasMod(z, ModifierTypes.PRIVATE)
   }
 
@@ -53,7 +53,7 @@ class MemberTests extends SolidityCodeToCpgFixture {
       x.name shouldBe "Coin"
     })
 //    val List(x) = cpg.member.typeDecl.l
-
+//    x.name shouldBe "Coin"
 
 
   }

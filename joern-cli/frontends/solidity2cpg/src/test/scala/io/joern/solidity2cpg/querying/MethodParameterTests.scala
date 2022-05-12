@@ -24,7 +24,7 @@ class MethodParameterTests extends SolidityCodeToCpgFixture {
     t.typeFullName shouldBe "Foo"
 //    t.lineNumber shouldBe Some(3)
 //    t.columnNumber shouldBe None
-//    t.order shouldBe 0
+    t.order shouldBe 0
     t.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
 
     val List(x) = cpg.parameter.filter(_.method.name == "foo").name("param1").l
@@ -32,7 +32,7 @@ class MethodParameterTests extends SolidityCodeToCpgFixture {
     x.typeFullName shouldBe "int"
 //    x.lineNumber shouldBe Some(3)
 //    x.columnNumber shouldBe Some(15)
-//    x.order shouldBe 1
+    x.order shouldBe 1
     x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
     val List(y) = cpg.parameter.filter(_.method.name == "foo").name("param2").l
@@ -40,7 +40,7 @@ class MethodParameterTests extends SolidityCodeToCpgFixture {
     y.typeFullName shouldBe "uint[]"
 //    y.lineNumber shouldBe Some(3)
 //    y.columnNumber shouldBe Some(27)
-//    y.order shouldBe 2
+    y.order shouldBe 2
     y.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
   }
 

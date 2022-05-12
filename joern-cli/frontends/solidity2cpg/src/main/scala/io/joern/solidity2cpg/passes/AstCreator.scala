@@ -120,20 +120,37 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .inheritsFromTypeFullName(superTypes)
       .code(shortName)
       .isExternal(false)
+      .order(order)
+//    val typeDecls: Seq[Ast] = withOrder(sourceUnit.children.collect { case x: ContractDefinition => x }) {
+//      case (contractDef, order) =>
+//        astForTypeDecl(contractDef, namespaceBlockFullName, order)
+//    }
+    val methods = withOrder(contractDef.subNodes.map(x=>x)) {
+      (x,order) => astsForMethod(x, contractDef.name,order)
+    }
 
-    val methods = contractDef.subNodes.map(x => astsForMethod(x, fullName))
-    val memberAsts = contractDef.subNodes
-      .collect {
-        case x: StateVariableDeclaration => astForField(x)
-        case x: StructDefinition         => astForStruct(x, contractDef.name)
-      }
+    val memberAsts = withOrder(contractDef.subNodes.collect {
+      case x: StateVariableDeclaration => x
+//      case x: StructDefinition => astForStruct(x, order)
+    }) {
+     case(x, order) => astForField(x, order)
+    }
+//    val memberAsts = contractDef.subNodes
+//      .collect { case(x, order)=>
+//        case x: StateVariableDeclaration => {
+//          case(x, order) => astForField(x, order)
+//        }
+//        case x: StructDefinition  => {
+//          case (x, order) astForStruct(x, contractDef.name, order)
+//        }
+//      }
 
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
   }
 
-  private def astsForMethod(methods: BaseASTNode, contractname: String): Ast = {
+  private def astsForMethod(methods: BaseASTNode, contractname: String, order: Int): Ast = {
     methods match {
       case x: ModifierDefinition => {
         val methodNode = NewMethod()
@@ -235,6 +252,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .signature(signature)
           .code(code)
           .filename(filename.substring(0, filename.length - 4) + "sol")
+          .order(order)
 
         Ast(methodNode)
           .withChild(thisNode)
@@ -391,10 +409,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  private def astForField(stateVariableDeclaration: StateVariableDeclaration): Ast = {
-    var counter = 0
+  private def astForField(stateVariableDeclaration: StateVariableDeclaration, order: Int): Ast = {
     val fieldType =
-      stateVariableDeclaration.variables.collect { case x: VariableDeclaration => x }.map(astForMemberVarDecl);
+          stateVariableDeclaration.variables.collect { case x: VariableDeclaration => astForMemberVarDecl(x, order) }
+
     Ast().withChildren(fieldType)
   }
 
@@ -434,7 +452,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
   }
 
-  private def astForMemberVarDecl(varDecl: VariableDeclaration): Ast = {
+  private def astForMemberVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
     val newMember    = NewMember();
     var typefullName = ""
     var code         = ""
@@ -452,8 +470,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
     }
     var visibility = "";
-    println(varDecl)
-    println(varDecl.visibility)
+//    println(varDecl)
+//    println(varDecl.visibility)
     varDecl.visibility match {
       case x: String => visibility = " " + x
       case _         => visibility = ""
@@ -462,7 +480,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .name(varDecl.name)
       .code(typefullName + code + visibility + " " + varDecl.name)
       .typeFullName(typefullName)
-      .order(1)
+      .order(order)
 
     Ast(newMember)
 
@@ -786,7 +804,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  private def astForStruct(structDefinition: StructDefinition, contractName: String): Ast = {
+  private def astForStruct(structDefinition: StructDefinition, contractName: String, order: Int): Ast = {
     val typeFullName = registerType(contractName + "." + structDefinition.name)
     val memberNode = NewTypeDecl()
       .name(typeFullName)

@@ -38,7 +38,7 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName shouldBe List("Woo")
     x.aliasTypeFullName shouldBe None
-//    x.order shouldBe 1
+    x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
         startWith regex "[A-Z]:"   // Windows
@@ -54,7 +54,7 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName shouldBe List()
     x.aliasTypeFullName shouldBe None
-//    x.order shouldBe 2
+    x.order shouldBe 2
     x.filename should (
       startWith(File.separator) or // Unix
         startWith regex "[A-Z]:"   // Windows
@@ -63,6 +63,7 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
   }
 
   "should contain type decl for external type `uint`" in {
+
     val List(x) = cpg.member("sum").l
     x.name shouldBe "sum"
     x.typeFullName shouldBe "uint"
