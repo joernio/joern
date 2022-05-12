@@ -35,6 +35,7 @@ object GradleDependencies {
   private val logger         = LoggerFactory.getLogger(getClass)
   private val initScriptName = "x2cpg.init.gradle"
   private val taskNamePrefix = "x2cpgCopyDeps"
+  private val tempDirPrefix  = "x2cpgDependencies"
 
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
@@ -174,7 +175,7 @@ object GradleDependencies {
     }
 
     logger.info(s"Creating gradle init script...")
-    val destinationDir = Files.createTempDirectory("x2cpgRuntimeLibs")
+    val destinationDir = Files.createTempDirectory(tempDirPrefix)
     destinationDir.toFile.deleteOnExit()
     val taskNameOption =
       createGradleInitScript(gradleProjectInfo.gradleHome, destinationDir, gradleProjectInfo.hasAndroidSubproject)
@@ -184,7 +185,7 @@ object GradleDependencies {
     }
     val taskName = taskNameOption.get
 
-    logger.info(s"Downloading runtime dependencies for project at '$projectDir'...")
+    logger.info(s"Downloading dependencies for project to '$projectDir'...")
     val connectionOption =
       try {
         logger.info(s"Establishing gradle connection for project directory at '$projectDir'...")
