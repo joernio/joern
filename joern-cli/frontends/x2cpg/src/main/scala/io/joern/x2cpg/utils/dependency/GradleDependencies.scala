@@ -12,11 +12,7 @@ import java.util.stream.Collectors
 import scala.jdk.CollectionConverters._
 import scala.util.Random
 
-case class GradleProjectInfo(
-  gradleVersion: String,
-  tasks: Seq[String],
-  hasAndroidSubproject: Boolean = false
-) {
+case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndroidSubproject: Boolean = false) {
   def gradleVersionMajorMinor(): (Int, Int) = {
     def isValidPart(part: String) = part.forall(Character.isDigit)
     val parts                     = gradleVersion.split('.')
@@ -181,20 +177,26 @@ object GradleDependencies {
       }
 
     if (connectionOption.isDefined) {
-      val connection = connectionOption.get
+      val connection   = connectionOption.get
+      val stdoutStream = new ByteArrayOutputStream
+      val stderrStream = new ByteArrayOutputStream
       try {
         logger.info(s"Executing gradle task '${initScript.taskName}'...")
         connection
           .newBuild()
           .forTasks(initScript.taskName)
           .withArguments("--init-script", initScriptFile.pathAsString)
-          // .setStandardOutput(System.out) // uncomment for debugging
-          // .setStandardError(System.err)  // uncomment for debugging
+          .setStandardOutput(stdoutStream)
+          .setStandardError(stderrStream)
           .run()
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'.")
+          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'")
+          logger.debug(s"---- Cause: ${t.getCause}")
+          logger.debug(s"---- Stacktrace: ${t.getStackTrace}")
       } finally {
+        logger.debug(s"Gradle task execution stdout: \n${stdoutStream.toString}")
+        logger.debug(s"Gradle task execution stderr: \n${stderrStream.toString}")
         connection.close()
       }
     }
