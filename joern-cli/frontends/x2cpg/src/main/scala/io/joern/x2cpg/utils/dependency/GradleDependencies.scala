@@ -31,11 +31,13 @@ case class GradleProjectInfo(
   }
 }
 
+case class GradleInitScript(contents: String, taskName: String)
+
 object GradleDependencies {
-  private val logger         = LoggerFactory.getLogger(getClass)
-  private val initScriptName = "x2cpg.init.gradle"
-  private val taskNamePrefix = "x2cpgCopyDeps"
-  private val tempDirPrefix  = "x2cpgDependencies"
+  private val logger           = LoggerFactory.getLogger(getClass)
+  private val initScriptPrefix = "x2cpg.init.gradle"
+  private val taskNamePrefix   = "x2cpgCopyDeps"
+  private val tempDirPrefix    = "x2cpgDependencies"
 
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
@@ -87,37 +89,17 @@ object GradleDependencies {
      |""".stripMargin
   }
 
-  private def createGradleInitScript(gradleHome: String, destinationDir: Path, forAndroid: Boolean): Option[String] = {
-    val gradleInitDDir = gradleHome / "init.d"
-    try {
-      if (!gradleInitDDir.exists) {
-        logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
-        gradleInitDDir.createDirectories()
-      }
-    } catch {
-      case t: Throwable =>
-        logger.warn(s"Caught exception while trying to create init script directory: '$t'.")
-    }
+  private def makeInitScript(destinationDir: Path, forAndroid: Boolean): GradleInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
-    try {
-      val gradleInitScript = gradleInitDDir / initScriptName
-      gradleInitScript.createFileIfNotExists()
+    val content =
       if (forAndroid) {
         val gradleProjectName       = "app"                     // TODO: make configurable via CLI flag
         val gradleConfigurationName = "releaseCompileClasspath" // TODO: make configurable via CLI flag
-        gradleInitScript.write(
-          gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectName, gradleConfigurationName)
-        )
+        gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectName, gradleConfigurationName)
       } else {
-        gradleInitScript.write(gradle5OrLaterInitScript(taskName, destinationDir.toString))
+        gradle5OrLaterInitScript(taskName, destinationDir.toString)
       }
-      gradleInitScript.deleteOnExit()
-      Some(taskName)
-    } catch {
-      case t: Throwable =>
-        logger.warn(s"Caught exception while trying to create init script: '$t'.")
-        None
-    }
+    GradleInitScript(content, taskName)
   }
 
   // fetch the gradle project information first, then invoke a newly-defined gradle task to copy the necessary jars into
@@ -177,13 +159,10 @@ object GradleDependencies {
     logger.info(s"Creating gradle init script...")
     val destinationDir = Files.createTempDirectory(tempDirPrefix)
     destinationDir.toFile.deleteOnExit()
-    val taskNameOption =
-      createGradleInitScript(gradleProjectInfo.gradleHome, destinationDir, gradleProjectInfo.hasAndroidSubproject)
-    if (taskNameOption.isEmpty) {
-      logger.warn("Could not create Gradle init script.")
-      return Seq()
-    }
-    val taskName = taskNameOption.get
+    val initScript = makeInitScript(destinationDir, gradleProjectInfo.hasAndroidSubproject)
+
+    val initScriptFile = File.newTemporaryFile(initScriptPrefix).deleteOnExit()
+    initScriptFile.write(initScript.contents)
 
     logger.info(s"Downloading dependencies for project to '$projectDir'...")
     val connectionOption =
@@ -204,10 +183,11 @@ object GradleDependencies {
     if (connectionOption.isDefined) {
       val connection = connectionOption.get
       try {
-        logger.info(s"Executing gradle task '$taskName'...")
+        logger.info(s"Executing gradle task '${initScript.taskName}'...")
         connection
           .newBuild()
-          .forTasks(taskName)
+          .forTasks(initScript.taskName)
+          .withArguments("--init-script", initScriptFile.pathAsString)
           // .setStandardOutput(System.out) // uncomment for debugging
           // .setStandardError(System.err)  // uncomment for debugging
           .run()
