@@ -29,7 +29,4 @@ object MavenDependencies {
     }
   }
 
-  private[dependency] def isMavenBuild(codeDir: Path): Boolean = {
-    Files.exists(codeDir.resolve("pom.xml"))
-  }
 }

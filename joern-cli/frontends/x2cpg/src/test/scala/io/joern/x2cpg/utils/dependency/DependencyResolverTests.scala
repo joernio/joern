@@ -1,10 +1,11 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
 
 class DependencyResolverTests extends AnyWordSpec with Matchers {
@@ -52,12 +53,10 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       }
     }
 
-    /*
-    // TODO: reenable after the proper plugins have been applied
     "test gradle dependency resolution for a simple `build.gradle.kts`" in {
       val fixture = new Fixture(
         """
-          |apply plugin: 'java'
+          |plugins { kotlin("jvm") version "1.6.10" }
           |repositories { mavenCentral() }
           |dependencies { implementation("log4j:log4j:1.2.17") }
           |""".stripMargin,
@@ -68,7 +67,6 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
         dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
       }
     }
-     */
 
     "test gradle dependency resolution for `build.gradle` using `kotlin-gradle-plugin`" in {
       val fixture = new Fixture(
@@ -87,6 +85,13 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       fixture.test { dependenciesFiles =>
         dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
       }
+    }
+
+    "test gradle dependency resolution for simple Android app" in {
+      val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
+      val dependencies  = DependencyResolver.getDependencies(Paths.get(androidAppDir))
+      dependencies.filter(_.endsWith(".jar")) should not be Set()
+      // TODO: add test for `.aar` as soon as it's decided what to do about them
     }
   }
 

@@ -12,12 +12,7 @@ import java.util.stream.Collectors
 import scala.jdk.CollectionConverters._
 import scala.util.Random
 
-case class GradleProjectInfo(
-  gradleVersion: String,
-  gradleHome: String,
-  tasks: Seq[String],
-  hasAndroidSubproject: Boolean = false
-) {
+case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndroidSubproject: Boolean = false) {
   def gradleVersionMajorMinor(): (Int, Int) = {
     def isValidPart(part: String) = part.forall(Character.isDigit)
     val parts                     = gradleVersion.split('.')
@@ -31,10 +26,13 @@ case class GradleProjectInfo(
   }
 }
 
+case class GradleInitScript(contents: String, taskName: String)
+
 object GradleDependencies {
-  private val logger         = LoggerFactory.getLogger(getClass)
-  private val initScriptName = "x2cpg.init.gradle"
-  private val taskNamePrefix = "x2cpgCopyDeps"
+  private val logger           = LoggerFactory.getLogger(getClass)
+  private val initScriptPrefix = "x2cpg.init.gradle"
+  private val taskNamePrefix   = "x2cpgCopyDeps"
+  private val tempDirPrefix    = "x2cpgDependencies"
 
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
@@ -54,11 +52,13 @@ object GradleDependencies {
        |    if (project.name.equals(gradleProjectName)) {
        |      def compileDepsCopyTaskName = taskName + "_compileDeps"
        |      tasks.register(compileDepsCopyTaskName, Copy) {
+       |        duplicatesStrategy = 'include'
        |        into destinationDir
        |        from project.configurations.find { it.name.equals(gradleConfigurationName) }
        |      }
        |      def androidDepsCopyTaskName = taskName + "_androidDeps"
        |      tasks.register(androidDepsCopyTaskName, Copy) {
+       |        duplicatesStrategy = 'include'
        |        into destinationDir
        |        from project.configurations.find { it.name.equals("androidApis") }
        |      }
@@ -86,42 +86,29 @@ object GradleDependencies {
      |""".stripMargin
   }
 
-  private def createGradleInitScript(gradleHome: String, destinationDir: Path, forAndroid: Boolean): Option[String] = {
-    val gradleInitDDir = gradleHome / "init.d"
-    try {
-      if (!gradleInitDDir.exists) {
-        logger.info(s"Creating gradle init script directory at '$gradleInitDDir'...")
-        gradleInitDDir.createDirectories()
-      }
-    } catch {
-      case t: Throwable =>
-        logger.warn(s"Caught exception while trying to create init script directory: '$t'.")
-    }
+  private def makeInitScript(
+    destinationDir: Path,
+    forAndroid: Boolean,
+    gradleProjectName: String,
+    gradleConfigurationName: String
+  ): GradleInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
-    try {
-      val gradleInitScript = gradleInitDDir / initScriptName
-      gradleInitScript.createFileIfNotExists()
+    val content =
       if (forAndroid) {
-        val gradleProjectName       = "app"                     // TODO: make configurable via CLI flag
-        val gradleConfigurationName = "releaseCompileClasspath" // TODO: make configurable via CLI flag
-        gradleInitScript.write(
-          gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectName, gradleConfigurationName)
-        )
+        gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectName, gradleConfigurationName)
       } else {
-        gradleInitScript.write(gradle5OrLaterInitScript(taskName, destinationDir.toString))
+        gradle5OrLaterInitScript(taskName, destinationDir.toString)
       }
-      gradleInitScript.deleteOnExit()
-      Some(taskName)
-    } catch {
-      case t: Throwable =>
-        logger.warn(s"Caught exception while trying to create init script: '$t'.")
-        None
-    }
+    GradleInitScript(content, taskName)
   }
 
   // fetch the gradle project information first, then invoke a newly-defined gradle task to copy the necessary jars into
   // a destination directory.
-  private[dependency] def downloadRuntimeLibs(projectDir: Path): collection.Seq[String] = {
+  private[dependency] def get(
+    projectDir: Path,
+    projectName: String,
+    configurationName: String
+  ): collection.Seq[String] = {
     val gradleProjectInfoOption =
       try {
         logger.info(s"Attempting to fetch gradle project information from path `$projectDir`.")
@@ -145,13 +132,12 @@ object GradleDependencies {
             val gradleAndroidPropertyPrefix = "android."
             !out.toString.split('\n').filter(_.startsWith(gradleAndroidPropertyPrefix)).isEmpty
           } catch {
-            case _: Throwable =>
-              logger.warn("Caught exception while executing Gradle task named `properties`.")
+            case t: Throwable =>
+              logger.warn("Caught exception while executing Gradle task named `properties`.", t)
               false
           }
         val info = GradleProjectInfo(
           buildEnv.getGradle.getGradleVersion,
-          buildEnv.getGradle.getGradleUserHome.toString,
           project.getTasks.asScala.map(_.getName).toSeq,
           hasAndroidPrefixGradleProperty
         )
@@ -159,7 +145,7 @@ object GradleDependencies {
         Some(info)
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while trying fetch gradle project information: `$t`.")
+          logger.warn(s"Caught exception while trying fetch gradle project information: `$t`.", t)
           None
       }
     if (gradleProjectInfoOption.isEmpty) {
@@ -174,17 +160,17 @@ object GradleDependencies {
     }
 
     logger.info(s"Creating gradle init script...")
-    val destinationDir = Files.createTempDirectory("x2cpgRuntimeLibs")
+    val destinationDir = Files.createTempDirectory(tempDirPrefix)
     destinationDir.toFile.deleteOnExit()
-    val taskNameOption =
-      createGradleInitScript(gradleProjectInfo.gradleHome, destinationDir, gradleProjectInfo.hasAndroidSubproject)
-    if (taskNameOption.isEmpty) {
-      logger.warn("Could not create Gradle init script.")
-      return Seq()
-    }
-    val taskName = taskNameOption.get
+    val initScript =
+      makeInitScript(destinationDir, gradleProjectInfo.hasAndroidSubproject, projectName, configurationName)
 
-    logger.info(s"Downloading runtime dependencies for project at '$projectDir'...")
+    val initScriptFile = File.newTemporaryFile(initScriptPrefix).deleteOnExit()
+    initScriptFile.write(initScript.contents)
+
+    logger.info(
+      s"Downloading dependencies for configuration `$configurationName` of project `$projectName` into '$projectDir'..."
+    )
     val connectionOption =
       try {
         logger.info(s"Establishing gradle connection for project directory at '$projectDir'...")
@@ -201,31 +187,29 @@ object GradleDependencies {
       }
 
     if (connectionOption.isDefined) {
-      val connection = connectionOption.get
+      val connection   = connectionOption.get
+      val stdoutStream = new ByteArrayOutputStream
+      val stderrStream = new ByteArrayOutputStream
       try {
-        logger.info(s"Executing gradle task '$taskName'...")
+        logger.info(s"Executing gradle task '${initScript.taskName}'...")
         connection
           .newBuild()
-          .forTasks(taskName)
-          // .setStandardOutput(System.out) // uncomment for debugging
-          // .setStandardError(System.err)  // uncomment for debugging
+          .forTasks(initScript.taskName)
+          .withArguments("--init-script", initScriptFile.pathAsString)
+          .setStandardOutput(stdoutStream)
+          .setStandardError(stderrStream)
           .run()
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'.")
+          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'", t)
       } finally {
+        logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
+        logger.debug(s"Gradle task execution stderr: \n$stderrStream")
         connection.close()
       }
     }
 
     Files.list(destinationDir).collect(Collectors.toList[Path]).asScala.map(_.toAbsolutePath.toString)
-  }
-
-  private[dependency] def isGradleBuild(codeDir: Path): Boolean = {
-    Files
-      .walk(codeDir)
-      .filter(file => file.toString.endsWith(".gradle") || file.toString.endsWith(".gradle.kts"))
-      .count > 0
   }
 
 }

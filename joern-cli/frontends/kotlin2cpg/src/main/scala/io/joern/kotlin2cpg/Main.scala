@@ -12,7 +12,9 @@ final case class Config(
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
   withAndroidJarsInClassPath: Boolean = true,
-  downloadDependencies: Boolean = false
+  downloadDependencies: Boolean = false,
+  gradleProjectName: Option[String] = None,
+  gradleConfigurationName: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -45,7 +47,13 @@ private object Frontend {
         .action((_, c) => c.copy(downloadDependencies = true)),
       opt[Unit]("download-dependencies")
         .text("Download the dependencies of the target project and add them to the classpath")
-        .action((_, c) => c.copy(downloadDependencies = true))
+        .action((_, c) => c.copy(downloadDependencies = true)),
+      opt[String]("gradle-project-name")
+        .text("Name of the Gradle project used to download dependencies")
+        .action((value, c) => c.copy(gradleProjectName = Some(value))),
+      opt[String]("gradle-configuration-name")
+        .text("Name of the Gradle configuration used to download dependencies")
+        .action((value, c) => c.copy(gradleConfigurationName = Some(value)))
     )
   }
 }
