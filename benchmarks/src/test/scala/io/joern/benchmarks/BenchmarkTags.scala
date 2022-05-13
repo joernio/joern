@@ -12,12 +12,20 @@ object BenchmarkTags {
   object Casting          extends Tag("Casting")
   object Collections      extends Tag("Collections")
   object ClassInitializer extends Tag("Class Initializer")
-  object HighConditional  extends Tag("High Conditional")
-  object ImplicitFlows    extends Tag("Implicit Flows")
+  object DataStructures   extends Tag("Data Structures")
   object Exceptions       extends Tag("Exceptions")
   object ExplicitFlows    extends Tag("Explicit Flows")
+  object Factories        extends Tag("Factories")
+  object HighConditional  extends Tag("High Conditional")
+  object ImplicitFlows    extends Tag("Implicit Flows")
+  object Inter            extends Tag("Inter")
+  object Pred             extends Tag("Pred")
+  object Reflection       extends Tag("Reflection")
   object Library          extends Tag("Library")
+  object Sanitizers       extends Tag("Sanitizers")
+  object Session          extends Tag("Session")
   object Simple           extends Tag("Simple")
+  object StrongUpdates    extends Tag("Strong Updates")
 
   def TAGS = Seq(
     ExplicitFlows.name,
@@ -25,13 +33,20 @@ object BenchmarkTags {
     Aliasing.name,
     Arrays.name,
     Basic.name,
-    Collections.name,
-    HighConditional.name,
-    Library.name,
-    Simple.name,
-    Exceptions.name,
     Casting.name,
-    ClassInitializer.name
+    ClassInitializer.name,
+    Collections.name,
+    DataStructures.name,
+    Exceptions.name,
+    Factories.name,
+    HighConditional.name,
+    Inter.name,
+    Pred.name,
+    Library.name,
+    Sanitizers.name,
+    Session.name,
+    Simple.name,
+    StrongUpdates.name,
   )
 
   val confusionMatrix = mutable.Map.empty[String, Array[Int]]
@@ -52,9 +67,7 @@ object BenchmarkTags {
     TAGS.filter { tag => confusionMatrix(tag).sum > 0 }.foreach { tag =>
       val m = confusionMatrix(tag)
       println(s"| $tag ${(for (_ <- 0 until (catWhiteSpaceCount - tag.length))
-          yield ' ').mkString} | ${m.sum}   | ${countToString(m(FP))}   | ${countToString(m(TP))}   | ${countToString(
-          m(TN)
-        )}   | ${countToString(m(FN))}   |")
+          yield ' ').mkString} | ${m.sum} | ${m(FP)} | ${m(TP)} | ${m(TN)} | ${m(FN)} |")
     }
     val FNs        = confusionMatrix.map(_._2(FN)).sum
     val TNs        = confusionMatrix.map(_._2(TN)).sum
@@ -65,8 +78,6 @@ object BenchmarkTags {
         yield ' ').mkString} | *$totalTests* | *$FPs* | *$TPs* | *$TNs* | *$FNs* |")
     println(s"Total accuracy: ${String.format("%.3f", (TNs + TPs + 0.0) / totalTests * 100.0)}%")
   }
-
-  private def countToString(count: Int): String = if (count < 10) s"$count " else count.toString
 
   sys.addShutdownHook(finalResults())
 }
