@@ -33,7 +33,7 @@ class SecuribenchMicroPredFixture(fileExt: String, benchmarkNo: Int)
   extends SecuribenchMicroFixture(category = "Pred", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
 
 class SecuribenchMicroReflectionFixture(fileExt: String, benchmarkNo: Int)
-  extends SecuribenchMicroFixture(category = "Reflection", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
+  extends SecuribenchMicroFixture(category = "Refl", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
 
 class SecuribenchMicroSanitizersFixture(fileExt: String, benchmarkNo: Int)
   extends SecuribenchMicroFixture(category = "Sanitizers", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)

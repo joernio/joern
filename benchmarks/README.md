@@ -28,9 +28,10 @@ or JVM bytecode Jimple frontend:
 | Collections        | 22 | 8 | 14 | 0 | 0 |
 | Data Structures    | 8 | 1 | 2 | 2 | 3 |
 | Factories          | 6 | 3 | 3 | 0 | 0 |
-| Inter              | 17 | 6 | 7 | 1 | 3 |
-| *Total*            | *149* | *28* | *96* | *7* | *18* |
-Total accuracy: 69,128%
+| Inter              | 25 | 8 | 9 | 2 | 6 |
+| Pred               | 9 | 4 | 5 | 0 | 0 |
+| *Total*            | *166* | *34* | *103* | *8* | *21* |
+Total accuracy: 66,867%
 
 #### JVM Bytecode Results
 
@@ -42,6 +43,7 @@ Total accuracy: 69,128%
 | Collections        | 22 | 8 | 14 | 0 | 0 |
 | Data Structures    | 8 | 2 | 3 | 1 | 2 |
 | Factories          | 6 | 3 | 3 | 0 | 0 |
-| Inter              | 17 | 6 | 8 | 1 | 2 |
-| *Total*            | *149* | *30* | *105* | *5* | *9* |
-Total accuracy: 73,826%
+| Inter              | 25 | 6 | 8 | 4 | 7 |
+| Pred               | 9 | 3 | 5 | 1 | 0 |
+| *Total*            | *166* | *33* | *110* | *9* | *14* |
+Total accuracy: 71,687%

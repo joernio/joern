@@ -18,9 +18,9 @@ object BenchmarkTags {
   object Factories        extends Tag("Factories")
   object HighConditional  extends Tag("High Conditional")
   object ImplicitFlows    extends Tag("Implicit Flows")
-  object Inter            extends Tag("Inter")
-  object Pred             extends Tag("Pred")
-  object Reflection       extends Tag("Reflection")
+  object Inter            extends Tag("Inter-procedural")
+  object Pred             extends Tag("Predicates")
+  object Refl             extends Tag("Reflection")
   object Library          extends Tag("Library")
   object Sanitizers       extends Tag("Sanitizers")
   object Session          extends Tag("Session")
@@ -41,12 +41,13 @@ object BenchmarkTags {
     Factories.name,
     HighConditional.name,
     Inter.name,
-    Pred.name,
     Library.name,
+    Pred.name,
+    Refl.name,
     Sanitizers.name,
     Session.name,
     Simple.name,
-    StrongUpdates.name,
+    StrongUpdates.name
   )
 
   val confusionMatrix = mutable.Map.empty[String, Array[Int]]

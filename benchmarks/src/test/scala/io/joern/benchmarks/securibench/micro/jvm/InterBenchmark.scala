@@ -43,7 +43,7 @@ class InterBenchmark3 extends SecuribenchMicroInterFixture(JVM_EXT, 3) {
 
 class InterBenchmark4 extends SecuribenchMicroInterFixture(JVM_EXT, 4) {
 
-  s"Inter$benchmarkNo line" should "report insecure" taggedAs Inter in {
+  s"Inter$benchmarkNo" should "report insecure" taggedAs Inter in {
     assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*"))
   }
 
@@ -105,6 +105,58 @@ class InterBenchmark9 extends SecuribenchMicroInterFixture(JVM_EXT, 9) {
 
   s"Inter$benchmarkNo line 54" should "report secure" taggedAs Inter in {
     assertIsSecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(54))
+  }
+
+}
+
+class InterBenchmark10 extends SecuribenchMicroInterFixture(JAVA_EXT, 10) {
+
+  s"Inter$benchmarkNo line 47" should "report insecure" taggedAs Inter in {
+    assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(47))
+  }
+
+  s"Inter$benchmarkNo line 48" should "report secure" taggedAs Inter in {
+    assertIsSecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(48))
+  }
+
+}
+
+class InterBenchmark11 extends SecuribenchMicroInterFixture(JAVA_EXT, 11) {
+
+  s"Inter$benchmarkNo line 47" should "report insecure" taggedAs Inter in {
+    assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(47))
+  }
+
+  s"Inter$benchmarkNo line 48" should "report secure" taggedAs Inter in {
+    assertIsSecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(48))
+  }
+
+}
+
+class InterBenchmark12 extends SecuribenchMicroInterFixture(JAVA_EXT, 12) {
+
+  s"Inter$benchmarkNo line 54" should "report insecure" taggedAs Inter in {
+    assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(54))
+  }
+
+  s"Inter$benchmarkNo line 55" should "report secure" taggedAs Inter in {
+    assertIsSecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(55))
+  }
+
+}
+
+class InterBenchmark13 extends SecuribenchMicroInterFixture(JAVA_EXT, 13) {
+
+  s"Inter$benchmarkNo line 52" should "report insecure" taggedAs Inter in {
+    assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(52))
+  }
+
+}
+
+class InterBenchmark14 extends SecuribenchMicroInterFixture(JAVA_EXT, 14) {
+
+  s"Inter$benchmarkNo line 54" should "report insecure" taggedAs Inter in {
+    assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*").lineNumber(54))
   }
 
 }
