@@ -5,10 +5,26 @@ import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.Comparator
 
 class DependencyResolverTests extends AnyWordSpec with Matchers {
+  private class FixtureWithCopyDir(srcDir: Path) {
+    def test(testFunc: collection.Seq[String] => Unit): Unit = {
+      val tmpDir = Files.createTempDirectory("DependencyResolverTests")
+      try {
+        Files.copy(srcDir, tmpDir, StandardCopyOption.REPLACE_EXISTING)
+        val dependenciesFiles = DependencyResolver.getDependencies(tmpDir)
+        testFunc(dependenciesFiles)
+      } finally {
+        Files
+          .walk(tmpDir)
+          .sorted(Comparator.reverseOrder[Path]())
+          .forEach(Files.delete(_))
+      }
+    }
+  }
+
   private class Fixture(content: String, fileName: String) {
     def test(testFunc: collection.Seq[String] => Unit): Unit = {
       val tmpDir = Files.createTempDirectory("DependencyResolverTests")
@@ -89,8 +105,10 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
 
     "test gradle dependency resolution for simple Android app" in {
       val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
-      val dependencies  = DependencyResolver.getDependencies(Paths.get(androidAppDir))
-      dependencies.filter(_.endsWith(".jar")) should not be Set()
+      val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir))
+      fixture.test { dependenciesFiles =>
+        dependenciesFiles.filter(_.endsWith(".jar")) should not be Set()
+      }
       // TODO: add test for `.aar` as soon as it's decided what to do about them
     }
   }
