@@ -59,14 +59,12 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         }
         val dependenciesPaths =
           if (config.downloadDependencies) {
-            val gradleParams = mutable.Map[GradleConfigKeys.GradleConfigKey, String]()
-            if (config.gradleProjectName.nonEmpty) {
-              gradleParams(GradleConfigKeys.ProjectName) = config.gradleProjectName.get
-            }
-            if (config.gradleConfigurationName.nonEmpty) {
-              gradleParams(GradleConfigKeys.ConfigurationName) = config.gradleConfigurationName.get
-            }
-            val resolverParams = DependencyResolverParams(Map(), gradleParams.toMap)
+            val gradleParams = Map(
+              GradleConfigKeys.ProjectName -> config.gradleProjectName, 
+              GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+            ).collect { case (key, Some(value)) => (key, value) }
+            
+            val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
             val paths          = DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams)
             logger.info(s"Using ${paths.size} dependency jars.")
             paths
