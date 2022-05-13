@@ -28,6 +28,13 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   dataflowengineoss,
   macros,
   semanticcpg,
+  fuzzyc2cpg,
+  c2cpg,
+  x2cpg,
+  pysrc2cpg,
+  php2cpg,
+  javasrc2cpg,
+  jimple2cpg
 )
 
 ThisBuild / compile / javacOptions ++= Seq(
