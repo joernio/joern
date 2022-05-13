@@ -20,30 +20,38 @@ or JVM bytecode Jimple frontend:
 
 #### Java Source Results
 
-| Category           | #    | FP   | TP   | TN   | FN   |
-| ------------------ | ---- | ---- | ---- | ---- | ---- |
-| Aliasing           | 14 | 1 | 4 | 1 | 8 |
-| Arrays             | 15 | 4 | 7 | 2 | 2 |
-| Basic              | 67 | 5 | 59 | 1 | 2 |
-| Collections        | 22 | 8 | 14 | 0 | 0 |
-| Data Structures    | 8 | 1 | 2 | 2 | 3 |
-| Factories          | 6 | 3 | 3 | 0 | 0 |
-| Inter              | 25 | 8 | 9 | 2 | 6 |
-| Pred               | 9 | 4 | 5 | 0 | 0 |
-| *Total*            | *166* | *34* | *103* | *8* | *21* |
-Total accuracy: 66,867%
+| Category          | #    | FP   | TP   | TN   | FN   |
+| ----------------- | ---- | ---- | ---- | ---- | ---- |
+| Aliasing          | 14 | 1 | 4 | 1 | 8 |
+| Arrays            | 15 | 4 | 7 | 2 | 2 |
+| Basic             | 67 | 5 | 59 | 1 | 2 |
+| Collections       | 22 | 8 | 14 | 0 | 0 |
+| Data Structures   | 8 | 1 | 2 | 2 | 3 |
+| Factories         | 6 | 3 | 3 | 0 | 0 |
+| Inter-procedural  | 25 | 8 | 9 | 2 | 6 |
+| Predicates        | 9 | 4 | 5 | 0 | 0 |
+| Reflection        | 4 | 1 | 1 | 0 | 2 |
+| Sanitizers        | 9 | 3 | 2 | 2 | 2 |
+| Session           | 4 | 1 | 3 | 0 | 0 |
+| Strong Updates    | 5 | 0 | 0 | 4 | 1 |
+| *Total*           | *188* | *39* | *109* | *14* | *26* |
+Total accuracy: 65,426%
 
 #### JVM Bytecode Results
 
-| Category           | #    | FP   | TP   | TN   | FN   |
-| ------------------ | ---- | ---- | ---- | ---- | ---- |
-| Aliasing           | 14 | 1 | 10 | 1 | 2 |
-| Arrays             | 15 | 5 | 7 | 1 | 2 |
-| Basic              | 67 | 5 | 60 | 1 | 1 |
-| Collections        | 22 | 8 | 14 | 0 | 0 |
-| Data Structures    | 8 | 2 | 3 | 1 | 2 |
-| Factories          | 6 | 3 | 3 | 0 | 0 |
-| Inter              | 25 | 6 | 8 | 4 | 7 |
-| Pred               | 9 | 3 | 5 | 1 | 0 |
-| *Total*            | *166* | *33* | *110* | *9* | *14* |
-Total accuracy: 71,687%
+| Category          | #    | FP   | TP   | TN   | FN   |
+| ----------------- | ---- | ---- | ---- | ---- | ---- |
+| Aliasing          | 14 | 1 | 10 | 1 | 2 |
+| Arrays            | 15 | 5 | 7 | 1 | 2 |
+| Basic             | 67 | 5 | 60 | 1 | 1 |
+| Collections       | 22 | 8 | 14 | 0 | 0 |
+| Data Structures   | 8 | 2 | 3 | 1 | 2 |
+| Factories         | 6 | 3 | 3 | 0 | 0 |
+| Inter-procedural  | 25 | 6 | 8 | 4 | 7 |
+| Predicates        | 9 | 3 | 5 | 1 | 0 |
+| Reflection        | 4 | 1 | 2 | 0 | 1 |
+| Sanitizers        | 9 | 3 | 2 | 2 | 2 |
+| Session           | 4 | 1 | 3 | 0 | 0 |
+| Strong Updates    | 5 | 0 | 0 | 4 | 1 |
+| *Total*           | *188* | *38* | *117* | *15* | *18* |
+Total accuracy: 70,213%
