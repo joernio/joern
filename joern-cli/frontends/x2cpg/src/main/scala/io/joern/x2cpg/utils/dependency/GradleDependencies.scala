@@ -205,8 +205,8 @@ object GradleDependencies {
           logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'")
           logger.debug(s"FULL_EXCEPTION: \n", t)
       } finally {
-        logger.debug(s"Gradle task execution stdout: \n${stdoutStream.toString}")
-        logger.debug(s"Gradle task execution stderr: \n${stderrStream.toString}")
+        logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
+        logger.debug(s"Gradle task execution stderr: \n$stderrStream")
         connection.close()
       }
     }
