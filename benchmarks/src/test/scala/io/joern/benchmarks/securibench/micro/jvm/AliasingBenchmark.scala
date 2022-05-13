@@ -5,9 +5,8 @@ import io.joern.benchmarks.testfixtures.BenchmarkFixture._
 import io.joern.benchmarks.testfixtures.SecuribenchMicroAliasingFixture
 import io.shiftleft.semanticcpg.language._
 
-/**
-  * During all the tests our class files have propagated the field constant so we need to look for the literal and
-  * not the field.
+/** During all the tests our class files have propagated the field constant so we need to look for the literal and not
+  * the field.
   */
 class AliasingBenchmark1 extends SecuribenchMicroAliasingFixture(JVM_EXT, 1) {
 
@@ -57,8 +56,7 @@ class AliasingBenchmark5 extends SecuribenchMicroAliasingFixture(JVM_EXT, 5) {
 
 }
 
-/**
-  * We do well here since the deep copy propagation is converted to three address bytecode that simplifies the aliasing
+/** We do well here since the deep copy propagation is converted to three address bytecode that simplifies the aliasing
   * chain.
   */
 class AliasingBenchmark6 extends SecuribenchMicroAliasingFixture(JVM_EXT, 6) {

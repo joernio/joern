@@ -58,5 +58,5 @@ class DataStructuresBenchmark6 extends SecuribenchMicroDatastructuresFixture(JVM
   s"DataStructures$benchmarkNo" should "report insecure" taggedAs DataStructures in {
     assertIsInsecure(cpg.literal(".*name.*"), cpg.call(".*println.*"))
   }
-  
+
 }

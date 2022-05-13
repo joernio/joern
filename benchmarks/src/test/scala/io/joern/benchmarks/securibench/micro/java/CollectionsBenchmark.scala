@@ -85,7 +85,7 @@ class CollectionsBenchmark8 extends SecuribenchMicroCollectionsFixture(JAVA_EXT,
 
 }
 
-class CollectionsBenchmark9 extends SecuribenchMicroCollectionsFixture(JAVA_EXT,  "9") {
+class CollectionsBenchmark9 extends SecuribenchMicroCollectionsFixture(JAVA_EXT, "9") {
 
   s"Collections$benchmarkNo" should "report secure" taggedAs Collections in {
     assertIsSecure(cpg.fieldAccess.code(".*FIELD_NAME.*"), cpg.call(".*println.*"))
