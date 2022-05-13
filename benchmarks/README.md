@@ -8,18 +8,20 @@ The benchmarks are implemented in ScalaTest. Implemented benchmarks are:
 
 * [Securibench Micro](http://too4words.github.io/securibench-micro/)
 
-Below are instructions on how to run Joern against each benchmark.
+Below are instructions on how to run Joern against each benchmark. If
+you would like the benchmark results to be written to a file instead
+of printed to STDOUT, set the path to the environment variable 
+`JOERN_BENCHMARK_RESULT_FILE`.
 
 ### Securibench Micro
 
-The benchmark can be run using either the Java source code frontend 
+The benchmark can be run using either the Java source code frontend
 or JVM bytecode Jimple frontend:
 
 * Java source: `sbt "benchmarks / testOnly *.securibench.micro.java.*"`
 * JVM bytecode: `sbt "benchmarks / testOnly *.securibench.micro.jvm.*"`
 
 #### Java Source Results
-
 | Category          | #    | FP   | TP   | TN   | FN   |
 | ----------------- | ---- | ---- | ---- | ---- | ---- |
 | Aliasing          | 14 | 1 | 4 | 1 | 8 |
@@ -37,9 +39,7 @@ or JVM bytecode Jimple frontend:
 | *Total*           | *188* | *39* | *109* | *14* | *26* |
 
 Total accuracy: 65,426%
-
 #### JVM Bytecode Results
-
 | Category          | #    | FP   | TP   | TN   | FN   |
 | ----------------- | ---- | ---- | ---- | ---- | ---- |
 | Aliasing          | 14 | 1 | 10 | 1 | 2 |
