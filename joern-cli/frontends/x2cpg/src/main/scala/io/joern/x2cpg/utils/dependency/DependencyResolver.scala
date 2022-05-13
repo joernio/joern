@@ -40,7 +40,6 @@ object DependencyResolver {
   def isGradleBuild(codeDir: Path): Boolean = {
     Files
       .walk(codeDir)
-      .filter(file => file.toString.endsWith(".gradle") || file.toString.endsWith(".gradle.kts"))
-      .count > 0
+      .anyMatch(file => file.toString.endsWith(".gradle") || file.toString.endsWith(".gradle.kts"))
   }
 }
