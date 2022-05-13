@@ -9,7 +9,6 @@ object BenchmarkTags {
 
   val resultsOut: PrintStream = Option(System.getenv("JOERN_BENCHMARK_RESULT_FILE")) match {
     case Some(filePath) =>
-      println("Loggin to file")
       val f = new File(filePath)
       f.getParentFile.mkdirs()
       f.createNewFile()
@@ -17,18 +16,18 @@ object BenchmarkTags {
     case None => System.out
   }
 
-  object Aliasing         extends Tag("Aliasing")
-  object Arrays           extends Tag("Arrays")
-  object Basic            extends Tag("Basic")
-  object Collections      extends Tag("Collections")
-  object DataStructures   extends Tag("Data Structures")
-  object Factories        extends Tag("Factories")
-  object Inter            extends Tag("Inter-procedural")
-  object Pred             extends Tag("Predicates")
-  object Refl             extends Tag("Reflection")
-  object Sanitizers       extends Tag("Sanitizers")
-  object Session          extends Tag("Session")
-  object StrongUpdates    extends Tag("Strong Updates")
+  object Aliasing       extends Tag("Aliasing")
+  object Arrays         extends Tag("Arrays")
+  object Basic          extends Tag("Basic")
+  object Collections    extends Tag("Collections")
+  object DataStructures extends Tag("Data Structures")
+  object Factories      extends Tag("Factories")
+  object Inter          extends Tag("Inter-procedural")
+  object Pred           extends Tag("Predicates")
+  object Refl           extends Tag("Reflection")
+  object Sanitizers     extends Tag("Sanitizers")
+  object Session        extends Tag("Session")
+  object StrongUpdates  extends Tag("Strong Updates")
 
   def TAGS = Seq(
     Aliasing.name,
@@ -59,7 +58,9 @@ object BenchmarkTags {
     val catWhiteSpaceCount = TAGS.maxBy(_.length).length
     val catWhiteSpace      = for (_ <- 0 until (catWhiteSpaceCount - "Category".length)) yield ' '
     resultsOut.println(s"| Category ${catWhiteSpace.mkString} | #    | FP   | TP   | TN   | FN   |")
-    resultsOut.println(s"| ${(for (_ <- 0 to catWhiteSpaceCount) yield '-').mkString} | ---- | ---- | ---- | ---- | ---- |")
+    resultsOut.println(
+      s"| ${(for (_ <- 0 to catWhiteSpaceCount) yield '-').mkString} | ---- | ---- | ---- | ---- | ---- |"
+    )
     TAGS.filter { tag => confusionMatrix(tag).sum > 0 }.foreach { tag =>
       val m = confusionMatrix(tag)
       resultsOut.println(s"| $tag ${(for (_ <- 0 until (catWhiteSpaceCount - tag.length))
