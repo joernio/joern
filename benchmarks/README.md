@@ -30,13 +30,13 @@ or JVM bytecode Jimple frontend:
 | Collections       | 22 | 8 | 14 | 0 | 0 |
 | Data Structures   | 8 | 1 | 2 | 2 | 3 |
 | Factories         | 6 | 3 | 3 | 0 | 0 |
-| Inter-procedural  | 25 | 8 | 9 | 2 | 6 |
+| Inter-procedural  | 25 | 7 | 8 | 3 | 7 |
 | Predicates        | 9 | 4 | 5 | 0 | 0 |
 | Reflection        | 4 | 1 | 1 | 0 | 2 |
 | Sanitizers        | 9 | 3 | 2 | 2 | 2 |
 | Session           | 4 | 1 | 3 | 0 | 0 |
 | Strong Updates    | 5 | 0 | 0 | 4 | 1 |
-| *Total*           | *188* | *39* | *109* | *14* | *26* |
+| *Total*           | *188* | *38* | *108* | *15* | *27* |
 
 Total accuracy: 65,426%
 #### JVM Bytecode Results
@@ -46,14 +46,14 @@ Total accuracy: 65,426%
 | Arrays            | 15 | 5 | 7 | 1 | 2 |
 | Basic             | 67 | 5 | 60 | 1 | 1 |
 | Collections       | 22 | 8 | 14 | 0 | 0 |
-| Data Structures   | 8 | 2 | 3 | 1 | 2 |
+| Data Structures   | 8 | 1 | 2 | 2 | 3 |
 | Factories         | 6 | 3 | 3 | 0 | 0 |
-| Inter-procedural  | 25 | 6 | 8 | 4 | 7 |
+| Inter-procedural  | 25 | 5 | 7 | 5 | 8 |
 | Predicates        | 9 | 3 | 5 | 1 | 0 |
 | Reflection        | 4 | 1 | 2 | 0 | 1 |
 | Sanitizers        | 9 | 3 | 2 | 2 | 2 |
 | Session           | 4 | 1 | 3 | 0 | 0 |
 | Strong Updates    | 5 | 0 | 0 | 4 | 1 |
-| *Total*           | *188* | *38* | *117* | *15* | *18* |
+| *Total*           | *188* | *36* | *115* | *17* | *20* |
 
 Total accuracy: 70,213%
