@@ -6,10 +6,11 @@ import overflowdb.Graph
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
+import java.util.Comparator
 import scala.collection.mutable
 
 // Lazily populated test CPG which is created upon first access to the underlying graph.
-class TestCpg(frontend: LanguageFrontend, registerCleanup: (Path, TestCpg) => Unit) extends Cpg() {
+class TestCpg(frontend: LanguageFrontend, fixture: Code2CpgFixture) extends Cpg() {
   private var _graph            = Option.empty[Graph]
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
@@ -44,12 +45,22 @@ class TestCpg(frontend: LanguageFrontend, registerCleanup: (Path, TestCpg) => Un
     tmpDir
   }
 
+  private def deleteDir(dir: Path): Unit = {
+    Files
+      .walk(dir)
+      .sorted(Comparator.reverseOrder[Path]())
+      .forEach(Files.delete(_))
+  }
+
   override def graph: Graph = {
     if (_graph.isEmpty) {
       val codeDir = codeToFileSystem()
-      registerCleanup(codeDir, this)
-      _graph = Some(frontend.execute(codeDir.toFile).graph)
-      X2Cpg.applyDefaultOverlays(this)
+      try {
+        _graph = Some(frontend.execute(codeDir.toFile).graph)
+        fixture.applyPasses(this)
+      } finally {
+        deleteDir(codeDir)
+      }
     }
     _graph.get
   }

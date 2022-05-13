@@ -1,36 +1,33 @@
 package io.joern.x2cpg.testfixtures
 
+import io.joern.x2cpg.X2Cpg
+import io.shiftleft.codepropertygraph.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.{Files, Path}
-import java.util.Comparator
 import scala.collection.mutable
 
 class Code2CpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-  private val cleanupRegister = mutable.ArrayBuffer.empty[(Path, TestCpg)]
+  private val cpgs = mutable.ArrayBuffer.empty[TestCpg]
 
   def code(code: String): TestCpg = {
-    new TestCpg(frontend, this.registerTmpDir).moreCode(code)
+    val newCpg = new TestCpg(frontend, this).moreCode(code)
+    cpgs.append(newCpg)
+    newCpg
   }
 
   def code(code: String, fileName: String): TestCpg = {
-    new TestCpg(frontend, this.registerTmpDir).moreCode(code, fileName)
+    val newCpg = new TestCpg(frontend, this).moreCode(code, fileName)
+    cpgs.append(newCpg)
+    newCpg
   }
 
-  private def registerTmpDir(tmpDir: Path, cpg: TestCpg): Unit = {
-    cleanupRegister.append((tmpDir, cpg))
+  def applyPasses(cpg: Cpg): Unit = {
+    X2Cpg.applyDefaultOverlays(cpg)
   }
 
   override def afterAll(): Unit = {
-    cleanupRegister.foreach { case (tmpDir, cpg) =>
-      cpg.close()
-
-      Files
-        .walk(tmpDir)
-        .sorted(Comparator.reverseOrder[Path]())
-        .forEach(Files.delete(_))
-    }
+    cpgs.foreach(_.close())
   }
 }
