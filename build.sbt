@@ -21,6 +21,15 @@ lazy val php2cpg           = Projects.php2cpg
 lazy val javasrc2cpg       = Projects.javasrc2cpg
 lazy val jimple2cpg        = Projects.jimple2cpg
 
+lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
+  joerncli,
+  querydb,
+  console,
+  dataflowengineoss,
+  macros,
+  semanticcpg,
+)
+
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint"
@@ -65,3 +74,8 @@ ThisBuild / developers := List(
 )
 
 publish / skip := true // don't publish the root project
+
+// Avoids running root tasks on the benchmarks project
+lazy val root = project
+  .in(file("."))
+  .aggregate(aggregatedProjects: _*)
