@@ -132,8 +132,8 @@ object GradleDependencies {
             val gradleAndroidPropertyPrefix = "android."
             !out.toString.split('\n').filter(_.startsWith(gradleAndroidPropertyPrefix)).isEmpty
           } catch {
-            case _: Throwable =>
-              logger.warn("Caught exception while executing Gradle task named `properties`.")
+            case t: Throwable =>
+              logger.warn("Caught exception while executing Gradle task named `properties`.", t)
               false
           }
         val info = GradleProjectInfo(
@@ -145,8 +145,7 @@ object GradleDependencies {
         Some(info)
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while trying fetch gradle project information: `$t`.")
-          logger.debug("FULL_EXCEPTION: \n", t)
+          logger.warn(s"Caught exception while trying fetch gradle project information: `$t`.", t)
           None
       }
     if (gradleProjectInfoOption.isEmpty) {
@@ -202,8 +201,7 @@ object GradleDependencies {
           .run()
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'")
-          logger.debug(s"FULL_EXCEPTION: \n", t)
+          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'", t)
       } finally {
         logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
         logger.debug(s"Gradle task execution stderr: \n$stderrStream")
