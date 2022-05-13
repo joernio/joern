@@ -37,7 +37,7 @@ class SuperTests extends AnyFreeSpec with Matchers {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.methodFullName shouldBe "mypkg.BClass.myfun:void()"
       c.signature shouldBe "void()"
-      c.lineNumber shouldBe Some(11)
+      c.lineNumber shouldBe Some(12)
       c.columnNumber shouldBe Some(8)
     }
   }

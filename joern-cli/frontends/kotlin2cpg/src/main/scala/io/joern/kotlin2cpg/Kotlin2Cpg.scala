@@ -16,7 +16,12 @@ import io.joern.kotlin2cpg.types.{
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.utils.dependency.{DependencyResolver, GradleDependencies}
+import io.joern.x2cpg.utils.dependency.{
+  DependencyResolver,
+  DependencyResolverParams,
+  GradleConfigKeys,
+  GradleDependencies
+}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
@@ -24,6 +29,7 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
 import java.nio.file.{Files, Paths}
+import scala.collection.mutable
 import scala.util.Try
 
 object Kotlin2Cpg {
@@ -51,9 +57,15 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
           System.exit(1)
         }
-        val copiedRuntimeLibsJarPaths =
+        val dependenciesPaths =
           if (config.downloadDependencies) {
-            val paths = DependencyResolver.getDependencies(Paths.get(sourceDir))
+            val gradleParams = Map(
+              GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+              GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+            ).collect { case (key, Some(value)) => (key, value) }
+
+            val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+            val paths          = DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams)
             logger.info(s"Using ${paths.size} dependency jars.")
             paths
           } else {
@@ -101,7 +113,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val defaultContentRootJars =
           androidJars ++ stdlibJars ++
             jarPathsFromClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
-            copiedRuntimeLibsJarPaths.map { path =>
+            dependenciesPaths.map { path =>
               DefaultContentRootJarPath(path, false)
             }
         val messageCollector = new ErrorLoggingMessageCollector

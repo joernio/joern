@@ -91,7 +91,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "complex `if` statement contains all required properties" in {
       val List(i) = cpg.controlStructure.where(_.condition.code("x > 1")).l
       i.controlStructureType shouldBe ControlStructureTypes.IF
-      i.lineNumber shouldBe Some(5)
+      i.lineNumber shouldBe Some(6)
 
       val List(ic) = cpg.controlStructure.where(_.condition.code("x > 1")).condition.l
       ic.code shouldBe "x > 1"
@@ -154,7 +154,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.controlStructure.condition.isCall.l
       c.code shouldBe "aList.contains(msg)"
       c.methodFullName shouldBe "kotlin.collections.List.contains:boolean(java.lang.Object)"
-      c.lineNumber shouldBe Some(6)
+      c.lineNumber shouldBe Some(7)
       c.columnNumber shouldBe Some(5)
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       c.signature shouldBe "boolean(java.lang.Object)"
@@ -179,7 +179,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
       def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
       val List(cs)  = matchTryQ.l
-      cs.lineNumber shouldBe Some(4)
+      cs.lineNumber shouldBe Some(5)
       cs.columnNumber shouldBe Some(3)
 
       val List(c1, c2, c3) = matchTryQ.astChildren.l
@@ -205,7 +205,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
       def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
       val List(cs)  = matchTryQ.l
-      cs.lineNumber shouldBe Some(4)
+      cs.lineNumber shouldBe Some(5)
       cs.columnNumber shouldBe Some(3)
 
       val List(c1, c2) = matchTryQ.astChildren.l

@@ -21,7 +21,7 @@ class MethodReturnTests extends AnyFreeSpec with Matchers {
       x.code shouldBe "RET"
       x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
       x.order shouldBe 5
-      x.lineNumber shouldBe Some(1)
+      x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(4)
     }
 

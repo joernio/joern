@@ -19,7 +19,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "bar"
       x.code shouldBe "bar"
       x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(2)
+      x.lineNumber shouldBe Some(3)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
     }
@@ -65,7 +65,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "bar"
       x.code shouldBe "bar"
       x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(2)
+      x.lineNumber shouldBe Some(3)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
     }
@@ -90,7 +90,7 @@ class MemberTests extends AnyFreeSpec with Matchers {
       x.name shouldBe "bar"
       x.code shouldBe "bar"
       x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(2)
+      x.lineNumber shouldBe Some(3)
       x.columnNumber shouldBe Some(6)
       x.order shouldBe 2
     }

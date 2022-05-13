@@ -21,7 +21,7 @@ class ParenthesizedExpressionTests extends AnyFreeSpec with Matchers {
 
     "should contain a CALL node for the expression inside it" in {
       val List(c) = cpg.call.methodFullName(Operators.addition).l
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(19)
       c.code shouldBe "\"a\" + \"b\""
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -41,7 +41,7 @@ class ParenthesizedExpressionTests extends AnyFreeSpec with Matchers {
 
     "should contain a call node for the expression inside it" in {
       val List(c) = cpg.call.methodFullName(Operators.addition).l
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(19)
       c.code shouldBe "\"a\" + \"b\""
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH

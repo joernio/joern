@@ -52,7 +52,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "+x"
       c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
 
       c.argument.size shouldBe 1
     }
@@ -62,7 +62,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "-x"
       c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
 
       c.argument.size shouldBe 1
     }
@@ -72,7 +72,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "!y"
       c.typeFullName shouldBe "boolean"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(6)
+      c.lineNumber shouldBe Some(7)
 
       c.argument.size shouldBe 1
     }
@@ -82,7 +82,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "++x"
       c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(7)
+      c.lineNumber shouldBe Some(8)
 
       c.argument.size shouldBe 1
     }
@@ -92,7 +92,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "--x"
       c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(8)
+      c.lineNumber shouldBe Some(9)
 
       c.argument.size shouldBe 1
     }
@@ -102,7 +102,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "x++"
       c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(9)
+      c.lineNumber shouldBe Some(10)
 
       c.argument.size shouldBe 1
     }
@@ -112,7 +112,7 @@ class UnaryOpTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "x--"
       c.typeFullName shouldBe "int"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(10)
+      c.lineNumber shouldBe Some(11)
 
       c.argument.size shouldBe 1
     }

@@ -30,7 +30,7 @@ class MethodAtPackageLevelTests extends AnyFreeSpec with Matchers {
       x.code shouldBe "double"
       x.signature shouldBe "int(int)"
       x.isExternal shouldBe false
-      x.lineNumber shouldBe Some(1)
+      x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(4)
       x.filename.endsWith(".kt") shouldBe true
 
@@ -40,7 +40,7 @@ class MethodAtPackageLevelTests extends AnyFreeSpec with Matchers {
       y.code shouldBe "main"
       y.signature shouldBe "void(kotlin.Array)"
       y.isExternal shouldBe false
-      y.lineNumber shouldBe Some(5)
+      y.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(4)
       y.filename.endsWith(".kt") shouldBe true
     }

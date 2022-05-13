@@ -28,10 +28,10 @@ class IdentifierTests extends AnyFreeSpec with Matchers {
     }
 
     "IDENTIFIER nodes have the correct LINE_NUMBER property set" in {
-      cpg.identifier("x").lineNumber.l.head shouldBe 2
-      cpg.identifier("y").lineNumber.l.head shouldBe 2
-      cpg.identifier("argc").lineNumber.l.head shouldBe 6
-      cpg.identifier("args").lineNumber.l.head shouldBe 6
+      cpg.identifier("x").lineNumber.l.head shouldBe 3
+      cpg.identifier("y").lineNumber.l.head shouldBe 3
+      cpg.identifier("argc").lineNumber.l.head shouldBe 7
+      cpg.identifier("args").lineNumber.l.head shouldBe 7
     }
 
     "IDENTIFIER nodes have the correct COLUMN_NUMBER property set" in {

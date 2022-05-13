@@ -3,6 +3,7 @@ package io.joern.c2cpg.querying
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.toNodeTraversal
 
@@ -1251,29 +1252,6 @@ class DataFlowTest38 extends DataFlowCodeToCpgSuite {
   }
 }
 
-class DataFlowTest39 extends DataFlowCodeToCpgSuite {
-
-  override val code: String =
-    """
-      |int foo(int y, int x) {
-      |  free(y);
-      |  free(x);
-      |}
-      |
-      |""".stripMargin
-
-  "find flows of last statements to METHOD_RETURN" in {
-    val source = cpg.call("free").argument(1)
-    val sink   = cpg.method("foo").methodReturn
-    val flows  = sink.reachableByFlows(source)
-
-    flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-      List(("free(x)", Some(4)), ("int", Some(2))),
-      List(("free(y)", Some(3)), ("int", Some(2)))
-    )
-  }
-}
-
 class DataFlowTest40 extends DataFlowCodeToCpgSuite {
 
   override val code: String =
@@ -1394,7 +1372,7 @@ class DataFlowTest45 extends DataFlowCodeToCpgSuite {
       |""".stripMargin
 
   "should provide correct flow for source in sibling callee" in {
-    cpg.call("sink").reachableByFlows(cpg.call("source")).size shouldBe 2
+    cpg.call("sink").argument(1).reachableByFlows(cpg.call("source")).size shouldBe 1
   }
 
 }
@@ -1436,26 +1414,7 @@ class DataFlowTest47 extends DataFlowCodeToCpgSuite {
     val source = cpg.call("source")
     val sink   = cpg.call("sink")
     val flows  = sink.reachableByFlows(source)
-
     flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("source()", Some(6)), ("sink(source())", Some(6))))
-  }
-}
-
-class DataFlowTest48 extends DataFlowCodeToCpgSuite {
-
-  override val code: String =
-    """
-      | void foo(int x) {
-      |   woo(x);
-      | }
-      |""".stripMargin
-
-  "should find flow of call return value to exit node" in {
-    val source = cpg.call("woo")
-    val sink   = cpg.method("foo").methodReturn
-    val flows  = sink.reachableByFlows(source)
-
-    flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("woo(x)", Some(3)), ("void", Some(2))))
   }
 }
 
@@ -1761,6 +1720,215 @@ class DataFlowTest59 extends DataFlowCodeToCpgSuite {
   "should find flow from local to 'doFoo'" in {
     def source = cpg.local.name("foo").referencingIdentifiers
     def sink   = cpg.call.code("doFoo.*").argument
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
+}
+
+class DataFlowTests60 extends DataFlowCodeToCpgSuite {
+
+  override val code: String = """
+      |
+      |void outer(char* ptr){
+      | taint1(ptr);
+      | inner(ptr);
+      | return;
+      | }
+      | void inner(char * ptr)
+      | {
+      | // taint2(ptr);
+      | ptr = malloc(0x80);
+      | sink(ptr);
+      | }""".stripMargin
+
+  "should not return flow" in {
+    def source = cpg.call("taint1").argument
+    def sink   = cpg.call("sink").argument
+    sink.reachableByFlows(source).size shouldBe 0
+  }
+
+}
+
+class DataFlowTests61 extends DataFlowCodeToCpgSuite {
+  override val code: String =
+    """
+      |void reassignThenFree(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |free(ptr);
+      |return;
+      |}
+      |
+      |void reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return;
+      |}
+      |
+      |// This flow from `free` to `free` should be returned
+      |int case0()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |free(data);
+      |return 0;
+      |}
+      |
+      |""".stripMargin
+
+  "should find flow from `free` to `free`" in {
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
+    val List(flow: Path) = sink
+      .reachableByFlows(source)
+      .filter(path => path.elements.size > 1)
+      .l
+    flow.elements match {
+      case List(i1: Identifier, i2: Identifier) =>
+        i1.name shouldBe "data"
+        i1.lineNumber shouldBe Some(19)
+        i2.name shouldBe "data"
+        i2.lineNumber shouldBe Some(20)
+    }
+  }
+}
+
+class DataFlowTests62 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |void reassignThenFree(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |free(ptr);
+      |return;
+      |}
+      |
+      |void reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return;
+      |}
+      |
+      |// This flow should NOT be returned
+      |int case1()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |data = malloc(0x80);
+      |free(data);
+      |return 0;
+      |}
+      |
+      |""".stripMargin
+
+  "should not report flow" in {
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+  }
+}
+
+class DataFlowTests63 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |void reassignThenFree(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |free(ptr);
+      |return;
+      |}
+      |
+      |// This flow should NOT be returned
+      |int case2()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |reassignThenFree(data);
+      |return 0;
+      |}
+      |
+      |""".stripMargin
+
+  "should not report flow" in {
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+  }
+}
+
+// This case is a double-free that we return, the reason being that modifying `ptr`
+// does not modify `data` as arguments  are passed by value.
+
+class DataFlowTests64 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |void reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return;
+      |}
+      |
+      |// This flow should NOT be returned
+      |int case3()
+      |{
+      |char * data = malloc(0x100);
+      |free(data);
+      |reassign(data);
+      |free(data);
+      |return 0;
+      |}
+      |""".stripMargin
+
+  "should report flow" in {
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 1
+  }
+
+}
+
+class DataFlowTests65 extends DataFlowCodeToCpgSuite {
+
+  override val code: String =
+    """
+      |char * reassign(char * ptr)
+      |{
+      |ptr = malloc(0x80);
+      |return ptr;
+      |}
+      |
+      |int case3()
+      |{
+      |char * data = malloc(0x80);
+      |free(data);
+      |data = reassign(data);
+      |free(data):
+      |return 0;
+      |}
+      |""".stripMargin
+
+  "should not report flow from free to free" in {
+    def sink   = cpg.call("free").argument(1)
+    def source = cpg.call("free").argument(1)
+    sink.reachableByFlows(source).count(path => path.elements.size > 1) shouldBe 0
+  }
+
+}
+
+class DataFlowTests66 extends DataFlowCodeToCpgSuite {
+
+  override val code: String = """
+  int foo(int x) {
+    x = 10;
+  }
+  """
+
+  "should report flow from method assignment to method parameter out" in {
+    def sink   = cpg.method("foo").parameter.asOutput
+    def source = cpg.method("foo").ast.isIdentifier.name("x")
     sink.reachableByFlows(source).size shouldBe 1
   }
 

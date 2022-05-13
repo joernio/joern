@@ -29,7 +29,7 @@ class CallsToFieldAccessTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "this.x"
       c.name shouldBe Operators.fieldAccess
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(16)
 
       val List(firstArg: Identifier, secondArg: FieldIdentifier) =

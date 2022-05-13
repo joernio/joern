@@ -53,7 +53,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     "should contain a call node for `assignment` op with correct fields" in {
       val List(p) = cpg.call.methodFullName(Operators.assignment).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(2)
+      p.lineNumber shouldBe Some(3)
       p.code shouldBe "val x: Int = 5"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
@@ -61,7 +61,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     "should contain a call node for `assignmentPlus` op with correct fields" in {
       val List(p) = cpg.call.methodFullName(Operators.assignmentPlus).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(3)
+      p.lineNumber shouldBe Some(4)
       p.code shouldBe "x += 1"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
@@ -69,7 +69,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     "should contain a call node for `assignmentMinus` op with correct fields" in {
       val List(p) = cpg.call.methodFullName(Operators.assignmentMinus).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(4)
+      p.lineNumber shouldBe Some(5)
       p.code shouldBe "x -= 1"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
@@ -77,7 +77,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     "should contain a call node for `assignmentMultiplication` op with correct fields" in {
       val List(p) = cpg.call.methodFullName(Operators.assignmentMultiplication).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(5)
+      p.lineNumber shouldBe Some(6)
       p.code shouldBe "x *= 1"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
@@ -85,7 +85,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     "should contain a call node for `assignmentDivision` op with correct fields" in {
       val List(p) = cpg.call.methodFullName(Operators.assignmentDivision).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(6)
+      p.lineNumber shouldBe Some(7)
       p.code shouldBe "x /= 1"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
@@ -93,7 +93,7 @@ class AssignmentTests extends AnyFreeSpec with Matchers {
     "should contain a call node for `assignmentModulo` op with correct fields" in {
       val List(p) = cpg.call.methodFullName(Operators.assignmentModulo).l
       p.argument.size shouldBe 2
-      p.lineNumber shouldBe Some(7)
+      p.lineNumber shouldBe Some(8)
       p.code shouldBe "x %= 1"
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
