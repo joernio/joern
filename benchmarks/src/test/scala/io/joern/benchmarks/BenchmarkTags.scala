@@ -60,7 +60,7 @@ object BenchmarkTags {
     val TPs        = confusionMatrix.map(_._2(TP)).sum
     val totalTests = confusionMatrix.map(_._2.sum).sum
     println(s"| *Total* ${(for (_ <- 0 until (catWhiteSpaceCount - "*Total*".length))
-        yield ' ').mkString} | *$totalTests* | *$FPs* | *$TPs* | *$TNs* | *$FNs* |")
+        yield ' ').mkString} | *$totalTests* | *$FPs* | *$TPs* | *$TNs* | *$FNs* |\n")
     println(s"Total accuracy: ${String.format("%.3f", (TNs + TPs + 0.0) / totalTests * 100.0)}%")
   }
 

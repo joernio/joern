@@ -35,6 +35,7 @@ or JVM bytecode Jimple frontend:
 | Session           | 4 | 1 | 3 | 0 | 0 |
 | Strong Updates    | 5 | 0 | 0 | 4 | 1 |
 | *Total*           | *188* | *39* | *109* | *14* | *26* |
+
 Total accuracy: 65,426%
 
 #### JVM Bytecode Results
@@ -54,4 +55,5 @@ Total accuracy: 65,426%
 | Session           | 4 | 1 | 3 | 0 | 0 |
 | Strong Updates    | 5 | 0 | 0 | 4 | 1 |
 | *Total*           | *188* | *38* | *117* | *15* | *18* |
+
 Total accuracy: 70,213%
