@@ -36,14 +36,14 @@ class BenchmarkFixture(
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
   private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
-  private lazy val targetDir = moveToTempDir(targetFiles)
-  lazy val cpg: Cpg          = BenchmarkCpgContext.buildCpg(targetDir)
+  private lazy val targetDir   = moveToTempDir(targetFiles)
+  lazy val cpg: Cpg            = BenchmarkCpgContext.buildCpg(targetDir)
 
   def constructTargetFilePath: String =
     s"benchmarks/src/test/resources/$pkg/${category.toLowerCase}"
 
   private def getListOfFiles(dir: String): List[java.io.File] = {
-    val d     = new java.io.File(dir)
+    val d = new java.io.File(dir)
     // Regex is useful for class files containing subclasses
     val regex = s".*$category$benchmarkNo.*$fileExt"
     if (d.exists && d.isDirectory) {
