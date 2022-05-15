@@ -155,7 +155,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ModifierDefinition => {
         val methodNode = NewMethod()
           .name(x.name)
-        val parameters = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        val parameters = withOrder(x.parameters.collect { case x: VariableDeclaration => x }.map(x=>x)) {
+          case(x,order) => astForParameter(x, order)
+        }
         // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
         val methodReturn = NewMethodReturn().typeFullName("")
         Ast(methodNode)
@@ -164,7 +166,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(Ast(methodReturn))
       }
       case x: FunctionDefinition => {
-        val parameters   = x.parameters.collect { case x: VariableDeclaration => x }.map(astForParameter)
+        val parameters   = withOrder(x.parameters.collect { case x: VariableDeclaration => x }.map(x=>x)) {
+          case (x,order) => astForParameter(x, order)
+        }
         var name         = ""
         var methodReturn = Ast()
         var funcType     = ""
@@ -186,7 +190,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         /** passing returnParameters if found
           */
         if (x.returnParameters != null) {
-          methodReturn = astForMethodReturn(x.returnParameters);
+          methodReturn = astForMethodReturn(x.returnParameters, order);
           x.returnParameters.collect {
             case y: VariableDeclaration => {
               y.typeName match {
@@ -269,7 +273,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   // TODO: I assume the only types coming into parameter are var decls but it's worth making sure in tests
-  private def astForParameter(varDecl: VariableDeclaration): Ast = {
+  private def astForParameter(varDecl: VariableDeclaration, order: Int): Ast = {
     val NewMethodParameter = NewMethodParameterIn();
     var typefullName       = ""
     var code               = ""
@@ -309,7 +313,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .name(varDecl.name)
       .code(typefullName + code + visibility + storage + " " + varDecl.name)
       .typeFullName(typefullName)
-      .order(1)
+      .order(order)
       .evaluationStrategy(getEvaluationStrategy(varDecl.typeName.getType))
 
     Ast(NewMethodParameter)
@@ -486,7 +490,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
+  private def astForMethodReturn(value: List[BaseASTNode], order: Int): Ast = {
     val returnMethod = NewMethodReturn()
     var code         = ""
     var mapkey       = ""
