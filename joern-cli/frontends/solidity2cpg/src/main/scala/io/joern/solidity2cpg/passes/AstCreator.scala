@@ -131,10 +131,17 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     val memberAsts = withOrder(contractDef.subNodes.collect {
       case x: StateVariableDeclaration => x
-//      case x: StructDefinition => astForStruct(x, order)
+      case x: StructDefinition => x
     }) {
-     case(x, order) => astForField(x, order)
+     case(x:StateVariableDeclaration, order) => astForField(x, order)
+     case (x: StructDefinition, order)=> astForStruct(x,contractDef.name, order)
     }
+//    val structAsts = withOrder(contractDef.subNodes.collect {
+//      case x: StructDefinition => x
+//    }) {
+//
+//    }
+
 //    val memberAsts = contractDef.subNodes
 //      .collect { case(x, order)=>
 //        case x: StateVariableDeclaration => {
@@ -162,7 +169,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         val methodReturn = NewMethodReturn().typeFullName("")
         Ast(methodNode)
           .withChildren(parameters)
-          .withChild(astForBody(x.body.asInstanceOf[Block]))
+          .withChild(astForBody(x.body.asInstanceOf[Block], order))
           .withChild(Ast(methodReturn))
       }
       case x: FunctionDefinition => {
@@ -261,7 +268,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         Ast(methodNode)
           .withChild(thisNode)
           .withChildren(parameters)
-          .withChild(astForBody(x.body.asInstanceOf[Block]))
+          .withChild(astForBody(x.body.asInstanceOf[Block], order))
           .withChild(methodReturn)
           .withChild(modifiers)
       }
@@ -319,24 +326,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(NewMethodParameter)
   }
 
-  private def astForBody(body: Block): Ast = {
+  private def astForBody(body: Block, order : Int): Ast = {
     val blockNode = NewBlock()
     Ast(blockNode)
       .withChildren(body.statements.map(astForLocalStatement))
-      .withChildren(body.statements.map(astForStatement))
+      .withChildren(withOrder(body.statements.map(x=>x)){
+        case (x, order) => astForStatement(x, order = order + 1)
+      })
 
   }
 
-  private def astForStatement(statement: BaseASTNode): Ast = {
+  private def astForStatement(statement: BaseASTNode, order: Int): Ast = {
     // TODO : Finish all of these statements
     statement match {
-      case x: ExpressionStatement          => astForExpression(x.expression)
-      case x: VariableDeclaration          => astForVarDecl(x)
+      case x: ExpressionStatement          => astForExpression(x.expression,order)
+      case x: VariableDeclaration          => astForVarDecl(x,order)
       case x: EmitStatement                => Ast()
       case x: ForStatement                 => Ast()
-      case x: IfStatement                  => astForIfStatement(x)
-      case x: ReturnStatement              => astForReturn(x)
-      case x: VariableDeclarationStatement => astForVarDeclStat(x)
+      case x: IfStatement                  => astForIfStatement(x,order)
+      case x: ReturnStatement              => astForReturn(x, order)
+      case x: VariableDeclarationStatement => astForVarDeclStat(x,order)
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
@@ -376,7 +385,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
   }
 
-  private def astForVarDecl(varDecl: VariableDeclaration): Ast = {
+  private def astForVarDecl(varDecl: VariableDeclaration, order : Int): Ast = {
     val newID        = NewIdentifier();
     var typefullName = ""
     var code         = ""
@@ -496,6 +505,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var mapkey       = ""
     var visibility   = ""
     var name         = ""
+    var counter = 0;
     value.collect {
       case x: VariableDeclaration => {
 
@@ -511,22 +521,25 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           case x: String => visibility = " " + x
           case _         => visibility = ""
         }
+        counter +=  2
       }
     }
     code = code + visibility + name
     returnMethod
       .code(code)
       .typeFullName(name)
-      .order(1)
+      .order(order+ counter)
     Ast(returnMethod)
 
   }
 
-  private def astForReturn(returnStatement: ReturnStatement): Ast = {
+  private def astForReturn(returnStatement: ReturnStatement, order: Int): Ast = {
 
-    val exprAst = astForExpression(returnStatement.expression)
+    val exprAst = astForExpression(returnStatement.expression, order + 1)
     val returnNode = NewReturn()
       .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
+      .order(order)
+      .argumentIndex(order)
     Ast(returnNode)
       .withChild(exprAst)
       .withArgEdges(returnNode, exprAst.root.toList)
@@ -556,13 +569,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     (Ast(modifierNode))
   }
 
-  private def astForExpression(expr: BaseASTNode): Ast = {
+  private def astForExpression(expr: BaseASTNode, order : Int): Ast = {
 
     expr match {
       case x: MemberAccess       => astForMemberAccess(x)
       case x: Identifier         => astForIdentifier(x)
-      case x: FunctionCall       => astForFunctionCall(x)
-      case x: BinaryOperation    => astForBinaryOperation(x)
+      case x: FunctionCall       => astForFunctionCall(x, order)
+      case x: BinaryOperation    => astForBinaryOperation(x, order)
       case x: UnaryOperation     => astForUnaryOperation(x)
       case x: NumberLiteral      => astForNumberLiteral(x)
       case x: BooleanLiteral     => astForBooleanLiteral(x)
@@ -600,7 +613,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast()
   }
 
-  private def astForBinaryOperation(operation: BinaryOperation): Ast = {
+  private def astForBinaryOperation(operation: BinaryOperation, order: Int): Ast = {
     var lft = Ast()
     var rht = Ast()
     val operatorName = operation.operator match {
@@ -625,9 +638,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //      case _: EqExpr   => Operators.equals
       case _ => ""
     }
-    lft = astForExpression(operation.left)
+    lft = astForExpression(operation.left, 1)
 
-    rht = astForExpression(operation.right)
+    rht = astForExpression(operation.right, 2)
 
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
@@ -637,18 +650,19 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .methodFullName(operatorName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(lfteq + " " + operation.operator + " " + rhteq)
-//      .argumentIndex(order)
-//      .order(order)
+      .argumentIndex(order)
+      .order(order)
 
     Ast(callNode)
       .withChild(lft)
       .withChild(rht)
   }
-  private def astForIfStatement(operation: IfStatement): Ast = {
+  private def astForIfStatement(operation: IfStatement, order : Int): Ast = {
     val opNode = operation.condition match {
-      case x: BinaryOperation => astForBinaryOperation(x)
-      case x: FunctionCall    => astForFunctionCall(x)
+      case x: BinaryOperation => astForBinaryOperation(x, 1)
+      case x: FunctionCall    => astForFunctionCall(x, 1)
     }
+
     var tb     = Ast()
     var fb     = Ast()
     var foundt = false
@@ -656,7 +670,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (operation.trueBody != null) {
       operation.trueBody match {
         case x: Block => {
-          tb = astForBody(x)
+          tb = astForBody(x,2)
           foundt = true
         }
       }
@@ -664,60 +678,59 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (operation.falseBody != null) {
       operation.falseBody match {
         case x: Block => {
-          fb = astForBody(x)
+          fb = astForBody(x, 3)
           foundf = true
         }
       }
     }
     val code = opNode.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    var ast = Ast()
+    val ifNode =
+      NewControlStructure()
+        .controlStructureType(ControlStructureTypes.IF)
+        .code("if (" + code + ")")
+        .order(order)
     if (foundt && foundf) {
-      Ast(
-        NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code("if (" + code + ")")
-      )
+      ast = Ast(ifNode)
         .withChild(opNode)
         .withChild(fb)
         .withChild(tb)
+
     } else if (foundt && !foundf) {
-      Ast(
-        NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code("if (" + code + ")")
-      )
+      ast =  Ast(ifNode)
         .withChild(opNode)
         .withChild(tb)
     } else if (!foundt && foundf) {
 
-      Ast(
-        NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code("if (" + code + ")")
-      )
+      ast =  Ast(ifNode)
         .withChild(opNode)
         .withChild(fb)
-    } else {
-      Ast(
-        NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code("if (" + code + ")")
-      )
-    }
 
+    } else {
+      ast =  Ast(ifNode)
+    }
+    val ifAst = opNode.root match {
+      case Some(r) =>
+        ast.withConditionEdge(ifNode,r)
+      case None => ast
+    }
+    ifAst
   }
   private def astForNewExpression(x: NewExpression): Ast = {
     Ast()
   }
 
-  private def astForFunctionCall(call: FunctionCall): Ast = {
+  private def astForFunctionCall(call: FunctionCall, order : Int): Ast = {
     var name           = ""
     var code           = ""
     var args           = ""
     var argsArr        = {}
     var methodFullName = ""
     var sig            = ""
-    val expr           = astForExpression(call.expression)
-    val arguments      = call.arguments.map(astForExpression)
+    val expr           = astForExpression(call.expression,order + 1)
+    val arguments      = withOrder(call.arguments.map(x=>x)){
+      case (x, order) => astForExpression(x, order)
+    }
     name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
     args = arguments.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
     argsArr = args.split(",")
@@ -771,22 +784,24 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast()
   }
 
-  private def astsForDefinition(x: BaseASTNode): Ast = {
+  private def astsForDefinition(x: BaseASTNode, order : Int): Ast = {
     x match {
       case x: NumberLiteral   => astForNumberLiteral(x)
-      case x: BinaryOperation => astForBinaryOperation(x)
-      case x: FunctionCall    => astForFunctionCall(x)
+      case x: BinaryOperation => astForBinaryOperation(x, order)
+      case x: FunctionCall    => astForFunctionCall(x, order)
       case x: TupleExpression => astForTupleExpression(x)
     }
   }
 
-  private def astForVarDeclStat(statement: VariableDeclarationStatement): Ast = {
+  private def astForVarDeclStat(statement: VariableDeclarationStatement, order : Int): Ast = {
 
-    val vars    = statement.variables.map(x => astForStatement(x))
+    val vars    = withOrder(statement.variables.map(x => x)){
+      case (x, order) => astForStatement(x, order+1)
+    }
     val call    = NewCall();
     var initial = Ast()
     if (statement.initialValue != null) {
-      initial = astsForDefinition(statement.initialValue)
+      initial = astsForDefinition(statement.initialValue, order)
       val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
       val rhsCode = initial.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString
       call
@@ -815,7 +830,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .fullName(typeFullName)
 
     val members = structDefinition.members.collect { case x: VariableDeclaration =>
-      astForVarDecl(x)
+      astForVarDecl(x, order)
     }
     Ast(memberNode).withChildren(members)
   }
