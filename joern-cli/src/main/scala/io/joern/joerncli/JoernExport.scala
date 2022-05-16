@@ -7,6 +7,7 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.JoernExport.Representations
 import io.joern.joerncli.console.JoernWorkspaceLoader
 import io.joern.x2cpg.layers.{AstDumpOptions, CdgDumpOptions, CfgDumpOptions, DumpAst, DumpCdg, DumpCfg}
+import io.shiftleft.codepropertygraph.generated.{edges, nodes}
 import io.shiftleft.semanticcpg.layers._
 
 case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out", repr: Representations.Value = Representations.cpg14)
@@ -14,7 +15,7 @@ case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out
 object JoernExport extends App {
 
   object Representations extends Enumeration {
-    val ast, cfg, ddg, cdg, pdg, cpg14 = Value
+    val ast, cfg, ddg, cdg, pdg, cpg14, neo4jcsv = Value
   }
 
   private def parseConfig: Option[ExporterConfig] =
@@ -63,6 +64,13 @@ object JoernExport extends App {
             new DumpPdg(PdgDumpOptions(config.outDir)).create(context)
           case Representations.cpg14 =>
             new DumpCpg14(Cpg14DumpOptions(config.outDir)).create(context)
+          case Representations.neo4jcsv =>
+            val exporterMain = overflowdb.formats.ExporterMain(nodes.Factories.all, edges.Factories.all)
+            exporterMain(Array(
+              s"--format=neo4jcsv",
+              s"--out=${config.outDir}",
+              config.cpgFileName
+            ))
           case repr =>
             System.err.println(s"unknown representation: $repr. Baling out.")
         }
