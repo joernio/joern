@@ -1,16 +1,17 @@
 package io.joern.x2cpg.utils.dependency
 
 import better.files._
-import org.gradle.tooling.{GradleConnector}
+import org.gradle.tooling.{GradleConnector, ProjectConnection}
 import org.gradle.tooling.model.GradleProject
 import org.gradle.tooling.model.build.BuildEnvironment
 import org.slf4j.LoggerFactory
 
 import java.io.ByteArrayOutputStream
 import java.nio.file.{Files, Path}
+import java.io.{File => JFile}
 import java.util.stream.Collectors
 import scala.jdk.CollectionConverters._
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try, Using}
 
 case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndroidSubproject: Boolean = false) {
   def gradleVersionMajorMinor(): (Int, Int) = {
@@ -26,7 +27,7 @@ case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndro
   }
 }
 
-case class GradleInitScript(contents: String, taskName: String)
+case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
 
 object GradleDependencies {
   private val logger           = LoggerFactory.getLogger(getClass)
@@ -91,7 +92,7 @@ object GradleDependencies {
     forAndroid: Boolean,
     gradleProjectName: String,
     gradleConfigurationName: String
-  ): GradleInitScript = {
+  ): GradleDepsInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
     val content =
       if (forAndroid) {
@@ -99,7 +100,104 @@ object GradleDependencies {
       } else {
         gradle5OrLaterInitScript(taskName, destinationDir.toString)
       }
-    GradleInitScript(content, taskName)
+    GradleDepsInitScript(content, taskName, destinationDir)
+  }
+
+  private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
+    GradleConnector.newConnector().forProjectDirectory(projectDir).connect()
+  }
+
+  private def getGradleProjectInfo(projectDir: Path, projectName: String): Option[GradleProjectInfo] = {
+    Try(makeConnection(projectDir.toFile)) match {
+      case Success(gradleConnection) =>
+        Using.resource(gradleConnection) { connection =>
+          val buildEnv                 = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
+          val project                  = connection.getModel[GradleProject](classOf[GradleProject])
+          val gradlePropertiesTaskName = "properties"
+          val hasAndroidPrefixGradleProperty =
+            runGradleTask(connection, gradlePropertiesTaskName) match {
+              case Some(out) =>
+                val gradleAndroidPropertyPrefix = "android."
+                out.split('\n').filter(_.startsWith(gradleAndroidPropertyPrefix)).nonEmpty
+              case None => false
+            }
+          val info = GradleProjectInfo(
+            buildEnv.getGradle.getGradleVersion,
+            project.getTasks.asScala.map(_.getName).toSeq,
+            hasAndroidPrefixGradleProperty
+          )
+          if (hasAndroidPrefixGradleProperty) {
+            val validProjectNames = List(project.getName) ++ project.getChildren.getAll.asScala.map(_.getName)
+            logger.debug(s"Found Gradle projects: ${validProjectNames.mkString(",")}")
+            if (!validProjectNames.contains(projectName)) {
+              val validProjectNamesStr = validProjectNames.mkString(",")
+              logger.error(
+                s"The provided Gradle project name `$projectName` is is not part of the valid project names: `$validProjectNamesStr`"
+              )
+              None
+            } else {
+              Some(info)
+            }
+          } else {
+            Some(info)
+          }
+        }
+      case Failure(ex) =>
+        logger.error(s"Caught exception while trying fetch Gradle project information: `$ex`.", ex)
+        None
+    }
+  }
+
+  private def runGradleTask(connection: ProjectConnection, taskName: String): Option[String] = {
+    Using.resource(new ByteArrayOutputStream()) { out =>
+      Try(
+        connection
+          .newBuild()
+          .forTasks(taskName)
+          .setStandardOutput(out)
+          .run()
+      ) match {
+        case Success(_) =>
+          Some(out.toString)
+        case Failure(ex) =>
+          logger.warn(s"Caught exception while executing Gradle task named `$taskName`.", ex)
+          None
+      }
+    }
+  }
+
+  private def runGradleTask(
+    connection: ProjectConnection,
+    initScript: GradleDepsInitScript,
+    initScriptPath: String
+  ): Option[collection.Seq[String]] = {
+    Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
+      logger.info(s"Executing gradle task '${initScript.taskName}'...")
+      Try(
+        connection
+          .newBuild()
+          .forTasks(initScript.taskName)
+          .withArguments("--init-script", initScriptPath)
+          .setStandardOutput(stdoutStream)
+          .setStandardError(stderrStream)
+          .run()
+      ) match {
+        case Success(_) =>
+          val result =
+            Files
+              .list(initScript.destinationDir)
+              .collect(Collectors.toList[Path])
+              .asScala
+              .map(_.toAbsolutePath.toString)
+          logger.info(s"Resolved `${result.size}` dependency files.")
+          Some(result)
+        case Failure(ex) =>
+          logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
+          logger.debug(s"Gradle task execution stderr: \n$stderrStream")
+          logger.error(s"Caught exception while executing Gradle task: '${ex.getMessage}'", ex)
+          None
+      }
+    }
   }
 
   // fetch the gradle project information first, then invoke a newly-defined gradle task to copy the necessary jars into
@@ -108,108 +206,44 @@ object GradleDependencies {
     projectDir: Path,
     projectName: String,
     configurationName: String
-  ): collection.Seq[String] = {
-    val gradleProjectInfoOption =
-      try {
-        logger.info(s"Fetching Gradle project information for project at path `$projectDir`.")
-        val connection = GradleConnector
-          .newConnector()
-          .forProjectDirectory(projectDir.toFile)
-          .connect()
-        val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
-        val project  = connection.getModel[GradleProject](classOf[GradleProject])
+  ): Option[collection.Seq[String]] = {
+    logger.info(s"Fetching Gradle project information at path `$projectDir` with project name `$projectName`.")
+    getGradleProjectInfo(projectDir, projectName) match {
+      case Some(projectInfo) if projectInfo.gradleVersionMajorMinor()._1 < 5 =>
+        logger.error(s"Unsupported Gradle version `${projectInfo.gradleVersion}`")
+        None
+      case Some(projectInfo) =>
+        Try(File.newTemporaryDirectory(tempDirPrefix).deleteOnExit()) match {
+          case Success(destinationDir) =>
+            Try(File.newTemporaryFile(initScriptPrefix).deleteOnExit()) match {
+              case Success(initScriptFile) =>
+                val initScript =
+                  makeInitScript(destinationDir.path, projectInfo.hasAndroidSubproject, projectName, configurationName)
+                initScriptFile.write(initScript.contents)
 
-        val hasAndroidPrefixGradleProperty =
-          try {
-            val out                      = new ByteArrayOutputStream()
-            val gradlePropertiesTaskName = "properties"
-            connection
-              .newBuild()
-              .forTasks(gradlePropertiesTaskName)
-              .setStandardOutput(out)
-              .run()
-            out.close()
-            val gradleAndroidPropertyPrefix = "android."
-            !out.toString.split('\n').filter(_.startsWith(gradleAndroidPropertyPrefix)).isEmpty
-          } catch {
-            case t: Throwable =>
-              logger.warn("Caught exception while executing Gradle task named `properties`.", t)
-              false
-          }
-        val info = GradleProjectInfo(
-          buildEnv.getGradle.getGradleVersion,
-          project.getTasks.asScala.map(_.getName).toSeq,
-          hasAndroidPrefixGradleProperty
-        )
-        connection.close()
-        Some(info)
-      } catch {
-        case t: Throwable =>
-          logger.warn(s"Caught exception while trying fetch Gradle project information: `$t`.", t)
-          None
-      }
-    if (gradleProjectInfoOption.isEmpty) {
-      throw new Exception("Could not fetch Gradle project information.")
+                logger.info(
+                  s"Downloading dependencies for configuration `$configurationName` of project `$projectName` at `$projectDir` into `$destinationDir`..."
+                )
+                Try(makeConnection(projectDir.toFile)) match {
+                  case Success(connection) =>
+                    Using.resource(connection) { c =>
+                      runGradleTask(c, initScript, initScriptFile.pathAsString)
+                    }
+                  case Failure(ex) =>
+                    logger.warn(s"Caught exception while trying to establish a Gradle connection:", ex)
+                    None
+                }
+              case Failure(ex) =>
+                logger.error("Could not create temporary file for Gradle init script", ex)
+                None
+            }
+          case Failure(ex) =>
+            logger.error("Could not create temporary directory for saving dependency files", ex)
+            None
+        }
+      case None =>
+        logger.error("Could not fetch Gradle project information")
+        None
     }
-
-    val gradleProjectInfo       = gradleProjectInfoOption.get
-    val (gradleVersionMajor, _) = gradleProjectInfo.gradleVersionMajorMinor()
-    if (gradleVersionMajor < 5) {
-      logger.warn(s"Found unsupported Gradle version `${gradleProjectInfo.gradleVersion}`.")
-      throw new Exception("Unsupported Gradle version `" + gradleProjectInfo.gradleVersion + "`")
-    }
-
-    logger.info(s"Creating gradle init script...")
-    val destinationDir = Files.createTempDirectory(tempDirPrefix)
-    destinationDir.toFile.deleteOnExit()
-    val initScript =
-      makeInitScript(destinationDir, gradleProjectInfo.hasAndroidSubproject, projectName, configurationName)
-
-    val initScriptFile = File.newTemporaryFile(initScriptPrefix).deleteOnExit()
-    initScriptFile.write(initScript.contents)
-
-    logger.info(
-      s"Downloading dependencies for configuration `$configurationName` of project `$projectName` into '$projectDir'..."
-    )
-    val connectionOption =
-      try {
-        logger.info(s"Establishing gradle connection for project directory at '$projectDir'...")
-        Some(
-          GradleConnector
-            .newConnector()
-            .forProjectDirectory(projectDir.toFile)
-            .connect()
-        )
-      } catch {
-        case t: Throwable =>
-          logger.warn(s"Caught exception while trying to establish a Gradle connection: '$t'.")
-          None
-      }
-
-    if (connectionOption.isDefined) {
-      val connection   = connectionOption.get
-      val stdoutStream = new ByteArrayOutputStream
-      val stderrStream = new ByteArrayOutputStream
-      try {
-        logger.info(s"Executing gradle task '${initScript.taskName}'...")
-        connection
-          .newBuild()
-          .forTasks(initScript.taskName)
-          .withArguments("--init-script", initScriptFile.pathAsString)
-          .setStandardOutput(stdoutStream)
-          .setStandardError(stderrStream)
-          .run()
-      } catch {
-        case t: Throwable =>
-          logger.warn(s"Caught exception while executing Gradle task: '${t.getMessage}'", t)
-      } finally {
-        logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
-        logger.debug(s"Gradle task execution stderr: \n$stderrStream")
-        connection.close()
-      }
-    }
-
-    Files.list(destinationDir).collect(Collectors.toList[Path]).asScala.map(_.toAbsolutePath.toString)
   }
-
 }

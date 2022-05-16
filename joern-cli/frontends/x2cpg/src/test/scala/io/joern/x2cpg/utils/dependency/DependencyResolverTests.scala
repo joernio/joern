@@ -5,47 +5,40 @@ import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.{Files, Path, Paths, StandardCopyOption}
-import java.util.Comparator
+import java.nio.file.{Path, Paths}
+import better.files.File
 
 class DependencyResolverTests extends AnyWordSpec with Matchers {
   private class FixtureWithCopyDir(srcDir: Path, runningOnWindowsGitHubAction: Boolean = false) {
-    def test(testFunc: collection.Seq[String] => Unit): Unit = {
+    def test(
+      testFunc: Option[collection.Seq[String]] => Unit,
+      params: DependencyResolverParams = new DependencyResolverParams
+    ): Unit = {
       if (runningOnWindowsGitHubAction) {
         info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
       } else {
-        val tmpDir = Files.createTempDirectory("DependencyResolverTests")
-        try {
-          Files.copy(srcDir, tmpDir, StandardCopyOption.REPLACE_EXISTING)
-          val dependenciesFiles = DependencyResolver.getDependencies(tmpDir)
-          testFunc(dependenciesFiles)
-        } finally {
-          Files
-            .walk(tmpDir)
-            .sorted(Comparator.reverseOrder[Path]())
-            .forEach(Files.delete(_))
+        File.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
+          File(srcDir).copyTo(tmpDir, true)
+          val dependenciesResult = DependencyResolver.getDependencies(tmpDir.path, params)
+          testFunc(dependenciesResult)
         }
       }
     }
   }
 
   private class Fixture(content: String, fileName: String, runningOnWindowsGitHubAction: Boolean = false) {
-    def test(testFunc: collection.Seq[String] => Unit): Unit = {
+    def test(
+      testFunc: Option[collection.Seq[String]] => Unit,
+      params: DependencyResolverParams = new DependencyResolverParams
+    ): Unit = {
       if (runningOnWindowsGitHubAction) {
         info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
       } else {
-        val tmpDir = Files.createTempDirectory("DependencyResolverTests")
-        try {
-          val file = tmpDir.resolve(fileName)
-          Files.write(file, content.getBytes)
-
-          val dependenciesFiles = DependencyResolver.getDependencies(tmpDir)
-          testFunc(dependenciesFiles)
-        } finally {
-          Files
-            .walk(tmpDir)
-            .sorted(Comparator.reverseOrder[Path]())
-            .forEach(Files.delete(_))
+        File.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
+          val outFile = tmpDir / fileName
+          outFile.write(content)
+          val dependenciesResult = DependencyResolver.getDependencies(tmpDir.path, params)
+          testFunc(dependenciesResult)
         }
       }
     }
@@ -71,8 +64,10 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       isRunningOnWindowsGithubAction
     )
 
-    fixture.test { dependenciesFiles =>
-      dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    fixture.test { dependenciesResult =>
+      dependenciesResult should not be empty
+      val dependencyFiles = dependenciesResult.getOrElse(Seq())
+      dependencyFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
     }
   }
 
@@ -87,8 +82,10 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       isRunningOnWindowsGithubAction
     )
 
-    fixture.test { dependenciesFiles =>
-      dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    fixture.test { dependenciesResult =>
+      dependenciesResult should not be empty
+      val dependencyFiles = dependenciesResult.getOrElse(Seq())
+      dependencyFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
     }
   }
 
@@ -107,17 +104,45 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       isRunningOnWindowsGithubAction
     )
 
-    fixture.test { dependenciesFiles =>
-      dependenciesFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    fixture.test { dependenciesResult =>
+      dependenciesResult should not be empty
+      val dependencyFiles = dependenciesResult.getOrElse(Seq())
+      dependencyFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
     }
   }
 
   "test gradle dependency resolution for simple Android app" in {
     val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
     val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir), isRunningOnWindowsGithubAction)
-    fixture.test { dependenciesFiles =>
-      dependenciesFiles.filter(_.endsWith(".jar")) should not be Set()
-    }
+    fixture.test({ dependenciesResult =>
+      dependenciesResult should not be empty
+      val dependencyFiles = dependenciesResult.getOrElse(Seq())
+      dependencyFiles.filter(_.endsWith(".jar")) should not be Seq()
+    })
+    // TODO: add test for `.aar` as soon as it's decided what to do about them
+  }
+
+  "test gradle dependency resolution for simple Android app with incorrect Gradle project name param" in {
+    val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
+    val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir), isRunningOnWindowsGithubAction)
+    fixture.test(
+      { dependenciesResult =>
+        dependenciesResult shouldBe empty
+      },
+      DependencyResolverParams(forGradle = Map(GradleConfigKeys.ProjectName -> "NON_EXISTENT_PROJECT_NAME"))
+    )
+    // TODO: add test for `.aar` as soon as it's decided what to do about them
+  }
+
+  "test gradle dependency resolution for simple Android app with incorrect Gradle configuration param" in {
+    val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
+    val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir), isRunningOnWindowsGithubAction)
+    fixture.test(
+      { dependenciesResult =>
+        dependenciesResult shouldBe empty
+      },
+      DependencyResolverParams(forGradle = Map(GradleConfigKeys.ConfigurationName -> "NON_EXISTENT_CONFIGURATION_NAME"))
+    )
     // TODO: add test for `.aar` as soon as it's decided what to do about them
   }
 
@@ -172,8 +197,10 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       "pom.xml"
     )
 
-    fixture.test { dependenciesFiles =>
-      dependenciesFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty
+    fixture.test { dependenciesResult =>
+      dependenciesResult should not be empty
+      val dependencyFiles = dependenciesResult.getOrElse(Seq())
+      dependencyFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty
     }
   }
 }

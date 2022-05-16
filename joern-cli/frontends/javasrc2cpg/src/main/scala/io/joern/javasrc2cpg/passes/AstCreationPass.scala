@@ -12,9 +12,9 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JavaParserTypeSolver,
   ReflectionTypeSolver
 }
-import io.joern.javasrc2cpg.util.{SourceRootFinder}
+import io.joern.javasrc2cpg.util.SourceRootFinder
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.dependency.{DependencyResolver, MavenDependencies}
+import io.joern.x2cpg.utils.dependency.DependencyResolver
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -88,8 +88,14 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
       combinedTypeSolver.add(javaParserTypeSolver)
     }
 
+    val resolvedDeps = DependencyResolver.getDependencies(Paths.get(codeDir)) match {
+      case Some(deps) => deps
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $codeDir")
+        Seq()
+    }
     // Add solvers for inference jars
-    (jarsList ++ DependencyResolver.getDependencies(Paths.get(codeDir)))
+    (jarsList ++ resolvedDeps)
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }
