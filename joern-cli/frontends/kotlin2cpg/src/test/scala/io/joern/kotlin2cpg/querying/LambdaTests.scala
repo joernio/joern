@@ -61,10 +61,13 @@ class LambdaTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a METHOD_REF node with a non-null CODE prop set" in {
+    "should contain a METHOD_REF node with its CODE prop set" in {
       cpg.methodRef.size shouldBe 1
       val List(mr) = cpg.methodRef.l
-      mr.code should not be null
+      mr.code shouldBe
+        """|{
+          |       println(baz)
+          |    }""".stripMargin
     }
 
     "should contain two CAPTURE edges for the METHOD_REF" in {
