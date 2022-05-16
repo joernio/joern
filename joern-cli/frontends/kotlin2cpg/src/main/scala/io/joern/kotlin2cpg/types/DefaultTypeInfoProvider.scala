@@ -823,9 +823,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         case typedDesc: LazyPackageViewDescriptorImpl =>
           Some(TypeRenderer.renderFqName(typedDesc))
         case unhandled: Any =>
-          logger.debug(
-            s"Unhandled class type info fetch in for `${expr.getText}` with class `${unhandled.getClass}`."
-          )
+          logger.debug(s"Unhandled class type info fetch in for `${expr.getText}` with class `${unhandled.getClass}`.")
           None
         case _ => None
       }
