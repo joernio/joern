@@ -5,7 +5,7 @@ import io.joern.console.FrontendConfig
 import java.nio.file.Path
 
 case class JsCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  private lazy val command: Path = if(isWin) rootPath.resolve("js2cpg.bat") else rootPath.resolve("js2cpg.sh")
+  private lazy val command: Path = if (isWin) rootPath.resolve("js2cpg.bat") else rootPath.resolve("js2cpg.sh")
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */

@@ -7,7 +7,7 @@ import java.nio.file.Path
 /** Fuzzy C/C++ language frontend. Translates C/C++ source files into code property graphs via fuzzy parsing.
   */
 case class FuzzyCCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  private lazy val command: Path = if(isWin) rootPath.resolve("fuzzyc2cpg.bat") else rootPath.resolve("fuzzyc2cpg.sh")
+  private lazy val command: Path = if (isWin) rootPath.resolve("fuzzyc2cpg.bat") else rootPath.resolve("fuzzyc2cpg.sh")
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */

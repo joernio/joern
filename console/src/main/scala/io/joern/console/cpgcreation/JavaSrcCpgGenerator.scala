@@ -7,7 +7,7 @@ import java.nio.file.Path
 /** Source-based front-end for Java
   */
 case class JavaSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  private lazy val command: Path = if(isWin) rootPath.resolve("javasrc2cpg.bat") else rootPath.resolve("javasrc2cpg")
+  private lazy val command: Path = if (isWin) rootPath.resolve("javasrc2cpg.bat") else rootPath.resolve("javasrc2cpg")
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */

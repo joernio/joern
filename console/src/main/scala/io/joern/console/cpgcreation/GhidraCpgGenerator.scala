@@ -7,7 +7,7 @@ import java.nio.file.Path
 /** Language frontend for Ghidra - translates compiled binaries into Code Property Graphs.
   */
 case class GhidraCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  private lazy val command: Path = if(isWin) rootPath.resolve("ghidra2cpg.bat") else rootPath.resolve("ghidra2cpg")
+  private lazy val command: Path = if (isWin) rootPath.resolve("ghidra2cpg.bat") else rootPath.resolve("ghidra2cpg")
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
