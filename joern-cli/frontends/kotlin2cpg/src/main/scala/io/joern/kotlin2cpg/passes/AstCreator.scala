@@ -985,7 +985,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val lambdaTypeDeclFullName = fullNameWithSig._1.split(":").head
     val methodRef =
-      methodRefNode(expr.getName, fullNameWithSig._1, lambdaTypeDeclFullName, line(expr), column(expr))
+      methodRefNode(expr.getText, fullNameWithSig._1, lambdaTypeDeclFullName, line(expr), column(expr))
         .order(order)
         .argumentIndex(argIdx)
     val returnNode =
