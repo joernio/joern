@@ -1,3 +1,3 @@
 @echo off
 
-.\joern-cli\target\universal\stage\bin\joern-export.bat
+.\joern-cli\target\universal\stage\bin\joern-export.bat %*
