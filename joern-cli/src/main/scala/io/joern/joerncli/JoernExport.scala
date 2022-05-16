@@ -6,11 +6,18 @@ import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.JoernExport.Representations
 import io.joern.joerncli.console.JoernWorkspaceLoader
-import io.joern.x2cpg.layers.{AstDumpOptions, CdgDumpOptions, CfgDumpOptions, DumpAst, DumpCdg, DumpCfg}
-import io.shiftleft.codepropertygraph.generated.{edges, nodes}
+import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
+import overflowdb.formats.ExportResult
+import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 
-case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out", repr: Representations.Value = Representations.cpg14)
+import scala.util.Using
+
+case class ExporterConfig(
+  cpgFileName: String = "cpg.bin",
+  outDir: String = "out",
+  repr: Representations.Value = Representations.cpg14
+)
 
 object JoernExport extends App {
 
@@ -41,40 +48,38 @@ object JoernExport extends App {
       if (!File(config.cpgFileName).exists) {
         System.err.println(s"CPG at ${config.cpgFileName} does not exist. Bailing out.")
       } else {
-        val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
-        CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
-        val context = new LayerCreatorContext(cpg)
+        Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+          CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
+          val context = new LayerCreatorContext(cpg)
 
-        mkdir(File(config.outDir))
-        implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
-        if (semantics.elements.isEmpty) {
-          System.err.println("Warning: semantics are empty.")
-        }
+          mkdir(File(config.outDir))
+          implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
+          if (semantics.elements.isEmpty) {
+            System.err.println("Warning: semantics are empty.")
+          }
 
-        config.repr match {
-          case Representations.ast =>
-            new DumpAst(AstDumpOptions(config.outDir)).create(context)
-          case Representations.cfg =>
-            new DumpCfg(CfgDumpOptions(config.outDir)).create(context)
-          case Representations.ddg =>
-            new DumpDdg(DdgDumpOptions(config.outDir)).create(context)
-          case Representations.cdg =>
-            new DumpCdg(CdgDumpOptions(config.outDir)).create(context)
-          case Representations.pdg =>
-            new DumpPdg(PdgDumpOptions(config.outDir)).create(context)
-          case Representations.cpg14 =>
-            new DumpCpg14(Cpg14DumpOptions(config.outDir)).create(context)
-          case Representations.neo4jcsv =>
-            val exporterMain = overflowdb.formats.ExporterMain(nodes.Factories.all, edges.Factories.all)
-            exporterMain(Array(
-              s"--format=neo4jcsv",
-              s"--out=${config.outDir}",
-              config.cpgFileName
-            ))
-          case repr =>
-            System.err.println(s"unknown representation: $repr. Baling out.")
+          config.repr match {
+            case Representations.ast =>
+              new DumpAst(AstDumpOptions(config.outDir)).create(context)
+            case Representations.cfg =>
+              new DumpCfg(CfgDumpOptions(config.outDir)).create(context)
+            case Representations.ddg =>
+              new DumpDdg(DdgDumpOptions(config.outDir)).create(context)
+            case Representations.cdg =>
+              new DumpCdg(CdgDumpOptions(config.outDir)).create(context)
+            case Representations.pdg =>
+              new DumpPdg(PdgDumpOptions(config.outDir)).create(context)
+            case Representations.cpg14 =>
+              new DumpCpg14(Cpg14DumpOptions(config.outDir)).create(context)
+            case Representations.neo4jcsv =>
+              val ExportResult(nodeCount, edgeCount, files, additionalInfo) =
+                Neo4jCsvExporter.runExport(cpg.graph, config.outDir)
+              println(s"export completed successfully: $nodeCount nodes, $edgeCount edges in ${files.size} files")
+              println(additionalInfo)
+            case repr =>
+              System.err.println(s"unknown representation: $repr. Baling out.")
+          }
         }
-        cpg.close()
       }
     }
   }
