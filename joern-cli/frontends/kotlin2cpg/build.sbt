@@ -18,5 +18,5 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"                  % "3.2.9"                % Test
 )
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit := false

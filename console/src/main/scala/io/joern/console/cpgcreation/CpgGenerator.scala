@@ -10,6 +10,8 @@ import scala.sys.process._
   */
 abstract class CpgGenerator() {
 
+  def isWin: Boolean = scala.util.Properties.isWin
+
   def isAvailable: Boolean
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.

@@ -16,6 +16,6 @@ scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit                      := false
 Global / onChangedBuildSource := ReloadOnSourceChanges
