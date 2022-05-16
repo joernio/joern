@@ -52,7 +52,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug("Started parsing of file `" + fileWithMeta.filename + "`")
 
-    val defaultTypes = Set(TypeConstants.javaLangObject)
+    val defaultTypes = Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
     defaultTypes.foreach { t =>
       registerType(t)
     }

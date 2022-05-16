@@ -18,6 +18,7 @@ object TypeConstants {
   val javaLangClass                     = "java.lang.Class"
   val javaLangObject                    = "java.lang.Object"
   val javaLangString                    = "java.lang.String"
+  val kotlin                            = "kotlin"
   val tType                             = "T"
   val void                              = "void"
 }
