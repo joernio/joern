@@ -852,7 +852,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         )
         Seq(astForUnknown(typedExpr, order, argIdx))
       case null =>
-        logger.debug("Received null expression! Skipping...")
+        logger.trace("Received null expression! Skipping...")
         Seq()
       // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
       case unknownExpr =>
