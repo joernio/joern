@@ -111,7 +111,7 @@ object GradleDependencies {
   ): collection.Seq[String] = {
     val gradleProjectInfoOption =
       try {
-        logger.info(s"Attempting to fetch gradle project information from path `$projectDir`.")
+        logger.info(s"Fetching Gradle project information for project at path `$projectDir`.")
         val connection = GradleConnector
           .newConnector()
           .forProjectDirectory(projectDir.toFile)
@@ -145,7 +145,7 @@ object GradleDependencies {
         Some(info)
       } catch {
         case t: Throwable =>
-          logger.warn(s"Caught exception while trying fetch gradle project information: `$t`.", t)
+          logger.warn(s"Caught exception while trying fetch Gradle project information: `$t`.", t)
           None
       }
     if (gradleProjectInfoOption.isEmpty) {

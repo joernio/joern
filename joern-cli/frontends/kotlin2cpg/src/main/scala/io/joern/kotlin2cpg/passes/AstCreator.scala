@@ -52,7 +52,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug("Started parsing of file `" + fileWithMeta.filename + "`")
 
-    val defaultTypes = Set(TypeConstants.javaLangObject)
+    val defaultTypes = Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
     defaultTypes.foreach { t =>
       registerType(t)
     }
@@ -848,7 +848,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtWhileExpression               => Seq(astForWhile(typedExpr, order))
       case typedExpr: KtNamedFunction =>
         logger.debug(
-          "Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`"
+          s"Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`."
         )
         Seq(astForUnknown(typedExpr, order, argIdx))
       case null =>
@@ -857,7 +857,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
       case unknownExpr =>
         logger.debug(
-          "Creating empty AST node for unknown expression `" + unknownExpr.getClass + "` with text `" + unknownExpr.getText + "`"
+          s"Creating empty AST node for unknown expression `${unknownExpr.getClass}` with text `${unknownExpr.getText}`."
         )
         Seq(astForUnknown(unknownExpr, order, argIdx))
     }
