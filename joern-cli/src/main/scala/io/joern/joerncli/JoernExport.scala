@@ -4,21 +4,17 @@ import better.files.Dsl._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.joerncli.JoernExport.Representations
 import io.joern.joerncli.console.JoernWorkspaceLoader
 import io.joern.x2cpg.layers.{AstDumpOptions, CdgDumpOptions, CfgDumpOptions, DumpAst, DumpCdg, DumpCfg}
 import io.shiftleft.semanticcpg.layers._
 
-case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out", repr: String = "cpg14")
+case class ExporterConfig(cpgFileName: String = "cpg.bin", outDir: String = "out", repr: Representations.Value = Representations.cpg14)
 
 object JoernExport extends App {
 
-  object Representations {
-    val ast   = "ast"
-    val cfg   = "cfg"
-    val ddg   = "ddg"
-    val cdg   = "cdg"
-    val pdg   = "pdg"
-    val cpg14 = "cpg14"
+  object Representations extends Enumeration {
+    val ast, cfg, ddg, cdg, pdg, cpg14 = Value
   }
 
   private def parseConfig: Option[ExporterConfig] =
@@ -33,8 +29,8 @@ object JoernExport extends App {
         .text("output directory")
         .action((x, c) => c.copy(outDir = x))
       opt[String]("repr")
-        .text("representation to extract: [ast|cfg|ddg|cdg|pdg|cpg14]")
-        .action((x, c) => c.copy(repr = x))
+        .text(s"representation to extract: [${Representations.values.toSeq.sorted.mkString("|")}]")
+        .action((x, c) => c.copy(repr = Representations.withName(x)))
     }.parse(args, ExporterConfig())
 
   parseConfig.foreach { config =>

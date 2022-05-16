@@ -1,6 +1,10 @@
 name := "joern-cli"
 
-dependsOn(Projects.console, Projects.console % "test->test", Projects.c2cpg, Projects.dataflowengineoss, Projects.x2cpg)
+dependsOn(Projects.console,
+          Projects.console % "test->test",
+          Projects.c2cpg,
+          Projects.dataflowengineoss,
+          Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
@@ -15,9 +19,8 @@ libraryDependencies ++= Seq(
 
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
-scriptClasspath := Seq(
-  "*"
-) //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
+//wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
+scriptClasspath := Seq("*")
 
 topLevelDirectory := Some(packageName.value)
 
