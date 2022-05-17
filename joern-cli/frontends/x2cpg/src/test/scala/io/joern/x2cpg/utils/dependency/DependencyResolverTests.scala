@@ -117,9 +117,11 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
     fixture.test({ dependenciesResult =>
       dependenciesResult should not be empty
       val dependencyFiles = dependenciesResult.getOrElse(Seq())
-      dependencyFiles.filter(_.endsWith(".jar")) should not be Seq()
+      dependencyFiles.filter(_.endsWith(".jar")) should not be empty
+      dependencyFiles.filter(_.endsWith(".aar")) shouldBe empty
+      dependencyFiles.find(_.endsWith("glide-4.11.0.aar")) shouldBe empty
+      dependencyFiles.find(_.endsWith("glide-4.11.0.jar")) should not be empty
     })
-    // TODO: add test for `.aar` as soon as it's decided what to do about them
   }
 
   "test gradle dependency resolution for simple Android app with incorrect Gradle project name param" in {
@@ -131,7 +133,6 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       },
       DependencyResolverParams(forGradle = Map(GradleConfigKeys.ProjectName -> "NON_EXISTENT_PROJECT_NAME"))
     )
-    // TODO: add test for `.aar` as soon as it's decided what to do about them
   }
 
   "test gradle dependency resolution for simple Android app with incorrect Gradle configuration param" in {
@@ -143,7 +144,6 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       },
       DependencyResolverParams(forGradle = Map(GradleConfigKeys.ConfigurationName -> "NON_EXISTENT_CONFIGURATION_NAME"))
     )
-    // TODO: add test for `.aar` as soon as it's decided what to do about them
   }
 
   "test maven dependency resolution" in {
