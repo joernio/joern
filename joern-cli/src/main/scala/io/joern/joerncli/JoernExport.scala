@@ -11,6 +11,7 @@ import overflowdb.formats.ExportResult
 import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 
 import scala.util.Using
+import scala.util.control.NoStackTrace
 
 object JoernExport extends App {
 
@@ -41,19 +42,18 @@ object JoernExport extends App {
         .text("output directory - will be created and must not yet exist")
         .action((x, c) => c.copy(outDir = x))
       opt[String]("repr")
-        .text(s"representation to extract: [${Representation.values.toSeq.sorted.mkString("|")}] - defaults to ${Representation.cpg14}")
+        .text(s"representation to extract: [${Representation.values.toSeq.sorted.mkString("|")}] - defaults to `${Representation.cpg14}`")
         .action((x, c) => c.copy(repr = Representation.withName(x)))
       opt[String]("format")
-        .required()
         .action((x, c) => c.copy(format = Format.withName(x)))
-        .text(s"export format, one of [${Format.values.toSeq.sorted.mkString("|")}] - defaults to ${Format.dot}")
+        .text(s"export format, one of [${Format.values.toSeq.sorted.mkString("|")}] - defaults to `${Format.dot}`")
     }.parse(args, Config())
 
   parseConfig.foreach { config =>
     if (File(config.outDir).exists)
-      throw new AssertionError(s"Output directory ${config.outDir} already exists.")
+      exitWithError(s"Output directory `${config.outDir}` already exists.")
     if (File(config.cpgFileName).notExists)
-      throw new AssertionError(s"CPG at ${config.cpgFileName} does not exist.")
+      exitWithError(s"CPG at ${config.cpgFileName} does not exist.")
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
@@ -84,9 +84,14 @@ object JoernExport extends App {
           println(s"export completed successfully: $nodeCount nodes, $edgeCount edges in ${files.size} files")
           println(additionalInfo)
         case (repr, format) =>
-          throw new NotImplementedError(s"combination of repr=$repr and $format not (yet) supported")
+          exitWithError(s"combination of repr=$repr and format=$format not (yet) supported")
       }
     }
+  }
+
+  private def exitWithError(msg: String): Unit = {
+    System.err.println(s"error: $msg")
+    System.exit(1)
   }
 
 }
