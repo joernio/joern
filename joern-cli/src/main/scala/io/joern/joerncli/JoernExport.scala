@@ -4,7 +4,7 @@ import better.files.Dsl._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.joerncli.JoernExport.Representations
+import io.joern.joerncli.JoernExport.{Format, Representations}
 import io.joern.joerncli.console.JoernWorkspaceLoader
 import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
@@ -13,20 +13,23 @@ import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 
 import scala.util.Using
 
-case class ExporterConfig(
-  cpgFileName: String = "cpg.bin",
-  outDir: String = "out",
-  repr: Representations.Value = Representations.cpg14
-)
-
 object JoernExport extends App {
 
+  case class Config(
+     cpgFileName: String = "cpg.bin",
+     outDir: String = "out",
+     repr: Representations.Value = Representations.cpg14,
+   )
+
+  /**
+    * Choose from either a subset of the graph, or the entire graph (all).
+    */
   object Representations extends Enumeration {
-    val ast, cfg, ddg, cdg, pdg, cpg14, neo4jcsv = Value
+    val ast, cfg, ddg, cdg, pdg, cpg14, all = Value
   }
 
-  private def parseConfig: Option[ExporterConfig] =
-    new scopt.OptionParser[ExporterConfig]("joern-export") {
+  private def parseConfig: Option[Config] =
+    new scopt.OptionParser[Config]("joern-export") {
       head("Dump intermediate graph representations of code onto disk")
       help("help")
       arg[String]("cpg")
@@ -39,7 +42,7 @@ object JoernExport extends App {
       opt[String]("repr")
         .text(s"representation to extract: [${Representations.values.toSeq.sorted.mkString("|")}]")
         .action((x, c) => c.copy(repr = Representations.withName(x)))
-    }.parse(args, ExporterConfig())
+    }.parse(args, Config())
 
   parseConfig.foreach { config =>
     if (File(config.outDir).exists) {
