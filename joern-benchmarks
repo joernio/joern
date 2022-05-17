@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Set README preamble
-PREAMBLE="$PWD/benchmarks/PREAMBLE.md"
 README="$PWD/benchmarks/README.md"
-cat $PREAMBLE > $README
+
+# Clear README
+> $README
 
 # Run Securibench Micro benchmarks and write results to README.md
 echo "
