@@ -8,8 +8,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   "CPG for code with simple if-expression inside DQE" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package main
         |
         |import kotlin.random.Random
@@ -24,9 +23,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
         |        }.plus(" came up")
         |    println(out)
         |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a CALL for the DQE with ARGUMENTs with the correct index set" in {
       val List(c) = cpg.call.methodFullName(".*plus.*").l
@@ -40,8 +37,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple when-expression inside DQE" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -56,9 +52,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
         |        }.plus(" came up")
         |    println(out)
         |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a CALL for the DQE with ARGUMENTs with the correct index set" in {
       val List(c) = cpg.call.methodFullName(".*plus.*").l
@@ -72,8 +66,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with simple try-catch-expression inside DQE" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package main
         |
         |fun main() {
@@ -86,9 +79,7 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
         |        }.plus(" came up")
         |    println(out)
         |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a CALL for the DQE with ARGUMENTs with the correct index set" in {
       val List(c) = cpg.call.methodFullName(".*plus.*").l

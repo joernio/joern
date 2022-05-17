@@ -110,8 +110,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with typealias of type from external library" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package org.http4k.core.body
         |
         |import org.http4k.core.Parameters
@@ -119,9 +118,7 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
         |
         |typealias Form = Parameters
         |fun Request.form(): Form = bodyString().toParameters()
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a TYPE_DECL with the correct ALIAS_TYPE_FULL_NAME set" in {
       cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "java.util.List"
