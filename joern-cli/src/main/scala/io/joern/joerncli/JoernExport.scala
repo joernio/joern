@@ -15,13 +15,14 @@ import scala.util.control.NoStackTrace
 
 object JoernExport extends App {
 
-  case class Config(cpgFileName: String = "cpg.bin",
-                    outDir: String = "out",
-                    repr: Representation.Value = Representation.cpg14,
-                    format: Format.Value = Format.dot)
+  case class Config(
+    cpgFileName: String = "cpg.bin",
+    outDir: String = "out",
+    repr: Representation.Value = Representation.cpg14,
+    format: Format.Value = Format.dot
+  )
 
-  /**
-    * Choose from either a subset of the graph, or the entire graph (all).
+  /** Choose from either a subset of the graph, or the entire graph (all).
     */
   object Representation extends Enumeration {
     val ast, cfg, ddg, cdg, pdg, cpg14, all = Value
@@ -42,7 +43,9 @@ object JoernExport extends App {
         .text("output directory - will be created and must not yet exist")
         .action((x, c) => c.copy(outDir = x))
       opt[String]("repr")
-        .text(s"representation to extract: [${Representation.values.toSeq.sorted.mkString("|")}] - defaults to `${Representation.cpg14}`")
+        .text(
+          s"representation to extract: [${Representation.values.toSeq.sorted.mkString("|")}] - defaults to `${Representation.cpg14}`"
+        )
         .action((x, c) => c.copy(repr = Representation.withName(x)))
       opt[String]("format")
         .action((x, c) => c.copy(format = Format.withName(x)))
