@@ -67,10 +67,8 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
   private def helpMsg(): String =
     s"""Type `help` or `browse(help)` to begin""".stripMargin
 
-  // If you remove this, the shell will not start.
   def version(): String = {
-    // TODO read and report version
-    ""
+    getClass.getPackage.getImplementationVersion
   }
 
   def loadCpg(inputPath: String): Option[Cpg] = {
