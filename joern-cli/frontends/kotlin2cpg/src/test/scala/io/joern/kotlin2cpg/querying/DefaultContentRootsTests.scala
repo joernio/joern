@@ -150,8 +150,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Javalin web framework" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import io.javalin.Javalin
@@ -176,9 +175,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
         |    ctx.result("----Executed `" + invocation + "` with result: `" + out  + "`.\n-----\n")
         |  }
         |}
-        | """.stripMargin,
-      includeAllJars = true
-    )
+        | """.stripMargin)
 
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullNames set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
@@ -223,46 +220,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with CALL to `super`" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
-        |package mypkg
-        |
-        |import android.content.Intent
-        |import android.content.IntentFilter
-        |import android.os.Bundle
-        |import android.view.View
-        |import android.app.Activity
-        |
-        |class AboutUsActivity : Activity() {
-        |    override fun onCreate(savedInstanceState: Bundle?) {
-        |        super.onCreate(savedInstanceState)
-        |    }
-        |}
-        | """.stripMargin,
-      includeAllJars = true
-    )
-
-    "should contain a CALL node for `onCreate` with the correct props set" in {
-      def createCall = cpg.call.code(".*onCreate.*")
-
-      val List(c) = createCall.l
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.methodFullName shouldBe "android.app.Activity.onCreate:void(android.os.Bundle)"
-      c.argument.size shouldBe 2
-
-      val List(firstArg, secondArg) = createCall.argument.l
-      firstArg.code shouldBe "super"
-      firstArg.argumentIndex shouldBe 0
-
-      secondArg.code shouldBe "savedInstanceState"
-      secondArg.argumentIndex shouldBe 1
-    }
-  }
-
   "CPG for code using the http4k framework" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package com.example
         |
         |import org.http4k.core.HttpHandler
@@ -300,9 +259,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
         |    println("Serving content on port " + port.toString() + ".")
         |    HelloWorld().asServer(SunHttp(port)).start()
         |}
-        | """.stripMargin,
-      includeAllJars = true
-    )
+        | """.stripMargin)
 
     "should contain a CALL node for `port.toString()` with the correct methodFullName set" in {
       val List(c) = cpg.call.codeExact("port.toString()").l

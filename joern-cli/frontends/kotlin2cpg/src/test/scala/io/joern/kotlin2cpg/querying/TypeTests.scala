@@ -67,26 +67,6 @@ class TypeTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with Android SDK fn" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
-        |package mypkg
-        |
-        |import android.util.Log
-        |
-        |fun mine() {
-        |  Log.d("foo", "bar")
-        |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
-
-    "should have type for Log" in {
-      val List(x) = cpg.typ.typeDeclFullName(".*Log.*").l
-      x.typeDeclFullName shouldBe "android.util.Log"
-    }
-  }
-
   "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " - {
     lazy val cpg = TestContext.buildCpg("""
         |package mypkg

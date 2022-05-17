@@ -103,14 +103,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           } else {
             Seq()
           }
-        val androidJars =
-          if (config.withAndroidJarsInClassPath) {
-            ContentSourcesPicker.defaultAndroidContentRootJarPaths
-          } else {
-            Seq()
-          }
         val defaultContentRootJars =
-          androidJars ++ stdlibJars ++
+          stdlibJars ++
             jarPathsFromClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
             dependenciesPaths.map { path =>
               DefaultContentRootJarPath(path, false)
