@@ -7,10 +7,12 @@ import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
-import java.io.{File => javaFile}
+import org.slf4j.LoggerFactory
+
+import java.io.{File => JFile}
 import java.io.PrintWriter
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Using}
 
 object Solidity2Cpg {
   // TODO: Add to io.shiftleft.codepropertygraph.generated.Languages
@@ -23,8 +25,10 @@ class Solidity2Cpg {
 
   import Solidity2Cpg._
 
-  val sourceFileExtensions      = Set(".sol")
-  val suryaOutputFileExtensions = Set(".json")
+  private val sourceFileExtensions      = Set(".sol")
+  private val suryaOutputFileExtensions = Set(".json")
+
+  private val logger = LoggerFactory.getLogger(classOf[Solidity2Cpg])
 
   /** Create CPG for Solidity source code at `sourceCodePath` and store the CPG at `outputPath`. If `outputPath` is
     * `None`, the CPG is created in-memory.
@@ -50,50 +54,36 @@ class Solidity2Cpg {
     * second part of the tuple.
     */
   def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
+    import java.io.File.{separator => sep}
     val sourceFile = File(sourceCodePath)
+    val dir        = File.newTemporaryDirectory("solidity").deleteOnExit()
     if (sourceFile.isDirectory) {
-      val sourceFileNames         = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
-      val dir                     = File.newTemporaryDirectory("solidity").deleteOnExit()
-      val matches: Iterator[File] = sourceFile.glob("*.sol")
-      matches.foreach(file => file.copyToDirectory(dir))
-      val names: Array[String]           = new Array(1000)
-      var pathOfParseFiles: List[String] = List()
-      var counter                        = 0
-      sourceFileNames.foreach(fName => {
-        names(counter) = (fName.split("/")(fName.split("/").length - 1))
-        ExternalCommand.run(s"surya parse -jc ${names(counter)}", dir.pathAsString) match {
-          case Success(stdOut: Seq[String]) =>
-            val path   = dir.pathAsString + s"/${names(counter).substring(0, (names(counter).length - 3))}" + "json"
-            val writer = new PrintWriter(new javaFile(path))
-            writer.write(stdOut.toString().substring(5, (stdOut.toString().length - 1)))
-            writer.close()
-            pathOfParseFiles = pathOfParseFiles :+ (path)
-          case Failure(e) =>
-            println(s"Could not parse Solidity source code at $sourceCodePath", e)
-
-        }
-//        ExternalCommand.run(s"npm -g","")
-        counter += 1
-      })
-      (dir.toString(), pathOfParseFiles)
+      SourceFiles
+        .determine(Set(sourceCodePath), sourceFileExtensions)
+        .map(File(_))
+        .foreach(file => file.copyToDirectory(dir))
     } else {
-      val dir                = File.newTemporaryDirectory("solidity").deleteOnExit()
-      var list: List[String] = List()
       sourceFile.copyToDirectory(dir)
-      val name = sourceFile.pathAsString.split("/")(sourceFile.pathAsString.split("/").length - 1)
-      ExternalCommand.run(s"surya parse -jlc ${name}", dir.pathAsString) match {
-        case Success(stdOut: Seq[String]) =>
-          val path   = dir.pathAsString + s"/${name.substring(0, name.length - 3) + "json"}"
-          val writer = new PrintWriter(new javaFile(path))
-          val output = stdOut.toString()
-          writer.write(output.substring(5, (output.length - 1)))
-          writer.close()
-          list = list :+ (path)
-        case Failure(e) =>
-          println("Failure when executing Surya on :", e.printStackTrace())
-      }
-      (dir.pathAsString, list)
     }
+
+    SourceFiles
+      .determine(Set(dir.pathAsString), sourceFileExtensions)
+      .map { fName => fName.stripPrefix(s"${dir.pathAsString}$sep") }
+      .foreach(fileName => {
+        ExternalCommand.run(s"surya parse -jc $fileName", dir.pathAsString) match {
+          case Success(stdOut: Seq[String]) =>
+            val path = s"${dir.pathAsString}$sep$fileName.json"
+            Using.resource(new PrintWriter(new JFile(path))) { writer =>
+              writer.write(stdOut.toString().substring(5, stdOut.toString().length - 1))
+            }
+          case Failure(e) =>
+            logger.warn(s"Could not parse Solidity source code at $sourceCodePath", e)
+        }
+      })
+
+    val outFileNames = SourceFiles.determine(Set(sourceCodePath), suryaOutputFileExtensions)
+    println(outFileNames)
+    (dir.pathAsString, outFileNames)
   }
 
 }
