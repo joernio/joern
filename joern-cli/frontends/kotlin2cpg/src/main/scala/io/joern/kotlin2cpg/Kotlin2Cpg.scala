@@ -16,12 +16,7 @@ import io.joern.kotlin2cpg.types.{
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.utils.dependency.{
-  DependencyResolver,
-  DependencyResolverParams,
-  GradleConfigKeys,
-  GradleDependencies
-}
+import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
@@ -29,7 +24,6 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
 import java.nio.file.{Files, Paths}
-import scala.collection.mutable
 import scala.util.Try
 
 object Kotlin2Cpg {
@@ -65,9 +59,14 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
             ).collect { case (key, Some(value)) => (key, value) }
 
             val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
-            val paths          = DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams)
-            logger.info(s"Using ${paths.size} dependency jars.")
-            paths
+            DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
+              case Some(deps) =>
+                logger.info(s"Using ${deps.size} dependency jars.")
+                deps
+              case None =>
+                logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
+                Seq()
+            }
           } else {
             logger.info(s"Not using any dependency jars.")
             Seq()
