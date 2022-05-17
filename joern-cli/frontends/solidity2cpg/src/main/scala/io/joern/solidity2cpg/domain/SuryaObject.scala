@@ -32,6 +32,14 @@ object SuryaObject {
     def columnNumber: Option[Int] = None
   }
 
+  trait FunctionOrModifierDefinition {
+    def name: String
+    def parameters: List[BaseASTNode]
+    def body: BaseASTNode
+    def isVirtual: Boolean
+    def `override`: BaseASTNode
+  }
+
   case class SourceUnit(children: List[BaseASTNode]) extends BaseASTNode("SourceUnit") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
@@ -78,7 +86,7 @@ object SuryaObject {
     body: BaseASTNode,
     isVirtual: Boolean,
     `override`: BaseASTNode
-  ) extends BaseASTNode("ModifierDefinition") {
+  ) extends BaseASTNode("ModifierDefinition") with FunctionOrModifierDefinition {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
@@ -163,7 +171,7 @@ object SuryaObject {
     isFallback: Boolean,
     isVirtual: Boolean,
     stateMutability: String
-  ) extends BaseASTNode("FunctionDefinition") {
+  ) extends BaseASTNode("FunctionDefinition") with FunctionOrModifierDefinition {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
