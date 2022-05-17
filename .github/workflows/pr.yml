@@ -14,6 +14,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
+      - name: Install astgen for jssrc2cpg
+        run: npm install -g @joernio/astgen
       - name: Compile and run tests
         run: joern-cli/frontends/php2cpg/installdeps.sh
       - run: sbt clean +test

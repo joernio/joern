@@ -18,6 +18,7 @@ object CpgGeneratorFactory {
     Languages.GHIDRA,
     Languages.JAVA,
     Languages.JAVASCRIPT,
+    Languages.JSSRC,
     Languages.PYTHON,
     Languages.PYTHONSRC,
     Languages.LLVM,

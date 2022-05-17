@@ -26,6 +26,7 @@ package object cpgcreation {
       case Languages.JAVA       => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
       case Languages.JAVASRC    => Some(JavaSrcCpgGenerator(config.withArgs(args), rootPath))
       case Languages.JAVASCRIPT => Some(JsCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.JSSRC      => Some(JsSrcCpgGenerator(config.withArgs(args), rootPath))
       case Languages.PYTHONSRC  => Some(PythonSrcCpgGenerator(config.withArgs(args), rootPath))
       case Languages.PHP        => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
       case Languages.GHIDRA     => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
