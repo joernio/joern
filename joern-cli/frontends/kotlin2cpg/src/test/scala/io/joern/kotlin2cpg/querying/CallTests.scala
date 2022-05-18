@@ -182,8 +182,7 @@ class CallTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code with a call to a constructor from library with default content root jar" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import com.google.gson.Gson
@@ -192,9 +191,7 @@ class CallTests extends AnyFreeSpec with Matchers {
         |  val serialized = Gson().toJson(productList)
         |  println(serialized)
         |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a call node for `Gson()`" in {
       val List(c) = cpg.call.methodFullName(".*Gson.*init.*").l

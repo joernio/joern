@@ -27,6 +27,13 @@ case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndro
   }
 }
 
+object Constants {
+  val aarFileExtension            = "aar"
+  val gradleAndroidPropertyPrefix = "android."
+  val gradlePropertiesTaskName    = "properties"
+  val jarInsideAarFileName        = "classes.jar"
+}
+
 case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
 
 object GradleDependencies {
@@ -111,14 +118,12 @@ object GradleDependencies {
     Try(makeConnection(projectDir.toFile)) match {
       case Success(gradleConnection) =>
         Using.resource(gradleConnection) { connection =>
-          val buildEnv                 = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
-          val project                  = connection.getModel[GradleProject](classOf[GradleProject])
-          val gradlePropertiesTaskName = "properties"
+          val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
+          val project  = connection.getModel[GradleProject](classOf[GradleProject])
           val hasAndroidPrefixGradleProperty =
-            runGradleTask(connection, gradlePropertiesTaskName) match {
+            runGradleTask(connection, Constants.gradlePropertiesTaskName) match {
               case Some(out) =>
-                val gradleAndroidPropertyPrefix = "android."
-                out.split('\n').filter(_.startsWith(gradleAndroidPropertyPrefix)).nonEmpty
+                out.split('\n').filter(_.startsWith(Constants.gradleAndroidPropertyPrefix)).nonEmpty
               case None => false
             }
           val info = GradleProjectInfo(
@@ -157,8 +162,7 @@ object GradleDependencies {
           .setStandardOutput(out)
           .run()
       ) match {
-        case Success(_) =>
-          Some(out.toString)
+        case Success(_) => Some(out.toString)
         case Failure(ex) =>
           logger.warn(s"Caught exception while executing Gradle task named `$taskName`.", ex)
           None
@@ -200,6 +204,30 @@ object GradleDependencies {
     }
   }
 
+  private def extractClassesJarFromAar(aar: File): Option[Path] = {
+    val newPath           = aar.path.toString.replaceFirst(Constants.aarFileExtension + "$", "jar")
+    val aarUnzipDirSuffix = ".unzipped"
+    val outDir            = File(aar.path.toString + aarUnzipDirSuffix)
+    aar.unzipTo(outDir, _.getName == Constants.jarInsideAarFileName)
+    val outFile = File(newPath)
+    val classesJarEntries =
+      outDir.listRecursively
+        .filter(_.path.getFileName.toString == Constants.jarInsideAarFileName)
+        .toList
+    if (classesJarEntries.size != 1) {
+      logger.warn(s"Found aar file without `classes.jar` inside at path ${aar.path}")
+      outDir.delete()
+      None
+    } else {
+      val classesJar = classesJarEntries.toList.head
+      logger.trace(s"Copying `classes.jar` for aar at `${aar.path.toString}` into `$newPath`")
+      classesJar.copyTo(outFile)
+      outDir.delete()
+      aar.delete()
+      Some(outFile.path)
+    }
+  }
+
   // fetch the gradle project information first, then invoke a newly-defined gradle task to copy the necessary jars into
   // a destination directory.
   private[dependency] def get(
@@ -227,7 +255,18 @@ object GradleDependencies {
                 Try(makeConnection(projectDir.toFile)) match {
                   case Success(connection) =>
                     Using.resource(connection) { c =>
-                      runGradleTask(c, initScript, initScriptFile.pathAsString)
+                      runGradleTask(c, initScript, initScriptFile.pathAsString) match {
+                        case Some(deps) =>
+                          Some(deps.map { d =>
+                            if (!d.endsWith(Constants.aarFileExtension)) d
+                            else
+                              extractClassesJarFromAar(File(d)) match {
+                                case Some(path) => path.toString
+                                case None       => d
+                              }
+                          })
+                        case None => None
+                      }
                     }
                   case Failure(ex) =>
                     logger.warn(s"Caught exception while trying to establish a Gradle connection:", ex)

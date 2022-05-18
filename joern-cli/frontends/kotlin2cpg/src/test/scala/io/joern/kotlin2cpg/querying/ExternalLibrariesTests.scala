@@ -8,8 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ExternalLibrariesTests extends AnyFreeSpec with Matchers {
   "CPG for code with usage of the `timber` logging library" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import timber.log.Timber
@@ -19,9 +18,7 @@ class ExternalLibrariesTests extends AnyFreeSpec with Matchers {
         |  val secretKeys = listOf("LUSHQOXDMZNAIKFREPCYBWVGTJ", "ENIGMA")
         |  Timber.d("TODO: remove from prod: %s", secretKeys);
         |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a CALL node for `Timber.d.*` with the correct METHOD_FULL_NAME set" in {
       cpg.call.code("Timber.*").methodFullName.l shouldBe List(

@@ -11,7 +11,6 @@ final case class Config(
   outputPath: String = X2CpgConfig.defaultOutputPath,
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
-  withAndroidJarsInClassPath: Boolean = true,
   downloadDependencies: Boolean = false,
   gradleProjectName: Option[String] = None,
   gradleConfigurationName: Option[String] = None
@@ -39,12 +38,6 @@ private object Frontend {
       opt[Unit]("no-stdlib-jars")
         .text("Do not add local versions of Kotlin stdlib jars to classpath")
         .action((_, c) => c.copy(withStdlibJarsInClassPath = false)),
-      opt[Unit]("no-android-jars")
-        .text("Do not add local versions of Android jars to classpath")
-        .action((_, c) => c.copy(withAndroidJarsInClassPath = false)),
-      opt[Unit]("copy-runtime-libs") // deprecated, remove the flag as soon it's not needed upstream
-        .text("Attempt to copy the runtime libs using the build tool found at the input path")
-        .action((_, c) => c.copy(downloadDependencies = true)),
       opt[Unit]("download-dependencies")
         .text("Download the dependencies of the target project and add them to the classpath")
         .action((_, c) => c.copy(downloadDependencies = true)),
