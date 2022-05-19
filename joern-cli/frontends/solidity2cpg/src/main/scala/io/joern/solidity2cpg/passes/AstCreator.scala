@@ -226,7 +226,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           */
         val (methodReturn, funcType) = if (x.returnParameters != null) {
           (
-            astForMethodReturn(x.returnParameters, order),
+            astForMethodReturn(x.returnParameters),
             ":" ++ x.returnParameters
               .collect { case y: VariableDeclaration =>
                 y.typeName match {
@@ -312,7 +312,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val NewMethodParameter = NewMethodParameterIn();
     var typefullName       = ""
     var code               = ""
-    var visibility         = "";
+    var visibility         = ""
     var storage            = ""
     varDecl.typeName match {
       case x: ElementaryTypeName => typefullName = registerType(x.name)
@@ -358,10 +358,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val blockNode = NewBlock().order(order).argumentIndex(order)
     val vars = body.statements.collect { case x: VariableDeclaration => x }.toSet
     val stmts = body.statements.toSet -- vars
+
     Ast(blockNode)
       .withChildren(withOrder(vars) { (v, order) => astForLocal(v, order) })
+      .withChild(Ast(NewLocal().name("this").code("this").typeFullName("this").order(vars.size)))
       .withChildren(withOrder(stmts) { case (x, order) =>
-        astForStatement(x, vars.size + order)
+        astForStatement(x, vars.size + 1 + order)
       })
 
   }
@@ -512,7 +514,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  private def astForMethodReturn(value: List[BaseASTNode], order: Int): Ast = {
+  private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
     val returnMethod = NewMethodReturn()
     var code         = ""
     var mapkey       = ""
@@ -520,7 +522,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var name         = ""
     var counter      = 0;
     value.collect {
-      case x: VariableDeclaration => {
+      case x: VariableDeclaration =>
 
         x.typeName match {
           case x: ElementaryTypeName => name = registerType(x.name)
@@ -534,21 +536,24 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           case x: String => visibility = " " + x
           case _         => visibility = ""
         }
-        counter += 2
+        counter +=1
       }
+    if (!name.equals("")) {
+      registerType(name)
     }
     code = code + visibility + name
+////    println(counter+2)
+//    println(counter)
     returnMethod
       .code(code)
       .typeFullName(name)
-      .order(order + counter)
+      .order(counter)
     Ast(returnMethod)
 
   }
 
   private def astForReturn(returnStatement: ReturnStatement, order: Int): Ast = {
-
-    val exprAst = astForExpression(returnStatement.expression, order + 1)
+    val exprAst = astForExpression(returnStatement.expression, 1)
     val returnNode = NewReturn()
       .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
       .order(order)
@@ -556,6 +561,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(returnNode)
       .withChild(exprAst)
       .withArgEdges(returnNode, exprAst.root.toList)
+
   }
 
   private def astForModifiers(modifiers: List[BaseASTNode]): Ast = {

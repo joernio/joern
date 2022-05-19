@@ -31,6 +31,7 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
       | """.stripMargin
 
   "should contain a type decl for `Bar` with correct fields" in {
+    println(cpg.typeDecl.name("Bar").ast.isReturn.l)
     val List(x) = cpg.typeDecl.name("Bar").l
     x.name shouldBe "Bar"
     x.code shouldBe "Bar"

@@ -12,6 +12,7 @@ class MethodReturnTests extends JimpleCodeToCpgFixture {
       |""".stripMargin
 
   "should have METHOD_RETURN node with correct fields" in {
+
     val List(x) = cpg.method.name("foo").methodReturn.typeFullName("int").l
     x.code shouldBe "int"
     x.typeFullName shouldBe "int"
@@ -23,6 +24,7 @@ class MethodReturnTests extends JimpleCodeToCpgFixture {
   }
 
   "should have a RETURN node with correct fields" in {
+    println(cpg.method.name("foo").ast.isReturn.order.l)
     val List(x) = cpg.method.name("foo").ast.isReturn.l
     x.code shouldBe "return 1;"
     x.order shouldBe 2

@@ -17,6 +17,7 @@ class MethodReturnTests extends SolidityCodeToCpgFixture {
    */
 
   "should have METHOD_RETURN node with correct fields" in {
+//    println(cpg.method.name("foo").methodReturn.typeFullName.l)
     val List(x) = cpg.method.name("foo").methodReturn.typeFullName("int").l
     x.code shouldBe "int"
     x.typeFullName shouldBe "int"
