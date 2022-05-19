@@ -167,7 +167,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val methods = withOrder(contractDef.subNodes.collect { case x: FunctionOrModifierDefinition =>
       x
     }) { (methodOrModifier, order) =>
-      astsForMethod(methodOrModifier, contractDef.name, order)
+      astsForMethodOrModifier(methodOrModifier, contractDef.name, order)
     }
 
     val memberAsts = withOrder(contractDef.subNodes.collect {
@@ -198,61 +198,64 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(memberAsts)
   }
 
-  private def astsForMethod(methodOrModifier: FunctionOrModifierDefinition, contractName: String, order: Int): Ast = {
+  private def astsForMethodOrModifier(
+    methodOrModifier: FunctionOrModifierDefinition,
+    contractName: String,
+    methodOrModifierOrder: Int
+  ): Ast = {
+    val name = if (methodOrModifier.name != null) methodOrModifier.name else "<init>"
+    val parameters =
+      (if (methodOrModifier.isVirtual) createThisParameterNode(contractName)
+       else
+         Ast()) +: withOrder(methodOrModifier.parameters.collect { case x: VariableDeclaration => x }) {
+        case (x, order) =>
+          astForParameter(x, order)
+      }
+    val body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size + 1)
+    val methodNode = NewMethod()
+      .name(name)
+      .order(methodOrModifierOrder)
+      .astParentType(NodeTypes.TYPE_DECL)
+      .astParentFullName(contractName)
+
+    // Modifier definition properties are a subset of function definitions so if this turns out to be a function
+    // definition we simply handle the additional we need to
     methodOrModifier match {
       case x: ModifierDefinition =>
-        val methodNode = NewMethod()
-          .name(x.name)
-        val parameters = withOrder(x.parameters.collect { case x: VariableDeclaration => x }) { case (x, order) =>
-          astForParameter(x, order)
-        }
         // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
         val methodReturn = NewMethodReturn().typeFullName("")
         Ast(methodNode)
           .withChildren(parameters)
-          .withChild(astForBody(x.body.asInstanceOf[Block], order))
-          .withChild(Ast(methodReturn))
-
+          .withChild(body)
+          .withChild(Ast(methodReturn.order(parameters.size + 2)))
       case x: FunctionDefinition =>
-        val parameters = withOrder(x.parameters.collect { case x: VariableDeclaration => x }) { case (x, order) =>
-          astForParameter(x, order)
-        }
-
-        /** allowing for constructors or functions
-          */
-        val name = if (x.name != null) x.name else "<init>"
-
         /** passing returnParameters if found
           */
-        val (methodReturn, funcType) = if (x.returnParameters != null) {
-          (
-            astForMethodReturn(x.returnParameters),
-            ":" ++ x.returnParameters
-              .collect { case y: VariableDeclaration =>
-                y.typeName match {
-                  case z: ElementaryTypeName => z.name
-                }
-
+        val returnParams = if (x.returnParameters != null) x.returnParameters else List()
+        val funcType = if (returnParams.nonEmpty) {
+          ":" ++ returnParams
+            .collect { case y: VariableDeclaration =>
+              y.typeName match {
+                case z: ElementaryTypeName => z.name
               }
-              .mkString(":")
-          )
+            }
+            .mkString(":")
         } else {
-          (Ast(NewMethodReturn()), ":void")
+          ":void"
         }
 
         val modifiers =
-          if (x.modifiers.nonEmpty) astForModifiers(x.modifiers);
-          else Ast()
+          if (x.modifiers.nonEmpty) astForModifiers(x.modifiers)
+          else Seq()
 
-        /** creating ast node "thisNode"
+        /** getting names of types and variable names TODO: "this" param only goes for static methods but for now it
+          * seems most solidity methods are dynamic
           */
-
-        val thisNode = createThisParameterNode(contractName)
-
-        /** getting names of types and variable names
-          */
-        val params = parameters.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
-        val types  = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString(",")
+        val params = Ast(NewLocal().name("this").code("this").typeFullName(contractName).order(0)) +: parameters
+          .flatMap(_.root)
+          .map(_.properties(PropertyNames.CODE))
+          .mkString(", ")
+        val types = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString(",")
         val code = if (x.name != null) {
           new mutable.StringBuilder("function ").append(name).append("(")
         } else {
@@ -283,23 +286,28 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           funcType + "(" + types + ")"
         }
 
-        /** creating the new method
-          */
-        val methodNode = NewMethod()
-          .name(name)
-          .fullName(contractName + "." + name + funcType + "(" + types + ")")
-          .signature(signature)
-          .code(code.toString())
-          .filename(filename.substring(0, filename.length - 4) + "sol")
-          .order(order)
+        val methodReturn = astForMethodReturn(returnParams, parameters.size + 2)
 
-        Ast(methodNode)
-          .withChild(thisNode)
+        val mAst = Ast(
+          methodNode
+            .fullName(contractName + "." + name + funcType + "(" + types + ")")
+            .signature(signature)
+            .code(code.toString())
+            .filename(filename.substring(0, filename.length - 4) + "sol")
+        )
           .withChildren(parameters)
-          .withChild(astForBody(x.body.asInstanceOf[Block], order))
+          .withChild(body)
+          .withChildren(modifiers)
           .withChild(methodReturn)
-          .withChild(modifiers)
 
+        // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
+        mAst.nodes.foreach { n =>
+          val code  = n.properties.getOrElse("CODE", null)
+          val order = n.properties.getOrElse("ORDER", null)
+          println((order, n.label(), code))
+        }
+
+        mAst
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
@@ -356,12 +364,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForBody(body: Block, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order)
-    val vars = body.statements.collect { case x: VariableDeclaration => x }.toSet
-    val stmts = body.statements.toSet -- vars
+    val vars      = body.statements.collect { case x: VariableDeclaration => x }.toSet
+    val stmts     = body.statements.toSet -- vars
 
     Ast(blockNode)
       .withChildren(withOrder(vars) { (v, order) => astForLocal(v, order) })
-      .withChild(Ast(NewLocal().name("this").code("this").typeFullName("this").order(vars.size)))
       .withChildren(withOrder(stmts) { case (x, order) =>
         astForStatement(x, vars.size + 1 + order)
       })
@@ -401,7 +408,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
-    val newID        = NewIdentifier();
+    val newID        = NewIdentifier()
     var typefullName = ""
     var code         = ""
     varDecl.typeName match {
@@ -514,41 +521,36 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  private def astForMethodReturn(value: List[BaseASTNode]): Ast = {
-    val returnMethod = NewMethodReturn()
-    var code         = ""
-    var mapkey       = ""
-    var visibility   = ""
-    var name         = ""
-    var counter      = 0;
-    value.collect {
-      case x: VariableDeclaration =>
-
-        x.typeName match {
-          case x: ElementaryTypeName => name = registerType(x.name)
-          case x: Mapping => {
-            name = registerType("mapping")
-            mapkey = getMappingKeyAndValue(x)
-          }
+  /** TODO: This needs some refinement, can methods really return more than one base type?
+    */
+  private def astForMethodReturn(value: List[BaseASTNode], order: Int): Ast = {
+    var mapkey     = ""
+    var visibility = ""
+    var name       = ""
+    value.collect { case x: VariableDeclaration => x }.foreach { x =>
+      x.typeName match {
+        case x: ElementaryTypeName => name = registerType(x.name)
+        case x: Mapping => {
+          name = registerType("mapping")
+          mapkey = getMappingKeyAndValue(x)
         }
-
-        x.visibility match {
-          case x: String => visibility = " " + x
-          case _         => visibility = ""
-        }
-        counter +=1
       }
+
+      x.visibility match {
+        case x: String => visibility = " " + x
+        case _         =>
+      }
+    }
     if (!name.equals("")) {
       registerType(name)
     }
-    code = code + visibility + name
-////    println(counter+2)
-//    println(counter)
-    returnMethod
-      .code(code)
-      .typeFullName(name)
-      .order(counter)
-    Ast(returnMethod)
+    val code = visibility + name
+    Ast(
+      NewMethodReturn()
+        .code(code)
+        .typeFullName(name)
+        .order(order)
+    )
 
   }
 
@@ -564,11 +566,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  private def astForModifiers(modifiers: List[BaseASTNode]): Ast = {
-    val modifierNode = NewModifier()
-    var args         = ""
-    modifiers.collect {
-      case x: ModifierInvocation => {
+  private def astForModifiers(modifiers: List[BaseASTNode]): Seq[Ast] = {
+    var args = ""
+    modifiers
+      .collect { case x: ModifierInvocation => x }
+      .map { x =>
         if (x.arguments != null) {
           x.arguments.collect {
             case x: Identifier => {
@@ -579,20 +581,19 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         if (!args.equals("")) {
           args = args.substring(0, args.length - 1)
         }
-        modifierNode
-          .modifierType(x.name)
-          .code(x.name + " (" + args + ")")
+        Ast(
+          NewModifier()
+            .modifierType(x.name)
+            .code(x.name + " (" + args + ")")
+        )
       }
-
-    }
-    (Ast(modifierNode))
   }
 
   private def astForExpression(expr: BaseASTNode, order: Int): Ast = {
 
     expr match {
       case x: MemberAccess       => astForMemberAccess(x)
-      case x: Identifier         => astForIdentifier(x)
+      case x: Identifier         => astForIdentifier(x, order)
       case x: FunctionCall       => astForFunctionCall(x, order)
       case x: BinaryOperation    => astForBinaryOperation(x, order)
       case x: UnaryOperation     => astForUnaryOperation(x)
@@ -774,13 +775,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(arguments)
   }
 
-  private def astForIdentifier(identifier: Identifier): Ast = {
+  private def astForIdentifier(identifier: Identifier, order: Int): Ast = {
     val typeFullName = registerType(identifier.name)
     Ast(
       NewIdentifier()
         .name(identifier.name)
         .code(identifier.name)
         .typeFullName(typeFullName)
+        .order(order)
+        .argumentIndex(order)
     )
   }
 

@@ -35,10 +35,7 @@ class CfgTests extends SolidityCodeToCpgFixture {
     """.stripMargin
 
   "should find that sink is control dependent on condition" in {
-    println(cpg.typeDecl.dotAst.head)
-    println(cpg.call("sink").controlledBy.isCall.toSetMutable)
     val controllers = cpg.call("sink").controlledBy.isCall.toSetMutable
-    println(controllers.map(_.order))
     controllers.map(_.code) should contain("y < 10")
     controllers.map(_.code) should contain("x < 5")
   }
