@@ -17,11 +17,11 @@ class BindingTests extends JavaSrcCode2CpgFixture {
       val typeDecl = cpg.typeDecl(".*SomeConsumer.*").head
       val methodBinding = typeDecl.methodBinding
         .name("accept")
-        .map(binding => (binding.methodFullName, binding.name, binding.signature))
+        .map(binding => (binding.name, binding.signature, binding.methodFullName))
         .l
       methodBinding should contain theSameElementsAs List(
-        ("SomeConsumer.accept:void(java.lang.Integer)", "accept", "void(java.lang.Integer)"),
-        ("SomeConsumer.accept:void(java.lang.Integer)", "accept", "void(java.lang.Object)")
+        ("accept", "void(java.lang.Integer)", "SomeConsumer.accept:void(java.lang.Integer)"),
+        ("accept", "void(java.lang.Object)", "SomeConsumer.accept:void(java.lang.Integer)")
       )
     }
   }
@@ -30,13 +30,10 @@ class BindingTests extends JavaSrcCode2CpgFixture {
     val cpg = code(
       """
         |import java.util.function.Consumer;
-        |import a.b.C
         |
         |class SomeConsumer<I extends Number> implements Consumer<I> {
         |  @Override
         |  public void accept(I i) {}
-        |
-        |  void foo(C c) {}
         |}
         |""".stripMargin,
       "SomeConsumer.java"
@@ -51,31 +48,29 @@ class BindingTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin,
       "OtherConsumer.java"
     )
-    // TODO remove ignore. Currently this does not pass because of invalid
-    // method full name.
-    "have two bindings for SomeConsumer" ignore {
+
+    "have two bindings for SomeConsumer" in {
       val typeDecl = cpg.typeDecl(".*SomeConsumer.*").head
       val methodBinding = typeDecl.methodBinding
         .name("accept")
-        .map(binding => (binding.methodFullName, binding.name, binding.signature))
+        .map(binding => (binding.name, binding.signature, binding.methodFullName))
         .l
       methodBinding should contain theSameElementsAs List(
-        ("SomeConsumer.accept:void(java.lang.Number)", "accept", "void(java.lang.Number)"),
-        ("SomeConsumer.accept:void(java.lang.Number)", "accept", "void(java.lang.Object)")
+        ("accept", "void(java.lang.Number)", "SomeConsumer.accept:void(java.lang.Number)"),
+        ("accept", "void(java.lang.Object)", "SomeConsumer.accept:void(java.lang.Number)")
       )
     }
-    // TODO remove ignore. Currently this does not pass because of invalid
-    // method full name.
-    "have three bindings for OtherConsumer" ignore {
-      val typeDecl = cpg.typeDecl(".*SomeConsumer.*").head
+
+    "have three bindings for OtherConsumer" in {
+      val typeDecl = cpg.typeDecl(".*OtherConsumer.*").head
       val methodBinding = typeDecl.methodBinding
         .name("accept")
-        .map(binding => (binding.methodFullName, binding.name, binding.signature))
+        .map(binding => (binding.name, binding.signature, binding.methodFullName))
         .l
       methodBinding should contain theSameElementsAs List(
-        ("SomeConsumer.accept:void(java.lang.Integer)", "accept", "void(java.lang.Integer)"),
-        ("SomeConsumer.accept:void(java.lang.Integer)", "accept", "void(java.lang.Number)"),
-        ("SomeConsumer.accept:void(java.lang.Integer)", "accept", "void(java.lang.Object)")
+        ("accept", "void(java.lang.Integer)", "OtherConsumer.accept:void(java.lang.Integer)"),
+        ("accept", "void(java.lang.Number)", "OtherConsumer.accept:void(java.lang.Integer)"),
+        ("accept", "void(java.lang.Object)", "OtherConsumer.accept:void(java.lang.Integer)")
       )
     }
   }
