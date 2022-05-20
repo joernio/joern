@@ -343,19 +343,41 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def constructorSignature(
+    constructor: ResolvedConstructorDeclaration,
+    typeParamValues: ResolvedTypeParametersMap
+  ): String = {
+    val parameterTypes = calcParameterTypes(constructor, typeParamValues)
+
+    composeMethodLikeSignature("void", parameterTypes)
+  }
+
   private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
-    val parameterTypes =
-      Range(0, method.getNumberOfParams).map(method.getParam).map { param =>
-        Try(param.getType).toOption
-          .map(paramType => substituteTypeVariable(paramType, typeParamValues))
-          .getOrElse(TypeConstants.Object)
-      }
+    val parameterTypes = calcParameterTypes(method, typeParamValues)
 
     val returnType =
       Try(method.getReturnType).toOption
         .map(returnType => substituteTypeVariable(returnType, typeParamValues))
-        .getOrElse(TypeConstants.Object)
+        .getOrElse(UnresolvedTypeDefault)
 
+    composeMethodLikeSignature(returnType, parameterTypes)
+  }
+
+  private def calcParameterTypes(
+    methodLike: ResolvedMethodLikeDeclaration,
+    typeParamValues: ResolvedTypeParametersMap
+  ): collection.Seq[String] = {
+    val parameterTypes =
+      Range(0, methodLike.getNumberOfParams).map(methodLike.getParam).map { param =>
+        Try(param.getType).toOption
+          .map(paramType => substituteTypeVariable(paramType, typeParamValues))
+          .getOrElse(UnresolvedTypeDefault)
+      }
+
+    parameterTypes
+  }
+
+  private def composeMethodLikeSignature(returnType: String, parameterTypes: collection.Seq[String]): String = {
     s"$returnType(${parameterTypes.mkString(",")})"
   }
 
@@ -2065,24 +2087,34 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     */
   def astForObjectCreationExpr(expr: ObjectCreationExpr, order: Int, expectedType: Option[String]): Ast = {
     val maybeResolvedExpr = Try(expr.resolve())
-    val args = withOrder(expr.getArguments) { (x, o) =>
+    val argumentAsts = withOrder(expr.getArguments) { (x, o) =>
       val expectedArgType = getExpectedParamType(maybeResolvedExpr, o - 1)
       astsForExpression(x, o, expectedArgType)
     }.flatten
 
-    val name = Operators.alloc
+    val allocFullName = Operators.alloc
     val typeFullName = typeInfoCalc
       .fullName(expr.getType)
       .orElse(expectedType)
-      .getOrElse(UnresolvedTypeDefault)
-    val argTypes = args.map { arg =>
-      arg.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME)).getOrElse(UnresolvedTypeDefault)
-    }
-    val signature = s"void(${argTypes.mkString(",")})"
+      .getOrElse("<unresolvedType>")
+
+    val signature =
+      maybeResolvedExpr match {
+        case Success(constructor) =>
+          constructorSignature(constructor, ResolvedTypeParametersMap.empty())
+        case _ =>
+          // Fallback. Method could not be resolved. So we fall back to using
+          // expressionTypeFullName and the argument types to approximate the method
+          // signature.
+          val argumentTypes = argumentAsts.map(arg => rootType(arg).getOrElse(UnresolvedTypeDefault))
+          composeMethodLikeSignature("void", argumentTypes)
+      }
+
+    val initFullName = s"$typeFullName.<init>:$signature"
 
     val allocNode = NewCall()
-      .name(name)
-      .methodFullName(name)
+      .name(allocFullName)
+      .methodFullName(allocFullName)
       .code(expr.toString)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
@@ -2094,7 +2126,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val initNode = NewCall()
       .name("<init>")
-      .methodFullName(s"$typeFullName.<init>:$signature")
+      .methodFullName(initFullName)
       .lineNumber(line(expr))
       .typeFullName("void")
       .code(expr.toString)
@@ -2103,11 +2135,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     // Assume that a block ast is required, since there isn't enough information to decide otherwise.
     // This simplifies logic elsewhere, and unnecessary blocks will be garbage collected soon.
-    val blockAst = blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initNode, args, order)
+    val blockAst = blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initNode, argumentAsts, order)
 
     expr.getParentNode.toScala match {
       case Some(parent) if parent.isInstanceOf[VariableDeclarator] || parent.isInstanceOf[AssignExpr] =>
-        val partialConstructor = PartialConstructor(initNode, args, blockAst)
+        val partialConstructor = PartialConstructor(initNode, argumentAsts, blockAst)
         partialConstructorQueue.append(partialConstructor)
         Ast(allocNode)
 
@@ -2561,27 +2593,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def rootName(ast: Ast): Option[String] = {
-    ast.root.flatMap(_.properties.get(PropertyNames.NAME).map(_.toString))
-  }
-
   private def argumentTypesForCall(maybeMethod: Try[ResolvedMethodLikeDeclaration], argAsts: Seq[Ast]): List[String] = {
     maybeMethod match {
       case Success(resolved) =>
-        val matchingArgs = argAsts.headOption match {
-          case Some(ast) if rootName(ast).contains("this") =>
-            argAsts.tail
-
-          case _ => argAsts
-        }
-
-        (0 until resolved.getNumberOfParams)
-          .zip(matchingArgs)
-          .map { case (idx, argAst) =>
-            val param = resolved.getParam(idx)
-            typeInfoCalc.fullName(param.getType)
-          }
-          .toList
+        (0 until resolved.getNumberOfParams).map { idx =>
+          val param = resolved.getParam(idx)
+          typeInfoCalc.fullName(param.getType)
+        }.toList
 
       case Failure(_) =>
         // Fall back to actual argument types if the called method couldn't be resolved.
@@ -2598,32 +2616,37 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astsForExpression(arg, o, expectedType)
     }.flatten
 
-    val maybeReturnType =
-      Try(call.resolve())
-        .map(resolvedMethod => typeInfoCalc.fullName(resolvedMethod.getReturnType()))
-        .toOption
-        .orElse(expectedReturnType)
+    val expressionTypeFullName = expressionReturnTypeFullName(call)
+      .orElse(expectedReturnType)
+      .getOrElse(UnresolvedTypeDefault)
+
+    val signature =
+      maybeResolvedCall match {
+        case Success(method) =>
+          methodSignature(method, ResolvedTypeParametersMap.empty())
+        case _ =>
+          // Fallback. Method could not be resolved. So we fall back to using
+          // expressionTypeFullName and the argument types to approximate the method
+          // signature.
+          val argumentTypes = argumentAsts.map(arg => rootType(arg).getOrElse(UnresolvedTypeDefault))
+          composeMethodLikeSignature(expressionTypeFullName, argumentTypes)
+      }
+
+    val receiverTypeOption = targetTypeForCall(call)
+
+    val methodFullName =
+      receiverTypeOption match {
+        case Some(receiverType) =>
+          s"$receiverType.${call.getNameAsString}:$signature"
+        case None =>
+          s"<unresolvedReceiverType>.${call.getNameAsString}:$signature"
+      }
 
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
 
-    val maybeTargetType = targetTypeForCall(call)
-
-    val argumentTypes = argumentTypesForCall(maybeResolvedCall, argumentAsts)
-
-    val (signature, methodFullName) = (maybeTargetType, maybeReturnType) match {
-      case (Some(targetType), Some(returnType)) =>
-        val signature      = s"$returnType(${argumentTypes.mkString(",")})"
-        val methodFullName = s"$targetType.${call.getNameAsString}:$signature"
-        (signature, methodFullName)
-
-      case _ =>
-        ("", "")
-    }
-
-    val expressionTypeFullName = expressionReturnTypeFullName(call).orElse(expectedReturnType)
-    val codePrefix             = codePrefixForMethodCall(call)
+    val codePrefix = codePrefixForMethodCall(call)
     val callNode = NewCall()
-      .typeFullName(expressionTypeFullName.getOrElse(UnresolvedTypeDefault))
+      .typeFullName(expressionTypeFullName)
       .name(call.getNameAsString)
       .methodFullName(methodFullName)
       .signature(signature)
@@ -2636,10 +2659,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val scopeAsts = call.getScope.toScala match {
       case Some(scope) =>
-        astsForExpression(scope, 0, maybeTargetType)
+        astsForExpression(scope, 0, receiverTypeOption)
 
       case None =>
-        val objectNode = createObjectNode(maybeTargetType.getOrElse(UnresolvedTypeDefault), call, callNode)
+        val objectNode = createObjectNode(receiverTypeOption.getOrElse(UnresolvedTypeDefault), call, callNode)
         objectNode.map(Ast(_)).toList
     }
 
