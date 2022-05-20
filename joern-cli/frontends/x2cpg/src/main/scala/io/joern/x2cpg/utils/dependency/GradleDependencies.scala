@@ -118,33 +118,39 @@ object GradleDependencies {
     Try(makeConnection(projectDir.toFile)) match {
       case Success(gradleConnection) =>
         Using.resource(gradleConnection) { connection =>
-          val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
-          val project  = connection.getModel[GradleProject](classOf[GradleProject])
-          val hasAndroidPrefixGradleProperty =
-            runGradleTask(connection, Constants.gradlePropertiesTaskName) match {
-              case Some(out) =>
-                out.split('\n').filter(_.startsWith(Constants.gradleAndroidPropertyPrefix)).nonEmpty
-              case None => false
-            }
-          val info = GradleProjectInfo(
-            buildEnv.getGradle.getGradleVersion,
-            project.getTasks.asScala.map(_.getName).toSeq,
-            hasAndroidPrefixGradleProperty
-          )
-          if (hasAndroidPrefixGradleProperty) {
-            val validProjectNames = List(project.getName) ++ project.getChildren.getAll.asScala.map(_.getName)
-            logger.debug(s"Found Gradle projects: ${validProjectNames.mkString(",")}")
-            if (!validProjectNames.contains(projectName)) {
-              val validProjectNamesStr = validProjectNames.mkString(",")
-              logger.error(
-                s"The provided Gradle project name `$projectName` is is not part of the valid project names: `$validProjectNamesStr`"
-              )
-              None
+          try {
+            val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
+            val project  = connection.getModel[GradleProject](classOf[GradleProject])
+            val hasAndroidPrefixGradleProperty =
+              runGradleTask(connection, Constants.gradlePropertiesTaskName) match {
+                case Some(out) =>
+                  out.split('\n').filter(_.startsWith(Constants.gradleAndroidPropertyPrefix)).nonEmpty
+                case None => false
+              }
+            val info = GradleProjectInfo(
+              buildEnv.getGradle.getGradleVersion,
+              project.getTasks.asScala.map(_.getName).toSeq,
+              hasAndroidPrefixGradleProperty
+            )
+            if (hasAndroidPrefixGradleProperty) {
+              val validProjectNames = List(project.getName) ++ project.getChildren.getAll.asScala.map(_.getName)
+              logger.debug(s"Found Gradle projects: ${validProjectNames.mkString(",")}")
+              if (!validProjectNames.contains(projectName)) {
+                val validProjectNamesStr = validProjectNames.mkString(",")
+                logger.error(
+                  s"The provided Gradle project name `$projectName` is is not part of the valid project names: `$validProjectNamesStr`"
+                )
+                None
+              } else {
+                Some(info)
+              }
             } else {
               Some(info)
             }
-          } else {
-            Some(info)
+          } catch {
+            case t: Throwable =>
+              logger.error(s"Caught exception while trying use Gradle connection", t)
+              None
           }
         }
       case Failure(ex) =>

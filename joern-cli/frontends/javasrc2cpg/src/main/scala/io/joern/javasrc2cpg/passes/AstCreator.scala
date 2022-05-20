@@ -79,14 +79,16 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedConstructorDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration
+  ResolvedReferenceTypeDeclaration,
+  ResolvedTypeDeclaration
 }
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedType, ResolvedTypeVariable}
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
 import com.github.javaparser.symbolsolver.model.typesystem.LazyType
+import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
-import io.joern.javasrc2cpg.util.{NodeTypeInfo, Scope, TypeInfoCalculator}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NodeTypeInfo, Scope, TypeInfoCalculator}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -186,8 +188,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val scopeStack                       = Scope()
   private val typeInfoCalc: TypeInfoCalculator = new TypeInfoCalculator(global, symbolResolver)
   private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
-  private val bindingsQueue: mutable.ArrayBuffer[BindingInfo]                  = mutable.ArrayBuffer.empty
   private val lambdaContextQueue: mutable.ArrayBuffer[Context]                 = mutable.ArrayBuffer.empty
+  private val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -202,12 +204,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     */
   def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
-
-    bindingsQueue.foreach { bindingInfo =>
-      diffGraph.addNode(bindingInfo.newBinding)
-
-      diffGraph.addEdge(bindingInfo.typeDecl, bindingInfo.newBinding, EdgeTypes.BINDS)
-    }
 
     lambdaContextQueue.flatMap(_.closureBindingInfo).foreach { closureBindingInfo =>
       diffGraph.addNode(closureBindingInfo.node)
@@ -350,10 +346,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
     val parameterTypes =
       Range(0, method.getNumberOfParams).map(method.getParam).map { param =>
-        substituteTypeVariable(param.getType, typeParamValues)
+        Try(param.getType).toOption
+          .map(paramType => substituteTypeVariable(paramType, typeParamValues))
+          .getOrElse(TypeConstants.Object)
       }
 
-    val returnType = substituteTypeVariable(method.getReturnType, typeParamValues)
+    val returnType =
+      Try(method.getReturnType).toOption
+        .map(returnType => substituteTypeVariable(returnType, typeParamValues))
+        .getOrElse(TypeConstants.Object)
 
     s"$returnType(${parameterTypes.mkString(",")})"
   }
@@ -389,6 +390,30 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }.getOrElse(Nil)
   }
 
+  def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
+    val fullName = typeInfoCalc.fullName(typeDecl)
+    bindingTableCache.getOrElseUpdate(
+      fullName,
+      createBindingTable(fullName, typeDecl, getBindingTable, methodSignature)
+    )
+  }
+
+  def createBindingNodes(typeDeclNode: NewTypeDecl, bindingTable: BindingTable): Unit = {
+    // We only sort to get stable output.
+    val sortedEntries =
+      bindingTable.getEntries.toBuffer.sortBy((entry: BindingTableEntry) => entry.name + entry.signature)
+
+    sortedEntries.foreach { entry =>
+      val bindingNode = NewBinding()
+        .name(entry.name)
+        .signature(entry.signature)
+        .methodFullName(entry.implementingMethodFullName)
+
+      diffGraph.addNode(bindingNode)
+      diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
+    }
+  }
+
   private def astForTypeDeclMember(
     member: BodyDeclaration[_],
     order: Int,
@@ -397,18 +422,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): AstWithStaticInit = {
     member match {
       case constructor: ConstructorDeclaration =>
-        val ast         = astForConstructor(constructor)
-        val rootNode    = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
-        val bindingInfo = bindingForMethod(rootNode, Nil)
-        bindingsQueue.addAll(bindingInfo)
+        val ast      = astForConstructor(constructor)
+        val rootNode = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
 
         AstWithStaticInit(ast)
 
       case method: MethodDeclaration =>
-        val ast         = astForMethod(method)
-        val rootNode    = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
-        val bindingInfo = bindingForMethod(rootNode, bindingSignatures(method))
-        bindingsQueue.addAll(bindingInfo)
+        val ast      = astForMethod(method)
+        val rootNode = Try(ast.root.get.asInstanceOf[NewMethod]).toOption
 
         AstWithStaticInit(ast)
 
@@ -614,6 +635,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(annotationAsts)
       .withChildren(clinitAst.toSeq)
 
+    Try(typ.resolve()).toOption.foreach { resolvedTypeDecl =>
+      val bindingTable = getBindingTable(resolvedTypeDecl)
+      createBindingNodes(typeDecl, bindingTable)
+    }
+
     scopeStack.popScope()
 
     typeDeclAst
@@ -639,9 +665,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       Ast(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR)),
       Ast(NewModifier().modifierType(ModifierTypes.PUBLIC))
     )
-
-    val bindingsInfo = bindingForMethod(Some(constructorNode), Nil)
-    bindingsQueue.addAll(bindingsInfo)
 
     Ast(constructorNode)
       .withChildren(modifiers)

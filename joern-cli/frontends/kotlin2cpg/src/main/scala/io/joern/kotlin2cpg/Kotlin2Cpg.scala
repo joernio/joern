@@ -65,6 +65,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
                 deps
               case None =>
                 logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
+                println("Could not fetch dependencies when explicitly asked to. Exiting.")
+                System.exit(1)
                 Seq()
             }
           } else {
@@ -78,6 +80,13 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           System.exit(1)
         }
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+
+        val filesWithJavaExtension = SourceFiles.determine(Set(sourceDir), Set(".java"))
+        if (filesWithJavaExtension.nonEmpty) {
+          logger.info(
+            s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
+          )
+        }
 
         val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
         val jarPathsFromClassPath =

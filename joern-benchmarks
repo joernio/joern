@@ -1,0 +1,32 @@
+#!/bin/bash
+
+README="$PWD/benchmarks/README.md"
+
+# Clear README
+> $README
+
+# Run Securibench Micro benchmarks and write results to README.md
+echo "
+### Securibench Micro
+
+The benchmark can be run using either the Java source code frontend
+or JVM bytecode Jimple frontend:
+
+* Java source: \`sbt \"benchmarks / testOnly *.securibench.micro.java.*\"\`
+* JVM bytecode: \`sbt \"benchmarks / testOnly *.securibench.micro.jvm.*\"\`
+" >> $README
+
+echo "#### Java Source Results" >> $README
+
+export JOERN_BENCHMARK_RESULT_FILE="$PWD/securibench_micro_java.txt"
+sbt "benchmarks / testOnly *.securibench.micro.java.*"
+cat $JOERN_BENCHMARK_RESULT_FILE >> $README
+
+echo "#### JVM Bytecode Results" >> $README
+
+export JOERN_BENCHMARK_RESULT_FILE="$PWD/securibench_micro_jvm.txt"
+sbt "benchmarks / testOnly *.securibench.micro.jvm.*"
+cat $JOERN_BENCHMARK_RESULT_FILE >> $README
+
+# Clean up
+rm *.txt
