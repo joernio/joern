@@ -321,7 +321,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     substituteTypeVariableInternal(resolvedType, typeParamValues)
   }
 
-  @tailrec
   private def substituteTypeVariableInternal(
     resolvedType: ResolvedType,
     typeParamValues: ResolvedTypeParametersMap
@@ -334,7 +333,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val assignedType  = typeParamValues.getValue(typeParamDecl)
         if (assignedType.isTypeVariable && assignedType.asTypeParameter() == typeParamDecl) {
           // This is the way the library tells us there is no assigned type.
-          typeParamDecl.getBounds.asScala.find(_.isExtends).map(_.getType.describe()).getOrElse(TypeConstants.Object)
+          typeParamDecl.getBounds.asScala
+            .find(_.isExtends)
+            .map(bound => substituteTypeVariableInternal(bound.getType, typeParamValues))
+            .getOrElse(TypeConstants.Object)
         } else {
           substituteTypeVariableInternal(assignedType, typeParamValues)
         }
