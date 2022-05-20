@@ -37,7 +37,13 @@ object Environment {
         logger.debug(s"\t+ astgen is available (version: ${result.headOption.getOrElse("unknown")})")
         true
       case Failure(_) =>
-        logger.error("\t- astgen is not installed.")
+        val hint =
+          s"""\t- astgen is not installed! Please make sure you have 'npm' installed.
+              |  Then run the astgen installation:
+              |   - Linux/MacOS: 'sudo npm install -g @joernio/astgen'
+              |   - Windows 'npm install -g @joernio/astgen' in a console with admin rights
+              |  """.stripMargin
+        logger.error(hint)
         false
     }
   }
