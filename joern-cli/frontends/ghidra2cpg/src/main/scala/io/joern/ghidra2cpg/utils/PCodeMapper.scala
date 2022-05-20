@@ -61,30 +61,7 @@ class PCodeMapper(
       // map to node and return
       mapCallNode(pcodeOps.head)
     } else {
-      // Iterating over the pcodeOps and replace the "unique" outputs
-      // with the the according node
-      // e.g. the instruction "lw t9,-0x7ff0(gp)" results in the following pcodes:
-      //
-      // 0 : "(unique, 0x100, 4) INT_ADD (register, 0x70, 4) , (const, 0xffff8010, 4)"
-      // 1 : "(unique, 0x180, 4) COPY (const, 0x0, 4)"
-      // 2 : "(unique, 0x180, 4) COPY (unique, 0x100, 4)"
-      // 3 : "(register, 0x64, 4) LOAD (const, 0x1a1, 8) , (unique, 0x180, 4)"
-      //
-      // We want to return:
-      // NewCall(code=lw t9,-0x7ff0(gp),name="<operator>.assignment")
-      //   Parameter 1: NewIdentifier(code=t9)
-      //   Parameter 2: NewCall(code=-0x7ff0(gp), name="<operator>.addition")
-      //                  Parameter 1: NewIdentifier(gp)
-      //                  Parameter 2: NewLiteral(-0x7ff0)
-      val resolvedVars = pcodeOps.last.getInputs.zipWithIndex.map { case (variable, index) =>
-        resolveVarNode(variable, index)
-      }
-      val last = mapCallNode(pcodeOps.last)
-      //resolvedVars.foreach { x =>
-      //  connectCallToArgument(last, x)
-      //}
-      // println("================================================")
-      last
+      mapCallNode(pcodeOps.last)
     }
   }
 
