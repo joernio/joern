@@ -1,10 +1,30 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local, Method}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
+
+class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
+  "constructor init method call" should {
+    val cpg = code("""
+        |class Foo {
+        |  Foo(long aaa) {
+        |  }
+        |  static void method() {
+        |    Foo foo = new Foo(1);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName and signature" in {
+      val initCall = cpg.call.nameExact("<init>").head
+      initCall.signature shouldBe "void(long)"
+      initCall.methodFullName shouldBe "Foo.<init>:void(long)"
+    }
+  }
+}
 
 class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
