@@ -4,7 +4,6 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class ParserTests extends AnyFreeSpec with Matchers {
-  private val ls = System.lineSeparator()
 
   // code is parsed and the resulting AST is printed and compared against code.
   // expected is optional and if present the printed AST is compare against it
@@ -108,68 +107,68 @@ class ParserTests extends AnyFreeSpec with Matchers {
     }
 
     "function def statement tests" in {
-      testT(s"def func():$ls\tpass")
-      testT(s"def func(x):$ls\tpass")
-      testT(s"def func(x,):$ls\tpass", s"def func(x):$ls\tpass")
-      testT(s"def func(x = 1):$ls\tpass")
-      testT(s"def func(x = 1,):$ls\tpass", s"def func(x = 1):$ls\tpass")
-      testT(s"def func(x, y):$ls\tpass")
-      testT(s"def func(x, y = 2):$ls\tpass")
-      testT(s"def func(x = 1, y = 2):$ls\tpass")
-      testT(s"def func(x, y,):$ls\tpass", s"def func(x, y):$ls\tpass")
-      testT(s"def func(x, /, y):$ls\tpass")
-      testT(s"def func(x, /):$ls\tpass")
-      testT(s"def func(x, /,):$ls\tpass", s"def func(x, /):$ls\tpass")
-      testT(s"def func(x, *y):$ls\tpass")
-      testT(s"def func(x, *y, z):$ls\tpass")
-      testT(s"def func(x, *y, z, **a):$ls\tpass")
-      testT(s"def func(x, *y, **z):$ls\tpass")
-      testT(s"def func(x, **y):$ls\tpass")
+      testT("def func():\n\tpass")
+      testT("def func(x):\n\tpass")
+      testT("def func(x,):\n\tpass", s"def func(x):\n\tpass")
+      testT("def func(x = 1):\n\tpass")
+      testT("def func(x = 1,):\n\tpass", s"def func(x = 1):\n\tpass")
+      testT("def func(x, y):\n\tpass")
+      testT("def func(x, y = 2):\n\tpass")
+      testT("def func(x = 1, y = 2):\n\tpass")
+      testT("def func(x, y,):\n\tpass", s"def func(x, y):\n\tpass")
+      testT("def func(x, /, y):\n\tpass")
+      testT("def func(x, /):\n\tpass")
+      testT("def func(x, /,):\n\tpass", s"def func(x, /):\n\tpass")
+      testT("def func(x, *y):\n\tpass")
+      testT("def func(x, *y, z):\n\tpass")
+      testT("def func(x, *y, z, **a):\n\tpass")
+      testT("def func(x, *y, **z):\n\tpass")
+      testT("def func(x, **y):\n\tpass")
 
-      testT(s"def func(*x):$ls\tpass")
-      testT(s"def func(*x,):$ls\tpass", s"def func(*x):$ls\tpass")
-      testT(s"def func(*x, y):$ls\tpass")
-      testT(s"def func(*x, y, ):$ls\tpass", s"def func(*x, y):$ls\tpass")
-      testT(s"def func(*x, y = 1):$ls\tpass")
-      testT(s"def func(*x, y, z):$ls\tpass")
-      testT(s"def func(*x, y = 1, z = 2):$ls\tpass")
-      testT(s"def func(*x, y = 1, z):$ls\tpass")
-      testT(s"def func(*x, y, z = 2):$ls\tpass")
-      testT(s"def func(*x, y, **z):$ls\tpass")
-      testT(s"def func(*x, **z):$ls\tpass")
-      testT(s"def func(*, x):$ls\tpass")
-      testT(s"def func(*, x, ):$ls\tpass", s"def func(*, x):$ls\tpass")
-      testT(s"def func(*, x, **y):$ls\tpass")
-      testT(s"def func(**x):$ls\tpass")
-      testT(s"def func(**x, ):$ls\tpass", s"def func(**x):$ls\tpass")
+      testT("def func(*x):\n\tpass")
+      testT("def func(*x,):\n\tpass", s"def func(*x):\n\tpass")
+      testT("def func(*x, y):\n\tpass")
+      testT("def func(*x, y, ):\n\tpass", s"def func(*x, y):\n\tpass")
+      testT("def func(*x, y = 1):\n\tpass")
+      testT("def func(*x, y, z):\n\tpass")
+      testT("def func(*x, y = 1, z = 2):\n\tpass")
+      testT("def func(*x, y = 1, z):\n\tpass")
+      testT("def func(*x, y, z = 2):\n\tpass")
+      testT("def func(*x, y, **z):\n\tpass")
+      testT("def func(*x, **z):\n\tpass")
+      testT("def func(*, x):\n\tpass")
+      testT("def func(*, x, ):\n\tpass", s"def func(*, x):\n\tpass")
+      testT("def func(*, x, **y):\n\tpass")
+      testT("def func(**x):\n\tpass")
+      testT("def func(**x, ):\n\tpass", s"def func(**x):\n\tpass")
 
-      testT(s"def func(x: y):$ls\tpass")
-      testT(s"def func(x: y = z):$ls\tpass")
-      testT(s"def func() -> x:$ls\tpass")
+      testT("def func(x: y):\n\tpass")
+      testT("def func(x: y = z):\n\tpass")
+      testT("def func() -> x:\n\tpass")
 
-      testT(s"@x${ls}def func():$ls\tpass")
-      testT(s"@x${ls}@y${ls}def func():$ls\tpass")
+      testT("@x\ndef func():\n\tpass")
+      testT("@x\n@y\ndef func():\n\tpass")
 
-      testT(s"async def func():$ls\tpass")
-      testT(s"@x${ls}async def func():$ls\tpass")
+      testT("async def func():\n\tpass")
+      testT("@x\nasync def func():\n\tpass")
     }
 
     "if statement tests" in {
-      testT("if x: y;", s"if x:$ls\ty")
-      testT(s"if x:$ls\ty")
-      testT(s"if x:$ls\ty${ls}else:$ls\tz")
-      testT(s"if x:$ls\ty${ls}elif z:$ls\ta")
+      testT("if x: y;", s"if x:\n\ty")
+      testT("if x:\n\ty")
+      testT("if x:\n\ty\nelse:\n\tz")
+      testT("if x:\n\ty\nelif z:\n\ta")
     }
 
     "class def statement tests" in {
-      testT(s"class x:$ls\tpass", s"class x():$ls\tpass")
-      testT(s"class x():$ls\tpass")
-      testT(s"class x(y):$ls\tpass")
-      testT(s"class x(y, z):$ls\tpass")
-      testT(s"class x(y = z):$ls\tpass")
-      testT(s"class x(y, z = a):$ls\tpass")
-      testT(s"@x${ls}class y():$ls\tpass")
-      testT(s"@x$ls@y${ls}class z():$ls\tpass")
+      testT("class x:\n\tpass", s"class x():\n\tpass")
+      testT("class x():\n\tpass")
+      testT("class x(y):\n\tpass")
+      testT("class x(y, z):\n\tpass")
+      testT("class x(y = z):\n\tpass")
+      testT("class x(y, z = a):\n\tpass")
+      testT("@x\nclass y():\n\tpass")
+      testT("@x\n@y\nclass z():\n\tpass")
     }
 
     "try statement tests" in {
@@ -217,44 +216,44 @@ class ParserTests extends AnyFreeSpec with Matchers {
     }
 
     "while statement tests" in {
-      testT(s"while x: y;", s"while x:$ls\ty")
-      testT(s"while x:$ls\ty")
-      testT(s"while x:$ls\twhile y:$ls\t\tz")
-      testT(s"while x:$ls\ty${ls}else:$ls\tz")
+      testT("while x: y;", s"while x:\n\ty")
+      testT("while x:\n\ty")
+      testT("while x:\n\twhile y:\n\t\tz")
+      testT("while x:\n\ty\nelse:\n\tz")
     }
 
     "with statement tests" in {
-      testT(s"with x:$ls\tpass")
-      testT(s"with x, :$ls\tpass", s"with x:$ls\tpass")
-      testT(s"with x, y:$ls\tpass")
-      testT(s"with x, y, z:$ls\tpass")
-      testT(s"with (x):$ls\tpass", s"with x:$ls\tpass")
-      testT(s"with (x,):$ls\tpass", s"with x:$ls\tpass")
-      testT(s"with (x, y):$ls\tpass", s"with x, y:$ls\tpass")
-      testT(s"with (x, y, z):$ls\tpass", s"with x, y, z:$ls\tpass")
-      testT(s"with x + 1:$ls\tpass")
-      testT(s"with x + 1, y + 2:$ls\tpass")
-      testT(s"with (x + 1):$ls\tpass", s"with x + 1:$ls\tpass")
-      testT(s"with (x + 1, y + 2):$ls\tpass", s"with x + 1, y + 2:$ls\tpass")
-      testT(s"with x as y:$ls\tpass")
-      testT(s"with x as *y:$ls\tpass")
-      testT(s"with x as y, z:$ls\tpass")
-      testT(s"with x as y, z as a:$ls\tpass")
-      testT(s"with x as y, z as a,:$ls\tpass", s"with x as y, z as a:$ls\tpass")
+      testT("with x:\n\tpass")
+      testT("with x, :\n\tpass", s"with x:\n\tpass")
+      testT("with x, y:\n\tpass")
+      testT("with x, y, z:\n\tpass")
+      testT("with (x):\n\tpass", s"with x:\n\tpass")
+      testT("with (x,):\n\tpass", s"with x:\n\tpass")
+      testT("with (x, y):\n\tpass", s"with x, y:\n\tpass")
+      testT("with (x, y, z):\n\tpass", s"with x, y, z:\n\tpass")
+      testT("with x + 1:\n\tpass")
+      testT("with x + 1, y + 2:\n\tpass")
+      testT("with (x + 1):\n\tpass", s"with x + 1:\n\tpass")
+      testT("with (x + 1, y + 2):\n\tpass", s"with x + 1, y + 2:\n\tpass")
+      testT("with x as y:\n\tpass")
+      testT("with x as *y:\n\tpass")
+      testT("with x as y, z:\n\tpass")
+      testT("with x as y, z as a:\n\tpass")
+      testT("with x as y, z as a,:\n\tpass", s"with x as y, z as a:\n\tpass")
     }
 
     "for statement tests" in {
-      testT(s"for x in l:$ls\tpass")
-      testT(s"for x, in l:$ls\tpass", s"for (x,) in l:$ls\tpass")
-      testT(s"for x, y in l:$ls\tpass", s"for (x,y) in l:$ls\tpass")
-      testT(s"for x, y, in l:$ls\tpass", s"for (x,y) in l:$ls\tpass")
-      testT(s"for *x in l:$ls\tpass")
-      testT(s"for x.y in l:$ls\tpass")
-      testT(s"for x in l,:$ls\tpass", s"for x in (l,):$ls\tpass")
-      testT(s"for x in *l:$ls\tpass")
-      testT(s"for x in l.m:$ls\tpass")
-      testT(s"for x in l, m:$ls\tpass", s"for x in (l,m):$ls\tpass")
-      testT(s"for x in l, m,:$ls\tpass", s"for x in (l,m):$ls\tpass")
+      testT("for x in l:\n\tpass")
+      testT("for x, in l:\n\tpass", s"for (x,) in l:\n\tpass")
+      testT("for x, y in l:\n\tpass", s"for (x,y) in l:\n\tpass")
+      testT("for x, y, in l:\n\tpass", s"for (x,y) in l:\n\tpass")
+      testT("for *x in l:\n\tpass")
+      testT("for x.y in l:\n\tpass")
+      testT("for x in l,:\n\tpass", s"for x in (l,):\n\tpass")
+      testT("for x in *l:\n\tpass")
+      testT("for x in l.m:\n\tpass")
+      testT("for x in l, m:\n\tpass", s"for x in (l,m):\n\tpass")
+      testT("for x in l, m,:\n\tpass", s"for x in (l,m):\n\tpass")
       // TODO test with parenthesized target an iter
     }
 
@@ -300,16 +299,16 @@ class ParserTests extends AnyFreeSpec with Matchers {
 
   "error recovery tests" in {
     testT("<someErr>", "<error>")
-    testT("x;<someErr>", s"x$ls<error>")
-    testT("x;<someErr>;", s"x$ls<error>")
-    testT("<someErr>;x", s"<error>${ls}x")
-    testT("<someErr>;x;", s"<error>${ls}x")
-    testT("x;<someErr>;y", s"x$ls<error>${ls}y")
-    testT("x;<someErr>;y;<someErr>", s"x$ls<error>${ls}y$ls<error>")
-    testT(s"x$ls<someErr>", s"x$ls<error>")
-    testT(s"<someErr>${ls}x", s"<error>${ls}x")
-    testT(s"x$ls<someErr>${ls}y", s"x$ls<error>${ls}y")
-    testT(s"x$ls<someErr>${ls}y$ls<someErr>", s"x$ls<error>${ls}y$ls<error>")
+    testT("x;<someErr>", s"x\n<error>")
+    testT("x;<someErr>;", s"x\n<error>")
+    testT("<someErr>;x", s"<error>\nx")
+    testT("<someErr>;x;", s"<error>\nx")
+    testT("x;<someErr>;y", s"x\n<error>\ny")
+    testT("x;<someErr>;y;<someErr>", s"x\n<error>\ny\n<error>")
+    testT("x\n<someErr>", s"x\n<error>")
+    testT("<someErr>\nx", s"<error>\nx")
+    testT("x\n<someErr>\ny", s"x\n<error>\ny")
+    testT("x\n<someErr>\ny\n<someErr>", s"x\n<error>\ny\n<error>")
     testT("print x = y", "<error>")
   }
 
@@ -324,11 +323,11 @@ class ParserTests extends AnyFreeSpec with Matchers {
   "comment tests" in {
     testT("#comment", "")
     testT("x#comment", "x")
-    testT(s"x#comment${ls}y", s"x${ls}y")
-    testT(s"x#comment${ls}y#comment${ls}z", s"x${ls}y${ls}z")
-    testT(s"x$ls#comment", "x")
-    testT(s"x$ls  #comment", "x")
-    testT(s"x$ls  #comment${ls}y", s"x${ls}y")
+    testT("x#comment\ny", s"x\ny")
+    testT("x#comment\ny#comment\nz", s"x\ny\nz")
+    testT("x\n#comment", "x")
+    testT("x\n  #comment", "x")
+    testT("x\n  #comment\ny", s"x\ny")
     testT("#\u2265", "")
   }
 
@@ -338,7 +337,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  if True:
         |    y
         |z""".stripMargin)
-    testT(s"if True:$ls\t x$ls \t y", s"if True:$ls\tx$ls\ty")
+    testT("if True:\n\t x\n \t y", s"if True:\n\tx\n\ty")
     testS(
       """if True:
         |  z = (x
@@ -415,12 +414,12 @@ class ParserTests extends AnyFreeSpec with Matchers {
   }
 
   "multi character new line tests" in {
-    testT(s"if True:\n\r\tx", s"if True:$ls\tx")
-    testT(s"if True:\r\n\tx", s"if True:$ls\tx")
-    testT(s"if True:\n\n\r\tx", s"if True:$ls\tx")
-    testT(s"if True:\n\r\n\tx", s"if True:$ls\tx")
-    testT(s"if True:\n\t(x,\n\ry)", s"if True:$ls\t(x,y)")
-    testT(s"if True:\n\t(x,\r\ny)", s"if True:$ls\t(x,y)")
+    testT("if True:\n\r\tx", s"if True:\n\tx")
+    testT("if True:\r\n\tx", s"if True:\n\tx")
+    testT("if True:\n\n\r\tx", s"if True:\n\tx")
+    testT("if True:\n\r\n\tx", s"if True:\n\tx")
+    testT("if True:\n\t(x,\n\ry)", s"if True:\n\t(x,y)")
+    testT("if True:\n\t(x,\r\ny)", s"if True:\n\t(x,y)")
   }
 
   "inversion rule tests" in {
@@ -754,12 +753,12 @@ class ParserTests extends AnyFreeSpec with Matchers {
 
   "python2 print statement tests" in {
     testT("print x", "print(x)")
-    testT("print x; print y", s"print(x)${ls}print(y)")
-    testT(s"print x${ls}print y", s"print(x)${ls}print(y)")
-    testT("valid1;print x;valid2", s"valid1${ls}print(x)${ls}valid2")
-    testT(s"valid1${ls}print x;valid2", s"valid1${ls}print(x)${ls}valid2")
-    testT(s"valid1${ls}print x${ls}valid2", s"valid1${ls}print(x)${ls}valid2")
-    testT(s"valid1;print x${ls}valid2", s"valid1${ls}print(x)${ls}valid2")
+    testT("print x; print y", s"print(x)\nprint(y)")
+    testT("print x\nprint y", s"print(x)\nprint(y)")
+    testT("valid1;print x;valid2", s"valid1\nprint(x)\nvalid2")
+    testT("valid1\nprint x;valid2", s"valid1\nprint(x)\nvalid2")
+    testT("valid1\nprint x\nvalid2", s"valid1\nprint(x)\nvalid2")
+    testT("valid1;print x\nvalid2", s"valid1\nprint(x)\nvalid2")
   }
 
   // These print statements are valid in python2 and python3
@@ -775,8 +774,8 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("exec x", "exec(x)")
     testT("exec x in y", "exec(x, y)")
     testT("exec x in y, z", "exec(x, y, z)")
-    testT("exec x; pass", s"exec(x)${ls}pass")
-    testT(s"exec x;${ls}pass", s"exec(x)${ls}pass")
+    testT("exec x; pass", s"exec(x)\npass")
+    testT("exec x;\npass", s"exec(x)\npass")
   }
 
   "extra" in {}
