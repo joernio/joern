@@ -267,7 +267,7 @@ class PcodePass(
         val prevInstructionNode = nodes.head
         val instructionNode     = nodes.last
         diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
-        diffGraphBuilder.addEdge(methodNode, prevInstructionNode, EdgeTypes.CFG)
+        diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
       }
     }

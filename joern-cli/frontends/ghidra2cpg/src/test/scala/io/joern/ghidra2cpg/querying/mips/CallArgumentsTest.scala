@@ -23,16 +23,13 @@ class CallArgumentsTest extends GhidraBinToCpgSuite {
     }
    */
   "The call to 'memcpy' should have three arguments " in {
-    val x = cpg.call
+    val result = cpg.call
       .name("memcpy")
       .argument
       .code
       .l
-    val y = cpg.call.name("memcpy").l
 
-    println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "+y)
-    println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "+x)
-    x shouldBe List("auStack180", "param_1 + 0x5", "param_2 - 0x5")
+    result shouldBe List("auStack180", "param_1 + 0x5", "param_2 - 0x5")
   }
   "The call to 'test' should have two arguments " in {
     cpg.call
@@ -41,21 +38,23 @@ class CallArgumentsTest extends GhidraBinToCpgSuite {
       .code
       .l shouldBe List("abcdefghij", "sVar1")
   }
-
+  // TODO: distinct?
   "The call to 'strlen' should have two arguments " in {
-    cpg.call
+    val result = cpg.call
       .name("strlen")
       .argument
       .code
-      .l shouldBe List("abcdefghij")
+      .l
+      .distinct
+    result shouldBe List("abcdefghij")
   }
 
   "The call to 'puts' in 'main' should have 'abcdefghij' arguments " in {
-    val a = cpg.method.name("main").call.name("puts").argument.code.l
-    a shouldBe List("abcdefghij")
+    val result = cpg.method.name("main").call.name("puts").argument.code.l.distinct
+    result shouldBe List("abcdefghij")
   }
   "The call to 'puts' in 'test' should have '__s' arguments " in {
-    val __s = cpg.method.name("test").call.name("puts").argument.code.l
-    __s shouldBe List("__s")
+    val result = cpg.method.name("test").call.name("puts").argument.code.l.distinct
+    result shouldBe List("__s")
   }
 }

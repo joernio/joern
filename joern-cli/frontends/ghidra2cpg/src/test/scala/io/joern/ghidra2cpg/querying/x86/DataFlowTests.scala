@@ -33,9 +33,9 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     implicit val resolver: ICallResolver = NoResolve
     val semanticsFilename    = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
     val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
-    implicit var context: EngineContext = EngineContext(semantics)
+    implicit val context: EngineContext = EngineContext(semantics)
 
-    def source = cpg.method.name("dataflow").call.argument.code("1")
+    def source = cpg.method.name("dataflow").call.argument.code("0x1")
     def sink =
       cpg.method
         .name("dataflow")
@@ -44,6 +44,8 @@ class DataFlowTests extends GhidraBinToCpgSuite {
         .argument
         .order(1)
         .code("EAX")
+    println(source.l)
+    println(sink.l)
     val flows = sink.reachableByFlows(source).l
 
     flows.map(flowToResultPairs).toSet shouldBe

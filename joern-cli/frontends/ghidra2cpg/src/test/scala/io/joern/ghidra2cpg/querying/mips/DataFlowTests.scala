@@ -27,13 +27,12 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val semanticsFilename               = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+  val semanticsFilename: String       = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
   val semantics: Semantics            = Semantics.fromList(new Parser().parseFile(semanticsFilename))
   implicit var context: EngineContext = EngineContext(semantics)
 
   "should find flows through `add*` instructions" in {
     def source = cpg.call.code("li t1,0x2a").argument(1)
-    println(cpg.call.code("li t1,0x2a").l)
     def sink =
       cpg.call
         .code("or t9,t6,zero")
