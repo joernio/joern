@@ -131,7 +131,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (tmp.contains(".json")) {
       tmp = filename.replace("json", "sol")
     }
-//    println("namespaceBlock: "+namespaceBlock + " : "+ tmp+ " : "+ fullName)
 
     Ast(
       NewNamespaceBlock()
@@ -177,22 +176,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case (x: StateVariableDeclaration, order) => astForField(x, order)
       case (x: StructDefinition, order)         => astForStruct(x, contractDef.name, order)
     }
-//    val structAsts = withOrder(contractDef.subNodes.collect {
-//      case x: StructDefinition => x
-//    }) {
-//
-//    }
-
-//    val memberAsts = contractDef.subNodes
-//      .collect { case(x, order)=>
-//        case x: StateVariableDeclaration => {
-//          case(x, order) => astForField(x, order)
-//        }
-//        case x: StructDefinition  => {
-//          case (x, order) astForStruct(x, contractDef.name, order)
-//        }
-//      }
-
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
@@ -207,7 +190,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val parameters =
       (if (methodOrModifier.isVirtual) createThisParameterNode(contractName)
        else
-         Ast()) +: withOrder(methodOrModifier.parameters.collect { case x: VariableDeclaration => x }) {
+        createThisParameterNode(contractName)) +: withOrder(methodOrModifier.parameters.collect { case x: VariableDeclaration => x }) {
         case (x, order) =>
           astForParameter(x, order)
       }
@@ -255,17 +238,37 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .flatMap(_.root)
           .map(_.properties(PropertyNames.CODE))
           .mkString(", ")
-        val types = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString(",")
+        var types = ""
+        val varAndtypes = new mutable.StringBuilder
+        val varNames = parameters.flatMap(_.root).map(_.properties(PropertyNames.NAME))
+        val typeNames = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME))
+        if (parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).size >1) {
+
+          for (i <- varNames.indices) {
+            if (!varNames(i).toString.equals("this")) {
+              varAndtypes.append(typeNames(i).toString + " ")
+              varAndtypes.append(varNames(i).toString)
+              if (i != varNames.length-1) {
+                varAndtypes.append(", ")
+              }
+            }
+          }
+          types = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString(",").replace(contractName+",","")
+        } else {
+          types = parameters.flatMap(_.root).map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString(",").replace(contractName,"")
+        }
+
         val code = if (x.name != null) {
           new mutable.StringBuilder("function ").append(name).append("(")
         } else {
           new mutable.StringBuilder("constructor(")
-        }.append(params).append(");")
+        }
+          code.append(varAndtypes.toString()).append(")")
 
         /** adding visibility into "code"
           */
         if (x.visibility != null && !x.visibility.equals("default")) {
-          code.append(x.visibility)
+          code.append(" "+x.visibility)
         }
 
         /** adding returns into "code" if given
@@ -287,7 +290,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         }
 
         val methodReturn = astForMethodReturn(returnParams, parameters.size + 2)
-
         val mAst = Ast(
           methodNode
             .fullName(contractName + "." + name + funcType + "(" + types + ")")
@@ -434,7 +436,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(code + visibility + " " + varDecl.name)
       .typeFullName(varDecl.name)
       .order(1)
-//    println("vd: "+varDecl.name)
 
     Ast(newID)
 
@@ -505,8 +506,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
     }
     var visibility = "";
-//    println(varDecl)
-//    println(varDecl.visibility)
+
     varDecl.visibility match {
       case x: String => visibility = " " + x
       case _         => visibility = ""
@@ -761,6 +761,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       methodFullName = call.methodFullName
       sig = call.methodFullName.split(":")(1)
     }
+    println("here: "+call.methodFullName)
 //    methodFullNameText = expr.root.map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString("")
 //    sig = expr.root.map(_.properties(PropertyNames.SIGNATURE)).mkString("")
     code = name + "(" + args + ")"

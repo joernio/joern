@@ -29,7 +29,7 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
       |
       |
       |contract Bar is Foo {
-      |    constructor (uint256 _x) Foo( _x) {
+      |    constructor(uint256 _x) Foo( _x) {
       |        Foo.x = _x;
       |    }
       |// Solidity can only have 1 instance of a constructor
@@ -49,11 +49,10 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
 
   "it should create correct method nodes for constructors" in {
     cpg.method.name("<init>").where(_.fullName("^Foo.*")).l match {
-
       case List(cons: Method) =>
         cons.fullName shouldBe "Foo.<init>:void(uint256)"
         cons.signature shouldBe "void(uint256)"
-        cons.code shouldBe "constructor (uint256 _x)"
+        cons.code shouldBe "constructor(uint256 _x)"
         cons.parameter.size shouldBe 2
         val objParam = cons.parameter.index(0).head
         objParam.name shouldBe "this"
@@ -71,7 +70,7 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
       case List(cons1: Method) =>
         cons1.fullName shouldBe "Bar.<init>:void(uint256)"
         cons1.signature shouldBe "void(uint256)"
-        cons1.code shouldBe "constructor (uint256 _x)"
+        cons1.code shouldBe "constructor(uint256 _x)"
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "_x"
