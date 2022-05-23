@@ -94,6 +94,24 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Number)"
     }
   }
+
+  "call to method with generic array parameter" should {
+    val cpg = code("""
+        |class Foo <T> {
+        |  void foo(T[] aaa) {}
+        |
+        |  static void method() {
+        |    Foo<Integer> obj = new Foo();
+        |    Integer[] array = new Integer[3];
+        |    obj.foo(array);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should have correct methodFullName" in {
+      cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Object[])"
+    }
+  }
 }
 
 class CallTests extends JavaSrcCodeToCpgFixture {

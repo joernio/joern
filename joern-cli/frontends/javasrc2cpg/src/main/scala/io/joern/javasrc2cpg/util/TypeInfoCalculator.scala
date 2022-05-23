@@ -9,6 +9,7 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedTypeDeclaration,
   ResolvedTypeParameterDeclaration
 }
+import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{
   ResolvedArrayType,
   ResolvedLambdaConstraintType,
@@ -31,39 +32,72 @@ import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger               = LoggerFactory.getLogger(this.getClass)
+  private val emptyTypeParamValues = ResolvedTypeParametersMap.empty()
+
   def name(typ: ResolvedType): String = {
-    nameOrFullName(typ, false)
+    nameOrFullName(typ, emptyTypeParamValues, false)
+  }
+
+  def name(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
+    nameOrFullName(typ, typeParamValues, false)
   }
 
   def fullName(typ: ResolvedType): String = {
-    registerType(nameOrFullName(typ, true))
+    registerType(nameOrFullName(typ, emptyTypeParamValues, true))
   }
 
-  private def nameOrFullName(typ: ResolvedType, fullyQualified: Boolean): String = {
+  def fullName(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
+    registerType(nameOrFullName(typ, typeParamValues, true))
+  }
+
+  private def nameOrFullName(
+    typ: ResolvedType,
+    typeParamValues: ResolvedTypeParametersMap,
+    fullyQualified: Boolean
+  ): String = {
     typ match {
       case refType: ResolvedReferenceType =>
         nameOrFullName(refType.getTypeDeclaration.get, fullyQualified)
-      case lazyType: LazyType if lazyType.isReferenceType =>
-        nameOrFullName(lazyType.asReferenceType(), fullyQualified)
+      case lazyType: LazyType =>
+        lazyType match {
+          case _ if lazyType.isReferenceType =>
+            nameOrFullName(lazyType.asReferenceType(), typeParamValues, fullyQualified)
+          case _ if lazyType.isTypeVariable =>
+            nameOrFullName(lazyType.asTypeVariable(), typeParamValues, fullyQualified)
+          case _ if lazyType.isArray =>
+            nameOrFullName(lazyType.asArrayType(), typeParamValues, fullyQualified)
+          case _ if lazyType.isPrimitive =>
+            nameOrFullName(lazyType.asPrimitive(), typeParamValues, fullyQualified)
+          case _ if lazyType.isWildcard =>
+            nameOrFullName(lazyType.asWildcard(), typeParamValues, fullyQualified)
+        }
       case voidType: ResolvedVoidType =>
         voidType.describe()
       case primitiveType: ResolvedPrimitiveType =>
         primitiveType.describe()
       case arrayType: ResolvedArrayType =>
-        arrayType.describe()
+        nameOrFullName(arrayType.getComponentType, typeParamValues, fullyQualified) + "[]"
       case nullType: NullType =>
         nullType.describe()
       case typeVariable: ResolvedTypeVariable =>
-        val extendsBoundOption = typeVariable.asTypeParameter().getBounds.asScala.find(_.isExtends)
-        extendsBoundOption
-          .map(bound => fullName(bound.getType))
-          .getOrElse(objectType(fullyQualified))
+        val typeParamDecl   = typeVariable.asTypeParameter()
+        val substitutedType = typeParamValues.getValue(typeParamDecl)
+
+        // This is the way the library tells us there is no substitution happened.
+        if (substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl) {
+          val extendsBoundOption = typeParamDecl.getBounds.asScala.find(_.isExtends)
+          extendsBoundOption
+            .map(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
+            .getOrElse(objectType(fullyQualified))
+        } else {
+          nameOrFullName(substitutedType, typeParamValues, fullyQualified)
+        }
       case lambdaConstraintType: ResolvedLambdaConstraintType =>
-        nameOrFullName(lambdaConstraintType.getBound, fullyQualified)
+        nameOrFullName(lambdaConstraintType.getBound, typeParamValues, fullyQualified)
       case wildcardType: ResolvedWildcard =>
         if (wildcardType.isBounded) {
-          nameOrFullName(wildcardType.getBoundedType, fullyQualified)
+          nameOrFullName(wildcardType.getBoundedType, typeParamValues, fullyQualified)
         } else {
           objectType(fullyQualified)
         }
@@ -99,7 +133,7 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         // resolve. Since we anyway dont care about the type cast, we directly access the
         // symbolResolver and specifiy the most generic type ResolvedType.
         Try(symbolResolver.toResolvedType(typ, classOf[ResolvedType])).toOption
-          .map(resolvedType => nameOrFullName(resolvedType, fullyQualified))
+          .map(resolvedType => nameOrFullName(resolvedType, emptyTypeParamValues, fullyQualified))
     }
   }
 

@@ -317,34 +317,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def substituteTypeVariable(resolvedType: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
-    substituteTypeVariableInternal(resolvedType, typeParamValues)
-  }
-
-  private def substituteTypeVariableInternal(
-    resolvedType: ResolvedType,
-    typeParamValues: ResolvedTypeParametersMap
-  ): String = {
-    resolvedType match {
-      case lazyType: LazyType if lazyType.isTypeVariable =>
-        substituteTypeVariableInternal(lazyType.asTypeVariable(), typeParamValues)
-      case typeParamVariable: ResolvedTypeVariable =>
-        val typeParamDecl = typeParamVariable.asTypeParameter()
-        val assignedType  = typeParamValues.getValue(typeParamDecl)
-        if (assignedType.isTypeVariable && assignedType.asTypeParameter() == typeParamDecl) {
-          // This is the way the library tells us there is no assigned type.
-          typeParamDecl.getBounds.asScala
-            .find(_.isExtends)
-            .map(bound => substituteTypeVariableInternal(bound.getType, typeParamValues))
-            .getOrElse(TypeConstants.Object)
-        } else {
-          substituteTypeVariableInternal(assignedType, typeParamValues)
-        }
-      case typ =>
-        typeInfoCalc.fullName(typ)
-    }
-  }
-
   private def constructorSignature(
     constructor: ResolvedConstructorDeclaration,
     typeParamValues: ResolvedTypeParametersMap
@@ -359,7 +331,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val returnType =
       Try(method.getReturnType).toOption
-        .map(returnType => substituteTypeVariable(returnType, typeParamValues))
+        .map(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
         .getOrElse(UnresolvedTypeDefault)
 
     composeMethodLikeSignature(returnType, parameterTypes)
@@ -372,7 +344,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameterTypes =
       Range(0, methodLike.getNumberOfParams).map(methodLike.getParam).map { param =>
         Try(param.getType).toOption
-          .map(paramType => substituteTypeVariable(paramType, typeParamValues))
+          .map(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
           .getOrElse(UnresolvedTypeDefault)
       }
 
@@ -381,37 +353,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def composeMethodLikeSignature(returnType: String, parameterTypes: collection.Seq[String]): String = {
     s"$returnType(${parameterTypes.mkString(",")})"
-  }
-
-  // For methods which override a method from a super class or interface, we
-  // also need to add bindings with the erased signature of the overridden
-  // methods. This methods calculated those signatures as well as the signature
-  // of the overriding method itself.
-  private def bindingSignatures(method: MethodDeclaration): Iterable[String] = {
-    Try {
-      val result              = mutable.LinkedHashSet.empty[String]
-      val resolvedMethod      = method.resolve()
-      val declType            = resolvedMethod.declaringType()
-      val origMethodErasedSig = methodSignature(resolvedMethod, ResolvedTypeParametersMap.empty())
-      result.add(origMethodErasedSig)
-
-      val ancestors = declType.getAllAncestors()
-      ancestors.asScala.foreach { ancestorType =>
-        val typeParameters   = ancestorType.typeParametersMap()
-        val ancestorTypeDecl = ancestorType.getTypeDeclaration.get
-        ancestorTypeDecl.getDeclaredMethods.asScala
-          .filter(_.getName == resolvedMethod.getName)
-          .foreach { ancestorMethod =>
-            val ancestorSig = methodSignature(ancestorMethod, typeParameters)
-            if (ancestorSig == origMethodErasedSig) {
-              val erasedSig = methodSignature(ancestorMethod, ResolvedTypeParametersMap.empty())
-              result.add(erasedSig)
-            }
-            ancestorSig
-          }
-      }
-      result
-    }.getOrElse(Nil)
   }
 
   def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
