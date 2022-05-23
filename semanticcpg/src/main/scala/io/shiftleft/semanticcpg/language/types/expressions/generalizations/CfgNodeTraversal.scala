@@ -4,7 +4,7 @@ import io.shiftleft.Implicits.JavaIteratorDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
+import overflowdb.traversal.{Traversal, _}
 import overflowdb.traversal.help.Doc
 
 @help.Traversal(elementType = classOf[CfgNode])
@@ -98,5 +98,11 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
   @Doc(info = "Address of the code (for binary code)")
   def address: Traversal[Option[String]] =
     traversal.map(_.address)
+
+  @Doc(info = "Filters out paths that pass though the given traversal")
+  def passesNot(excluded: Traversal[CfgNode]): Traversal[CfgNode] = {
+    val ex = excluded.toSet
+    traversal.flatMap(_.filter(_.postDominatedBy.toSet.exists(ex.contains)))
+  }
 
 }
