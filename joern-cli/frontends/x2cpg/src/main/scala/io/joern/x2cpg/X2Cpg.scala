@@ -194,14 +194,12 @@ object X2Cpg {
     * the function, printing errors to the console.
     */
   def withErrorsToConsole[T <: X2CpgConfig[_]](config: T)(f: T => Try[_]): Try[_] = {
-    Try {
-      f(config)
-    } match {
+    f(config) match {
       case Failure(exception) =>
-        println(exception.getMessage)
         exception.printStackTrace()
         Failure(exception)
-      case Success(v) => v
+      case Success(v) =>
+        Success(v)
     }
   }
 
