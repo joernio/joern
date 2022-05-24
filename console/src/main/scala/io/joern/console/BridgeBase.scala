@@ -32,7 +32,7 @@ case class Config(
 
 /** Base class for Ammonite Bridge. Nothing to see here, move along.
   */
-trait BridgeBase {
+trait BridgeBase extends PluginHandling with ServerHandling {
 
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
@@ -164,88 +164,6 @@ trait BridgeBase {
     }
   }
 
-  private def listPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
-    println("Installed plugins:")
-    println("==================")
-    new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
-    println("Available layer creators")
-    println()
-    val code =
-      """
-        |println(run)
-        |
-        |""".stripMargin
-    withTemporaryScript(code, slProduct.name) { file =>
-      runScript(os.Path(file.path.toString), config)
-    }
-  }
-
-  private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
-    File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
-      val file = (dir / "script.sc")
-      file.write(code)
-      f(file)
-    }
-  }
-
-  private def runPlugin(config: Config, productName: String): Unit = {
-    if (config.src.isEmpty) {
-      println("You must supply a source directory with the --src flag")
-      return
-    }
-
-    val bundleName = config.pluginToRun.get
-    val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
-    val language = config.language.getOrElse(
-      io.joern.console.cpgcreation
-        .guessLanguage(src)
-        .map { x =>
-          val lang = x.toLowerCase
-          // TODO we should eventually rename the languages in the
-          // spec to `OLDC` and `C` at which point the match below
-          // is no longer required.
-          lang match {
-            case "newc" => "c"
-            case "c"    => "oldc"
-            case _      => lang
-          }
-        }
-        .getOrElse("c")
-    )
-    val storeCode = if (config.store) { "save" }
-    else { "" }
-    val runDataflow = if (productName == "ocular") { "run.dataflow" }
-    else { "run.ossdataflow" }
-    val argsString = config.frontendArgs match {
-      case Array() => ""
-      case args =>
-        val quotedArgs = args.map { arg =>
-          "\"" ++ arg ++ "\""
-        }
-        val argsString = quotedArgs.mkString(", ")
-        s", args=List($argsString)"
-    }
-    val code = s"""
-        | if (${config.overwrite} || !workspace.projectExists("$src")) {
-        |   workspace.projects
-        |   .filter(_.inputPath == "$src")
-        |   .map(_.name).foreach(n => workspace.removeProject(n))
-        |   importCode.$language("$src"$argsString)
-        |   $runDataflow
-        |   save
-        | } else {
-        |    println("Using existing CPG - Use `--overwrite` if this is not what you want")
-        |    openForInputPath(\"$src\")
-        | }
-        | run.$bundleName
-        | $storeCode
-        |""".stripMargin
-
-    withTemporaryScript(code, productName) { file =>
-      runScript(os.Path(file.path.toString), config)
-    }
-  }
-
   private def startInteractiveShell(config: Config, slProduct: SLProduct) = {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
@@ -276,41 +194,7 @@ trait BridgeBase {
       .run()
   }
 
-  private def startHttpServer(config: Config): Unit = {
-    val predef   = predefPlus(additionalImportCode(config))
-    val ammonite = new EmbeddedAmmonite(predef)
-    ammonite.start()
-    Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      ammonite.shutdown()
-    }))
-    val server = new CPGQLServer(
-      ammonite,
-      config.serverHost,
-      config.serverPort,
-      config.serverAuthUsername,
-      config.serverAuthPassword
-    )
-    println("Starting CPGQL server ...")
-    try {
-      server.main(Array.empty)
-    } catch {
-      case _: java.net.BindException => {
-        println("Could not bind socket for CPGQL server, exiting.")
-        ammonite.shutdown()
-        System.exit(1)
-      }
-      case e: Throwable => {
-        println("Unhandled exception thrown while attempting to start CPGQL server: ")
-        println(e.getMessage)
-        println("Exiting.")
-
-        ammonite.shutdown()
-        System.exit(1)
-      }
-    }
-  }
-
-  private def runScript(scriptFile: Path, config: Config) = {
+  protected def runScript(scriptFile: Path, config: Config) = {
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
     val scriptArgs: Seq[String] = {
@@ -349,7 +233,7 @@ trait BridgeBase {
     if (isEncryptedScript) actualScriptFile.toIO.delete
   }
 
-  private def additionalImportCode(config: Config): List[String] =
+  protected def additionalImportCode(config: Config): List[String] =
     config.additionalImports.flatMap { importScript =>
       val file = importScript.toIO
       assert(file.canRead, s"unable to read $file")
@@ -377,5 +261,136 @@ trait BridgeBase {
   protected def shutdownHooks: List[String]
 
   protected def promptStr(): String
+
+}
+
+trait PluginHandling {
+  this: BridgeBase =>
+
+  protected def runPlugin(config: Config, productName: String): Unit = {
+    if (config.src.isEmpty) {
+      println("You must supply a source directory with the --src flag")
+      return
+    }
+
+    val bundleName = config.pluginToRun.get
+    val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val language = config.language.getOrElse(
+      io.joern.console.cpgcreation
+        .guessLanguage(src)
+        .map { x =>
+          val lang = x.toLowerCase
+          // TODO we should eventually rename the languages in the
+          // spec to `OLDC` and `C` at which point the match below
+          // is no longer required.
+          lang match {
+            case "newc" => "c"
+            case "c"    => "oldc"
+            case _      => lang
+          }
+        }
+        .getOrElse("c")
+    )
+    val storeCode = if (config.store) { "save" }
+    else { "" }
+    val runDataflow = if (productName == "ocular") { "run.dataflow" }
+    else { "run.ossdataflow" }
+    val argsString = config.frontendArgs match {
+      case Array() => ""
+      case args =>
+        val quotedArgs = args.map { arg =>
+          "\"" ++ arg ++ "\""
+        }
+        val argsString = quotedArgs.mkString(", ")
+        s", args=List($argsString)"
+    }
+    val code = s"""
+                  | if (${config.overwrite} || !workspace.projectExists("$src")) {
+                  |   workspace.projects
+                  |   .filter(_.inputPath == "$src")
+                  |   .map(_.name).foreach(n => workspace.removeProject(n))
+                  |   importCode.$language("$src"$argsString)
+                  |   $runDataflow
+                  |   save
+                  | } else {
+                  |    println("Using existing CPG - Use `--overwrite` if this is not what you want")
+                  |    openForInputPath(\"$src\")
+                  | }
+                  | run.$bundleName
+                  | $storeCode
+                  |""".stripMargin
+
+    withTemporaryScript(code, productName) { file =>
+      runScript(os.Path(file.path.toString), config)
+    }
+  }
+
+  protected def listPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
+    println("Installed plugins:")
+    println("==================")
+    new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
+    println("Available layer creators")
+    println()
+    val code = codeToListPlugins()
+
+    withTemporaryScript(code, slProduct.name) { file =>
+      runScript(os.Path(file.path.toString), config)
+    }
+  }
+
+  private def codeToListPlugins(): String = {
+    """
+      |println(run)
+      |
+      |""".stripMargin
+  }
+
+  private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
+    File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
+      val file = (dir / "script.sc")
+      file.write(code)
+      f(file)
+    }
+  }
+
+}
+
+trait ServerHandling {
+
+  this: BridgeBase =>
+
+  protected def startHttpServer(config: Config): Unit = {
+    val predef   = predefPlus(additionalImportCode(config))
+    val ammonite = new EmbeddedAmmonite(predef)
+    ammonite.start()
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      ammonite.shutdown()
+    }))
+    val server = new CPGQLServer(
+      ammonite,
+      config.serverHost,
+      config.serverPort,
+      config.serverAuthUsername,
+      config.serverAuthPassword
+    )
+    println("Starting CPGQL server ...")
+    try {
+      server.main(Array.empty)
+    } catch {
+      case _: java.net.BindException => {
+        println("Could not bind socket for CPGQL server, exiting.")
+        ammonite.shutdown()
+        System.exit(1)
+      }
+      case e: Throwable => {
+        println("Unhandled exception thrown while attempting to start CPGQL server: ")
+        println(e.getMessage)
+        println("Exiting.")
+
+        ammonite.shutdown()
+        System.exit(1)
+      }
+    }
+  }
 
 }
