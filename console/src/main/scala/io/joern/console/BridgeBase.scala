@@ -30,7 +30,7 @@ case class Config(
   frontendArgs: Array[String] = Array.empty
 )
 
-/** Base class for Ammonite Bridge. Nothing to see here, move along.
+/** Base class for Ammonite Bridge, split by topic into multiple self types.
   */
 trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
@@ -141,6 +141,8 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
     parser.parse(args, Config()).get
   }
 
+  /** Entry point for Joern's integrated ammonite shell
+    */
   protected def runAmmonite(config: Config, slProduct: SLProduct = OcularProduct): Unit = {
     if (config.listPlugins) {
       listPluginsAndLayerCreators(config, slProduct)
@@ -387,14 +389,13 @@ trait ServerHandling {
         ammonite.shutdown()
         System.exit(1)
       }
-      case e: Throwable => {
+      case e: Throwable =>
         println("Unhandled exception thrown while attempting to start CPGQL server: ")
         println(e.getMessage)
         println("Exiting.")
 
         ammonite.shutdown()
         System.exit(1)
-      }
     }
   }
 
