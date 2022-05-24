@@ -344,11 +344,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     typeParamValues: ResolvedTypeParametersMap
   ): collection.Seq[String] = {
     val parameterTypes =
-      Range(0, methodLike.getNumberOfParams).map(methodLike.getParam).map { param =>
-        Try(param.getType).toOption
-          .map(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
-          .getOrElse(UnresolvedTypeDefault)
-      }
+      Range(0, methodLike.getNumberOfParams)
+        .flatMap { index =>
+          Try(methodLike.getParam(index)).toOption
+        }
+        .map { param =>
+          Try(param.getType).toOption
+            .map(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
+            .getOrElse(UnresolvedTypeDefault)
+        }
 
     parameterTypes
   }
