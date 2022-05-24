@@ -7,11 +7,21 @@ import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
 /** Plugin management component
-  * @param installDir
-  *   the Joern/Ocular installation dir
-  */
+ *
+ * Joern allows plugins to be installed. A plugin at the very least consists of a class
+ * that inherits from `LayerCreator`, bundled in a jar file, packaged in a zip file. The
+ * zip file may furthermore contain any dependency jars that the plugin requires and
+ * that are not included on the joern class path by default.
+ *
+ * @param installDir
+ *   the Joern/Ocular installation dir
+ */
 class PluginManager(val installDir: File) {
 
+  /**
+   * Generate a sorted list of all installed plugins by examining the
+   * plugin directory.
+   * */
   def listPlugins(): List[String] = {
     val installedPluginNames = pluginDir.toList
       .flatMap { dir =>
@@ -26,6 +36,10 @@ class PluginManager(val installDir: File) {
     installedPluginNames
   }
 
+  /**
+   * Install the plugin stored at `filename`. The plugin is
+   * expected to be a zip file containing Java archives (.jar files).
+   * */
   def add(filename: String): Unit = {
     if (pluginDir.isEmpty) {
       println("Plugin directory does not exist")
@@ -67,6 +81,9 @@ class PluginManager(val installDir: File) {
     }
   }
 
+  /**
+   * Delete plugin with given `name` from the plugin directory.
+   * */
   def rm(name: String): List[String] = {
     if (!listPlugins().contains(name)) {
       List()
@@ -81,6 +98,10 @@ class PluginManager(val installDir: File) {
     }
   }
 
+  /**
+   * Return the path to the plugin directory or None if the plugin
+   * directory does not exist.
+   * */
   def pluginDir: Option[Path] = {
     val pathToPluginDir = installDir.path.resolve("lib")
     if (pathToPluginDir.toFile.exists()) {
