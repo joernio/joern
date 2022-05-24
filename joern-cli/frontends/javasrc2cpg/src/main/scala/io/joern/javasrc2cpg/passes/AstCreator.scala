@@ -90,7 +90,14 @@ import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParse
 import com.github.javaparser.symbolsolver.model.typesystem.LazyType
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
-import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NodeTypeInfo, Scope, TypeInfoCalculator}
+import io.joern.javasrc2cpg.util.{
+  BindingTable,
+  BindingTableAdapterForJavaparser,
+  BindingTableEntry,
+  NodeTypeInfo,
+  Scope,
+  TypeInfoCalculator
+}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, UnresolvedTypeDefault}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -365,7 +372,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val fullName = typeInfoCalc.fullName(typeDecl)
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable(fullName, typeDecl, getBindingTable, methodSignature)
+      createBindingTable(
+        fullName,
+        typeDecl,
+        getBindingTable,
+        methodSignature,
+        new BindingTableAdapterForJavaparser(methodSignature)
+      )
     )
   }
 

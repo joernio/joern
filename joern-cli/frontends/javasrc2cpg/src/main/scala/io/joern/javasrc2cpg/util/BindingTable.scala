@@ -3,6 +3,7 @@ package io.joern.javasrc2cpg.util
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedReferenceTypeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -22,19 +23,62 @@ class BindingTable() {
   }
 }
 
-object BindingTable {
-  def createBindingTable(
+trait BindingTableAdapter[T] {
+  def directParents(typeDecl: T): collection.Seq[ResolvedReferenceTypeDeclaration]
+
+  def allParentsWithTypeMap(typeDecl: T): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)]
+
+  def directBindingTableEntries(typeDeclFullName: String, typeDecl: T): collection.Seq[BindingTableEntry]
+}
+
+class BindingTableAdapterForJavaparser(
+  methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
+) extends BindingTableAdapter[ResolvedReferenceTypeDeclaration] {
+  override def directParents(
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): collection.Seq[ResolvedReferenceTypeDeclaration] = {
+    typeDecl.getAncestors(true).asScala.map(_.getTypeDeclaration.get)
+  }
+
+  override def allParentsWithTypeMap(
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
+    getAllParents(typeDecl).map { parentType =>
+      (parentType.getTypeDeclaration.get, parentType.typeParametersMap())
+    }
+  }
+
+  override def directBindingTableEntries(
     typeDeclFullName: String,
-    typeDecl: ResolvedReferenceTypeDeclaration,
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): collection.Seq[BindingTableEntry] = {
+
+    typeDecl.getDeclaredMethods.asScala.iterator
+      .filter(methodDecl => !methodDecl.isStatic)
+      .map { methodDecl =>
+        val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
+        BindingTableEntry.apply(
+          methodDecl.getName,
+          signature,
+          composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
+        )
+      }
+      .toBuffer
+  }
+}
+
+object BindingTable {
+  def createBindingTable[T](
+    typeDeclFullName: String,
+    typeDecl: T,
     getBindingTable: ResolvedReferenceTypeDeclaration => BindingTable,
-    methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
+    methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String,
+    adapter: BindingTableAdapter[T]
   ): BindingTable = {
     val bindingTable = new BindingTable()
 
     // Take over all binding table entries for parent class/interface binding tables.
-    val ancestors = typeDecl.getAncestors(true).asScala
-    ancestors.foreach { parentType =>
-      val parentTypeDecl     = parentType.getTypeDeclaration.get
+    adapter.directParents(typeDecl).foreach { parentTypeDecl =>
       val parentBindingTable = getBindingTable(parentTypeDecl)
       parentBindingTable.getEntries.foreach { entry =>
         bindingTable.add(entry)
@@ -42,18 +86,7 @@ object BindingTable {
     }
 
     // Create table entries for all methods declared in type declaration.
-    val directTableEntries =
-      typeDecl.getDeclaredMethods.asScala.iterator
-        .filter(methodDecl => !methodDecl.isStatic)
-        .map { methodDecl =>
-          val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
-          BindingTableEntry.apply(
-            methodDecl.getName,
-            signature,
-            composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
-          )
-        }
-        .toBuffer
+    val directTableEntries = adapter.directBindingTableEntries(typeDeclFullName, typeDecl)
 
     // Add all table entries for method of type declaration to binding table.
     // It is important that this happens after adding the inherited entries
@@ -68,21 +101,16 @@ object BindingTable {
     // with the name matches a direct table entry we have an override and replace
     // the binding table entry for the erased! parent method signature.
     // This become necessary because calls in the JVM executed via erased signatures.
-    val allParents = getAllParents(typeDecl)
-    allParents.foreach { parentType =>
-      val typeParameterInDerivedContext = parentType.typeParametersMap()
+    adapter.allParentsWithTypeMap(typeDecl).foreach { case (parentTypeDecl, typeParameterInDerivedContext) =>
       directTableEntries.foreach { directTableEntry =>
-        val parentMethods = parentType.getTypeDeclaration.get.getDeclaredMethods.asScala
+        val parentMethods = parentTypeDecl.getDeclaredMethods.asScala
         parentMethods.foreach { parentMethodDecl =>
           if (directTableEntry.name == parentMethodDecl.getName) {
             val parentSigInDerivedContext = methodSignature(parentMethodDecl, typeParameterInDerivedContext)
             if (directTableEntry.signature == parentSigInDerivedContext) {
               val erasedParentMethodSig = methodSignature(parentMethodDecl, ResolvedTypeParametersMap.empty())
-              val tableEntry = BindingTableEntry.apply(
-                directTableEntry.name,
-                erasedParentMethodSig,
-                directTableEntry.implementingMethodFullName
-              )
+              val tableEntry = BindingTableEntry
+                .apply(directTableEntry.name, erasedParentMethodSig, directTableEntry.implementingMethodFullName)
               bindingTable.add(tableEntry)
             }
           }
@@ -91,33 +119,5 @@ object BindingTable {
     }
 
     bindingTable
-  }
-
-  private def getAllParents(typeDecl: ResolvedReferenceTypeDeclaration): mutable.ArrayBuffer[ResolvedReferenceType] = {
-    val result = mutable.ArrayBuffer.empty[ResolvedReferenceType]
-
-    if (!typeDecl.isJavaLangObject) {
-      typeDecl.getAncestors(true).asScala.foreach { ancestor =>
-        result.append(ancestor)
-        getAllParents(ancestor, result)
-      }
-    }
-
-    result
-  }
-
-  private def getAllParents(typ: ResolvedReferenceType, result: mutable.ArrayBuffer[ResolvedReferenceType]): Unit = {
-    if (typ.isJavaLangObject) {
-      Iterable.empty
-    } else {
-      Try(typ.getDirectAncestors).map(_.asScala).getOrElse(Nil).foreach { ancestor =>
-        result.append(ancestor)
-        getAllParents(ancestor, result)
-      }
-    }
-  }
-
-  private def composeMethodFullName(typeDeclFullName: String, name: String, signature: String): String = {
-    s"$typeDeclFullName.$name:$signature"
   }
 }
