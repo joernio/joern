@@ -7,11 +7,12 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.console.JoernWorkspaceLoader
 import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
+import overflowdb.Graph
 import overflowdb.formats.ExportResult
+import overflowdb.formats.graphml.GraphMLExporter
 import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 
 import scala.util.Using
-import scala.util.control.NoStackTrace
 
 object JoernExport extends App {
 
@@ -28,7 +29,7 @@ object JoernExport extends App {
     val ast, cfg, ddg, cdg, pdg, cpg14, all = Value
   }
   object Format extends Enumeration {
-    val dot, neo4jcsv = Value
+    val dot, neo4jcsv, graphml = Value
   }
 
   private def parseConfig: Option[Config] =
@@ -39,7 +40,7 @@ object JoernExport extends App {
         .text("input CPG file name - defaults to `cpg.bin`")
         .optional()
         .action((x, c) => c.copy(cpgFileName = x))
-      opt[String]("out")
+      opt[String]('o', "out")
         .text("output directory - will be created and must not yet exist")
         .action((x, c) => c.copy(outDir = x))
       opt[String]("repr")
@@ -82,14 +83,19 @@ object JoernExport extends App {
         case (Representation.cpg14, Format.dot) =>
           new DumpCpg14(Cpg14DumpOptions(config.outDir)).create(context)
         case (Representation.all, Format.neo4jcsv) =>
-          val ExportResult(nodeCount, edgeCount, files, additionalInfo) =
-            Neo4jCsvExporter.runExport(cpg.graph, config.outDir)
-          println(s"export completed successfully: $nodeCount nodes, $edgeCount edges in ${files.size} files")
-          println(additionalInfo)
+          overflowdbExport(cpg.graph, config.outDir, Neo4jCsvExporter)
+        case (Representation.all, Format.graphml) =>
+          overflowdbExport(cpg.graph, config.outDir, GraphMLExporter)
         case (repr, format) =>
           exitWithError(s"combination of repr=$repr and format=$format not (yet) supported")
       }
     }
+  }
+
+  private def overflowdbExport(graph: Graph, outDir: String, exporter: overflowdb.formats.Exporter): Unit = {
+    val ExportResult(nodeCount, edgeCount, files, additionalInfo) = exporter.runExport(graph, outDir)
+    println(s"export completed successfully: $nodeCount nodes, $edgeCount edges in ${files.size} files")
+    additionalInfo.foreach(println)
   }
 
   private def exitWithError(msg: String): Unit = {
