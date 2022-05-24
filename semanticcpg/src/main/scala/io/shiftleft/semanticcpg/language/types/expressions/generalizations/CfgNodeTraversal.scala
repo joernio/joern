@@ -102,13 +102,13 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
   @Doc(info = "Filters in paths that pass though the given traversal")
   def passes(included: Traversal[CfgNode]): Traversal[CfgNode] = {
     val in = included.toSet
-    traversal.flatMap(_.filter(_.postDominatedBy.toSet.exists(in.contains)))
+    traversal.flatMap(_.passes(in))
   }
 
   @Doc(info = "Filters out paths that pass though the given traversal")
   def passesNot(excluded: Traversal[CfgNode]): Traversal[CfgNode] = {
     val ex = excluded.toSet
-    traversal.flatMap(_.filterNot(_.postDominatedBy.toSet.exists(ex.contains)))
+    traversal.flatMap(_.passesNot(ex))
   }
 
 }

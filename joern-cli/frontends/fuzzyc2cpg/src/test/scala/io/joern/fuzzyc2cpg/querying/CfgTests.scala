@@ -46,25 +46,25 @@ class CfgTests extends FuzzyCCodeToCpgSuite {
   }
 
   "should allow CFG successors to be filtered in if they pass a given node" in {
-    val printf = cpg.method.call.name("printf").isCall
-    val lt     = cpg.method.call.name(Operators.lessThan).isCall
-    val sink   = cpg.method.call.name("sink").isCall
-    // LTs always pass before printf
+    def printf = cpg.method.call.name("printf").isCall
+    def lt     = cpg.method.call.name(Operators.lessThan).isCall
+    def sink   = cpg.method.call.name("sink").isCall
+    // printf passes after LTs
     lt.passes(printf).code.toSet shouldBe Set("y < 10", "x < 10")
-    // printf does not pass before the LTs
+    // LTs do not pass after printf
     printf.passes(lt).code.toSet shouldBe Set()
     // "Foo" is after the call to "sink"
     sink.passes(cpg.literal("foo")).code.toSet shouldBe Set()
   }
 
   "should allow CFG successors to be filtered out if they pass a given node" in {
-    val printf = cpg.method.call.name("printf").isCall
-    val lt     = cpg.method.call.name(Operators.lessThan).isCall
-    val sink   = cpg.method.call.name("sink").isCall
+    def printf = cpg.method.call.name("printf").isCall
+    def lt     = cpg.method.call.name(Operators.lessThan).isCall
+    def sink   = cpg.method.call.name("sink").isCall
     // printf not before LTs
     lt.passesNot(printf).code.toSet shouldBe Set()
-    // printf will always pass both of the LTs
-    printf.passesNot(lt).code.toSet shouldBe Set()
+    // printf does not pass lt
+    printf.passesNot(lt).code.toSet shouldBe Set("printf(\"foo\")")
     // "Foo" is after the call to "sink"
     sink.passesNot(cpg.literal("foo")).code.toSet shouldBe Set("sink(x)")
   }
