@@ -6,6 +6,7 @@ import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParame
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 case class BindingTableEntry(name: String, signature: String, implementingMethodFullName: String)
 
@@ -109,7 +110,7 @@ object BindingTable {
     if (typ.isJavaLangObject) {
       Iterable.empty
     } else {
-      typ.getDirectAncestors.asScala.foreach { ancestor =>
+      Try(typ.getDirectAncestors).map(_.asScala).getOrElse(Nil).foreach { ancestor =>
         result.append(ancestor)
         getAllParents(ancestor, result)
       }

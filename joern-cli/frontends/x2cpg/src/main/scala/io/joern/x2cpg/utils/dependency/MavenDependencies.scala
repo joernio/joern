@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object MavenDependencies {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -14,19 +14,29 @@ object MavenDependencies {
     val tmpFile = Files.createTempFile("mvnClassPass", ".txt")
     tmpFile.toFile.deleteOnExit()
     ExternalCommand.run(
-      s"mvn dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=$tmpFile",
+      s"mvn -B dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=$tmpFile",
       projectDir.toString
     ) match {
       case Success(_) =>
-        val classPath = new String(Files.readAllBytes(tmpFile), StandardCharsets.UTF_8)
-        classPath.split(":").toList
       case Failure(exception) =>
         logger.warn(
-          s"Unable to retrieve compile class path from maven." +
-            s"\n Results will suffer from poor type information.\n${exception.getMessage}"
+          s"Retrieval of compile class path via maven return with error.\n" +
+            "The compile class path may be missing or partial.\n" +
+            "Results will suffer from poor type information.\n" +
+            s"Error: ${exception.getMessage}"
         )
-        Nil
     }
+
+    Try {
+      // Regardless of the external maven comment error status we try to read the
+      // output file because sometimes it contains partial results.
+      val classPath = new String(Files.readAllBytes(tmpFile), StandardCharsets.UTF_8)
+      if (classPath.isEmpty) {
+        Nil
+      } else {
+        classPath.split(":").toList
+      }
+    }.getOrElse(Nil)
   }
 
 }
