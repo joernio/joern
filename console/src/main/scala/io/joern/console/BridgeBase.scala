@@ -237,19 +237,11 @@ trait ScriptExecution {
     val actualScriptFile =
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
-    val importCpgCode = config.cpgToLoad.map { cpgFile =>
-      "importCpg(\"" + cpgFile + "\")"
-    }.toList ++ config.forInputPath.map { name =>
-      s"""
-         |openForInputPath(\"$name\")
-         |""".stripMargin
-    }
+
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
+
     ammonite
-      .Main(
-        predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode ++ shutdownHooks),
-        remoteLogging = false,
-        colors = ammoniteColors(config)
-      )
+      .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
       .runScript(actualScriptFile, scriptArgs)
       ._1 match {
       case Res.Success(r) =>
@@ -263,6 +255,18 @@ trait ScriptExecution {
     }
     /* minimizing exposure time by deleting the decrypted script straight away */
     if (isEncryptedScript) actualScriptFile.toIO.delete
+  }
+
+  /** For the given config, generate a list of commands to import the CPG
+    */
+  private def importCpgCode(config: Config): List[String] = {
+    config.cpgToLoad.map { cpgFile =>
+      "importCpg(\"" + cpgFile + "\")"
+    }.toList ++ config.forInputPath.map { name =>
+      s"""
+         |openForInputPath(\"$name\")
+         |""".stripMargin
+    }
   }
 
   private def ammoniteColors(config: Config) =
@@ -279,6 +283,15 @@ trait PluginHandling {
       println("You must supply a source directory with the --src flag")
       return
     }
+    val code = loadOrCreateCpg(config, productName)
+    withTemporaryScript(code, productName) { file =>
+      runScript(os.Path(file.path.toString), config)
+    }
+  }
+
+  /** Create a command that loads an existing CPG or creates it, based on the given `config`.
+    */
+  private def loadOrCreateCpg(config: Config, productName: String): String = {
 
     val bundleName = config.pluginToRun.get
     val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
@@ -298,6 +311,7 @@ trait PluginHandling {
         }
         .getOrElse("c")
     )
+
     val storeCode = if (config.store) { "save" }
     else { "" }
     val runDataflow = if (productName == "ocular") { "run.dataflow" }
@@ -311,25 +325,23 @@ trait PluginHandling {
         val argsString = quotedArgs.mkString(", ")
         s", args=List($argsString)"
     }
-    val code = s"""
-                  | if (${config.overwrite} || !workspace.projectExists("$src")) {
-                  |   workspace.projects
-                  |   .filter(_.inputPath == "$src")
-                  |   .map(_.name).foreach(n => workspace.removeProject(n))
-                  |   importCode.$language("$src"$argsString)
-                  |   $runDataflow
-                  |   save
-                  | } else {
-                  |    println("Using existing CPG - Use `--overwrite` if this is not what you want")
-                  |    openForInputPath(\"$src\")
-                  | }
-                  | run.$bundleName
-                  | $storeCode
-                  |""".stripMargin
 
-    withTemporaryScript(code, productName) { file =>
-      runScript(os.Path(file.path.toString), config)
-    }
+    s"""
+       | if (${config.overwrite} || !workspace.projectExists("$src")) {
+       |   workspace.projects
+       |   .filter(_.inputPath == "$src")
+       |   .map(_.name).foreach(n => workspace.removeProject(n))
+       |   importCode.$language("$src"$argsString)
+       |   $runDataflow
+       |   save
+       | } else {
+       |    println("Using existing CPG - Use `--overwrite` if this is not what you want")
+       |    openForInputPath(\"$src\")
+       | }
+       | run.$bundleName
+       | $storeCode
+       |""".stripMargin
+
   }
 
   protected def listPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
