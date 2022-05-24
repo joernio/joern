@@ -17,6 +17,7 @@ import com.github.javaparser.resolution.types.{
   ResolvedReferenceType,
   ResolvedType,
   ResolvedTypeVariable,
+  ResolvedUnionType,
   ResolvedVoidType,
   ResolvedWildcard
 }
@@ -98,6 +99,16 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
       case wildcardType: ResolvedWildcard =>
         if (wildcardType.isBounded) {
           nameOrFullName(wildcardType.getBoundedType, typeParamValues, fullyQualified)
+        } else {
+          objectType(fullyQualified)
+        }
+      case unionType: ResolvedUnionType =>
+        // The individual elements of the type union cannot be accessed in ResolvedUnionType.
+        // For whatever reason there is no accessor and the field is private.
+        // So for now we settle with the ancestor type. Maybe we use reflection later.
+        val ancestorOption = unionType.getCommonAncestor
+        if (ancestorOption.isPresent) {
+          nameOrFullName(ancestorOption.get, typeParamValues, fullyQualified)
         } else {
           objectType(fullyQualified)
         }
