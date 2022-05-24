@@ -14,7 +14,7 @@ object MavenDependencies {
     val tmpFile = Files.createTempFile("mvnClassPass", ".txt")
     tmpFile.toFile.deleteOnExit()
     ExternalCommand.run(
-      s"mvn dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=$tmpFile",
+      s"mvn -B dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=$tmpFile",
       projectDir.toString
     ) match {
       case Success(_) =>
