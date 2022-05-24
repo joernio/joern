@@ -145,7 +145,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
     */
   protected def runAmmonite(config: Config, slProduct: SLProduct = OcularProduct): Unit = {
     if (config.listPlugins) {
-      listPluginsAndLayerCreators(config, slProduct)
+      printPluginsAndLayerCreators(config, slProduct)
     } else if (config.addPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).add(config.addPlugin.get)
     } else if (config.rmPlugin.isDefined) {
@@ -278,6 +278,28 @@ trait ScriptExecution {
 trait PluginHandling {
   this: BridgeBase =>
 
+  /** Print a summary of the available plugins and layer creators to the terminal.
+    */
+  protected def printPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
+    println("Installed plugins:")
+    println("==================")
+    new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
+    println("Available layer creators")
+    println()
+    withTemporaryScript(codeToListPlugins(), slProduct.name) { file =>
+      runScript(os.Path(file.path.toString), config)
+    }
+  }
+
+  private def codeToListPlugins(): String = {
+    """
+      |println(run)
+      |
+      |""".stripMargin
+  }
+
+  /** Run plugin by generating a temporary script based on the given config and executing the script via ammonite.
+    */
   protected def runPlugin(config: Config, productName: String): Unit = {
     if (config.src.isEmpty) {
       println("You must supply a source directory with the --src flag")
@@ -295,36 +317,13 @@ trait PluginHandling {
 
     val bundleName = config.pluginToRun.get
     val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
-    val language = config.language.getOrElse(
-      io.joern.console.cpgcreation
-        .guessLanguage(src)
-        .map { x =>
-          val lang = x.toLowerCase
-          // TODO we should eventually rename the languages in the
-          // spec to `OLDC` and `C` at which point the match below
-          // is no longer required.
-          lang match {
-            case "newc" => "c"
-            case "c"    => "oldc"
-            case _      => lang
-          }
-        }
-        .getOrElse("c")
-    )
+    val language   = languageFromConfig(config, src)
 
     val storeCode = if (config.store) { "save" }
     else { "" }
     val runDataflow = if (productName == "ocular") { "run.dataflow" }
     else { "run.ossdataflow" }
-    val argsString = config.frontendArgs match {
-      case Array() => ""
-      case args =>
-        val quotedArgs = args.map { arg =>
-          "\"" ++ arg ++ "\""
-        }
-        val argsString = quotedArgs.mkString(", ")
-        s", args=List($argsString)"
-    }
+    val argsString = argsStringFromConfig(config)
 
     s"""
        | if (${config.overwrite} || !workspace.projectExists("$src")) {
@@ -344,29 +343,40 @@ trait PluginHandling {
 
   }
 
-  protected def listPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
-    println("Installed plugins:")
-    println("==================")
-    new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
-    println("Available layer creators")
-    println()
-    val code = codeToListPlugins()
-
-    withTemporaryScript(code, slProduct.name) { file =>
-      runScript(os.Path(file.path.toString), config)
-    }
+  private def languageFromConfig(config: Config, src: String): String = {
+    config.language.getOrElse(
+      io.joern.console.cpgcreation
+        .guessLanguage(src)
+        .map { x =>
+          val lang = x.toLowerCase
+          // TODO we should eventually rename the languages in the
+          // spec to `OLDC` and `C` at which point the match below
+          // is no longer required.
+          lang match {
+            case "newc" => "c"
+            case "c"    => "oldc"
+            case _      => lang
+          }
+        }
+        .getOrElse("c")
+    )
   }
 
-  private def codeToListPlugins(): String = {
-    """
-      |println(run)
-      |
-      |""".stripMargin
+  private def argsStringFromConfig(config: Config): String = {
+    config.frontendArgs match {
+      case Array() => ""
+      case args =>
+        val quotedArgs = args.map { arg =>
+          "\"" ++ arg ++ "\""
+        }
+        val argsString = quotedArgs.mkString(", ")
+        s", args=List($argsString)"
+    }
   }
 
   private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
     File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
-      val file = (dir / "script.sc")
+      val file = dir / "script.sc"
       file.write(code)
       f(file)
     }
