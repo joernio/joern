@@ -32,7 +32,7 @@ case class Config(
 
 /** Base class for Ammonite Bridge. Nothing to see here, move along.
   */
-trait BridgeBase extends PluginHandling with ServerHandling {
+trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
@@ -164,7 +164,37 @@ trait BridgeBase extends PluginHandling with ServerHandling {
     }
   }
 
-  private def startInteractiveShell(config: Config, slProduct: SLProduct) = {
+  protected def additionalImportCode(config: Config): List[String] =
+    config.additionalImports.flatMap { importScript =>
+      val file = importScript.toIO
+      assert(file.canRead, s"unable to read $file")
+      readScript(file.toScala)
+    }
+
+  /** Override this method to implement script decryption
+    */
+  protected def decryptedScript(scriptFile: Path): Path = {
+    scriptFile
+  }
+
+  private def readScript(scriptFile: File): List[String] = {
+    val code = scriptFile.lines.toList
+    println(s"importing $scriptFile (${code.size} lines)")
+    code
+  }
+
+  protected def predefPlus(lines: List[String]): String
+
+  protected def shutdownHooks: List[String]
+
+  protected def promptStr(): String
+
+}
+
+trait ScriptExecution {
+  this: BridgeBase =>
+
+  protected def startInteractiveShell(config: Config, slProduct: SLProduct) = {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
       else """val originalPPrinter = repl.pprinter()
@@ -180,8 +210,8 @@ trait BridgeBase extends PluginHandling with ServerHandling {
       "importCpg(\"" + cpgFile + "\")"
     } ++ config.forInputPath.map { name =>
       s"""
-        |openForInputPath(\"$name\")
-        |""".stripMargin
+         |openForInputPath(\"$name\")
+         |""".stripMargin
     }
     ammonite
       .Main(
@@ -233,34 +263,9 @@ trait BridgeBase extends PluginHandling with ServerHandling {
     if (isEncryptedScript) actualScriptFile.toIO.delete
   }
 
-  protected def additionalImportCode(config: Config): List[String] =
-    config.additionalImports.flatMap { importScript =>
-      val file = importScript.toIO
-      assert(file.canRead, s"unable to read $file")
-      readScript(file.toScala)
-    }
-
   private def ammoniteColors(config: Config) =
     if (config.nocolors) Colors.BlackWhite
     else Colors.Default
-
-  /** Override this method to implement script decryption
-    */
-  protected def decryptedScript(scriptFile: Path): Path = {
-    scriptFile
-  }
-
-  private def readScript(scriptFile: File): List[String] = {
-    val code = scriptFile.lines.toList
-    println(s"importing $scriptFile (${code.size} lines)")
-    code
-  }
-
-  protected def predefPlus(lines: List[String]): String
-
-  protected def shutdownHooks: List[String]
-
-  protected def promptStr(): String
 
 }
 
