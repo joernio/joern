@@ -27,9 +27,7 @@ case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String
 case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
 
 // TODO: add description
-case class Additionals(
-  lambdaAsts: Seq[Ast] = List(),
-)
+case class Additionals()
 
 // TODO: add description
 case class AstWithAdditionals(ast: Ast, additionals: Additionals)
@@ -107,8 +105,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   private def mergedAdditionals(adds: Seq[Additionals]): Additionals = {
     adds.foldLeft(Additionals())((acc, adds) => {
-      val lambdaAsts         = acc.lambdaAsts ++ adds.lambdaAsts
-      Additionals(lambdaAsts)
+      acc
     })
   }
 
@@ -151,19 +148,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(0)
     val finalCtx                 = mergedAdditionals(declarationsAstsWithCtx.map(_.additionals))
     val namespaceBlockAst        = astForPackageDeclaration(ktFile.getPackageFqName.toString)
-    val lambdaTypeDecls =
+    val lambdaTypeDecls = {
       lambdaBindingInfoQueue.flatMap(
         _.edgeMeta
           .map(_._1)
           .collect { case n: NewTypeDecl => Ast(n) }
       )
+    }
     val ast =
       Ast(fileNode)
         .withChild(
           namespaceBlockAst
             .withChildren(importAsts)
             .withChildren(declarationsAstsWithCtx.map(_.ast))
-            .withChildren(mergedAdditionals(declarationsAstsWithCtx.map(_.additionals)).lambdaAsts)
+            .withChildren(lambdaAstQueue)
             .withChildren(lambdaTypeDecls)
         )
         .withChildren(namespaceBlocksForImports)
@@ -1026,8 +1024,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
 
     lambdaBindingInfoQueue.prepend(bindingInfo)
-    val localizedAdditionals = Additionals(lambdaAsts = Seq(lambdaMethodAst))
-    AstWithAdditionals(methodRefAst, mergedAdditionals(Seq(localizedAdditionals) ++ Seq(bodyAstWithCtx.additionals)))
+    lambdaAstQueue.prepend(lambdaMethodAst)
+    AstWithAdditionals(methodRefAst, mergedAdditionals(Seq() ++ Seq(bodyAstWithCtx.additionals)))
   }
 
   def astForArrayAccess(expr: KtArrayAccessExpression, order: Int, argIdx: Int)(implicit
