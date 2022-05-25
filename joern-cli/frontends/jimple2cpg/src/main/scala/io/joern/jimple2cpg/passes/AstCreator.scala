@@ -320,7 +320,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     val block        = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
-    val jimpleLocals = body.getLocals.asScala.filterNot(jimpleParams.contains).toList
+    val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
     val locals = withOrder(jimpleLocals) { case (l, order) =>
       val name         = l.getName
       val typeFullName = registerType(l.getType.toQuotedString)
