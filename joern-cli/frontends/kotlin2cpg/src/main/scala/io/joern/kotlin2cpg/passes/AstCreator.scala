@@ -21,6 +21,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
 case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
@@ -30,7 +31,6 @@ case class Additionals(
   bindingsInfo: Seq[BindingInfo] = List(),
   lambdaAsts: Seq[Ast] = List(),
   lambdaBindingInfo: Seq[BindingInfo] = List(),
-  closureBindingDefs: Seq[ClosureBindingDef] = List()
 )
 
 // TODO: add description
@@ -39,6 +39,10 @@ case class AstWithAdditionals(ast: Ast, additionals: Additionals)
 // TODO: add description
 class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)
     extends AstCreatorBase(fileWithMeta.filename) {
+
+  private val lambdaAstQueue: mutable.ArrayBuffer[Ast] = mutable.ArrayBuffer.empty
+  private val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
+  private val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo] = mutable.ArrayBuffer.empty
 
   private val lambdaKeyPool   = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   private val tmpKeyPool      = new IntervalKeyPool(first = 1, last = Long.MaxValue)
@@ -95,7 +99,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     }
 
-    astWithCtx.additionals.closureBindingDefs.foreach { cbd =>
+    closureBindingDefQueue.foreach { cbd =>
       diffGraph.addNode(cbd.node)
       diffGraph.addEdge(cbd.captureEdgeTo, cbd.node, EdgeTypes.CAPTURE)
       diffGraph.addEdge(cbd.node, cbd.refEdgeTo, EdgeTypes.REF)
@@ -107,8 +111,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val bindingsInfo       = acc.bindingsInfo ++ adds.bindingsInfo
       val lambdaAsts         = acc.lambdaAsts ++ adds.lambdaAsts
       val lambdaBindingInfo  = acc.lambdaBindingInfo ++ adds.lambdaBindingInfo
-      val closureBindingDefs = acc.closureBindingDefs ++ adds.closureBindingDefs
-      Additionals(bindingsInfo, lambdaAsts, lambdaBindingInfo, closureBindingDefs)
+      Additionals(bindingsInfo, lambdaAsts, lambdaBindingInfo)
     })
   }
 
@@ -1019,12 +1022,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       closureBindingEntriesForCaptured.map { entry =>
         ClosureBindingDef(entry._1, methodRef, entry._2)
       }
+    closureBindingDefs.foreach { entry =>
+      closureBindingDefQueue.prepend(entry)
+    }
+
 
     val localizedAdditionals =
       Additionals(
         lambdaAsts = Seq(lambdaMethodAst),
         lambdaBindingInfo = Seq(bindingInfo),
-        closureBindingDefs = closureBindingDefs
       )
     AstWithAdditionals(methodRefAst, mergedAdditionals(Seq(localizedAdditionals) ++ Seq(bodyAstWithCtx.additionals)))
   }
