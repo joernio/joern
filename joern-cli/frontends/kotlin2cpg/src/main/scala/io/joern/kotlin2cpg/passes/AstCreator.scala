@@ -29,7 +29,6 @@ case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRe
 // TODO: add description
 case class Additionals(
   lambdaAsts: Seq[Ast] = List(),
-  lambdaBindingInfo: Seq[BindingInfo] = List(),
 )
 
 // TODO: add description
@@ -91,7 +90,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     }
 
-    astWithCtx.additionals.lambdaBindingInfo.foreach { bindingInfo =>
+    lambdaBindingInfoQueue.foreach { bindingInfo =>
       diffGraph.addNode(bindingInfo.node)
 
       bindingInfo.edgeMeta.foreach { edgeMeta =>
@@ -109,8 +108,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   private def mergedAdditionals(adds: Seq[Additionals]): Additionals = {
     adds.foldLeft(Additionals())((acc, adds) => {
       val lambdaAsts         = acc.lambdaAsts ++ adds.lambdaAsts
-      val lambdaBindingInfo  = acc.lambdaBindingInfo ++ adds.lambdaBindingInfo
-      Additionals(lambdaAsts, lambdaBindingInfo)
+      Additionals(lambdaAsts)
     })
   }
 
@@ -154,7 +152,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val finalCtx                 = mergedAdditionals(declarationsAstsWithCtx.map(_.additionals))
     val namespaceBlockAst        = astForPackageDeclaration(ktFile.getPackageFqName.toString)
     val lambdaTypeDecls =
-      finalCtx.lambdaBindingInfo.flatMap(
+      lambdaBindingInfoQueue.flatMap(
         _.edgeMeta
           .map(_._1)
           .collect { case n: NewTypeDecl => Ast(n) }
@@ -1027,12 +1025,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       closureBindingDefQueue.prepend(entry)
     }
 
-
-    val localizedAdditionals =
-      Additionals(
-        lambdaAsts = Seq(lambdaMethodAst),
-        lambdaBindingInfo = Seq(bindingInfo),
-      )
+    lambdaBindingInfoQueue.prepend(bindingInfo)
+    val localizedAdditionals = Additionals(lambdaAsts = Seq(lambdaMethodAst))
     AstWithAdditionals(methodRefAst, mergedAdditionals(Seq(localizedAdditionals) ++ Seq(bodyAstWithCtx.additionals)))
   }
 
