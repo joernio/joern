@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph"             % Versions.cpg,
   "org.apache.logging.log4j" % "log4j-slf4j-impl"              % Versions.log4j     % Runtime,
   "com.github.javaparser"    % "javaparser-symbol-solver-core" % "3.23.1",
+  "org.gradle"               % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest"           %% "scalatest"                     % Versions.scalatest % Test
 )
 
