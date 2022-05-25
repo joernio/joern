@@ -12,7 +12,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JavaParserTypeSolver,
   ReflectionTypeSolver
 }
-import io.joern.javasrc2cpg.util.SourceRootFinder
+import io.joern.javasrc2cpg.util.{CachingReflectionTypeSolver, SourceRootFinder}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import org.slf4j.LoggerFactory
@@ -79,7 +79,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
     SourceRootFinder.getSourceRoots(codeDir)
 
     val combinedTypeSolver   = new CombinedTypeSolver()
-    val reflectionTypeSolver = new ReflectionTypeSolver()
+    val reflectionTypeSolver = new CachingReflectionTypeSolver()
     combinedTypeSolver.add(reflectionTypeSolver)
 
     // Add solvers for all detected sources roots
