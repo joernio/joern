@@ -1,4 +1,4 @@
-class program {
+class Aliasing10 {
     public static class A {
         private boolean x;
 

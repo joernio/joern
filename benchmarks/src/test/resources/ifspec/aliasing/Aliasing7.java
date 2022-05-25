@@ -1,4 +1,4 @@
-class Aliasing {
+class Aliasing7 {
 
     static class A {
         int i;

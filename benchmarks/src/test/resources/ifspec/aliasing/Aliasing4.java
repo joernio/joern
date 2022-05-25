@@ -1,4 +1,4 @@
-class Main {
+class Aliasing4 {
 
     static class A {
         int val;
