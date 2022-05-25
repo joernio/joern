@@ -48,4 +48,4 @@
 "<operators>.assignmentOr" 2->1 1->1
 "<operators>.assignmentXor" 2->1 1->1
 
-"java.io.PrintWriter.println:void(java.lang.String)" 1->1
+"java.io.PrintWriter.println:void(java.lang.String)" 1->-1
