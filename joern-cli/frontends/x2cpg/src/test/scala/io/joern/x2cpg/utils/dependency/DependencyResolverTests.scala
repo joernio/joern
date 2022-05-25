@@ -111,7 +111,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
     }
   }
 
-  "test gradle dependency resolution for simple Android app" in {
+  "test gradle dependency resolution for simple Android app" ignore {
     val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
     val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir), isRunningOnWindowsGithubAction)
     fixture.test({ dependenciesResult =>
@@ -124,7 +124,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
     })
   }
 
-  "test gradle dependency resolution for simple Android app with incorrect Gradle project name param" in {
+  "test gradle dependency resolution for simple Android app with incorrect Gradle project name param" ignore {
     val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
     val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir), isRunningOnWindowsGithubAction)
     fixture.test(
@@ -135,7 +135,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
     )
   }
 
-  "test gradle dependency resolution for simple Android app with incorrect Gradle configuration param" in {
+  "test gradle dependency resolution for simple Android app with incorrect Gradle configuration param" ignore {
     val androidAppDir = ProjectRoot.relativise("joern-cli/src/test/resources/testcode/SlimAndroid")
     val fixture       = new FixtureWithCopyDir(Paths.get(androidAppDir), isRunningOnWindowsGithubAction)
     fixture.test(
