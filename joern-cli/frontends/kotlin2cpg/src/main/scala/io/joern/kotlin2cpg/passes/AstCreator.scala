@@ -54,9 +54,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     logger.debug(s"Started parsing file `${fileWithMeta.filename}`.")
 
     val defaultTypes = Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
-    defaultTypes.foreach { t =>
-      registerType(t)
-    }
+    defaultTypes.foreach(registerType)
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
   }
@@ -595,9 +593,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChildren(componentNMethodAsts.toList)
         .withChildren(memberAsts)
 
-    (bindingsInfo ++ componentNBindingsInfo).foreach { bindingInfo =>
-      bindingInfoQueue.prepend(bindingInfo)
-    }
+    (bindingsInfo ++ componentNBindingsInfo)
+      .foreach(bindingInfoQueue.prepend(_))
 
     val finalCtx = mergedAdditionals(methodAstsWithCtx.map(_.additionals))
     val finalAst =
@@ -1019,10 +1016,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       closureBindingEntriesForCaptured.map { entry =>
         ClosureBindingDef(entry._1, methodRef, entry._2)
       }
-    closureBindingDefs.foreach { entry =>
-      closureBindingDefQueue.prepend(entry)
-    }
-
+    closureBindingDefs
+      .foreach(closureBindingDefQueue.prepend(_))
     lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
     AstWithAdditionals(methodRefAst, mergedAdditionals(Seq() ++ Seq(bodyAstWithCtx.additionals)))
