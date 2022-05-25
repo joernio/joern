@@ -28,7 +28,6 @@ case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRe
 
 // TODO: add description
 case class Additionals(
-  bindingsInfo: Seq[BindingInfo] = List(),
   lambdaAsts: Seq[Ast] = List(),
   lambdaBindingInfo: Seq[BindingInfo] = List(),
 )
@@ -40,9 +39,10 @@ case class AstWithAdditionals(ast: Ast, additionals: Additionals)
 class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)
     extends AstCreatorBase(fileWithMeta.filename) {
 
-  private val lambdaAstQueue: mutable.ArrayBuffer[Ast] = mutable.ArrayBuffer.empty
   private val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
   private val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo] = mutable.ArrayBuffer.empty
+  private val lambdaAstQueue: mutable.ArrayBuffer[Ast] = mutable.ArrayBuffer.empty
+  private val lambdaBindingInfoQueue: mutable.ArrayBuffer[BindingInfo] = mutable.ArrayBuffer.empty
 
   private val lambdaKeyPool   = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   private val tmpKeyPool      = new IntervalKeyPool(first = 1, last = Long.MaxValue)
@@ -83,7 +83,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     Ast.storeInDiffGraph(ast, diffGraph)
 
-    astWithCtx.additionals.bindingsInfo.foreach { bindingInfo =>
+    bindingInfoQueue.foreach { bindingInfo =>
       diffGraph.addNode(bindingInfo.node)
 
       bindingInfo.edgeMeta.foreach { edgeMeta =>
@@ -108,10 +108,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   private def mergedAdditionals(adds: Seq[Additionals]): Additionals = {
     adds.foldLeft(Additionals())((acc, adds) => {
-      val bindingsInfo       = acc.bindingsInfo ++ adds.bindingsInfo
       val lambdaAsts         = acc.lambdaAsts ++ adds.lambdaAsts
       val lambdaBindingInfo  = acc.lambdaBindingInfo ++ adds.lambdaBindingInfo
-      Additionals(bindingsInfo, lambdaAsts, lambdaBindingInfo)
+      Additionals(lambdaAsts, lambdaBindingInfo)
     })
   }
 
@@ -600,9 +599,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChildren(componentNMethodAsts.toList)
         .withChildren(memberAsts)
 
-    val finalCtx = mergedAdditionals(
-      methodAstsWithCtx.map(_.additionals) ++ List(Additionals(bindingsInfo = bindingsInfo ++ componentNBindingsInfo))
-    )
+    (bindingsInfo ++ componentNBindingsInfo).foreach { bindingInfo =>
+      bindingInfoQueue.prepend(bindingInfo)
+    }
+
+    val finalCtx = mergedAdditionals(methodAstsWithCtx.map(_.additionals))
     val finalAst =
       if (typeInfoProvider.isCompanionObject(ktClass)) {
         val companionMemberTypeFullName =
