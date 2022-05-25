@@ -57,12 +57,19 @@ object GradleDependencies {
        |    def destinationDir = "$destination"
        |    def gradleProjectName = "$gradleProjectName"
        |    def gradleConfigurationName = "$gradleConfigurationName"
+       |
        |    if (project.name.equals(gradleProjectName)) {
        |      def compileDepsCopyTaskName = taskName + "_compileDeps"
        |      tasks.register(compileDepsCopyTaskName, Copy) {
+       |        def myConfig = project.configurations.find { it.name.equals(gradleConfigurationName) }
+       |        def componentIds = myConfig.incoming.resolutionResult.allDependencies.collect { it.selected.id }
+       |        def result = dependencies.createArtifactResolutionQuery()
+       |                                 .forComponents(componentIds)
+       |                                 .withArtifacts(JvmLibrary, SourcesArtifact)
+       |                                 .execute()
        |        duplicatesStrategy = 'include'
        |        into destinationDir
-       |        from project.configurations.find { it.name.equals(gradleConfigurationName) }
+       |        from result.resolvedComponents.collect { it.getArtifacts(SourcesArtifact).collect { it.file } }
        |      }
        |      def androidDepsCopyTaskName = taskName + "_androidDeps"
        |      tasks.register(androidDepsCopyTaskName, Copy) {
