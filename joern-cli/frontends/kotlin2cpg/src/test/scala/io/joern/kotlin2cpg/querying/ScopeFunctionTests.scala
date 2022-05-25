@@ -94,7 +94,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _it_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -129,7 +128,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -164,7 +162,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
