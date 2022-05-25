@@ -25,3 +25,6 @@ scalacOptions ++= Seq() ++ (
     case _            => Seq("-target:jvm-1.8")
   }
 )
+
+trapExit    := false
+Test / fork := true
