@@ -37,19 +37,7 @@ case class JoernScanConfig(
 
 object JoernScan extends App with BridgeBase {
 
-  val ARGS_DELIMITER = "--frontend-args"
-
-  val (scanArgs, frontendArgs) = splitArgs()
-
-  private def splitArgs(): (List[String], List[String]) = {
-    args.indexOf(ARGS_DELIMITER) match {
-      case -1 => (args.toList, Nil)
-
-      case splitIdx =>
-        val (parseOpts, frontendOpts) = args.toList.splitAt(splitIdx)
-        (parseOpts, frontendOpts.tail) // Take the tail to ignore the delimiter
-    }
-  }
+  val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
 
   val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
     head("Creates a code property graph and scans it with queries from installed bundles")
@@ -105,7 +93,7 @@ object JoernScan extends App with BridgeBase {
       .action((_, c) => c.copy(listLanguages = true))
       .text("List available language options")
 
-    note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
+    note(s"Args specified after the ${CpgBasedTool.ARGS_DELIMITER} separator will be passed to the front-end verbatim")
   }
 
   optionParser.parse(scanArgs, JoernScanConfig()).foreach(run)
