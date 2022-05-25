@@ -2,7 +2,7 @@ package io.joern.benchmarks
 
 import org.scalatest.Tag
 
-import java.io.{File, PrintStream, PrintWriter}
+import java.io.{File, PrintStream}
 import scala.collection.mutable
 
 object BenchmarkTags {
@@ -28,6 +28,15 @@ object BenchmarkTags {
   object Sanitizers     extends Tag("Sanitizers")
   object Session        extends Tag("Session")
   object StrongUpdates  extends Tag("Strong Updates")
+  // Additional tags for IFSPEC
+  object Casting extends Tag("Casting")
+  object ClassInitializer extends Tag("Class Initializer")
+  object HighConditional extends Tag("High Conditional")
+  object ImplicitFlows extends Tag("Implicit Flows")
+  object Exceptions extends Tag("Exceptions")
+  object ExplicitFlows extends Tag("Explicit Flows")
+  object Library extends Tag("Library")
+  object Simple extends Tag("Simple")
 
   def TAGS = Seq(
     Aliasing.name,
@@ -41,7 +50,15 @@ object BenchmarkTags {
     Refl.name,
     Sanitizers.name,
     Session.name,
-    StrongUpdates.name
+    StrongUpdates.name,
+    Casting.name,
+    ClassInitializer.name,
+    HighConditional.name,
+    ImplicitFlows.name,
+    Exceptions.name,
+    ExplicitFlows.name,
+    Library.name,
+    Simple.name,
   )
 
   val confusionMatrix = mutable.Map.empty[String, Array[Int]]
