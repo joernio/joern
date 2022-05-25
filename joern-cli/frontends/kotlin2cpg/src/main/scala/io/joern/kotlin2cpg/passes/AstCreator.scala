@@ -210,7 +210,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case d: KtObjectDeclaration => astsForClassOrObject(d, order)
       case d: KtNamedFunction     => Seq(astForMethod(d, order))
       case d: KtTypeAlias         => Seq(withEmptyAdditionals(astForTypeAlias(d, order)))
-      case d: KtProperty          => astForTopLevelProperty(d, order)
+      case d: KtProperty          => Seq(withEmptyAdditionals(astForTopLevelProperty(d, order)))
       case unhandled =>
         logger.error(
           "Unknown declaration type encountered with text `" + unhandled.getText + "` and class `" + unhandled.getClass + "`!"
@@ -222,8 +222,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   // TODO: lower them
   def astForTopLevelProperty(prop: KtProperty, order: Int)(implicit
     typeInfoProvider: TypeInfoProvider
-  ): Seq[AstWithAdditionals] = {
-    Seq()
+  ): Ast = {
+    Ast()
   }
 
   def astForTypeAlias(typeAlias: KtTypeAlias, order: Int)(implicit
@@ -1992,8 +1992,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithAdditionals(ast, mergedAdditionals(stmtAsts.map(_.additionals) ++ Seq(conditionAst.additionals)))
   }
 
-  /// \/\//\\\\\\\\\\\\\\///\\\//\\//\/\\/\//\/\\//\\/
-  ////////////// \\/\/\/\/\/\/\\//\\/\/\///\\/\//\\/\/\/\/\//\/\/\/\/\/\//////\\\|||||/\/\/\/\/\/\\/\/\//\
   // e.g. lowering:
   // for `for (one in l) { <statements> }`
   // BLOCK
@@ -2163,8 +2161,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     AstWithAdditionals(outAst, outCtx)
   }
 
-  /// \/\//\\\\\\\\\\\\\\///\\\//\\//\/\\/\//\/\\//\\/
-  ////////////// \\/\/\/\/\/\/\\//\\/\/\///\\/\//\\/\/\/\/\//\/\/\/\/\/\//////\\\|||||/\/\/\/\/\/\\/\/\//\
   // e.g. lowering:
   // for `for ((d1, d2) in l) { <statements> }`
   // BLOCK
