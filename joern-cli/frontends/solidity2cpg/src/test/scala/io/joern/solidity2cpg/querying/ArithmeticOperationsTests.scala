@@ -36,16 +36,17 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
     ("f", "int256")
   )
 
+
   "should contain call nodes with <operation>.assignment for all variables" in {
 //    println(cpg.typeDecl.dotAst.head)
 //    println(cpg.assignment.dotAst.head)
 //    println(cpg.assignment.name.l)
 //    println(cpg.assignment.typeFullName.l)
 //    println(cpg.assignment.target.dotAst.head)
-//    val assignments = cpg.assignment
-//      .map(x => (x.target.code, x.typeFullName))
-//      .l
-//    assignments.size shouldBe 6
+    val assignments = cpg.assignment
+      .map(x => (x.target.code, x.typeFullName))
+      .l
+    assignments.size shouldBe 6
 //    vars.foreach(x => {
 //      println(assignments)
 //      println(x)

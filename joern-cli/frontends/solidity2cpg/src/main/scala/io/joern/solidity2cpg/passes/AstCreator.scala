@@ -159,10 +159,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(shortName)
       .isExternal(false)
       .order(order)
-//    val typeDecls: Seq[Ast] = withOrder(sourceUnit.children.collect { case x: ContractDefinition => x }) {
-//      case (contractDef, order) =>
-//        astForTypeDecl(contractDef, namespaceBlockFullName, order)
-//    }
+
     val methods = withOrder(contractDef.subNodes.collect { case x: FunctionOrModifierDefinition =>
       x
     }) { (methodOrModifier, order) =>
@@ -303,11 +300,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-        mAst.nodes.foreach { n =>
-          val code  = n.properties.getOrElse("CODE", null)
-          val order = n.properties.getOrElse("ORDER", null)
-          println((order, n.label(), code))
-        }
+//        mAst.nodes.foreach { n =>
+//          val code  = n.properties.getOrElse("CODE", null)
+//          val order = n.properties.getOrElse("ORDER", null)
+//        }
 
         mAst
       case x =>
@@ -363,16 +359,27 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     Ast(NewMethodParameter)
   }
-
+//TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order)
-    val vars      = body.statements.collect { case x: VariableDeclaration => x }.toSet
-    val stmts     = body.statements.toSet -- vars
+//    val varStatements      = body.statements.collect { case x: VariableDeclarationStatement => x }.toSet
+    val stmts     = body.statements
+//    val vars = if (varStatements.nonEmpty) {
+//       body.statements.collect {
+//         case x: VariableDeclarationStatement => x.variables.collect {
+//           case y: VariableDeclaration => y
+//         }
+//       }.head
+//    } else {
+//      List[VariableDeclaration]()
+//    }
+
 
     Ast(blockNode)
-      .withChildren(withOrder(vars) { (v, order) => astForLocal(v, order) })
+//      .withChildren(withOrder(vars) { (v, order) => astForLocal(v, order) })
       .withChildren(withOrder(stmts) { case (x, order) =>
-        astForStatement(x, vars.size + 1 + order)
+//        astForStatement(x, order+1)
+        astForStatement(x, order)
       })
 
   }
@@ -394,8 +401,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForLocal(varDecl: VariableDeclaration, order: Int): Ast = {
+//    if (varDecl.)
     val fullTypeName = varDecl.typeName match {
-      case x: ElementaryTypeName => x.name
+      case x: ElementaryTypeName => registerType(x.name)
       case _                     => ""
     }
 
@@ -435,7 +443,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .name(varDecl.name)
       .code(code + visibility + " " + varDecl.name)
       .typeFullName(varDecl.name)
-      .order(1)
+      .order(order)
 
     Ast(newID)
 
@@ -545,6 +553,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       registerType(name)
     }
     val code = visibility + name
+
     Ast(
       NewMethodReturn()
         .code(code)
@@ -555,6 +564,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForReturn(returnStatement: ReturnStatement, order: Int): Ast = {
+
     val exprAst = astForExpression(returnStatement.expression, 1)
     val returnNode = NewReturn()
       .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
@@ -592,25 +602,25 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForExpression(expr: BaseASTNode, order: Int): Ast = {
 
     expr match {
-      case x: MemberAccess       => astForMemberAccess(x)
+      case x: MemberAccess       => astForMemberAccess(x, order)
       case x: Identifier         => astForIdentifier(x, order)
       case x: FunctionCall       => astForFunctionCall(x, order)
       case x: BinaryOperation    => astForBinaryOperation(x, order)
-      case x: UnaryOperation     => astForUnaryOperation(x)
-      case x: NumberLiteral      => astForNumberLiteral(x)
-      case x: BooleanLiteral     => astForBooleanLiteral(x)
-      case x: StringLiteral      => astForStringLiteral(x)
-      case x: IndexAccess        => astForIndexAccess(x)
-      case x: TupleExpression    => astForTupleExpression(x)
-      case x: NewExpression      => astForNewExpression(x)
-      case x: TypeNameExpression => astForTypeNameExpression(x)
+      case x: UnaryOperation     => astForUnaryOperation(x, order)
+      case x: NumberLiteral      => astForNumberLiteral(x, order)
+      case x: BooleanLiteral     => astForBooleanLiteral(x, order)
+      case x: StringLiteral      => astForStringLiteral(x, order)
+      case x: IndexAccess        => astForIndexAccess(x, order)
+      case x: TupleExpression    => astForTupleExpression(x, order)
+      case x: NewExpression      => astForNewExpression(x, order)
+      case x: TypeNameExpression => astForTypeNameExpression(x, order)
       case _ => {
         println("name: " + expr.getType)
         Ast()
       }
     }
   }
-  private def astForNumberLiteral(numberLiteral: NumberLiteral): Ast = {
+  private def astForNumberLiteral(numberLiteral: NumberLiteral, order: Int): Ast = {
     var code         = ""
     val typeFullName = registerType(numberLiteral.number)
     if (numberLiteral.subdenomination != null) {
@@ -622,14 +632,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       NewLiteral()
         .code(code)
         .typeFullName(typeFullName)
+        .order(order)
     )
   }
 
-  private def astForUnaryOperation(operation: UnaryOperation): Ast = {
+  private def astForUnaryOperation(operation: UnaryOperation, order: Int): Ast = {
     // TODO : finx all cases with "Ast()"
     Ast()
   }
-  private def astForTypeNameExpression(expression: TypeNameExpression): Ast = {
+  private def astForTypeNameExpression(expression: TypeNameExpression, order : Int): Ast = {
     Ast()
   }
 
@@ -737,7 +748,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     ifAst
   }
-  private def astForNewExpression(x: NewExpression): Ast = {
+  private def astForNewExpression(x: NewExpression , order : Int): Ast = {
     Ast()
   }
 
@@ -761,16 +772,25 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       methodFullName = call.methodFullName
       sig = call.methodFullName.split(":")(1)
     }
-    println("here: "+call.methodFullName)
-//    methodFullNameText = expr.root.map(_.properties(PropertyNames.TYPE_FULL_NAME)).mkString("")
-//    sig = expr.root.map(_.properties(PropertyNames.SIGNATURE)).mkString("")
     code = name + "(" + args + ")"
+    val typeFullName = if (methodFullName != null & !methodFullName.equals("")) {
+      methodFullName.substring(0, methodFullName.indexOf("."))
+    } else {
+      ""
+    }
+
     val func = NewCall()
       .name(name)
       .code(name)
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .order(order)
+      .argumentIndex(order)
       .methodFullName(methodFullName)
       .signature(sig)
-//      .code()
+      .typeFullName(typeFullName)
+
+
+
     Ast(func)
       .withChild(expr)
       .withChildren(arguments)
@@ -788,39 +808,39 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     )
   }
 
-  private def astForMemberAccess(memberAccess: MemberAccess): Ast = {
+  private def astForMemberAccess(memberAccess: MemberAccess, order : Int): Ast = {
     Ast()
   }
 
-  private def astForBooleanLiteral(literal: BooleanLiteral): Ast = {
+  private def astForBooleanLiteral(literal: BooleanLiteral, order : Int): Ast = {
     Ast()
   }
 
-  private def astForStringLiteral(x: StringLiteral): Ast = {
+  private def astForStringLiteral(x: StringLiteral, order : Int): Ast = {
     Ast()
   }
 
-  private def astForIndexAccess(x: IndexAccess): Ast = {
+  private def astForIndexAccess(x: IndexAccess, order : Int): Ast = {
     Ast()
   }
 
-  private def astForTupleExpression(expression: TupleExpression): Ast = {
+  private def astForTupleExpression(expression: TupleExpression, order : Int): Ast = {
     Ast()
   }
 
   private def astsForDefinition(x: BaseASTNode, order: Int): Ast = {
     x match {
-      case x: NumberLiteral   => astForNumberLiteral(x)
+      case x: NumberLiteral   => astForNumberLiteral(x, order)
       case x: BinaryOperation => astForBinaryOperation(x, order)
       case x: FunctionCall    => astForFunctionCall(x, order)
-      case x: TupleExpression => astForTupleExpression(x)
+      case x: TupleExpression => astForTupleExpression(x, order)
     }
   }
 
   private def astForVarDeclStmt(statement: VariableDeclarationStatement, order: Int): Ast = {
     // TODO: We need to make sure that we don't duplicate Local nodes. Perhaps using
     val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
-      astForVarDecl(x, order + varOrder)
+      astForLocal(x, order + varOrder)
     }
 
     val initial =
