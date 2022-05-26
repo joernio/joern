@@ -2446,9 +2446,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(1)
     val initReceiverAst = Ast(initReceiverNode)
 
-    val args = expr.getValueArguments
     val argAsts =
-      withIndex(args.asScala.toSeq) { case (arg, argOrder) =>
+      withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, argOrder) =>
         astsForExpression(arg.getArgumentExpression, argOrder, argOrder)
       }.flatten
 
