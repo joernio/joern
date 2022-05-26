@@ -2426,7 +2426,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(2)
         .argumentIndex(2)
 
-    // TODO: add check here for the `.get`
     val assignmentLhsNode =
       identifierNode(tmpName, typeFullName, line(expr), column(expr))
         .argumentIndex(0)
