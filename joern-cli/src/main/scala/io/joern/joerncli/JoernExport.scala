@@ -9,6 +9,7 @@ import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
 import overflowdb.Graph
 import overflowdb.formats.ExportResult
+import overflowdb.formats.dot.DotExporter
 import overflowdb.formats.graphml.GraphMLExporter
 import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 
@@ -86,6 +87,8 @@ object JoernExport extends App {
           overflowdbExport(cpg.graph, config.outDir, Neo4jCsvExporter)
         case (Representation.all, Format.graphml) =>
           overflowdbExport(cpg.graph, config.outDir, GraphMLExporter)
+        case (Representation.all, Format.dot) =>
+          overflowdbExport(cpg.graph, config.outDir, DotExporter)
         case (repr, format) =>
           exitWithError(s"combination of repr=$repr and format=$format not (yet) supported")
       }
