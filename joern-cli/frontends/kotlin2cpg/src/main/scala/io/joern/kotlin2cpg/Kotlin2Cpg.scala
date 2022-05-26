@@ -88,18 +88,10 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           )
         }
 
-        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-        val jarPathsFromClassPath =
-          config.classpath.foldLeft(Seq[String]())((acc, classpathEntry) => {
-            val f = File(classpathEntry)
-            val files =
-              if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == ".jar").map(_.toString)
-              else Seq()
-            acc ++ files
-          })
+        val jarsAtConfigClassPath = findJarsIn(config.classpath)
         if (config.classpath.nonEmpty) {
-          if (jarPathsFromClassPath.nonEmpty) {
-            logger.info(s"Found ${jarPathsFromClassPath.size} jars in the specified classpath.")
+          if (jarsAtConfigClassPath.nonEmpty) {
+            logger.info(s"Found ${jarsAtConfigClassPath.size} jars in the specified classpath.")
           } else {
             logger.warn("No jars found in the specified classpath.")
           }
@@ -114,17 +106,18 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           }
         val defaultContentRootJars =
           stdlibJars ++
-            jarPathsFromClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+            jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
             dependenciesPaths.map { path =>
               DefaultContentRootJarPath(path, false)
             }
-        val messageCollector = new ErrorLoggingMessageCollector
+        val messageCollector        = new ErrorLoggingMessageCollector
+        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
         val environment =
           CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
-        val sources     = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-        val configFiles = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
-        val typeInfoProvider      = new DefaultTypeInfoProvider(environment)
+        val sources          = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+        val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
+        val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
         new MetaDataPass(cpg, Languages.KOTLIN).createAndApply()
         val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
@@ -143,6 +136,17 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         System.exit(1)
       }
     }
+  }
+
+  private def findJarsIn(dirs: Set[String]) = {
+    val jarExtension = ".jar"
+    dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
+      val f = File(classpathEntry)
+      val files =
+        if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
+        else Seq()
+      acc ++ files
+    })
   }
 
   private def entriesForSources(files: Iterable[KtFile], relativeTo: String): Iterable[KtFileWithMeta] = {
