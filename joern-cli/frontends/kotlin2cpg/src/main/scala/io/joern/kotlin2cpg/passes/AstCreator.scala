@@ -2552,19 +2552,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(expr)
     if (referencesCompanionObject) {
+      val argAsts = List(
+        // TODO: change this to a TYPE_REF node as soon as the closed source data-flow engine supports it
+        identifierNode(expr.getIdentifier.getText, typeFullName, line(expr), column(expr)),
+        fieldIdentifierNode(Constants.companionObjectMemberName, line(expr), column(expr))
+      ).map(Ast(_))
+
       val callNode =
         operatorCallNode(Operators.fieldAccess, expr.getText, Some(typeFullName), line(expr), column(expr))
           .order(order)
           .argumentIndex(argIdx)
-
-      // TODO: change this to a TYPE_REF node as soon as the closed source data-flow engine supports it
-      val _identifierNode =
-        identifierNode(expr.getIdentifier.getText, typeFullName, line(expr), column(expr))
-          .argumentIndex(1)
-      val _fieldIdentifierNode =
-        fieldIdentifierNode(Constants.companionObjectMemberName, line(expr), column(expr))
-          .argumentIndex(2)
-      callAst(callNode, Seq(_identifierNode, _fieldIdentifierNode).map(Ast(_)).toList)
+      callAst(callNode, argAsts)
     } else {
       val node =
         typeRefNode(expr.getIdentifier.getText, typeFullName, line(expr), column(expr))
