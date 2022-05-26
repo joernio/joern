@@ -23,7 +23,7 @@ class HigherOrderFnsTests extends AnyFreeSpec with Matchers {
         |
         |""".stripMargin)
 
-    "should contain a CALL node with the correct METHOD_FULL_NAME" in {
+    "should contain a CALL node with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*fold.*").l
       c.methodFullName shouldBe "java.lang.Iterable.fold:java.lang.Object(java.lang.Object,kotlin.Function2)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH

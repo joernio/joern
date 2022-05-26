@@ -65,8 +65,6 @@ class MethodTests extends AnyFreeSpec with Matchers {
     }
   }
 
-
-
   "CPG for code with simple class declaration" - {
     lazy val cpg = TestContext.buildCpg("""
         |package com.test.pkg

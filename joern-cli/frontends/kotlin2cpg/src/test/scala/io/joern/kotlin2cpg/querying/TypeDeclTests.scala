@@ -25,7 +25,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
         |}
         | """.stripMargin)
 
-    "should contain a TYPE_DECL node for `Foo` with correct fields" in {
+    "should contain a TYPE_DECL node for `Foo` with correct props set" in {
       val List(x) = cpg.typeDecl.isExternal(false).name("Foo").l
       x.name shouldBe "Foo"
       x.code shouldBe "Foo"
@@ -36,7 +36,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
       x.columnNumber shouldBe Some(6)
     }
 
-    "should contain a TYPE_DECL node for `Foo` with two method nodes" in {
+    "should contain a TYPE_DECL node for `Foo` with two METHOD nodes" in {
       cpg.typeDecl
         .isExternal(false)
         .name("Foo")

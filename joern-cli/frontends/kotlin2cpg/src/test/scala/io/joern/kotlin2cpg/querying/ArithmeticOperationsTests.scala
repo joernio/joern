@@ -20,7 +20,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a call node for addition op with correct fields" in {
+    "should contain a CALL node for the addition op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.addition).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(3)
@@ -28,7 +28,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
-    "should contain a call node for subtraction op with correct fields" in {
+    "should contain a CALL node for the subtraction op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.subtraction).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(4)
@@ -36,7 +36,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
-    "should contain a call node for multiplication op with correct fields" in {
+    "should contain a CALL node for the multiplication op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.multiplication).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(5)
@@ -44,7 +44,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
-    "should contain a call node for division op with correct fields" in {
+    "should contain a CALL node for the division op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.division).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(6)

@@ -16,13 +16,15 @@ class SubscriptTests extends AnyFreeSpec with Matchers {
       |}
       |""".stripMargin)
 
-    "should contain a CALL node for `Operators.indexAccess`" in {
+    "should contain a CALL node for `Operators.indexAccess` with the correct props set" in {
       val List(c) = cpg.call(Operators.indexAccess).l
       c.code shouldBe "names[0]"
       c.methodFullName shouldBe Operators.indexAccess
       c.typeFullName shouldBe "int"
       c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(9)
+
+      c.argument.size shouldBe 2
     }
   }
 }

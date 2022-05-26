@@ -12,11 +12,11 @@ class MetaDataTests extends AnyFreeSpec with Matchers {
       |class ClassFoo {}
       |""".stripMargin)
 
-  "should contain exactly one node with all mandatory fields set" in {
-    val List(x) = cpg.metaData.l
-    x.language shouldBe "KOTLIN"
-    x.version shouldBe "0.1"
-    x.overlays shouldBe List("base", "controlflow", "typerel", "callgraph")
+  "should contain exactly one META_DATA node with all mandatory fields set" in {
+    val List(md) = cpg.metaData.l
+    md.language shouldBe "KOTLIN"
+    md.version shouldBe "0.1"
+    md.overlays shouldBe List("base", "controlflow", "typerel", "callgraph")
   }
 
   "should not have any incoming or outgoing edges" in {
