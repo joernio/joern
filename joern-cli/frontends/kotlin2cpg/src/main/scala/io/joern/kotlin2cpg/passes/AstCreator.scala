@@ -2493,11 +2493,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   private def astsForProperty(expr: KtProperty, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val explicitTypeName =
-      if (expr.getTypeReference != null) {
-        expr.getTypeReference.getText
-      } else {
-        TypeConstants.any
-      }
+      Option(expr.getTypeReference)
+        .map(_.getText)
+        .getOrElse(TypeConstants.any)
     val elem         = expr.getIdentifyingElement
     val typeFullName = typeInfoProvider.propertyType(expr, explicitTypeName)
     registerType(typeFullName)
