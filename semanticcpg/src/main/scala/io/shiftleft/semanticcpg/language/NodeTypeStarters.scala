@@ -4,16 +4,17 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import overflowdb._
-import overflowdb.traversal.help.{Doc, TraversalSource}
-import overflowdb.traversal.{Traversal, jIteratortoTraversal, toElementTraversal}
+import overflowdb.traversal.help
+import overflowdb.traversal.help.Doc
+import overflowdb.traversal.{Traversal, TraversalSource, jIteratortoTraversal, toElementTraversal}
 
-@TraversalSource
-class NodeTypeStarters(cpg: Cpg) {
+@help.TraversalSource
+class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
 
   /** Traverse to all nodes.
     */
   @Doc(info = "All nodes of the graph")
-  def all: Traversal[StoredNode] =
+  override def all: Traversal[StoredNode] =
     cpg.graph.nodes.cast[StoredNode]
 
   /** Traverse to all annotations
@@ -97,22 +98,11 @@ class NodeTypeStarters(cpg: Cpg) {
   def goto: Traversal[ControlStructure] =
     controlStructure.isGoto
 
-  /** Begin traversal at node with id.
-    */
-  def id[NodeType <: StoredNode](anId: Long): Traversal[NodeType] =
-    cpg.graph.nodes(anId).cast[NodeType]
-
   /** Traverse to all identifiers, e.g., occurrences of local variables or class members in method bodies.
     */
   @Doc(info = "All identifier usages")
   def identifier: Traversal[Identifier] =
     cpg.graph.nodes(NodeTypes.IDENTIFIER).cast[Identifier]
-
-  /** Begin traversal at set of nodes - specified by their ids
-    */
-  def id[NodeType <: StoredNode](ids: Seq[Long]): Traversal[NodeType] =
-    if (ids.isEmpty) Traversal.empty
-    else cpg.graph.nodes(ids: _*).cast[NodeType]
 
   /** Shorthand for `cpg.identifier.name(name)`
     */
