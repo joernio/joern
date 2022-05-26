@@ -123,24 +123,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .name(fileWithMeta.relativizedPath)
         .order(0)
     val namespaceBlockAst = astForPackageDeclaration(ktFile.getPackageFqName.toString)
-    val lambdaTypeDecls = {
+    val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(
         _.edgeMeta
           .map(_._1)
           .collect { case n: NewTypeDecl => Ast(n) }
       )
-    }
-    val ast =
-      Ast(fileNode)
-        .withChild(
-          namespaceBlockAst
-            .withChildren(importAsts)
-            .withChildren(declarationsAsts)
-            .withChildren(lambdaAstQueue)
-            .withChildren(lambdaTypeDecls)
-        )
-        .withChildren(namespaceBlocksForImports)
-    ast
+    Ast(fileNode)
+      .withChild(
+        namespaceBlockAst
+          .withChildren(importAsts)
+          .withChildren(declarationsAsts)
+          .withChildren(lambdaAstQueue)
+          .withChildren(lambdaTypeDecls)
+      )
+      .withChildren(namespaceBlocksForImports)
   }
 
   def astForImportDirective(directive: KtImportDirective, order: Int): Ast = {
