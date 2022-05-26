@@ -597,7 +597,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val fnWithSig = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
     val lineEndElement =
       Option(ktFn.getBodyBlockExpression)
-        .filter(_ != null)
         .map(_.getRBrace)
         .getOrElse(ktFn)
     val _methodNode =
@@ -639,11 +638,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     scope.popScope()
 
     val explicitTypeName =
-      if (ktFn.getTypeReference != null) { // TODO: use `Option` for these types of checks
-        ktFn.getTypeReference.getText
-      } else {
-        "" // TODO: add test case for this scenario; maybe replace with Constants.Any
-      }
+      Option(ktFn.getTypeReference)
+        .map(_.getText)
+        .getOrElse(TypeConstants.any)
     val typeFullName = typeInfoProvider.returnType(ktFn, explicitTypeName)
     registerType(typeFullName)
 
@@ -2906,16 +2903,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   private def astForMember(decl: KtDeclaration, childNum: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    // TODO: handle `null` names in a clean way
-    // e.g. found in projects like:
-    //   - git@github.com:vsouhrada/kotlin-anko-demo.git
-    //   - git@github.com:dgewe/Movie-App-Android.git
-    val name =
-      if (decl.getName != null) {
-        decl.getName
-      } else {
-        TypeConstants.any
-      }
+    val name = Option(decl.getName).getOrElse(TypeConstants.any)
 
     val explicitTypeName =
       decl.getOriginalElement match {
@@ -2939,17 +2927,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForParameter(param: KtParameter, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val name = if (param.getDestructuringDeclaration != null) {
-      Constants.paramNameLambdaDestructureDecl
-    } else {
-      param.getName
-    }
+    val name =
+      Option(param.getDestructuringDeclaration)
+        .map { _ => Constants.paramNameLambdaDestructureDecl }
+        .getOrElse(param.getName)
+
     val explicitTypeName =
-      if (param.getTypeReference != null) {
-        param.getTypeReference.getText
-      } else {
-        TypeConstants.any
-      }
+      Option(param.getTypeReference)
+        .map(_.getText)
+        .getOrElse(TypeConstants.any)
     val typeFullName = typeInfoProvider.parameterType(param, explicitTypeName)
     registerType(typeFullName)
 
