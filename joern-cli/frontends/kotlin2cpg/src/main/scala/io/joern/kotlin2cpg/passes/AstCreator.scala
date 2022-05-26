@@ -293,7 +293,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val ctorFnWithSig =
       typeInfoProvider.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
     val primaryCtorOrder = 1
-    val constructorMethod =
+    val primaryCtorMethodNode =
       methodNode(
         TypeConstants.initPrefix,
         ctorFnWithSig._1,
@@ -372,7 +372,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
         .order(orderAfterParamsAndBlock)
     val constructorAst =
-      Ast(constructorMethod)
+      Ast(primaryCtorMethodNode)
         .withChildren(constructorParamsAsts)
         .withChild(ctorMethodAst)
         .withChild(Ast(constructorMethodReturn))
@@ -396,7 +396,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val defaultSignature  = typeInfoProvider.erasedSignature(constructorParams)
         val defaultFullName   = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
         val ctorFnWithSig = typeInfoProvider.fullNameWithSignature(secondaryCtor, (defaultFullName, defaultSignature))
-        val constructorMethod =
+        val secondaryCtorMethodNode =
           methodNode(
             Constants.init,
             ctorFnWithSig._1,
@@ -406,7 +406,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             column(secondaryCtor)
           )
             .order(orderAfterPrimaryCtorAndItsMemberDefs + order)
-        scope.pushNewScope(constructorMethod)
+        scope.pushNewScope(secondaryCtorMethodNode)
 
         val typeFullName = typeInfoProvider.typeFullName(secondaryCtor, TypeConstants.any)
         registerType(typeFullName)
@@ -429,16 +429,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           } else {
             Seq()
           }
-        val constructorMethodReturn =
+        scope.popScope()
+
+        val ctorMethodReturnNode =
           methodReturnNode(Some(line(secondaryCtor)), Some(column(secondaryCtor)), typeFullName, Some(classFullName))
             .order(orderAfterCtorParams + ctorMethodBlockAst.size + 1)
-        val constructorAst =
-          Ast(constructorMethod)
-            .withChildren(constructorParamsAsts)
-            .withChildren(ctorMethodBlockAst)
-            .withChild(Ast(constructorMethodReturn))
-        scope.popScope()
-        constructorAst
+        val children =
+          constructorParamsAsts ++ ctorMethodBlockAst ++ List(Ast(ctorMethodReturnNode))
+        Ast(secondaryCtorMethodNode)
+          .withChildren(children)
       }
 
     val orderAfterCtors = orderAfterPrimaryCtorAndItsMemberDefs + secondaryConstructorAsts.size
