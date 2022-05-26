@@ -303,6 +303,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //        mAst.nodes.foreach { n =>
 //          val code  = n.properties.getOrElse("CODE", null)
 //          val order = n.properties.getOrElse("ORDER", null)
+//          println((order, n.label(), code))
 //        }
 
         mAst
@@ -388,7 +389,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     // TODO : Finish all of these statements
     statement match {
       case x: ExpressionStatement          => astForExpression(x.expression, order)
-      case x: VariableDeclaration          => astForVarDecl(x, order) // TODO: This is not a statement
+//      case x: VariableDeclaration          => astForVarDecl(x, order) // TODO: This is not a statement
       case x: EmitStatement                => Ast()
       case x: ForStatement                 => Ast()
       case x: IfStatement                  => astForIfStatement(x, order)
@@ -840,12 +841,16 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForVarDeclStmt(statement: VariableDeclarationStatement, order: Int): Ast = {
     // TODO: We need to make sure that we don't duplicate Local nodes. Perhaps using
     val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
-      astForLocal(x, order + varOrder)
+      astForLocal(x, (order-1)*2 + varOrder)
     }
 
     val initial =
       if (statement.initialValue != null) astsForDefinition(statement.initialValue, statement.variables.size + 1)
       else Ast()
+
+    val id = if (statement.initialValue != null) statement.variables.collect{case x: VariableDeclaration => astForVarDecl(x, 1)}
+    else List(Ast())
+
     val call = if (statement.initialValue != null) {
       val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
       val rhsCode = initial.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString
@@ -855,8 +860,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .code(s"$lhsCode = $rhsCode")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(registerType(vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.NAME)).mkString))
-        .order(vars.size + order)
-        .argumentIndex(vars.size + order)
+        .order(vars.size + (order-1)*2 + 1)
+        .argumentIndex(vars.size + (order-1)*2 + 1)
     } else {
       NewCall()
     }
@@ -864,7 +869,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (statement.initialValue != null) {
       Ast(call)
         .withChildren(vars)
+        .withChildren(id)
         .withChild(initial)
+
     } else {
       Ast()
         .withChildren(vars)
