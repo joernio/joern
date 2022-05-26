@@ -311,13 +311,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(0)
     scope.addToScope(Constants.this_, ctorThisParam)
 
-    val constructorParamsWithCtx = {
+    val constructorParamsAsts =
       Seq(Ast(ctorThisParam)) ++
         withIndex(constructorParams) { (p, order) =>
           astForParameter(p, order)
         }
-    }
-    val orderAfterParams = constructorParamsWithCtx.size + 1
+    val orderAfterParams = constructorParamsAsts.size + 1
     val ctorMethodBlock =
       blockNode("", TypeConstants.void)
         .order(orderAfterParams)
@@ -337,7 +336,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .order(2)
 
           val matchingMethodParamNode =
-            constructorParamsWithCtx.flatMap { pWithCtx =>
+            constructorParamsAsts.flatMap { pWithCtx =>
               val node = pWithCtx.root.get.asInstanceOf[NewMethodParameterIn]
               if (node.name == paramName) {
                 Some(node)
@@ -349,40 +348,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             Ast(paramIdentifier)
               .withRefEdge(paramIdentifier, matchingMethodParamNode)
 
-          val this_ =
-            identifierNode(Constants.this_, classFullName)
-              .argumentIndex(1)
-              .order(1)
-
-          val fieldIdentifier =
-            fieldIdentifierNode(paramName)
-              .argumentIndex(2)
-              .order(2)
-
+          val this_           = identifierNode(Constants.this_, classFullName)
+          val fieldIdentifier = fieldIdentifierNode(paramName)
           val fieldAccessCall =
             operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + paramName, Some(typeFullName))
-              .order(1)
-              .argumentIndex(1)
-
-          val fieldAccessCallAst =
-            Ast(fieldAccessCall)
-              .withChild(Ast(this_))
-              .withArgEdge(fieldAccessCall, this_)
-              .withChild(Ast(fieldIdentifier))
-              .withArgEdge(fieldAccessCall, fieldIdentifier)
+          val fieldAccessCallAst = callAst(fieldAccessCall, List(this_, fieldIdentifier).map(Ast(_)))
 
           val assignmentNode =
             operatorCallNode(Operators.assignment, fieldAccessCall.code + " = " + paramIdentifier.code)
               .order(idx + 1)
-
-          val assignmentAst =
-            Ast(assignmentNode)
-              .withChild(fieldAccessCallAst)
-              .withArgEdge(assignmentNode, fieldAccessCall)
-              .withChild(paramIdentifierAst)
-              .withArgEdge(assignmentNode, paramIdentifier)
-
-          assignmentAst
+          callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
         }
 
     val ctorMethodAst =
@@ -401,7 +376,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(orderAfterParamsAndBlock)
     val constructorAst =
       Ast(constructorMethod)
-        .withChildren(constructorParamsWithCtx)
+        .withChildren(constructorParamsAsts)
         .withChild(ctorMethodAst)
         .withChild(Ast(constructorMethodReturn))
 
@@ -492,12 +467,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val signature     = typeFullName + "()"
           val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
 
-          val thisParam =
-            methodParameterNode(Constants.this_, classFullName)
-              .order(0)
           val _methodNode =
             methodNode(componentName, fullName, signature, relativizedPath)
               .order(order)
+
+          val thisParam =
+            methodParameterNode(Constants.this_, classFullName)
+              .order(0)
           val thisIdentifier =
             identifierNode(Constants.this_, typeDecl.fullName)
               .argumentIndex(1)
@@ -518,23 +494,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .withChild(Ast(fieldIdentifier))
               .withArgEdge(fieldAccessCall, fieldIdentifier)
 
-          val _returnNode = returnNode(Constants.ret).order(1)
+          val _returnNode =
+            returnNode(Constants.ret)
+              .order(1)
           val returnAst =
             Ast(_returnNode)
               .withChild(fieldAccessCallAst)
               .withArgEdge(_returnNode, fieldAccessCall)
 
-          val methodBlock =
-            blockNode(fieldAccessCall.code, typeFullName)
-              .order(1)
+          val methodBlock = blockNode(fieldAccessCall.code, typeFullName)
           val methodBlockAst =
             Ast(methodBlock)
               .withChild(returnAst)
 
-          val methodReturn =
-            methodReturnNode(None, None, typeFullName)
-              .order(2)
-
+          val methodReturn = methodReturnNode(None, None, typeFullName)
           methodAst(_methodNode, Seq(thisParam), methodBlockAst, methodReturn)
         }
       } else {
@@ -904,7 +877,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         node
       }
 
-    val parametersWithCtx =
+    val parameters =
       typeInfoProvider.implicitParameterName(expr) match {
         case Some(implicitParamName) =>
           val node = methodParameterNode(implicitParamName, TypeConstants.any)
@@ -915,7 +888,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             astForParameter(p, order)
           }
       }
-    val lastOrder = parametersWithCtx.size + 2
+    val lastOrder = parameters.size + 2
 
     val bodyAst =
       expr.getBodyExpression match {
@@ -939,7 +912,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val lambdaMethodAst =
       Ast(lambdaNode)
-        .withChildren(parametersWithCtx)
+        .withChildren(parameters)
         .withChild(bodyAst)
         .withChild(Ast(returnNode))
         .withChild(Ast(lambdaModifierNode))
