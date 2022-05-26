@@ -255,27 +255,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     scope.pushNewScope(typeDecl)
 
     val classFunctions =
-      if (ktClass.getBody != null) {
-        ktClass.getBody.getFunctions.asScala.filter { decl =>
-          decl.isInstanceOf[KtNamedFunction]
-        }.asJava
-      } else {
-        List().asJava
-      }
+      Option(ktClass.getBody)
+        .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
+        .getOrElse(List())
     val classDeclarations =
-      if (ktClass.getBody != null) {
-        ktClass.getBody.getDeclarations.asScala.filter { decl =>
-          !decl.isInstanceOf[KtNamedFunction]
-        }.asJava
-      } else {
-        List().asJava
-      }
+      Option(ktClass.getBody)
+        .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
+        .getOrElse(List())
 
     /** curently unused val blockInitializers = if (ktClass.getBody != null) { ktClass.getBody.getAnonymousInitializers
       * } else { List().asJava }
       */
     val methodAsts =
-      withIndex(classFunctions.asScala.toSeq) { (method, order) =>
+      withIndex(classFunctions.toSeq) { (method, order) =>
         astForMethod(method, order)
       }
 
@@ -553,7 +545,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val orderAfterComponentN = orderAfterCtors + componentNMethodAsts.size
     val memberAsts =
-      withIndex(classDeclarations.asScala.toSeq) { (method, order) =>
+      withIndex(classDeclarations.toSeq) { (method, order) =>
         astForMember(method, orderAfterComponentN + order)
       }
     val orderAfterMembers = orderAfterComponentN + memberAsts.size
