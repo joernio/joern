@@ -1,7 +1,6 @@
 package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.ast.Nodes._
-import io.joern.kotlin2cpg.ast.Nodes.{methodReturnNode => _methodReturnNode}
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.psi.Extractor._
@@ -394,11 +393,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val orderAfterParamsAndBlock = orderAfterParams + 1
     val typeFullName             = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn =
-      _methodReturnNode(
+      methodReturnNode(
+        Some(line(ktClass.getPrimaryConstructor)),
+        Some(column(ktClass.getPrimaryConstructor)),
         typeFullName,
-        Some(classFullName),
-        line(ktClass.getPrimaryConstructor),
-        column(ktClass.getPrimaryConstructor)
+        Some(classFullName)
       )
         .order(orderAfterParamsAndBlock)
     val constructorAst =
@@ -460,7 +459,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             Seq()
           }
         val constructorMethodReturn =
-          _methodReturnNode(typeFullName, Some(classFullName), line(secondaryCtor), column(secondaryCtor))
+          methodReturnNode(Some(line(secondaryCtor)), Some(column(secondaryCtor)), typeFullName, Some(classFullName))
             .order(orderAfterCtorParams + ctorMethodBlockAst.size + 1)
         val constructorAst =
           Ast(constructorMethod)
@@ -533,7 +532,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             Ast(methodBlock)
               .withChild(returnAst)
 
-          val methodReturn = _methodReturnNode(typeFullName, None).order(2)
+          val methodReturn =
+            methodReturnNode(None, None, typeFullName)
+              .order(2)
           Ast(_methodNode)
             .withChild(Ast(thisParam))
             .withChild(methodBlockAst)
@@ -613,12 +614,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(childNum)
     scope.pushNewScope(_methodNode)
 
-    val parametersWithCtx =
+    val parameters =
       withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, order) =>
         astForParameter(p, order)
+      }.flatMap { ast =>
+        ast.root match {
+          case Some(node) =>
+            node match {
+              case p: NewMethodParameterIn => Some(p)
+              case _                       => None
+            }
+          case None => None
+        }
       }
 
-    val lastOrder = parametersWithCtx.size + 2
+    val lastOrder = parameters.size + 2
     val bodyAst =
       ktFn.getBodyBlockExpression match {
         case blockExpr if blockExpr != null => astForBlock(blockExpr, lastOrder)
@@ -626,20 +636,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val blockNode = NewBlock()
           Ast(blockNode)
       }
-    val returnAst = astForMethodReturn(ktFn, lastOrder + 1)
-    val ast =
-      Ast(_methodNode)
-        .withChildren(parametersWithCtx)
-        .withChild(bodyAst)
-        .withChild(returnAst)
-
     scope.popScope()
-    ast
-  }
 
-  private def astForMethodReturn(ktFn: KtNamedFunction, order: Int)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
     val explicitTypeName =
       if (ktFn.getTypeReference != null) { // TODO: use `Option` for these types of checks
         ktFn.getTypeReference.getText
@@ -649,10 +647,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val typeFullName = typeInfoProvider.returnType(ktFn, explicitTypeName)
     registerType(typeFullName)
 
-    val node =
-      _methodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
-        .order(order)
-    Ast(node)
+    val returnNode = methodReturnNode(Some(line(ktFn)), Some(column(ktFn)), typeFullName)
+    methodAst(_methodNode, parameters, bodyAst, returnNode)
   }
 
   private def astForBlock(
@@ -944,7 +940,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(order)
         .argumentIndex(argIdx)
     val returnNode =
-      _methodReturnNode(returnTypeFullName, None, line(expr), column(expr))
+      methodReturnNode(Some(line(expr)), Some(column(expr)), returnTypeFullName)
         .order(lastOrder + 1)
 
     val lambdaMethodAst =

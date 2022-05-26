@@ -20,7 +20,7 @@ class MethodReturnTests extends AnyFreeSpec with Matchers {
       val List(x) = cpg.method.name("foo").methodReturn.l
       x.code shouldBe "RET"
       x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      x.order shouldBe 5
+      x.order shouldBe 4
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(4)
     }

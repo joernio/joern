@@ -14,7 +14,7 @@ class MethodReturnTests extends JavaSrcCodeToCpgFixture {
 
   "should have METHOD_RETURN node with correct fields" in {
     val List(x) = cpg.method.name("foo").methodReturn.typeFullName("int").l
-    x.code shouldBe "int"
+    x.code shouldBe "RET"
     x.typeFullName shouldBe "int"
     x.lineNumber shouldBe Some(2)
     // we expect the METHOD_RETURN node to be the right-most
@@ -33,7 +33,7 @@ class MethodReturnTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing to method" in {
-    cpg.methodReturn.code("int").method.name.l shouldBe List("foo")
+    cpg.methodReturn.typeFullName("int").method.name.l shouldBe List("foo")
   }
 
 }
