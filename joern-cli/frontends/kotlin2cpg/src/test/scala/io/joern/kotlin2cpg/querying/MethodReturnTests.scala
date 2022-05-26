@@ -18,7 +18,7 @@ class MethodReturnTests extends AnyFreeSpec with Matchers {
 
     "should have METHOD_RETURN node with correct fields" in {
       val List(x) = cpg.method.name("foo").methodReturn.l
-      x.code shouldBe "RET"
+      x.code shouldBe "int"
       x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
       x.order shouldBe 4
       x.lineNumber shouldBe Some(2)

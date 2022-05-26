@@ -63,7 +63,7 @@ abstract class AstCreatorBase(filename: String) {
     NewMethodReturn()
       .typeFullName(tfn)
       .dynamicTypeHintFullName(dtfn)
-      .code("RET")
+      .code(tfn)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
