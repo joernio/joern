@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 class AliasingBenchmark1 extends IfspecAliasingFixture(JAVA_EXT, 1) {
 
   s"Aliasing$benchmarkNo" should "report insecure" taggedAs (Aliasing, ImplicitFlows) in {
-    assertIsInsecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsInsecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
@@ -18,7 +18,7 @@ class AliasingBenchmark1 extends IfspecAliasingFixture(JAVA_EXT, 1) {
 class AliasingBenchmark2 extends IfspecAliasingFixture(JAVA_EXT, 2) {
 
   s"Aliasing$benchmarkNo" should "report secure" taggedAs (Aliasing, ImplicitFlows) in {
-    assertIsSecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsSecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
@@ -27,7 +27,7 @@ class AliasingBenchmark2 extends IfspecAliasingFixture(JAVA_EXT, 2) {
 class AliasingBenchmark3 extends IfspecAliasingFixture(JAVA_EXT, 3) {
 
   s"Aliasing$benchmarkNo" should "report insecure" taggedAs (Aliasing, ExplicitFlows) in {
-    assertIsInsecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsInsecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
@@ -36,7 +36,7 @@ class AliasingBenchmark3 extends IfspecAliasingFixture(JAVA_EXT, 3) {
 class AliasingBenchmark4 extends IfspecAliasingFixture(JAVA_EXT, 4) {
 
   s"Aliasing$benchmarkNo" should "report secure" taggedAs (Aliasing, ExplicitFlows) in {
-    assertIsSecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsSecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
@@ -45,7 +45,7 @@ class AliasingBenchmark4 extends IfspecAliasingFixture(JAVA_EXT, 4) {
 class AliasingBenchmark5 extends IfspecAliasingFixture(JAVA_EXT, 5) {
 
   s"Aliasing$benchmarkNo" should "report insecure" taggedAs (Aliasing, ExplicitFlows) in {
-    assertIsInsecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsInsecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
@@ -54,7 +54,7 @@ class AliasingBenchmark5 extends IfspecAliasingFixture(JAVA_EXT, 5) {
 class AliasingBenchmark6 extends IfspecAliasingFixture(JAVA_EXT, 6) {
 
   s"Aliasing$benchmarkNo" should "report secure" taggedAs (Aliasing, ExplicitFlows) in {
-    assertIsSecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsSecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
@@ -81,7 +81,7 @@ class AliasingBenchmark8 extends IfspecAliasingFixture(JAVA_EXT, 8) {
 class AliasingBenchmark9 extends IfspecAliasingFixture(JAVA_EXT, 9) {
 
   s"Aliasing$benchmarkNo" should "report secure" taggedAs (Aliasing, ImplicitFlows) in {
-    assertIsSecure(cpg.fieldAccess.code("secret"), cpg.call(".*println.*").argument(1))
+    assertIsSecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 
 }
