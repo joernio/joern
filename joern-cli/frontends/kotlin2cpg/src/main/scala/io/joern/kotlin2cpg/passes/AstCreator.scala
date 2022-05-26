@@ -527,10 +527,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val methodReturn =
             methodReturnNode(None, None, typeFullName)
               .order(2)
-          Ast(_methodNode)
-            .withChild(Ast(thisParam))
-            .withChild(methodBlockAst)
-            .withChild(Ast(methodReturn))
+
+          methodAst(_methodNode, Seq(thisParam), methodBlockAst, methodReturn)
         }
       } else {
         Seq()
@@ -1875,20 +1873,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val conditionAst = astsForExpression(expr.getCondition, 1, 1).headOption
       .getOrElse(Ast())
     val stmtAsts = astsForExpression(expr.getBody, 2, 2)
-    val tempAst =
+    val ast =
       Ast(whileNode)
         .withChild(conditionAst)
         .withChildren(stmtAsts)
-
-    val ast = {
-      conditionAst.root match {
-        case Some(r) =>
-          tempAst.withConditionEdge(whileNode, r)
-        case None =>
-          tempAst
-      }
+    conditionAst.root match {
+      case Some(node) =>
+        ast.withConditionEdge(whileNode, node)
+      case None =>
+        ast
     }
-    ast
   }
 
   def astForDoWhile(expr: KtDoWhileExpression, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1896,19 +1890,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val stmtAsts = astsForExpression(expr.getBody, 1, 1)
     val conditionAst = astsForExpression(expr.getCondition, 2, 2).headOption
       .getOrElse(Ast())
-    val tempAst =
+    val ast =
       Ast(doNode)
         .withChildren(stmtAsts)
         .withChild(conditionAst)
-
-    val ast =
-      conditionAst.root match {
-        case Some(r) =>
-          tempAst.withConditionEdge(doNode, r)
-        case None =>
-          tempAst
-      }
-    ast
+    conditionAst.root match {
+      case Some(node) =>
+        ast.withConditionEdge(doNode, node)
+      case None =>
+        ast
+    }
   }
 
   // e.g. lowering:
@@ -2071,12 +2062,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val topLevelBlock =
       blockNode(Constants.codeForLoweredForBlock, "")
         .order(order)
-    val outAst =
-      Ast(topLevelBlock)
-        .withChild(iteratorLocalAst)
-        .withChild(iteratorAssignmentAst)
-        .withChild(controlStructureAst)
-    outAst
+    Ast(topLevelBlock)
+      .withChild(iteratorLocalAst)
+      .withChild(iteratorAssignmentAst)
+      .withChild(controlStructureAst)
   }
 
   // e.g. lowering:
@@ -2246,6 +2235,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .argumentIndex(1)
             .order(1)
 
+        // TODO: rewrite this in a cleaner way
         val matchingLocalForEntry =
           localsForDestructuringVars.filter { l =>
             l.root.get.asInstanceOf[NewLocal].code == entry.getText
@@ -2292,13 +2282,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val componentNAssignment =
           operatorCallNode(Operators.assignment, entryIdentifier.code + " = " + tmpComponentNCall.code)
             .order(order + orderForTmpEqNextAssignment)
-        val outAst =
-          Ast(componentNAssignment)
-            .withChild(entryIdentifierAst)
-            .withArgEdge(componentNAssignment, entryIdentifier)
-            .withChild(tmpComponentNCallAst)
-            .withArgEdge(componentNAssignment, tmpComponentNCall)
-        outAst
+        Ast(componentNAssignment)
+          .withChild(entryIdentifierAst)
+          .withArgEdge(componentNAssignment, entryIdentifier)
+          .withChild(tmpComponentNCallAst)
+          .withArgEdge(componentNAssignment, tmpComponentNCall)
       }
     val orderAfterComponentNCalls = componentNCalls.map(_.root.get.asInstanceOf[NewCall].order).reverse.take(1).head + 1
 
@@ -2320,12 +2308,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChild(controlStructureBodyAst)
         .withConditionEdge(controlStructure, controlStructureCondition)
     val topLevelBlock = blockNode(Constants.codeForLoweredForBlock, "").order(order)
-    val outAst =
-      Ast(topLevelBlock)
-        .withChild(iteratorLocalAst)
-        .withChild(iteratorAssignmentAst)
-        .withChild(controlStructureAst)
-    outAst
+    Ast(topLevelBlock)
+      .withChild(iteratorLocalAst)
+      .withChild(iteratorAssignmentAst)
+      .withChild(controlStructureAst)
   }
 
   def astForFor(expr: KtForExpression, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -2369,25 +2355,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       Ast(switchNode)
         .withChild(astForSubject)
         .withChild(astForBlock)
-    val astWithCondition = {
-      astForSubject.root match {
-        case Some(root) =>
-          ast.withConditionEdge(switchNode, root)
-        case None =>
-          ast
-      }
+    astForSubject.root match {
+      case Some(root) =>
+        ast.withConditionEdge(switchNode, root)
+      case None =>
+        ast
     }
-    astWithCondition
   }
 
   def astsForWhenEntry(entry: KtWhenEntry, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     // TODO: get all conditions with entry.getConditions()
     val name =
-      if (entry.getElseKeyword == null) {
-        Constants.caseNodePrefix + order.toString
-      } else {
-        Constants.defaultCaseNode
-      }
+      Option(entry.getElseKeyword)
+        .map { _ => Constants.caseNodePrefix + order.toString }
+        .getOrElse(Constants.defaultCaseNode)
     val jumpNode =
       jumpTargetNode(entry.getText, name, Constants.caseNodeParserTypeName, line(entry), column(entry))
         .order(order)
@@ -2547,13 +2528,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withRefEdge(assignmentLhsNode, tmpLocalNode)
         .withRefEdge(initReceiverNode, tmpLocalNode)
         .withRefEdge(lastIdentifier, tmpLocalNode)
-    val blockAst =
-      Ast(tmpBlockNode)
-        .withChild(tmpLocalAst)
-        .withChild(assignmentAst)
-        .withChild(initCallAst)
-        .withChild(lastIdentifierAst)
-    blockAst
+    Ast(tmpBlockNode)
+      .withChild(tmpLocalAst)
+      .withChild(assignmentAst)
+      .withChild(initCallAst)
+      .withChild(lastIdentifierAst)
   }
 
   private def astsForProperty(expr: KtProperty, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
@@ -2887,11 +2866,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
         .order(order)
         .argumentIndex(argIdx)
-    val ast =
-      Ast(_callNode)
-        .withChildren(argAsts)
-        .withArgEdges(_callNode, argAsts.flatMap(_.root))
-    ast
+    Ast(_callNode)
+      .withChildren(argAsts)
+      .withArgEdges(_callNode, argAsts.flatMap(_.root))
   }
 
   private def astForMember(decl: KtDeclaration, childNum: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
