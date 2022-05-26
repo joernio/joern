@@ -365,22 +365,21 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val blockNode = NewBlock().order(order).argumentIndex(order)
 //    val varStatements      = body.statements.collect { case x: VariableDeclarationStatement => x }.toSet
     val stmts     = body.statements
-//    val vars = if (varStatements.nonEmpty) {
-//       body.statements.collect {
-//         case x: VariableDeclarationStatement => x.variables.collect {
-//           case y: VariableDeclaration => y
-//         }
-//       }.head
-//    } else {
-//      List[VariableDeclaration]()
+
+    val vars =
+      withOrder(body.statements.collect { case x: VariableDeclarationStatement => x.variables.collect{case y : VariableDeclaration => y} }.head) { (x, varOrder) =>
+              astForLocal(x, varOrder)
+    }
+
+
+//    val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
+//      astForVarDecl(x, varOrder)
 //    }
-
-
     Ast(blockNode)
-//      .withChildren(withOrder(vars) { (v, order) => astForLocal(v, order) })
+      .withChildren(vars)
       .withChildren(withOrder(stmts) { case (x, order) =>
 //        astForStatement(x, order+1)
-        astForStatement(x, order)
+        astForStatement(x, order + vars.size)
       })
 
   }
@@ -841,15 +840,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForVarDeclStmt(statement: VariableDeclarationStatement, order: Int): Ast = {
     // TODO: We need to make sure that we don't duplicate Local nodes. Perhaps using
     val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
-      astForLocal(x, (order-1)*2 + varOrder)
+      astForVarDecl(x, varOrder)
     }
 
     val initial =
       if (statement.initialValue != null) astsForDefinition(statement.initialValue, statement.variables.size + 1)
       else Ast()
 
-    val id = if (statement.initialValue != null) statement.variables.collect{case x: VariableDeclaration => astForVarDecl(x, 1)}
-    else List(Ast())
+//    val id = if (statement.initialValue != null) statement.variables.collect{case x: VariableDeclaration => astForVarDecl(x, 1)}
+//    else List(Ast())
 
     val call = if (statement.initialValue != null) {
       val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
@@ -860,8 +859,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .code(s"$lhsCode = $rhsCode")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(registerType(vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.NAME)).mkString))
-        .order(vars.size + (order-1)*2 + 1)
-        .argumentIndex(vars.size + (order-1)*2 + 1)
+        .order(vars.size + order)
+        .argumentIndex(vars.size + order)
     } else {
       NewCall()
     }
@@ -869,7 +868,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (statement.initialValue != null) {
       Ast(call)
         .withChildren(vars)
-        .withChildren(id)
+//        .withChildren(id)
         .withChild(initial)
 
     } else {
