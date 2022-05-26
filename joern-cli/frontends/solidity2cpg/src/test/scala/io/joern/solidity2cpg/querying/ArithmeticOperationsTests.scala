@@ -81,7 +81,7 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
 //    println(cpg.assignment.typeFullName.l)
 //    println(cpg.assignment.target.dotAst.head)
 //    println(cpg.assignment.dotAst.head)
-    println(cpg.typeDecl.dotAst.head)
+//    println(cpg.typeDecl.dotAst.head)
     val assignments = cpg.assignment
       .map(x => (x.target.code, x.typeFullName))
       .l
