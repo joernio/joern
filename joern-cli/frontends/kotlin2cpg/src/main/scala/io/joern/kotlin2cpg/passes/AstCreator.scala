@@ -2554,15 +2554,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       // TODO: change this to a TYPE_REF node as soon as the closed source data-flow engine supports it
       val _identifierNode =
         identifierNode(expr.getIdentifier.getText, typeFullName, line(expr), column(expr))
-          .order(1)
           .argumentIndex(1)
       val _fieldIdentifierNode =
         fieldIdentifierNode(Constants.companionObjectMemberName, line(expr), column(expr))
-          .order(2)
           .argumentIndex(2)
-      Ast(callNode)
-        .withChildren(Seq(Ast(_identifierNode), Ast(_fieldIdentifierNode)))
-        .withArgEdges(callNode, Seq(_identifierNode, _fieldIdentifierNode))
+      callAst(callNode, Seq(_identifierNode, _fieldIdentifierNode).map(Ast(_)).toList)
     } else {
       val typeFullName = typeInfoProvider.typeFullName(expr, TypeConstants.any)
       registerType(typeFullName)
@@ -2598,7 +2594,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val thisNode =
       identifierNode(Constants.this_, referenceTargetTypeFullName, line(expr), column(expr))
         .argumentIndex(1)
-        .order(1)
     val thisAst =
       scope.lookupVariable(Constants.this_) match {
         case Some(n) => Ast(thisNode).withRefEdge(thisNode, n)
@@ -2607,8 +2602,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val _fieldIdentifierNode =
       fieldIdentifierNode(expr.getReferencedName, line(expr), column(expr))
-        .order(2)
         .argumentIndex(2)
+
+    // TODO: use `callAst`
     Ast(callNode)
       .withChild(thisAst)
       .withChild(Ast(_fieldIdentifierNode))
