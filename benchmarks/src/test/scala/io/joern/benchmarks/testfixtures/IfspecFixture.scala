@@ -17,8 +17,8 @@ class IfspecArraysFixture(fileExt: String, benchmarkNo: Int)
 class IfspecCastingFixture(fileExt: String, benchmarkNo: Int)
     extends IfspecFixture(category = "Casting", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
 
-class IfspecClassInitializerFixture(fileExt: String, benchmarkNo: String)
-    extends IfspecFixture(category = "ClassInitializer", fileExt = fileExt, benchmarkNo = benchmarkNo)
+class IfspecClassInitializerFixture(fileExt: String, benchmarkNo: Int)
+    extends IfspecFixture(category = "ClassInitializer", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)
 
 class IfspecExceptionsFixture(fileExt: String, benchmarkNo: Int)
     extends IfspecFixture(category = "Exceptions", fileExt = fileExt, benchmarkNo = benchmarkNo.toString)

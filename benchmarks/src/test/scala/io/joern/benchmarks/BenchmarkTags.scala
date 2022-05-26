@@ -38,7 +38,7 @@ object BenchmarkTags {
   object Library          extends Tag("Library")
   object Simple           extends Tag("Simple")
 
-  def TAGS = Seq(
+  def TAGS: Seq[String] = Seq(
     Aliasing.name,
     Arrays.name,
     Basic.name,
