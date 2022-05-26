@@ -122,21 +122,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       NewFile()
         .name(fileWithMeta.relativizedPath)
         .order(0)
-    val namespaceBlockAst = astForPackageDeclaration(ktFile.getPackageFqName.toString)
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(
         _.edgeMeta
           .map(_._1)
           .collect { case n: NewTypeDecl => Ast(n) }
       )
+
+    val namespaceBlockAst =
+      astForPackageDeclaration(ktFile.getPackageFqName.toString)
+        .withChildren(importAsts ++ declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls)
     Ast(fileNode)
-      .withChild(
-        namespaceBlockAst
-          .withChildren(importAsts)
-          .withChildren(declarationsAsts)
-          .withChildren(lambdaAstQueue)
-          .withChildren(lambdaTypeDecls)
-      )
+      .withChild(namespaceBlockAst)
       .withChildren(namespaceBlocksForImports)
   }
 
@@ -373,9 +370,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(orderAfterParamsAndBlock)
     val constructorAst =
       Ast(primaryCtorMethodNode)
-        .withChildren(constructorParamsAsts)
-        .withChild(ctorMethodAst)
-        .withChild(Ast(constructorMethodReturn))
+        .withChildren(constructorParamsAsts ++ List(ctorMethodAst, Ast(constructorMethodReturn)))
 
     val membersFromPrimaryCtorAsts =
       ktClass.getPrimaryConstructorParameters.asScala.toList
@@ -523,14 +518,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         astForMember(method, orderAfterComponentN + order)
       }
     val orderAfterMembers = orderAfterComponentN + memberAsts.size
-    val ast =
-      Ast(typeDecl)
-        .withChildren(methodAsts)
-        .withChild(constructorAst)
-        .withChildren(membersFromPrimaryCtorAsts)
-        .withChildren(secondaryConstructorAsts)
-        .withChildren(componentNMethodAsts.toList)
-        .withChildren(memberAsts)
+    val children =
+      methodAsts ++
+        List(constructorAst) ++
+        membersFromPrimaryCtorAsts ++
+        secondaryConstructorAsts ++
+        componentNMethodAsts.toList ++
+        memberAsts
+    val ast = Ast(typeDecl).withChildren(children)
 
     (bindingsInfo ++ componentNBindingsInfo)
       .foreach(bindingInfoQueue.prepend(_))
@@ -652,8 +647,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
 
     Ast(block)
-      .withChildren(localAstsForCaptures)
-      .withChildren(expressions)
+      .withChildren(localAstsForCaptures ++ expressions)
   }
 
   private def astsForReturnExpression(expr: KtReturnExpression, order: Int)(implicit
@@ -908,10 +902,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val lambdaMethodAst =
       Ast(lambdaNode)
-        .withChildren(parameters)
-        .withChild(bodyAst)
-        .withChild(Ast(returnNode))
-        .withChild(Ast(lambdaModifierNode))
+        .withChildren(parameters ++ List(bodyAst, Ast(returnNode), Ast(lambdaModifierNode)))
 
     val methodRefAst =
       Ast(methodRef)
@@ -1813,8 +1804,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .getOrElse(Ast())
     val ast =
       Ast(doNode)
-        .withChildren(stmtAsts)
-        .withChild(conditionAst)
+        .withChildren(stmtAsts ++ List(conditionAst))
     conditionAst.root match {
       case Some(node) =>
         ast.withConditionEdge(doNode, node)
@@ -2217,11 +2207,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(2)
     val controlStructureBodyAst =
       Ast(controlStructureBody)
-        .withChildren(localsForDestructuringVars)
-        .withChild(localForTmpAst)
-        .withChild(tmpParameterNextAssignmentAst)
-        .withChildren(componentNCalls)
-        .withChildren(stmtAsts)
+        .withChildren(
+          localsForDestructuringVars ++
+            List(localForTmpAst, tmpParameterNextAssignmentAst) ++
+            componentNCalls ++
+            stmtAsts
+        )
 
     val controlStructureAst =
       Ast(controlStructure)
@@ -2230,9 +2221,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withConditionEdge(controlStructure, controlStructureCondition)
     val topLevelBlock = blockNode(Constants.codeForLoweredForBlock, "").order(order)
     Ast(topLevelBlock)
-      .withChild(iteratorLocalAst)
-      .withChild(iteratorAssignmentAst)
-      .withChild(controlStructureAst)
+      .withChildren(List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst))
   }
 
   def astForFor(expr: KtForExpression, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
