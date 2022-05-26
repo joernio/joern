@@ -111,7 +111,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val lastImportOrder = importAsts.size
     var idxEpsilon      = 0 // when multiple AST nodes are returned by `astForDeclaration`
-    val declarationsAstsWithCtx =
+    val declarationsAsts =
       withIndex(ktFile.getDeclarations.asScala.toSeq) { (decl, order) =>
         val asts = astForDeclaration(decl, order + lastImportOrder + idxEpsilon)
         idxEpsilon += asts.size - 1
@@ -135,7 +135,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChild(
           namespaceBlockAst
             .withChildren(importAsts)
-            .withChildren(declarationsAstsWithCtx)
+            .withChildren(declarationsAsts)
             .withChildren(lambdaAstQueue)
             .withChildren(lambdaTypeDecls)
         )
@@ -336,8 +336,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .order(2)
 
           val matchingMethodParamNode =
-            constructorParamsAsts.flatMap { pWithCtx =>
-              val node = pWithCtx.root.get.asInstanceOf[NewMethodParameterIn]
+            constructorParamsAsts.flatMap { ast =>
+              val node = ast.root.get.asInstanceOf[NewMethodParameterIn]
               if (node.name == paramName) {
                 Some(node)
               } else {
@@ -418,13 +418,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           methodParameterNode(Constants.this_, classFullName)
             .order(0)
         scope.addToScope(Constants.this_, ctorThisParam)
-        val constructorParamsWithCtx =
+        val constructorParamsAsts =
           Seq(Ast(ctorThisParam)) ++
             withIndex(constructorParams) { (p, order) =>
               astForParameter(p, order)
             }
 
-        val orderAfterCtorParams = constructorParamsWithCtx.size + 1
+        val orderAfterCtorParams = constructorParamsAsts.size + 1
 
         val ctorMethodBlockAst =
           if (secondaryCtor.getBodyExpression != null) {
@@ -437,7 +437,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .order(orderAfterCtorParams + ctorMethodBlockAst.size + 1)
         val constructorAst =
           Ast(constructorMethod)
-            .withChildren(constructorParamsWithCtx)
+            .withChildren(constructorParamsAsts)
             .withChildren(ctorMethodBlockAst)
             .withChild(Ast(constructorMethodReturn))
         scope.popScope()
@@ -1566,9 +1566,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       else if (isExtensionCall) 0
       else if (isStaticCall) 1
       else 1
-    val receiverAstWithCtx =
-      astsForExpression(expr.getReceiverExpression, orderForReceiver, argIdxForReceiver).head
-    val receiverAst        = receiverAstWithCtx
+    val receiverAst        = astsForExpression(expr.getReceiverExpression, orderForReceiver, argIdxForReceiver).head
     val selectorOrderCount = argIdxForReceiver
     val argAsts =
       expr.getSelectorExpression match {
@@ -1723,18 +1721,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val tryNode =
       controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
         .order(order)
-    val tryAstWithCtx = astsForExpression(expr.getTryBlock, 1, 1).headOption
+    val tryAstOption = astsForExpression(expr.getTryBlock, 1, 1).headOption
       .getOrElse(Ast())
     val tryAst =
       Ast(tryNode)
-        .withChild(tryAstWithCtx)
+        .withChild(tryAstOption)
 
     val clauseAstsWitCtx =
       withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, order) =>
         astsForExpression(entry.getCatchBody, order + 1, order + 1)
       }.flatten
 
-    val finallyAstsWithCtx =
+    val finallyAsts =
       if (expr.getFinallyBlock == null) {
         Seq()
       } else {
@@ -1746,9 +1744,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       tryAst
         .withChildren(clauseAstsWitCtx)
     val finalAst =
-      if (finallyAstsWithCtx.nonEmpty) {
+      if (finallyAsts.nonEmpty) {
         tryWithClausesAst
-          .withChildren(finallyAstsWithCtx)
+          .withChildren(finallyAsts)
       } else {
         tryWithClausesAst
       }
@@ -1766,23 +1764,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .order(order)
         .argumentIndex(argumentIndex)
 
-    val tryAstWithCtx = astsForExpression(expr.getTryBlock, 1, 1).headOption
+    val tryBlockAst = astsForExpression(expr.getTryBlock, 1, 1).headOption
       .getOrElse(Ast())
     val tryAst =
       Ast(callNode)
-        .withChild(tryAstWithCtx)
-        .withArgEdge(callNode, tryAstWithCtx.root.get)
+        .withChild(tryBlockAst)
+        .withArgEdge(callNode, tryBlockAst.root.get)
 
-    val clauseAstsWitCtx =
+    val clauseAsts =
       withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, order) =>
         astsForExpression(entry.getCatchBody, order + 1, order + 1)
       }.flatten
 
-    val finalAst =
-      tryAst
-        .withChildren(clauseAstsWitCtx)
-        .withArgEdges(callNode, clauseAstsWitCtx.map(_.root.get))
-    finalAst
+    tryAst
+      .withChildren(clauseAsts)
+      .withArgEdges(callNode, clauseAsts.map(_.root.get))
   }
 
   // TODO: handle parameters passed to the clauses
@@ -2304,8 +2300,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .argumentIndex(order)
     val exprNode = astsForExpression(entry.getExpression, order + 1, order + 1).headOption
       .getOrElse(Ast())
-    val jumpNodeAstsWithCtx = Ast(jumpNode)
-    Seq(jumpNodeAstsWithCtx) ++ Seq(exprNode)
+    Seq(Ast(jumpNode)) ++ Seq(exprNode)
   }
 
   def astForIf(expr: KtIfExpression, order: Int, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
