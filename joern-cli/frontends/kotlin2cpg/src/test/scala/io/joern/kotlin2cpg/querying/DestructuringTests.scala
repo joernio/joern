@@ -147,13 +147,13 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(tmpLocal) = cpg.local.name("tmp_.*").l
       tmpLocal.code shouldBe "tmp_1"
       tmpLocal.typeFullName shouldBe "main.AClass"
-      tmpLocal.order shouldBe (firstAstConstruct.order + 4)
+      tmpLocal.order shouldBe (firstAstConstruct.order + 3)
 
       val List(tmpAssignmentToAlloc) = cpg.call.code("tmp.*=.*alloc.*").l
       tmpAssignmentToAlloc.methodFullName shouldBe Operators.assignment
       tmpAssignmentToAlloc.typeFullName shouldBe "ANY"
       tmpAssignmentToAlloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      tmpAssignmentToAlloc.order shouldBe (firstAstConstruct.order + 5)
+      tmpAssignmentToAlloc.order shouldBe (firstAstConstruct.order + 4)
 
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = tmpAssignmentToAlloc.argument.l
       allocAssignmentLhs.argumentIndex shouldBe 1
@@ -169,7 +169,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(tmpInitCall) = cpg.call.code(".*init.*").l
-      tmpInitCall.order shouldBe (firstAstConstruct.order + 6)
+      tmpInitCall.order shouldBe (firstAstConstruct.order + 5)
 
       val List(initCallFirstArg: Identifier, initCallSecondArg: Identifier, initCallThirdArg: Literal) =
         tmpInitCall.argument.l
@@ -192,7 +192,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
-      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
+      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
 
       val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
       firstDestructLHSIdentifier.name shouldBe "myA"
@@ -216,7 +216,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(secondDestructAssignment) = cpg.call.code("myB.*=.*component.*").l
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
-      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 8)
+      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"
@@ -303,13 +303,13 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(tmpLocal) = cpg.local.name("tmp_.*").where(_.method.fullName(".*main.*")).l
       tmpLocal.code shouldBe "tmp_2"
       tmpLocal.typeFullName shouldBe "mypkg.AClass"
-      tmpLocal.order shouldBe (firstAstConstruct.order + 4)
+      tmpLocal.order shouldBe (firstAstConstruct.order + 3)
 
       val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
       tmpAssignmentToRhsCall.methodFullName shouldBe Operators.assignment
       tmpAssignmentToRhsCall.typeFullName shouldBe "ANY"
       tmpAssignmentToRhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 5)
+      tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 4)
 
       val List(allocAssignmentLhs: Identifier, rhsCall: Call) = tmpAssignmentToRhsCall.argument.l
       allocAssignmentLhs.argumentIndex shouldBe 1
@@ -334,7 +334,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
-      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
+      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 5)
 
       val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
       firstDestructLHSIdentifier.name shouldBe "myA"
@@ -358,7 +358,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(secondDestructAssignment) = cpg.call.code("myB.*=.*component.*").l
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
-      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
+      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"
@@ -461,13 +461,13 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
           .l
       tmpLocal1.code shouldBe "tmp_3"
       tmpLocal1.typeFullName shouldBe "mypkg.AClass"
-      tmpLocal1.order shouldBe (firstAstConstruct.order + 4)
+      tmpLocal1.order shouldBe (firstAstConstruct.order + 3)
 
       val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
       tmpAssignmentToRhsCall.methodFullName shouldBe Operators.assignment
       tmpAssignmentToRhsCall.typeFullName shouldBe "ANY"
       tmpAssignmentToRhsCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 5)
+      tmpAssignmentToRhsCall.order shouldBe (firstAstConstruct.order + 4)
 
       val List(allocAssignmentLhs: Identifier, rhsCall: Call) = tmpAssignmentToRhsCall.argument.l
       allocAssignmentLhs.argumentIndex shouldBe 1
@@ -495,7 +495,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(firstDestructAssignment) = cpg.call.code("myA.*=.*component.*").l
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
-      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
+      firstDestructAssignment.order shouldBe (firstAstConstruct.order + 5)
 
       val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
       firstDestructLHSIdentifier.name shouldBe "myA"
@@ -519,7 +519,7 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
       val List(secondDestructAssignment) = cpg.call.code("myB.*=.*component.*").l
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
-      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 7)
+      secondDestructAssignment.order shouldBe (firstAstConstruct.order + 6)
 
       val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
       secondDestructLHSIdentifier.name shouldBe "myB"

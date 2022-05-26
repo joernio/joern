@@ -1081,49 +1081,36 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val initExpr = expr.getInitializer
     val localsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
-        val entry        = entryWithIdx._1
-        val orderForNode = entryWithIdx._2 + order
+        val entry = entryWithIdx._1
 
         val typeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
         registerType(typeFullName)
 
-        val node =
-          localNode(entry.getName, typeFullName, None, line(entry), column(entry))
-            .order(orderForNode)
+        val node = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
         Ast(node)
       }
-
-    val orderAfterEntryLocals = localsForEntries.size + order
 
     val callRhsTypeFullName = typeInfoProvider.expressionType(initExpr, TypeConstants.cpgUnresolved)
     registerType(callRhsTypeFullName)
 
-    val tmpName          = Constants.tmpLocalPrefix + tmpKeyPool.next
-    val orderForTmpLocal = orderAfterEntryLocals + 1
-    val localForTmpNode =
-      localNode(tmpName, callRhsTypeFullName)
-        .order(orderForTmpLocal)
-    val localForTmpAst =
-      Ast(localForTmpNode)
+    val tmpName         = Constants.tmpLocalPrefix + tmpKeyPool.next
+    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
+    val localForTmpAst  = Ast(localForTmpNode)
 
-    val astForRhsCall    = astsForExpression(initExpr, 2, 2).head
-    val assignmentRhsAst = astForRhsCall
-    val assignmentRhsNode =
-      assignmentRhsAst.root.get
+    val astForRhsCall     = astsForExpression(initExpr, 2, 2).head
+    val assignmentRhsAst  = astForRhsCall
+    val assignmentRhsNode = assignmentRhsAst.root.get
 
     val assignmentLhsNode =
       identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
         .argumentIndex(1)
-        .order(1)
 
     val assignmentLhsAst =
       Ast(assignmentLhsNode)
         .withRefEdge(assignmentLhsNode, localForTmpNode)
 
-    val orderForTmpAssignmentCall = orderForTmpLocal + 1
     val assignmentNode =
       operatorCallNode(Operators.assignment, tmpName + " = " + initExpr.getText, None)
-        .order(orderForTmpAssignmentCall)
     val assignmentAst =
       Ast(assignmentNode)
         .withChild(assignmentLhsAst)
@@ -1133,7 +1120,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val returnType = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(returnType)
 
-    val orderAfterLocalsAndTmpLowering = orderForTmpAssignmentCall + 1
     val assignmentsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
@@ -1143,7 +1129,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val assignmentLHSNode =
           identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
             .argumentIndex(1)
-            .order(1)
         val relevantLocal = localsForEntries(entryWithIdx._2).root.get
         val assignmentLHSAst =
           Ast(assignmentLHSNode)
@@ -1152,7 +1137,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val componentNIdentifierNode =
           identifierNode(localForTmpNode.name, callRhsTypeFullName, line(entry), column(entry))
             .argumentIndex(0)
-            .order(1)
 
         val componentIdx      = entryWithIdx._2 + 1
         val fallbackSignature = TypeConstants.cpgUnresolved + "()"
@@ -1172,7 +1156,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             line(entry),
             column(entry)
           )
-            .order(2)
             .argumentIndex(2)
 
         val componentNIdentifierAst =
@@ -1184,7 +1167,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .withArgEdge(componentNCallNode, componentNIdentifierNode)
             .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
 
-        val orderForNode = orderAfterLocalsAndTmpLowering + entryWithIdx._2
         val assignmentCallNode =
           operatorCallNode(
             Operators.assignment,
@@ -1193,7 +1175,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             line(entry),
             column(entry)
           )
-            .order(orderForNode)
         val assignmentAst =
           Ast(assignmentCallNode)
             .withChild(assignmentLHSAst)
@@ -1237,49 +1218,34 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val localsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
-        val entry        = entryWithIdx._1
-        val orderForNode = entryWithIdx._2 + order
+        val entry = entryWithIdx._1
 
         val typeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
         registerType(typeFullName)
 
-        val node =
-          localNode(entry.getName, typeFullName, None, line(entry), column(entry))
-            .order(orderForNode)
+        val node = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
         Ast(node)
       }
-
-    val orderAfterEntryLocals = localsForEntries.size + order
 
     val ctorTypeFullName = typeInfoProvider.expressionType(ctorCall, TypeConstants.cpgUnresolved)
     registerType(ctorTypeFullName)
 
-    val tmpName          = Constants.tmpLocalPrefix + tmpKeyPool.next
-    val orderForTmpLocal = orderAfterEntryLocals + 1
-    val localForTmpNode =
-      localNode(tmpName, ctorTypeFullName)
-        .order(orderForTmpLocal)
-
-    val localForTmpAst =
-      Ast(localForTmpNode)
+    val tmpName         = Constants.tmpLocalPrefix + tmpKeyPool.next
+    val localForTmpNode = localNode(tmpName, ctorTypeFullName)
+    val localForTmpAst  = Ast(localForTmpNode)
 
     val assignmentRhsNode =
       operatorCallNode(Operators.alloc, Constants.alloc, Some(ctorTypeFullName), line(expr), column(expr))
-        .order(2)
         .argumentIndex(2)
     val assignmentLhsNode =
       identifierNode(tmpName, ctorTypeFullName, line(expr), column(expr))
         .argumentIndex(1)
-        .order(1)
 
     val assignmentLhsAst =
       Ast(assignmentLhsNode)
         .withRefEdge(assignmentLhsNode, localForTmpNode)
 
-    val orderForTmpAssignmentCall = orderForTmpLocal + 1
-    val assignmentNode =
-      operatorCallNode(Operators.assignment, tmpName + " = " + Constants.alloc, None)
-        .order(orderForTmpAssignmentCall)
+    val assignmentNode = operatorCallNode(Operators.assignment, tmpName + " = " + Constants.alloc, None)
     val assignmentAst =
       Ast(assignmentNode)
         .withChild(assignmentLhsAst)
@@ -1289,7 +1255,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val initReceiverNode =
       identifierNode(tmpName, ctorTypeFullName, line(expr), column(expr))
         .argumentIndex(0)
-        .order(1)
     val initReceiverAst =
       Ast(initReceiverNode)
         .withRefEdge(initReceiverNode, localForTmpNode)
@@ -1304,7 +1269,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val returnType      = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(returnType)
 
-    val orderForTmpInitCall = orderForTmpAssignmentCall + 1
     val initCallNode =
       callNode(
         Constants.init,
@@ -1316,14 +1280,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         line(expr),
         column(expr)
       )
-        .order(orderForTmpInitCall)
     val initCallAst =
       Ast(initCallNode)
         .withChild(initReceiverAst)
         .withChildren(argAsts)
         .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.root))
 
-    val orderAfterLocalsAndTmpLowering = orderForTmpInitCall + 1
     val assignmentsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
@@ -1333,7 +1295,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val assignmentLHSNode =
           identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
             .argumentIndex(1)
-            .order(1)
         val relevantLocal = localsForEntries(entryWithIdx._2).root.get
         val assignmentLHSAst =
           Ast(assignmentLHSNode)
@@ -1342,7 +1303,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val componentNIdentifierNode =
           identifierNode(localForTmpNode.name, ctorTypeFullName, line(entry), column(entry))
             .argumentIndex(0)
-            .order(1)
 
         val componentIdx      = entryWithIdx._2 + 1
         val fallbackSignature = TypeConstants.cpgUnresolved + "()"
@@ -1362,7 +1322,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             line(entry),
             column(entry)
           )
-            .order(2)
             .argumentIndex(2)
 
         val componentNIdentifierAst =
@@ -1374,7 +1333,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             .withArgEdge(componentNCallNode, componentNIdentifierNode)
             .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
 
-        val orderForNode = orderAfterLocalsAndTmpLowering + entryWithIdx._2
         val assignmentCallNode =
           operatorCallNode(
             Operators.assignment,
@@ -1382,7 +1340,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             None,
             line(entry),
             column(entry)
-          ).order(orderForNode)
+          )
 
         val assignmentAst =
           Ast(assignmentCallNode)
@@ -1421,19 +1379,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val localsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex
         .map { entryWithIdx =>
-          val entry        = entryWithIdx._1
-          val orderForNode = entryWithIdx._2 + order
+          val entry = entryWithIdx._1
 
           val typeFullName = typeInfoProvider.typeFullName(entry, TypeConstants.any)
           registerType(typeFullName)
 
-          val node =
-            localNode(entry.getName, typeFullName, None, line(entry), column(entry))
-              .order(orderForNode)
+          val node = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
           Ast(node)
         }
 
-    val orderAfterLocals = localsForEntries.size + order
     val assignmentsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex
         .map { entryWithIdx =>
@@ -1444,7 +1398,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val assignmentLHSNode =
             identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
               .argumentIndex(1)
-              .order(1)
           val relevantLocal = localsForEntries(entryWithIdx._2).root.get
           val assignmentLHSAst =
             Ast(assignmentLHSNode)
@@ -1456,7 +1409,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val componentNIdentifierNode =
             identifierNode(destructuringRHS.getText, componentNIdentifierTFN, line(entry), column(entry))
               .argumentIndex(0)
-              .order(1)
 
           val componentIdx      = entryWithIdx._2 + 1
           val fallbackSignature = TypeConstants.cpgUnresolved + "()"
@@ -1476,7 +1428,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               line(entry),
               column(entry)
             )
-              .order(2)
               .argumentIndex(2)
 
           val componentNIdentifierAst =
@@ -1491,7 +1442,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .withArgEdge(componentNCallNode, componentNIdentifierNode)
               .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
 
-          val orderForNode = orderAfterLocals + entryWithIdx._2
           val assignmentCallNode =
             operatorCallNode(
               Operators.assignment,
@@ -1500,7 +1450,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               line(entry),
               column(entry)
             )
-              .order(orderForNode)
           val assignmentAst =
             Ast(assignmentCallNode)
               .withChild(assignmentLHSAst)
