@@ -2542,10 +2542,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, order: Int, argIdx: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    if (typeInfoProvider.isRefToCompanionObject(expr)) {
-      val typeFullName = typeInfoProvider.typeFullName(expr, TypeConstants.any)
-      registerType(typeFullName)
+    val typeFullName = typeInfoProvider.typeFullName(expr, TypeConstants.any)
+    registerType(typeFullName)
 
+    val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(expr)
+    if (referencesCompanionObject) {
       val callNode =
         operatorCallNode(Operators.fieldAccess, expr.getText, Some(typeFullName), line(expr), column(expr))
           .order(order)
@@ -2560,9 +2561,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           .argumentIndex(2)
       callAst(callNode, Seq(_identifierNode, _fieldIdentifierNode).map(Ast(_)).toList)
     } else {
-      val typeFullName = typeInfoProvider.typeFullName(expr, TypeConstants.any)
-      registerType(typeFullName)
-
       val node =
         typeRefNode(expr.getIdentifier.getText, typeFullName, line(expr), column(expr))
           .order(order)
@@ -2798,7 +2796,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val returnType = typeInfoProvider.expressionType(expr, TypeConstants.any)
     registerType(returnType)
 
-    val _callNode =
+    val node =
       callNode(
         expr.getText,
         referencedName,
@@ -2811,9 +2809,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
         .order(order)
         .argumentIndex(argIdx)
-    Ast(_callNode)
-      .withChildren(argAsts)
-      .withArgEdges(_callNode, argAsts.flatMap(_.root))
+    callAst(node, argAsts.toList)
   }
 
   private def astForMember(decl: KtDeclaration, childNum: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
