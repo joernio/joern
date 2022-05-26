@@ -272,19 +272,26 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
 
     val bindingsInfo =
-      methodAsts.map { ast =>
-        // TODO: add a try catch here
-        val method = ast.root.get.asInstanceOf[NewMethod]
-        val node   = bindingNode(method.name, method.signature)
-        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, method, EdgeTypes.REF)))
-      }
+      methodAsts
+        .flatMap { ast =>
+          ast.root match {
+            case Some(node) =>
+              node match {
+                case m: NewMethod => Some(m)
+                case _            => None
+              }
+            case _ => None
+          }
+        }
+        .map { _methodNode =>
+          val node = bindingNode(_methodNode.name, _methodNode.signature)
+          BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
+        }
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature =
-      if (ktClass.getPrimaryConstructor == null) {
-        TypeConstants.void + "()"
-      } else {
-        typeInfoProvider.erasedSignature(constructorParams)
-      }
+      Option(ktClass.getPrimaryConstructor)
+        .map { _ => typeInfoProvider.erasedSignature(constructorParams) }
+        .getOrElse(TypeConstants.void + "()")
     val defaultFullName = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
     val ctorFnWithSig =
       typeInfoProvider.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
@@ -879,9 +886,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val closureBindingEntriesForCaptured =
       captured
         .collect {
-          case mpi: NewMethodParameterIn => mpi
-          case l: NewLocal               => l
-          case mem: NewMember            => mem
+          case node: NewMethodParameterIn => node
+          case node: NewLocal             => node
+          case node: NewMember            => node
         }
         .map { capturedNode =>
           val closureBindingId = randomUUID().toString
