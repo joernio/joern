@@ -546,12 +546,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       } else {
         ast
       }
-    val companionObjectAstWithAdditionals =
+    val companionObjectAsts =
       if (ktClass.getCompanionObjects.isEmpty) Seq()
       else astsForClassOrObject(ktClass.getCompanionObjects.asScala.head, order + 1)
     scope.popScope()
 
-    Seq(finalAst) ++ companionObjectAstWithAdditionals
+    Seq(finalAst) ++ companionObjectAsts
   }
 
   private def astForMethod(ktFn: KtNamedFunction, childNum: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
