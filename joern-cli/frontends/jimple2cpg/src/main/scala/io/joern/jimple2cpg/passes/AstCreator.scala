@@ -365,6 +365,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   }
 
   private def astForBinOpExpr(binOp: BinopExpr, order: Int, parentUnit: soot.Unit): Ast = {
+    // https://javadoc.io/static/org.soot-oss/soot/4.3.0/soot/jimple/BinopExpr.html
     val operatorName = binOp match {
       case _: AddExpr  => Operators.addition
       case _: SubExpr  => Operators.subtraction
@@ -385,7 +386,10 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case _: OrExpr   => Operators.or
       case _: XorExpr  => Operators.xor
       case _: EqExpr   => Operators.equals
-      case _           => ""
+      case _: NeExpr   => Operators.notEquals
+      case _ =>
+        logger.warn(s"Unhandled binary operator ${binOp.getSymbol} (${binOp.getClass}). This is unexpected behaviour.")
+        "<operator>.unknown"
     }
 
     val callNode = NewCall()
