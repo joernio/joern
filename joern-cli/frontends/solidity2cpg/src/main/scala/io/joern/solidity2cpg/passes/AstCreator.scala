@@ -438,6 +438,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(code + visibility + varDecl.name)
       .typeFullName(varDecl.name)
       .order(order)
+      .argumentIndex(order)
 
     Ast(newID)
 
@@ -635,6 +636,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .code(code)
         .typeFullName(typeFullName)
         .order(order)
+        .argumentIndex(order)
     )
   }
 
