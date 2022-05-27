@@ -6,8 +6,9 @@ import overflowdb.traversal.Traversal
 
 class ImportTraversal(val traversal: Traversal[Import]) extends AnyVal {
 
-  def namespaceBlock : Traversal[NamespaceBlock] = traversal.in(EdgeTypes.AST)
-    .collect{ case x : NamespaceBlock => x}
+  def namespaceBlock: Traversal[NamespaceBlock] = traversal
+    .in(EdgeTypes.AST)
+    .collect { case x: NamespaceBlock => x }
     .cast[NamespaceBlock]
 
 }
