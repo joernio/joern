@@ -78,7 +78,7 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
 
 
   "should contain call nodes with <operation>.assignment for all variables" in {
-    println(cpg.typeDecl.dotAst.head)
+//    println(cpg.typeDecl.dotAst.head)
 //    println(cpg.assignment.dotAst.head)
 //    println(cpg.assignment.name.l)
 //    println(cpg.assignment.typeFullName.l)
