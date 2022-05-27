@@ -123,10 +123,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         asts
       }.flatten
 
-    val fileNode =
-      NewFile()
-        .name(fileWithMeta.relativizedPath)
-        .order(0)
+    val fileNode = NewFile().name(fileWithMeta.relativizedPath)
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(
         _.edgeMeta
