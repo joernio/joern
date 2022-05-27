@@ -110,7 +110,7 @@ class NodeTypeStartersTests extends FuzzyCCodeToCpgSuite {
     val method2 = cpg.method.name("libfunc").head
 
     cpg.id(method1.id).l shouldBe Seq(method1)
-    cpg.id(Seq(method1.id, method2.id)).l shouldBe Seq(method1, method2)
+    cpg.ids(method1.id, method2.id).l shouldBe Seq(method1, method2)
   }
 
 }
