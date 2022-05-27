@@ -1,0 +1,37 @@
+name: upgrade-deps
+# Nightly job that verifies that we can upgrade all internal dependencies
+# This essentially runs `./updateDependencies.sh --non-interactive` and
+# runs the regular tests, to notify us if some upstream dependency
+# introduced breaking changes. If it's red, that's not the end of the
+# world, but we should get it back on track to unblock others. 
+on: 
+  schedule:
+    - cron: '0 2 * * *'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Install astgen for jssrc2cpg
+        run: npm install -g @joernio/astgen
+      - name: Install php deps for php2cpg
+        run: joern-cli/frontends/php2cpg/installdeps.sh
+      - name: Upgrade all (internal) dependencies
+        run: ./updateDependencies.sh --non-interactive
+      - run: sbt clean +test
+      - run: ./testDistro.sh
+      - run: |
+          mkdir /tmp/foo
+          echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
+          ./joern --src /tmp/foo --run scan
+          ./joern-scan /tmp/foo
+          ./joern-scan --dump
+      - run: |
+          cd joern-cli/target/universal/stage
+          ./schema-extender/test.sh
