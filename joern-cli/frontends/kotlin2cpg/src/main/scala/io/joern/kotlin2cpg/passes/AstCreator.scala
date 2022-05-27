@@ -96,7 +96,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
     val namespaceBlocksForImports =
       importAsts
-        .map(_.root.get)
+        .flatMap { ast =>
+          ast.root match {
+            case Some(node) => Some(node)
+            case _          => None
+          }
+        }
         .collect { case n: NewImport => n }
         .map { n =>
           val importedName =
