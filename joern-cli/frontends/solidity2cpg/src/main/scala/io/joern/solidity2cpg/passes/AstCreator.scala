@@ -366,17 +366,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val blockNode = NewBlock().order(order).argumentIndex(order)
 //    val varStatements      = body.statements.collect { case x: VariableDeclarationStatement => x }.toSet
     val stmts     = body.statements
-<<<<<<< HEAD
 
     val vars = withOrder(stmts) {case (x, order) =>
       astForLocalDeclaration(x, order)
-=======
-    println(body.statements.collect{case x: VariableDeclarationStatement => println(x)})
-    val vars =
-//      if (body.statements.collect { case x: VariableDeclarationStatement => x}.nonEmpty) {
-        withOrder(body.statements.collect { case x: VariableDeclarationStatement => x.variables.collect{case y : VariableDeclaration => y} }) { (x, varOrder) =>
-              x.map ( z => astForLocal(z, varOrder))
->>>>>>> 2562b500953694e462231df77d6405299c99de6f
     }
 //      } else Seq(Ast())
     println(vars.foreach(x => println(x)))
