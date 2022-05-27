@@ -1,6 +1,6 @@
 package io.joern.benchmarks.ifspec.java
 
-import io.joern.benchmarks.BenchmarkTags.{Exceptions, ExplicitFlows, HighConditional, ImplicitFlows}
+import io.joern.benchmarks.BenchmarkTags.{ExplicitFlows, HighConditional, ImplicitFlows}
 import io.joern.benchmarks.testfixtures.BenchmarkFixture._
 import io.joern.benchmarks.testfixtures.IfspecHighConditionalFixture
 import io.shiftleft.semanticcpg.language._
