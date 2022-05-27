@@ -364,23 +364,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order)
-//    val varStatements      = body.statements.collect { case x: VariableDeclarationStatement => x }.toSet
     val stmts     = body.statements
 
     val vars = withOrder(stmts) {case (x, order) =>
       astForLocalDeclaration(x, order)
     }
-//      } else Seq(Ast())
-    println(vars.foreach(x => println(x)))
 
-//    val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
-//      astForVarDecl(x, varOrder)
-//    }
     Ast(blockNode)
-//      .withChildren(vars)
+      .withChildren(vars)
       .withChildren(withOrder(stmts) { case (x, order) =>
-//        astForStatement(x, order+1)
-//        astForLocalDeclaration(x, order)
         astForStatement(x, order + vars.size-1)
       })
   }
