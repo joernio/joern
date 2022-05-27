@@ -184,14 +184,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     methodOrModifierOrder: Int
   ): Ast = {
     val name = if (methodOrModifier.name != null) methodOrModifier.name else "<init>"
-    val parameters =
+    val parameters = {
       (if (methodOrModifier.isVirtual) createThisParameterNode(contractName)
        else
         createThisParameterNode(contractName)) +: withOrder(methodOrModifier.parameters.collect { case x: VariableDeclaration => x }) {
         case (x, order) =>
           astForParameter(x, order)
       }
-    val body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size + 1)
+    }
+    val body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size)
     val methodNode = NewMethod()
       .name(name)
       .order(methodOrModifierOrder)
@@ -286,7 +287,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           funcType + "(" + types + ")"
         }
 
-        val methodReturn = astForMethodReturn(returnParams, parameters.size + 2)
+        val methodReturn = astForMethodReturn(returnParams, parameters.size + 1)
         val mAst = Ast(
           methodNode
             .fullName(contractName + "." + name + funcType + "(" + types + ")")
@@ -300,11 +301,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-//        mAst.nodes.foreach { n =>
-//          val code  = n.properties.getOrElse("CODE", null)
-//          val order = n.properties.getOrElse("ORDER", null)
-//          println((order, n.label(), code))
-//        }
+        mAst.nodes.foreach { n =>
+          val code  = n.properties.getOrElse("CODE", null)
+          val order = n.properties.getOrElse("ORDER", null)
+          println((order, n.label(), code))
+        }
 
         mAst
       case x =>
@@ -366,9 +367,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //    val varStatements      = body.statements.collect { case x: VariableDeclarationStatement => x }.toSet
     val stmts     = body.statements
 
-    val vars =
-      withOrder(body.statements.collect { case x: VariableDeclarationStatement => x.variables.collect{case y : VariableDeclaration => y} }.head) { (x, varOrder) =>
-              astForLocal(x, varOrder)
+    val vars = withOrder(stmts) {case (x, order) =>
+      astForLocalDeclaration(x, order)
     }
 
 
@@ -379,8 +379,26 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(vars)
       .withChildren(withOrder(stmts) { case (x, order) =>
 //        astForStatement(x, order+1)
-        astForStatement(x, order + vars.size)
+//        astForLocalDeclaration(x, order)
+        astForStatement(x, order + vars.size-1)
       })
+  }
+  private def astForLocalDeclaration (statement: BaseASTNode, order: Int): Ast = {
+    val locals = statement match {
+      case x: VariableDeclarationStatement => {
+        withOrder(x.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
+          astForLocal(x, varOrder - 1 + order)
+        }
+      }
+      case _ => null
+    }
+  if (locals != null) {
+    Ast()
+      .withChildren(locals)
+  } else {
+    Ast()
+  }
+
 
   }
 
@@ -425,7 +443,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ElementaryTypeName => typefullName = registerType(x.name)
       case x: Mapping => {
         typefullName = registerType("mapping")
-        code = getMappingKeyAndValue(x)
+        code = getMappingKeyAndValue(x) + " "
       }
       case x: ArrayTypeName =>
         x.baseTypeName match {
@@ -436,12 +454,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     var visibility = "";
     varDecl.visibility match {
-      case x: String => visibility = " " + x
+      case x: String => visibility = x + " "
       case _         => visibility = ""
     }
     newID
       .name(varDecl.name)
-      .code(code + visibility + " " + varDecl.name)
+      .code(code + visibility + varDecl.name)
       .typeFullName(varDecl.name)
       .order(order)
 
@@ -552,7 +570,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (!name.equals("")) {
       registerType(name)
     }
-    val code = visibility + name
+    val code = if (!(visibility + name ).equals(""))
+      visibility + name
+    else {
+      "void"
+    }
+
+    if (code.equals("void")) {
+      name = code
+    }
 
     Ast(
       NewMethodReturn()
@@ -846,10 +872,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val initial =
       if (statement.initialValue != null) astsForDefinition(statement.initialValue, statement.variables.size + 1)
       else Ast()
-
-//    val id = if (statement.initialValue != null) statement.variables.collect{case x: VariableDeclaration => astForVarDecl(x, 1)}
-//    else List(Ast())
-
     val call = if (statement.initialValue != null) {
       val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
       val rhsCode = initial.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString
@@ -868,7 +890,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (statement.initialValue != null) {
       Ast(call)
         .withChildren(vars)
-//        .withChildren(id)
         .withChild(initial)
 
     } else {

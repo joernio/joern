@@ -25,7 +25,7 @@ class MethodReturnTests extends SolidityCodeToCpgFixture {
     // we expect the METHOD_RETURN node to be the right-most
     // child so that when traversing the AST from left to
     // right in CFG construction, we visit it last.
-    x.order shouldBe 3
+    x.order shouldBe 2
   }
 
   "should have a RETURN node with correct fields" in {
