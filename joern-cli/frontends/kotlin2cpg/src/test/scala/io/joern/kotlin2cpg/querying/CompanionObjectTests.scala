@@ -1,31 +1,127 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.{Constants, TestContext}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Member, TypeRef}
 import io.shiftleft.semanticcpg.language._
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class CompanionObjectTests extends AnyFreeSpec with Matchers {
 
-  "CPG for code with simple companion object definition" - {
-
+  "CPG for code with simple unnamed companion object" - {
     lazy val cpg = TestContext.buildCpg("""
-        | class MyClass {
-        |   companion object Factory {
-        |       fun create(): MyClass = MyClass()
-        |   }
+        |package mypkg
+        |
+        |class AClass {
+        |    companion object {
+        |        val m: String = "AVALUE"
+        |    }
         |}
         |
-        |fun main(args : Array<String>) {
-        |  println(MyClass.create())
+        |fun main() {
+        |    val out = AClass.m
+        |    println(out)
         |}
         |""".stripMargin)
 
-    "should contain correct number of calls" in {
-      cpg.call.size should not be 0
+    "should contain two TYPE_DECL nodes with the same FULL_NAME prefix, but different NAME & FULL_NAME" in {
+      val List(td1, td2) = cpg.typeDecl.fullName("mypkg.AClass.*").l
+      td1.name should not be td2.name
+      td1.fullName should not be td2.fullName
     }
 
-    // TODO: fill out the actual test cases
+    "should contain a TYPE_DECL node for the companion object with the correct props set" in {
+      val List(td) = cpg.typeDecl.nameExact("Companion").l
+      td.fullName shouldBe "mypkg.AClass$Companion"
+      td.member.size shouldBe 2
+
+      val List(firstMember: Member, secondMember: Member) = td.member.l
+      firstMember.name shouldBe "m"
+      firstMember.typeFullName shouldBe "java.lang.String"
+      secondMember.name shouldBe Constants.companionObjectMemberName
+      secondMember.typeFullName shouldBe "mypkg.AClass"
+    }
+
+    "should contain a TYPE_DECL node for the class containing the companion object with the correct props set" in {
+      val List(td) = cpg.typeDecl.nameExact("AClass").l
+      td.fullName shouldBe "mypkg.AClass"
+    }
+
+    "should contain a CALL node for the companion object member access with the correct props set" in {
+      val List(c) = cpg.call.codeExact("AClass.m").l
+      c.methodFullName shouldBe "<operator>.fieldAccess"
+      c.name shouldBe "<operator>.fieldAccess"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l
+      firstArg.code shouldBe "AClass"
+      firstArg.typeFullName shouldBe "mypkg.AClass$Companion"
+      secondArg.code shouldBe "m"
+      secondArg.canonicalName shouldBe "m"
+
+      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) = firstArg.argument.l
+      firstArgOfLoweredCall.typeFullName shouldBe "mypkg.AClass$Companion"
+      firstArgOfLoweredCall.refsTo.size shouldBe 0 // yes, 0. it's how the closed-source dataflow engine wants it atm
+      secondArgOfLoweredCall.canonicalName shouldBe Constants.companionObjectMemberName
+    }
+  }
+
+  "CPG for code with simple named companion object" - {
+    lazy val cpg = TestContext.buildCpg("""
+        |package mypkg
+        |
+        |class AClass {
+        |    companion object NamedCompanion {
+        |        val m: String = "AVALUE"
+        |    }
+        |}
+        |
+        |fun main() {
+        |    val out = AClass.m
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should contain two TYPE_DECL nodes with the same FULL_NAME prefix, but different NAME & FULL_NAME" in {
+      val List(td1, td2) = cpg.typeDecl.fullName("mypkg.AClass.*").l
+      td1.name should not be td2.name
+      td1.fullName should not be td2.fullName
+    }
+
+    "should contain a TYPE_DECL node for the companion object with the correct props set" in {
+      val List(td) = cpg.typeDecl.nameExact("NamedCompanion").l
+      td.fullName shouldBe "mypkg.AClass$NamedCompanion"
+      td.member.size shouldBe 2
+
+      val List(firstMember: Member, secondMember: Member) = td.member.l
+      firstMember.name shouldBe "m"
+      firstMember.typeFullName shouldBe "java.lang.String"
+      secondMember.name shouldBe Constants.companionObjectMemberName
+      secondMember.typeFullName shouldBe "mypkg.AClass"
+    }
+
+    "should contain a TYPE_DECL node for the class containing the companion object with the correct props set" in {
+      val List(td) = cpg.typeDecl.nameExact("AClass").l
+      td.fullName shouldBe "mypkg.AClass"
+    }
+
+    "should contain a CALL node for the companion object member access with the correct props set" in {
+      val List(c) = cpg.call.codeExact("AClass.m").l
+      c.methodFullName shouldBe "<operator>.fieldAccess"
+      c.name shouldBe "<operator>.fieldAccess"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l
+      firstArg.code shouldBe "AClass"
+      firstArg.typeFullName shouldBe "mypkg.AClass$NamedCompanion"
+      secondArg.code shouldBe "m"
+      secondArg.canonicalName shouldBe "m"
+
+      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) = firstArg.argument.l
+      firstArgOfLoweredCall.typeFullName shouldBe "mypkg.AClass$NamedCompanion"
+      firstArgOfLoweredCall.refsTo.size shouldBe 0 // yes, 0. it's how the closed-source dataflow engine wants it atm
+      secondArgOfLoweredCall.canonicalName shouldBe Constants.companionObjectMemberName
+    }
   }
 }

@@ -160,7 +160,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
     "should contain METHOD nodes for the primary and secondary constructors with the correct fullnames set" in {
       cpg.typeDecl.fullNameExact("mypkg.Foo").method.fullName.l shouldBe List(
         "mypkg.Foo.<init>:void(java.lang.String)",
-        "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
+        "mypkg.Foo.<init>:void(java.lang.String,int)"
       )
     }
 
@@ -174,10 +174,10 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the primary constructor with properties set correctly" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
-      m.lineNumber shouldBe Some(3)
+      m.lineNumber shouldBe Some(4)
       m.columnNumber shouldBe Some(9)
       m.methodReturn.code shouldBe "RET"
-      m.methodReturn.lineNumber shouldBe Some(3)
+      m.methodReturn.lineNumber shouldBe Some(4)
       m.methodReturn.columnNumber shouldBe Some(9)
 
       m.block.size shouldBe 1
@@ -186,12 +186,12 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
-      m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,java.lang.Integer)"
+      m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,int)"
       m.name shouldBe "<init>"
-      m.lineNumber shouldBe Some(5)
+      m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(4)
       m.methodReturn.code shouldBe "RET"
-      m.methodReturn.lineNumber shouldBe Some(5)
+      m.methodReturn.lineNumber shouldBe Some(6)
       m.methodReturn.columnNumber shouldBe Some(4)
 
       m.block.size shouldBe 1

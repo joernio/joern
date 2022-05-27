@@ -12,10 +12,12 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JavaParserTypeSolver,
   ReflectionTypeSolver
 }
-import io.joern.javasrc2cpg.util.{SourceRootFinder, TypeInfoProvider}
+import io.joern.javasrc2cpg.util.{CachingReflectionTypeSolver, SourceRootFinder}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.dependency.DependencyResolver
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
@@ -34,12 +36,20 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
     val parser       = new JavaParser(parserConfig)
     val parseResult  = parser.parse(new java.io.File(filename))
 
+    parseResult.getProblems.asScala.toList match {
+      case Nil => // Just carry on as usual
+      case problems =>
+        logger.warn(s"Encountered problems while parsing file $filename:")
+        problems.foreach { problem =>
+          logger.warn(s"- ${problem.getMessage}")
+        }
+    }
+
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED =>
-        diffGraph.absorb(new AstCreator(filename, result, global).createAst())
+        diffGraph.absorb(new AstCreator(filename, result, global, symbolResolver).createAst())
       case _ =>
-        logger.warn("Cannot parse: " + filename)
-        logger.warn("Problems: ", parseResult.getProblems.asScala.toList.map(_.toString))
+        logger.warn("Failed to parse file " + filename)
         Iterator()
     }
   }
@@ -69,7 +79,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
     SourceRootFinder.getSourceRoots(codeDir)
 
     val combinedTypeSolver   = new CombinedTypeSolver()
-    val reflectionTypeSolver = new ReflectionTypeSolver()
+    val reflectionTypeSolver = new CachingReflectionTypeSolver()
     combinedTypeSolver.add(reflectionTypeSolver)
 
     // Add solvers for all detected sources roots
@@ -78,8 +88,14 @@ class AstCreationPass(codeDir: String, filenames: List[String], inferenceJarPath
       combinedTypeSolver.add(javaParserTypeSolver)
     }
 
+    val resolvedDeps = DependencyResolver.getDependencies(Paths.get(codeDir)) match {
+      case Some(deps) => deps
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $codeDir")
+        Seq()
+    }
     // Add solvers for inference jars
-    jarsList
+    (jarsList ++ resolvedDeps)
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }

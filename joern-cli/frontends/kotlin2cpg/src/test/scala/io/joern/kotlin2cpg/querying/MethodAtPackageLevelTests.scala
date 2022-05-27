@@ -26,11 +26,11 @@ class MethodAtPackageLevelTests extends AnyFreeSpec with Matchers {
     "should contain method nodes with the correct fields" in {
       val List(x) = cpg.method.name("double").isExternal(false).l
       x.size shouldBe 1
-      x.fullName shouldBe "double:java.lang.Integer(java.lang.Integer)"
+      x.fullName shouldBe "double:int(int)"
       x.code shouldBe "double"
-      x.signature shouldBe "java.lang.Integer(java.lang.Integer)"
+      x.signature shouldBe "int(int)"
       x.isExternal shouldBe false
-      x.lineNumber shouldBe Some(1)
+      x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(4)
       x.filename.endsWith(".kt") shouldBe true
 
@@ -40,7 +40,7 @@ class MethodAtPackageLevelTests extends AnyFreeSpec with Matchers {
       y.code shouldBe "main"
       y.signature shouldBe "void(kotlin.Array)"
       y.isExternal shouldBe false
-      y.lineNumber shouldBe Some(5)
+      y.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(4)
       y.filename.endsWith(".kt") shouldBe true
     }
@@ -51,7 +51,7 @@ class MethodAtPackageLevelTests extends AnyFreeSpec with Matchers {
     }
 
     "should allow traversing to methodReturn" in {
-      cpg.method.name("double").isExternal(false).methodReturn.typeFullName.l shouldBe List("java.lang.Integer")
+      cpg.method.name("double").isExternal(false).methodReturn.typeFullName.l shouldBe List("int")
       cpg.method.name("main").isExternal(false).methodReturn.typeFullName.l shouldBe List("void")
     }
 

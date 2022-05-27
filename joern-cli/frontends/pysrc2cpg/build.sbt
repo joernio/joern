@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test
 )
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit                      := false
 Global / onChangedBuildSource := ReloadOnSourceChanges
 

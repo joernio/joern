@@ -39,4 +39,17 @@ object CpgBasedTool {
       s"To load the graph, type `joern $absolutePath`"
   }
 
+  val ARGS_DELIMITER = "--frontend-args"
+
+  /** Splits arguments at the ARGS_DELIMITER into arguments for the tool and arguments for the language frontend.
+    */
+  def splitArgs(args: Array[String]): (List[String], List[String]) = {
+    args.indexOf(ARGS_DELIMITER) match {
+      case -1 => (args.toList, Nil)
+      case splitIdx =>
+        val (parseOpts, frontendOpts) = args.toList.splitAt(splitIdx)
+        (parseOpts, frontendOpts.tail) // Take the tail to ignore the delimiter
+    }
+  }
+
 }

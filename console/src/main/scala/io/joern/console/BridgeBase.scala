@@ -30,9 +30,9 @@ case class Config(
   frontendArgs: Array[String] = Array.empty
 )
 
-/** Base class for Ammonite Bridge. Nothing to see here, move along.
+/** Base class for Ammonite Bridge, split by topic into multiple self types.
   */
-trait BridgeBase {
+trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
@@ -141,9 +141,11 @@ trait BridgeBase {
     parser.parse(args, Config()).get
   }
 
+  /** Entry point for Joern's integrated ammonite shell
+    */
   protected def runAmmonite(config: Config, slProduct: SLProduct = OcularProduct): Unit = {
     if (config.listPlugins) {
-      listPluginsAndLayerCreators(config, slProduct)
+      printPluginsAndLayerCreators(config, slProduct)
     } else if (config.addPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).add(config.addPlugin.get)
     } else if (config.rmPlugin.isDefined) {
@@ -164,89 +166,37 @@ trait BridgeBase {
     }
   }
 
-  private def listPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
-    println("Installed plugins:")
-    println("==================")
-    new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
-    println("Available layer creators")
-    println()
-    val code =
-      """
-        |println(run)
-        |
-        |""".stripMargin
-    withTemporaryScript(code, slProduct.name) { file =>
-      runScript(os.Path(file.path.toString), config)
+  protected def additionalImportCode(config: Config): List[String] =
+    config.additionalImports.flatMap { importScript =>
+      val file = importScript.toIO
+      assert(file.canRead, s"unable to read $file")
+      readScript(file.toScala)
     }
+
+  /** Override this method to implement script decryption
+    */
+  protected def decryptedScript(scriptFile: Path): Path = {
+    scriptFile
   }
 
-  private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
-    File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
-      val file = (dir / "script.sc")
-      file.write(code)
-      f(file)
-    }
+  private def readScript(scriptFile: File): List[String] = {
+    val code = scriptFile.lines.toList
+    println(s"importing $scriptFile (${code.size} lines)")
+    code
   }
 
-  private def runPlugin(config: Config, productName: String): Unit = {
-    if (config.src.isEmpty) {
-      println("You must supply a source directory with the --src flag")
-      return
-    }
+  protected def predefPlus(lines: List[String]): String
 
-    val bundleName = config.pluginToRun.get
-    val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
-    val language = config.language.getOrElse(
-      io.joern.console.cpgcreation
-        .guessLanguage(src)
-        .map { x =>
-          val lang = x.toLowerCase
-          // TODO we should eventually rename the languages in the
-          // spec to `OLDC` and `C` at which point the match below
-          // is no longer required.
-          lang match {
-            case "newc" => "c"
-            case "c"    => "oldc"
-            case _      => lang
-          }
-        }
-        .getOrElse("c")
-    )
-    val storeCode = if (config.store) { "save" }
-    else { "" }
-    val runDataflow = if (productName == "ocular") { "run.dataflow" }
-    else { "run.ossdataflow" }
-    val argsString = config.frontendArgs match {
-      case Array() => ""
-      case args =>
-        val quotedArgs = args.map { arg =>
-          "\"" ++ arg ++ "\""
-        }
-        val argsString = quotedArgs.mkString(", ")
-        s", args=List($argsString)"
-    }
-    val code = s"""
-        | if (${config.overwrite} || !workspace.projectExists("$src")) {
-        |   workspace.projects
-        |   .filter(_.inputPath == "$src")
-        |   .map(_.name).foreach(n => workspace.removeProject(n))
-        |   importCode.$language("$src"$argsString)
-        |   $runDataflow
-        |   save
-        | } else {
-        |    println("Using existing CPG - Use `--overwrite` if this is not what you want")
-        |    openForInputPath(\"$src\")
-        | }
-        | run.$bundleName
-        | $storeCode
-        |""".stripMargin
+  protected def shutdownHooks: List[String]
 
-    withTemporaryScript(code, productName) { file =>
-      runScript(os.Path(file.path.toString), config)
-    }
-  }
+  protected def promptStr(): String
 
-  private def startInteractiveShell(config: Config, slProduct: SLProduct) = {
+}
+
+trait ScriptExecution {
+  this: BridgeBase =>
+
+  protected def startInteractiveShell(config: Config, slProduct: SLProduct) = {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
       else """val originalPPrinter = repl.pprinter()
@@ -262,8 +212,8 @@ trait BridgeBase {
       "importCpg(\"" + cpgFile + "\")"
     } ++ config.forInputPath.map { name =>
       s"""
-        |openForInputPath(\"$name\")
-        |""".stripMargin
+         |openForInputPath(\"$name\")
+         |""".stripMargin
     }
     ammonite
       .Main(
@@ -276,7 +226,169 @@ trait BridgeBase {
       .run()
   }
 
-  private def startHttpServer(config: Config): Unit = {
+  protected def runScript(scriptFile: Path, config: Config) = {
+    val isEncryptedScript = scriptFile.ext == "enc"
+    System.err.println(s"executing $scriptFile with params=${config.params}")
+    val scriptArgs: Seq[String] = {
+      val commandArgs   = config.command.toList
+      val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
+      commandArgs ++ parameterArgs
+    }
+    val actualScriptFile =
+      if (isEncryptedScript) decryptedScript(scriptFile)
+      else scriptFile
+
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
+
+    ammonite
+      .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
+      .runScript(actualScriptFile, scriptArgs)
+      ._1 match {
+      case Res.Success(r) =>
+        System.err.println(s"script finished successfully")
+        System.err.println(r)
+      case Res.Failure(msg) =>
+        throw new AssertionError(s"script failed: $msg")
+      case Res.Exception(e, msg) =>
+        throw new AssertionError(s"script errored: $msg", e)
+      case _ => ???
+    }
+    /* minimizing exposure time by deleting the decrypted script straight away */
+    if (isEncryptedScript) actualScriptFile.toIO.delete
+  }
+
+  /** For the given config, generate a list of commands to import the CPG
+    */
+  private def importCpgCode(config: Config): List[String] = {
+    config.cpgToLoad.map { cpgFile =>
+      "importCpg(\"" + cpgFile + "\")"
+    }.toList ++ config.forInputPath.map { name =>
+      s"""
+         |openForInputPath(\"$name\")
+         |""".stripMargin
+    }
+  }
+
+  private def ammoniteColors(config: Config) =
+    if (config.nocolors) Colors.BlackWhite
+    else Colors.Default
+
+}
+
+trait PluginHandling {
+  this: BridgeBase =>
+
+  /** Print a summary of the available plugins and layer creators to the terminal.
+    */
+  protected def printPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
+    println("Installed plugins:")
+    println("==================")
+    new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
+    println("Available layer creators")
+    println()
+    withTemporaryScript(codeToListPlugins(), slProduct.name) { file =>
+      runScript(os.Path(file.path.toString), config)
+    }
+  }
+
+  private def codeToListPlugins(): String = {
+    """
+      |println(run)
+      |
+      |""".stripMargin
+  }
+
+  /** Run plugin by generating a temporary script based on the given config and executing the script via ammonite.
+    */
+  protected def runPlugin(config: Config, productName: String): Unit = {
+    if (config.src.isEmpty) {
+      println("You must supply a source directory with the --src flag")
+      return
+    }
+    val code = loadOrCreateCpg(config, productName)
+    withTemporaryScript(code, productName) { file =>
+      runScript(os.Path(file.path.toString), config)
+    }
+  }
+
+  /** Create a command that loads an existing CPG or creates it, based on the given `config`.
+    */
+  private def loadOrCreateCpg(config: Config, productName: String): String = {
+
+    val bundleName = config.pluginToRun.get
+    val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val language   = languageFromConfig(config, src)
+
+    val storeCode = if (config.store) { "save" }
+    else { "" }
+    val runDataflow = if (productName == "ocular") { "run.dataflow" }
+    else { "run.ossdataflow" }
+    val argsString = argsStringFromConfig(config)
+
+    s"""
+       | if (${config.overwrite} || !workspace.projectExists("$src")) {
+       |   workspace.projects
+       |   .filter(_.inputPath == "$src")
+       |   .map(_.name).foreach(n => workspace.removeProject(n))
+       |   importCode.$language("$src"$argsString)
+       |   $runDataflow
+       |   save
+       | } else {
+       |    println("Using existing CPG - Use `--overwrite` if this is not what you want")
+       |    openForInputPath(\"$src\")
+       | }
+       | run.$bundleName
+       | $storeCode
+       |""".stripMargin
+
+  }
+
+  private def languageFromConfig(config: Config, src: String): String = {
+    config.language.getOrElse(
+      io.joern.console.cpgcreation
+        .guessLanguage(src)
+        .map { x =>
+          val lang = x.toLowerCase
+          // TODO we should eventually rename the languages in the
+          // spec to `OLDC` and `C` at which point the match below
+          // is no longer required.
+          lang match {
+            case "newc" => "c"
+            case "c"    => "oldc"
+            case _      => lang
+          }
+        }
+        .getOrElse("c")
+    )
+  }
+
+  private def argsStringFromConfig(config: Config): String = {
+    config.frontendArgs match {
+      case Array() => ""
+      case args =>
+        val quotedArgs = args.map { arg =>
+          "\"" ++ arg ++ "\""
+        }
+        val argsString = quotedArgs.mkString(", ")
+        s", args=List($argsString)"
+    }
+  }
+
+  private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
+    File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
+      val file = dir / "script.sc"
+      file.write(code)
+      f(file)
+    }
+  }
+
+}
+
+trait ServerHandling {
+
+  this: BridgeBase =>
+
+  protected def startHttpServer(config: Config): Unit = {
     val predef   = predefPlus(additionalImportCode(config))
     val ammonite = new EmbeddedAmmonite(predef)
     ammonite.start()
@@ -299,83 +411,14 @@ trait BridgeBase {
         ammonite.shutdown()
         System.exit(1)
       }
-      case e: Throwable => {
+      case e: Throwable =>
         println("Unhandled exception thrown while attempting to start CPGQL server: ")
         println(e.getMessage)
         println("Exiting.")
 
         ammonite.shutdown()
         System.exit(1)
-      }
     }
   }
-
-  private def runScript(scriptFile: Path, config: Config) = {
-    val isEncryptedScript = scriptFile.ext == "enc"
-    System.err.println(s"executing $scriptFile with params=${config.params}")
-    val scriptArgs: Seq[String] = {
-      val commandArgs   = config.command.toList
-      val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
-      commandArgs ++ parameterArgs
-    }
-    val actualScriptFile =
-      if (isEncryptedScript) decryptedScript(scriptFile)
-      else scriptFile
-    val importCpgCode = config.cpgToLoad.map { cpgFile =>
-      "importCpg(\"" + cpgFile + "\")"
-    }.toList ++ config.forInputPath.map { name =>
-      s"""
-         |openForInputPath(\"$name\")
-         |""".stripMargin
-    }
-    ammonite
-      .Main(
-        predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode ++ shutdownHooks),
-        remoteLogging = false,
-        colors = ammoniteColors(config)
-      )
-      .runScript(actualScriptFile, scriptArgs)
-      ._1 match {
-      case Res.Success(r) =>
-        System.err.println(s"script finished successfully")
-        System.err.println(r)
-      case Res.Failure(msg) =>
-        throw new AssertionError(s"script failed: $msg")
-      case Res.Exception(e, msg) =>
-        throw new AssertionError(s"script errored: $msg", e)
-      case _ => ???
-    }
-    /* minimizing exposure time by deleting the decrypted script straight away */
-    if (isEncryptedScript) actualScriptFile.toIO.delete
-  }
-
-  private def additionalImportCode(config: Config): List[String] =
-    config.additionalImports.flatMap { importScript =>
-      val file = importScript.toIO
-      assert(file.canRead, s"unable to read $file")
-      readScript(file.toScala)
-    }
-
-  private def ammoniteColors(config: Config) =
-    if (config.nocolors) Colors.BlackWhite
-    else Colors.Default
-
-  /** Override this method to implement script decryption
-    */
-  protected def decryptedScript(scriptFile: Path): Path = {
-    scriptFile
-  }
-
-  private def readScript(scriptFile: File): List[String] = {
-    val code = scriptFile.lines.toList
-    println(s"importing $scriptFile (${code.size} lines)")
-    code
-  }
-
-  protected def predefPlus(lines: List[String]): String
-
-  protected def shutdownHooks: List[String]
-
-  protected def promptStr(): String
 
 }

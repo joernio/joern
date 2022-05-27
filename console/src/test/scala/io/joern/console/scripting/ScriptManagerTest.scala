@@ -4,12 +4,12 @@ import cats.effect.IO
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.TestProtoCpg
 import io.joern.console.scripting.ScriptManager.{ScriptCollections, ScriptDescription, ScriptDescriptions}
+import io.shiftleft.utils.IOUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, Inside}
 
 import java.nio.file.{NoSuchFileException, Path}
-import scala.io.Source
 import scala.util.Try
 
 class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with BeforeAndAfterAll {
@@ -29,12 +29,8 @@ class ScriptManagerTest extends AnyWordSpec with Matchers with Inside with Befor
   private object TestScriptExecutor extends AmmoniteExecutor {
     override protected def predef: String = ""
 
-    override def runScript(scriptPath: Path, parameters: Map[String, String], cpg: Cpg): IO[Any] = IO.fromTry(Try {
-      val source = Source.fromFile(scriptPath.toFile)
-      val result = source.getLines().mkString(System.lineSeparator())
-      source.close()
-      result
-    })
+    override def runScript(scriptPath: Path, parameters: Map[String, String], cpg: Cpg): IO[Any] =
+      IO.fromTry(Try(IOUtils.readLinesInFile(scriptPath).mkString("\n")))
   }
 
   private object TestScriptManager extends ScriptManager(TestScriptExecutor)

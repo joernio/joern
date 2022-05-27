@@ -36,7 +36,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       val List(assignmentLhs: Identifier, assignmentRhs: Block) = assignmentCall.argument.l
       assignmentLhs.code shouldBe "f"
       assignmentLhs.name shouldBe "f"
-      assignmentLhs.lineNumber shouldBe Some(6)
+      assignmentLhs.lineNumber shouldBe Some(7)
       assignmentLhs.columnNumber shouldBe Some(8)
       local.referencingIdentifiers.id.l.contains(assignmentLhs.id) shouldBe true
       assignmentRhs.typeFullName shouldBe "java.io.File"
@@ -175,7 +175,7 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
       val List(assignmentLhs: Identifier, assignmentRhs: Block) = assignmentCall.argument.l
       assignmentLhs.code shouldBe "a"
       assignmentLhs.name shouldBe "a"
-      assignmentLhs.lineNumber shouldBe Some(10)
+      assignmentLhs.lineNumber shouldBe Some(11)
       assignmentLhs.columnNumber shouldBe Some(8)
       local.referencingIdentifiers.id.l.contains(assignmentLhs.id) shouldBe true
       assignmentRhs.typeFullName shouldBe "mypkg.AClass"

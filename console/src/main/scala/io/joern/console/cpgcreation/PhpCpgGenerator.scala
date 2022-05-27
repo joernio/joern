@@ -5,12 +5,13 @@ import io.joern.console.FrontendConfig
 import java.nio.file.Path
 
 case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
+  private lazy val command: Path = if (isWin) rootPath.resolve("php2cpg.bat") else rootPath.resolve("php2cpg")
 
   override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
-    val command   = rootPath.resolve("php2cpg").toString
     val arguments = Seq("create") ++ List(inputPath) ++ Seq("-o", outputPath) ++ config.cmdLineParams
-    runShellCommand(command, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
-  override def isAvailable: Boolean = rootPath.resolve("php2cpg").toFile.exists()
+  override def isAvailable: Boolean =
+    command.toFile.exists
 }

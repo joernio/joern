@@ -29,7 +29,7 @@ class ClassLiteralTests extends AnyFreeSpec with Matchers {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.code shouldBe "Bar::class"
       c.columnNumber shouldBe Some(10)
-      c.lineNumber shouldBe Some(7)
+      c.lineNumber shouldBe Some(8)
       c.signature shouldBe "kotlin.reflect.KClass()"
       c.typeFullName shouldBe "kotlin.reflect.KClass"
       c.methodFullName shouldBe "mypkg.Bar.getClass:kotlin.reflect.KClass()"
@@ -41,7 +41,7 @@ class ClassLiteralTests extends AnyFreeSpec with Matchers {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.code shouldBe "Baz::class"
       c.columnNumber shouldBe Some(10)
-      c.lineNumber shouldBe Some(8)
+      c.lineNumber shouldBe Some(9)
       c.signature shouldBe "kotlin.reflect.KClass()"
       c.typeFullName shouldBe "kotlin.reflect.KClass"
       c.methodFullName shouldBe "mypkg.Baz.getClass:kotlin.reflect.KClass()"

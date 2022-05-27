@@ -214,7 +214,6 @@ class FunctionCallTests extends JimpleDataflowFixture {
   it should "find a path where `MALICIOUS` is added to safe input via a called function" in {
     val (source, sink) = getConstSourceSink("test14")
     sink.reachableBy(source).size shouldBe 1
-
   }
 
   it should "not find a path where the `MALICIOUS` arg is overwritten before the sink" in {

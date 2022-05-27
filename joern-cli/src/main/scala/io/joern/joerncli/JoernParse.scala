@@ -55,7 +55,7 @@ object JoernParse extends App {
 
   val DEFAULT_CPG_OUT_FILE = "cpg.bin"
 
-  val (parserArgs, frontendArgs) = splitArgs()
+  val (parserArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
   val installConfig              = new InstallConfig()
 
   run() match {
@@ -64,16 +64,6 @@ object JoernParse extends App {
     case Left(errMsg) =>
       println(s"Failure: $errMsg")
       System.exit(1)
-  }
-
-  private def splitArgs(): (List[String], List[String]) = {
-    args.indexOf(ARGS_DELIMITER) match {
-      case -1 => (args.toList, Nil)
-
-      case splitIdx =>
-        val (parseOpts, frontendOpts) = args.toList.splitAt(splitIdx)
-        (parseOpts, frontendOpts.tail) // Take the tail to ignore the delimiter
-    }
   }
 
   private def run(): Either[String, String] = {

@@ -1,6 +1,6 @@
 name := "kotlin2cpg"
 
-val kotlinVersion = "1.6.20"
+val kotlinVersion = "1.6.21"
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
@@ -18,5 +18,5 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"                  % "3.2.9"                % Test
 )
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit := false

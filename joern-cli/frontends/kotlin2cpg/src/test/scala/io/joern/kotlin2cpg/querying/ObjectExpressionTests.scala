@@ -21,7 +21,7 @@ class ObjectExpressionTests extends AnyFreeSpec with Matchers {
 
     "should contain an unknown node for the object expression" in {
       val List(u) = cpg.all.filter(_.isInstanceOf[Unknown]).map(_.asInstanceOf[Unknown]).l
-      u.lineNumber shouldBe Some(2)
+      u.lineNumber shouldBe Some(3)
       u.columnNumber shouldBe Some(12)
     }
   }

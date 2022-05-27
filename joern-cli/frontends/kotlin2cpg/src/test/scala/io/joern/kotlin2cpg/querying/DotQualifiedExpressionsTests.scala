@@ -12,8 +12,7 @@ class DotQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
   implicit val resolver = NoResolve
 
   "CPG for code with dot qualified expression as a receiver" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import io.javalin.Javalin
@@ -24,14 +23,12 @@ class DotQualifiedExpressionsTests extends AnyFreeSpec with Matchers {
         |  val app = Javalin.create().start(7000)
         |  app.get("/status") { ctx -> ctx.result("ok") }
         |}
-        |""".stripMargin,
-      includeAllJars = true
-    )
+        |""".stripMargin)
 
     "should contain a CALL node for `Javalin.create.*` with the correct properties set" in {
       val List(c) = cpg.call.code("Javalin.create.*7000.*").l
-      c.methodFullName shouldBe "io.javalin.Javalin.start:io.javalin.Javalin(java.lang.Integer)"
-      c.lineNumber shouldBe Some(8)
+      c.methodFullName shouldBe "io.javalin.Javalin.start:io.javalin.Javalin(int)"
+      c.lineNumber shouldBe Some(9)
       c.columnNumber shouldBe Some(12)
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }

@@ -7,7 +7,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"             %% "requests"          % "0.7.0",
   "com.github.scopt"        %% "scopt"             % "4.0.1",
   "com.github.pathikrit"    %% "better-files"      % "3.9.1",
-  "io.circe"                %% "circe-generic"     % "0.14.1",
+  "io.circe"                %% "circe-generic"     % "0.14.2",
   "org.reflections"          % "reflections"       % "0.10.2",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
@@ -15,9 +15,8 @@ libraryDependencies ++= Seq(
 
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
-scriptClasspath := Seq(
-  "*"
-) //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
+//wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
+scriptClasspath := Seq("*")
 
 topLevelDirectory := Some(packageName.value)
 

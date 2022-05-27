@@ -13,18 +13,18 @@ object TestContext {
     new TestContext()
   }
 
-  def buildCpg(code: String, file: String = "generated.kt", includeAllJars: Boolean = false): Cpg = {
+  def buildCpg(code: String, file: String = "generated.kt", withTestResourceClassPath: Boolean = true): Cpg = {
     val context = new TestContext()
     context.addSource(code, file)
-    context.includeAllJars = includeAllJars
+    context.withTestResourcePaths = withTestResourceClassPath
     context.buildCpg
   }
 }
 
 class TestContext private () {
-  private val codeAndFile    = mutable.ArrayBuffer.empty[Kotlin2Cpg.InputPair]
-  private var buildResult    = Option.empty[Cpg]
-  private var includeAllJars = false
+  private val codeAndFile           = mutable.ArrayBuffer.empty[Kotlin2Cpg.InputPair]
+  private var buildResult           = Option.empty[Cpg]
+  private var withTestResourcePaths = true
 
   def addSource(code: String, fileName: String = "generated.kt"): TestContext = {
     if (buildResult.nonEmpty) {
@@ -49,8 +49,7 @@ class TestContext private () {
       val config = Config(
         inputPaths = Set(tempDir.pathAsString),
         outputPath = randomOutPath,
-        classpath = Set(dir.path.toAbsolutePath.toString),
-        withAndroidJarsInClassPath = includeAllJars
+        classpath = if (withTestResourcePaths) Set(dir.path.toAbsolutePath.toString) else Set()
       )
 
       val kt2Cpg = new Kotlin2Cpg()

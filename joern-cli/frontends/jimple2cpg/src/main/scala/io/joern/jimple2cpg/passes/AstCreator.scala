@@ -8,10 +8,11 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
-import soot.tagkit.Host
+import soot.tagkit._
 import soot.{Local => _, _}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -110,28 +111,39 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .withChildren(methodAsts)
   }
 
-  private def astForField(v: SootField, order: Int): Ast = {
-    val typeFullName = registerType(v.getType.toQuotedString)
-    val name         = v.getName
-    val code         = if (v.getDeclaration.contains("enum")) name else s"$typeFullName $name"
+  private def astForField(field: SootField, order: Int): Ast = {
+    val typeFullName = registerType(field.getType.toQuotedString)
+    val name         = field.getName
+    val code         = if (field.getDeclaration.contains("enum")) name else s"$typeFullName $name"
+    val annotations = field.getTags.asScala
+      .collect { case x: VisibilityAnnotationTag => x }
+      .flatMap(_.getAnnotations.asScala)
+
     Ast(
       NewMember()
         .name(name)
-        .lineNumber(line(v))
-        .columnNumber(column(v))
+        .lineNumber(line(field))
+        .columnNumber(column(field))
         .typeFullName(typeFullName)
         .order(order)
         .code(code)
-    )
+    ).withChildren(withOrder(annotations) { (a, aOrder) => astsForAnnotations(a, aOrder, field) })
   }
 
   private def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
     val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
     val lastOrder  = 2 + methodDeclaration.getParameterCount
+    // Map params to their annotations
+    val mTags = methodDeclaration.getTags.asScala
+    val paramAnnos =
+      mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
+    val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
+    val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
     try {
       if (!methodDeclaration.isConcrete) {
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
+          .withChildren(astsForMethodTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
         val methodBody = Try(methodDeclaration.getActiveBody) match {
@@ -140,12 +152,12 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         }
         val parameterAsts =
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
-            (p, order) =>
-              astForParameter(p, order, methodDeclaration)
+            (p, order) => astForParameter(p, order, methodDeclaration, parameterAnnotations)
           }
         Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
+          .withChildren(astsForMethodTags(methodDeclaration))
           .withChild(astForMethodBody(methodBody, lastOrder))
           .withChild(astForMethodReturn(methodDeclaration))
       }
@@ -154,6 +166,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         logger.warn(s"Unexpected exception while parsing method body! Will stub the method ${methodNode.fullName}", e)
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
+          .withChildren(astsForMethodTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
@@ -179,25 +192,135 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case _              => EvaluationStrategies.BY_SHARING
     }
 
-  private def astForParameter(parameter: soot.Local, childNum: Int, methodDeclaration: SootMethod): Ast = {
+  private def astForParameter(
+    parameter: soot.Local,
+    childNum: Int,
+    methodDeclaration: SootMethod,
+    parameterAnnotations: Map[String, VisibilityAnnotationTag]
+  ): Ast = {
     val typeFullName = registerType(parameter.getType.toQuotedString)
-    val parameterNode = NewMethodParameterIn()
-      .name(parameter.getName)
-      .code(s"$typeFullName ${parameter.getName}")
-      .typeFullName(typeFullName)
-      .order(childNum)
-      .index(childNum)
-      .lineNumber(line(methodDeclaration))
-      .columnNumber(column(methodDeclaration))
-      .evaluationStrategy(getEvaluationStrategy(parameter.getType))
-    Ast(parameterNode)
+
+    val parameterNode = Ast(
+      NewMethodParameterIn()
+        .name(parameter.getName)
+        .code(s"$typeFullName ${parameter.getName}")
+        .typeFullName(typeFullName)
+        .order(childNum)
+        .index(childNum)
+        .lineNumber(line(methodDeclaration))
+        .columnNumber(column(methodDeclaration))
+        .evaluationStrategy(getEvaluationStrategy(parameter.getType))
+    )
+
+    parameterAnnotations.get(parameter.getName) match {
+      case Some(annoRoot) =>
+        parameterNode.withChildren(withOrder(annoRoot.getAnnotations.asScala) { (a, order) =>
+          astsForAnnotations(a, order, methodDeclaration)
+        })
+      case None => parameterNode
+    }
+  }
+
+  private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {
+    methodDeclaration.getTags.asScala.flatMap {
+      case x: VisibilityAnnotationTag =>
+        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, methodDeclaration) }
+      case _: AnnotationDefaultTag => Seq(Ast())
+      case x =>
+        logger.warn(s"Unhandled method tag '${x.getClass}' skipping...'")
+        Seq(Ast())
+    }.toSeq
+  }
+
+  private def astsForAnnotations(annotation: AnnotationTag, order: Int, methodDeclaration: AbstractHost): Ast = {
+    val annoType = registerType(parseAsmType(annotation.getType))
+    val name     = if (annoType.contains('.')) annoType.substring(annoType.indexOf('.'), annoType.length) else annoType
+    val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
+      astForAnnotationElement(a, order, methodDeclaration)
+    }
+    val annotationNode = NewAnnotation()
+      .name(name)
+      .code(s"@$name(${elementNodes.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")})")
+      .fullName(annoType)
+      .order(order)
+    Ast(annotationNode)
+      .withChildren(elementNodes)
+  }
+
+  private def astForAnnotationElement(annoElement: AnnotationElem, order: Int, parent: AbstractHost): Ast = {
+    def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
+      case x: AnnotationClassElem =>
+        val desc = registerType(parseAsmType(x.getDesc))
+        (desc, desc)
+      case x: AnnotationBooleanElem => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationDoubleElem  => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationEnumElem    => (x.getConstantName, x.getConstantName)
+      case x: AnnotationFloatElem   => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationIntElem     => (x.getValue.toString, x.getValue.toString)
+      case x: AnnotationLongElem    => (x.getValue.toString, x.getValue.toString)
+      case _                        => ("", "")
+    }
+    val lineNo      = line(parent)
+    val columnNo    = column(parent)
+    val codeBuilder = new StringBuilder()
+    val astChildren = ListBuffer.empty[Ast]
+    if (annoElement.getName != null) {
+      astChildren.append(
+        Ast(
+          NewAnnotationParameter()
+            .code(annoElement.getName)
+            .lineNumber(lineNo)
+            .columnNumber(columnNo)
+            .order(1)
+        )
+      )
+      codeBuilder.append(s"${annoElement.getName} = ")
+    }
+    astChildren.append(annoElement match {
+      case x: AnnotationAnnotationElem =>
+        val rhsAst = astsForAnnotations(x.getValue, astChildren.size + 1, parent)
+        codeBuilder.append(s"${rhsAst.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}")
+        rhsAst
+      case x: AnnotationArrayElem =>
+        val (rhsAst, code) = astForAnnotationArrayElement(x, astChildren.size + 1, parent)
+        codeBuilder.append(code)
+        rhsAst
+      case x =>
+        val (name, code) = x match {
+          case y: AnnotationStringElem => (y.getValue, s"\"${y.getValue}\"")
+          case _                       => getLiteralElementNameAndCode(x)
+        }
+        val rhsOrder = if (annoElement.getName == null) order else astChildren.size + 1
+        codeBuilder.append(code)
+        Ast(NewAnnotationLiteral().name(name).code(code).order(rhsOrder).argumentIndex(rhsOrder))
+    })
+
+    if (astChildren.size == 1) {
+      astChildren.head
+    } else {
+      val paramAssign = NewAnnotationParameterAssign()
+        .code(codeBuilder.toString)
+        .lineNumber(lineNo)
+        .columnNumber(columnNo)
+        .order(order)
+
+      Ast(paramAssign)
+        .withChildren(astChildren)
+    }
+  }
+
+  private def astForAnnotationArrayElement(x: AnnotationArrayElem, order: Int, parent: AbstractHost): (Ast, String) = {
+    val elems = withOrder(x.getValues.asScala) { (elem, order) => astForAnnotationElement(elem, order, parent) }
+    val code  = s"{${elems.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}}"
+    val array = NewArrayInitializer().code(code).order(order).argumentIndex(order)
+    (Ast(array).withChildren(elems), code)
   }
 
   private def astForMethodBody(body: Body, order: Int): Ast = {
     val block        = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
-    val jimpleLocals = body.getLocals.asScala.filterNot(jimpleParams.contains).toList
+    val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
     val locals = withOrder(jimpleLocals) { case (l, order) =>
       val name         = l.getName
       val typeFullName = registerType(l.getType.toQuotedString)
@@ -242,6 +365,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   }
 
   private def astForBinOpExpr(binOp: BinopExpr, order: Int, parentUnit: soot.Unit): Ast = {
+    // https://javadoc.io/static/org.soot-oss/soot/4.3.0/soot/jimple/BinopExpr.html
     val operatorName = binOp match {
       case _: AddExpr  => Operators.addition
       case _: SubExpr  => Operators.subtraction
@@ -262,7 +386,10 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       case _: OrExpr   => Operators.or
       case _: XorExpr  => Operators.xor
       case _: EqExpr   => Operators.equals
-      case _           => ""
+      case _: NeExpr   => Operators.notEquals
+      case _ =>
+        logger.warn(s"Unhandled binary operator ${binOp.getSymbol} (${binOp.getClass}). This is unexpected behaviour.")
+        "<operator>.unknown"
     }
 
     val callNode = NewCall()
@@ -847,47 +974,29 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astForConstantExpr(constant: Constant, order: Int): Ast = {
     constant match {
-      case _: ClassConstant => Ast()
-      case _: NullConstant  => Ast()
-      case _: IntConstant =>
+      case x: ClassConstant =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("int"))
+            .code(s"${parseAsmType(x.value)}.class")
+            .typeFullName(registerType(x.getType.toQuotedString))
         )
-      case _: LongConstant =>
+      case _: NullConstant =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("long"))
+            .code("null")
+            .typeFullName(registerType("null"))
         )
-      case _: DoubleConstant =>
+      case _ =>
         Ast(
           NewLiteral()
             .order(order)
             .argumentIndex(order)
             .code(constant.toString)
-            .typeFullName(registerType("double"))
-        )
-      case _: FloatConstant =>
-        Ast(
-          NewLiteral()
-            .order(order)
-            .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("float"))
-        )
-      case _: StringConstant =>
-        Ast(
-          NewLiteral()
-            .order(order)
-            .argumentIndex(order)
-            .code(constant.toString)
-            .typeFullName(registerType("java.lang.String"))
+            .typeFullName(registerType(constant.getType.toQuotedString))
         )
     }
   }
@@ -942,6 +1051,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .isExternal(false)
       .order(childNum)
       .filename(filename)
+      .astParentType(NodeTypes.TYPE_DECL)
+      .astParentFullName(typeDecl.toQuotedString)
       .lineNumber(line(methodDeclaration))
       .columnNumber(column(methodDeclaration))
   }
@@ -993,4 +1104,73 @@ object AstCreator {
       f(x, i + 1)
     }.toSeq
   }
+
+  private val primitives: Map[Char, String] = Map[Char, String](
+    'Z' -> "boolean",
+    'C' -> "char",
+    'B' -> "byte",
+    'S' -> "short",
+    'I' -> "int",
+    'F' -> "float",
+    'J' -> "long",
+    'D' -> "double",
+    'V' -> "void"
+  )
+
+  def parseAsmType(signature: String): String = {
+    val sigArr = signature.toCharArray
+    val sb     = new StringBuilder()
+    sigArr.toSeq.foreach { (c: Char) =>
+      if (c == ';') {
+        val prefix = sb
+          .toString()
+          .replace("[", "")
+          .substring(1)
+          .replace("/", ".")
+        val suffix = sb.toSeq
+          .filter { _ == '[' }
+          .map { _ => "[]" }
+          .mkString("")
+        return s"$prefix$suffix"
+      } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
+        return s"${primitives(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
+      } else if (isObject(c)) {
+        sb.append(c)
+      } else if (isArray(c)) {
+        sb.append(c)
+      } else sb.append(c)
+    }
+    sb.toString()
+  }
+
+  /** Checks if the given character is associated with a primitive or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. I, D, F, etc.
+    * @return
+    *   true if the character is associated with a primitive, false if otherwise.
+    */
+  def isPrimitive(c: Char): Boolean =
+    primitives.contains(c)
+
+  /** Checks if the given character is associated an object or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. L
+    * @return
+    *   true if the character is associated with an object, false if otherwise.
+    */
+  def isObject(c: Char): Boolean =
+    c == 'L'
+
+  /** Checks if the given character is associated an array or not according to Section 2.1.3 of the ASM docs.
+    *
+    * @param c
+    *   the character e.g. [
+    * @return
+    *   true if the character is associated with an array, false if otherwise.
+    */
+  def isArray(c: Char): Boolean =
+    c == '['
+
 }

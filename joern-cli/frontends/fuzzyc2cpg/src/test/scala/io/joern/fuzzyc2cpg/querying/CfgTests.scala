@@ -1,6 +1,7 @@
 package io.joern.fuzzyc2cpg.querying
 
 import io.joern.fuzzyc2cpg.testfixtures.FuzzyCCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends FuzzyCCodeToCpgSuite {
@@ -42,6 +43,30 @@ class CfgTests extends FuzzyCCodeToCpgSuite {
 
   "should find that method does not post dominate anything" in {
     cpg.method("foo").postDominates.l.size shouldBe 0
+  }
+
+  "should allow CFG successors to be filtered in if they pass a given node" in {
+    def printf = cpg.method.call.name("printf").isCall
+    def lt     = cpg.method.call.name(Operators.lessThan).isCall
+    def sink   = cpg.method.call.name("sink").isCall
+    // printf passes after LTs
+    lt.passes(printf).code.toSet shouldBe Set("y < 10", "x < 10")
+    // LTs do not pass after printf
+    printf.passes(lt).code.toSet shouldBe Set()
+    // "Foo" is after the call to "sink"
+    sink.passes(cpg.literal("foo")).code.toSet shouldBe Set()
+  }
+
+  "should allow CFG successors to be filtered out if they pass a given node" in {
+    def printf = cpg.method.call.name("printf").isCall
+    def lt     = cpg.method.call.name(Operators.lessThan).isCall
+    def sink   = cpg.method.call.name("sink").isCall
+    // printf not before LTs
+    lt.passesNot(printf).code.toSet shouldBe Set()
+    // printf does not pass lt
+    printf.passesNot(lt).code.toSet shouldBe Set("printf(\"foo\")")
+    // "Foo" is after the call to "sink"
+    sink.passesNot(cpg.literal("foo")).code.toSet shouldBe Set("sink(x)")
   }
 
 }

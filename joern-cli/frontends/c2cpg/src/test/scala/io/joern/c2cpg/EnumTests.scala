@@ -22,7 +22,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |};""".stripMargin) { cpg =>
       inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(color) =>
         color.name shouldBe "color"
-        color.code shouldBe "enum color"
+        color.code should startWith("enum color")
         inside(color.member.l) { case List(red, yellow, green, blue) =>
           red.name shouldBe "red"
           yellow.name shouldBe "yellow"
@@ -50,7 +50,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |} C;""".stripMargin) { cpg =>
       inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(color, c) =>
         color.name shouldBe "color"
-        color.code shouldBe "enum color"
+        color.code should startWith("typedef enum color")
         color.aliasTypeFullName shouldBe None
         c.name shouldBe "C"
         c.aliasTypeFullName shouldBe Some("color")
@@ -79,7 +79,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |}; """.stripMargin) { cpg =>
       inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(altitude) =>
         altitude.name shouldBe "altitude"
-        altitude.code shouldBe "enum altitude"
+        altitude.code should startWith("enum class altitude")
         inside(altitude.member.l) { case List(high, low) =>
           high.name shouldBe "high"
           high.typeFullName shouldBe "char"
@@ -99,7 +99,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
     }
 
     "be correct for simple enum with type" in CompleteCpgFixture("""
-        enum smallenum: int
+        |enum smallenum: int
         |{
         |    a,
         |    b,
@@ -107,7 +107,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
         |};""".stripMargin) { cpg =>
       inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(smallenum) =>
         smallenum.name shouldBe "smallenum"
-        smallenum.code shouldBe "enum smallenum"
+        smallenum.code should startWith("enum smallenum")
         inside(smallenum.member.l) { case List(a, b, c) =>
           a.name shouldBe "a"
           a.typeFullName shouldBe "int"
@@ -129,7 +129,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
          |};""".stripMargin) { cpg =>
       inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(anon) =>
         anon.name shouldBe "anonymous_enum_0"
-        anon.code shouldBe "enum"
+        anon.code should startWith("enum")
         inside(anon.member.l) { case List(d, e, f) =>
           d.name shouldBe "d"
           e.name shouldBe "e"
@@ -149,7 +149,7 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
        |""".stripMargin) { cpg =>
       inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(x) =>
         x.name shouldBe "X"
-        x.code shouldBe "enum X"
+        x.code should startWith("enum X")
         inside(x.member.l) { case List(a, b) =>
           a.name shouldBe "a"
           a.typeFullName shouldBe "int"

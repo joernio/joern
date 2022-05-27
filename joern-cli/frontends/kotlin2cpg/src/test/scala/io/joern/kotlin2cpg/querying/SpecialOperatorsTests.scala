@@ -22,7 +22,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       c.code shouldBe "b?.length"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.methodFullName shouldBe Operators.fieldAccess
-      c.lineNumber shouldBe Some(3)
+      c.lineNumber shouldBe Some(4)
       c.columnNumber shouldBe Some(12)
     }
   }
@@ -39,7 +39,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(Operators.cast).l
       c.code shouldBe "\"PLACEHOLDER\" as String"
       c.columnNumber shouldBe Some(12)
-      c.lineNumber shouldBe Some(2)
+      c.lineNumber shouldBe Some(3)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
@@ -69,7 +69,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
       val List(c) = cpg.call.methodFullName(Operators.notNullAssert).l
       c.code shouldBe "\" PLACEHOLDER \"!!"
       c.columnNumber shouldBe Some(14)
-      c.lineNumber shouldBe Some(2)
+      c.lineNumber shouldBe Some(3)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
@@ -94,7 +94,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
           .isCall
           .l
       c.code shouldBe "o is String"
-      c.lineNumber shouldBe Some(5)
+      c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(12)
       c.methodFullName shouldBe Operators.is
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -119,7 +119,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
           .isCall
           .l
       c.code shouldBe "0..2"
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(12)
       c.methodFullName shouldBe Operators.range
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -139,7 +139,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for elvis operator with the correct properties set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.elvis).l
       c.code shouldBe "args[1]?.length ?: -1"
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(14)
       c.methodFullName shouldBe Operators.elvis
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -148,7 +148,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
 
     "should contain an IDENTIFIER node for  " in {
       val List(i) = cpg.identifier.nameExact("foo").head.l
-      i.typeFullName shouldBe "java.lang.Integer"
+      i.typeFullName shouldBe "int"
     }
   }
 
@@ -165,7 +165,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
 
     "should contain an IDENTIFIER node for the result of the elvis operator call with the correct TYPE_FULL_NAME set" in {
       val List(i) = cpg.identifier.nameExact("isValid").head.l
-      i.typeFullName shouldBe "java.lang.Boolean"
+      i.typeFullName shouldBe "boolean"
     }
   }
 
@@ -182,7 +182,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the notIn operator with the correct properties set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.notIn).l
       c.code shouldBe "1 !in 0..10"
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(14)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2
@@ -202,7 +202,7 @@ class SpecialOperatorsTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the notIn operator with the correct properties set" in {
       val List(c) = cpg.call.methodFullNameExact(Operators.in).l
       c.code shouldBe "1 in 0..10"
-      c.lineNumber shouldBe Some(4)
+      c.lineNumber shouldBe Some(5)
       c.columnNumber shouldBe Some(14)
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.size shouldBe 2

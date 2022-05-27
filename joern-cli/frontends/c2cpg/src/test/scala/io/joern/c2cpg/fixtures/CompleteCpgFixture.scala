@@ -16,10 +16,12 @@ object CompleteCpgFixture {
       val file = dir / fileName
       file.write(code)
 
-      val cpg = Cpg.emptyCpg
+      val cpg    = Cpg.emptyCpg
+      val config = Config(inputPaths = Set(dir.path.toString), includePathsAutoDiscovery = false)
+
       new MetaDataPass(cpg, Languages.NEWC).createAndApply()
       val astCreationPass =
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPaths = Set(dir.path.toString)))
+        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config)
       astCreationPass.createAndApply()
       new CfgCreationPass(cpg).createAndApply()
       new TypeNodePass(astCreationPass.usedTypes(), cpg).createAndApply()

@@ -23,11 +23,11 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
       val List(x) = params.name("x").l
       x.code shouldBe "x"
-      x.typeFullName shouldBe "java.lang.Integer"
+      x.typeFullName shouldBe "int"
 
       val List(y) = params.name("y").l
       y.code shouldBe "y"
-      y.typeFullName shouldBe "java.lang.Integer"
+      y.typeFullName shouldBe "int"
     }
   }
 
@@ -48,11 +48,11 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
       val List(x) = params.name("x").l
       x.code shouldBe "x"
-      x.typeFullName shouldBe "java.lang.Integer"
+      x.typeFullName shouldBe "int"
 
       val List(y) = params.name("y").l
       y.code shouldBe "y"
-      y.typeFullName shouldBe "java.lang.Integer"
+      y.typeFullName shouldBe "int"
     }
   }
 
@@ -119,7 +119,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
     "should contain a MEMBER node for `z` with the correct typeFullName set" in {
       val List(m) = cpg.typeDecl.fullName(".*Foo.*").member.name("z").l
-      m.typeFullName shouldBe "java.lang.Integer"
+      m.typeFullName shouldBe "int"
     }
   }
 
@@ -150,8 +150,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
   }
 
   "CPG for code using the Javalin web framework" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package mypkg
         |
         |import io.javalin.Javalin
@@ -176,9 +175,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
         |    ctx.result("----Executed `" + invocation + "` with result: `" + out  + "`.\n-----\n")
         |  }
         |}
-        | """.stripMargin,
-      includeAllJars = true
-    )
+        | """.stripMargin)
 
     "should contain a CALL node for `Runtime.getRuntime.*exec` with the correct methodFullNames set" in {
       val List(c) = cpg.call.code("Runtime.*exec.*").take(1).l
@@ -223,46 +220,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with CALL to `super`" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
-        |package mypkg
-        |
-        |import android.content.Intent
-        |import android.content.IntentFilter
-        |import android.os.Bundle
-        |import android.view.View
-        |import android.app.Activity
-        |
-        |class AboutUsActivity : Activity() {
-        |    override fun onCreate(savedInstanceState: Bundle?) {
-        |        super.onCreate(savedInstanceState)
-        |    }
-        |}
-        | """.stripMargin,
-      includeAllJars = true
-    )
-
-    "should contain a CALL node for `onCreate` with the correct props set" in {
-      def createCall = cpg.call.code(".*onCreate.*")
-
-      val List(c) = createCall.l
-      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.methodFullName shouldBe "android.app.Activity.onCreate:void(android.os.Bundle)"
-      c.argument.size shouldBe 2
-
-      val List(firstArg, secondArg) = createCall.argument.l
-      firstArg.code shouldBe "super"
-      firstArg.argumentIndex shouldBe 0
-
-      secondArg.code shouldBe "savedInstanceState"
-      secondArg.argumentIndex shouldBe 1
-    }
-  }
-
   "CPG for code using the http4k framework" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+    lazy val cpg = TestContext.buildCpg("""
         |package com.example
         |
         |import org.http4k.core.HttpHandler
@@ -300,9 +259,7 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
         |    println("Serving content on port " + port.toString() + ".")
         |    HelloWorld().asServer(SunHttp(port)).start()
         |}
-        | """.stripMargin,
-      includeAllJars = true
-    )
+        | """.stripMargin)
 
     "should contain a CALL node for `port.toString()` with the correct methodFullName set" in {
       val List(c) = cpg.call.codeExact("port.toString()").l
@@ -342,13 +299,13 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
 
     "should have the correct types inferred" in {
       val List(identifierForAliasedType) = cpg.identifier.codeExact("x").take(1).l
-      identifierForAliasedType.typeFullName shouldBe "java.lang.Integer"
+      identifierForAliasedType.typeFullName shouldBe "int"
 
       val List(identifierForOriginalType) = cpg.identifier.codeExact("y").take(1).l
-      identifierForOriginalType.typeFullName shouldBe "java.lang.Integer"
+      identifierForOriginalType.typeFullName shouldBe "int"
 
       val List(identifierForOpResult) = cpg.identifier.codeExact("bar").take(1).l
-      identifierForOpResult.typeFullName shouldBe "java.lang.Integer"
+      identifierForOpResult.typeFullName shouldBe "int"
     }
   }
 }

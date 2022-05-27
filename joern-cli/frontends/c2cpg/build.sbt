@@ -33,7 +33,6 @@ scalacOptions ++= Seq() ++ (
         "-language:implicitConversions", // Allow definition of implicit functions called views
         "-unchecked",                    // Enable additional warnings where generated code depends on assumptions.
         "-Xcheckinit",                   // Wrap field accessors to throw an exception on uninitialized access.
-        "-Xfatal-warnings",              // Fail the compilation if there are any warnings.
         "-Xlint:adapted-args",           // Warn if an argument list is modified to match the receiver.
         "-Xlint:constant",               // Evaluation of a constant arithmetic expression results in an error.
         "-Xlint:delayedinit-select",     // Selecting member of DelayedInit.
@@ -64,7 +63,7 @@ scalacOptions ++= Seq() ++ (
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

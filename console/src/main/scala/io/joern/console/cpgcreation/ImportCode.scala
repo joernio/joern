@@ -52,7 +52,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def python: Frontend     = new Frontend("python", Languages.PYTHON, "Python Source Frontend")
   def golang: Frontend     = new Frontend("golang", Languages.GOLANG, "Golang Source Frontend")
   def javascript: Frontend = new Frontend("javascript", Languages.JAVASCRIPT, "Javascript Source Frontend")
-  def csharp: Frontend     = new Frontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
+  def jssrc: Frontend  = new Frontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen")
+  def csharp: Frontend = new Frontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
 
   def llvm: Frontend = new Frontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: Frontend  = new Frontend("php", Languages.PHP, "PHP bytecode frontend")

@@ -91,7 +91,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "complex `if` statement contains all required properties" in {
       val List(i) = cpg.controlStructure.where(_.condition.code("x > 1")).l
       i.controlStructureType shouldBe ControlStructureTypes.IF
-      i.lineNumber shouldBe Some(5)
+      i.lineNumber shouldBe Some(6)
 
       val List(ic) = cpg.controlStructure.where(_.condition.code("x > 1")).condition.l
       ic.code shouldBe "x > 1"
@@ -153,11 +153,11 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain a CALL node for the condition inside the `if`-statement" in {
       val List(c) = cpg.controlStructure.condition.isCall.l
       c.code shouldBe "aList.contains(msg)"
-      c.methodFullName shouldBe "kotlin.collections.List.contains:java.lang.Boolean(java.lang.Object)"
-      c.lineNumber shouldBe Some(6)
+      c.methodFullName shouldBe "kotlin.collections.List.contains:boolean(java.lang.Object)"
+      c.lineNumber shouldBe Some(7)
       c.columnNumber shouldBe Some(5)
       c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      c.signature shouldBe "java.lang.Boolean(java.lang.Object)"
+      c.signature shouldBe "boolean(java.lang.Object)"
     }
   }
 
@@ -179,7 +179,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
       def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
       val List(cs)  = matchTryQ.l
-      cs.lineNumber shouldBe Some(4)
+      cs.lineNumber shouldBe Some(5)
       cs.columnNumber shouldBe Some(3)
 
       val List(c1, c2, c3) = matchTryQ.astChildren.l
@@ -205,7 +205,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
       def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
       val List(cs)  = matchTryQ.l
-      cs.lineNumber shouldBe Some(4)
+      cs.lineNumber shouldBe Some(5)
       cs.columnNumber shouldBe Some(3)
 
       val List(c1, c2) = matchTryQ.astChildren.l
@@ -272,10 +272,10 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) = controlStructure.astChildren.l
       controlStructureFirstChild.order shouldBe 1
       controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:java.lang.Boolean()"
+      controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:boolean()"
       controlStructureFirstChild.receiver.size shouldBe 1
       controlStructureFirstChild.name shouldBe "hasNext"
-      controlStructureFirstChild.signature shouldBe "java.lang.Boolean()"
+      controlStructureFirstChild.signature shouldBe "boolean()"
       controlStructureSecondChild.order shouldBe 2
 
       val List(loopParameter: Local, getNext: Call, blockInsideBody: Block) = controlStructureSecondChild.astChildren.l
@@ -387,10 +387,10 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) = controlStructure.astChildren.l
       controlStructureFirstChild.order shouldBe 1
       controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:java.lang.Boolean()"
+      controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:boolean()"
       controlStructureFirstChild.receiver.size shouldBe 1
       controlStructureFirstChild.name shouldBe "hasNext"
-      controlStructureFirstChild.signature shouldBe "java.lang.Boolean()"
+      controlStructureFirstChild.signature shouldBe "boolean()"
       controlStructureSecondChild.order shouldBe 2
 
       val List(dVal1: Local, dVal2: Local, tmp: Local) = controlStructureSecondChild.astChildren.take(3).l
@@ -401,7 +401,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       dVal2.order shouldBe 2
       dVal2.code shouldBe "dVal2"
       dVal2.name shouldBe "dVal2"
-      dVal2.typeFullName shouldBe "java.lang.Integer"
+      dVal2.typeFullName shouldBe "int"
       tmp.order shouldBe 3
       tmp.code shouldBe "tmp_3"
       tmp.name shouldBe "tmp_3"
@@ -477,9 +477,9 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       component2SecondArg.order shouldBe 2
       component2SecondArg.argumentIndex shouldBe 2
       component2SecondArg.code shouldBe "tmp_3.component2()"
-      component2SecondArg.methodFullName shouldBe "mypkg.AClass.component2:java.lang.Integer()"
+      component2SecondArg.methodFullName shouldBe "mypkg.AClass.component2:int()"
       component2SecondArg.name shouldBe "component2"
-      component2SecondArg.signature shouldBe "java.lang.Integer()"
+      component2SecondArg.signature shouldBe "int()"
       component2SecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       component2SecondArg.receiver.size shouldBe 1
 
@@ -495,7 +495,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       statementInsideBody.argument.size shouldBe 1
 
       secondStatementInsideBody.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      secondStatementInsideBody.methodFullName shouldBe "kotlin.io.println:void(java.lang.Integer)"
+      secondStatementInsideBody.methodFullName shouldBe "kotlin.io.println:void(int)"
       secondStatementInsideBody.code shouldBe "println(dVal2)"
       secondStatementInsideBody.argument.size shouldBe 1
 
@@ -510,7 +510,7 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
       secondStatementInsideBodyFirstArg.order shouldBe 1
       secondStatementInsideBodyFirstArg.argumentIndex shouldBe 1
       secondStatementInsideBodyFirstArg.code shouldBe "dVal2"
-      secondStatementInsideBodyFirstArg.typeFullName shouldBe "java.lang.Integer"
+      secondStatementInsideBodyFirstArg.typeFullName shouldBe "int"
       dVal2.referencingIdentifiers.id.l.contains(secondStatementInsideBodyFirstArg.id) shouldBe true
     }
   }

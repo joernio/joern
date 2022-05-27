@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBinding,
   NewBlock,
   NewCall,
+  NewClosureBinding,
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
@@ -59,6 +60,13 @@ object Nodes {
       .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
+  }
+
+  def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
   }
 
   def controlStructureNode(code: String, _type: String, line: Int = -1, column: Int = -1): NewControlStructure = {
@@ -146,7 +154,9 @@ object Nodes {
     signature: String,
     fileName: String,
     line: Int = -1,
-    column: Int = -1
+    column: Int = -1,
+    lineEnd: Int = -1,
+    columnEnd: Int = -1
   ): NewMethod = {
     NewMethod()
       .code(name)
@@ -157,6 +167,8 @@ object Nodes {
       .isExternal(false)
       .lineNumber(line)
       .columnNumber(column)
+      .lineNumberEnd(lineEnd)
+      .columnNumberEnd(columnEnd)
   }
 
   def memberNode(name: String, typeFullName: String, line: Int = -1, column: Int = -1): NewMember = {

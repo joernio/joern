@@ -47,9 +47,9 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   }
 
   private def generateOss(inputPath: String, outputPath: String): Option[String] = {
-    val command   = rootPath.resolve("jimple2cpg").toString
+    val command   = if (isWin) rootPath.resolve("jimple2cpg.bat") else rootPath.resolve("jimple2cpg")
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
-    runShellCommand(command, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
   private def jvmLanguages: List[String] = {

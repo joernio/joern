@@ -1,10 +1,118 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
+
+class NewCallTests extends JavaSrcCode2CpgFixture {
+  "call to method in different class" should {
+    val cpg = code(
+      """
+        |class Base {
+        |  void method(int aaa) {}
+        |}
+        |""".stripMargin,
+      "Base.java"
+    ).moreCode(
+      """
+        |class Derived extends Base {}
+        |""".stripMargin,
+      "Derived.java"
+    ).moreCode("""
+        |class User {
+        |  static void user() {
+        |    Derived derived = new Derived();
+        |    derived.method(1);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call.nameExact("method").methodFullName.head shouldBe "Derived.method:void(int)"
+    }
+  }
+
+  "call to method in same class" should {
+    val cpg = code(
+      """
+        |class Base {
+        |  void method(int aaa) {}
+        |}
+        |""".stripMargin,
+      "Base.java"
+    ).moreCode(
+      """
+        |class Derived extends Base {}
+        |""".stripMargin,
+      "Derived.java"
+    ).moreCode("""
+        |class MoreDerived extends Derived {
+        |  void user() {
+        |    method(1);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call.nameExact("method").methodFullName.head shouldBe "MoreDerived.method:void(int)"
+    }
+  }
+
+  "call to method with generic return type" should {
+    val cpg = code("""
+        |class Foo {
+        |  void method(java.util.function.Function<String, Integer> supplier) {
+        |     supplier.apply("abc");
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct substitute type as expression type" in {
+      cpg.call.name("apply").evalType.head shouldBe "java.lang.Integer"
+    }
+    "have correct methodFullName to erased method signature" in {
+      cpg.call.name("apply").methodFullName.head shouldBe
+        "java.util.function.Function.apply:java.lang.Object(java.lang.Object)"
+    }
+  }
+
+  "call to generic method of generic type" should {
+    val cpg = code("""
+        |class Foo <T extends Number> {
+        |  <S extends T> void foo(S i) {}
+        |
+        |  static void method() {
+        |    Foo<Integer> obj = new Foo();
+        |    obj.foo(1);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Number)"
+    }
+  }
+
+  "call to method with generic array parameter" should {
+    val cpg = code("""
+        |class Foo <T> {
+        |  void foo(T[] aaa) {}
+        |
+        |  static void method() {
+        |    Foo<Integer> obj = new Foo();
+        |    Integer[] array = new Integer[3];
+        |    obj.foo(array);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should have correct methodFullName" in {
+      cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Object[])"
+    }
+  }
+}
 
 class CallTests extends JavaSrcCodeToCpgFixture {
 
@@ -202,5 +310,27 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.name shouldBe "bar"
     call.methodFullName shouldBe "test.Bar.bar:void()"
     call.signature shouldBe "void()"
+  }
+}
+
+class CallTests2 extends JavaSrcCodeToCpgFixture {
+  override val code: String =
+    """
+      |class Foo {
+      |    public static class Ops {
+      |        public <T> T ident(T x) {
+      |            return x;
+      |        }
+      |    }
+      |    public Integer method(Integer aaa) {
+      |        Ops ops = new Ops();
+      |        Integer ret = ops.ident(aaa);
+      |        return ret;
+      |    }
+      |}
+      |""".stripMargin
+
+  "test methodFullName for call to generic function" in {
+    cpg.call(".*ident.*").methodFullName.head shouldBe "Foo$Ops.ident:java.lang.Object(java.lang.Object)"
   }
 }

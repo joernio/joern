@@ -22,7 +22,7 @@ class MethodParameterTests extends CCodeToCpgSuite {
 
     val List(y) = cpg.parameter.name("argv").l
     y.code shouldBe "char **argv"
-    y.typeFullName shouldBe "char**"
+    y.typeFullName shouldBe "char"
     y.lineNumber shouldBe Some(2)
     y.columnNumber shouldBe Some(22)
     y.order shouldBe 2

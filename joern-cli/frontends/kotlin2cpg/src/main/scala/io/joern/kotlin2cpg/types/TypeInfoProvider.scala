@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassOrObject,
   KtDestructuringDeclarationEntry,
   KtExpression,
+  KtLambdaArgument,
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
@@ -94,4 +95,12 @@ trait TypeInfoProvider {
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
+
+  def implicitParameterName(expr: KtLambdaExpression): Option[String]
+
+  def isCompanionObject(expr: KtClassOrObject): Boolean
+
+  def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean
+
+  def typeFullName(expr: KtClassOrObject, defaultValue: String): String
 }

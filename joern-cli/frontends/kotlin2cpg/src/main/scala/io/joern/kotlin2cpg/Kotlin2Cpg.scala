@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.psi.KtFile
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.GradleDependencies
 import io.joern.kotlin2cpg.types.{
   CompilerAPI,
   ContentSourcesPicker,
@@ -17,11 +16,13 @@ import io.joern.kotlin2cpg.types.{
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
+
 import java.nio.file.{Files, Paths}
 import scala.util.Try
 
@@ -43,26 +44,33 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       if (config.inputPaths.size == 1) {
         val sourceDir = config.inputPaths.head
         if (!Files.exists(Paths.get(sourceDir))) {
-          println("The input path provided does not exist `" + sourceDir + "`. Exiting.")
+          println("The specified input path `" + sourceDir + "` is not a file that exists. Exiting.")
           System.exit(1)
         }
         if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println("The input path provided is not a directory `" + sourceDir + "`. Exiting.")
+          println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
           System.exit(1)
         }
-        val copiedRuntimeLibsJarPaths =
-          if (config.copyRuntimeLibs) {
-            val runtimeLibsDir = Files.createTempDirectory("x2cpgRuntimeLibs").toFile
-            runtimeLibsDir.deleteOnExit()
-            GradleDependencies.downloadRuntimeLibs(sourceDir, runtimeLibsDir.getAbsolutePath)
-            val paths =
-              File(runtimeLibsDir.getAbsolutePath).list.map { f =>
-                f.path.toAbsolutePath.toString
-              }.toList
-            logger.info(s"Using ${paths.size} runtime libs from the build system found at the input path.")
-            paths
+        val dependenciesPaths =
+          if (config.downloadDependencies) {
+            val gradleParams = Map(
+              GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+              GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+            ).collect { case (key, Some(value)) => (key, value) }
+
+            val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+            DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
+              case Some(deps) =>
+                logger.info(s"Using ${deps.size} dependency jars.")
+                deps
+              case None =>
+                logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
+                println("Could not fetch dependencies when explicitly asked to. Exiting.")
+                System.exit(1)
+                Seq()
+            }
           } else {
-            logger.info(s"Not using any runtime libs from the build system found at the input path.")
+            logger.info(s"Not using any dependency jars.")
             Seq()
           }
 
@@ -72,6 +80,13 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           System.exit(1)
         }
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+
+        val filesWithJavaExtension = SourceFiles.determine(Set(sourceDir), Set(".java"))
+        if (filesWithJavaExtension.nonEmpty) {
+          logger.info(
+            s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
+          )
+        }
 
         val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
         val jarPathsFromClassPath =
@@ -97,16 +112,10 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           } else {
             Seq()
           }
-        val androidJars =
-          if (config.withAndroidJarsInClassPath) {
-            ContentSourcesPicker.defaultAndroidContentRootJarPaths
-          } else {
-            Seq()
-          }
         val defaultContentRootJars =
-          androidJars ++ stdlibJars ++
+          stdlibJars ++
             jarPathsFromClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
-            copiedRuntimeLibsJarPaths.map { path =>
+            dependenciesPaths.map { path =>
               DefaultContentRootJarPath(path, false)
             }
         val messageCollector = new ErrorLoggingMessageCollector

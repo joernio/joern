@@ -337,4 +337,11 @@ class StepsTest extends AnyWordSpec with Matchers {
     method.head.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
   }
 
+  "id starter step" in {
+    // only verifying what compiles and what doesn't...
+    // if it compiles, :shipit:
+    assertCompiles("cpg.id(1).out")
+    assertDoesNotCompile("cpg.id(1).outV") // `.outV` is only available on Traversal[Edge]
+  }
+
 }

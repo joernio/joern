@@ -3,7 +3,7 @@ import io.joern.pythonparser.ast._
 import scala.collection.immutable
 
 class AstPrinter(indentStr: String) extends AstVisitor[String] {
-  private val ls = System.lineSeparator()
+  private val ls = "\n"
 
   def print(astNode: iast): String = {
     astNode.accept(this)

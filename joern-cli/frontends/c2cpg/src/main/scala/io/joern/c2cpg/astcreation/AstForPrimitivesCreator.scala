@@ -29,7 +29,7 @@ trait AstForPrimitivesCreator {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
-      case _                                                       => ident.toString
+      case _                                                       => nodeSignature(ident)
     }
     val variableOption = scope.lookupVariable(identifierName)
     val identifierTypeName = variableOption match {

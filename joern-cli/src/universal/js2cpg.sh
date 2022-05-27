@@ -14,4 +14,4 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
-$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml "$@"
+$SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml --optimize-dependencies "$@"

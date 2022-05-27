@@ -45,7 +45,7 @@ trait AstForStatementsCreator {
         Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
       case simplDecl: IASTSimpleDeclaration =>
         val locals =
-          simplDecl.getDeclarators.toList.map { d => astForDeclarator(simplDecl, d) }
+          simplDecl.getDeclarators.zipWithIndex.toList.map { case (d, i) => astForDeclarator(simplDecl, d, i) }
         val calls =
           simplDecl.getDeclarators.filter(_.getInitializer != null).toList.map { d =>
             astForInitializer(d, d.getInitializer)
@@ -257,19 +257,46 @@ trait AstForStatementsCreator {
         (c, blockAst)
     }
 
-    val ifNode   = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code)
-    val stmtAsts = nullSafeAst(ifStmt.getThenClause)
+    val ifNode = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code)
 
-    val elseChild = if (ifStmt.getElseClause != null) {
-      val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-      val elseAsts = astsForStatement(ifStmt.getElseClause)
-      Ast(elseNode).withChildren(elseAsts)
-    } else Ast()
+    val thenAst = ifStmt.getThenClause match {
+      case block: IASTCompoundStatement => astForBlockStatement(block)
+      case other if other != null =>
+        val thenBlock = NewBlock()
+          .typeFullName(registerType(Defines.voidTypeName))
+          .lineNumber(line(other))
+          .columnNumber(column(other))
+        scope.pushNewScope(thenBlock)
+        val a        = astsForStatement(other)
+        val blockAst = Ast(thenBlock).withChildren(a)
+        scope.popScope()
+        blockAst
+      case _ => Ast()
+    }
+
+    val elseAst = ifStmt.getElseClause match {
+      case block: IASTCompoundStatement =>
+        val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
+        val elseAst  = astForBlockStatement(block)
+        Ast(elseNode).withChild(elseAst)
+      case other if other != null =>
+        val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
+        val elseBlock = NewBlock()
+          .typeFullName(registerType(Defines.voidTypeName))
+          .lineNumber(line(other))
+          .columnNumber(column(other))
+        scope.pushNewScope(elseBlock)
+        val a        = astsForStatement(other)
+        val blockAst = Ast(elseBlock).withChildren(a)
+        scope.popScope()
+        Ast(elseNode).withChild(blockAst)
+      case _ => Ast()
+    }
 
     Ast(ifNode)
       .withChild(conditionAst)
-      .withChildren(stmtAsts)
-      .withChild(elseChild)
+      .withChild(thenAst)
+      .withChild(elseAst)
       .withConditionEdge(ifNode, conditionAst.root)
   }
 

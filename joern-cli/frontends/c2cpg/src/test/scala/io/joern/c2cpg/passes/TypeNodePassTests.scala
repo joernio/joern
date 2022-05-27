@@ -48,7 +48,7 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         inside(arg.typ.referencedTypeDecl.l) { case List(tpe) =>
           tpe.fullName shouldBe "test"
           tpe.name shouldBe "test"
-          tpe.code shouldBe "struct test"
+          tpe.code should startWith("struct test")
         }
         inside(cpg.local.l) { case List(ptr) =>
           ptr.name shouldBe "ptr"
@@ -58,7 +58,7 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
           tpe.fullName shouldBe "test"
           tpe.name shouldBe "test"
-          tpe.code shouldBe "struct test"
+          tpe.code should startWith("struct test")
         }
       }
     }

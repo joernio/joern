@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test
 )
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 fork        := true
 javaOptions := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")

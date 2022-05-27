@@ -2,8 +2,8 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion    = "1.3.532"
-val js2cpgVersion = "0.2.140"
+val cpgVersion    = "1.3.542"
+val js2cpgVersion = "0.2.158"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -11,12 +11,35 @@ lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
+lazy val benchmarks        = Projects.benchmarks
 lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
 lazy val pysrc2cpg         = Projects.pysrc2cpg
 lazy val php2cpg           = Projects.php2cpg
+lazy val jssrc2cpg         = Projects.jssrc2cpg
+lazy val javasrc2cpg       = Projects.javasrc2cpg
+lazy val jimple2cpg        = Projects.jimple2cpg
+lazy val kotlin2cpg        = Projects.kotlin2cpg
+
+lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
+  joerncli,
+  querydb,
+  console,
+  dataflowengineoss,
+  macros,
+  semanticcpg,
+  fuzzyc2cpg,
+  c2cpg,
+  x2cpg,
+  pysrc2cpg,
+  php2cpg,
+  jssrc2cpg,
+  javasrc2cpg,
+  jimple2cpg,
+  kotlin2cpg
+)
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
@@ -62,3 +85,8 @@ ThisBuild / developers := List(
 )
 
 publish / skip := true // don't publish the root project
+
+// Avoids running root tasks on the benchmarks project
+lazy val root = project
+  .in(file("."))
+  .aggregate(aggregatedProjects: _*)
