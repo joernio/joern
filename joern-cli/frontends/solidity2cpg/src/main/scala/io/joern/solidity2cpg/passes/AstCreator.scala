@@ -1,6 +1,6 @@
 package io.joern.solidity2cpg.passes
 
-import io.joern.solidity2cpg.domain.SuryaObject
+import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
@@ -78,25 +78,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     */
   override def createAst(): DiffGraphBuilder = {
     val astRoot = astForCompilationUnit(sourceUnit)
-    storeInDiffGraph(astRoot)
+    storeInDiffGraph(astRoot, diffGraph)
     diffGraph
-  }
-
-  /** Copy nodes/edges of given `AST` into the diff graph
-    */
-  private def storeInDiffGraph(ast: Ast): scala.Unit = {
-    ast.nodes.foreach { node =>
-      diffGraph.addNode(node)
-    }
-    ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
-    }
-    ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
-    }
-    ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
-    }
   }
 
   private def astForCompilationUnit(sourceUnit: SourceUnit): Ast = {
@@ -664,8 +647,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForBinaryOperation(operation: BinaryOperation, order: Int): Ast = {
-    var lft = Ast()
-    var rht = Ast()
     val operatorName = operation.operator match {
       case "+"  => Operators.addition
       case "-"  => Operators.subtraction
@@ -688,9 +669,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //      case _: EqExpr   => Operators.equals
       case _ => ""
     }
-    lft = astForExpression(operation.left, 1)
+    val lft = astForExpression(operation.left, 1)
 
-    rht = astForExpression(operation.right, 2)
+    val rht = astForExpression(operation.right, 2)
 
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
@@ -702,10 +683,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(lfteq + " " + operation.operator + " " + rhteq)
       .argumentIndex(order)
       .order(order)
+    val children = Seq(lft, rht)
 
     Ast(callNode)
-      .withChild(lft)
-      .withChild(rht)
+      .withChildren(children)
+      .withArgEdges(callNode, children.flatMap(_.root))
   }
   private def astForIfStatement(operation: IfStatement, order: Int): Ast = {
     val opNode = operation.condition match {
@@ -813,6 +795,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(func)
       .withChild(expr)
       .withChildren(arguments)
+      .withArgEdges(func, (expr +: arguments).flatMap(_.root))
   }
 
   private def astForIdentifier(identifier: Identifier, order: Int): Ast = {
@@ -884,10 +867,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       Ast(call)
         .withChildren(vars)
         .withChild(initial)
+        .withArgEdges(call, (vars :+ initial).flatMap(_.root))
 
     } else {
-      Ast()
+      Ast(call)
         .withChildren(vars)
+        .withArgEdges(call, vars.flatMap(_.root))
     }
 
   }
