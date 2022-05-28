@@ -9,7 +9,6 @@ dependsOn(Projects.x2cpg)
 dependsOn(Projects.joerncli)
 dependsOn(Projects.javasrc2cpg)
 dependsOn(Projects.jimple2cpg)
-dependsOn(Projects.solidity2cpg)
 
 libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j     % Test,

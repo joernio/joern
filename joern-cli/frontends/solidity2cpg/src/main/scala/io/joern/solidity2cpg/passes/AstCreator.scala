@@ -284,11 +284,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-        mAst.nodes.foreach { n =>
-          val code  = n.properties.getOrElse("CODE", null)
-          val order = n.properties.getOrElse("ORDER", null)
-          println((order, n.label(), code))
-        }
+//        mAst.nodes.foreach { n =>
+//          val code  = n.properties.getOrElse("CODE", null)
+//          val order = n.properties.getOrElse("ORDER", null)
+//          println((order, n.label(), code))
+//        }
 
         mAst
       case x =>
@@ -784,7 +784,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     val func = NewCall()
       .name(name)
-      .code(name)
+      .code(code)
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
