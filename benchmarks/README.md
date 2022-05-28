@@ -59,13 +59,15 @@ or JVM bytecode Jimple frontend:
 | Arrays             | 12 | 2 | 1 | 5 | 4 |
 | Casting            | 2 | 1 | 0 | 0 | 1 |
 | Class Initializer  | 7 | 1 | 1 | 3 | 2 |
-| High Conditional   | 11 | 4 | 4 | 2 | 1 |
-| Implicit Flows     | 23 | 6 | 7 | 5 | 5 |
+| High Conditional   | 12 | 5 | 4 | 2 | 1 |
+| Implicit Flows     | 32 | 10 | 11 | 5 | 6 |
 | Exceptions         | 9 | 2 | 4 | 1 | 2 |
-| Explicit Flows     | 24 | 4 | 3 | 10 | 7 |
-| *Total*            | *47* | *10* | *10* | *15* | *12* |
+| Explicit Flows     | 41 | 11 | 8 | 14 | 8 |
+| Library            | 7 | 2 | 4 | 0 | 1 |
+| Simple             | 18 | 8 | 5 | 4 | 1 |
+| *Total*            | *73* | *21* | *19* | *19* | *14* |
 
-Total accuracy: 53,191%
+Total accuracy: 52,055%
 #### JVM Bytecode Results
 | Category           | #    | FP   | TP   | TN   | FN   |
 | ------------------ | ---- | ---- | ---- | ---- | ---- |
@@ -73,10 +75,12 @@ Total accuracy: 53,191%
 | Arrays             | 12 | 2 | 1 | 5 | 4 |
 | Casting            | 2 | 1 | 1 | 0 | 0 |
 | Class Initializer  | 7 | 2 | 2 | 2 | 1 |
-| High Conditional   | 11 | 4 | 4 | 2 | 1 |
-| Implicit Flows     | 23 | 6 | 8 | 5 | 4 |
+| High Conditional   | 12 | 5 | 4 | 2 | 1 |
+| Implicit Flows     | 32 | 10 | 12 | 5 | 5 |
 | Exceptions         | 9 | 2 | 5 | 1 | 1 |
-| Explicit Flows     | 24 | 5 | 4 | 9 | 6 |
-| *Total*            | *47* | *11* | *12* | *14* | *10* |
+| Explicit Flows     | 41 | 12 | 10 | 13 | 6 |
+| Library            | 7 | 2 | 4 | 0 | 1 |
+| Simple             | 18 | 8 | 6 | 4 | 0 |
+| *Total*            | *73* | *22* | *22* | *18* | *11* |
 
-Total accuracy: 55,319%
+Total accuracy: 54,795%
