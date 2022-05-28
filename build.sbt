@@ -22,6 +22,7 @@ lazy val jssrc2cpg         = Projects.jssrc2cpg
 lazy val javasrc2cpg       = Projects.javasrc2cpg
 lazy val jimple2cpg        = Projects.jimple2cpg
 lazy val kotlin2cpg        = Projects.kotlin2cpg
+lazy val solidity2cpg      = Projects.solidity2cpg
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
@@ -38,7 +39,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   jssrc2cpg,
   javasrc2cpg,
   jimple2cpg,
-  kotlin2cpg
+  kotlin2cpg,
+  solidity2cpg
 )
 
 ThisBuild / compile / javacOptions ++= Seq(

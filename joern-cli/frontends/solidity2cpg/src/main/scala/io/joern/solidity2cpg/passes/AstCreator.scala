@@ -884,6 +884,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val memberNode = NewTypeDecl()
       .name(typeFullName)
       .fullName(typeFullName)
+      .order(order)
 
     val members = structDefinition.members.collect { case x: VariableDeclaration =>
       astForVarDecl(x, order)
