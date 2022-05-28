@@ -28,5 +28,28 @@ export JOERN_BENCHMARK_RESULT_FILE="$PWD/securibench_micro_jvm.txt"
 sbt "benchmarks / testOnly *.securibench.micro.jvm.*"
 cat $JOERN_BENCHMARK_RESULT_FILE >> $README
 
+# Run IFSpec benchmarks and write results to README.md
+echo "
+### IFSpec
+
+The benchmark can be run using either the Java source code frontend
+or JVM bytecode Jimple frontend:
+
+* Java source: \`sbt \"benchmarks / testOnly *.ifspec.java.*\"\`
+* JVM bytecode: \`sbt \"benchmarks / testOnly *.ifspec.jvm.*\"\`
+" >> $README
+
+echo "#### Java Source Results" >> $README
+
+export JOERN_BENCHMARK_RESULT_FILE="$PWD/ifspec_java.txt"
+sbt "benchmarks / testOnly *.ifspec.java.*"
+cat $JOERN_BENCHMARK_RESULT_FILE >> $README
+
+echo "#### JVM Bytecode Results" >> $README
+
+export JOERN_BENCHMARK_RESULT_FILE="$PWD/ifspec_jvm.txt"
+sbt "benchmarks / testOnly *.ifspec.jvm.*"
+cat $JOERN_BENCHMARK_RESULT_FILE >> $README
+
 # Clean up
 rm *.txt
