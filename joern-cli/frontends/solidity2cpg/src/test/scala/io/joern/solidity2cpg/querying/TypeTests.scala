@@ -38,7 +38,6 @@ class TypeTests extends SolidityCodeToCpgFixture {
   }
 
   "should create TYPE node with correct fields for class struct and its members" in {
-    println(cpg.typ.name.l)
     val List(x) = cpg.typ.name("Request").l
     x.name shouldBe "Request"
     x.fullName shouldBe "Foo.Request"
@@ -50,7 +49,7 @@ class TypeTests extends SolidityCodeToCpgFixture {
     y.typeDeclFullName shouldBe "bytes"
 
     // This may seem weird but makes sense in terms of callback types
-    val z = cpg.typ.nameExact("function\\(uint\\)")
+    val List(z) = cpg.typ.nameExact("function(uint)").l
     z.name shouldBe "function(uint)"
     z.fullName shouldBe "function(uint)"
     z.typeDeclFullName shouldBe "function(uint)"

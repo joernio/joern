@@ -568,7 +568,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForReturn(returnStatement: ReturnStatement, order: Int): Ast = {
 
-    val exprAst = astForExpression(returnStatement.expression, 1)
+    val exprAst = astForExpression(returnStatement.expression, order + 1)
     val returnNode = NewReturn()
       .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
       .order(order)
@@ -797,7 +797,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(func)
       .withChild(expr)
       .withChildren(arguments)
-      .withArgEdges(func, (expr +: arguments).flatMap(_.root))
+//      .withArgEdges(func, (expr +: arguments).flatMap(_.root))
+      .withArgEdges(func, arguments.flatMap(_.root))
   }
 
   private def astForIdentifier(identifier: Identifier, order: Int): Ast = {

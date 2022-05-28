@@ -20,11 +20,11 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
   }
 
   "should be able to parse a solidity file to a json format file" in {
-    import io.joern.solidity2cpg.Solidity2Cpg
     val sampleSolFile : String = ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/Reentrancy.sol")
     val json = new Solidity2Cpg().getSourcesFromDir(sampleSolFile)
-    println(json._1)
-    println(json._2)
+    
+//    println(json._1)
+//    println(json._2)
   }
 
 // "should be able to decode a string JSON input to a root SourceUnit" in {
