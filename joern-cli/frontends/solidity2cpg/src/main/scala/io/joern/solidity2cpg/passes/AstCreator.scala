@@ -346,6 +346,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 //TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
+//    println(body)
     val blockNode = NewBlock().order(order).argumentIndex(order)
     val stmts     = body.statements
 
@@ -659,6 +660,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case ">"  => Operators.greaterThan
       case "<=" => Operators.lessEqualsThan
       case "<"  => Operators.lessThan
+      case "+=" => Operators.assignmentPlus
+      case "-=" => Operators.assignmentMinus
 //      case _: ShlExpr  => Operators.shiftLeft
 //      case _: ShrExpr  => Operators.logicalShiftRight
 //      case _: UshrExpr => Operators.arithmeticShiftRight
@@ -854,6 +857,20 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val call = if (statement.initialValue != null) {
       val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
       val rhsCode = initial.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString
+//      val methodName = if (initial.){
+//        case Operator.ASSIGN               => Operators.assignment
+//        case Operator.PLUS                 => Operators.assignmentPlus
+//        case Operator.MINUS                => Operators.assignmentMinus
+//        case Operator.MULTIPLY             => Operators.assignmentMultiplication
+//        case Operator.DIVIDE               => Operators.assignmentDivision
+//        case Operator.BINARY_AND           => Operators.assignmentAnd
+//        case Operator.BINARY_OR            => Operators.assignmentOr
+//        case Operator.XOR                  => Operators.assignmentXor
+//        case Operator.REMAINDER            => Operators.assignmentModulo
+//        case Operator.LEFT_SHIFT           => Operators.assignmentShiftLeft
+//        case Operator.SIGNED_RIGHT_SHIFT   => Operators.assignmentArithmeticShiftRight
+//        case Operator.UNSIGNED_RIGHT_SHIFT => Operators.assignmentLogicalShiftRight
+//      }
       NewCall()
         .name(Operators.assignment)
         .methodFullName(Operators.assignment)
