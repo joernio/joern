@@ -23,7 +23,6 @@ class JInfoFlowEventsFixture(fileExt: String, benchmarkNo: Int)
     val eventFramework = new java.io.File(s"$dir${java.io.File.separator}eventframework")
     val events = new java.io.File(s"$dir${java.io.File.separator}events")
     val supportingFiles = eventFramework.listFiles() ++ events.listFiles()
-    (targetFiles ++ supportingFiles.filter(_.isFile)).foreach(f => println(f.getAbsolutePath))
     targetFiles ++ supportingFiles.filter(_.isFile)
   }
 
