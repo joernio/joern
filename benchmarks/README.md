@@ -1,8 +1,8 @@
 
 ### Securibench Micro
 
-The benchmark can be run using either the Java source code frontend
-or JVM bytecode Jimple frontend:
+Securibench Micro is a series of small test cases designed to exercise different parts of a static security analyzer.
+Securibench Micro may be used to compare the effectiveness of runtime techniques such as penetration testing tools.
 
 * Java source: `sbt "benchmarks / testOnly *.securibench.micro.java.*"`
 * JVM bytecode: `sbt "benchmarks / testOnly *.securibench.micro.jvm.*"`
@@ -46,8 +46,7 @@ Total accuracy: 79,255%
 
 ### IFSpec
 
-The benchmark can be run using either the Java source code frontend
-or JVM bytecode Jimple frontend:
+IFSpec contains a diverse set of information flow benchmarks for Java programs.
 
 * Java source: `sbt "benchmarks / testOnly *.ifspec.java.*"`
 * JVM bytecode: `sbt "benchmarks / testOnly *.ifspec.jvm.*"`
@@ -84,3 +83,30 @@ Total accuracy: 52,055%
 | *Total*            | *73* | *22* | *22* | *18* | *11* |
 
 Total accuracy: 54,795%
+
+### JInfoFlow
+
+JInfoFlow-bench is a taint analysis benchmark suite containing 12 plain Java benchmarks exercising reflection,
+event-driven architecture, and popular software engineering patterns.
+
+* Java source: `sbt "benchmarks / testOnly *.jinfoflow.java.*"`
+* JVM bytecode: `sbt "benchmarks / testOnly *.jinfoflow.jvm.*"`
+
+#### Java Source Results
+| Category           | #    | FP   | TP   | TN   | FN   |
+| ------------------ | ---- | ---- | ---- | ---- | ---- |
+| Basic              | 4 | 0 | 1 | 2 | 1 |
+| Context            | 8 | 2 | 1 | 1 | 4 |
+| Event              | 8 | 0 | 0 | 3 | 5 |
+| *Total*            | *20* | *2* | *2* | *6* | *10* |
+
+Total accuracy: 40,000%
+#### JVM Bytecode Results
+| Category           | #    | FP   | TP   | TN   | FN   |
+| ------------------ | ---- | ---- | ---- | ---- | ---- |
+| Basic              | 4 | 0 | 1 | 2 | 1 |
+| Context            | 8 | 2 | 2 | 1 | 3 |
+| Event              | 8 | 0 | 0 | 3 | 5 |
+| *Total*            | *20* | *2* | *3* | *6* | *9* |
+
+Total accuracy: 45,000%
