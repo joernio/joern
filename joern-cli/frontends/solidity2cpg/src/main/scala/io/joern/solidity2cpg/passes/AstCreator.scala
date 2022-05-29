@@ -124,6 +124,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForTypeDecl(contractDef: ContractDefinition, astParentFullName: String, order: Int): Ast = {
+//    println(contractDef)
     val fullName  = registerType(contractDef.name)
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
@@ -156,6 +157,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case (x: StateVariableDeclaration, order) => astForField(x, order)
       case (x: StructDefinition, order)         => astForStruct(x, contractDef.name, order)
     }
+    println(memberAsts.flatMap(_.root).map(_.properties(PropertyNames.NAME)))
     Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
@@ -493,7 +495,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForMemberVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
-    val newMember    = NewMember();
+    val newMember    = NewMember()
     var typefullName = ""
     var code         = ""
     varDecl.typeName match {
