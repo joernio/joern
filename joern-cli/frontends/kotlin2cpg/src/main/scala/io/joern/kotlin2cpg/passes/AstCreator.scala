@@ -1619,11 +1619,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         astsForExpression(entry.getCatchBody, order + 1, order + 1)
       }.flatten
 
-    Ast(callNode)
-      .withChild(tryBlockAst)
-      .withArgEdge(callNode, tryBlockAst.root.get)
-      .withChildren(clauseAsts)
-      .withArgEdges(callNode, clauseAsts.map(_.root.get))
+    callAst(callNode, List(tryBlockAst) ++ clauseAsts)
   }
 
   // TODO: handle parameters passed to the clauses
