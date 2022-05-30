@@ -705,10 +705,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     if (operation.trueBody != null) {
       operation.trueBody match {
         case x: Block => {
+
           tb = astForBody(x, 2)
           foundt = true
         }
-        case x => astForStatement(x, 2)
+        case x => {println(x)
+          tb = astForStatement(x, 2)
+          foundt = true}
       }
     }
     if (operation.falseBody != null) {
@@ -717,7 +720,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           fb = astForBody(x, 3)
           foundf = true
         }
-        case x => astForStatement(x, 3)
+        case x =>  {println(x)
+          fb = astForStatement(x, 3)
+          foundf = true}
       }
     }
     val code = opNode.root.map(_.properties(PropertyNames.CODE)).mkString("")
@@ -729,10 +734,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
     if (foundt && foundf) {
+      println("here")
       ast = Ast(ifNode)
         .withChild(opNode)
-        .withChild(fb)
         .withChild(tb)
+        .withChild(fb)
 
     } else if (foundt && !foundf) {
       ast = Ast(ifNode)
@@ -784,6 +790,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     } else {
       ""
     }
+//    println(name + " : "+code)
     val func = NewCall()
       .name(name)
       .code(code)
@@ -806,58 +813,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       else
         ""
     }
-//    membersList.foreach(x=> print(x + " "))
-//    println()
-//    println(membersList.contains(identifier.name) + "\t"+identifier.name)
-    val fieldIdentifier =
-if (membersList.contains(identifier.name)) {
-    Ast(NewFieldIdentifier()
-      .code(identifier.name)
-      .canonicalName(identifier.name)
-      .order(2)
-      .argumentIndex(2))
-} else {
-      Ast()
-}
-    val id =
-      if (membersList.contains(identifier.name)) {
-        Ast(NewIdentifier()
-          .name("this")
-          .code("this")
-          .typeFullName(typeFullName)
-          .order(1)
-          .argumentIndex(1))
-      }else {
-        Ast(NewIdentifier()
-          .name(identifier.name)
-          .code(identifier.name)
-          .typeFullName(typeFullName)
-          .order(1)
-          .argumentIndex(1))
-      }
-    val call = if (membersList.contains(identifier.name)) {
-      NewCall()
-        .name(Operators.fieldAccess)
-        .methodFullName(Operators.fieldAccess)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(identifier.name)
-        .argumentIndex(order)
-        .order(order)
-
-    } else {
-      NewCall()
-    }
-
-    val seq = Seq(id, fieldIdentifier)
-    if (membersList.contains(identifier.name)) {
-      Ast(call)
-        .withChildren(seq)
-        .withArgEdges(call, seq.flatMap(_.root))
-    } else {
-      val seq = Seq(id, fieldIdentifier)
-      Ast()
-        .withChildren(seq)
-    }
+    Ast(NewIdentifier()
+                .name(identifier.name)
+                .code(identifier.name)
+                .typeFullName(typeFullName)
+                .order(1)
+                .argumentIndex(1))
 
   }
 
@@ -866,24 +827,33 @@ if (membersList.contains(identifier.name)) {
     val name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
     val fieldAccess = NewCall()
       .name(memberAccess.memberName)
-      .methodFullName(memberAccess.memberName)
+//      .name(Operators.fieldAccess)
+      .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(name+"."+memberAccess.memberName)
       .argumentIndex(order)
       .order(order)
-////      .typeFullName()
-//    val field = NewFieldIdentifier()
-//      .code(name)
-//      .canonicalName(name)
-//      .order(order + 1)
-//      .argumentIndex(order+1)
+    val fieldIdentifierNode = Ast(NewFieldIdentifier()
+      .canonicalName(name)
+      .argumentIndex(2)
+      .order(2)
+      .code(name))
     Ast(fieldAccess)
       .withChild(expr)
-//      .withChild(Ast(field))
+      .withChild(fieldIdentifierNode)
   }
 
   private def astForBooleanLiteral(literal: BooleanLiteral, order : Int): Ast = {
-    Ast()
+    var code         = ""
+    val typeFullName = registerType("bool")
+    code = literal.value+""
+    Ast(
+      NewLiteral()
+        .code(code)
+        .typeFullName(typeFullName)
+        .order(order)
+        .argumentIndex(order)
+    )
   }
 
   private def astForStringLiteral(x: StringLiteral, order : Int): Ast = {
@@ -1012,6 +982,22 @@ if (membersList.contains(identifier.name)) {
     }
     (params)
   }
+
+//  def astForThrow(stmt: ThrowStmt, order: Int): Ast = {
+//    val throwNode = NewCall()
+//      .name("<operator>.throw")
+//      .methodFullName("<operator>.throw")
+//      .lineNumber(line(stmt))
+//      .columnNumber(column(stmt))
+//      .code(stmt.toString())
+//      .order(order)
+//      .argumentIndex(order)
+//      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+//
+//    val args = astsForExpression(stmt.getExpression, order = 1, None)
+//
+//    callAst(throwNode, args)
+//  }
   object AstCreator {
 
     def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
