@@ -12,7 +12,7 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
     """
         |import java.io.Serializable;
         |
-        |class Foo implements Serializable {
+        |final class Foo implements Serializable {
         |
         |   public int add(int x, int y) {
         |     return x + y;
@@ -24,7 +24,7 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
   "should contain a type decl for `Foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Foo").l
     x.name shouldBe "Foo"
-    x.code shouldBe "Foo"
+    x.code shouldBe "final class Foo implements java.io.Serializable"
     x.fullName shouldBe "Foo"
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName shouldBe List("java.io.Serializable")
