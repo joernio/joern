@@ -112,12 +112,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Ast(node)
         }
 
-    var idxEpsilon = 0 // when multiple AST nodes are returned by `astForDeclaration`
     val declarationsAsts =
-      ktFile.getDeclarations.asScala.toSeq.map { decl =>
-        astForDeclaration(decl)
-      }.flatten
-
+      ktFile.getDeclarations.asScala.toSeq.map(astForDeclaration).flatten
     val fileNode = NewFile().name(fileWithMeta.relativizedPath)
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(
@@ -300,7 +296,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val typeFullName = typeInfoProvider.typeFullName(ctorParam, TypeConstants.any)
           registerType(typeFullName)
 
-          val paramName = ctorParam.getName
+          val paramName       = ctorParam.getName
           val paramIdentifier = identifierNode(paramName, typeFullName)
 
           val matchingMethodParamNode =
@@ -438,7 +434,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
           val fieldAccessCall =
             operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + valueParam.getName, Some(typeFullName))
-              .argumentIndex(1)
           val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
 
           val _returnNode =
