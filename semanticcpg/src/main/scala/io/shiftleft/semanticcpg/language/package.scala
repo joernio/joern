@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Expression,
   File,
   Identifier,
+  Import,
   Literal,
   Local,
   Member,
@@ -148,6 +149,12 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new FileTraversal(Traversal.fromSingle(a))
   implicit def iterOnceToFileTrav[A <: File](a: IterableOnce[A]): FileTraversal =
     new FileTraversal(iterableToTraversal(a))
+
+  implicit def singleToImportTrav[A <: Import](a: A): ImportTraversal =
+    new ImportTraversal(Traversal.fromSingle(a))
+
+  implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
+    new ImportTraversal(iterableToTraversal(a))
 
   // Call graph extension
   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
