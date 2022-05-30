@@ -1,5 +1,6 @@
 package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -18,7 +19,7 @@ class InterfaceTests extends JimpleCodeToCpgFixture {
   "should contain a type decl for `Foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Foo").l
     x.name shouldBe "Foo"
-    x.code shouldBe "Foo"
+    x.code shouldBe "interface Foo extends java.lang.Object"
     x.fullName shouldBe "Foo"
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName shouldBe List("java.lang.Object")
@@ -35,6 +36,13 @@ class InterfaceTests extends JimpleCodeToCpgFixture {
     x.fullName shouldBe "Foo.add:int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
+  }
+
+  "should contain the correct modifier(s)" in {
+    val List(x)      = cpg.typeDecl.name("Foo").l
+    val List(m1, m2) = x.modifier.l
+    m1.modifierType shouldBe ModifierTypes.ABSTRACT
+    m2.modifierType shouldBe "INTERFACE"
   }
 
 }
