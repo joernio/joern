@@ -4,48 +4,12 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  NodeTypes,
-  Operators,
-  PropertyNames
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewFile,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
@@ -64,6 +28,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreator])
   private val typeMap = mutable.HashMap.empty[String, String]
+  private var membersList : Array[String] = Array()
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
     */
@@ -522,7 +487,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case _         => visibility = ""
     }
     typeMap.addOne(varDecl.name, typefullName)
-//    typeMap.get(varDecl.name).foreach(x => println(x))
+    membersList = membersList :+ (varDecl.name)
     newMember
       .name(varDecl.name)
       .code(typefullName + code + visibility + " " + varDecl.name)
@@ -650,8 +615,30 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForUnaryOperation(operation: UnaryOperation, order: Int): Ast = {
-    // TODO : finx all cases with "Ast()"
-    Ast()
+    val subExpression = astForExpression(operation.subExpression, 1)
+    val operatorName = if (operation.isPrefix) operation.operator match {
+      case "!"  => Operators.logicalNot
+      case "++" => Operators.preIncrement
+      case "--" => Operators.preDecrement
+    }
+    else operation.operator match {
+      case "!" => Operators.logicalNot
+      case "++" => Operators.postIncrement
+      case "--" => Operators.postDecrement
+    }
+    val code = if (operation.isPrefix)
+      operation.operator + subExpression.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    else
+      subExpression.root.map(_.properties(PropertyNames.CODE)).mkString("") + operation.operator
+    val callNode = NewCall()
+      .name(operatorName)
+      .methodFullName(operatorName)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(code)
+      .order(order)
+      .argumentIndex(order)
+
+    Ast(callNode).withChild(subExpression)
   }
   private def astForTypeNameExpression(expression: TypeNameExpression, order : Int): Ast = {
     Ast()
@@ -671,6 +658,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case "+=" => Operators.assignmentPlus
       case "-=" => Operators.assignmentMinus
       case "="  => Operators.assignment
+      case "&&" => Operators.logicalAnd
+      case "||" => Operators.logicalOr
 //      case _: ShlExpr  => Operators.shiftLeft
 //      case _: ShrExpr  => Operators.logicalShiftRight
 //      case _: UshrExpr => Operators.arithmeticShiftRight
@@ -719,6 +708,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           tb = astForBody(x, 2)
           foundt = true
         }
+        case x => astForStatement(x, 2)
       }
     }
     if (operation.falseBody != null) {
@@ -727,6 +717,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           fb = astForBody(x, 3)
           foundf = true
         }
+        case x => astForStatement(x, 3)
       }
     }
     val code = opNode.root.map(_.properties(PropertyNames.CODE)).mkString("")
@@ -820,18 +811,58 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       else
         ""
     }
-    Ast(
-      NewIdentifier()
-        .name(identifier.name)
-        .code(identifier.name)
-        .typeFullName(typeFullName)
-        .order(order)
-        .argumentIndex(order)
-    )
+//    membersList.foreach(x=> print(x + " "))
+//    println()
+//    println(membersList.contains(identifier.name) + "\t"+identifier.name)
+    val fieldIdentifier =
+//if (membersList.contains(identifier.name))
+//    Ast(NewFieldIdentifier()
+//      .code(identifier.name)
+//      .canonicalName(identifier.name)
+//      .order(2)
+//      .argumentIndex(2))
+//    else
+      Ast()
+
+    val id =
+//      if (membersList.contains(identifier.name))
+//      NewIdentifier()
+//        .name("this")
+//        .code("this")
+//        .typeFullName(typeFullName)
+//        .order(1)
+//        .argumentIndex(1)
+//    else
+    NewIdentifier()
+      .name(identifier.name)
+      .code(identifier.name)
+      .typeFullName(typeFullName)
+      .order(1)
+      .argumentIndex(1)
+
+    Ast().withChild(Ast(id))
+      .withChild(fieldIdentifier)
   }
 
   private def astForMemberAccess(memberAccess: MemberAccess, order : Int): Ast = {
-    Ast()
+    val expr = astForExpression(memberAccess.expression, order)
+    val name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
+    val fieldAccess = NewCall()
+      .name(memberAccess.memberName)
+      .methodFullName(memberAccess.memberName)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(name+"."+memberAccess.memberName)
+      .argumentIndex(order)
+      .order(order)
+////      .typeFullName()
+//    val field = NewFieldIdentifier()
+//      .code(name)
+//      .canonicalName(name)
+//      .order(order + 1)
+//      .argumentIndex(order+1)
+    Ast(fieldAccess)
+      .withChild(expr)
+//      .withChild(Ast(field))
   }
 
   private def astForBooleanLiteral(literal: BooleanLiteral, order : Int): Ast = {
@@ -847,7 +878,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForTupleExpression(expression: TupleExpression, order : Int): Ast = {
-    Ast()
+    val components = withOrder(expression.components) {
+      case (x, order) => astForExpression(x, order+order)
+    }
+    Ast()withChildren(components)
   }
 
   private def astsForDefinition(x: BaseASTNode, order: Int): Ast = {

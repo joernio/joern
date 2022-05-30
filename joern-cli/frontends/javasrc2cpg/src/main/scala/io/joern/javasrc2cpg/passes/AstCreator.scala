@@ -1004,13 +1004,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
 
-    Ast(methodNode)
+    val mAst = Ast(methodNode)
       .withChildren(thisAst)
       .withChildren(parameterAsts)
       .withChild(bodyAst)
       .withChildren(annotationAsts)
       .withChildren(modifiers)
       .withChild(returnAst)
+
+    mAst.nodes.foreach { n =>
+      val code  = n.properties.getOrElse("CODE", null)
+      val order = n.properties.getOrElse("ORDER", null)
+      println((order, n.label(), code))
+    }
+    mAst
   }
 
   private def astForMethodReturn(methodDeclaration: MethodDeclaration): Ast = {
