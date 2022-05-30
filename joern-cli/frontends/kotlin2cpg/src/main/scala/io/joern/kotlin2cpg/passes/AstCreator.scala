@@ -244,16 +244,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val methodAsts = classFunctions.toSeq.map(astForMethod)
     val bindingsInfo =
       methodAsts
-        .flatMap { ast =>
-          ast.root match {
-            case Some(node) =>
-              node match {
-                case m: NewMethod => Some(m)
-                case _            => None
-              }
-            case _ => None
-          }
-        }
+        .flatMap { ast => ast.root.collect { case node: NewMethod => node } }
         .map { _methodNode =>
           val node = bindingNode(_methodNode.name, _methodNode.signature)
           BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
@@ -521,14 +512,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, order) =>
         astForParameter(p, order)
       }.flatMap { ast =>
-        ast.root match {
-          case Some(node) =>
-            node match {
-              case p: NewMethodParameterIn => Some(p)
-              case _                       => None
-            }
-          case None => None
-        }
+        ast.root.collect { case node: NewMethodParameterIn => node }
       }
 
     val lastOrder = parameters.size + 2
