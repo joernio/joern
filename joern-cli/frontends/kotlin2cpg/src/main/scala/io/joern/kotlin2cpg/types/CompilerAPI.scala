@@ -56,7 +56,7 @@ object CompilerAPI {
           val tempFile = File.createTempFile("kotlin2cpgDependencies", "", new File("./"))
           tempFile.deleteOnExit()
           val outStream = new FileOutputStream(tempFile)
-          val buffer = new Array[Byte](4096)
+          val buffer    = new Array[Byte](4096)
 
           while (resourceStream.available > 0) {
             val readBytes = resourceStream.read(buffer)
