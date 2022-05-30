@@ -242,14 +242,12 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   }
 
   private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {
-    methodDeclaration.getTags.asScala.flatMap {
-      case x: VisibilityAnnotationTag =>
+    methodDeclaration.getTags.asScala
+      .collect { case x: VisibilityAnnotationTag => x }
+      .flatMap { x =>
         withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, methodDeclaration) }
-      case _: AnnotationDefaultTag => Seq(Ast())
-      case x =>
-        logger.warn(s"Unhandled method tag '${x.getClass}' skipping...'")
-        Seq(Ast())
-    }.toSeq
+      }
+      .toSeq
   }
 
   private def astsForAnnotations(annotation: AnnotationTag, order: Int, methodDeclaration: AbstractHost): Ast = {
@@ -282,7 +280,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }
     val lineNo      = line(parent)
     val columnNo    = column(parent)
-    val codeBuilder = new StringBuilder()
+    val codeBuilder = new mutable.StringBuilder()
     val astChildren = ListBuffer.empty[Ast]
     if (annoElement.getName != null) {
       astChildren.append(
