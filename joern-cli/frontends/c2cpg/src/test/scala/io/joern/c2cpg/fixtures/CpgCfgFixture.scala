@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
+import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgEdgeType
 
 import scala.jdk.CollectionConverters._
 

@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.fixtures.CpgCfgFixture
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
+import io.joern.x2cpg.passes.controlflow.cfgcreation.{AlwaysEdge, TrueEdge, FalseEdge, CaseEdge, CfgEdgeType}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
