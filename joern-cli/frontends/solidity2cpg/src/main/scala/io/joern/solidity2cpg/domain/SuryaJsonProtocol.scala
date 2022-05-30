@@ -731,7 +731,14 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "StateVariableDeclaration") {
         throw new RuntimeException("StateVariableDeclaration object expected")
       } else {
-        StateVariableDeclaration(fields("variables").convertTo[List[BaseASTNode]])
+        StateVariableDeclaration(
+          fields("variables").convertTo[List[BaseASTNode]],
+          fields("initialValue") match {
+            case x: JsObject => x.convertTo[BaseASTNode]
+            case _ => null
+
+          }
+        )
       }
     }
 

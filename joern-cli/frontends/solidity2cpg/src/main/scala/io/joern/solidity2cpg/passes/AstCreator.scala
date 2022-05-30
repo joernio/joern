@@ -63,7 +63,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   import AstCreator._
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreator])
-
+  private val typeMap = mutable.HashMap.empty[String, String]
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
     */
@@ -124,7 +124,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForTypeDecl(contractDef: ContractDefinition, astParentFullName: String, order: Int): Ast = {
-//    println(contractDef)
     val fullName  = registerType(contractDef.name)
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
@@ -144,23 +143,31 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .isExternal(false)
       .order(order)
 
+    val memberAsts = withOrder(contractDef.subNodes.collect {
+      case x: StateVariableDeclaration => x
+      case x: StructDefinition         => x
+    }) {
+      case (x: StateVariableDeclaration, order) => astForField(x, order +1)
+      case (x: StructDefinition, order)         => astForStruct(x, contractDef.name, order +1)
+    }
+
     val methods = withOrder(contractDef.subNodes.collect { case x: FunctionOrModifierDefinition =>
       x
     }) { (methodOrModifier, order) =>
       astsForMethodOrModifier(methodOrModifier, contractDef.name, order)
     }
 
-    val memberAsts = withOrder(contractDef.subNodes.collect {
-      case x: StateVariableDeclaration => x
-      case x: StructDefinition         => x
-    }) {
-      case (x: StateVariableDeclaration, order) => astForField(x, order)
-      case (x: StructDefinition, order)         => astForStruct(x, contractDef.name, order)
-    }
-    println(memberAsts.flatMap(_.root).map(_.properties(PropertyNames.NAME)))
-    Ast(typeDecl)
+
+    val mAst = Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
+
+//      mAst.nodes.foreach { n =>
+//        val code  = n.properties.getOrElse("CODE", null)
+//        val order = n.properties.getOrElse("ORDER", null)
+//        println((order, n.label(), code))
+//      }
+    mAst
   }
 
   private def astsForMethodOrModifier(
@@ -348,7 +355,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 //TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
-//    println(body)
     val blockNode = NewBlock().order(order).argumentIndex(order)
     val stmts     = body.statements
 
@@ -398,12 +404,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForLocal(varDecl: VariableDeclaration, order: Int): Ast = {
-//    if (varDecl.)
     val fullTypeName = varDecl.typeName match {
       case x: ElementaryTypeName => registerType(x.name)
       case _                     => ""
     }
-
     Ast(
       NewLocal()
         .name(varDecl.name)
@@ -439,7 +443,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     newID
       .name(varDecl.name)
       .code(code + visibility + varDecl.name)
-      .typeFullName(varDecl.name)
+      .typeFullName(typefullName)
       .order(order)
       .argumentIndex(order)
 
@@ -517,6 +521,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: String => visibility = " " + x
       case _         => visibility = ""
     }
+    typeMap.addOne(varDecl.name, typefullName)
+//    typeMap.get(varDecl.name).foreach(x => println(x))
     newMember
       .name(varDecl.name)
       .code(typefullName + code + visibility + " " + varDecl.name)
@@ -664,6 +670,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case "<"  => Operators.lessThan
       case "+=" => Operators.assignmentPlus
       case "-=" => Operators.assignmentMinus
+      case "="  => Operators.assignment
 //      case _: ShlExpr  => Operators.shiftLeft
 //      case _: ShrExpr  => Operators.logicalShiftRight
 //      case _: UshrExpr => Operators.arithmeticShiftRight
@@ -807,7 +814,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForIdentifier(identifier: Identifier, order: Int): Ast = {
-    val typeFullName = registerType(identifier.name)
+    val typeFullName = {
+      if (typeMap.contains(identifier.name))
+        typeMap.get(identifier.name).toList(typeMap.get(identifier.name).size-1)
+      else
+        ""
+    }
     Ast(
       NewIdentifier()
         .name(identifier.name)

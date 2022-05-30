@@ -219,7 +219,7 @@ object SuryaObject {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
-  case class StateVariableDeclaration(variables: List[BaseASTNode]) extends BaseASTNode("StateVariableDeclaration") {
+  case class StateVariableDeclaration(variables: List[BaseASTNode], initialValue: BaseASTNode) extends BaseASTNode("StateVariableDeclaration") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 
