@@ -14,19 +14,19 @@ class MemberTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain MEMBER node with correct properties" in {
-      val List(x) = cpg.member("bar").l
-      x.name shouldBe "bar"
-      x.code shouldBe "bar"
-      x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(3)
-      x.columnNumber shouldBe Some(6)
-      x.order shouldBe 2
+    "should contain a MEMBER node with the correct properties set" in {
+      val List(m) = cpg.member("bar").l
+      m.name shouldBe "bar"
+      m.code shouldBe "bar"
+      m.typeFullName shouldBe "int"
+      m.lineNumber shouldBe Some(3)
+      m.columnNumber shouldBe Some(6)
+      m.order shouldBe 2
     }
 
     "should allow traversing from MEMBER to TYPE_DECL" in {
-      val List(x) = cpg.member.typeDecl.l
-      x.name shouldBe "Foo"
+      val List(td) = cpg.member.typeDecl.l
+      td.name shouldBe "Foo"
     }
   }
 
@@ -46,10 +46,10 @@ class MemberTests extends AnyFreeSpec with Matchers {
       |}
       |""".stripMargin)
 
-    "should contain MEMBER node with correct properties" in {
-      val List(x) = cpg.member("x").l
-      x.code shouldBe "x"
-      x.typeFullName shouldBe "java.lang.String"
+    "should contain a MEMBER node with the correct properties set" in {
+      val List(m) = cpg.member("x").l
+      m.code shouldBe "x"
+      m.typeFullName shouldBe "java.lang.String"
     }
   }
 
@@ -60,19 +60,19 @@ class MemberTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain MEMBER node with correct properties" in {
-      val List(x) = cpg.member("bar").l
-      x.name shouldBe "bar"
-      x.code shouldBe "bar"
-      x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(3)
-      x.columnNumber shouldBe Some(6)
-      x.order shouldBe 2
+    "should contain a MEMBER node with the correct properties set" in {
+      val List(m) = cpg.member("bar").l
+      m.name shouldBe "bar"
+      m.code shouldBe "bar"
+      m.typeFullName shouldBe "int"
+      m.lineNumber shouldBe Some(3)
+      m.columnNumber shouldBe Some(6)
+      m.order shouldBe 2
     }
 
     "should allow traversing from MEMBER to TYPE_DECL" in {
-      val List(x) = cpg.member.typeDecl.l
-      x.name shouldBe "Foo"
+      val List(td) = cpg.member.typeDecl.l
+      td.name shouldBe "Foo"
     }
 
     // TODO: test lowering of setting member to expression
@@ -85,19 +85,19 @@ class MemberTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain MEMBER node with correct properties" in {
-      val List(x) = cpg.member("bar").l
-      x.name shouldBe "bar"
-      x.code shouldBe "bar"
-      x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(3)
-      x.columnNumber shouldBe Some(6)
-      x.order shouldBe 2
+    "should contain a MEMBER node with the correct properties set" in {
+      val List(m) = cpg.member("bar").l
+      m.name shouldBe "bar"
+      m.code shouldBe "bar"
+      m.typeFullName shouldBe "int"
+      m.lineNumber shouldBe Some(3)
+      m.columnNumber shouldBe Some(6)
+      m.order shouldBe 2
     }
 
     "should allow traversing from MEMBER to TYPE_DECL" in {
-      val List(x) = cpg.member.typeDecl.l
-      x.name shouldBe "Foo"
+      val List(td) = cpg.member.typeDecl.l
+      td.name shouldBe "Foo"
     }
   }
 

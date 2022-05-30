@@ -94,7 +94,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _it_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -129,7 +128,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -164,7 +162,6 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -224,20 +221,4 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
     }
   }
-
-  "CPG for code with simple `takeUnless` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun foo() {
-        |  val x: Int = 3
-        |  val y = x.takeUnless { it -> it % 2 == 0 }
-        |  println(y)
-        |}
-        |""".stripMargin)
-
-    // TODO: add test case for CALLs inside the scope function
-    // at the moment, they don't end up in the CPG correctly
-  }
-
 }

@@ -88,18 +88,10 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           )
         }
 
-        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-        val jarPathsFromClassPath =
-          config.classpath.foldLeft(Seq[String]())((acc, classpathEntry) => {
-            val f = File(classpathEntry)
-            val files =
-              if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == ".jar").map(_.toString)
-              else Seq()
-            acc ++ files
-          })
+        val jarsAtConfigClassPath = findJarsIn(config.classpath)
         if (config.classpath.nonEmpty) {
-          if (jarPathsFromClassPath.nonEmpty) {
-            logger.info(s"Found ${jarPathsFromClassPath.size} jars in the specified classpath.")
+          if (jarsAtConfigClassPath.nonEmpty) {
+            logger.info(s"Found ${jarsAtConfigClassPath.size} jars in the specified classpath.")
           } else {
             logger.warn("No jars found in the specified classpath.")
           }
@@ -114,66 +106,25 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           }
         val defaultContentRootJars =
           stdlibJars ++
-            jarPathsFromClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+            jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
             dependenciesPaths.map { path =>
               DefaultContentRootJarPath(path, false)
             }
-        val messageCollector = new ErrorLoggingMessageCollector
+        val messageCollector        = new ErrorLoggingMessageCollector
+        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
         val environment =
           CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
-        val ktFiles = environment.getSourceFiles.asScala
-        val filesWithMeta =
-          ktFiles
-            .flatMap { f =>
-              try {
-                val relPath = PathUtils.relativize(sourceDir, f.getVirtualFilePath)
-                Some(f, relPath)
-              } catch {
-                case _: Throwable => None
-              }
-            }
-            .map { fwp =>
-              KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
-            }
-            .filterNot { fwp =>
-              // TODO: add test for this type of filtering
-              // TODO: support Windows paths
-              val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
-              if (willFilter) {
-                logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
-              }
-              willFilter
-            }
-
-        val fileContentsAtPath =
-          SourceFilesPicker
-            .configFiles(sourceDir)
-            .flatMap { fileName =>
-              try {
-                val relPath = PathUtils.relativize(sourceDir, fileName)
-                Some(fileName, relPath)
-              } catch {
-                case _: Throwable => None
-              }
-            }
-            .map { fnm =>
-              val fileContents =
-                try {
-                  IOUtils.readLinesInFile(Paths.get(fnm._1)).mkString("\n")
-                } catch {
-                  case t: Throwable => parsingError + "\n" + t.toString
-                }
-              FileContentAtPath(fileContents, fnm._2, fnm._1)
-            }
-
+        val sources          = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+        val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
         val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
         new MetaDataPass(cpg, Languages.KOTLIN).createAndApply()
-        val astCreator = new AstCreationPass(filesWithMeta, typeInfoProvider, cpg)
+        val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
         astCreator.createAndApply()
         new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
-        val configCreator = new ConfigPass(fileContentsAtPath, cpg)
+
+        val configCreator = new ConfigPass(configFiles, cpg)
         configCreator.createAndApply()
 
         val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
@@ -185,5 +136,61 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         System.exit(1)
       }
     }
+  }
+
+  private def findJarsIn(dirs: Set[String]) = {
+    val jarExtension = ".jar"
+    dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
+      val f = File(classpathEntry)
+      val files =
+        if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
+        else Seq()
+      acc ++ files
+    })
+  }
+
+  private def entriesForSources(files: Iterable[KtFile], relativeTo: String): Iterable[KtFileWithMeta] = {
+    files
+      .flatMap { f =>
+        try {
+          val relPath = PathUtils.relativize(relativeTo, f.getVirtualFilePath)
+          Some(f, relPath)
+        } catch {
+          case _: Throwable => None
+        }
+      }
+      .map { fwp =>
+        KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
+      }
+      .filterNot { fwp =>
+        // TODO: add test for this type of filtering
+        // TODO: support Windows paths
+        val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
+        if (willFilter) {
+          logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
+        }
+        willFilter
+      }
+  }
+
+  private def entriesForConfigFiles(paths: Seq[String], relativeTo: String): Seq[FileContentAtPath] = {
+    paths
+      .flatMap { fileName =>
+        try {
+          val relPath = PathUtils.relativize(relativeTo, fileName)
+          Some(fileName, relPath)
+        } catch {
+          case _: Throwable => None
+        }
+      }
+      .map { fnm =>
+        val fileContents =
+          try {
+            IOUtils.readLinesInFile(Paths.get(fnm._1)).mkString("\n")
+          } catch {
+            case t: Throwable => parsingError + "\n" + t.toString
+          }
+        FileContentAtPath(fileContents, fnm._2, fnm._1)
+      }
   }
 }

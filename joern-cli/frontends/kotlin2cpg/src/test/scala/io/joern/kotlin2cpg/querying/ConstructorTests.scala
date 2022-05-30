@@ -176,7 +176,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
       m.lineNumber shouldBe Some(4)
       m.columnNumber shouldBe Some(9)
-      m.methodReturn.code shouldBe "RET"
+      m.methodReturn.code shouldBe "mypkg.Foo"
       m.methodReturn.lineNumber shouldBe Some(4)
       m.methodReturn.columnNumber shouldBe Some(9)
 
@@ -190,7 +190,7 @@ class ConstructorTests extends AnyFreeSpec with Matchers {
       m.name shouldBe "<init>"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(4)
-      m.methodReturn.code shouldBe "RET"
+      m.methodReturn.code shouldBe "mypkg.Foo"
       m.methodReturn.lineNumber shouldBe Some(6)
       m.methodReturn.columnNumber shouldBe Some(4)
 

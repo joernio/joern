@@ -18,10 +18,6 @@ class StringInterpolationTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain correct number of calls" in {
-      cpg.call.size should not be 0
-    }
-
     "should contain a call node for the `formatString` operator" in {
       cpg.call(Operators.formatString).size should not be 0
     }

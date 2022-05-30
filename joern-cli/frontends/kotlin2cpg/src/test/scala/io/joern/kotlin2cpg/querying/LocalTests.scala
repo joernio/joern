@@ -22,13 +22,13 @@ class LocalTests extends AnyFreeSpec with Matchers {
       l1.code shouldBe "x"
       l1.name shouldBe "x"
       l1.typeFullName shouldBe "int"
-      l1.order shouldBe 1
+      l1.order shouldBe 2
 
       val List(l2) = cpg.local("y").l
       l2.code shouldBe "y"
       l2.name shouldBe "y"
       l2.typeFullName shouldBe "int"
-      l2.order shouldBe 3
+      l2.order shouldBe 4
     }
   }
 }

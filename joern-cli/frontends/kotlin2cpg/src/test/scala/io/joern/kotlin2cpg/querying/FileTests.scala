@@ -27,7 +27,7 @@ class FileTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain two file nodes with order set" in {
-      cpg.file.order.l shouldBe List(0, 0)
+      cpg.file.order.l shouldBe List(1, 0)
       cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
       cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
     }

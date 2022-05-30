@@ -30,7 +30,7 @@ class CallTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a call node for `argc`'s declaration with correct fields" in {
+    "should contain a call node for `argc`'s declaration with correct props set" in {
       cpg.call(Operators.assignment).size shouldBe 1
 
       val List(c) = cpg.call(Operators.assignment).l
@@ -41,7 +41,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(6)
     }
 
-    "should contain a call node for `x + y` with correct fields" in {
+    "should contain a call node for `x + y` with correct props set" in {
       cpg.call(Operators.addition).size shouldBe 1
 
       val List(c) = cpg.call(Operators.addition).l
@@ -52,8 +52,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       c.columnNumber shouldBe Some(9)
     }
 
-    // TODO: check for the dispatch types as well
-    "should contain a call node for `println` with correct fields" in {
+    "should contain a call node for `println` with correct props set" in {
       cpg.call("println").size shouldBe 1
 
       val List(p) = cpg.call("println").l
@@ -65,7 +64,7 @@ class CallTests extends AnyFreeSpec with Matchers {
       p.columnNumber shouldBe Some(2)
     }
 
-    "should contain a call node for `foo` with correct fields" in {
+    "should contain a call node for `foo` with correct props set" in {
       cpg.call("foo").size shouldBe 1
 
       val List(p) = cpg.call("foo").l
@@ -86,14 +85,12 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
 
     "should allow traversing from call to callee method" in {
-      // TODO: check why the dedupBy is needed
-      val List(x) = cpg.call.code("foo.*").callee.dedupBy(_.id).l
+      val List(x) = cpg.call.code("foo.*").callee.l
       x.name shouldBe "foo"
     }
 
     "should allow traversing from argument to parameter" in {
-      // TODO: check why the dedupBy is needed
-      val List(x) = cpg.call.code("foo.*").argument(1).parameter.dedupBy(_.id).l
+      val List(x) = cpg.call.code("foo.*").argument(1).parameter.l
       x.name shouldBe "x"
     }
   }

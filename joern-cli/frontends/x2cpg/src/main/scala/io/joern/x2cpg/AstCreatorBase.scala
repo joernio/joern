@@ -54,10 +54,16 @@ abstract class AstCreatorBase(filename: String) {
 
   /** Create a method return node
     */
-  def methodReturnNode(line: Option[Integer], column: Option[Integer], tpe: String): NewMethodReturn =
+  def methodReturnNode(
+    line: Option[Integer],
+    column: Option[Integer],
+    tfn: String,
+    dtfn: Option[String] = None
+  ): NewMethodReturn =
     NewMethodReturn()
-      .typeFullName(tpe)
-      .code(tpe)
+      .typeFullName(tfn)
+      .dynamicTypeHintFullName(dtfn)
+      .code(tfn)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)

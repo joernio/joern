@@ -33,7 +33,7 @@ class MethodReturnTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing to method" in {
-    cpg.methodReturn.code("int").method.name.l shouldBe List("foo")
+    cpg.methodReturn.typeFullName("int").method.name.l shouldBe List("foo")
   }
 
 }

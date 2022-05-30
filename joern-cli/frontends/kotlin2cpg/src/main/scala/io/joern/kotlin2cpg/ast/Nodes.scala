@@ -180,21 +180,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def methodReturnNode(
-    typeFullName: String,
-    dynamicTypeHintFullName: Option[String],
-    line: Int = -1,
-    column: Int = -1
-  ): NewMethodReturn = {
-    NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(typeFullName)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName.toList)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def methodRefNode(
     name: String,
     fullName: String,

@@ -365,9 +365,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
               }
           }
 
-        // TODO: write descriptor renderer instead of working with the existing ones
-        // that render comments in fqnames
-
         val returnTypeFullName = {
           if (isCtor) {
             TypeConstants.void
@@ -417,8 +414,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedDesc match {
       case Some(fnDescriptor) =>
         val originalDesc = fnDescriptor.getOriginal
-        // TODO: write descriptor renderer instead of working with the existing ones
-        // that render comments in fqnames
         val renderedParameterTypes =
           originalDesc.getValueParameters.asScala.toSeq
             .map { valueParam =>
@@ -529,7 +524,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             .mkString(",")
         val renderedReturnType =
           if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) {
-            // TODO: handle `T` in Kotlin stdlib's `apply`
             TypeConstants.javaLangObject
           } else {
             TypeRenderer.render(originalDesc.getReturnType)
