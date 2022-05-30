@@ -2,6 +2,8 @@ Joern - The Bug Hunter's Workbench
 ===
 
 [![release](https://github.com/joernio/joern/actions/workflows/release.yml/badge.svg)](https://github.com/joernio/joern/actions/workflows/release.yml)
+[![Joern SBT](https://index.scala-lang.org/joernio/joern/latest.svg)](https://index.scala-lang.org/joernio/joern)
+[![Github All Releases](https://img.shields.io/github/downloads/joernio/joern/total.svg)](https://github.com/joernio/joern/releases/)
 [![Gitter](https://img.shields.io/badge/-Discord-lime?style=for-the-badge&logo=discord&logoColor=white&color=black)](https://discord.com/invite/vv4MH284Hc)
 
 Joern is a platform for analyzing source code, bytecode, and binary
@@ -62,9 +64,6 @@ sbt stage
 ```
 The last command prints all available queries - add your own in querydb, run the above commands again to see that your query got deployed.
 More details in the [separate querydb readme](querydb/README.md)
-
-## Javasrc2cpg (a source-based frontend for Java)
-See details in [the javasrc2cpg readme](joern-cli/frontends/javasrc2cpg/README.md)
 
 ## Benchmarks
 
