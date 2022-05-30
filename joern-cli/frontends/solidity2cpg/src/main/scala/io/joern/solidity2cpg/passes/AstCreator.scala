@@ -127,11 +127,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(methods)
       .withChildren(memberAsts)
 
-//      mAst.nodes.foreach { n =>
-//        val code  = n.properties.getOrElse("CODE", null)
-//        val order = n.properties.getOrElse("ORDER", null)
-//        println((order, n.label(), code))
-//      }
+      mAst.nodes.foreach { n =>
+        val code  = n.properties.getOrElse("CODE", null)
+        val order = n.properties.getOrElse("ORDER", null)
+        println((order, n.label(), code))
+      }
     mAst
   }
 
@@ -778,13 +778,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       methodFullName = call.methodFullName
       sig = call.methodFullName.split(":")(1)
     }
-    code = name + "(" + args + ")"
+    code = expr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "(" + args + ")"
     val typeFullName = if (methodFullName != null & !methodFullName.equals("")) {
       methodFullName.substring(0, methodFullName.indexOf("."))
     } else {
       ""
     }
-
     val func = NewCall()
       .name(name)
       .code(code)
@@ -794,13 +793,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .methodFullName(methodFullName)
       .signature(sig)
       .typeFullName(typeFullName)
-
-
-
     Ast(func)
       .withChild(expr)
       .withChildren(arguments)
-//      .withArgEdges(func, (expr +: arguments).flatMap(_.root))
       .withArgEdges(func, arguments.flatMap(_.root))
   }
 
@@ -815,33 +810,55 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //    println()
 //    println(membersList.contains(identifier.name) + "\t"+identifier.name)
     val fieldIdentifier =
-//if (membersList.contains(identifier.name))
-//    Ast(NewFieldIdentifier()
-//      .code(identifier.name)
-//      .canonicalName(identifier.name)
-//      .order(2)
-//      .argumentIndex(2))
-//    else
-      Ast()
-
-    val id =
-//      if (membersList.contains(identifier.name))
-//      NewIdentifier()
-//        .name("this")
-//        .code("this")
-//        .typeFullName(typeFullName)
-//        .order(1)
-//        .argumentIndex(1)
-//    else
-    NewIdentifier()
-      .name(identifier.name)
+if (membersList.contains(identifier.name)) {
+    Ast(NewFieldIdentifier()
       .code(identifier.name)
-      .typeFullName(typeFullName)
-      .order(1)
-      .argumentIndex(1)
+      .canonicalName(identifier.name)
+      .order(2)
+      .argumentIndex(2))
+} else {
+      Ast()
+}
+    val id =
+      if (membersList.contains(identifier.name)) {
+        Ast(NewIdentifier()
+          .name("this")
+          .code("this")
+          .typeFullName(typeFullName)
+          .order(1)
+          .argumentIndex(1))
+      }else {
+        Ast(NewIdentifier()
+          .name(identifier.name)
+          .code(identifier.name)
+          .typeFullName(typeFullName)
+          .order(1)
+          .argumentIndex(1))
+      }
+    val call = if (membersList.contains(identifier.name)) {
+      NewCall()
+        .name(Operators.fieldAccess)
+        .methodFullName(Operators.fieldAccess)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(identifier.name)
+        .argumentIndex(order)
+        .order(order)
 
-    Ast().withChild(Ast(id))
-      .withChild(fieldIdentifier)
+    } else {
+      NewCall()
+    }
+
+    val seq = Seq(id, fieldIdentifier)
+    if (membersList.contains(identifier.name)) {
+      Ast(call)
+        .withChildren(seq)
+        .withArgEdges(call, seq.flatMap(_.root))
+    } else {
+      val seq = Seq(id, fieldIdentifier)
+      Ast()
+        .withChildren(seq)
+    }
+
   }
 
   private def astForMemberAccess(memberAccess: MemberAccess, order : Int): Ast = {
