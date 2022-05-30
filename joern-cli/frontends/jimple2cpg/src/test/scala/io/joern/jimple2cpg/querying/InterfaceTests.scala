@@ -39,7 +39,7 @@ class InterfaceTests extends JimpleCodeToCpgFixture {
   }
 
   "should contain the correct modifier(s)" in {
-    val List(x) = cpg.typeDecl.name("Foo").l
+    val List(x)      = cpg.typeDecl.name("Foo").l
     val List(m1, m2) = x.modifier.l
     m1.modifierType shouldBe ModifierTypes.ABSTRACT
     m2.modifierType shouldBe "INTERFACE"
