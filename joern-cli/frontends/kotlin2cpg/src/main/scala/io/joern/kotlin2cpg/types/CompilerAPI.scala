@@ -53,7 +53,7 @@ object CompilerAPI {
       } else {
         val resourceStream = getClass.getClassLoader.getResourceAsStream(path.path)
         if (resourceStream != null) {
-          val tempFile = File.createTempFile("kotlin2cpgDependencies", "", new File("./"))
+          val tempFile = File.createTempFile("kotlin2cpgDependencies", "")
           tempFile.deleteOnExit()
           val outStream = new FileOutputStream(tempFile)
           val buffer    = new Array[Byte](4096)
