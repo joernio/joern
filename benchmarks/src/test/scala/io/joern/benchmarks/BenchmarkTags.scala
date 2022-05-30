@@ -37,6 +37,9 @@ object BenchmarkTags {
   object ExplicitFlows    extends Tag("Explicit Flows")
   object Library          extends Tag("Library")
   object Simple           extends Tag("Simple")
+  // Additional tags for JInfoFlow
+  object Context extends Tag("Context")
+  object Events   extends Tag("Event")
 
   def TAGS: Seq[String] = Seq(
     Aliasing.name,
@@ -58,7 +61,9 @@ object BenchmarkTags {
     Exceptions.name,
     ExplicitFlows.name,
     Library.name,
-    Simple.name
+    Simple.name,
+    Context.name,
+    Events.name,
   )
 
   val confusionMatrix = mutable.Map.empty[String, Array[Int]]

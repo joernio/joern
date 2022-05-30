@@ -21,7 +21,7 @@ import overflowdb.traversal.Traversal
 
 import scala.util.Failure
 
-class BenchmarkFixture(
+abstract class BenchmarkFixture(
   val pkg: String = "",
   val category: String = "",
   val benchmarkNo: String = "1",
@@ -42,7 +42,7 @@ class BenchmarkFixture(
   def constructTargetFilePath: String =
     s"benchmarks/src/test/resources/$pkg/${category.toLowerCase}"
 
-  private def getListOfFiles(dir: String): List[java.io.File] = {
+  protected def getListOfFiles(dir: String): List[java.io.File] = {
     val d = new java.io.File(dir)
     // Regex is useful for class files containing subclasses
     val regex = s".*$category$benchmarkNo(?:\\$$[A-Za-z]*)?$fileExt"
