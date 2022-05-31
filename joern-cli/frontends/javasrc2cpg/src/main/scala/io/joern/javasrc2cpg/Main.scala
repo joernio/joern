@@ -9,7 +9,8 @@ import scopt.OParser
 final case class Config(
   inputPaths: Set[String] = Set.empty,
   outputPath: String = X2CpgConfig.defaultOutputPath,
-  inferenceJarPaths: Set[String] = Set.empty
+  inferenceJarPaths: Set[String] = Set.empty,
+  skipDependencyDownload: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withAdditionalInputPath(inputPath: String): Config =
@@ -28,7 +29,10 @@ private object Frontend {
       programName("javasrc2cpg"),
       opt[String]("inference-jar-paths")
         .text(s"extra jars used only for type information")
-        .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path))
+        .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path)),
+      opt[Unit]("skip-dependency-download")
+        .text("don't attempt to download dependency jars for type information")
+        .action((_, c) => c.copy(skipDependencyDownload = true))
     )
   }
 }

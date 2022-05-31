@@ -11,7 +11,7 @@ class JavaSrcFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config = Config()
+    implicit val defaultConfig: Config = Config(skipDependencyDownload = true)
     new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
