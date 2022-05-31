@@ -20,3 +20,4 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit := false
+Test/fork := false
