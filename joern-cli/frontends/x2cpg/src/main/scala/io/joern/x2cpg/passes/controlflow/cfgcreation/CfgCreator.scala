@@ -44,11 +44,10 @@ import scala.collection.mutable
   */
 class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
-  private val edgeBuffer = mutable.ArrayBuffer[CfgEdge]()
+  private val edgeBuffer        = mutable.ArrayBuffer[CfgEdge]()
   private val jumpToLabelBuffer = mutable.ArrayBuffer[(CfgNode, String)]()
-  private val labeledNodes = mutable.HashMap[String, CfgNode]()
-  private val logger = LoggerFactory.getLogger(getClass)
-
+  private val labeledNodes      = mutable.HashMap[String, CfgNode]()
+  private val logger            = LoggerFactory.getLogger(getClass)
 
   /** A control flow graph that is under construction, consisting of:
     *
@@ -58,11 +57,11 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * @param edges
     *   control flow edges between nodes of the code property graph.
     * @param fringe
-    *   nodes of the CFG for which an outgoing edge type is already known but the destination node is not. These nodes are
-    *   connected when another CFG is appended to this CFG.
+    *   nodes of the CFG for which an outgoing edge type is already known but the destination node is not. These nodes
+    *   are connected when another CFG is appended to this CFG.
     *
-    * In addition to these three core building blocks, we store labels and jump statements that have not been resolved and
-    * may be resolvable as parent sub trees or sibblings are translated.
+    * In addition to these three core building blocks, we store labels and jump statements that have not been resolved
+    * and may be resolvable as parent sub trees or sibblings are translated.
     *
     * @param labeledNodes
     *   labels contained in the abstract syntax tree from which this CPG was generated
@@ -76,18 +75,18 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     *   unresolved gotos, labeled break and labeld continues collected along the way
     */
   case class CfgContext(
-                  entryNode: Option[CfgNode] = None,
-                  fringe: List[(CfgNode, CfgEdgeType)] = List(),
-                  breaks: List[CfgNode] = List(),
-                  continues: List[CfgNode] = List(),
-                  caseLabels: List[CfgNode] = List()) {
+    entryNode: Option[CfgNode] = None,
+    fringe: List[(CfgNode, CfgEdgeType)] = List(),
+    breaks: List[CfgNode] = List(),
+    continues: List[CfgNode] = List(),
+    caseLabels: List[CfgNode] = List()
+  ) {
 
     import CfgContext._
 
-
     /** Create a new CFG in which `other` is appended to this CFG. All nodes of the fringe are connected to `other`'s
-      * entry node and the new fringe is `other`'s fringe. The diffgraphs, jumps, and labels are the sum of those present
-      * in `this` and `other`.
+      * entry node and the new fringe is `other`'s fringe. The diffgraphs, jumps, and labels are the sum of those
+      * present in `this` and `other`.
       */
     def ++(other: CfgContext): CfgContext = {
       if (other eq CfgContext.empty) {
@@ -110,23 +109,19 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     }
   }
 
-
   object CfgContext {
 
     def from(cfgs: CfgContext*): CfgContext = {
       CfgContext(
         breaks = cfgs.map(_.breaks).reduceOption((x, y) => x ++ y).getOrElse(List()),
         continues = cfgs.map(_.continues).reduceOption((x, y) => x ++ y).getOrElse(List()),
-        caseLabels = cfgs.map(_.caseLabels).reduceOption((x, y) => x ++ y).getOrElse(List()),
+        caseLabels = cfgs.map(_.caseLabels).reduceOption((x, y) => x ++ y).getOrElse(List())
       )
     }
 
-    /** The safe "null" Cfg.
-      * Construction cannot use default arguments, cf https://github.com/scala/bug/issues/12174
+    /** The safe "null" Cfg. Construction cannot use default arguments, cf https://github.com/scala/bug/issues/12174
       */
     val empty: CfgContext = new CfgContext(None, Nil, Nil, Nil, Nil)
-
-
 
     /** Create edges from all nodes of cfg's fringe to `node`.
       */
@@ -134,7 +129,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       edgesFromFringeTo(cfg.fringe, node)
     }
 
-    /** Create edges from all nodes of cfg's fringe to `node`, ignoring fringe edge types and using `cfgEdgeType` instead.
+    /** Create edges from all nodes of cfg's fringe to `node`, ignoring fringe edge types and using `cfgEdgeType`
+      * instead.
       */
     def edgesFromFringeTo(cfg: CfgContext, node: Option[CfgNode], cfgEdgeType: CfgEdgeType): List[CfgEdge] = {
       edges(cfg.fringe.map(_._1), node, cfgEdgeType)
@@ -152,7 +148,11 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
     /** Create edges of given type from a list of source nodes to a destination node
       */
-    def edges(sources: List[CfgNode], dstNode: Option[CfgNode], cfgEdgeType: CfgEdgeType = AlwaysEdge): List[CfgEdge] = {
+    def edges(
+      sources: List[CfgNode],
+      dstNode: Option[CfgNode],
+      cfgEdgeType: CfgEdgeType = AlwaysEdge
+    ): List[CfgEdge] = {
       edgesToMultiple(sources, dstNode.toList, cfgEdgeType)
     }
 
@@ -163,10 +163,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     /** Create edges of given type from all nodes in `sources` to `node`.
       */
     def edgesToMultiple(
-                         sources: List[CfgNode],
-                         destinations: List[CfgNode],
-                         cfgEdgeType: CfgEdgeType = AlwaysEdge
-                       ): List[CfgEdge] = {
+      sources: List[CfgNode],
+      destinations: List[CfgNode],
+      cfgEdgeType: CfgEdgeType = AlwaysEdge
+    ): List[CfgEdge] = {
 
       sources.flatMap { l =>
         destinations.map { n =>
@@ -175,7 +175,6 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       }
     }
   }
-
 
   import CfgContext._
   import CfgCreator._
@@ -194,12 +193,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * labeled breaks, labeled continues and respective labels.
     */
   def resolveJumpsToLabels: Unit = {
-    for((node, label) <- jumpToLabelBuffer){
-      if(label != "*")
-      labeledNodes.get(label) match {
-        case None => logger.info(s"Unable to wire jump statement. Missing label ${label}.")
-        case Some(target) => edgeBuffer.append(CfgEdge(node, target, AlwaysEdge))
-    } else {
+    for ((node, label) <- jumpToLabelBuffer) {
+      if (label != "*")
+        labeledNodes.get(label) match {
+          case None         => logger.info(s"Unable to wire jump statement. Missing label ${label}.")
+          case Some(target) => edgeBuffer.append(CfgEdge(node, target, AlwaysEdge))
+        }
+      else {
         // We come here for: https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html
         // For such GOTOs we cannot statically determine the target label. As a quick
         // hack we simply put edges to all labels found. This might be an over-taint.
@@ -207,7 +207,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           Some(CfgEdge(node, labeledNode, AlwaysEdge))
         }
       }
-  }
+    }
     jumpToLabelBuffer.clear()
   }
 
@@ -377,29 +377,23 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * edge type of the left CFG is `TrueEdge`.
     */
   protected def cfgForAndExpression(call: Call): CfgContext = {
-    val leftCfg    = cfgFor(call.argument(1))
-    val rightCfg   = cfgFor(call.argument(2))
+    val leftCfg  = cfgFor(call.argument(1))
+    val rightCfg = cfgFor(call.argument(2))
     edgeBuffer.appendAll(edgesFromFringeTo(leftCfg, rightCfg.entryNode, TrueEdge))
     CfgContext
       .from(leftCfg, rightCfg)
-      .copy(
-        entryNode = leftCfg.entryNode,
-        fringe = leftCfg.fringe ++ rightCfg.fringe
-      ) ++ cfgForSingleNode(call)
+      .copy(entryNode = leftCfg.entryNode, fringe = leftCfg.fringe ++ rightCfg.fringe) ++ cfgForSingleNode(call)
   }
 
   /** Same construction recipe as for the AND expression, just that the fringe edge type of the left CFG is `FalseEdge`.
     */
   protected def cfgForOrExpression(call: Call): CfgContext = {
-    val leftCfg    = cfgFor(call.argument(1))
-    val rightCfg   = cfgFor(call.argument(2))
+    val leftCfg  = cfgFor(call.argument(1))
+    val rightCfg = cfgFor(call.argument(2))
     edgeBuffer.appendAll(edgesFromFringeTo(leftCfg, rightCfg.entryNode, TrueEdge))
     CfgContext
       .from(leftCfg, rightCfg)
-      .copy(
-        entryNode = leftCfg.entryNode,
-        fringe = leftCfg.fringe ++ rightCfg.fringe
-      ) ++ cfgForSingleNode(call)
+      .copy(entryNode = leftCfg.entryNode, fringe = leftCfg.fringe ++ rightCfg.fringe) ++ cfgForSingleNode(call)
   }
 
   /** A conditional expression is of the form `condition ? trueExpr ; falseExpr` where both `trueExpr` and `falseExpr`
@@ -410,8 +404,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val conditionCfg = cfgFor(call.argument(1))
     val trueCfg      = call.argumentOption(2).map(cfgFor).getOrElse(CfgContext.empty)
     val falseCfg     = call.argumentOption(3).map(cfgFor).getOrElse(CfgContext.empty)
-    edgeBuffer.appendAll(edgesFromFringeTo(conditionCfg, trueCfg.entryNode, TrueEdge) ++
-      edgesFromFringeTo(conditionCfg, falseCfg.entryNode, FalseEdge))
+    edgeBuffer.appendAll(
+      edgesFromFringeTo(conditionCfg, trueCfg.entryNode, TrueEdge) ++
+        edgesFromFringeTo(conditionCfg, falseCfg.entryNode, FalseEdge)
+    )
 
     val trueFridge = if (trueCfg.entryNode.isDefined) {
       trueCfg.fringe
@@ -426,10 +422,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
     CfgContext
       .from(conditionCfg, trueCfg, falseCfg)
-      .copy(
-        entryNode = conditionCfg.entryNode,
-        fringe = trueFridge ++ falseFridge
-      ) ++ cfgForSingleNode(call)
+      .copy(entryNode = conditionCfg.entryNode, fringe = trueFridge ++ falseFridge) ++ cfgForSingleNode(call)
   }
 
   /** For macros, the AST contains a CALL node, along with child sub trees for all arguments, and a final sub tree that
@@ -445,10 +438,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val cfgForExpansion = call.astChildren.lastOption.map(cfgFor).getOrElse(CfgContext.empty)
     val cfg = CfgContext
       .from(cfgForMacroCall, cfgForExpansion)
-      .copy(
-        entryNode = cfgForMacroCall.entryNode,
-        fringe = cfgForMacroCall.fringe ++ cfgForExpansion.fringe
-      )
+      .copy(entryNode = cfgForMacroCall.entryNode, fringe = cfgForMacroCall.fringe ++ cfgForExpansion.fringe)
     cfgForExpansion.entryNode.toList
       .foreach(x => edgeBuffer.appendAll(singleEdge(call, x)))
     cfg
@@ -468,7 +458,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val bodyCfg      = children.find(_.order == nLocals + 4).map(cfgFor).getOrElse(CfgContext.empty)
 
     val innerCfg  = conditionCfg ++ bodyCfg ++ loopExprCfg
-    val entryNode = if(initExprCfg.entryNode.isDefined) initExprCfg.entryNode else innerCfg.entryNode
+    val entryNode = if (initExprCfg.entryNode.isDefined) initExprCfg.entryNode else innerCfg.entryNode
 
     val newEdges = edgesFromFringeTo(initExprCfg, innerCfg.entryNode) ++
       edgesFromFringeTo(innerCfg, innerCfg.entryNode) ++
@@ -671,7 +661,6 @@ object CfgCreator {
   }
 
 }
-
 
 trait CfgEdgeType
 object TrueEdge extends CfgEdgeType {
