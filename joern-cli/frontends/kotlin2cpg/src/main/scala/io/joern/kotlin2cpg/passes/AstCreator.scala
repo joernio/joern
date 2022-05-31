@@ -376,11 +376,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val orderAfterCtorParams = constructorParamsAsts.size + 1
 
         val ctorMethodBlockAst =
-          if (secondaryCtor.getBodyExpression != null) {
-            Seq(astForBlock(secondaryCtor.getBodyExpression, orderAfterCtorParams))
-          } else {
-            Seq()
-          }
+          Option(secondaryCtor.getBodyExpression)
+            .map(astForBlock(_, orderAfterCtorParams))
+            .map(Seq(_))
+            .getOrElse(Seq())
         scope.popScope()
 
         val ctorMethodReturnNode =
