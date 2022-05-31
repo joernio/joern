@@ -53,23 +53,23 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
       .getOrElse(EngineContext(JoernWorkspaceLoader.defaultSemantics))
 
   def banner(): Unit = {
-    println("""
+    println(s"""
         |     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
         |     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
         |     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
         |██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
         |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
         | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+        |Version: $version
+        |$helpMsg
       """.stripMargin)
-    println(helpMsg())
   }
 
-  private def helpMsg(): String =
+  private def helpMsg: String =
     s"""Type `help` or `browse(help)` to begin""".stripMargin
 
-  def version(): String = {
+  def version: String =
     getClass.getPackage.getImplementationVersion
-  }
 
   def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
