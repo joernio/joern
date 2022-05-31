@@ -127,11 +127,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(methods)
       .withChildren(memberAsts)
 
-      mAst.nodes.foreach { n =>
-        val code  = n.properties.getOrElse("CODE", null)
-        val order = n.properties.getOrElse("ORDER", null)
-        println((order, n.label(), code))
-      }
+//      mAst.nodes.foreach { n =>
+//        val code  = n.properties.getOrElse("CODE", null)
+//        val order = n.properties.getOrElse("ORDER", null)
+//        println((order, n.label(), code))
+//      }
     mAst
   }
 
@@ -709,7 +709,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           tb = astForBody(x, 2)
           foundt = true
         }
-        case x => {println(x)
+        case x => {
           tb = astForStatement(x, 2)
           foundt = true}
       }
@@ -720,7 +720,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           fb = astForBody(x, 3)
           foundf = true
         }
-        case x =>  {println(x)
+        case x =>  {
           fb = astForStatement(x, 3)
           foundf = true}
       }
@@ -734,7 +734,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
     if (foundt && foundf) {
-      println("here")
       ast = Ast(ifNode)
         .withChild(opNode)
         .withChild(tb)

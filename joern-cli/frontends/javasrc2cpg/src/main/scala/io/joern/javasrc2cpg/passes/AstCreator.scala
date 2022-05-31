@@ -1012,11 +1012,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(modifiers)
       .withChild(returnAst)
 
-    mAst.nodes.foreach { n =>
-      val code  = n.properties.getOrElse("CODE", null)
-      val order = n.properties.getOrElse("ORDER", null)
-      println((order, n.label(), code))
-    }
+//    mAst.nodes.foreach { n =>
+//      val code  = n.properties.getOrElse("CODE", null)
+//      val order = n.properties.getOrElse("ORDER", null)
+//      println((order, n.label(), code))
+//    }
     mAst
   }
 
