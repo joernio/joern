@@ -990,8 +990,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val ctorCall = typedInit.get
 
     val localsForEntries =
-      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
-        val entry        = entryWithIdx._1
+      nonUnderscoreEntries(expr).map { entry =>
         val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
         val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
         Ast(node)
@@ -1387,8 +1386,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     val fullNameWithSig =
       typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
-    val declType = registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType  = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
+    val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val methodName =
       if (isFieldAccessCall || fullNameWithSig._1 == Operators.fieldAccess) {
         Operators.fieldAccess
@@ -1747,11 +1746,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val iteratorAssignment =
       operatorCallNode(Operators.assignment, iteratorName + " = " + iteratorAssignmentRhs.code, None)
     val iteratorAssignmentAst =
-      Ast(iteratorAssignment)
-        .withChild(Ast(iteratorAssignmentLhs))
-        .withArgEdge(iteratorAssignment, iteratorAssignmentLhs)
-        .withChild(iteratorAssignmentRhsAst)
-        .withArgEdge(iteratorAssignment, iteratorAssignmentRhs)
+      callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
 
     val controlStructure =
       controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr)).order(3)
@@ -1827,14 +1822,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val tmpParameterNextAssignment =
       operatorCallNode(Operators.assignment, tmpName + " = " + iteratorNextCall.code)
     val tmpParameterNextAssignmentAst =
-      Ast(tmpParameterNextAssignment)
-        .withChild(tmpIdentifierAst)
-        .withArgEdge(tmpParameterNextAssignment, tmpIdentifier)
-        .withChild(iteratorNextCallAst)
-        .withArgEdge(tmpParameterNextAssignment, iteratorNextCall)
+      callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
     val componentNCalls =
-      withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, order) =>
+      withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, idx) =>
         val entryIdentifier =
           identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
             .argumentIndex(1)
@@ -1849,13 +1840,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Ast(entryIdentifier)
             .withRefEdge(entryIdentifier, matchingLocalForEntry)
 
-        val componentIdx      = order
+        val componentNName    = Constants.componentNPrefix + idx
         val fallbackSignature = TypeConstants.cpgUnresolved + "()"
         val fallbackFullName =
-          TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
+          TypeConstants.cpgUnresolved + componentNName + ":" + fallbackSignature
         val componentNFullNameWithSignature =
           typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-        val componentNCallCode = tmpName + "." + Constants.componentNPrefix + componentIdx + "()"
+        val componentNCallCode = tmpName + "." + componentNName + "()"
 
         val tmpForComponentNIdentifier =
           identifierNode(tmpName, TypeConstants.any)
@@ -1865,7 +1856,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Ast(tmpForComponentNIdentifier)
             .withRefEdge(tmpForComponentNIdentifier, localForTmp)
 
-        val componentNName = Constants.componentNPrefix + order
         val tmpComponentNCall =
           callNode(
             componentNCallCode,
