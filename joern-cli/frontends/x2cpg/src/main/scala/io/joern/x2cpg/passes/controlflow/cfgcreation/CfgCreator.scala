@@ -38,6 +38,31 @@ import overflowdb.traversal.Traversal
   * were not considered in the translation. For example, we know that an outgoing edge from [x<10] must exist, but we do
   * not yet know where it should lead. We refer to the set of nodes of the control flow graph with outgoing edges for
   * which the destination node is yet to be determined as the "fringe" of the control flow graph.
+  *
+  * Immplementation note:
+  * We internally use List as accumulator for edges of CFGs. However, note that
+  *   def combineListsNaive(lists: List[List[T]]):List[T] = xs.reduceOption((x, y) => x ++ y).getOrElse(Nil)
+  * is O(N*N), where N = lists.map{_.size}.sum
+  * Instead, one can use
+  *   def combineUnOrdered(lists: List[List[T]]):List[T] = xs.reduceOption((x, y) => Cfg.combine(x,y)).getOrElse(Nil)
+  * which is O(N*math.log(N)). However, the resulting List is unordered (i.e. its precise order is unspecified).
+  * Proof idea: Consider
+  *   def weight(lsts:List[List[T]]):Double = lsts.map{_.size}.map{s => s * math.log(s)}.sum
+  * Then a simple calculation shows that N_op - weight is decreasing whenever we merge two elements of lists, where N_op
+  * denotes the number of operations we have run. Since this quantity is initially nonpositive, it stays that way,
+  * yielding the desired bound.
+  *
+  * TLDR: In order to avoid quadratic slowdown, it is only permissible to use `left ++ right` for two lists if left has
+  * bounded size or is known to be shorter than right. Otherwise, one must use Cfg.combine(left, right).
+  *
+  * It is not permissible to check sizes directly, since left.size is already O(left.size). However, one can use
+  * Cfg.isShorter(left, right) in order to compare sizes in O(min(left.size, right.size)).
+  *
+  * When you touch any code here, please think about the complexity class of all operations involving List. Take the
+  * time to read the implementation in the scala standard library and think about the runtime of these operations.
+  *
+  * The entire construction is realistically O(N*math.log(N)), where N is the number of CFG nodes. Quadratic complexity
+  * is expected in the number of nontrivial control flow structures (e.g. number of label/goto, etc).
   */
 class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
@@ -214,7 +239,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForAndExpression(call: Call): Cfg = {
     val leftCfg    = cfgFor(call.argument(1))
     val rightCfg   = cfgFor(call.argument(2))
-    val diffGraphs = edgesFromFringeTo(leftCfg, rightCfg.entryNode, TrueEdge) ++ leftCfg.edges ++ rightCfg.edges
+    val diffGraphs = edgesFromFringeTo(leftCfg, rightCfg.entryNode, TrueEdge) ++ combine(leftCfg.edges, rightCfg.edges)
     Cfg
       .from(leftCfg, rightCfg)
       .copy(
@@ -229,7 +254,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForOrExpression(call: Call): Cfg = {
     val leftCfg    = cfgFor(call.argument(1))
     val rightCfg   = cfgFor(call.argument(2))
-    val diffGraphs = edgesFromFringeTo(leftCfg, rightCfg.entryNode, FalseEdge) ++ leftCfg.edges ++ rightCfg.edges
+    val diffGraphs = edgesFromFringeTo(leftCfg, rightCfg.entryNode, FalseEdge) ++ combine(leftCfg.edges, rightCfg.edges)
     Cfg
       .from(leftCfg, rightCfg)
       .copy(
@@ -265,7 +290,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(conditionCfg, trueCfg, falseCfg)
       .copy(
         entryNode = conditionCfg.entryNode,
-        edges = conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges ++ diffGraphs,
+        edges = diffGraphs ++ combine(combine(conditionCfg.edges, trueCfg.edges), falseCfg.edges),
         fringe = trueFridge ++ falseFridge
       ) ++ cfgForSingleNode(call)
   }
@@ -285,8 +310,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(cfgForMacroCall, cfgForExpansion)
       .copy(
         entryNode = cfgForMacroCall.entryNode,
-        edges = cfgForMacroCall.edges ++ cfgForExpansion.edges ++ cfgForExpansion.entryNode.toList
-          .flatMap(x => singleEdge(call, x)),
+        edges = cfgForExpansion.entryNode.toList
+          .flatMap(x => singleEdge(call, x)) ++ combine(cfgForMacroCall.edges, cfgForExpansion.edges),
         fringe = cfgForMacroCall.fringe ++ cfgForExpansion.fringe
       )
     cfg
@@ -306,7 +331,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val bodyCfg      = children.find(_.order == nLocals + 4).map(cfgFor).getOrElse(Cfg.empty)
 
     val innerCfg  = conditionCfg ++ bodyCfg ++ loopExprCfg
-    val entryNode = (initExprCfg ++ innerCfg).entryNode
+    val entryNode = if (initExprCfg.entryNode.isDefined) initExprCfg.entryNode else innerCfg.entryNode
 
     val newEdges = edgesFromFringeTo(initExprCfg, innerCfg.entryNode) ++
       edgesFromFringeTo(innerCfg, innerCfg.entryNode) ++
@@ -322,7 +347,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(initExprCfg, conditionCfg, loopExprCfg, bodyCfg)
       .copy(
         entryNode = entryNode,
-        edges = newEdges ++ initExprCfg.edges ++ innerCfg.edges,
+        edges = newEdges ++ combine(initExprCfg.edges, innerCfg.edges),
         fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge))
       )
   }
@@ -345,7 +370,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = if (bodyCfg != Cfg.empty) { bodyCfg.entryNode }
         else { conditionCfg.entryNode },
-        edges = diffGraphs ++ bodyCfg.edges ++ conditionCfg.edges,
+        edges = diffGraphs ++ combine(bodyCfg.edges, conditionCfg.edges),
         fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge))
       )
   }
@@ -367,7 +392,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(conditionCfg, trueCfg, falseCfg)
       .copy(
         entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
+        edges = diffGraphs ++ combine(conditionCfg.edges, combine(trueCfg.edges, falseCfg.edges)),
         fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ trueCfg.breaks.map((_, AlwaysEdge)) ++ falseCfg.fringe
       )
   }
@@ -385,7 +410,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(conditionCfg, bodyCfg)
       .copy(
         entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ bodyCfg.edges,
+        edges = diffGraphs ++ combine(conditionCfg.edges, bodyCfg.edges),
         fringe = {
           if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
           else { List() }
@@ -408,7 +433,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(conditionCfg, trueCfg, falseCfg)
       .copy(
         entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
+        edges = diffGraphs ++ combine(conditionCfg.edges, combine(trueCfg.edges, falseCfg.edges)),
         fringe = trueCfg.fringe ++ {
           if (falseCfg.entryNode.isDefined) {
             falseCfg.fringe
@@ -491,8 +516,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         .from(Seq(tryBodyCfg) ++ catchBodyCfgs ++ maybeFinallyBodyCfg: _*)
         .copy(
           entryNode = tryBodyCfg.entryNode,
-          edges =
-            diffGraphs ++ tryBodyCfg.edges ++ catchBodyCfgs.flatMap(_.edges) ++ maybeFinallyBodyCfg.flatMap(_.edges),
+          edges = diffGraphs ++ combine(
+            tryBodyCfg.edges,
+            combine(catchBodyCfgs.flatMap(_.edges), maybeFinallyBodyCfg.flatMap(_.edges))
+          ),
           fringe = if (maybeFinallyBodyCfg.flatMap(_.entryNode).nonEmpty) {
             maybeFinallyBodyCfg.head.fringe
           } else {

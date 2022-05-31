@@ -47,6 +47,8 @@ case class Cfg(
   /** Create a new CFG in which `other` is appended to this CFG. All nodes of the fringe are connected to `other`'s
     * entry node and the new fringe is `other`'s fringe. The diffgraphs, jumps, and labels are the sum of those present
     * in `this` and `other`.
+    *
+    * This is only associative up to the ordering of edges. Hence, reduce is only well-defined up to ordering of edges.
     */
   def ++(other: Cfg): Cfg = {
     if (other == Cfg.empty) {
@@ -56,8 +58,7 @@ case class Cfg(
     } else {
       this.copy(
         fringe = other.fringe,
-        edges = this.edges ++ other.edges ++
-          edgesFromFringeTo(this, other.entryNode),
+        edges = edgesFromFringeTo(this, other.entryNode) ++ combine(this.edges, other.edges),
         jumpsToLabel = this.jumpsToLabel ++ other.jumpsToLabel,
         labeledNodes = this.labeledNodes ++ other.labeledNodes,
         breaks = this.breaks ++ other.breaks,
@@ -94,7 +95,7 @@ case class Cfg(
           Some(CfgEdge(jumpToLabel, labeledNode, AlwaysEdge))
         }
     }
-    this.copy(edges = this.edges ++ edges)
+    this.copy(edges = combine(this.edges, edges))
   }
 
 }
@@ -176,6 +177,19 @@ object Cfg {
         CfgEdge(l, n, cfgEdgeType)
       }
     }
+  }
+
+  def combine[T](left: List[T], right: List[T]): List[T] = {
+    if (isShorter(left, right)) left ++ right else right ++ left
+  }
+  def isShorter(left: List[_], right: List[_]): Boolean = {
+    var _left  = left
+    var _right = right
+    while (_left.nonEmpty && _right.nonEmpty) {
+      _left = _left.tail
+      _right = _right.tail
+    }
+    _right.nonEmpty
   }
 
 }
