@@ -34,8 +34,8 @@ class NamespaceBlockTests extends SolidityCodeToCpgFixture {
     cpg.namespaceBlock.filename(".*.sol").typeDecl.name.l shouldBe List("A")
   }
 
-//  "should allow traversing from namespace block to namespace" in {
-//    cpg.namespaceBlock.filename(".*.sol").namespace.name.l shouldBe List("bar")
-//  }
+  "should allow traversing from namespace block to namespace" in {
+    cpg.namespaceBlock.filename(".*.sol").namespace.name.l shouldBe List("bar")
+  }
 
 }

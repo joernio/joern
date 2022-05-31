@@ -789,7 +789,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     } else {
       ""
     }
-//    println(name + " : "+code)
     val func = NewCall()
       .name(name)
       .code(code)

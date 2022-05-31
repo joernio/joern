@@ -40,25 +40,11 @@ class CfgTests extends SolidityCodeToCpgFixture {
     controllers.map(_.code) should contain("x < 5")
   }
 
-  // No control structure node on flat ast
-  //  "should find that first if controls `sink`" in {
-  //    cpg.controlStructure.condition.code("y < 10").controls.isCall.name("sink").l.size shouldBe 1
-  //  }
-
-  //  "should find sink(x) does not dominate anything" in {
-  //    cpg.call("sink").dominates.l.size shouldBe 0
-  //  }
 
   "should find sink(x) is dominated by `x < 5` and `y < 10`" in {
     cpg.call("sink").dominatedBy.isCall.code.toSetMutable shouldBe Set("x < 5", "y < 10")
   }
 
-  //  "should find that println post dominates correct nodes" in {
-  //    cpg.call("println").postDominates.size shouldBe 6
-  //  }
 
-  //  "should find that method does not post dominate anything" in {
-  //    cpg.method("foo").postDominates.l.size shouldBe 0
-  //  }
 
 }

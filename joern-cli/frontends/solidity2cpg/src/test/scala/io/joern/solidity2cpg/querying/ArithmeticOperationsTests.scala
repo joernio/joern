@@ -36,67 +36,13 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
     ("f", "int256")
   )
 
-//  (1,METHOD,function Foo(uint256 argc, string argv) public)
-//  (0,METHOD_PARAMETER_IN,this)
-//  (1,METHOD_PARAMETER_IN,uint256 argc)
-//  (2,METHOD_PARAMETER_IN,string memory argv)
-//  (3,BLOCK,null)
-//  (1,LOCAL,uint8 a)
-//  (2,LOCAL,uint256 b)
-//  (3,LOCAL,int c)
-//  (4,LOCAL,uint d)
-//  (5,LOCAL,uint e)
-//  (6,LOCAL,int256 f)
-//  (7,CALL,a = 3)
-//  (1,IDENTIFIER,a)
-//  (2,LITERAL,3)
-//  (8,CALL,b = 2)
-//  (1,IDENTIFIER,b)
-//  (2,LITERAL,2)
-//  (9,CALL,c = a + b)
-//  (1,IDENTIFIER,c)
-//  (2,CALL,a + b)
-//  (1,IDENTIFIER,a)
-//  (2,IDENTIFIER,b)
-//  (10,CALL,d = c - a)
-//  (1,IDENTIFIER,d)
-//  (2,CALL,c - a)
-//  (1,IDENTIFIER,c)
-//  (2,IDENTIFIER,a)
-//  (11,CALL,e = a * b)
-//  (1,IDENTIFIER,e)
-//  (2,CALL,a * b)
-//  (1,IDENTIFIER,a)
-//  (2,IDENTIFIER,b)
-//  (12,CALL,f = b / a)
-//  (1,IDENTIFIER,f)
-//  (2,CALL,b / a)
-//  (1,IDENTIFIER,b)
-//  (2,IDENTIFIER,a)
-//  (4,METHOD_RETURN,void)
-
 
 
   "should contain call nodes with <operation>.assignment for all variables" in {
-//    println(cpg.typeDecl.dotAst.head)
-//    println(cpg.assignment.dotAst.head)
-//    println(cpg.assignment.name.l)
-//    println(cpg.assignment.typeFullName.l)
-//    println(cpg.assignment.target.dotAst.head)
-//    println(cpg.assignment.dotAst.head)
-//    println(cpg.typeDecl.dotAst.head)
-//    println(cpg.assignment.name.l)
-//    println(cpg.assignment.target.code.l)
-//    println(cpg.assignment.typeFullName.l)
     val assignments = cpg.assignment
       .map(x => (x.target.code, x.typeFullName))
       .l
     assignments.size shouldBe 6
-//    vars.foreach(x => {
-//      println(assignments)
-//      println(x)
-//      assignments contains x shouldBe true
-//    })
   }
 
   "should contain a call node for the addition operator" in {

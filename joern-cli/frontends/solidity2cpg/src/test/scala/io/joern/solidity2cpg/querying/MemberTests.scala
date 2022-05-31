@@ -52,8 +52,6 @@ class MemberTests extends SolidityCodeToCpgFixture {
     x.map(x => {
       x.name shouldBe "Coin"
     })
-//    val List(x) = cpg.member.typeDecl.l
-//    x.name shouldBe "Coin"
 
 
   }

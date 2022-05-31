@@ -64,7 +64,6 @@ class CallTests extends SolidityCodeToCpgFixture {
   }
 
   "should allow traversing from argument to parameter" in {
-    println(cpg.call("add").argument.parameter.name.l)
     val List(x) = cpg.call("add").argument(1).parameter.l
     x.name shouldBe "x"
   }
