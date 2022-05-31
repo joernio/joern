@@ -714,7 +714,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         node
       }
 
-    val parameters =
+    val parametersAsts =
       typeInfoProvider.implicitParameterName(expr) match {
         case Some(implicitParamName) =>
           val node = methodParameterNode(implicitParamName, TypeConstants.any)
@@ -743,7 +743,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val lambdaMethodAst =
       methodAst(
         lambdaMethodNode,
-        parameters.flatMap(_.root.collect { case node: NewMethodParameterIn => node }),
+        parametersAsts.flatMap(_.root.collect { case node: NewMethodParameterIn => node }),
         bodyAst,
         methodReturnNode(Some(line(expr)), Some(column(expr)), returnTypeFullName)
       )
@@ -1773,16 +1773,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val destructuringDeclEntries = expr.getDestructuringDeclaration.getEntries
     val localsForDestructuringVars =
-      withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, order) =>
-        val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-        val entryName         = entry.getText
-        val node =
-          localNode(entryName, entryTypeFullName, None, line(entry), column(entry))
-            .order(order)
-        // TODO: remove from scope after the block exits [add test where that is not the case]
-        scope.addToScope(entryName, node)
-        Ast(node)
-      }.toList
+      destructuringDeclEntries.asScala
+        .map { entry =>
+          val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+          val entryName         = entry.getText
+          val node              = localNode(entryName, entryTypeFullName, None, line(entry), column(entry))
+          // TODO: remove from scope after the block exits [add test where that is not the case]
+          scope.addToScope(entryName, node)
+          node
+        }
+        .map(Ast(_))
+        .toList
 
     val tmpName = Constants.tmpLocalPrefix + tmpKeyPool.next
     val localForTmp =
