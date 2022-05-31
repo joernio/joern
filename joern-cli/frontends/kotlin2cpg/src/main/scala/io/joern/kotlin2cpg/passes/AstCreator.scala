@@ -899,7 +899,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val assignmentNode =
       operatorCallNode(Operators.assignment, tmpName + " = " + initExpr.getText, None)
     val assignmentAst = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
-    val returnType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+
     val assignmentsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
@@ -2053,7 +2054,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }.flatten
 
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
-    val returnType      = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+
     val initCallNode =
       callNode(
         expr.getText,
