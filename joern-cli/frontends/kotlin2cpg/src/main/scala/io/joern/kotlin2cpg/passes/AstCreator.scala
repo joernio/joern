@@ -1028,7 +1028,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }.flatten
 
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(ctorCall, (TypeConstants.any, TypeConstants.any))
-    val returnType      = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val initCallNode =
       callNode(
         Constants.init,
