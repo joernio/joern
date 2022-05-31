@@ -454,8 +454,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         ast
       }
     val companionObjectAsts =
-      if (ktClass.getCompanionObjects.isEmpty) Seq()
-      else astsForClassOrObject(ktClass.getCompanionObjects.asScala.head)
+      ktClass.getCompanionObjects.asScala
+        .map(astsForClassOrObject(_))
+        .flatten
     scope.popScope()
 
     Seq(finalAst) ++ companionObjectAsts
