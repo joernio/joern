@@ -1171,8 +1171,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForUnknown(expr: KtExpression, argIdx: Option[Int]): Ast = {
-    val code = if (expr != null) { expr.getText }
-    else { null } // TODO: add test case to check if this is necessary
+    val code =
+      Option(expr)
+        .map(_.getText)
+        .getOrElse(null)
     val node =
       argIdx match {
         case Some(value) =>
