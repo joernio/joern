@@ -689,9 +689,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         column(expr)
       )
 
-    val captured = scope.pushClosureScope(lambdaMethodNode)
     val closureBindingEntriesForCaptured =
-      captured
+      scope.pushClosureScope(lambdaMethodNode)
         .collect {
           case node: NewMethodParameterIn => node
           case node: NewLocal             => node
