@@ -785,20 +785,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         case Some(v) => Ast(identifier).withRefEdge(identifier, v)
         case None    => Ast(identifier)
       }
-
-    val indexExpr =
-      if (expr.getIndexExpressions.size >= 1) {
-        Some(expr.getIndexExpressions.get(0))
-      } else {
-        None
-      }
-    val astsForIndexExpr = indexExpr match {
-      case Some(ie) =>
-        astsForExpression(ie, 2, 2)
-      case None =>
-        List()
-    }
-
+    val astsForIndexExpr =
+      expr.getIndexExpressions.asScala.zipWithIndex.map { case (expr, idx) =>
+        astsForExpression(expr, idx + 1, idx + 1)
+      }.flatten
     val callNode =
       operatorCallNode(Operators.indexAccess, expr.getText, Some(typeFullName), line(expr), column(expr))
         .argumentIndex(argIdx)
