@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.ast.Nodes._
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.psi.Extractor._
+import io.joern.kotlin2cpg.psi.PsiUtils._
 import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._

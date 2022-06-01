@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.psi
 
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 
-object Extractor {
+object PsiUtils {
   def line(element: PsiElement): Int = {
     try {
       element.getContainingFile.getViewProvider.getDocument
@@ -26,4 +26,4 @@ object Extractor {
   }
 }
 
-class Extractor {}
+class PsiUtils {}
