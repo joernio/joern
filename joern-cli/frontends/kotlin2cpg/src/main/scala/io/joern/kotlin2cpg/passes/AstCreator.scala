@@ -905,7 +905,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
         val assignmentLHSNode =
           identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-            .argumentIndex(1)
         val relevantLocal = localsForEntries(entryWithIdx._2).root.get
         val assignmentLHSAst =
           Ast(assignmentLHSNode)
@@ -1048,7 +1047,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
         val assignmentLHSNode =
           identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-            .argumentIndex(1)
         val relevantLocal = localsForEntries(entryWithIdx._2).root.get
         val assignmentLHSAst =
           Ast(assignmentLHSNode)
@@ -1138,7 +1136,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
           val assignmentLHSNode =
             identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-              .argumentIndex(1)
           val relevantLocal = localsForEntries(entryWithIdx._2).root.get
           val assignmentLHSAst =
             Ast(assignmentLHSNode)
@@ -1555,7 +1552,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       localNode(iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs =
       identifierNode(iteratorName, TypeConstants.any)
-        .argumentIndex(1)
     val iteratorLocalAst =
       Ast(iteratorLocal)
         .withRefEdge(iteratorAssignmentLhs, iteratorLocal)
@@ -1622,7 +1618,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val loopParameterIdentifier =
       identifierNode(loopParameterName, TypeConstants.any)
-        .argumentIndex(1)
     val loopParameterAst =
       Ast(loopParameterLocal)
         .withRefEdge(loopParameterIdentifier, loopParameterLocal)
@@ -1697,7 +1692,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       localNode(iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs =
       identifierNode(iteratorName, TypeConstants.any)
-        .argumentIndex(1)
     val iteratorLocalAst =
       Ast(localForIterator)
         .withRefEdge(iteratorAssignmentLhs, localForIterator)
@@ -1809,7 +1803,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, idx) =>
         val entryIdentifier =
           identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
-            .argumentIndex(1)
 
         val matchingLocalForEntry =
           localsForDestructuringVars
