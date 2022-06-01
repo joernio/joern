@@ -868,9 +868,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astsForDestructuringDeclarationWithNonCtorCallRHS(
     expr: KtDestructuringDeclaration
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val initExpr = expr.getInitializer
+    val initExpr             = expr.getInitializer
+    val destructuringEntries = nonUnderscoreEntries(expr)
     val localsForEntries =
-      nonUnderscoreEntries(expr)
+      destructuringEntries
         .map { entry =>
           val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
           localNode(entry.getName, typeFullName, None, line(entry), column(entry))
@@ -896,7 +897,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val assignmentsForEntries =
-      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
+      destructuringEntries.zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
         val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
         val assignmentLHSNode =
@@ -978,12 +979,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
     val ctorCall = typedInit.get
 
+    val destructuringEntries = nonUnderscoreEntries(expr)
     val localsForEntries =
-      nonUnderscoreEntries(expr).map { entry =>
-        val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-        val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
-        Ast(node)
-      }
+      destructuringEntries
+        .map { entry =>
+          val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+          localNode(entry.getName, typeFullName, None, line(entry), column(entry))
+        }
+        .map(Ast(_))
 
     val ctorTypeFullName = registerType(typeInfoProvider.expressionType(ctorCall, TypeConstants.cpgUnresolved))
     val tmpName          = Constants.tmpLocalPrefix + tmpKeyPool.next
@@ -1034,7 +1037,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.root))
 
     val assignmentsForEntries =
-      nonUnderscoreEntries(expr).zipWithIndex.map { entryWithIdx =>
+      destructuringEntries.zipWithIndex.map { entryWithIdx =>
         val entry             = entryWithIdx._1
         val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
         val assignmentLHSNode =
