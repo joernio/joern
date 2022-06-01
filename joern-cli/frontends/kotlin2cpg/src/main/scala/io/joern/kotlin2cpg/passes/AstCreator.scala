@@ -728,12 +728,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
 
     val bodyAst =
-      expr.getBodyExpression match {
-        case blockExpr if blockExpr != null => astForBlock(blockExpr, None, false, localsForCaptured)
-        case _ =>
-          val blockNode = NewBlock()
-          Ast(blockNode)
-      }
+      Option(expr.getBodyExpression)
+        .map(astForBlock(_, None, false, localsForCaptured))
+        .getOrElse(Ast(NewBlock()))
 
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
     val lambdaTypeDeclFullName = fullNameWithSig._1.split(":").head
