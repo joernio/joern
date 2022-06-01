@@ -67,26 +67,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   private def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
 
-    bindingInfoQueue.foreach { bindingInfo =>
-      diffGraph.addNode(bindingInfo.node)
-
-      bindingInfo.edgeMeta.foreach { edgeMeta =>
-        diffGraph.addEdge(edgeMeta._1, edgeMeta._2, edgeMeta._3)
+    (bindingInfoQueue ++ lambdaBindingInfoQueue)
+      .foreach { bindingInfo =>
+        diffGraph.addNode(bindingInfo.node)
+        bindingInfo.edgeMeta.foreach { edgeMeta =>
+          diffGraph.addEdge(edgeMeta._1, edgeMeta._2, edgeMeta._3)
+        }
       }
-    }
 
-    lambdaBindingInfoQueue.foreach { bindingInfo =>
-      diffGraph.addNode(bindingInfo.node)
-
-      bindingInfo.edgeMeta.foreach { edgeMeta =>
-        diffGraph.addEdge(edgeMeta._1, edgeMeta._2, edgeMeta._3)
-      }
-    }
-
-    closureBindingDefQueue.foreach { cbd =>
-      diffGraph.addNode(cbd.node)
-      diffGraph.addEdge(cbd.captureEdgeTo, cbd.node, EdgeTypes.CAPTURE)
-      diffGraph.addEdge(cbd.node, cbd.refEdgeTo, EdgeTypes.REF)
+    closureBindingDefQueue.foreach { closureBindingDef =>
+      diffGraph.addNode(closureBindingDef.node)
+      diffGraph.addEdge(closureBindingDef.captureEdgeTo, closureBindingDef.node, EdgeTypes.CAPTURE)
+      diffGraph.addEdge(closureBindingDef.node, closureBindingDef.refEdgeTo, EdgeTypes.REF)
     }
   }
 
