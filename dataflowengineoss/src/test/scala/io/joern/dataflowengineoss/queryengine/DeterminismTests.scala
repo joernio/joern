@@ -32,7 +32,10 @@ class DeterminismTests extends AnyWordSpec with Matchers {
     r1Paths.size shouldBe r2Paths.size
 
     r1Paths.zip(r2Paths).foreach { case (p1, p2) =>
-      p1 shouldBe p2
+      p1.size shouldBe p2.size
+      p1.zip(p2).foreach { case (p1e, p2e) =>
+        p1e.node.id() shouldBe p2e.node.id()
+      }
     }
   }
 
