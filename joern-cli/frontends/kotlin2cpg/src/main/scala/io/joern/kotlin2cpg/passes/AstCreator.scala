@@ -70,16 +70,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     (bindingInfoQueue ++ lambdaBindingInfoQueue)
       .foreach { bindingInfo =>
         diffGraph.addNode(bindingInfo.node)
-        bindingInfo.edgeMeta.foreach { edgeMeta =>
-          diffGraph.addEdge(edgeMeta._1, edgeMeta._2, edgeMeta._3)
+        bindingInfo.edgeMeta.foreach { case (src, dst, label) =>
+          diffGraph.addEdge(src, dst, label)
         }
       }
 
-    closureBindingDefQueue.foreach { closureBindingDef =>
-      diffGraph.addNode(closureBindingDef.node)
-      diffGraph.addEdge(closureBindingDef.captureEdgeTo, closureBindingDef.node, EdgeTypes.CAPTURE)
-      diffGraph.addEdge(closureBindingDef.node, closureBindingDef.refEdgeTo, EdgeTypes.REF)
-    }
+    closureBindingDefQueue
+      .foreach { case ClosureBindingDef(node, captureEdgeTo, refEdgeTo) =>
+        diffGraph.addNode(node)
+        diffGraph.addEdge(captureEdgeTo, node, EdgeTypes.CAPTURE)
+        diffGraph.addEdge(node, refEdgeTo, EdgeTypes.REF)
+      }
   }
 
   def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
