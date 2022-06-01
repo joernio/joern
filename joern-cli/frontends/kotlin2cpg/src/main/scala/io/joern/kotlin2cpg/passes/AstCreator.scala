@@ -1248,25 +1248,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         expr.getEntries
           .filter(_.getExpression != null)
           .zipWithIndex
-          .flatMap { case (entry, idx) =>
-            if (entry.getExpression != null) {
-              val entryTypeFullName =
-                registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
-              val valueCallNode =
-                operatorCallNode(
-                  Operators.formattedValue,
-                  entry.getExpression.getText,
-                  Some(entryTypeFullName),
-                  line(entry.getExpression),
-                  column(entry.getExpression)
-                )
-                  .argumentIndex(idx + 1)
-              val valueArgs = astsForExpression(entry.getExpression, idx + 1, idx + 1)
-              val call      = callAst(valueCallNode, valueArgs.toList)
-              Seq(call)
-            } else {
-              Seq()
-            }
+          .map { case (entry, idx) =>
+            val entryTypeFullName =
+              registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
+            val valueCallNode =
+              operatorCallNode(
+                Operators.formattedValue,
+                entry.getExpression.getText,
+                Some(entryTypeFullName),
+                line(entry.getExpression),
+                column(entry.getExpression)
+              )
+                .argumentIndex(idx + 1)
+            val valueArgs = astsForExpression(entry.getExpression, idx + 1, idx + 1)
+            callAst(valueCallNode, valueArgs.toList)
           }
       callAst(callNode, args.toIndexedSeq.toList)
     } else {
