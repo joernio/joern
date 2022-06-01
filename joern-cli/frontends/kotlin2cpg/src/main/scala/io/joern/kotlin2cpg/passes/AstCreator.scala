@@ -82,7 +82,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  private def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val ktFile = fileWithMeta.f
 
     val importDirectives = ktFile.getImportList.getImports.asScala
@@ -442,7 +442,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Seq(finalAst) ++ companionObjectAsts
   }
 
-  private def astForMethod(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForMethod(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val fnWithSig = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
     val _methodNode =
       methodNode(
@@ -480,7 +480,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)
   }
 
-  private def astForBlock(
+  def astForBlock(
     expr: KtBlockExpression,
     argIdxOption: Option[Int],
     pushToScope: Boolean = false,
@@ -530,7 +530,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     callAst(callNode, args.toList)
   }
 
-  private def astForTypeReference(expr: KtTypeReference, argIdx: Int)(implicit
+  def astForTypeReference(expr: KtTypeReference, argIdx: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
@@ -541,7 +541,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   @tailrec
-  private def astsForExpression(expr: KtExpression, order: Int, argIdx: Int)(implicit
+  final def astsForExpression(expr: KtExpression, order: Int, argIdx: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     expr match {
@@ -1404,7 +1404,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Ast(node)
   }
 
-  private def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val tryNode =
       controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
     val tryAstOption = astsForExpression(expr.getTryBlock, 1, 1).headOption
@@ -1425,7 +1425,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withChildren(clauseAsts ++ finallyAsts)
   }
 
-  private def astForTryAsExpression(expr: KtTryExpression, argumentIndex: Int)(implicit
+  def astForTryAsExpression(expr: KtTryExpression, argumentIndex: Int)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     // TODO: remove the `last`
@@ -1999,7 +1999,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withChild(lastIdentifierAst)
   }
 
-  private def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val explicitTypeName =
       Option(expr.getTypeReference)
         .map(_.getText)
@@ -2208,7 +2208,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     callAst(_callNode, args.toList)
   }
 
-  private def astForCall(expr: KtCallExpression, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForCall(expr: KtCallExpression, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
 
@@ -2271,7 +2271,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     callAst(node, argAsts.toList)
   }
 
-  private def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val name = Option(decl.getName).getOrElse(TypeConstants.any)
 
     val explicitTypeName =
