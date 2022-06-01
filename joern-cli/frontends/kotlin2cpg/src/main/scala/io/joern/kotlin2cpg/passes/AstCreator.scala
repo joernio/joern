@@ -2006,17 +2006,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val elseAsts      = astsForExpression(expr.getElse, 3, 3)
 
     val childAsts = conditionAsts ++ thenAsts ++ elseAsts
-    if (conditionAsts.nonEmpty && conditionAsts.head.root != null) {
-      callAst(callNode, childAsts.toList)
-    } else {
-      logger.warn("Parsing failed for expr `" + expr.getName + "` in file `" + fileWithMeta.filename + "`.")
-      logger.debug(" > expr.text `" + expr.getText + "`")
-
-      val _unknownNode =
-        unknownNode(expr.getText, Constants.parserTypeName, line(expr), column(expr))
-          .argumentIndex(argIdx)
-      Ast(_unknownNode)
-    }
+    callAst(callNode, childAsts.filter(_.root != null).toList)
   }
 
   private def astForCtorCall(expr: KtCallExpression, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
