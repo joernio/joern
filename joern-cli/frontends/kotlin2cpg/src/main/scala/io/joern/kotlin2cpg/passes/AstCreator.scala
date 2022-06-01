@@ -1259,7 +1259,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
                 line(entry.getExpression),
                 column(entry.getExpression)
               )
-                .argumentIndex(idx + 1)
             val valueArgs = astsForExpression(entry.getExpression, idx + 1, idx + 1)
             callAst(valueCallNode, valueArgs.toList)
           }
