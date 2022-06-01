@@ -270,11 +270,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               case Some(refTo) => Ast(paramIdentifier).withRefEdge(paramIdentifier, refTo)
               case None        => Ast(paramIdentifier)
             }
-          val this_           = identifierNode(Constants.this_, classFullName)
+          val thisIdentifier  = identifierNode(Constants.this_, classFullName)
           val fieldIdentifier = fieldIdentifierNode(paramName)
           val fieldAccessCall =
             operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + paramName, Some(typeFullName))
-          val fieldAccessCallAst = callAst(fieldAccessCall, List(this_, fieldIdentifier).map(Ast(_)))
+          val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
 
           val assignmentNode =
             operatorCallNode(Operators.assignment, fieldAccessCall.code + " = " + paramIdentifier.code)
