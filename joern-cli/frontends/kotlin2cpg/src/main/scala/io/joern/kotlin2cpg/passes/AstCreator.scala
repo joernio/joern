@@ -95,15 +95,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val namespaceBlocksForImports =
       importAsts
         .flatMap(_.root.collect { case node: NewImport => node })
-        .map { n =>
-          val importedName =
-            if (n.isWildcard.getOrElse(false).asInstanceOf[Boolean]) {
-              Constants.wildcardImportName
-            } else {
-              n.importedEntity.getOrElse("")
-            }
-          namespaceBlockNode(importedName, importedName, relativizedPath)
+        .map { node =>
+          if (node.isWildcard.getOrElse(false).asInstanceOf[Boolean]) {
+            Constants.wildcardImportName
+          } else {
+            node.importedEntity.getOrElse("")
+          }
         }
+        .map { name => namespaceBlockNode(name, name, relativizedPath) }
         .map(Ast(_))
 
     val declarationsAsts =
