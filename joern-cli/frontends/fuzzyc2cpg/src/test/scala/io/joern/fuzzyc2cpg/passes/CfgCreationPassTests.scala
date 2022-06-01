@@ -413,7 +413,7 @@ class CfgCreationPassTests extends AnyWordSpec with Matchers {
     "be correct for nested switch" in
       new CfgFixture("switch (x) { case 1: switch(y) { default: z; } }") {
         succOf("RET func ()") shouldBe expected(("x", AlwaysEdge))
-        succOf("x") shouldBe expected(("case 1:", CaseEdge), ("default:", CaseEdge))
+        succOf("x") shouldBe expected(("case 1:", CaseEdge), ("RET", AlwaysEdge))
         succOf("case 1:") shouldBe expected(("y", AlwaysEdge))
         succOf("y") shouldBe expected(("default:", CaseEdge))
         succOf("default:") shouldBe expected(("z", AlwaysEdge))

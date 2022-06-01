@@ -266,7 +266,10 @@ class CfgCreationPassTests extends AnyWordSpec with Matchers {
       succOf("x") shouldBe expected(("x", AlwaysEdge))
     }
 
-    "be correct with empty condition with empty block" in new CpgCfgFixture("for (;;) ;") {
+    "use UB to skip empty condition with empty block" in new CpgCfgFixture("for (;;) ;") {
+      //Non-terminating loops without side-effects are undefined behavior.
+      //So we can emit whatever CFG we want, it can't be wrong.
+      //However, gcc and clang both emit the loop without using the liberty granted by the C standard to spawn bats
       succOf("RET func ()") shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -401,7 +404,7 @@ class CfgCreationPassTests extends AnyWordSpec with Matchers {
 
     "be correct for nested switch" in new CpgCfgFixture("switch (x) { case 1: switch(y) { default: z; } }") {
       succOf("RET func ()") shouldBe expected(("x", AlwaysEdge))
-      succOf("x") shouldBe expected(("case 1:", CaseEdge), ("default:", CaseEdge))
+      succOf("x") shouldBe expected(("case 1:", CaseEdge), ("RET", AlwaysEdge))
       succOf("case 1:") shouldBe expected(("1", AlwaysEdge))
       succOf("1") shouldBe expected(("y", AlwaysEdge))
       succOf("y") shouldBe expected(("default:", CaseEdge))

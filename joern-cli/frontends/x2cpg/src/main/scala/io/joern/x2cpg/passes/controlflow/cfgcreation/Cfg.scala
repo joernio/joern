@@ -4,43 +4,23 @@ import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 /** A control flow graph that is under construction, consisting of:
   *
   * @param entryNode
   *   the control flow graph's first node, that is, the node to which a CFG that appends this CFG should attach itself
   *   to.
-  * @param edges
-  *   control flow edges between nodes of the code property graph.
   * @param fringe
   *   nodes of the CFG for which an outgoing edge type is already known but the destination node is not. These nodes are
   *   connected when another CFG is appended to this CFG.
-  *
-  * In addition to these three core building blocks, we store labels and jump statements that have not been resolved and
-  * may be resolvable as parent sub trees or sibblings are translated.
-  *
-  * @param labeledNodes
-  *   labels contained in the abstract syntax tree from which this CPG was generated
-  * @param caseLabels
-  *   labels beginning with "case"
-  * @param breaks
-  *   unresolved breaks collected along the way
-  * @param continues
-  *   unresolved continues collected along the way
-  * @param jumpsToLabel
-  *   unresolved gotos, labeled break and labeld continues collected along the way
   */
-case class Cfg(
-  entryNode: Option[CfgNode] = None,
-  edges: List[CfgEdge] = List(),
-  fringe: List[(CfgNode, CfgEdgeType)] = List(),
-  labeledNodes: Map[String, CfgNode] = Map(),
-  breaks: List[CfgNode] = List(),
-  continues: List[CfgNode] = List(),
-  caseLabels: List[CfgNode] = List(),
-  jumpsToLabel: List[(CfgNode, String)] = List()
-) {
+case class Cfg(entryNode: Option[CfgNode] = None, fringe: List[(CfgNode, CfgEdgeType)] = List()) {
 
   import Cfg._
+
+  def isEmpty: Boolean = this == Cfg.empty
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -48,70 +28,27 @@ case class Cfg(
     * entry node and the new fringe is `other`'s fringe. The diffgraphs, jumps, and labels are the sum of those present
     * in `this` and `other`.
     */
-  def ++(other: Cfg): Cfg = {
-    if (other == Cfg.empty) {
-      this
-    } else if (this == Cfg.empty) {
-      other
-    } else {
-      this.copy(
-        fringe = other.fringe,
-        edges = this.edges ++ other.edges ++
-          edgesFromFringeTo(this, other.entryNode),
-        jumpsToLabel = this.jumpsToLabel ++ other.jumpsToLabel,
-        labeledNodes = this.labeledNodes ++ other.labeledNodes,
-        breaks = this.breaks ++ other.breaks,
-        continues = this.continues ++ other.continues,
-        caseLabels = this.caseLabels ++ other.caseLabels
-      )
-    }
+  def connect(acc: CfgAccumulator, other: Cfg): Cfg = {
+    if (other.isEmpty) return this
+    else if (this.isEmpty) return other
+
+    acc.addEdges(edgesFromFringeTo(this, other.entryNode))
+    Cfg(entryNode = this.entryNode, fringe = other.fringe)
+  }
+  def connect(acc: CfgAccumulator, others: Cfg*): Cfg = {
+    var res = this
+    for (other <- others) res = res.connect(acc, other)
+    res
   }
 
   def withFringeEdgeType(cfgEdgeType: CfgEdgeType): Cfg = {
     this.copy(fringe = fringe.map { case (x, _) => (x, cfgEdgeType) })
   }
-
-  /** Upon completing traversal of the abstract syntax tree, this method creates CFG edges between jumps like gotos,
-    * labeled breaks, labeled continues and respective labels.
-    */
-  def withResolvedJumpToLabel(): Cfg = {
-    val edges = jumpsToLabel.flatMap {
-      case (jumpToLabel, label) if label != "*" =>
-        labeledNodes.get(label) match {
-          case Some(labeledNode) =>
-            // TODO set edge type of Always once the backend
-            // supports it
-            Some(CfgEdge(jumpToLabel, labeledNode, AlwaysEdge))
-          case None =>
-            logger.info("Unable to wire jump statement. Missing label {}.", label)
-            None
-        }
-      case (jumpToLabel, _) =>
-        // We come here for: https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html
-        // For such GOTOs we cannot statically determine the target label. As a quick
-        // hack we simply put edges to all labels found. This might be an over-taint.
-        labeledNodes.flatMap { case (_, labeledNode) =>
-          Some(CfgEdge(jumpToLabel, labeledNode, AlwaysEdge))
-        }
-    }
-    this.copy(edges = this.edges ++ edges)
-  }
-
 }
 
 case class CfgEdge(src: CfgNode, dst: CfgNode, edgeType: CfgEdgeType)
 
 object Cfg {
-
-  def from(cfgs: Cfg*): Cfg = {
-    Cfg(
-      jumpsToLabel = cfgs.map(_.jumpsToLabel).reduceOption((x, y) => x ++ y).getOrElse(List()),
-      breaks = cfgs.map(_.breaks).reduceOption((x, y) => x ++ y).getOrElse(List()),
-      continues = cfgs.map(_.continues).reduceOption((x, y) => x ++ y).getOrElse(List()),
-      caseLabels = cfgs.map(_.caseLabels).reduceOption((x, y) => x ++ y).getOrElse(List()),
-      labeledNodes = cfgs.map(_.labeledNodes).reduceOption((x, y) => x ++ y).getOrElse(Map())
-    )
-  }
 
   /** The safe "null" Cfg.
     */
@@ -134,23 +71,13 @@ object Cfg {
   /** Create edges from all nodes of cfg's fringe to `node`.
     */
   def edgesFromFringeTo(cfg: Cfg, node: Option[CfgNode]): List[CfgEdge] = {
-    edgesFromFringeTo(cfg.fringe, node)
-  }
-
-  /** Create edges from all nodes of cfg's fringe to `node`, ignoring fringe edge types and using `cfgEdgeType` instead.
-    */
-  def edgesFromFringeTo(cfg: Cfg, node: Option[CfgNode], cfgEdgeType: CfgEdgeType): List[CfgEdge] = {
-    edges(cfg.fringe.map(_._1), node, cfgEdgeType)
-  }
-
-  /** Create edges from a list (node, cfgEdgeType) pairs to `node`
-    */
-  def edgesFromFringeTo(fringeElems: List[(CfgNode, CfgEdgeType)], node: Option[CfgNode]): List[CfgEdge] = {
-    fringeElems.flatMap { case (sourceNode, cfgEdgeType) =>
-      node.map { dstNode =>
-        CfgEdge(sourceNode, dstNode, cfgEdgeType)
+    node
+      .map { dstNode =>
+        cfg.fringe.map { case (sourceNode, cfgEdgeType) =>
+          CfgEdge(sourceNode, dstNode, cfgEdgeType)
+        }
       }
-    }
+      .getOrElse(Nil)
   }
 
   /** Create edges of given type from a list of source nodes to a destination node
@@ -178,4 +105,34 @@ object Cfg {
     }
   }
 
+}
+
+class CfgAccumulator(
+  val edgeBuffer: mutable.ArrayBuffer[CfgEdge] = mutable.ArrayBuffer.empty,
+  val labeledNodes: mutable.HashMap[String, CfgNode] = mutable.HashMap.empty,
+  var breaks: mutable.ArrayBuffer[CfgNode] = mutable.ArrayBuffer.empty,
+  var continues: mutable.ArrayBuffer[CfgNode] = mutable.ArrayBuffer.empty,
+  var caseLabels: mutable.ArrayBuffer[CfgNode] = mutable.ArrayBuffer.empty,
+  val jumpsToLabel: mutable.ArrayBuffer[(CfgNode, String)] = mutable.ArrayBuffer.empty
+) {
+  def addEdges(edges: List[CfgEdge]): this.type = {
+    edgeBuffer.appendAll(edges)
+    this
+  }
+
+  def swapBreaks(other: mutable.ArrayBuffer[CfgNode] = mutable.ArrayBuffer.empty): ArrayBuffer[CfgNode] = {
+    val tmp = breaks
+    breaks = other
+    tmp
+  }
+  def swapContinues(other: mutable.ArrayBuffer[CfgNode] = mutable.ArrayBuffer.empty): ArrayBuffer[CfgNode] = {
+    val tmp = continues
+    continues = other
+    tmp
+  }
+  def swapCaseLabels(other: mutable.ArrayBuffer[CfgNode] = mutable.ArrayBuffer.empty): ArrayBuffer[CfgNode] = {
+    val tmp = caseLabels
+    caseLabels = other
+    tmp
+  }
 }
