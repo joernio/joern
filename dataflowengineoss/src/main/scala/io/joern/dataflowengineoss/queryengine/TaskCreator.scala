@@ -39,14 +39,14 @@ class TaskCreator(sources: Set[CfgNode]) {
       if (result.callSiteStack.isEmpty) {
         // Case 1
         paramToArgs(param).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
+          ReachableByTask(arg, sources, result.table, result.path, result.callDepth + 1)
         }
       } else {
         // Case 2
         val newCallSiteStack = result.callSiteStack.clone()
         val callSite         = newCallSiteStack.pop()
         paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1, newCallSiteStack)
+          ReachableByTask(arg, sources, result.table, result.path, result.callDepth + 1, newCallSiteStack)
         }
       }
     }
@@ -90,13 +90,13 @@ class TaskCreator(sources: Set[CfgNode]) {
           val newPath       = path
           val callSiteStack = result.callSiteStack.clone()
           callSiteStack.push(call)
-          List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
+          List(ReachableByTask(methodReturn, sources, result.table, newPath, callDepth + 1, callSiteStack))
         } else {
           returnStatements.map { returnStatement =>
             val newPath       = Vector(PathElement(methodReturn)) ++ path
             val callSiteStack = result.callSiteStack.clone()
             callSiteStack.push(call)
-            ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
+            ReachableByTask(returnStatement, sources, result.table, newPath, callDepth + 1, callSiteStack)
           }
         }
       }
@@ -114,7 +114,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           .map { p =>
             val callSiteStack = result.callSiteStack.clone()
             arg.inCall.headOption.foreach { x => callSiteStack.push(x) }
-            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, callSiteStack)
+            ReachableByTask(p, sources, result.table, path, callDepth + 1, callSiteStack)
           }
       }
     }

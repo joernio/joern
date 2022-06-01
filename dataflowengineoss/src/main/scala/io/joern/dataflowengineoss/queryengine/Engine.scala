@@ -58,12 +58,10 @@ class Engine(context: EngineContext) {
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-
     /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
       */
-    def newResultTable() =
-      context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
-    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
+    val rt = context.config.initialTable.map(x => new ResultTable(x.table)).getOrElse(new ResultTable)
+    sinks.map(sink => ReachableByTask(sink, sourcesSet, rt))
   }
 
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are

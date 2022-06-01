@@ -38,5 +38,20 @@ class DeterminismTests extends AnyWordSpec with Matchers {
       }
     }
   }
+  // The 10 flows using the original cache implementation
+  /* Straight forward flows
+  Vector(reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out1, out1, writer.println(out1))
+  Vector(reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out3, out3, writer.println(out3))
+  Vector(reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out2, out2, writer.println(out2))
+  Vector(reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out4, out4, writer.println(out4))
+   */
+  /* Flows by proxy
+  Vector(reader, reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out2, out2, writer.println(out2))
+  Vector(reader, reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out4, out4, writer.println(out4))
+  Vector(reader, reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out3, out3, writer.println(out3))
+  Vector(reader, reader, reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out3, out3, writer.println(out3))
+  Vector(reader, reader, reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out4, out4, writer.println(out4))
+  Vector(reader, reader, reader, reader, BufferedReader reader, reader, reader, reader.readLine(), line, line, return line;, java.lang.String, parse(reader), out4, out4, writer.println(out4))
+   */
 
 }

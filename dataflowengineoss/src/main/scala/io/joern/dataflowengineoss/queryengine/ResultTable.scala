@@ -8,8 +8,7 @@ import scala.jdk.CollectionConverters._
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
 class ResultTable(
-  val table: mutable.Map[StoredNode, Vector[ReachableByResult]] =
-    new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
+  val table: mutable.Map[StoredNode, Vector[ReachableByResult]] = mutable.HashMap.empty
 ) {
 
   /** Add all results in `results` to table at `key`, appending to existing results.
