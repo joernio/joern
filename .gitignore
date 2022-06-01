@@ -24,3 +24,6 @@ joern-cli/workspace
 /.bsp
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
+/foo.c
+/woo.c
+/cpg_*.bin.zip

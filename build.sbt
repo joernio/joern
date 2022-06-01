@@ -69,8 +69,6 @@ ThisBuild / resolvers ++= Seq(
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases/"
 )
 
-ThisBuild / Test / fork := true
-
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // publishing info for sonatype / maven central

@@ -57,7 +57,6 @@ scalacOptions ++= Seq(
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g", "--release", "8")
 
-Test / fork := true
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
 
 enablePlugins(Antlr4Plugin)
