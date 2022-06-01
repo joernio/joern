@@ -954,10 +954,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       Seq(assignmentAst) ++ assignmentsForEntries
   }
 
-  def nonUnderscoreEntries(expr: KtDestructuringDeclaration): Seq[KtDestructuringDeclarationEntry] = {
-    expr.getEntries.asScala.filterNot(_.getText == Constants.underscore).toSeq
-  }
-
   /*
    _______ example lowering _________
   | -> val (one, two) = Person("a", "b")

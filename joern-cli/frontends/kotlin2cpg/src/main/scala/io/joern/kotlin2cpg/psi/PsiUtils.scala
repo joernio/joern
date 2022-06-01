@@ -1,7 +1,9 @@
 package io.joern.kotlin2cpg.psi
 
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.{KtDestructuringDeclaration, KtDestructuringDeclarationEntry, KtNamedFunction}
+
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object PsiUtils {
   def line(element: PsiElement): Int = {
@@ -40,6 +42,11 @@ object PsiUtils {
         .map(_.getRBrace)
         .getOrElse(element)
     )
+  }
+
+  def nonUnderscoreEntries(expr: KtDestructuringDeclaration): Seq[KtDestructuringDeclarationEntry] = {
+    val underscore = "_"
+    expr.getEntries.asScala.filterNot(_.getText == underscore).toSeq
   }
 }
 
