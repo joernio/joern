@@ -1061,7 +1061,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   | -> LOCAL one
   | -> LOCAL two
   | -> CALL one = person.component1()
-  | -> CALL two = person.component1()
+  | -> CALL two = person.component2()
   |__________________________________
    */
   def astsForDestructuringDeclarationWithVarRHS(
