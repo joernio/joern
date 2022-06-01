@@ -40,6 +40,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   private val relativizedPath = fileWithMeta.relativizedPath
 
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
+  private def lookup(name: String): Option[DeclarationNew] = {
+    scope.lookupVariable(name)
+  }
 
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
@@ -269,16 +272,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val typeFullName    = registerType(typeInfoProvider.typeFullName(ctorParam, TypeConstants.any))
           val paramName       = ctorParam.getName
           val paramIdentifier = identifierNode(paramName, typeFullName)
-
-          val matchingMethodParamNode =
-            constructorParamsAsts
-              .flatMap(_.root.collect { case node: NewMethodParameterIn => node })
-              .filter(_.name == paramName)
-              .head
           val paramIdentifierAst =
-            Ast(paramIdentifier)
-              .withRefEdge(paramIdentifier, matchingMethodParamNode)
-
+            lookup(paramName) match {
+              case Some(refTo) => Ast(paramIdentifier).withRefEdge(paramIdentifier, refTo)
+              case None        => Ast(paramIdentifier)
+            }
           val this_           = identifierNode(Constants.this_, classFullName)
           val fieldIdentifier = fieldIdentifierNode(paramName)
           val fieldAccessCall =
@@ -640,7 +638,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val node =
       identifierNode(expr.getText, typeFullName, line(expr), column(expr))
         .argumentIndex(argIdx)
-    scope.lookupVariable(expr.getText) match {
+    lookup(expr.getText) match {
       case Some(n) => Ast(node).withRefEdge(node, n)
       case None    => Ast(node)
     }
@@ -651,7 +649,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val node =
       identifierNode(expr.getText, typeFullName, line(expr), column(expr))
         .argumentIndex(argIdx)
-    scope.lookupVariable(expr.getText) match {
+    lookup(expr.getText) match {
       case Some(n) => Ast(node).withRefEdge(node, n)
       case None    => Ast(node)
     }
@@ -780,7 +778,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val identifier =
       identifierNode(arrayExpr.getText, typeFullName, line(arrayExpr), column(arrayExpr))
     val identifierAst =
-      scope.lookupVariable(arrayExpr.getText) match {
+      lookup(arrayExpr.getText) match {
         case Some(v) => Ast(identifier).withRefEdge(identifier, v)
         case None    => Ast(identifier)
       }
@@ -1151,7 +1149,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .argumentIndex(2)
 
           val componentNIdentifierAst =
-            scope.lookupVariable(componentNIdentifierNode.name) match {
+            lookup(componentNIdentifierNode.name) match {
               case Some(n) => Ast(componentNIdentifierNode).withRefEdge(componentNIdentifierNode, n)
               case None    => Ast(componentNIdentifierNode)
             }
@@ -2116,7 +2114,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val thisNode =
       identifierNode(Constants.this_, referenceTargetTypeFullName, line(expr), column(expr))
     val thisAst =
-      scope.lookupVariable(Constants.this_) match {
+      lookup(Constants.this_) match {
         case Some(n) => Ast(thisNode).withRefEdge(thisNode, n)
         case None    => Ast(thisNode)
       }
@@ -2132,7 +2130,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val node =
       identifierNode(name, typeFullName, line(expr), column(expr))
         .argumentIndex(argIdx)
-    scope.lookupVariable(name) match {
+    lookup(name) match {
       case Some(n) => Ast(node).withRefEdge(node, n)
       case None    => Ast(node)
     }
