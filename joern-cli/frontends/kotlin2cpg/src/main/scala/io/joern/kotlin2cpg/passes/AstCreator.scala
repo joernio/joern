@@ -530,9 +530,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     callAst(callNode, args.toList)
   }
 
-  def astForTypeReference(expr: KtTypeReference, argIdx: Int)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForTypeReference(expr: KtTypeReference, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val node =
       typeRefNode(expr.getText, typeFullName, line(expr), column(expr))
@@ -1759,17 +1757,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, idx) =>
         val entryIdentifier =
           identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
-
-        val matchingLocalForEntry =
-          localsForDestructuringVars
-            .flatMap(_.root.collect { case node: NewLocal => node })
-            .filter(_.code == entry.getText)
-            .head // TODO: get rid of the `head`
-
         val entryIdentifierAst =
-          Ast(entryIdentifier)
-            .withRefEdge(entryIdentifier, matchingLocalForEntry)
-
+          lookup(entryIdentifier.name) match {
+            case Some(n) => Ast(entryIdentifier).withRefEdge(entryIdentifier, n)
+            case None    => Ast(entryIdentifier)
+          }
         val componentNName    = Constants.componentNPrefix + idx
         val fallbackSignature = TypeConstants.cpgUnresolved + "()"
         val fallbackFullName =
