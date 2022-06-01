@@ -8,7 +8,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodParameterIn,
   NewMethodReturn,
-  NewNamespaceBlock
+  NewNamespaceBlock,
+  NewReturn
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -67,6 +68,16 @@ abstract class AstCreatorBase(filename: String) {
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
+
+  /** For a given return node and arguments, create an AST that represents the return instruction. The main purpose of
+    * this method is to automatically assign the correct argument indices.
+    */
+  def returnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
+    setArgumentIndices(arguments)
+    Ast(returnNode)
+      .withChildren(arguments)
+      .withArgEdges(returnNode, arguments.flatMap(_.root))
+  }
 
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
     * main purpose of this method is to automatically assign the correct argument indices.

@@ -372,9 +372,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val signature     = typeFullName + "()"
           val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
 
-          val _methodNode =
-            methodNode(componentName, fullName, signature, relativizedPath)
-
           val thisParam =
             methodParameterNode(Constants.this_, classFullName)
               .order(0)
@@ -386,21 +383,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val fieldAccessCall =
             operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + valueParam.getName, Some(typeFullName))
           val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
-
-          val _returnNode =
-            returnNode(Constants.ret)
-          val returnAst =
-            Ast(_returnNode)
-              .withChild(fieldAccessCallAst)
-              .withArgEdge(_returnNode, fieldAccessCall)
-
-          val methodBlock = blockNode(fieldAccessCall.code, typeFullName)
           val methodBlockAst =
-            Ast(methodBlock)
-              .withChild(returnAst)
-
-          val methodReturn = methodReturnNode(None, None, typeFullName)
-          methodAst(_methodNode, Seq(thisParam), methodBlockAst, methodReturn)
+            Ast(blockNode(fieldAccessCall.code, typeFullName))
+              .withChild(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
+          methodAst(
+            methodNode(componentName, fullName, signature, relativizedPath),
+            Seq(thisParam),
+            methodBlockAst,
+            methodReturnNode(None, None, typeFullName)
+          )
         }
       } else {
         Seq()
@@ -484,9 +475,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       Option(ktFn.getTypeReference)
         .map(_.getText)
         .getOrElse(TypeConstants.any)
-    val typeFullName = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
-    val returnNode   = methodReturnNode(Some(line(ktFn)), Some(column(ktFn)), typeFullName)
-    methodAst(_methodNode, parameters, bodyAst, returnNode)
+    val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
+    val _methodReturnNode = methodReturnNode(Some(line(ktFn)), Some(column(ktFn)), typeFullName)
+    methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)
   }
 
   private def astForBlock(
@@ -512,18 +503,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Ast(nodeWithIdx).withChildren(localsForCaptures.map(Ast(_)) ++ statementAsts)
   }
 
-  private def astsForReturnExpression(
-    expr: KtReturnExpression
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val child = astsForExpression(expr.getReturnedExpression, 1, 1).headOption
-      .getOrElse(Ast())
-    val node =
-      returnNode(expr.getText, line(expr), column(expr))
-    val ast =
-      Ast(node)
-        .withChild(child)
-        .withArgEdges(node, child.root.toList)
-    Seq(ast)
+  def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val children = astsForExpression(expr.getReturnedExpression, 1, 1)
+    returnAst(returnNode(expr.getText, line(expr), column(expr)), children.toList)
   }
 
   def astForIsExpression(expr: KtIsExpression, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -600,7 +582,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtPostfixExpression             => Seq(astForPostfixExpression(typedExpr, argIdx))
       case typedExpr: KtPrefixExpression              => Seq(astForPrefixExpression(typedExpr, argIdx))
       case typedExpr: KtProperty if typedExpr.isLocal => astsForProperty(typedExpr)
-      case typedExpr: KtReturnExpression              => astsForReturnExpression(typedExpr)
+      case typedExpr: KtReturnExpression              => Seq(astForReturnExpression(typedExpr))
       case typedExpr: KtStringTemplateExpression      => Seq(astForStringTemplate(typedExpr, argIdx))
       case typedExpr: KtSuperExpression               => Seq(astForSuperExpression(typedExpr, argIdx))
       case typedExpr: KtThisExpression                => Seq(astForThisExpression(typedExpr, argIdx))
