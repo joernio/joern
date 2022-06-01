@@ -1997,9 +1997,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForIfAsExpression(expr: KtIfExpression, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val callNode =
-      operatorCallNode(Operators.conditional, expr.getText, Some(retType), line(expr), column(expr))
+      operatorCallNode(Operators.conditional, expr.getText, Some(returnTypeFullName), line(expr), column(expr))
         .argumentIndex(argIdx)
     val conditionAsts = astsForExpression(expr.getCondition, 1, 1)
     val thenAsts      = astsForExpression(expr.getThen, 2, 2)
