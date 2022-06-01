@@ -464,10 +464,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   private def astForMethod(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val fnWithSig = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
-    val lineEndElement =
-      Option(ktFn.getBodyBlockExpression)
-        .map(_.getRBrace)
-        .getOrElse(ktFn)
     val _methodNode =
       methodNode(
         ktFn.getName,
@@ -476,8 +472,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         relativizedPath,
         line(ktFn),
         column(ktFn),
-        line(lineEndElement),
-        column(lineEndElement)
+        lineEnd(ktFn),
+        columnEnd(ktFn)
       )
     scope.pushNewScope(_methodNode)
 
