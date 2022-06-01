@@ -2240,24 +2240,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
 
-    val args = expr.getValueArguments
     val argAsts =
-      withIndex(args.asScala.toSeq) { case (arg, argOrder) =>
+      withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, argOrder) =>
         astsForExpression(arg.getArgumentExpression, argOrder, argOrder)
       }.flatten
 
     // TODO: add tests for the empty `referencedName` here
     val referencedName =
-      expr.getFirstChild match {
-        case c: KtNameReferenceExpression => c.getText
-        case _                            => ""
-      }
-
+      Option(expr.getFirstChild)
+        .collect { case expr: KtNameReferenceExpression => expr }
+        .map(_.getText)
+        .getOrElse("")
     val nameToClass =
-      expr.getContainingKtFile.getDeclarations.asScala
-        .collect { case c: KtClass => c }
-        .map { c => c.getName -> c }
-        .toMap
+      expr.getContainingKtFile.getDeclarations.asScala.collect { case c: KtClass => c.getName -> c }.toMap
 
     val imports = expr.getContainingKtFile.getImportList.getImports.asScala.toList
     val importedNames = imports.map { imp =>
@@ -2279,11 +2274,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       }
     }
     val signature =
-      TypeConstants.any + "(" + args.asScala
-        .map { _ =>
-          TypeConstants.any
-        }
-        .mkString(",") + ")"
+      TypeConstants.any + "(" +
+        argAsts
+          .map { _ => TypeConstants.any }
+          .mkString(",") + ")"
 
     val fullName        = methodFqName + ":" + signature
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (fullName, signature))
