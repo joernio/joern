@@ -28,6 +28,7 @@ class DeterminismTests extends AnyWordSpec with Matchers {
     val r2      = query
     val r1Paths = r1.map(_.path)
     val r2Paths = r2.map(_.path)
+    r1Paths.size shouldBe 10
     r1Paths.size shouldBe r2Paths.size
 
     r1Paths.zip(r2Paths).foreach { case (p1, p2) =>
