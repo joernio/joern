@@ -1786,9 +1786,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val localForTmpAst =
       Ast(localForTmp)
 
-    val tmpIdentifier =
-      identifierNode(tmpName, TypeConstants.any)
-        .argumentIndex(1)
+    val tmpIdentifier = identifierNode(tmpName, TypeConstants.any)
     val tmpIdentifierAst =
       Ast(tmpIdentifier)
         .withRefEdge(tmpIdentifier, localForTmp)
