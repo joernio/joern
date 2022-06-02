@@ -509,10 +509,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val callNode = operatorCallNode(Operators.is, expr.getText, None, line(expr), column(expr))
     val args = astsForExpression(expr.getLeftHandSide, Some(1)) ++
       Seq(astForTypeReference(expr.getTypeReference, Some(2)))
-    callAst(withArgumentIndex(callNode, argIdx), args.toList)
+    val node = operatorCallNode(Operators.is, expr.getText, None, line(expr), column(expr))
+    callAst(withArgumentIndex(node, argIdx), args.toList)
   }
 
   def astForBinaryExprWithTypeRHS(expr: KtBinaryExpressionWithTypeRHS, argIdx: Option[Int])(implicit
@@ -521,9 +521,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args =
       astsForExpression(expr.getLeft, Some(1)) ++ Seq(astForTypeReference(expr.getRight, Some(2)))
-    val callNode =
+    val node =
       operatorCallNode(Operators.cast, expr.getText, None, line(expr), column(expr))
-    callAst(withArgumentIndex(callNode, argIdx), args.toList)
+    callAst(withArgumentIndex(node, argIdx), args.toList)
   }
 
   def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int])(implicit
@@ -2205,10 +2205,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map(_.getText)
         .getOrElse(TypeConstants.any)
     val typeFullName = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
-    val parameterNode =
+    val node =
       methodParameterNode(name, typeFullName, line(param), column(param))
         .order(order)
-    scope.addToScope(name, parameterNode)
-    Ast(parameterNode)
+    scope.addToScope(name, node)
+    Ast(node)
   }
 }
