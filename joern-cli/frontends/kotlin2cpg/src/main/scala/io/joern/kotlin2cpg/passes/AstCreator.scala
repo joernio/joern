@@ -277,12 +277,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
         }
 
-    val ctorMethodBlock =
-      blockNode("", TypeConstants.void)
-    val ctorMethodBlockAst =
-      Ast(ctorMethodBlock)
-        .withChildren(memberSetCalls)
-
     val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn =
       methodReturnNode(
@@ -291,12 +285,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         typeFullName,
         Some(classFullName)
       )
-
     val constructorAst =
       methodAst(
         primaryCtorMethodNode,
         constructorParamsAsts.flatMap(_.root.collect { case node: NewMethodParameterIn => node }),
-        ctorMethodBlockAst,
+        blockAst(blockNode("", TypeConstants.void), memberSetCalls),
         constructorMethodReturn
       )
 
