@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewMethodReturn,
   NewNamespaceBlock,
-  NewNode,
   NewReturn
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -139,6 +138,15 @@ abstract class AstCreatorBase(filename: String) {
     nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
+
+  def withArgumentIndex[T <: ExpressionNew](node: T, argIdxOpt: Option[Int]): T = {
+    argIdxOpt match {
+      case Some(argIdx) =>
+        node.argumentIndex = argIdx
+        node
+      case None => node
+    }
+  }
 
   /** Absolute path for the given file name
     */
