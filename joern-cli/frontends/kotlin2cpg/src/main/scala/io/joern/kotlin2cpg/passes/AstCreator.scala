@@ -1428,31 +1428,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForWhile(expr: KtWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val whileNode = controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
     val conditionAst = astsForExpression(expr.getCondition, Some(1)).headOption
-      .getOrElse(Ast())
-    val stmtAsts = astsForExpression(expr.getBody, Some(2))
-    val ast      = Ast(whileNode).withChildren(List(conditionAst) ++ stmtAsts)
-    conditionAst.root match {
-      case Some(node) =>
-        ast.withConditionEdge(whileNode, node)
-      case None =>
-        ast
-    }
+    val stmtAsts     = astsForExpression(expr.getBody, Some(2))
+    val node         = controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
+    controlStructureAst(node, conditionAst, stmtAsts.toList)
   }
 
   def astForDoWhile(expr: KtDoWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val doNode   = controlStructureNode(expr.getText, ControlStructureTypes.DO, line(expr), column(expr))
-    val stmtAsts = astsForExpression(expr.getBody, Some(1))
     val conditionAst = astsForExpression(expr.getCondition, Some(2)).headOption
-      .getOrElse(Ast())
-    val ast = Ast(doNode).withChildren(stmtAsts ++ List(conditionAst))
-    conditionAst.root match {
-      case Some(node) =>
-        ast.withConditionEdge(doNode, node)
-      case None =>
-        ast
-    }
+    val stmtAsts     = astsForExpression(expr.getBody, Some(1))
+    val node         = controlStructureNode(expr.getText, ControlStructureTypes.DO, line(expr), column(expr))
+    controlStructureAst(node, conditionAst, stmtAsts.toList, true)
   }
 
   // e.g. lowering:
@@ -1848,16 +1834,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val conditionAst = astsForExpression(expr.getCondition, None).head
+    val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val thenAsts     = astsForExpression(expr.getThen, None)
     val elseAsts     = astsForExpression(expr.getElse, None)
 
     val node = controlStructureNode(expr.getText, ControlStructureTypes.IF, line(expr), column(expr))
-    val ast  = Ast(node).withChildren(List(conditionAst) ++ thenAsts ++ elseAsts)
-    conditionAst.root match {
-      case Some(node) => ast.withConditionEdge(node, node)
-      case None       => ast
-    }
+    controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
   }
 
   def astForIfAsExpression(expr: KtIfExpression, argIdx: Option[Int])(implicit

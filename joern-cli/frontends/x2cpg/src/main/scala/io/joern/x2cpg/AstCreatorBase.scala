@@ -5,10 +5,12 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
   NewCall,
+  NewControlStructure,
   NewMethod,
   NewMethodParameterIn,
   NewMethodReturn,
   NewNamespaceBlock,
+  NewNode,
   NewReturn
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -77,6 +79,26 @@ abstract class AstCreatorBase(filename: String) {
     Ast(returnNode)
       .withChildren(arguments)
       .withArgEdges(returnNode, arguments.flatMap(_.root))
+  }
+
+  /** For a given node, condition AST and children ASTs, create an AST that represents the control structure. The main
+    * purpose of this method is to automatically assign the correct condition edges.
+    */
+  def controlStructureAst(
+    controlStructureNode: NewControlStructure,
+    condition: Option[Ast],
+    children: List[Ast] = List(),
+    placeConditionLast: Boolean = false
+  ): Ast = {
+    condition match {
+      case Some(conditionAst) =>
+        Ast(controlStructureNode)
+          .withChildren(if (placeConditionLast) children ++ List(conditionAst) else conditionAst :: children)
+          .withConditionEdges(controlStructureNode, List(conditionAst.root).flatten)
+      case _ =>
+        Ast(controlStructureNode)
+          .withChildren(children)
+    }
   }
 
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
