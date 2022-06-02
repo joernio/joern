@@ -3,6 +3,7 @@ package io.joern.benchmarks
 import org.scalatest.Tag
 
 import java.io.{File, PrintStream}
+import java.time.Duration
 import scala.collection.mutable
 
 object BenchmarkTags {
@@ -92,6 +93,10 @@ object BenchmarkTags {
     resultsOut.println(s"| *Total* ${(for (_ <- 0 until (catWhiteSpaceCount - "*Total*".length))
         yield ' ').mkString} | *$totalTests* | *$fps* | *$tps* | *$tns* | *$fns* |\n")
     resultsOut.println(s"Total accuracy: ${String.format("%.3f", (tns + tps + 0.0) / totalTests * 100.0)}%")
+    if (resultsOut == System.out) {
+      resultsOut.println(s"Elapsed time (wall clock): ${readableTime(System.nanoTime() - startTime)}")
+    }
+    resultsOut.println(s"Cache Hit Ratio ${cacheHits.toDouble / (cacheHits + cacheMisses) * 100.0 }%")
   }
 
   private def getTotalTests: (Int, Int, Int, Int, Int) = {
@@ -110,6 +115,20 @@ object BenchmarkTags {
       )
     }
   }
+
+  def cacheResults(hits: Long, misses: Long): Unit = {
+    cacheHits += hits
+    cacheMisses += misses
+  }
+
+  private def readableTime(nanoTime: Long): String = {
+    val d = Duration.ofNanos(nanoTime)
+    s"${d.toHoursPart}H ${d.toMinutesPart} min ${d.toSecondsPart} s ${d.toMillisPart} ms"
+  }
+
+  private val startTime = System.nanoTime()
+  private var cacheHits = 0L
+  private var cacheMisses = 0L
 
   sys.addShutdownHook(finalResults())
 }

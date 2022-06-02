@@ -1,10 +1,11 @@
 package io.joern.benchmarks.testfixtures
 
+import io.joern.benchmarks.BenchmarkTags
 import io.joern.console.cpgcreation.guessLanguage
 import io.joern.benchmarks.BenchmarkTags._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext, QueryEngineStatistics}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
@@ -30,9 +31,9 @@ abstract class BenchmarkFixture(
     with Matchers
     with BeforeAndAfterAll {
 
-  val semanticsFile: String = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
-  lazy val defaultSemantics: Semantics           = Semantics.fromList(new Parser().parseFile(semanticsFile))
-  implicit val resolver: ICallResolver           = NoResolve
+  val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
+  lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
+  implicit val resolver: ICallResolver = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
   private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
@@ -104,6 +105,10 @@ abstract class BenchmarkFixture(
         case None      =>
       }
     }
+
+    val cacheHits   = QueryEngineStatistics.getResult(QueryEngineStatistics.PATH_CACHE_HITS)
+    val cacheMisses = QueryEngineStatistics.getResult(QueryEngineStatistics.PATH_CACHE_MISSES)
+    BenchmarkTags.cacheResults(cacheHits, cacheMisses)
 
     outcome
   }

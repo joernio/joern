@@ -58,6 +58,7 @@ class Engine(context: EngineContext) {
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
+
     /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
       */
     val rt = context.config.initialTable.map(x => new ResultTable(x.table)).getOrElse(new ResultTable)
@@ -341,6 +342,14 @@ object QueryEngineStatistics extends Enumeration {
     *   a map of each [[QueryEngineStatistic]] and the associated value measurement.
     */
   def results(): Map[QueryEngineStatistic, Long] = statistics.asScala.toMap
+
+  /** Given a statistic key, returns the associated result if any. Default is 0.
+    * @param key
+    *   the key for the statistic to return.
+    * @return
+    *   the statistic where all statistics start at 0.
+    */
+  def getResult(key: QueryEngineStatistic): Long = statistics.getOrDefault(key, 0L)
 
   /** Sets all the tracked values back to 0.
     */
