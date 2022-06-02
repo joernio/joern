@@ -1626,7 +1626,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val controlStructure =
       controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
-        .order(3)
     val conditionIdentifier =
       identifierNode(loopRangeText, loopRangeExprTypeFullName)
         .argumentIndex(0)
