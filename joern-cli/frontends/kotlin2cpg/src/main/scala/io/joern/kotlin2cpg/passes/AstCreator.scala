@@ -480,7 +480,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForBlock(
     expr: KtBlockExpression,
     argIdxOption: Option[Int],
-    pushToScope: Boolean = false,
+    pushToScope: Boolean = true,
     localsForCaptures: List[NewLocal] = List()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
@@ -1849,24 +1849,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val ifNode =
-      controlStructureNode(expr.getText, ControlStructureTypes.IF, line(expr), column(expr))
     val conditionAst = astsForExpression(expr.getCondition, None).head
+    val thenAsts     = astsForExpression(expr.getThen, None)
+    val elseAsts     = astsForExpression(expr.getElse, None)
 
-    val thenAsts =
-      expr.getThen match {
-        case b: KtBlockExpression => Seq(astForBlock(b, None, true))
-        case e                    => astsForExpression(e, None)
-      }
-    val elseAsts =
-      expr.getElse match {
-        case b: KtBlockExpression => Seq(astForBlock(b, None, true))
-        case e                    => astsForExpression(e, None)
-      }
-
-    val ast = Ast(ifNode).withChildren(List(conditionAst) ++ thenAsts ++ elseAsts)
+    val node = controlStructureNode(expr.getText, ControlStructureTypes.IF, line(expr), column(expr))
+    val ast  = Ast(node).withChildren(List(conditionAst) ++ thenAsts ++ elseAsts)
     conditionAst.root match {
-      case Some(node) => ast.withConditionEdge(ifNode, node)
+      case Some(node) => ast.withConditionEdge(node, node)
       case None       => ast
     }
   }
