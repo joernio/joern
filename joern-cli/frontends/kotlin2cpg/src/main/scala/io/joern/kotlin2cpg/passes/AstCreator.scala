@@ -381,8 +381,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + valueParam.getName, Some(typeFullName))
             val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
             val methodBlockAst =
-              Ast(blockNode(fieldAccessCall.code, typeFullName))
-                .withChild(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
+              blockAst(
+                blockNode(fieldAccessCall.code, typeFullName),
+                List(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
+              )
             methodAst(
               methodNode(componentName, fullName, signature, relativizedPath),
               Seq(thisParam),
@@ -479,25 +481,23 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   def astForBlock(
     expr: KtBlockExpression,
-    argIdxOption: Option[Int],
+    argIdx: Option[Int],
     pushToScope: Boolean = true,
     localsForCaptures: List[NewLocal] = List()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node =
-      blockNode(expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName, line(expr), column(expr))
-    val nodeWithIdx = argIdxOption match {
-      case Some(idx) => node.argumentIndex(idx)
-      case None      => node
-    }
-    if (pushToScope) scope.pushNewScope(nodeWithIdx)
+      withArgumentIndex(
+        blockNode(expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName, line(expr), column(expr)),
+        argIdx
+      )
+    if (pushToScope) scope.pushNewScope(node)
     val statementAsts =
       withIndex(expr.getStatements.asScala.toSeq) { (statement, idx) =>
         astsForExpression(statement, Some(idx))
       }.flatten
     if (pushToScope) scope.popScope()
-
-    Ast(nodeWithIdx).withChildren(localsForCaptures.map(Ast(_)) ++ statementAsts)
+    blockAst(node, localsForCaptures.map(Ast(_)) ++ statementAsts)
   }
 
   def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1755,9 +1755,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       Ast(controlStructure)
         .withChildren(List(controlStructureConditionAst, controlStructureBodyAst))
         .withConditionEdge(controlStructure, controlStructureCondition)
-    val topLevelBlock = blockNode(Constants.codeForLoweredForBlock, "")
-    Ast(topLevelBlock)
-      .withChildren(List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst))
+    blockAst(
+      blockNode(Constants.codeForLoweredForBlock, ""),
+      List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst)
+    )
   }
 
   def astForFor(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1844,7 +1845,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = operatorCallNode(Operators.conditional, expr.getText, Some(returnTypeFullName), line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), (conditionAsts ++ thenAsts ++ elseAsts).toList)
-
   }
 
   private def astForCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit

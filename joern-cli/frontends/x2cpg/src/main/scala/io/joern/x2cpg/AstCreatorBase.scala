@@ -4,6 +4,7 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
+  NewBlock,
   NewCall,
   NewControlStructure,
   NewMethod,
@@ -98,6 +99,14 @@ abstract class AstCreatorBase(filename: String) {
         Ast(controlStructureNode)
           .withChildren(children)
     }
+  }
+
+  /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this
+    * method is to increase the readability of the code which creates block asts.
+    */
+  def blockAst(blockNode: NewBlock, statements: List[Ast] = List()): Ast = {
+    Ast(blockNode)
+      .withChildren(statements)
   }
 
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
