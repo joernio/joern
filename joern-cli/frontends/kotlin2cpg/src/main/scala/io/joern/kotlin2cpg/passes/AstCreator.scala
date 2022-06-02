@@ -1162,11 +1162,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForUnknown(expr: KtExpression, argIdx: Option[Int]): Ast = {
-    val code =
-      Option(expr)
-        .map(_.getText)
-        .getOrElse(null)
-    val node = unknownNode(code, Constants.parserTypeName, line(expr), column(expr))
+    val node =
+      unknownNode(
+        Option(expr).map(_.getText).getOrElse(Constants.codePropUndefinedValue),
+        Constants.parserTypeName,
+        line(expr),
+        column(expr)
+      )
     Ast(argIdx.map(node.argumentIndex(_)).getOrElse(node))
   }
 
