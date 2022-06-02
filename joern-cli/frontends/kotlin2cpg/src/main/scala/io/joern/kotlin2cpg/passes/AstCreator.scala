@@ -1851,17 +1851,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val ifNode =
       controlStructureNode(expr.getText, ControlStructureTypes.IF, line(expr), column(expr))
-    val conditionAst = astsForExpression(expr.getCondition, Some(1)).head
+    val conditionAst = astsForExpression(expr.getCondition, None).head
 
     val thenAsts =
       expr.getThen match {
-        case b: KtBlockExpression => Seq(astForBlock(b, Some(2), true))
-        case e                    => astsForExpression(e, Some(2))
+        case b: KtBlockExpression => Seq(astForBlock(b, None, true))
+        case e                    => astsForExpression(e, None)
       }
     val elseAsts =
       expr.getElse match {
-        case b: KtBlockExpression => Seq(astForBlock(b, Some(3), true))
-        case e                    => astsForExpression(e, Some(3))
+        case b: KtBlockExpression => Seq(astForBlock(b, None, true))
+        case e                    => astsForExpression(e, None)
       }
 
     val ast = Ast(ifNode).withChildren(List(conditionAst) ++ thenAsts ++ elseAsts)
