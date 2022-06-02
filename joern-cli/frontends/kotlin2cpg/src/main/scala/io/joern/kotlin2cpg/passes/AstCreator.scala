@@ -1946,9 +1946,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .getOrElse(TypeConstants.any)
     val elem         = expr.getIdentifyingElement
     val typeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-    val identifier   = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
-    val assignmentNode =
-      operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
     val node =
       localNode(expr.getName, typeFullName, None, line(expr), column(expr))
     scope.addToScope(expr.getName, node)
@@ -1960,14 +1957,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         case _ => false
       }
     val rhsAsts = if (hasRHSCtorCall) {
+      // TODO: remove the hard case
       Seq(astForCtorCall(expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression], Some(2)))
     } else {
       astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
     }
+    val identifier = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
+    val assignmentNode =
+      operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
     val call = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts)
 
-    Seq(call) ++
-      Seq(Ast(node).withRefEdge(identifier, node))
+    val localAst = Ast(node).withRefEdge(identifier, node)
+    Seq(call) ++ Seq(localAst)
   }
 
   def astForNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
