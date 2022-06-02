@@ -4,7 +4,9 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
+  NewBlock,
   NewCall,
+  NewControlStructure,
   NewMethod,
   NewMethodParameterIn,
   NewMethodReturn,
@@ -79,6 +81,34 @@ abstract class AstCreatorBase(filename: String) {
       .withArgEdges(returnNode, arguments.flatMap(_.root))
   }
 
+  /** For a given node, condition AST and children ASTs, create an AST that represents the control structure. The main
+    * purpose of this method is to automatically assign the correct condition edges.
+    */
+  def controlStructureAst(
+    controlStructureNode: NewControlStructure,
+    condition: Option[Ast],
+    children: List[Ast] = List(),
+    placeConditionLast: Boolean = false
+  ): Ast = {
+    condition match {
+      case Some(conditionAst) =>
+        Ast(controlStructureNode)
+          .withChildren(if (placeConditionLast) children ++ List(conditionAst) else conditionAst :: children)
+          .withConditionEdges(controlStructureNode, List(conditionAst.root).flatten)
+      case _ =>
+        Ast(controlStructureNode)
+          .withChildren(children)
+    }
+  }
+
+  /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this
+    * method is to increase the readability of the code which creates block asts.
+    */
+  def blockAst(blockNode: NewBlock, statements: List[Ast] = List()): Ast = {
+    Ast(blockNode)
+      .withChildren(statements)
+  }
+
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
     * main purpose of this method is to automatically assign the correct argument indices.
     */
@@ -117,6 +147,15 @@ abstract class AstCreatorBase(filename: String) {
     nodes.toIndexedSeq.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)
     }
+
+  def withArgumentIndex[T <: ExpressionNew](node: T, argIdxOpt: Option[Int]): T = {
+    argIdxOpt match {
+      case Some(argIdx) =>
+        node.argumentIndex = argIdx
+        node
+      case None => node
+    }
+  }
 
   /** Absolute path for the given file name
     */
