@@ -61,6 +61,7 @@ class Engine(context: EngineContext) {
     /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
       */
     val rt = context.config.initialTable.map(x => new ResultTable(x.table)).getOrElse(new ResultTable)
+    context.config.initialTable = Some(rt)
     sinks.map(sink => ReachableByTask(sink, sourcesSet, rt))
   }
 
@@ -310,7 +311,7 @@ case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConf
   */
 case class EngineConfig(
   var maxCallDepth: Int = 2,
-  initialTable: Option[ResultTable] = None,
+  var initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )
 

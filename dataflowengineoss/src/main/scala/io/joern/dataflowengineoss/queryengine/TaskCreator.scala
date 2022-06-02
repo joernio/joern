@@ -83,20 +83,20 @@ class TaskCreator(sources: Set[CfgNode]) {
       val methodReturns = outCall.toList
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
         .to(Traversal)
-
+      // TODO: This cannot share the result table below otherwise we get inconsistent, unrealizable paths
       methodReturns.flatMap { case (call, methodReturn) =>
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
         if (returnStatements.isEmpty) {
           val newPath       = path
           val callSiteStack = result.callSiteStack.clone()
           callSiteStack.push(call)
-          List(ReachableByTask(methodReturn, sources, result.table, newPath, callDepth + 1, callSiteStack))
+          List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
         } else {
           returnStatements.map { returnStatement =>
             val newPath       = Vector(PathElement(methodReturn)) ++ path
             val callSiteStack = result.callSiteStack.clone()
             callSiteStack.push(call)
-            ReachableByTask(returnStatement, sources, result.table, newPath, callDepth + 1, callSiteStack)
+            ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
           }
         }
       }
@@ -114,7 +114,8 @@ class TaskCreator(sources: Set[CfgNode]) {
           .map { p =>
             val callSiteStack = result.callSiteStack.clone()
             arg.inCall.headOption.foreach { x => callSiteStack.push(x) }
-            ReachableByTask(p, sources, result.table, path, callDepth + 1, callSiteStack)
+            // TODO: This cannot share the result table otherwise we get undecidability
+            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, callSiteStack)
           }
       }
     }

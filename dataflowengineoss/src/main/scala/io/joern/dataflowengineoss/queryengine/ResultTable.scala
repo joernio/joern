@@ -2,14 +2,13 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
-class ResultTable(
-  val table: mutable.Map[StoredNode, Vector[ReachableByResult]] = mutable.HashMap.empty
-) {
+class ResultTable(val table: mutable.Map[StoredNode, Vector[ReachableByResult]] = TrieMap.empty) {
 
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
@@ -33,6 +32,9 @@ class ResultTable(
         val completePath    = pathToFirstNode ++ (first +: remainder)
         r.copy(path = Vector(completePath.head) ++ completePath.tail)
       }
+    } match {
+      case Some(entry) if entry.nonEmpty => Option(entry)
+      case _                             => None
     }
   }
 
