@@ -816,7 +816,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   | -> CALL two = tmp.component2()
   |__________________________________
    */
-  def astsForDestructuringDeclarationWithNonCtorCallRHS(
+  private def astsForDestructuringDeclarationWithNonCtorCallRHS(
     expr: KtDestructuringDeclaration
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val initExpr             = expr.getInitializer
@@ -918,7 +918,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   | -> CALL two = tmp.component2()
   |__________________________________
    */
-  def astsForDestructuringDeclarationWithCtorRHS(
+  private def astsForDestructuringDeclarationWithCtorRHS(
     expr: KtDestructuringDeclaration
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typedInit =
@@ -1055,7 +1055,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   | -> CALL two = person.component2()
   |__________________________________
    */
-  def astsForDestructuringDeclarationWithVarRHS(
+  private def astsForDestructuringDeclarationWithVarRHS(
     expr: KtDestructuringDeclaration
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typedInit =
@@ -1382,7 +1382,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Ast(node)
   }
 
-  def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val tryNode =
       controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
     val tryAstOption = astsForExpression(expr.getTryBlock, Some(1)).headOption
@@ -1402,7 +1402,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     tryAst.withChildren(clauseAsts ++ finallyAsts)
   }
 
-  def astForTryAsExpression(expr: KtTryExpression, argumentIndex: Option[Int])(implicit
+  private def astForTryAsExpression(expr: KtTryExpression, argumentIndex: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(
