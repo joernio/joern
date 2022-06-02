@@ -62,7 +62,8 @@ class Engine(context: EngineContext) {
     /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
       */
     val rt = context.config.initialTable.map(x => new ResultTable(x.table)).getOrElse(new ResultTable)
-    context.config.initialTable = Some(rt)
+    // TODO: This gives issues
+    // context.config.initialTable = Some(rt)
     sinks.map(sink => ReachableByTask(sink, sourcesSet, rt))
   }
 

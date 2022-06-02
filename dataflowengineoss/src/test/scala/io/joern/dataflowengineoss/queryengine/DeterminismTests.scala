@@ -25,10 +25,10 @@ class DeterminismTests extends AnyWordSpec with Matchers {
     def query = snk.reachableByDetailed(src)
 
     var t0 = System.nanoTime()
-    val r1      = query
+    val r1 = query
     t0 = System.nanoTime() - t0
     var t1 = System.nanoTime()
-    val r2      = query
+    val r2 = query
     t1 = System.nanoTime() - t1
     val r1Paths = r1.map(_.path)
     val r2Paths = r2.map(_.path)
