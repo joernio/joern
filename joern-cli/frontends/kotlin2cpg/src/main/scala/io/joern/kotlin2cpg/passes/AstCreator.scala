@@ -1379,13 +1379,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   private def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val tryNode =
-      controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
     val tryAstOption = astsForExpression(expr.getTryBlock, Some(1)).headOption
       .getOrElse(Ast())
-    val tryAst =
-      Ast(tryNode)
-        .withChild(tryAstOption)
     val clauseAsts =
       withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, idx) =>
         astsForExpression(entry.getCatchBody, Some(idx + 1))
@@ -1395,7 +1390,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map(_.getFinalExpression)
         .map(astsForExpression(_, Some(clauseAsts.size + 2)))
         .getOrElse(Seq())
-    tryAst.withChildren(clauseAsts ++ finallyAsts)
+    val node = controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
+    controlStructureAst(node, None, tryAstOption :: (clauseAsts ++ finallyAsts).toList)
   }
 
   private def astForTryAsExpression(expr: KtTryExpression, argIdx: Option[Int])(implicit
