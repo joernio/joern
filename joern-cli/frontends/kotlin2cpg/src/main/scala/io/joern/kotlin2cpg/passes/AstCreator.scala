@@ -848,59 +848,59 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val assignmentsForEntries =
-      destructuringEntries.zipWithIndex.map { entryWithIdx =>
-        val entry             = entryWithIdx._1
-        val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-        val assignmentLHSNode =
-          identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-        val relevantLocal = localsForEntries(entryWithIdx._2).root.get
-        val assignmentLHSAst =
-          Ast(assignmentLHSNode)
-            .withRefEdge(assignmentLHSNode, relevantLocal)
+      destructuringEntries.zipWithIndex
+        .map { case (entry, idx) =>
+          val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+          val assignmentLHSNode =
+            identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
+          val relevantLocal = localsForEntries(idx).root.get
+          val assignmentLHSAst =
+            Ast(assignmentLHSNode)
+              .withRefEdge(assignmentLHSNode, relevantLocal)
 
-        val componentNIdentifierNode =
-          identifierNode(localForTmpNode.name, callRhsTypeFullName, line(entry), column(entry))
-            .argumentIndex(0)
+          val componentNIdentifierNode =
+            identifierNode(localForTmpNode.name, callRhsTypeFullName, line(entry), column(entry))
+              .argumentIndex(0)
 
-        val componentIdx      = entryWithIdx._2 + 1
-        val fallbackSignature = TypeConstants.cpgUnresolved + "()"
-        val fallbackFullName =
-          TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
-        val componentNFullNameWithSignature =
-          typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-        val componentNCallCode = localForTmpNode.name + "." + Constants.componentNPrefix + componentIdx + "()"
-        val componentNCallNode =
-          callNode(
-            componentNCallCode,
-            Constants.componentNPrefix + componentIdx,
-            componentNFullNameWithSignature._1,
-            componentNFullNameWithSignature._2,
-            entryTypeFullName,
-            DispatchTypes.DYNAMIC_DISPATCH,
-            line(entry),
-            column(entry)
-          )
-            .argumentIndex(2)
+          val componentIdx      = idx + 1
+          val fallbackSignature = TypeConstants.cpgUnresolved + "()"
+          val fallbackFullName =
+            TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
+          val componentNFullNameWithSignature =
+            typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
+          val componentNCallCode = localForTmpNode.name + "." + Constants.componentNPrefix + componentIdx + "()"
+          val componentNCallNode =
+            callNode(
+              componentNCallCode,
+              Constants.componentNPrefix + componentIdx,
+              componentNFullNameWithSignature._1,
+              componentNFullNameWithSignature._2,
+              entryTypeFullName,
+              DispatchTypes.DYNAMIC_DISPATCH,
+              line(entry),
+              column(entry)
+            )
+              .argumentIndex(2)
 
-        val componentNIdentifierAst =
-          Ast(componentNIdentifierNode)
-            .withRefEdge(componentNIdentifierNode, localForTmpNode)
-        val componentNAst =
-          Ast(componentNCallNode)
-            .withChild(componentNIdentifierAst)
-            .withArgEdge(componentNCallNode, componentNIdentifierNode)
-            .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
+          val componentNIdentifierAst =
+            Ast(componentNIdentifierNode)
+              .withRefEdge(componentNIdentifierNode, localForTmpNode)
+          val componentNAst =
+            Ast(componentNCallNode)
+              .withChild(componentNIdentifierAst)
+              .withArgEdge(componentNCallNode, componentNIdentifierNode)
+              .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
 
-        val assignmentCallNode =
-          operatorCallNode(
-            Operators.assignment,
-            entry.getText + " = " + componentNCallCode,
-            None,
-            line(entry),
-            column(entry)
-          )
-        callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
-      }
+          val assignmentCallNode =
+            operatorCallNode(
+              Operators.assignment,
+              entry.getText + " = " + componentNCallCode,
+              None,
+              line(entry),
+              column(entry)
+            )
+          callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
+        }
 
     localsForEntries ++ Seq(localForTmpAst) ++
       Seq(assignmentAst) ++ assignmentsForEntries
@@ -1076,12 +1076,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val assignmentsForEntries =
       nonUnderscoreEntries(expr).zipWithIndex
-        .map { entryWithIdx =>
-          val entry             = entryWithIdx._1
+        .map { case (entry, idx) =>
           val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
           val assignmentLHSNode =
             identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-          val relevantLocal = localsForEntries(entryWithIdx._2).root.get
+          val relevantLocal = localsForEntries(idx).root.get
           val assignmentLHSAst =
             Ast(assignmentLHSNode)
               .withRefEdge(assignmentLHSNode, relevantLocal)
@@ -1091,7 +1090,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             identifierNode(destructuringRHS.getText, componentNIdentifierTFN, line(entry), column(entry))
               .argumentIndex(0)
 
-          val componentIdx      = entryWithIdx._2 + 1
+          val componentIdx      = idx + 1
           val fallbackSignature = TypeConstants.cpgUnresolved + "()"
           val fallbackFullName =
             TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
