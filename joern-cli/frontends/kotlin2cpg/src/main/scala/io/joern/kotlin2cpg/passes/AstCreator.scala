@@ -705,10 +705,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
         .withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
 
-    val methodRef =
-      methodRefNode(expr.getText, fullNameWithSig._1, lambdaTypeDeclFullName, line(expr), column(expr))
-    val methodRefWithIdx = argIdx.map(methodRef.argumentIndex(_)).getOrElse(methodRef)
-    val methodRefAst     = Ast(methodRefWithIdx)
+    val _methodRefNode =
+      withArgumentIndex(
+        methodRefNode(expr.getText, fullNameWithSig._1, lambdaTypeDeclFullName, line(expr), column(expr)),
+        argIdx
+      )
 
     val lambdaTypeDeclInheritsFromTypeFullName =
       TypeConstants.kotlinFunctionXPrefix + expr.getValueParameters.size
@@ -729,12 +730,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     scope.popScope()
 
     val closureBindingDefs =
-      closureBindingEntriesForCaptured.map { entry => ClosureBindingDef(entry._1, methodRefWithIdx, entry._2) }
+      closureBindingEntriesForCaptured.map { entry => ClosureBindingDef(entry._1, _methodRefNode, entry._2) }
     closureBindingDefs
       .foreach(closureBindingDefQueue.prepend(_))
     lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
-    methodRefAst
+    Ast(_methodRefNode)
   }
 
   def astForArrayAccess(expr: KtArrayAccessExpression, argIdx: Option[Int])(implicit
@@ -1335,7 +1336,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         line(expr),
         column(expr)
       )
-    val root         = Ast(argIdx.map(_callNode.argumentIndex(_)).getOrElse(_callNode))
+    val root         = Ast(withArgumentIndex(_callNode, argIdx))
     val receiverNode = receiverAst.root.get
     val finalAst = {
       if (isExtensionCall || isCallToSuper) {
