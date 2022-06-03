@@ -74,7 +74,7 @@ package object cpgcreation {
       case f if f.endsWith(".csproj") || f.endsWith(".cs") => Some(Languages.CSHARP)
       case f if f.endsWith(".go") || Set("gopkg.lock", "gopkg.toml", "go.mod", "go.sum").contains(f) =>
         Some(Languages.GOLANG)
-      case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JAVASCRIPT)
+      case f if f.endsWith(".js") || f == "package.json" => Some(Languages.JSSRC)
       case f if f.endsWith(".java")                      => Some(Languages.JAVASRC)
       case f if f.endsWith(".class")                     => Some(Languages.JAVA)
       case f if f.endsWith(".kt")                        => Some(Languages.KOTLIN)
