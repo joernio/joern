@@ -323,7 +323,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = entryNode,
         edges = newEdges ++ initExprCfg.edges ++ innerCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge))
+        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge)),
+        breaks = List(),
+        continues = List()
       )
   }
 
@@ -346,7 +348,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         entryNode = if (bodyCfg != Cfg.empty) { bodyCfg.entryNode }
         else { conditionCfg.entryNode },
         edges = diffGraphs ++ bodyCfg.edges ++ conditionCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge))
+        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge)),
+        breaks = List(),
+        continues = List()
       )
   }
 
@@ -368,7 +372,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = conditionCfg.entryNode,
         edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ trueCfg.breaks.map((_, AlwaysEdge)) ++ falseCfg.fringe
+        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ trueCfg.breaks.map((_, AlwaysEdge)) ++ falseCfg.fringe,
+        breaks = List(),
+        continues = List()
       )
   }
 
@@ -390,7 +396,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
           else { List() }
         } ++ bodyCfg.breaks
-          .map((_, AlwaysEdge)) ++ bodyCfg.fringe
+          .map((_, AlwaysEdge)) ++ bodyCfg.fringe,
+        caseLabels = List(),
+        breaks = List(),
+        continues = List()
       )
   }
 
