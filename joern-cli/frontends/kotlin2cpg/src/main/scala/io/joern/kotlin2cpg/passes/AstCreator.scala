@@ -1526,15 +1526,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   //                            |-> <statements>
   //
   private def astForForWithDestructuringLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val loopRangeText = expr.getLoopRange.getText
-    val iteratorName  = Constants.iteratorPrefix + iteratorKeyPool.next()
-    val localForIterator =
-      localNode(iteratorName, TypeConstants.any)
-    val iteratorAssignmentLhs =
-      identifierNode(iteratorName, TypeConstants.any)
-    val iteratorLocalAst =
-      Ast(localForIterator)
-        .withRefEdge(iteratorAssignmentLhs, localForIterator)
+    val loopRangeText         = expr.getLoopRange.getText
+    val iteratorName          = Constants.iteratorPrefix + iteratorKeyPool.next()
+    val localForIterator      = localNode(iteratorName, TypeConstants.any)
+    val iteratorAssignmentLhs = identifierNode(iteratorName, TypeConstants.any)
+    val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
 
     // TODO: maybe use a different method here, one which does not translate `kotlin.collections.List` to `java.util.List`
     val loopRangeExprTypeFullName =
@@ -1561,8 +1557,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val iteratorAssignment =
       operatorCallNode(Operators.assignment, iteratorName + " = " + iteratorAssignmentRhs.code, None)
-    val iteratorAssignmentAst =
-      callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
+    val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
 
     val controlStructure =
       controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
@@ -1601,23 +1596,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map(Ast(_))
         .toList
 
-    val tmpName = Constants.tmpLocalPrefix + tmpKeyPool.next
-    val localForTmp =
-      localNode(tmpName, TypeConstants.any)
-    val localForTmpAst =
-      Ast(localForTmp)
+    val tmpName        = Constants.tmpLocalPrefix + tmpKeyPool.next
+    val localForTmp    = localNode(tmpName, TypeConstants.any)
+    val localForTmpAst = Ast(localForTmp)
 
-    val tmpIdentifier = identifierNode(tmpName, TypeConstants.any)
-    val tmpIdentifierAst =
-      Ast(tmpIdentifier)
-        .withRefEdge(tmpIdentifier, localForTmp)
-
-    val iteratorNextIdentifier =
-      identifierNode(iteratorName, TypeConstants.any)
-        .argumentIndex(0)
-    val iteratorNextIdentifierAst =
-      Ast(iteratorNextIdentifier)
-        .withRefEdge(iteratorNextIdentifier, localForIterator)
+    val tmpIdentifier             = identifierNode(tmpName, TypeConstants.any)
+    val tmpIdentifierAst          = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, localForTmp)
+    val iteratorNextIdentifier    = identifierNode(iteratorName, TypeConstants.any).argumentIndex(0)
+    val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, localForIterator)
 
     val iteratorNextCall =
       callNode(
@@ -1711,10 +1697,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForWhen(expr: KtWhenExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val astForSubject =
-      astsForExpression(expr.getSubjectExpression, Some(1)).headOption
-        .getOrElse(Ast())
-
+    val astForSubject = astsForExpression(expr.getSubjectExpression, Some(1)).headOption.getOrElse(Ast())
     val astsForEntries =
       withIndex(expr.getEntries.asScala.toSeq) { (e, idx) =>
         astsForWhenEntry(e, idx)
@@ -1722,9 +1705,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val switchBlockNode =
       blockNode(expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.any, line(expr), column(expr))
-    val astForBlock =
-      Ast(switchBlockNode)
-        .withChildren(astsForEntries)
+    val astForBlock = Ast(switchBlockNode).withChildren(astsForEntries)
 
     val codeForSwitch =
       Option(expr.getSubjectExpression)
@@ -1732,9 +1713,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map { text => Constants.when + s"($text)" }
         .getOrElse(Constants.when)
     val switchNode = controlStructureNode(codeForSwitch, ControlStructureTypes.SWITCH, line(expr), column(expr))
-    val ast =
-      Ast(withArgumentIndex(switchNode, argIdx))
-        .withChildren(List(astForSubject, astForBlock))
+    val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(astForSubject, astForBlock))
     // TODO: rewrite this as well
     astForSubject.root match {
       case Some(root) =>
@@ -1749,11 +1728,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val name =
       if (entry.getElseKeyword == null) Constants.defaultCaseNode
       else s"${Constants.caseNodePrefix}$argIdx"
-    val jumpNode =
-      jumpTargetNode(entry.getText, name, Constants.caseNodeParserTypeName, line(entry), column(entry))
-        .argumentIndex(argIdx)
-    val exprNode = astsForExpression(entry.getExpression, Some(argIdx + 1)).headOption
-      .getOrElse(Ast())
+    val jumpNode = jumpTargetNode(entry.getText, name, Constants.caseNodeParserTypeName, line(entry), column(entry))
+      .argumentIndex(argIdx)
+    val exprNode = astsForExpression(entry.getExpression, Some(argIdx + 1)).headOption.getOrElse(Ast())
     Seq(Ast(jumpNode), exprNode)
   }
 
@@ -1847,9 +1824,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val explicitTypeName = Option(expr.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-    val elem         = expr.getIdentifyingElement
-    val typeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-    val node = localNode(expr.getName, typeFullName, None, line(expr), column(expr))
+    val elem             = expr.getIdentifyingElement
+    val typeFullName     = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
+    val node             = localNode(expr.getName, typeFullName, None, line(expr), column(expr))
     scope.addToScope(expr.getName, node)
 
     val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
@@ -1863,9 +1840,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     } else {
       astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
     }
-    val identifier = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
+    val identifier     = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
     val assignmentNode = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
-    val call = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts)
+    val call           = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts)
 
     val localAst = Ast(node).withRefEdge(identifier, node)
     Seq(call) ++ Seq(localAst)
