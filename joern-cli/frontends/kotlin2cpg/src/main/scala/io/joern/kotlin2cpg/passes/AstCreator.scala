@@ -635,14 +635,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForLambda(expr: KtLambdaExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
     val lambdaMethodNode =
-      methodNode(
-        Constants.lambdaName,
-        fullName,
-        signature,
-        relativizedPath,
-        line(expr),
-        column(expr)
-      )
+      methodNode(Constants.lambdaName, fullName, signature, relativizedPath, line(expr), column(expr))
 
     val closureBindingEntriesForCaptured =
       scope
@@ -696,10 +689,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
 
     val _methodRefNode =
-      withArgumentIndex(
-        methodRefNode(expr.getText, fullName, lambdaTypeDeclFullName, line(expr), column(expr)),
-        argIdx
-      )
+      withArgumentIndex(methodRefNode(expr.getText, fullName, lambdaTypeDeclFullName, line(expr), column(expr)), argIdx)
 
     val lambdaTypeDeclInheritsFromTypeFullName =
       TypeConstants.kotlinFunctionXPrefix + expr.getValueParameters.size
