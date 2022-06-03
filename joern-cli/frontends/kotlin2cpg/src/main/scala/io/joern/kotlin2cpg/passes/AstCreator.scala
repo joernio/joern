@@ -14,7 +14,7 @@ import io.joern.x2cpg.datastructures.Global
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
-import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.iterableToTraversal
@@ -82,6 +82,23 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       diffGraph.addEdge(captureEdgeTo, node, EdgeTypes.CAPTURE)
       diffGraph.addEdge(node, refEdgeTo, EdgeTypes.REF)
     }
+  }
+
+  private def ktTokenToOperator(forPostfixExpr: Boolean): PartialFunction[KtToken, String] = {
+    val postfixKtTokenToOperator: PartialFunction[KtToken, String] = {
+      case KtTokens.EXCLEXCL   => Operators.notNullAssert
+      case KtTokens.MINUSMINUS => Operators.postDecrement
+      case KtTokens.PLUSPLUS   => Operators.postIncrement
+    }
+    val prefixKtTokenToOperator: PartialFunction[KtToken, String] = {
+      case KtTokens.EXCL       => Operators.logicalNot
+      case KtTokens.MINUSMINUS => Operators.preDecrement
+      case KtTokens.MINUS      => Operators.minus
+      case KtTokens.PLUS       => Operators.plus
+      case KtTokens.PLUSPLUS   => Operators.preIncrement
+    }
+    if (forPostfixExpr) postfixKtTokenToOperator
+    else prefixKtTokenToOperator
   }
 
   private def astWithRefEdgeMaybe(lookupName: String, srcNode: NewNode): Ast = {
@@ -702,14 +719,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForPostfixExpression(expr: KtPostfixExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val operatorType = expr.getOperationToken match {
-      case KtTokens.PLUSPLUS   => Operators.postIncrement
-      case KtTokens.MINUSMINUS => Operators.postDecrement
-      case KtTokens.EXCLEXCL   => Operators.notNullAssert
-      case _ =>
-        logger.warn("Creating empty AST node for unknown postfix expr: " + expr.getOperationToken)
-        Constants.unknownOperator
-    }
+    val operatorType = ktTokenToOperator(forPostfixExpr = true)
+      .applyOrElse(
+        KtPsiUtil.getOperationToken(expr),
+        { (token: KtToken) =>
+          logger.warn("Unsupported token type encountered: " + token)
+          Constants.unknownOperator
+        }
+      )
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = List(
       astsForExpression(expr.getBaseExpression, Some(1)).headOption
@@ -722,16 +739,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForPrefixExpression(expr: KtPrefixExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val operatorType = expr.getOperationToken match {
-      case KtTokens.EXCL       => Operators.logicalNot
-      case KtTokens.PLUS       => Operators.plus
-      case KtTokens.MINUS      => Operators.minus
-      case KtTokens.PLUSPLUS   => Operators.preIncrement
-      case KtTokens.MINUSMINUS => Operators.preDecrement
-      case _ =>
-        logger.warn("Creating empty AST node for unknown prefix expr: " + expr.getOperationToken)
-        Constants.unknownOperator
-    }
+    val operatorType = ktTokenToOperator(forPostfixExpr = false)
+      .applyOrElse(
+        KtPsiUtil.getOperationToken(expr),
+        { (token: KtToken) =>
+          logger.warn("Unsupported token type encountered: " + token)
+          Constants.unknownOperator
+        }
+      )
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = List(
       astsForExpression(expr.getBaseExpression, Some(1)).headOption
