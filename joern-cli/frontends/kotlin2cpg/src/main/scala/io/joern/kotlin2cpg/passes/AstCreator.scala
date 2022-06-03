@@ -234,13 +234,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map { _ => typeInfoProvider.erasedSignature(constructorParams) }
         .getOrElse(TypeConstants.void + "()")
     val defaultFullName = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
-    val ctorFnWithSig =
+    val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
     val primaryCtorMethodNode =
       methodNode(
         TypeConstants.initPrefix,
-        ctorFnWithSig._1,
-        ctorFnWithSig._2,
+        fullName,
+        signature,
         relativizedPath,
         line(ktClass.getPrimaryConstructor),
         column(ktClass.getPrimaryConstructor)
@@ -438,12 +438,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForMethod(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val fnWithSig = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
     val _methodNode =
       methodNode(
         ktFn.getName,
-        fnWithSig._1,
-        fnWithSig._2,
+        fullName,
+        signature,
         relativizedPath,
         line(ktFn),
         column(ktFn),
@@ -633,12 +633,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForLambda(expr: KtLambdaExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
     val lambdaMethodNode =
       methodNode(
         Constants.lambdaName,
-        fullNameWithSig._1,
-        fullNameWithSig._2,
+        fullName,
+        signature,
         relativizedPath,
         line(expr),
         column(expr)
@@ -684,7 +684,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .getOrElse(Ast(NewBlock()))
 
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
-    val lambdaTypeDeclFullName = fullNameWithSig._1.split(":").head
+    val lambdaTypeDeclFullName = fullName.split(":").head
 
     val lambdaMethodAst =
       methodAst(
@@ -697,7 +697,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val _methodRefNode =
       withArgumentIndex(
-        methodRefNode(expr.getText, fullNameWithSig._1, lambdaTypeDeclFullName, line(expr), column(expr)),
+        methodRefNode(expr.getText, fullName, lambdaTypeDeclFullName, line(expr), column(expr)),
         argIdx
       )
 
@@ -712,7 +712,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
     registerType(lambdaTypeDeclInheritsFromTypeFullName)
 
-    val lambdaBinding = bindingNode(Constants.lambdaBindingName, fullNameWithSig._2)
+    val lambdaBinding = bindingNode(Constants.lambdaBindingName, signature)
     val bindingInfo = BindingInfo(
       lambdaBinding,
       Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaMethodNode, EdgeTypes.REF))
