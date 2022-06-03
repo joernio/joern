@@ -250,10 +250,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
     scope.pushNewScope(typeDecl)
 
-    val (classFunctions, classDeclarations) = Option(ktClass.getBody)
-      .map(_.getFunctions.asScala)
-      .getOrElse(Seq())
-      .partition(_.isInstanceOf[KtNamedFunction])
+    val classFunctions =
+      Option(ktClass.getBody)
+        .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
+        .getOrElse(List())
+    val classDeclarations =
+      Option(ktClass.getBody)
+        .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
+        .getOrElse(List())
 
     /** curently unused val blockInitializers = if (ktClass.getBody != null) { ktClass.getBody.getAnonymousInitializers
       * } else { List().asJava }
