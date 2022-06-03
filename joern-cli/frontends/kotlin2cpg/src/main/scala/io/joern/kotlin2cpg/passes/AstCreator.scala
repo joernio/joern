@@ -77,6 +77,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
+  private def astWithRefEdgeMaybe(lookupName: String, srcNode: NewNode): Ast = {
+    scope.lookupVariable(lookupName) match {
+      case Some(n) => Ast(srcNode).withRefEdge(srcNode, n)
+      case None    => Ast(srcNode)
+    }
+  }
+
   def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val ktFile = fileWithMeta.f
 
@@ -595,10 +602,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node         = withArgumentIndex(identifierNode(expr.getText, typeFullName, line(expr), column(expr)), argIdx)
-    scope.lookupVariable(expr.getText) match {
-      case Some(n) => Ast(node).withRefEdge(node, n)
-      case None    => Ast(node)
-    }
+    astWithRefEdgeMaybe(expr.getText, node)
   }
 
   def astForThisExpression(expr: KtThisExpression, argIdx: Option[Int])(implicit
@@ -606,10 +610,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node         = withArgumentIndex(identifierNode(expr.getText, typeFullName, line(expr), column(expr)), argIdx)
-    scope.lookupVariable(expr.getText) match {
-      case Some(n) => Ast(node).withRefEdge(node, n)
-      case None    => Ast(node)
-    }
+    astWithRefEdgeMaybe(expr.getText, node)
   }
 
   def astForClassLiteral(expr: KtClassLiteralExpression, argIdx: Option[Int])(implicit
@@ -734,11 +735,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val identifier =
       identifierNode(arrayExpr.getText, typeFullName, line(arrayExpr), column(arrayExpr))
-    val identifierAst =
-      scope.lookupVariable(arrayExpr.getText) match {
-        case Some(v) => Ast(identifier).withRefEdge(identifier, v)
-        case None    => Ast(identifier)
-      }
+    val identifierAst = astWithRefEdgeMaybe(arrayExpr.getText, identifier)
     val astsForIndexExpr =
       expr.getIndexExpressions.asScala.zipWithIndex.map { case (expr, idx) =>
         astsForExpression(expr, Some(idx + 1))
@@ -1098,11 +1095,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
               .argumentIndex(2)
 
           val componentNIdentifierAst =
-            scope.lookupVariable(componentNIdentifierNode.name) match {
-              case Some(n) => Ast(componentNIdentifierNode).withRefEdge(componentNIdentifierNode, n)
-              case None    => Ast(componentNIdentifierNode)
-            }
-
+            astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
           val componentNAst =
             Ast(componentNCallNode)
               .withChild(componentNIdentifierAst)
@@ -1690,10 +1683,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val entryIdentifier =
           identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
         val entryIdentifierAst =
-          scope.lookupVariable(entryIdentifier.name) match {
-            case Some(n) => Ast(entryIdentifier).withRefEdge(entryIdentifier, n)
-            case None    => Ast(entryIdentifier)
-          }
+          astWithRefEdgeMaybe(entryIdentifier.name, entryIdentifier)
         val componentNName    = Constants.componentNPrefix + idx
         val fallbackSignature = TypeConstants.cpgUnresolved + "()"
         val fallbackFullName =
@@ -1970,13 +1960,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     )
     val thisNode =
       identifierNode(Constants.this_, referenceTargetTypeFullName, line(expr), column(expr))
-    val thisAst =
-      scope.lookupVariable(Constants.this_) match {
-        case Some(n) => Ast(thisNode).withRefEdge(thisNode, n)
-        case None    => Ast(thisNode)
-      }
+    val thisAst              = astWithRefEdgeMaybe(Constants.this_, thisNode)
     val _fieldIdentifierNode = fieldIdentifierNode(expr.getReferencedName, line(expr), column(expr))
-
     val node =
       operatorCallNode(
         Operators.fieldAccess,
@@ -1994,10 +1979,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val name         = expr.getIdentifier.getText
     val node         = withArgumentIndex(identifierNode(name, typeFullName, line(expr), column(expr)), argIdx)
-    scope.lookupVariable(name) match {
-      case Some(n) => Ast(node).withRefEdge(node, n)
-      case None    => Ast(node)
-    }
+    astWithRefEdgeMaybe(name, node)
   }
 
   def astForLiteral(expr: KtConstantExpression, argIdx: Option[Int])(implicit
