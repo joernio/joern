@@ -665,7 +665,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val bodyAst =
       Option(expr.getBodyExpression)
-        .map(astForBlock(_, None, false, localsForCaptured))
+        .map(astForBlock(_, None, pushToScope = false, localsForCaptured))
         .getOrElse(Ast(NewBlock()))
 
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
