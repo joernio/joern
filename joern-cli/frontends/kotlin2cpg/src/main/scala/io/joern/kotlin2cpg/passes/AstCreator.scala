@@ -176,6 +176,37 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     Ast(node)
   }
 
+  def componentNMethodAsts(typeDecl: NewTypeDecl, parameters: Seq[KtParameter])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Seq[Ast] = {
+    parameters.zipWithIndex.map { case (valueParam, idx) =>
+      val componentIdx = idx + 1
+
+      val typeFullName  = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
+      val componentName = Constants.componentNPrefix + componentIdx
+      val signature     = typeFullName + "()"
+      val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
+
+      val thisParam       = methodParameterNode(Constants.this_, typeDecl.fullName).order(0)
+      val thisIdentifier  = identifierNode(Constants.this_, typeDecl.fullName)
+      val fieldIdentifier = fieldIdentifierNode(valueParam.getName, line(valueParam), column(valueParam))
+      val fieldAccessCall =
+        operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + valueParam.getName, Some(typeFullName))
+      val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
+      val methodBlockAst =
+        blockAst(
+          blockNode(fieldAccessCall.code, typeFullName),
+          List(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
+        )
+      methodAst(
+        methodNode(componentName, fullName, signature, relativizedPath),
+        Seq(thisParam),
+        methodBlockAst,
+        methodReturnNode(None, None, typeFullName)
+      )
+    }
+  }
+
   def astsForClassOrObject(ktClass: KtClassOrObject)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val className = ktClass.getName
     val explicitFullName = {
@@ -343,53 +374,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         methodAst(secondaryCtorMethodNode, ctorParams, ctorMethodBlockAst, ctorMethodReturnNode)
       }
 
-    val isDataClass =
-      ktClass match {
-        case typedExpr: KtClass =>
-          typedExpr.isData
-        case _ => false
-      }
-
-    val componentNMethodAsts =
-      if (isDataClass) {
-        ktClass.getPrimaryConstructor.getValueParameters.asScala.zipWithIndex
-          .map { case (valueParam, idx) =>
-            val componentIdx = idx + 1
-
-            val typeFullName  = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
-            val componentName = Constants.componentNPrefix + componentIdx
-            val signature     = typeFullName + "()"
-            val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
-
-            val thisParam =
-              methodParameterNode(Constants.this_, classFullName)
-                .order(0)
-            val thisIdentifier =
-              identifierNode(Constants.this_, typeDecl.fullName)
-            val fieldIdentifier =
-              fieldIdentifierNode(valueParam.getName, line(valueParam), column(valueParam))
-
-            val fieldAccessCall =
-              operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + valueParam.getName, Some(typeFullName))
-            val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
-            val methodBlockAst =
-              blockAst(
-                blockNode(fieldAccessCall.code, typeFullName),
-                List(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
-              )
-            methodAst(
-              methodNode(componentName, fullName, signature, relativizedPath),
-              Seq(thisParam),
-              methodBlockAst,
-              methodReturnNode(None, None, typeFullName)
-            )
-          }
-      } else {
-        Seq()
-      }
-
+    val _componentNMethodAsts = ktClass match {
+      case typedExpr: KtClass if typedExpr.isData =>
+        componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
+      case _ => Seq()
+    }
     val componentNBindingsInfo =
-      componentNMethodAsts
+      _componentNMethodAsts
         .flatMap(_.root.collectAll[NewMethod])
         .map { methodNode =>
           val node = bindingNode(methodNode.name, methodNode.signature)
@@ -402,7 +393,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         List(constructorAst) ++
         membersFromPrimaryCtorAsts ++
         secondaryConstructorAsts ++
-        componentNMethodAsts.toList ++
+        _componentNMethodAsts.toList ++
         memberAsts
     val ast = Ast(typeDecl).withChildren(children)
 
