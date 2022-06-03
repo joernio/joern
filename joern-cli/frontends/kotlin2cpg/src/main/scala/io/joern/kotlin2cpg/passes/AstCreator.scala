@@ -411,7 +411,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val ast = Ast(typeDecl).withChildren(children)
 
     (bindingsInfo ++ componentNBindingsInfo)
-      .foreach(bindingInfoQueue.prepend(_))
+      .foreach(bindingInfoQueue.prepend)
 
     val finalAst =
       if (typeInfoProvider.isCompanionObject(ktClass)) {
