@@ -246,10 +246,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         line(ktClass.getPrimaryConstructor),
         column(ktClass.getPrimaryConstructor)
       )
-
-    val ctorThisParam =
-      methodParameterNode(Constants.this_, classFullName)
-        .order(0)
+    val ctorThisParam = methodParameterNode(Constants.this_, classFullName).order(0)
     scope.addToScope(Constants.this_, ctorThisParam)
 
     val constructorParamsAsts =
@@ -324,11 +321,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
         scope.pushNewScope(secondaryCtorMethodNode)
 
-        val typeFullName = registerType(typeInfoProvider.typeFullName(secondaryCtor, TypeConstants.any))
-        val ctorThisParam =
-          methodParameterNode(Constants.this_, classFullName)
-            .order(0)
+        val typeFullName  = registerType(typeInfoProvider.typeFullName(secondaryCtor, TypeConstants.any))
+        val ctorThisParam = methodParameterNode(Constants.this_, classFullName).order(0)
         scope.addToScope(Constants.this_, ctorThisParam)
+
         val constructorParamsAsts =
           Seq(Ast(ctorThisParam)) ++
             withIndex(constructorParams) { (p, idx) =>
@@ -458,9 +454,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val bodyAst =
       ktFn.getBodyBlockExpression match {
         case blockExpr if blockExpr != null => astForBlock(blockExpr, None)
-        case _ =>
-          val blockNode = NewBlock()
-          Ast(blockNode)
+        case _                              => Ast(NewBlock())
       }
     scope.popScope()
 
@@ -791,13 +785,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val initExpr             = expr.getInitializer
     val destructuringEntries = nonUnderscoreEntries(expr)
-    val localsForEntries =
-      destructuringEntries
-        .map { entry =>
-          val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-          localNode(entry.getName, typeFullName, None, line(entry), column(entry))
-        }
-        .map(Ast(_))
+    val localsForEntries = destructuringEntries.map { entry =>
+      val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+      Ast(localNode(entry.getName, typeFullName, None, line(entry), column(entry)))
+    }
 
     val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(initExpr, TypeConstants.cpgUnresolved))
     val tmpName             = Constants.tmpLocalPrefix + tmpKeyPool.next
@@ -2162,9 +2153,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .map(_.getText)
         .getOrElse(TypeConstants.any)
     val typeFullName = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
-    val node =
-      methodParameterNode(name, typeFullName, line(param), column(param))
-        .order(order)
+    val node         = methodParameterNode(name, typeFullName, line(param), column(param)).order(order)
     scope.addToScope(name, node)
     Ast(node)
   }
