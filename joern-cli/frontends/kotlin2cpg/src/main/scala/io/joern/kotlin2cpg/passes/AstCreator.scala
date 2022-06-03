@@ -64,20 +64,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   private def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
 
-    (bindingInfoQueue ++ lambdaBindingInfoQueue)
-      .foreach { bindingInfo =>
-        diffGraph.addNode(bindingInfo.node)
-        bindingInfo.edgeMeta.foreach { case (src, dst, label) =>
-          diffGraph.addEdge(src, dst, label)
-        }
-      }
+    for {
+      bindingInfo <- bindingInfoQueue ++ lambdaBindingInfoQueue
+      _ = diffGraph.addNode(bindingInfo.node)
+      (src, dst, label) <- bindingInfo.edgeMeta
+    } diffGraph.addEdge(src, dst, label)
 
-    closureBindingDefQueue
-      .foreach { case ClosureBindingDef(node, captureEdgeTo, refEdgeTo) =>
-        diffGraph.addNode(node)
-        diffGraph.addEdge(captureEdgeTo, node, EdgeTypes.CAPTURE)
-        diffGraph.addEdge(node, refEdgeTo, EdgeTypes.REF)
-      }
+    closureBindingDefQueue.foreach { case ClosureBindingDef(node, captureEdgeTo, refEdgeTo) =>
+      diffGraph.addNode(node)
+      diffGraph.addEdge(captureEdgeTo, node, EdgeTypes.CAPTURE)
+      diffGraph.addEdge(node, refEdgeTo, EdgeTypes.REF)
+    }
   }
 
   def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -130,16 +127,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   def astForPackageDeclaration(packageName: String): Ast = {
     val node =
-      packageName match {
-        case Constants.root =>
-          namespaceBlockNode(
-            NamespaceTraversal.globalNamespaceName,
-            NamespaceTraversal.globalNamespaceName,
-            relativizedPath
-          )
-        case _ =>
-          val name = packageName.split("\\.").lastOption.getOrElse("")
-          namespaceBlockNode(name, packageName, relativizedPath)
+      if (packageName == Constants.root)
+        namespaceBlockNode(
+          NamespaceTraversal.globalNamespaceName,
+          NamespaceTraversal.globalNamespaceName,
+          relativizedPath
+        )
+      else {
+        val name = packageName.split("\\.").lastOption.getOrElse("")
+        namespaceBlockNode(name, packageName, relativizedPath)
       }
     Ast(node)
   }
