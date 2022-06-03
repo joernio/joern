@@ -1776,9 +1776,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     // TODO: get all conditions with entry.getConditions()
     val name =
-      Option(entry.getElseKeyword)
-        .map { _ => Constants.caseNodePrefix + argIdx.toString }
-        .getOrElse(Constants.defaultCaseNode)
+      if (entry.getElseKeyword == null) Constants.defaultCaseNode
+      else s"${Constants.caseNodePrefix}$argIdx"
     val jumpNode =
       jumpTargetNode(entry.getText, name, Constants.caseNodeParserTypeName, line(entry), column(entry))
         .argumentIndex(argIdx)
