@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.traversal.iterableToTraversal
 
 import scala.jdk.CollectionConverters._
 import scala.annotation.tailrec
@@ -291,7 +292,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val constructorAst =
       methodAst(
         primaryCtorMethodNode,
-        constructorParamsAsts.flatMap(_.root.collect { case node: NewMethodParameterIn => node }),
+        constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn]),
         blockAst(blockNode("", TypeConstants.void), memberSetCalls),
         constructorMethodReturn
       )
@@ -343,7 +344,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val ctorMethodReturnNode =
           methodReturnNode(Some(line(secondaryCtor)), Some(column(secondaryCtor)), typeFullName, Some(classFullName))
 
-        val ctorParams = constructorParamsAsts.flatMap(_.root.collect { case node: NewMethodParameterIn => node })
+        val ctorParams = constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn])
         methodAst(secondaryCtorMethodNode, ctorParams, ctorMethodBlockAst, ctorMethodReturnNode)
       }
 
@@ -394,7 +395,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val componentNBindingsInfo =
       componentNMethodAsts
-        .flatMap(_.root.collect { case node: NewMethod => node })
+        .flatMap(_.root.collectAll[NewMethod])
         .map { methodNode =>
           val node = bindingNode(methodNode.name, methodNode.signature)
           BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
@@ -682,7 +683,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val lambdaMethodAst =
       methodAst(
         lambdaMethodNode,
-        parametersAsts.flatMap(_.root.collect { case node: NewMethodParameterIn => node }),
+        parametersAsts.flatMap(_.root.collectAll[NewMethodParameterIn]),
         bodyAst,
         methodReturnNode(Some(line(expr)), Some(column(expr)), returnTypeFullName)
       )
