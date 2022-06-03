@@ -47,8 +47,8 @@ class MethodReturnTest2 extends CCodeToCpgSuite {
       mainMethodReturn.typeFullName shouldBe "int"
     }
     val astReturns  = cpg.method("main").ast.isReturn.l
-    val cfgReturns  = cpg.method("main").methodReturn.cfgPrev.l
-    val travReturns = cpg.method("main").methodReturn.toReturn.l
+    val cfgReturns  = cpg.method("main").methodReturn.cfgPrev.toSet
+    val travReturns = cpg.method("main").methodReturn.toReturn.toSet
     inside(astReturns) { case List(ret1, ret2) =>
       ret1.code shouldBe "return 1;"
       ret1.lineNumber shouldBe Some(4)
@@ -57,7 +57,7 @@ class MethodReturnTest2 extends CCodeToCpgSuite {
       ret2.lineNumber shouldBe Some(6)
       ret2.columnNumber shouldBe Some(3)
     }
-    astReturns shouldBe cfgReturns
-    astReturns shouldBe travReturns
+    astReturns.toSet shouldBe cfgReturns
+    astReturns.toSet shouldBe travReturns
   }
 }
