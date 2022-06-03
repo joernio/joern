@@ -224,7 +224,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val methodAsts = classFunctions.toSeq.map(astForMethod)
     val bindingsInfo =
       methodAsts
-        .flatMap(_.root.collect { case node: NewMethod => node })
+        .flatMap(_.root.collectAll[NewMethod])
         .map { _methodNode =>
           val node = bindingNode(_methodNode.name, _methodNode.signature)
           BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
@@ -456,7 +456,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val parameters =
       withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) =>
         astForParameter(p, idx)
-      }.flatMap(_.root.collect { case node: NewMethodParameterIn => node })
+      }.flatMap(_.root.collectAll[NewMethodParameterIn])
 
     val bodyAst =
       ktFn.getBodyBlockExpression match {
