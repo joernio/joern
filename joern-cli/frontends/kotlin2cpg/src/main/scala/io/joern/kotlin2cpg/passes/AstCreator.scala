@@ -605,38 +605,35 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val lambdaMethodNode =
       methodNode(Constants.lambdaName, fullName, signature, relativizedPath, line(expr), column(expr))
 
-    val closureBindingEntriesForCaptured =
-      scope
-        .pushClosureScope(lambdaMethodNode)
-        .collect {
-          case node: NewMethodParameterIn => node
-          case node: NewLocal             => node
-          case node: NewMember            => node
-        }
-        .map { capturedNode =>
-          // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
-          val closureBindingId   = randomUUID().toString
-          val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
-          (closureBindingNode, capturedNode)
-        }
+    val closureBindingEntriesForCaptured = scope
+      .pushClosureScope(lambdaMethodNode)
+      .collect {
+        case node: NewMethodParameterIn => node
+        case node: NewLocal             => node
+        case node: NewMember            => node
+      }
+      .map { capturedNode =>
+        // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
+        val closureBindingId   = randomUUID().toString
+        val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
+        (closureBindingNode, capturedNode)
+      }
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNode) =>
       val node = localNode(capturedNode.name, capturedNode.typeFullName, closureBindingNode.closureBindingId)
       scope.addToScope(capturedNode.name, node)
       node
     }
-
-    val parametersAsts =
-      typeInfoProvider.implicitParameterName(expr) match {
-        case Some(implicitParamName) =>
-          val node = methodParameterNode(implicitParamName, TypeConstants.any)
-          scope.addToScope(implicitParamName, node)
-          Seq(Ast(node))
-        case None =>
-          withIndex(expr.getValueParameters.asScala.toSeq) { (p, idx) =>
-            astForParameter(p, idx)
-          }
-      }
+    val parametersAsts = typeInfoProvider.implicitParameterName(expr) match {
+      case Some(implicitParamName) =>
+        val node = methodParameterNode(implicitParamName, TypeConstants.any)
+        scope.addToScope(implicitParamName, node)
+        Seq(Ast(node))
+      case None =>
+        withIndex(expr.getValueParameters.asScala.toSeq) { (p, idx) =>
+          astForParameter(p, idx)
+        }
+    }
 
     val bodyAst =
       Option(expr.getBodyExpression)
