@@ -1794,7 +1794,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .argumentIndex(argIdx)
     val exprNode = astsForExpression(entry.getExpression, Some(argIdx + 1)).headOption
       .getOrElse(Ast())
-    Seq(Ast(jumpNode)) ++ Seq(exprNode)
+    Seq(Ast(jumpNode), exprNode)
   }
 
   def astForIf(expr: KtIfExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
