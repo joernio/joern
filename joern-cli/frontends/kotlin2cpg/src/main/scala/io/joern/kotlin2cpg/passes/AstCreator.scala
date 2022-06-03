@@ -102,21 +102,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         name = getName(node)
       } yield Ast(namespaceBlockNode(name, name, relativizedPath))
 
-    val declarationsAsts =
-      ktFile.getDeclarations.asScala.toSeq.map(astForDeclaration).flatten
-    val fileNode = NewFile().name(fileWithMeta.relativizedPath)
+    val declarationsAsts = ktFile.getDeclarations.asScala.flatMap(astForDeclaration)
+    val fileNode         = NewFile().name(fileWithMeta.relativizedPath)
     val lambdaTypeDecls =
-      lambdaBindingInfoQueue.flatMap(
-        _.edgeMeta
-          .map(_._1)
-          .collect { case node: NewTypeDecl => Ast(node) }
-      )
+      lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
 
     val namespaceBlockAst =
       astForPackageDeclaration(ktFile.getPackageFqName.toString)
         .withChildren(importAsts ++ declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls)
-    Ast(fileNode)
-      .withChildren(namespaceBlockAst :: namespaceBlocksForImports)
+    Ast(fileNode).withChildren(namespaceBlockAst :: namespaceBlocksForImports)
   }
 
   def astForImportDirective(directive: KtImportDirective): Ast = {
@@ -1852,22 +1846,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val explicitTypeName =
-      Option(expr.getTypeReference)
-        .map(_.getText)
-        .getOrElse(TypeConstants.any)
+    val explicitTypeName = Option(expr.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val elem         = expr.getIdentifyingElement
     val typeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-    val node =
-      localNode(expr.getName, typeFullName, None, line(expr), column(expr))
+    val node = localNode(expr.getName, typeFullName, None, line(expr), column(expr))
     scope.addToScope(expr.getName, node)
 
-    val hasRHSCtorCall =
-      expr.getDelegateExpressionOrInitializer match {
-        case typed: KtCallExpression =>
-          typeInfoProvider.isConstructorCall(typed).getOrElse(false)
-        case _ => false
-      }
+    val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
+      case typed: KtCallExpression =>
+        typeInfoProvider.isConstructorCall(typed).getOrElse(false)
+      case _ => false
+    }
     val rhsAsts = if (hasRHSCtorCall) {
       // TODO: remove the hard case
       Seq(astForCtorCall(expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression], Some(2)))
@@ -1875,8 +1864,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
     }
     val identifier = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
-    val assignmentNode =
-      operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
+    val assignmentNode = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
     val call = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts)
 
     val localAst = Ast(node).withRefEdge(identifier, node)
