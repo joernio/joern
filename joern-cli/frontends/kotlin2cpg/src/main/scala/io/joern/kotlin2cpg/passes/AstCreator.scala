@@ -614,18 +614,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           case node: NewMember            => node
         }
         .map { capturedNode =>
-          val closureBindingId = randomUUID().toString
-          val node             = closureBinding(closureBindingId, capturedNode.name)
-          (node, capturedNode)
+          // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
+          val closureBindingId   = randomUUID().toString
+          val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
+          (closureBindingNode, capturedNode)
         }
 
-    val localsForCaptured =
-      closureBindingEntriesForCaptured.map { entry =>
-        val node =
-          localNode(entry._2.name, entry._2.typeFullName, entry._1.closureBindingId)
-        scope.addToScope(entry._2.name, node)
-        node
-      }
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNode) =>
+      val node = localNode(capturedNode.name, capturedNode.typeFullName, closureBindingNode.closureBindingId)
+      scope.addToScope(capturedNode.name, node)
+      node
+    }
 
     val parametersAsts =
       typeInfoProvider.implicitParameterName(expr) match {
