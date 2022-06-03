@@ -739,15 +739,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForPostfixExpression(expr: KtPostfixExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val operatorType =
-      expr.getOperationToken match {
-        case KtTokens.PLUSPLUS   => Operators.postIncrement
-        case KtTokens.MINUSMINUS => Operators.postDecrement
-        case KtTokens.EXCLEXCL   => Operators.notNullAssert
-        case _ =>
-          logger.warn("Creating empty AST node for unknown postfix expr: " + expr.getOperationToken)
-          Constants.unknownOperator
-      }
+    val operatorType = expr.getOperationToken match {
+      case KtTokens.PLUSPLUS   => Operators.postIncrement
+      case KtTokens.MINUSMINUS => Operators.postDecrement
+      case KtTokens.EXCLEXCL   => Operators.notNullAssert
+      case _ =>
+        logger.warn("Creating empty AST node for unknown postfix expr: " + expr.getOperationToken)
+        Constants.unknownOperator
+    }
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = List(
       astsForExpression(expr.getBaseExpression, Some(1)).headOption
@@ -760,17 +759,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForPrefixExpression(expr: KtPrefixExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val operatorType =
-      expr.getOperationToken match {
-        case KtTokens.EXCL       => Operators.logicalNot
-        case KtTokens.PLUS       => Operators.plus
-        case KtTokens.MINUS      => Operators.minus
-        case KtTokens.PLUSPLUS   => Operators.preIncrement
-        case KtTokens.MINUSMINUS => Operators.preDecrement
-        case _ =>
-          logger.warn("Creating empty AST node for unknown prefix expr: " + expr.getOperationToken)
-          Constants.unknownOperator
-      }
+    val operatorType = expr.getOperationToken match {
+      case KtTokens.EXCL       => Operators.logicalNot
+      case KtTokens.PLUS       => Operators.plus
+      case KtTokens.MINUS      => Operators.minus
+      case KtTokens.PLUSPLUS   => Operators.preIncrement
+      case KtTokens.MINUSMINUS => Operators.preDecrement
+      case _ =>
+        logger.warn("Creating empty AST node for unknown prefix expr: " + expr.getOperationToken)
+        Constants.unknownOperator
+    }
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = List(
       astsForExpression(expr.getBaseExpression, Some(1)).headOption
