@@ -281,25 +281,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val memberSetCalls =
       constructorParams
-        .filter(_.hasValOrVar)
-        .map { case ctorParam =>
-          val typeFullName    = registerType(typeInfoProvider.typeFullName(ctorParam, TypeConstants.any))
-          val paramName       = ctorParam.getName
-          val paramIdentifier = identifierNode(paramName, typeFullName)
-          val paramIdentifierAst =
-            scope.lookupVariable(paramName) match {
-              case Some(refTo) => Ast(paramIdentifier).withRefEdge(paramIdentifier, refTo)
-              case None        => Ast(paramIdentifier)
-            }
-          val thisIdentifier  = identifierNode(Constants.this_, classFullName)
-          val fieldIdentifier = fieldIdentifierNode(paramName)
-          val fieldAccessCall =
-            operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + paramName, Some(typeFullName))
-          val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
+        .collect {
+          case ctorParam if ctorParam.hasValOrVar =>
+            val typeFullName       = registerType(typeInfoProvider.typeFullName(ctorParam, TypeConstants.any))
+            val paramName          = ctorParam.getName
+            val paramIdentifier    = identifierNode(paramName, typeFullName)
+            val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
+            val thisIdentifier     = identifierNode(Constants.this_, classFullName)
+            val fieldIdentifier    = fieldIdentifierNode(paramName)
+            val fieldAccessCall =
+              operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + paramName, Some(typeFullName))
+            val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
 
-          val assignmentNode =
-            operatorCallNode(Operators.assignment, fieldAccessCall.code + " = " + paramIdentifier.code)
-          callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
+            val assignmentNode =
+              operatorCallNode(Operators.assignment, fieldAccessCall.code + " = " + paramIdentifier.code)
+            callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
         }
 
     val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
