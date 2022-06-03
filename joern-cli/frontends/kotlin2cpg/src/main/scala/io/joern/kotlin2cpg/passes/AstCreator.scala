@@ -689,11 +689,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaMethodNode, EdgeTypes.REF))
     )
     scope.popScope()
-
-    val closureBindingDefs =
-      closureBindingEntriesForCaptured.map { entry => ClosureBindingDef(entry._1, _methodRefNode, entry._2) }
-    closureBindingDefs
-      .foreach(closureBindingDefQueue.prepend(_))
+    val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
+      ClosureBindingDef(closureBinding, _methodRefNode, node)
+    }
+    closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
     Ast(_methodRefNode)
