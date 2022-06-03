@@ -397,7 +397,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           else { List() }
         } ++ bodyCfg.breaks
           .map((_, AlwaysEdge)) ++ bodyCfg.fringe,
-        caseLabels = List()
+        caseLabels = List(),
+        breaks = List(),
+        continues = List()
       )
   }
 
