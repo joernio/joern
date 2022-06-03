@@ -299,10 +299,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val membersFromPrimaryCtorAsts =
       ktClass.getPrimaryConstructorParameters.asScala.toList
-        .filter(_.hasValOrVar)
-        .collect { case param =>
-          val typeFullName = registerType(typeInfoProvider.parameterType(param, TypeConstants.any))
-          memberNode(param.getName, typeFullName, line(param), column(param))
+        .collect {
+          case param if param.hasValOrVar =>
+            val typeFullName = registerType(typeInfoProvider.parameterType(param, TypeConstants.any))
+            memberNode(param.getName, typeFullName, line(param), column(param))
         }
         .map(Ast(_))
 
