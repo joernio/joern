@@ -187,8 +187,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val explicitBaseTypeFullNames =
       ktClass.getSuperTypeListEntries.asScala
         .map(_.getTypeAsUserType)
-        .filterNot(_ == null) // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
-        .map(_.getText)
+        .collect { case t if t != null => t.getText }
+        // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
         .toList
 
     val baseTypeFullNames =
