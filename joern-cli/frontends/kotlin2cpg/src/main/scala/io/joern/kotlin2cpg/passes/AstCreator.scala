@@ -62,6 +62,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeName
   }
 
+  private def getName(node: NewImport) = {
+    val isWildcard = node.isWildcard.getOrElse(false: java.lang.Boolean)
+    if (isWildcard) Constants.wildcardImportName
+    else node.importedEntity.getOrElse("")
+  }
+
   private def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
 
@@ -91,17 +97,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val importDirectives = ktFile.getImportList.getImports.asScala
     val importAsts       = importDirectives.toList.map(astForImportDirective)
     val namespaceBlocksForImports =
-      importAsts
-        .flatMap(_.root.collect { case node: NewImport => node })
-        .map { node =>
-          if (node.isWildcard.getOrElse(false).asInstanceOf[Boolean]) {
-            Constants.wildcardImportName
-          } else {
-            node.importedEntity.getOrElse("")
-          }
-        }
-        .map { name => namespaceBlockNode(name, name, relativizedPath) }
-        .map(Ast(_))
+      for {
+        node <- importAsts.flatMap(_.root.collectAll[NewImport])
+        name = getName(node)
+      } yield Ast(namespaceBlockNode(name, name, relativizedPath))
 
     val declarationsAsts =
       ktFile.getDeclarations.asScala.toSeq.map(astForDeclaration).flatten
