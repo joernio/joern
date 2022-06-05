@@ -124,9 +124,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
 
-    val namespaceBlockAst =
-      astForPackageDeclaration(ktFile.getPackageFqName.toString)
-        .withChildren(importAsts ++ declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls)
+    val namespaceBlockAst = astForPackageDeclaration(ktFile.getPackageFqName.toString)
+      .withChildren(importAsts ++ declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls)
     Ast(fileNode).withChildren(namespaceBlockAst :: namespaceBlocksForImports)
   }
 
@@ -225,19 +224,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       fqName + "." + className
     }
     val classFullName = registerType(typeInfoProvider.fullName(ktClass, explicitFullName))
-    val explicitBaseTypeFullNames =
-      ktClass.getSuperTypeListEntries.asScala
-        .map(_.getTypeAsUserType)
-        .collect { case t if t != null => t.getText }
-        // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
-        .toList
+    val explicitBaseTypeFullNames = ktClass.getSuperTypeListEntries.asScala
+      .map(_.getTypeAsUserType)
+      .collect { case t if t != null => t.getText }
+      // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
+      .toList
 
-    val baseTypeFullNames =
-      typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
-    val outBaseTypeFullNames =
-      Option(baseTypeFullNames)
-        .filter(_.nonEmpty)
-        .getOrElse(Seq(TypeConstants.javaLangObject))
+    val baseTypeFullNames = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val outBaseTypeFullNames = Option(baseTypeFullNames)
+      .filter(_.nonEmpty)
+      .getOrElse(Seq(TypeConstants.javaLangObject))
     val typeDecl =
       typeDeclNode(
         className,
@@ -250,10 +246,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       )
     scope.pushNewScope(typeDecl)
 
-    val classFunctions =
-      Option(ktClass.getBody)
-        .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
-        .getOrElse(List())
+    val classFunctions = Option(ktClass.getBody)
+      .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
+      .getOrElse(List())
     val classDeclarations =
       Option(ktClass.getBody)
         .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
@@ -263,13 +258,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       * } else { List().asJava }
       */
     val methodAsts = classFunctions.toSeq.map(astForMethod)
-    val bindingsInfo =
-      methodAsts
-        .flatMap(_.root.collectAll[NewMethod])
-        .map { _methodNode =>
-          val node = bindingNode(_methodNode.name, _methodNode.signature)
-          BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
-        }
+    val bindingsInfo = methodAsts
+      .flatMap(_.root.collectAll[NewMethod])
+      .map { _methodNode =>
+        val node = bindingNode(_methodNode.name, _methodNode.signature)
+        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
+      }
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature =
       Option(ktClass.getPrimaryConstructor)
@@ -409,11 +403,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val finalAst =
       if (typeInfoProvider.isCompanionObject(ktClass)) {
-        val companionMemberTypeFullName =
-          ktClass.getParent.getParent match {
-            case c: KtClassOrObject => typeInfoProvider.typeFullName(c, TypeConstants.any)
-            case _                  => TypeConstants.any
-          }
+        val companionMemberTypeFullName = ktClass.getParent.getParent match {
+          case c: KtClassOrObject => typeInfoProvider.typeFullName(c, TypeConstants.any)
+          case _                  => TypeConstants.any
+        }
         registerType(companionMemberTypeFullName)
 
         val companionObjectMember =
@@ -448,17 +441,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         astForParameter(p, idx)
       }.flatMap(_.root.collectAll[NewMethodParameterIn])
 
-    val bodyAst =
-      ktFn.getBodyBlockExpression match {
-        case blockExpr if blockExpr != null => astForBlock(blockExpr, None)
-        case _                              => Ast(NewBlock())
-      }
+    val bodyAst = ktFn.getBodyBlockExpression match {
+      case blockExpr if blockExpr != null => astForBlock(blockExpr, None)
+      case _                              => Ast(NewBlock())
+    }
     scope.popScope()
 
-    val explicitTypeName =
-      Option(ktFn.getTypeReference)
-        .map(_.getText)
-        .getOrElse(TypeConstants.any)
+    val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = methodReturnNode(Some(line(ktFn)), Some(column(ktFn)), typeFullName)
     methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)
@@ -471,16 +460,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     localsForCaptures: List[NewLocal] = List()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val node =
-      withArgumentIndex(
-        blockNode(expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName, line(expr), column(expr)),
-        argIdx
-      )
+    val node = withArgumentIndex(
+      blockNode(expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName, line(expr), column(expr)),
+      argIdx
+    )
     if (pushToScope) scope.pushNewScope(node)
-    val statementAsts =
-      withIndex(expr.getStatements.asScala.toSeq) { (statement, idx) =>
-        astsForExpression(statement, Some(idx))
-      }.flatten
+    val statementAsts = withIndex(expr.getStatements.asScala.toSeq) { (statement, idx) =>
+      astsForExpression(statement, Some(idx))
+    }.flatten
     if (pushToScope) scope.popScope()
     blockAst(node, localsForCaptures.map(Ast(_)) ++ statementAsts)
   }
@@ -1159,28 +1146,25 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val isDynamicCall   = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
 
-    val hasThisSuperOrNameRefReceiver =
-      expr.getReceiverExpression match {
-        case _: KtThisExpression          => true
-        case _: KtNameReferenceExpression => true
-        case _: KtSuperExpression         => true
-        case _                            => false
-      }
+    val hasThisSuperOrNameRefReceiver = expr.getReceiverExpression match {
+      case _: KtThisExpression          => true
+      case _: KtNameReferenceExpression => true
+      case _: KtSuperExpression         => true
+      case _                            => false
+    }
     val hasNameRefSelector = expr.getSelectorExpression.isInstanceOf[KtNameReferenceExpression]
     val isFieldAccessCall  = hasThisSuperOrNameRefReceiver && hasNameRefSelector
-    val isCallToSuper =
-      expr.getReceiverExpression match {
-        case _: KtSuperExpression => true
-        case _                    => false
-      }
+    val isCallToSuper = expr.getReceiverExpression match {
+      case _: KtSuperExpression => true
+      case _                    => false
+    }
     val isStaticMethodCall = typeInfoProvider.isStaticMethodCall(expr)
-    val hasRefToClassReceiver =
-      expr.getReceiverExpression match {
-        case r: KtNameReferenceExpression =>
-          typeInfoProvider.isReferenceToClass(r)
-        case _ =>
-          false
-      }
+    val hasRefToClassReceiver = expr.getReceiverExpression match {
+      case r: KtNameReferenceExpression =>
+        typeInfoProvider.isReferenceToClass(r)
+      case _ =>
+        false
+    }
     val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
     val argIdxForReceiver =
       if (isFieldAccessCall) 1
@@ -1191,23 +1175,22 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       else 1
     val receiverAst        = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
     val selectorOrderCount = argIdxForReceiver
-    val argAsts =
-      expr.getSelectorExpression match {
-        case selectorExpression: KtCallExpression =>
-          withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-            val selectorOrder    = if (isStaticCall) idx else selectorOrderCount + idx + 1
-            val selectorArgIndex = if (isStaticCall) idx else selectorOrder - 1
-            astsForExpression(arg.getArgumentExpression, Some(selectorArgIndex))
-          }.flatten
-        case typedExpr: KtNameReferenceExpression =>
-          val argIdx = if (isStaticCall) 1 else 2
-          val node =
-            fieldIdentifierNode(typedExpr.getText)
-              .argumentIndex(argIdx)
-          List(Ast(node))
-        case _ =>
-          List()
-      }
+    val argAsts = expr.getSelectorExpression match {
+      case selectorExpression: KtCallExpression =>
+        withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+          val selectorOrder    = if (isStaticCall) idx else selectorOrderCount + idx + 1
+          val selectorArgIndex = if (isStaticCall) idx else selectorOrder - 1
+          astsForExpression(arg.getArgumentExpression, Some(selectorArgIndex))
+        }.flatten
+      case typedExpr: KtNameReferenceExpression =>
+        val argIdx = if (isStaticCall) 1 else 2
+        val node =
+          fieldIdentifierNode(typedExpr.getText)
+            .argumentIndex(argIdx)
+        List(Ast(node))
+      case _ =>
+        List()
+    }
 
     // TODO: add more test cases for this
     // TODO: use the typedecl from the scope here as soon as it's available
@@ -1233,19 +1216,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
      */
 
-    val astDerivedMethodFullName =
-      expr.getSelectorExpression match {
-        case expression: KtCallExpression =>
-          val receiverPlaceholderType = TypeConstants.cpgUnresolved
-          val shortName               = expr.getSelectorExpression.getFirstChild.getText
-          val args                    = expression.getValueArguments
-          receiverPlaceholderType + "." + shortName + ":" + typeInfoProvider.erasedSignature(args.asScala.toList)
-        case _: KtNameReferenceExpression =>
-          Operators.fieldAccess
-        case _ =>
-          // TODO: add more test cases for this scenario
-          ""
-      }
+    val astDerivedMethodFullName = expr.getSelectorExpression match {
+      case expression: KtCallExpression =>
+        val receiverPlaceholderType = TypeConstants.cpgUnresolved
+        val shortName               = expr.getSelectorExpression.getFirstChild.getText
+        val args                    = expression.getValueArguments
+        receiverPlaceholderType + "." + shortName + ":" + typeInfoProvider.erasedSignature(args.asScala.toList)
+      case _: KtNameReferenceExpression =>
+        Operators.fieldAccess
+      case _ =>
+        // TODO: add more test cases for this scenario
+        ""
+    }
 
     val astDerivedSignature =
       if (astDerivedMethodFullName.startsWith(Constants.operatorSuffix)) {
@@ -1257,22 +1239,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val methodName =
-      if (isFieldAccessCall || fullNameWithSig._1 == Operators.fieldAccess) {
-        Operators.fieldAccess
-      } else {
-        expr.getSelectorExpression.getFirstChild.getText
-      }
-    val dispatchType =
-      if (isFieldAccessCall) {
-        DispatchTypes.STATIC_DISPATCH
-      } else if (callKind == CallKinds.DynamicCall) {
-        DispatchTypes.DYNAMIC_DISPATCH
-      } else if (callKind == CallKinds.ExtensionCall) {
-        DispatchTypes.STATIC_DISPATCH
-      } else {
-        DispatchTypes.STATIC_DISPATCH
-      }
+    val methodName = if (isFieldAccessCall || fullNameWithSig._1 == Operators.fieldAccess) {
+      Operators.fieldAccess
+    } else {
+      expr.getSelectorExpression.getFirstChild.getText
+    }
+    val dispatchType = if (isFieldAccessCall) {
+      DispatchTypes.STATIC_DISPATCH
+    } else if (callKind == CallKinds.DynamicCall) {
+      DispatchTypes.DYNAMIC_DISPATCH
+    } else if (callKind == CallKinds.ExtensionCall) {
+      DispatchTypes.STATIC_DISPATCH
+    } else {
+      DispatchTypes.STATIC_DISPATCH
+    }
 
     val _callNode =
       callNode(
@@ -1980,20 +1960,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Some(Constants.unknownOperator)
       }
     }
-    val fullNameWithSignature =
-      if (operatorOption.isDefined) {
-        (operatorOption.get, TypeConstants.any)
-      } else {
-        // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
-        typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
-      }
+    val fullNameWithSignature = if (operatorOption.isDefined) {
+      (operatorOption.get, TypeConstants.any)
+    } else {
+      // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
+      typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+    }
     val fullName = fullNameWithSignature._1
-    val signature =
-      if (fullName.startsWith(Constants.operatorSuffix)) {
-        Constants.empty // TODO: add test case for this situation
-      } else {
-        fullNameWithSignature._2
-      }
+    val signature = if (fullName.startsWith(Constants.operatorSuffix)) {
+      Constants.empty // TODO: add test case for this situation
+    } else {
+      fullNameWithSignature._2
+    }
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val name = if (operatorOption.isDefined) {
       operatorOption.get
@@ -2013,8 +1991,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         line(expr),
         column(expr)
       )
-    val args =
-      astsForExpression(expr.getLeft, Some(1)) ++ astsForExpression(expr.getRight, Some(2))
+    val args = astsForExpression(expr.getLeft, Some(1)) ++ astsForExpression(expr.getRight, Some(2))
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
 
@@ -2022,17 +1999,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
 
-    val argAsts =
-      withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-        astsForExpression(arg.getArgumentExpression, Some(idx))
-      }.flatten
+    val argAsts = withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+      astsForExpression(arg.getArgumentExpression, Some(idx))
+    }.flatten
 
     // TODO: add tests for the empty `referencedName` here
-    val referencedName =
-      Option(expr.getFirstChild)
-        .collect { case expr: KtNameReferenceExpression => expr }
-        .map(_.getText)
-        .getOrElse("")
+    val referencedName = Option(expr.getFirstChild)
+      .collect { case expr: KtNameReferenceExpression => expr }
+      .map(_.getText)
+      .getOrElse("")
     val nameToClass =
       expr.getContainingKtFile.getDeclarations.asScala.collect { case c: KtClass => c.getName -> c }.toMap
 
@@ -2045,22 +2020,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       importedName -> imp
     }.toMap
 
-    val methodFqName = {
-      if (importedNames.isDefinedAt(referencedName)) {
-        importedNames(referencedName).getImportedFqName.toString
-      } else if (nameToClass.contains(expr.getCalleeExpression.getText)) {
-        val klass = nameToClass(expr.getCalleeExpression.getText)
-        klass.getContainingKtFile.getPackageFqName.toString + "." + referencedName
-      } else {
-        expr.getContainingKtFile.getPackageFqName.toString + "." + referencedName
-      }
+    val methodFqName = if (importedNames.isDefinedAt(referencedName)) {
+      importedNames(referencedName).getImportedFqName.toString
+    } else if (nameToClass.contains(expr.getCalleeExpression.getText)) {
+      val klass = nameToClass(expr.getCalleeExpression.getText)
+      klass.getContainingKtFile.getPackageFqName.toString + "." + referencedName
+    } else {
+      expr.getContainingKtFile.getPackageFqName.toString + "." + referencedName
     }
-    val signature =
-      TypeConstants.any + "(" +
-        argAsts
-          .map { _ => TypeConstants.any }
-          .mkString(",") + ")"
-
+    val signature       = TypeConstants.any + "(" + argAsts.map { _ => TypeConstants.any }.mkString(",") + ")"
     val fullName        = methodFqName + ":" + signature
     val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (fullName, signature))
 
@@ -2083,13 +2051,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val name = Option(decl.getName).getOrElse(TypeConstants.any)
-
-    val explicitTypeName =
-      decl.getOriginalElement match {
-        case p: KtProperty if p.getTypeReference != null => p.getTypeReference.getText
-        case _                                           => TypeConstants.any
-      }
-
+    val explicitTypeName = decl.getOriginalElement match {
+      case p: KtProperty if p.getTypeReference != null => p.getTypeReference.getText
+      case _                                           => TypeConstants.any
+    }
     val typeFullName = decl match {
       case typed: KtProperty =>
         typeInfoProvider.propertyType(typed, explicitTypeName)
@@ -2104,17 +2069,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForParameter(param: KtParameter, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val name =
-      Option(param.getDestructuringDeclaration)
-        .map { _ => Constants.paramNameLambdaDestructureDecl }
-        .getOrElse(param.getName)
+    val name = Option(param.getDestructuringDeclaration)
+      .map { _ => Constants.paramNameLambdaDestructureDecl }
+      .getOrElse(param.getName)
 
-    val explicitTypeName =
-      Option(param.getTypeReference)
-        .map(_.getText)
-        .getOrElse(TypeConstants.any)
-    val typeFullName = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
-    val node         = methodParameterNode(name, typeFullName, line(param), column(param)).order(order)
+    val explicitTypeName = Option(param.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+    val typeFullName     = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
+    val node             = methodParameterNode(name, typeFullName, line(param), column(param)).order(order)
     scope.addToScope(name, node)
     Ast(node)
   }
