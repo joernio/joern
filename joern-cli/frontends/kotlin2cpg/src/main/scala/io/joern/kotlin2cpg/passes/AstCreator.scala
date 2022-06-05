@@ -217,6 +217,35 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
+  def secondaryCtorAsts(ctors: Seq[KtSecondaryConstructor], classFullName: String)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Seq[Ast] = {
+    ctors.map { ctor =>
+      val constructorParams = ctor.getValueParameters.asScala.toList
+      val defaultSignature  = typeInfoProvider.erasedSignature(constructorParams)
+      val defaultFullName   = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+      val ctorFnWithSig     = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
+      val secondaryCtorMethodNode =
+        methodNode(Constants.init, ctorFnWithSig._1, ctorFnWithSig._2, relativizedPath, line(ctor), column(ctor))
+
+      scope.pushNewScope(secondaryCtorMethodNode)
+
+      val typeFullName  = registerType(typeInfoProvider.typeFullName(ctor, TypeConstants.any))
+      val ctorThisParam = methodParameterNode(Constants.this_, classFullName).order(0)
+      scope.addToScope(Constants.this_, ctorThisParam)
+
+      val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
+        withIndex(constructorParams) { (p, idx) => astForParameter(p, idx) }
+      val ctorMethodBlockAst = Option(ctor.getBodyExpression).map(astForBlock(_, None)).getOrElse(Ast())
+      scope.popScope()
+
+      val ctorMethodReturnNode =
+        methodReturnNode(Some(line(ctor)), Some(column(ctor)), typeFullName, Some(classFullName))
+      val ctorParams = constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn])
+      methodAst(secondaryCtorMethodNode, ctorParams, ctorMethodBlockAst, ctorMethodReturnNode)
+    }
+  }
+
   def astsForClassOrObject(ktClass: KtClassOrObject)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val className = ktClass.getName
     val explicitFullName = {
@@ -334,47 +363,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         }
         .map(Ast(_))
 
-    val secondaryConstructorAsts =
-      ktClass.getSecondaryConstructors.asScala.toSeq.map { secondaryCtor =>
-        val constructorParams = secondaryCtor.getValueParameters.asScala.toList
-        val defaultSignature  = typeInfoProvider.erasedSignature(constructorParams)
-        val defaultFullName   = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
-        val ctorFnWithSig = typeInfoProvider.fullNameWithSignature(secondaryCtor, (defaultFullName, defaultSignature))
-        val secondaryCtorMethodNode =
-          methodNode(
-            Constants.init,
-            ctorFnWithSig._1,
-            ctorFnWithSig._2,
-            relativizedPath,
-            line(secondaryCtor),
-            column(secondaryCtor)
-          )
-
-        scope.pushNewScope(secondaryCtorMethodNode)
-
-        val typeFullName  = registerType(typeInfoProvider.typeFullName(secondaryCtor, TypeConstants.any))
-        val ctorThisParam = methodParameterNode(Constants.this_, classFullName).order(0)
-        scope.addToScope(Constants.this_, ctorThisParam)
-
-        val constructorParamsAsts =
-          Seq(Ast(ctorThisParam)) ++
-            withIndex(constructorParams) { (p, idx) =>
-              astForParameter(p, idx)
-            }
-
-        val ctorMethodBlockAst =
-          Option(secondaryCtor.getBodyExpression)
-            .map(astForBlock(_, None))
-            .getOrElse(Ast())
-        scope.popScope()
-
-        val ctorMethodReturnNode =
-          methodReturnNode(Some(line(secondaryCtor)), Some(column(secondaryCtor)), typeFullName, Some(classFullName))
-
-        val ctorParams = constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn])
-        methodAst(secondaryCtorMethodNode, ctorParams, ctorMethodBlockAst, ctorMethodReturnNode)
-      }
-
+    val secondaryConstructorAsts = secondaryCtorAsts(ktClass.getSecondaryConstructors.asScala.toSeq, classFullName)
     val _componentNMethodAsts = ktClass match {
       case typedExpr: KtClass if typedExpr.isData =>
         componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
