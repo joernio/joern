@@ -221,12 +221,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
-      val constructorParams = ctor.getValueParameters.asScala.toList
-      val defaultSignature  = typeInfoProvider.erasedSignature(constructorParams)
-      val defaultFullName   = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
-      val ctorFnWithSig     = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
+      val constructorParams     = ctor.getValueParameters.asScala.toList
+      val defaultSignature      = typeInfoProvider.erasedSignature(constructorParams)
+      val defaultFullName       = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+      val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
       val secondaryCtorMethodNode =
-        methodNode(Constants.init, ctorFnWithSig._1, ctorFnWithSig._2, relativizedPath, line(ctor), column(ctor))
+        methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
 
       scope.pushNewScope(secondaryCtorMethodNode)
 
@@ -566,19 +566,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astForClassLiteral(expr: KtClassLiteralExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val fullNameWithSignature = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
     val typeFullName          = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
-    val node =
-      callNode(
-        expr.getText,
-        TypeConstants.classLiteralReplacementMethodName,
-        fullNameWithSignature._1,
-        fullNameWithSignature._2,
-        typeFullName,
-        DispatchTypes.STATIC_DISPATCH,
-        line(expr),
-        column(expr)
-      )
+    val node = callNode(
+      expr.getText,
+      TypeConstants.classLiteralReplacementMethodName,
+      fullName,
+      signature,
+      typeFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      line(expr),
+      column(expr)
+    )
     Ast(withArgumentIndex(node, argIdx))
   }
 
@@ -761,15 +760,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val fallbackSignature = TypeConstants.cpgUnresolved + "()"
       val fallbackFullName =
         TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
-      val componentNFullNameWithSignature =
+      val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
       val componentNCallCode = localForTmpNode.name + "." + Constants.componentNPrefix + componentIdx + "()"
       val componentNCallNode =
         callNode(
           componentNCallCode,
           Constants.componentNPrefix + componentIdx,
-          componentNFullNameWithSignature._1,
-          componentNFullNameWithSignature._2,
+          fullName,
+          signature,
           entryTypeFullName,
           DispatchTypes.DYNAMIC_DISPATCH,
           line(entry),
@@ -849,14 +848,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       astsForExpression(arg.getArgumentExpression, Some(idx))
     }.flatten
 
-    val fullNameWithSig = typeInfoProvider.fullNameWithSignature(ctorCall, (TypeConstants.any, TypeConstants.any))
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctorCall, (TypeConstants.any, TypeConstants.any))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val initCallNode =
       callNode(
         Constants.init,
         Constants.init,
-        fullNameWithSig._1,
-        fullNameWithSig._2,
+        fullName,
+        signature,
         TypeConstants.void,
         DispatchTypes.STATIC_DISPATCH,
         line(expr),
@@ -881,21 +880,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val fallbackSignature = TypeConstants.cpgUnresolved + "()"
       val fallbackFullName =
         TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
-      val componentNFullNameWithSignature =
+      val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
       val componentNCallCode = localForTmpNode.name + "." + Constants.componentNPrefix + componentIdx + "()"
-      val componentNCallNode =
-        callNode(
-          componentNCallCode,
-          Constants.componentNPrefix + componentIdx,
-          componentNFullNameWithSignature._1,
-          componentNFullNameWithSignature._2,
-          entryTypeFullName,
-          DispatchTypes.DYNAMIC_DISPATCH,
-          line(entry),
-          column(entry)
-        )
-          .argumentIndex(2)
+      val componentNCallNode = callNode(
+        componentNCallCode,
+        Constants.componentNPrefix + componentIdx,
+        fullName,
+        signature,
+        entryTypeFullName,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        line(entry),
+        column(entry)
+      )
+        .argumentIndex(2)
 
       val componentNIdentifierAst = Ast(componentNIdentifierNode)
         .withRefEdge(componentNIdentifierNode, localForTmpNode)
@@ -960,21 +958,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val fallbackSignature = TypeConstants.cpgUnresolved + "()"
       val fallbackFullName =
         TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
-      val componentNFullNameWithSignature =
+      val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
       val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNPrefix + componentIdx + "()"
-      val componentNCallNode =
-        callNode(
-          componentNCallCode,
-          Constants.componentNPrefix + componentIdx,
-          componentNFullNameWithSignature._1,
-          componentNFullNameWithSignature._2,
-          entryTypeFullName,
-          DispatchTypes.DYNAMIC_DISPATCH,
-          line(entry),
-          column(entry)
-        )
-          .argumentIndex(2)
+      val componentNCallNode = callNode(
+        componentNCallCode,
+        Constants.componentNPrefix + componentIdx,
+        fullName,
+        signature,
+        entryTypeFullName,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        line(entry),
+        column(entry)
+      )
+        .argumentIndex(2)
 
       val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
       val componentNAst = Ast(componentNCallNode)
@@ -982,14 +979,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .withArgEdge(componentNCallNode, componentNIdentifierNode)
         .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
 
-      val assignmentCallNode =
-        operatorCallNode(
-          Operators.assignment,
-          entry.getText + " = " + componentNCallCode,
-          None,
-          line(entry),
-          column(entry)
-        )
+      val assignmentCallNode = operatorCallNode(
+        Operators.assignment,
+        entry.getText + " = " + componentNCallCode,
+        None,
+        line(entry),
+        column(entry)
+      )
       callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
     }
 
@@ -1155,11 +1151,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       } else {
         typeInfoProvider.erasedSignature(argAsts)
       }
-    val fullNameWithSig =
+    val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val methodName = if (isFieldAccessCall || fullNameWithSig._1 == Operators.fieldAccess) {
+    val methodName = if (isFieldAccessCall || fullName == Operators.fieldAccess) {
       Operators.fieldAccess
     } else {
       expr.getSelectorExpression.getFirstChild.getText
@@ -1175,16 +1171,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
 
     val _callNode =
-      callNode(
-        expr.getText,
-        methodName,
-        fullNameWithSig._1,
-        fullNameWithSig._2,
-        retType,
-        dispatchType,
-        line(expr),
-        column(expr)
-      )
+      callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr))
     val root         = Ast(withArgumentIndex(_callNode, argIdx))
     val receiverNode = receiverAst.root.get
     val finalAst = {
@@ -1492,7 +1479,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val componentNName     = Constants.componentNPrefix + idx
       val fallbackSignature  = TypeConstants.cpgUnresolved + "()"
       val fallbackFullName   = TypeConstants.cpgUnresolved + componentNName + ":" + fallbackSignature
-      val componentNFullNameWithSignature =
+      val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
       val componentNCallCode = tmpName + "." + componentNName + "()"
 
@@ -1503,8 +1490,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val tmpComponentNCall = callNode(
         componentNCallCode,
         componentNName,
-        componentNFullNameWithSignature._1,
-        componentNFullNameWithSignature._2,
+        fullName,
+        signature,
         TypeConstants.any,
         DispatchTypes.DYNAMIC_DISPATCH
       ).argumentIndex(2)
@@ -1631,14 +1618,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       astsForExpression(arg.getArgumentExpression, Some(idx))
     }.flatten
 
-    val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val initCallNode = callNode(
       expr.getText,
       Constants.init,
-      fullNameWithSig._1,
-      fullNameWithSig._2,
+      fullName,
+      signature,
       TypeConstants.void,
       DispatchTypes.STATIC_DISPATCH,
       line(expr),
@@ -1810,17 +1797,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Some(Constants.unknownOperator)
       }
     }
-    val fullNameWithSignature = if (operatorOption.isDefined) {
+    val (fullName, signature) = if (operatorOption.isDefined) {
       (operatorOption.get, TypeConstants.any)
     } else {
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
       typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
     }
-    val fullName = fullNameWithSignature._1
-    val signature = if (fullName.startsWith(Constants.operatorSuffix)) {
+    val finalSignature = if (fullName.startsWith(Constants.operatorSuffix)) {
       Constants.empty // TODO: add test case for this situation
     } else {
-      fullNameWithSignature._2
+      signature
     }
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val name = if (operatorOption.isDefined) {
@@ -1830,17 +1816,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     } else {
       expr.getName
     }
-    val node =
-      callNode(
-        expr.getText,
-        name,
-        fullName,
-        signature,
-        typeFullName,
-        DispatchTypes.STATIC_DISPATCH,
-        line(expr),
-        column(expr)
-      )
+    val node = callNode(
+      expr.getText,
+      name,
+      fullName,
+      finalSignature,
+      typeFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      line(expr),
+      column(expr)
+    )
     val args = astsForExpression(expr.getLeft, Some(1)) ++ astsForExpression(expr.getRight, Some(2))
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
@@ -1875,17 +1860,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     } else {
       expr.getContainingKtFile.getPackageFqName.toString + "." + referencedName
     }
-    val signature       = TypeConstants.any + "(" + argAsts.map { _ => TypeConstants.any }.mkString(",") + ")"
-    val fullName        = methodFqName + ":" + signature
-    val fullNameWithSig = typeInfoProvider.fullNameWithSignature(expr, (fullName, signature))
+    val signature             = TypeConstants.any + "(" + argAsts.map { _ => TypeConstants.any }.mkString(",") + ")"
+    val explicitFullName      = methodFqName + ":" + signature
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (explicitFullName, signature))
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
     val returnType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = callNode(
       expr.getText,
       referencedName,
-      fullNameWithSig._1,
-      fullNameWithSig._2,
+      fullName,
+      signature,
       returnType,
       DispatchTypes.STATIC_DISPATCH,
       line(expr),
