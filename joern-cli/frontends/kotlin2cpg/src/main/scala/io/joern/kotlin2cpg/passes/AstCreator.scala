@@ -136,7 +136,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .isWildcard(isWildcard)
         .isExplicit(true)
         .importedEntity(directive.getImportPath.getPathStr)
-        .code(Constants.importKeyword + " " + directive.getImportPath.getPathStr)
+        .code(s"${Constants.importKeyword} ${directive.getImportPath.getPathStr}")
         .lineNumber(line(directive))
         .columnNumber(column(directive))
     Ast(node)
@@ -192,15 +192,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val componentIdx = idx + 1
 
       val typeFullName  = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
-      val componentName = Constants.componentNPrefix + componentIdx
-      val signature     = typeFullName + "()"
-      val fullName      = typeDecl.fullName + "." + componentName + ":" + signature
+      val componentName = s"${Constants.componentNPrefix}$componentIdx"
+      val signature     = s"$typeFullName()"
+      val fullName      = s"${typeDecl.fullName}.$componentName:$signature"
 
       val thisParam       = methodParameterNode(Constants.this_, typeDecl.fullName).order(0)
       val thisIdentifier  = identifierNode(Constants.this_, typeDecl.fullName)
       val fieldIdentifier = fieldIdentifierNode(valueParam.getName, line(valueParam), column(valueParam))
       val fieldAccessCall =
-        operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + valueParam.getName, Some(typeFullName))
+        operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.${valueParam.getName}", Some(typeFullName))
       val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
       val methodBlockAst = blockAst(
         blockNode(fieldAccessCall.code, typeFullName),
@@ -221,7 +221,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     ctors.map { ctor =>
       val constructorParams     = ctor.getValueParameters.asScala.toList
       val defaultSignature      = typeInfoProvider.erasedSignature(constructorParams)
-      val defaultFullName       = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+      val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
       val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
       val secondaryCtorMethodNode =
         methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
@@ -247,7 +247,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val className = ktClass.getName
     val explicitFullName = {
       val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
-      fqName + "." + className
+      s"$fqName.$className"
     }
     val classFullName = registerType(typeInfoProvider.fullName(ktClass, explicitFullName))
     val explicitBaseTypeFullNames = ktClass.getSuperTypeListEntries.asScala
@@ -287,8 +287,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature = Option(ktClass.getPrimaryConstructor)
       .map { _ => typeInfoProvider.erasedSignature(constructorParams) }
-      .getOrElse(TypeConstants.void + "()")
-    val defaultFullName = classFullName + "." + TypeConstants.initPrefix + ":" + defaultSignature
+      .getOrElse(s"${TypeConstants.void}()")
+    val defaultFullName = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
     val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
     val primaryCtorMethodNode = methodNode(
@@ -715,7 +715,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val assignmentLhsNode = identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
-    val assignmentNode = operatorCallNode(Operators.assignment, tmpName + " = " + initExpr.getText, None)
+    val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName = ${initExpr.getText}", None)
     val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
@@ -731,12 +731,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           .argumentIndex(0)
 
       val componentIdx      = idx + 1
-      val fallbackSignature = TypeConstants.cpgUnresolved + "()"
+      val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
       val fallbackFullName =
         TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
       val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode = localForTmpNode.name + "." + Constants.componentNPrefix + componentIdx + "()"
+      val componentNCallCode = s"${localForTmpNode.name}.${Constants.componentNPrefix}$componentIdx()"
       val componentNCallNode = callNode(
         componentNCallCode,
         Constants.componentNPrefix + componentIdx,
@@ -757,7 +757,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
       val assignmentCallNode = operatorCallNode(
         Operators.assignment,
-        entry.getText + " = " + componentNCallCode,
+        s"${entry.getText} = $componentNCallCode",
         None,
         line(entry),
         column(entry)
@@ -844,15 +844,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         .argumentIndex(0)
 
       val componentIdx      = idx + 1
-      val fallbackSignature = TypeConstants.cpgUnresolved + "()"
+      val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
       val fallbackFullName =
-        TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
+        s"${TypeConstants.cpgUnresolved}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
       val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode = localForTmpNode.name + "." + Constants.componentNPrefix + componentIdx + "()"
+      val componentNCallCode = s"${localForTmpNode.name}.${Constants.componentNPrefix}$componentIdx()"
       val componentNCallNode = callNode(
         componentNCallCode,
-        Constants.componentNPrefix + componentIdx,
+        s"${Constants.componentNPrefix}$componentIdx",
         fullName,
         signature,
         entryTypeFullName,
@@ -871,7 +871,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
       val assignmentCallNode = operatorCallNode(
         Operators.assignment,
-        entry.getText + " = " + componentNCallCode,
+        s"${entry.getText} = $componentNCallCode",
         None,
         line(entry),
         column(entry)
@@ -919,12 +919,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           .argumentIndex(0)
 
       val componentIdx      = idx + 1
-      val fallbackSignature = TypeConstants.cpgUnresolved + "()"
+      val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
       val fallbackFullName =
-        TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
+        s"${TypeConstants.cpgUnresolved}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
       val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode = destructuringRHS.getText + "." + Constants.componentNPrefix + componentIdx + "()"
+      val componentNCallCode = s"${destructuringRHS.getText}.${Constants.componentNPrefix}$componentIdx()"
       val componentNCallNode = callNode(
         componentNCallCode,
         Constants.componentNPrefix + componentIdx,
@@ -945,7 +945,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
       val assignmentCallNode = operatorCallNode(
         Operators.assignment,
-        entry.getText + " = " + componentNCallCode,
+        s"${entry.getText} = $componentNCallCode",
         None,
         line(entry),
         column(entry)
@@ -1099,7 +1099,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val receiverPlaceholderType = TypeConstants.cpgUnresolved
         val shortName               = expr.getSelectorExpression.getFirstChild.getText
         val args                    = expression.getValueArguments
-        receiverPlaceholderType + "." + shortName + ":" + typeInfoProvider.erasedSignature(args.asScala.toList)
+        s"$receiverPlaceholderType.$shortName:${typeInfoProvider.erasedSignature(args.asScala.toList)}"
       case _: KtNameReferenceExpression =>
         Operators.fieldAccess
       case _ =>
@@ -1247,10 +1247,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val iteratorAssignmentRhsIdentifier = identifierNode(loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
-      loopRangeText + "." + Constants.getIteratorMethodName + "()",
+      s"$loopRangeText.${Constants.getIteratorMethodName}()",
       Constants.getIteratorMethodName,
-      loopRangeExprTypeFullName + "." + Constants.getIteratorMethodName + ":" + Constants.javaUtilIterator + "()",
-      Constants.javaUtilIterator + "()",
+      s"$loopRangeExprTypeFullName.${Constants.getIteratorMethodName}:${Constants.javaUtilIterator}()",
+      s"${Constants.javaUtilIterator}()",
       Constants.javaUtilIterator,
       DispatchTypes.DYNAMIC_DISPATCH
     )
@@ -1261,7 +1261,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withArgEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
       .withReceiverEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
     val iteratorAssignment =
-      operatorCallNode(Operators.assignment, iteratorName + " = " + iteratorAssignmentRhs.code, None)
+      operatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
 
     val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
     val controlStructure = controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
@@ -1269,12 +1269,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val conditionIdentifier = identifierNode(loopRangeText, loopRangeExprTypeFullName).argumentIndex(0)
 
     val hasNextFullName =
-      Constants.collectionsIteratorName + "." + Constants.hasNextIteratorMethodName + ":" + TypeConstants.javaLangBoolean + "()"
+      s"${Constants.collectionsIteratorName}.${Constants.hasNextIteratorMethodName}:${TypeConstants.javaLangBoolean}()"
     val controlStructureCondition = callNode(
-      iteratorName + "." + Constants.hasNextIteratorMethodName + "()",
+      s"$iteratorName.${Constants.hasNextIteratorMethodName}()",
       Constants.hasNextIteratorMethodName,
       hasNextFullName,
-      TypeConstants.javaLangBoolean + "()",
+      s"${TypeConstants.javaLangBoolean}()",
       TypeConstants.javaLangBoolean,
       DispatchTypes.DYNAMIC_DISPATCH
     ).argumentIndex(0)
@@ -1297,10 +1297,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, iteratorLocal)
 
     val iteratorNextCall = callNode(
-      iteratorName + "." + Constants.nextIteratorMethodName + "()",
+      s"$iteratorName.${Constants.nextIteratorMethodName}()",
       Constants.nextIteratorMethodName,
-      Constants.collectionsIteratorName + "." + Constants.nextIteratorMethodName + ":" + TypeConstants.javaLangObject + "()",
-      TypeConstants.javaLangObject + "()",
+      s"${Constants.collectionsIteratorName}.${Constants.nextIteratorMethodName}:${TypeConstants.javaLangObject}()",
+      s"${TypeConstants.javaLangObject}()",
       TypeConstants.javaLangObject,
       DispatchTypes.DYNAMIC_DISPATCH
     ).argumentIndex(2)
@@ -1309,7 +1309,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withArgEdge(iteratorNextCall, iteratorNextIdentifier)
       .withReceiverEdge(iteratorNextCall, iteratorNextIdentifier)
     val loopParameterNextAssignment =
-      operatorCallNode(Operators.assignment, loopParameterName + " = " + iteratorNextCall.code, None)
+      operatorCallNode(Operators.assignment, s"$loopParameterName = ${iteratorNextCall.code}", None)
     val loopParameterNextAssignmentAst =
       callAst(loopParameterNextAssignment, List(Ast(loopParameterIdentifier), iteratorNextCallAst))
 
@@ -1354,10 +1354,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val iteratorAssignmentRhsIdentifier = identifierNode(loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
-      loopRangeText + "." + Constants.getIteratorMethodName + "()",
+      s"$loopRangeText.${Constants.getIteratorMethodName}()",
       Constants.getIteratorMethodName,
-      loopRangeExprTypeFullName + "." + Constants.getIteratorMethodName + ":" + Constants.javaUtilIterator + "()",
-      Constants.javaUtilIterator + "()",
+      s"$loopRangeExprTypeFullName.${Constants.getIteratorMethodName}:${Constants.javaUtilIterator}()",
+      s"${Constants.javaUtilIterator}()",
       Constants.javaUtilIterator,
       DispatchTypes.DYNAMIC_DISPATCH
     )
@@ -1369,19 +1369,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withReceiverEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
 
     val iteratorAssignment =
-      operatorCallNode(Operators.assignment, iteratorName + " = " + iteratorAssignmentRhs.code, None)
+      operatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
     val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
 
     val controlStructure    = controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
     val conditionIdentifier = identifierNode(loopRangeText, loopRangeExprTypeFullName).argumentIndex(0)
 
     val hasNextFullName =
-      Constants.collectionsIteratorName + "." + Constants.hasNextIteratorMethodName + ":" + TypeConstants.javaLangBoolean + "()"
+      s"${Constants.collectionsIteratorName}.${Constants.hasNextIteratorMethodName}:${TypeConstants.javaLangBoolean}()"
     val controlStructureCondition = callNode(
-      iteratorName + "." + Constants.hasNextIteratorMethodName + "()",
+      s"$iteratorName.${Constants.hasNextIteratorMethodName}()",
       Constants.hasNextIteratorMethodName,
       hasNextFullName,
-      TypeConstants.javaLangBoolean + "()",
+      s"${TypeConstants.javaLangBoolean}()",
       TypeConstants.javaLangBoolean,
       DispatchTypes.DYNAMIC_DISPATCH
     ).argumentIndex(0)
@@ -1410,10 +1410,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, localForIterator)
 
     val iteratorNextCall = callNode(
-      iteratorNextIdentifier.code + "." + Constants.nextIteratorMethodName + "()",
+      s"${iteratorNextIdentifier.code}.${Constants.nextIteratorMethodName}()",
       Constants.nextIteratorMethodName,
-      Constants.collectionsIteratorName + "." + Constants.nextIteratorMethodName + ":" + TypeConstants.javaLangObject + "()",
-      TypeConstants.javaLangObject + "()",
+      s"${Constants.collectionsIteratorName}.${Constants.nextIteratorMethodName}:${TypeConstants.javaLangObject}()",
+      s"${TypeConstants.javaLangObject}()",
       TypeConstants.javaLangObject,
       DispatchTypes.DYNAMIC_DISPATCH
     ).argumentIndex(2)
@@ -1422,17 +1422,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       .withChild(iteratorNextIdentifierAst)
       .withArgEdge(iteratorNextCall, iteratorNextIdentifier)
       .withReceiverEdge(iteratorNextCall, iteratorNextIdentifier)
-    val tmpParameterNextAssignment    = operatorCallNode(Operators.assignment, tmpName + " = " + iteratorNextCall.code)
+    val tmpParameterNextAssignment    = operatorCallNode(Operators.assignment, s"$tmpName = ${iteratorNextCall.code}")
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
     val componentNCalls = withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, idx) =>
       val entryIdentifier       = identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
       val entryIdentifierAst    = astWithRefEdgeMaybe(entryIdentifier.name, entryIdentifier)
       val componentNName        = Constants.componentNPrefix + idx
-      val fallbackSignature     = TypeConstants.cpgUnresolved + "()"
-      val fallbackFullName      = TypeConstants.cpgUnresolved + componentNName + ":" + fallbackSignature
+      val fallbackSignature     = s"${TypeConstants.cpgUnresolved}()"
+      val fallbackFullName      = s"${TypeConstants.cpgUnresolved}$componentNName:$fallbackSignature"
       val (fullName, signature) = typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode    = tmpName + "." + componentNName + "()"
+      val componentNCallCode    = s"$tmpName.$componentNName()"
 
       val tmpForComponentNIdentifier = identifierNode(tmpName, TypeConstants.any).argumentIndex(0)
       val tmpForComponentNIdentifierAst = Ast(tmpForComponentNIdentifier)
@@ -1493,7 +1493,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
     val codeForSwitch = Option(expr.getSubjectExpression)
       .map(_.getText)
-      .map { text => Constants.when + s"($text)" }
+      .map { text => s"${Constants.when}($text)" }
       .getOrElse(Constants.when)
     val switchNode = controlStructureNode(codeForSwitch, ControlStructureTypes.SWITCH, line(expr), column(expr))
     val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(astForSubject, astForBlock))
@@ -1656,7 +1656,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-
     val referenceTargetTypeFullName = registerType(
       typeInfoProvider.referenceTargetTypeFullName(expr, TypeConstants.any)
     )
@@ -1665,7 +1664,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val _fieldIdentifierNode = fieldIdentifierNode(expr.getReferencedName, line(expr), column(expr))
     val node = operatorCallNode(
       Operators.fieldAccess,
-      Constants.this_ + "." + expr.getReferencedName,
+      s"${Constants.this_}.${expr.getReferencedName}",
       Some(typeFullName),
       line(expr),
       column(expr)
@@ -1802,13 +1801,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       importedNames(referencedName).getImportedFqName.toString
     } else if (nameToClass.contains(expr.getCalleeExpression.getText)) {
       val klass = nameToClass(expr.getCalleeExpression.getText)
-      klass.getContainingKtFile.getPackageFqName.toString + "." + referencedName
+      s"${klass.getContainingKtFile.getPackageFqName.toString}.$referencedName"
     } else {
-      expr.getContainingKtFile.getPackageFqName.toString + "." + referencedName
+      s"${expr.getContainingKtFile.getPackageFqName.toString}.$referencedName"
     }
-    val signature             = TypeConstants.any + "(" + argAsts.map { _ => TypeConstants.any }.mkString(",") + ")"
-    val explicitFullName      = methodFqName + ":" + signature
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (explicitFullName, signature))
+    val explicitSignature     = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
+    val explicitFullName      = s"$methodFqName:$explicitSignature"
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (explicitFullName, explicitSignature))
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
     val returnType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
