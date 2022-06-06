@@ -927,7 +927,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       val componentNCallCode = s"${destructuringRHS.getText}.${Constants.componentNPrefix}$componentIdx()"
       val componentNCallNode = callNode(
         componentNCallCode,
-        Constants.componentNPrefix + componentIdx,
+        s"${Constants.componentNPrefix}$componentIdx",
         fullName,
         signature,
         entryTypeFullName,
