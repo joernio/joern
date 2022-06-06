@@ -966,18 +966,12 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
     val isCtor = expr.getInitializer match {
       case typedExpr: KtCallExpression =>
-        typeInfoProvider
-          .isConstructorCall(typedExpr)
-          .getOrElse(false)
+        typeInfoProvider.isConstructorCall(typedExpr).getOrElse(false)
       case _ => false
     }
-    if (isCtor) {
-      astsForDestructuringDeclarationWithCtorRHS(expr)
-    } else if (hasNonRefExprRHS) {
-      astsForDestructuringDeclarationWithNonCtorCallRHS(expr)
-    } else {
-      astsForDestructuringDeclarationWithVarRHS(expr)
-    }
+    if (isCtor) astsForDestructuringDeclarationWithCtorRHS(expr)
+    else if (hasNonRefExprRHS) astsForDestructuringDeclarationWithNonCtorCallRHS(expr)
+    else astsForDestructuringDeclarationWithVarRHS(expr)
   }
 
   def astForUnknown(expr: KtExpression, argIdx: Option[Int]): Ast = {
@@ -1201,11 +1195,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   // TODO: handle parameters passed to the clauses
   def astForTry(expr: KtTryExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    if (KtPsiUtil.isStatement(expr)) {
-      astForTryAsStatement(expr)
-    } else {
-      astForTryAsExpression(expr, argIdx)
-    }
+    if (KtPsiUtil.isStatement(expr)) astForTryAsStatement(expr)
+    else astForTryAsExpression(expr, argIdx)
   }
 
   def astForWhile(expr: KtWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1474,11 +1465,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForFor(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    if (expr.getDestructuringDeclaration != null) {
-      astForForWithDestructuringLHS(expr)
-    } else {
-      astForForWithSimpleVarLHS(expr)
-    }
+    if (expr.getDestructuringDeclaration != null) astForForWithDestructuringLHS(expr)
+    else astForForWithSimpleVarLHS(expr)
   }
 
   def astForWhen(expr: KtWhenExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1501,8 +1489,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     astForSubject.root match {
       case Some(root) =>
         ast.withConditionEdge(switchNode, root)
-      case None =>
-        ast
+      case None => ast
     }
   }
 
@@ -1519,11 +1506,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   def astForIf(expr: KtIfExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
-    if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) {
-      astForIfAsControlStructure(expr)
-    } else {
-      astForIfAsExpression(expr, argIdx)
-    }
+    if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) astForIfAsControlStructure(expr)
+    else astForIfAsExpression(expr, argIdx)
   }
 
   def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1754,13 +1738,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       signature
     }
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-    val name = if (operatorOption.isDefined) {
-      operatorOption.get
-    } else if (expr.getChildren.toList.size >= 2) {
-      expr.getChildren.toList(1).getText
-    } else {
-      expr.getName
-    }
+    val name =
+      if (operatorOption.isDefined) operatorOption.get
+      else if (expr.getChildren.toList.size >= 2) expr.getChildren.toList(1).getText
+      else expr.getName
     val node = callNode(
       expr.getText,
       name,
@@ -1831,10 +1812,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case _                                           => TypeConstants.any
     }
     val typeFullName = decl match {
-      case typed: KtProperty =>
-        typeInfoProvider.propertyType(typed, explicitTypeName)
-      case _ =>
-        explicitTypeName
+      case typed: KtProperty => typeInfoProvider.propertyType(typed, explicitTypeName)
+      case _                 => explicitTypeName
     }
     registerType(typeFullName)
 
