@@ -959,8 +959,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case _                            => false
     }
     val isCtor = expr.getInitializer match {
-      case typedExpr: KtCallExpression =>
-        typeInfoProvider.isConstructorCall(typedExpr).getOrElse(false)
+      case typedExpr: KtCallExpression => typeInfoProvider.isConstructorCall(typedExpr).getOrElse(false)
       case _ => false
     }
     if (isCtor) astsForDestructuringDeclarationWithCtorRHS(expr)
@@ -1481,8 +1480,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(astForSubject, astForBlock))
     // TODO: rewrite this as well
     astForSubject.root match {
-      case Some(root) =>
-        ast.withConditionEdge(switchNode, root)
+      case Some(root) => ast.withConditionEdge(switchNode, root)
       case None => ast
     }
   }
