@@ -566,52 +566,7 @@ trait KtPsiToAst {
     val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
-    val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
-      val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val assignmentLHSNode =
-        identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-      val relevantLocal    = localsForEntries(idx).root.get
-      val assignmentLHSAst = Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, relevantLocal)
-
-      val componentNIdentifierNode =
-        identifierNode(localForTmpNode.name, callRhsTypeFullName, line(entry), column(entry))
-          .argumentIndex(0)
-
-      val componentIdx      = idx + 1
-      val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
-      val fallbackFullName =
-        TypeConstants.cpgUnresolved + Constants.componentNPrefix + componentIdx + ":" + fallbackSignature
-      val (fullName, signature) =
-        typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode = s"${localForTmpNode.name}.${Constants.componentNPrefix}$componentIdx()"
-      val componentNCallNode = callNode(
-        componentNCallCode,
-        Constants.componentNPrefix + componentIdx,
-        fullName,
-        signature,
-        entryTypeFullName,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        line(entry),
-        column(entry)
-      )
-        .argumentIndex(2)
-
-      val componentNIdentifierAst = Ast(componentNIdentifierNode).withRefEdge(componentNIdentifierNode, localForTmpNode)
-      val componentNAst = Ast(componentNCallNode)
-        .withChild(componentNIdentifierAst)
-        .withArgEdge(componentNCallNode, componentNIdentifierNode)
-        .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
-
-      val assignmentCallNode = operatorCallNode(
-        Operators.assignment,
-        s"${entry.getText} = $componentNCallCode",
-        None,
-        line(entry),
-        column(entry)
-      )
-      callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
-    }
-
+    val assignmentsForEntries = componentNCallAstsForDestructuringEntries(destructuringEntries, localForTmpNode)
     localsForEntries ++ Seq(localForTmpAst) ++
       Seq(assignmentAst) ++ assignmentsForEntries
   }
@@ -1163,6 +1118,43 @@ trait KtPsiToAst {
       .withChildren(List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst))
   }
 
+  def componentNCallAstsForDestructuringEntries(entries: Seq[KtDestructuringDeclarationEntry], localForTmp: NewLocal)(
+    implicit typeInfoProvider: TypeInfoProvider
+  ): Seq[Ast] = {
+    withIndex(entries) { (entry, idx) =>
+      val entryTypeFullName     = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+      val entryIdentifier       = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
+      val entryIdentifierAst    = astWithRefEdgeMaybe(entryIdentifier.name, entryIdentifier)
+      val componentNName        = Constants.componentNPrefix + idx
+      val fallbackSignature     = s"${TypeConstants.cpgUnresolved}()"
+      val fallbackFullName      = s"${TypeConstants.cpgUnresolved}$componentNName:$fallbackSignature"
+      val (fullName, signature) = typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
+      val tmpName               = localForTmp.name
+      val componentNCallCode    = s"$tmpName.$componentNName()"
+
+      val tmpForComponentNIdentifier = identifierNode(tmpName, localForTmp.typeFullName).argumentIndex(0)
+      val tmpForComponentNIdentifierAst = Ast(tmpForComponentNIdentifier)
+        .withRefEdge(tmpForComponentNIdentifier, localForTmp)
+
+      val tmpComponentNCall = callNode(
+        componentNCallCode,
+        componentNName,
+        fullName,
+        signature,
+        entryTypeFullName,
+        DispatchTypes.DYNAMIC_DISPATCH
+      ).argumentIndex(2)
+      val tmpComponentNCallAst = Ast(tmpComponentNCall)
+        .withChild(tmpForComponentNIdentifierAst)
+        .withArgEdge(tmpComponentNCall, tmpForComponentNIdentifier)
+        .withReceiverEdge(tmpComponentNCall, tmpForComponentNIdentifier)
+
+      val componentNAssignment =
+        operatorCallNode(Operators.assignment, entryIdentifier.code + " = " + tmpComponentNCall.code)
+      callAst(componentNAssignment, List(entryIdentifierAst, tmpComponentNCallAst))
+    }
+  }
+
   // e.g. lowering:
   // for `for ((d1, d2) in l) { <statements> }`
   // BLOCK
@@ -1262,37 +1254,8 @@ trait KtPsiToAst {
     val tmpParameterNextAssignment    = operatorCallNode(Operators.assignment, s"$tmpName = ${iteratorNextCall.code}")
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
-    val componentNCalls = withIndex(destructuringDeclEntries.asScala.toSeq) { (entry, idx) =>
-      val entryIdentifier       = identifierNode(entry.getText, TypeConstants.any, line(entry), column(entry))
-      val entryIdentifierAst    = astWithRefEdgeMaybe(entryIdentifier.name, entryIdentifier)
-      val componentNName        = Constants.componentNPrefix + idx
-      val fallbackSignature     = s"${TypeConstants.cpgUnresolved}()"
-      val fallbackFullName      = s"${TypeConstants.cpgUnresolved}$componentNName:$fallbackSignature"
-      val (fullName, signature) = typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode    = s"$tmpName.$componentNName()"
-
-      val tmpForComponentNIdentifier = identifierNode(tmpName, TypeConstants.any).argumentIndex(0)
-      val tmpForComponentNIdentifierAst = Ast(tmpForComponentNIdentifier)
-        .withRefEdge(tmpForComponentNIdentifier, localForTmp)
-
-      val tmpComponentNCall = callNode(
-        componentNCallCode,
-        componentNName,
-        fullName,
-        signature,
-        TypeConstants.any,
-        DispatchTypes.DYNAMIC_DISPATCH
-      ).argumentIndex(2)
-      val tmpComponentNCallAst = Ast(tmpComponentNCall)
-        .withChild(tmpForComponentNIdentifierAst)
-        .withArgEdge(tmpComponentNCall, tmpForComponentNIdentifier)
-        .withReceiverEdge(tmpComponentNCall, tmpForComponentNIdentifier)
-
-      val componentNAssignment =
-        operatorCallNode(Operators.assignment, entryIdentifier.code + " = " + tmpComponentNCall.code)
-      callAst(componentNAssignment, List(entryIdentifierAst, tmpComponentNCallAst))
-    }
-    val stmtAsts             = astsForExpression(expr.getBody, None)
+    val componentNCalls = componentNCallAstsForDestructuringEntries(destructuringDeclEntries.asScala.toSeq, localForTmp)
+    val stmtAsts        = astsForExpression(expr.getBody, None)
     val controlStructureBody = blockNode("", "")
     val controlStructureBodyAst = Ast(controlStructureBody).withChildren(
       localsForDestructuringVars ++
