@@ -1635,9 +1635,11 @@ trait KtPsiToAst {
   }
 
   def astForParameter(param: KtParameter, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val name = Option(param.getDestructuringDeclaration)
-      .map { _ => Constants.paramNameLambdaDestructureDecl }
-      .getOrElse(param.getName)
+    val name = 
+      if (param.getDestructuringDeclaration != null)
+        Constants.paramNameLambdaDestructureDecl
+      else
+        param.getName
 
     val explicitTypeName = Option(param.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName     = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
