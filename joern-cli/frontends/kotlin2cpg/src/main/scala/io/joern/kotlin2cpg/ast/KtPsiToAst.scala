@@ -1635,7 +1635,7 @@ trait KtPsiToAst {
   }
 
   def astForParameter(param: KtParameter, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val name = 
+    val name =
       if (param.getDestructuringDeclaration != null)
         Constants.paramNameLambdaDestructureDecl
       else
