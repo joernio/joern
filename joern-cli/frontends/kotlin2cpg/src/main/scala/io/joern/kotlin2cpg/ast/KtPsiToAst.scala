@@ -1113,9 +1113,10 @@ trait KtPsiToAst {
     val controlStructureAst = Ast(controlStructure)
       .withChildren(List(controlStructureConditionAst, controlStructureBodyAst))
       .withConditionEdge(controlStructure, controlStructureCondition)
-    val topLevelBlock = blockNode(Constants.codeForLoweredForBlock, "")
-    Ast(topLevelBlock)
-      .withChildren(List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst))
+    blockAst(
+      blockNode(Constants.codeForLoweredForBlock, ""),
+      List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst)
+    )
   }
 
   def componentNCallAstsForDestructuringEntries(entries: Seq[KtDestructuringDeclarationEntry], localForTmp: NewLocal)(
