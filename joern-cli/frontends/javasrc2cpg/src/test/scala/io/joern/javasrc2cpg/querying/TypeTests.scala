@@ -155,6 +155,9 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should default to ANY with a matching type node for unresolved types" in {
+    val xxx = cpg.typ.fullName("ANY").l
+    val yyy = cpg.typ.filter(_ => true).fullName("ANY").l
+    val zzz = 1 + 1
     val List(x)    = cpg.typ("ANY").l
     val List(node) = cpg.identifier.name("UnknownType").l
     node.typeFullName shouldBe "ANY"
