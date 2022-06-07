@@ -458,14 +458,12 @@ trait KtPsiToAst {
     val _methodRefNode =
       withArgumentIndex(methodRefNode(expr.getText, fullName, lambdaTypeDeclFullName, line(expr), column(expr)), argIdx)
 
-    val lambdaTypeDeclInheritsFromTypeFullName = TypeConstants.kotlinFunctionXPrefix + expr.getValueParameters.size
     val lambdaTypeDecl = typeDeclNode(
       Constants.lambdaTypeDeclName,
       lambdaTypeDeclFullName,
       relativizedPath,
-      Seq(lambdaTypeDeclInheritsFromTypeFullName)
+      Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${expr.getValueParameters.size}"))
     )
-    registerType(lambdaTypeDeclInheritsFromTypeFullName)
 
     val lambdaBinding = bindingNode(Constants.lambdaBindingName, signature)
     val bindingInfo = BindingInfo(
