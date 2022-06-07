@@ -34,6 +34,6 @@ class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
   }
 
   private def parseAddress(address: String): Option[Int] = {
-    Try(Integer.parseInt(address, 16)).toOption
+    Try(Integer.decode(address).toInt).toOption
   }
 }

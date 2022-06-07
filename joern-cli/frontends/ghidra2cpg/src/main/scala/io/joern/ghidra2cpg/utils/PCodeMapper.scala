@@ -264,11 +264,14 @@ class PCodeMapper(
     val callNode = pcodeOp.getOpcode match {
       // TODO add more pcode ops like CALL.*
       case BRANCH | BRANCHIND | CBRANCH =>
-        createCallNode(
+        val destination = resolveVarNode(pcodeOp.getInputs.head, 1)
+        val callNode = createCallNode(
           nativeInstruction.toString,
           "<operator>.goto",
           nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
         )
+        connectCallToArgument(callNode, destination)
+        callNode
       case RETURN =>
         createCall("TODO RET", "TODO RET")
       case CALL | CALLOTHER | CALLIND =>

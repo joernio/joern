@@ -18,7 +18,7 @@ class CFGTests extends GhidraBinToCpgSuite {
   }
 
   "should have correct CFG edge out of an unconditional jump" in {
-    val jmp = cpg.method.name("main").call.code("JMP.*").l.head
+    def jmp = cpg.method.name("main").call.code("JMP.*").l.head
     jmp.cfgNext.l match {
       case List(node: Call) =>
         node.code shouldBe "CMP RCX,0x0"
