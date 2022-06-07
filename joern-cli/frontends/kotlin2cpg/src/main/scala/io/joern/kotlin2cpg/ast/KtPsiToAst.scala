@@ -930,29 +930,26 @@ trait KtPsiToAst {
       callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr))
     val root         = Ast(withArgumentIndex(_callNode, argIdx))
     val receiverNode = receiverAst.root.get
-    val finalAst = {
-      if (isExtensionCall || isCallToSuper) {
-        root
-          .withChild(receiverAst)
-          .withArgEdge(_callNode, receiverNode)
-          .withChildren(argAsts)
-          .withArgEdges(_callNode, argAsts.map(_.root.get))
-      } else if (noAstForReceiver) {
-        root.withChild(receiverAst).withChildren(argAsts).withArgEdges(_callNode, argAsts.map(_.root.get))
+    if (isExtensionCall || isCallToSuper) {
+      root
+        .withChild(receiverAst)
+        .withArgEdge(_callNode, receiverNode)
+        .withChildren(argAsts)
+        .withArgEdges(_callNode, argAsts.map(_.root.get))
+    } else if (noAstForReceiver) {
+      root.withChild(receiverAst).withChildren(argAsts).withArgEdges(_callNode, argAsts.map(_.root.get))
+    } else {
+      val ast = root
+        .withChild(receiverAst)
+        .withArgEdge(_callNode, receiverNode)
+        .withChildren(argAsts)
+        .withArgEdges(_callNode, argAsts.map(_.root.get))
+      if (argAsts.size == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) {
+        ast.withReceiverEdge(_callNode, argAsts.head.root.get)
       } else {
-        val ast = root
-          .withChild(receiverAst)
-          .withArgEdge(_callNode, receiverNode)
-          .withChildren(argAsts)
-          .withArgEdges(_callNode, argAsts.map(_.root.get))
-        if (argAsts.size == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) {
-          ast.withReceiverEdge(_callNode, argAsts.head.root.get)
-        } else {
-          ast.withReceiverEdge(_callNode, receiverNode)
-        }
+        ast.withReceiverEdge(_callNode, receiverNode)
       }
     }
-    finalAst
   }
 
   def astForBreak(expr: KtBreakExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
