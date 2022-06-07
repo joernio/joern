@@ -470,26 +470,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtBlockExpression             => List(astForBlock(typedExpr, argIdxOpt))
       case typedExpr: KtBinaryExpressionWithTypeRHS => Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt))
       case typedExpr: KtBreakExpression             => Seq(astForBreak(typedExpr))
-      case typedExpr: KtCallExpression =>
-        val isCtorCall = typeInfoProvider.isConstructorCall(typedExpr)
-        if (isCtorCall.getOrElse(false)) {
-          Seq(astForCtorCall(typedExpr, argIdxOpt))
-        } else {
-          Seq(astForCall(typedExpr, argIdxOpt))
-        }
-      case typedExpr: KtConstantExpression       => Seq(astForLiteral(typedExpr, argIdxOpt))
-      case typedExpr: KtClass                    => astsForClassOrObject(typedExpr)
-      case typedExpr: KtClassLiteralExpression   => Seq(astForClassLiteral(typedExpr, argIdxOpt))
-      case typedExpr: KtSafeQualifiedExpression  => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtContinueExpression       => Seq(astForContinue(typedExpr))
-      case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
-      case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr))
-      case typedExpr: KtForExpression            => Seq(astForFor(typedExpr))
-      case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxOpt))
-      case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtLabeledExpression        => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
-      case typedExpr: KtLambdaExpression         => Seq(astForLambda(typedExpr, argIdxOpt))
+      case typedExpr: KtCallExpression              => Seq(astForCall(typedExpr, argIdxOpt))
+      case typedExpr: KtConstantExpression          => Seq(astForLiteral(typedExpr, argIdxOpt))
+      case typedExpr: KtClass                       => astsForClassOrObject(typedExpr)
+      case typedExpr: KtClassLiteralExpression      => Seq(astForClassLiteral(typedExpr, argIdxOpt))
+      case typedExpr: KtSafeQualifiedExpression     => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtContinueExpression          => Seq(astForContinue(typedExpr))
+      case typedExpr: KtDestructuringDeclaration    => astsForDestructuringDeclaration(typedExpr)
+      case typedExpr: KtDotQualifiedExpression      => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtDoWhileExpression           => Seq(astForDoWhile(typedExpr))
+      case typedExpr: KtForExpression               => Seq(astForFor(typedExpr))
+      case typedExpr: KtIfExpression                => Seq(astForIf(typedExpr, argIdxOpt))
+      case typedExpr: KtIsExpression                => Seq(astForIsExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtLabeledExpression           => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
+      case typedExpr: KtLambdaExpression            => Seq(astForLambda(typedExpr, argIdxOpt))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, argIdxOpt))
       // TODO: callable reference
@@ -1757,6 +1751,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astForCall(expr: KtCallExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val isCtorCall = typeInfoProvider.isConstructorCall(expr)
+    if (isCtorCall.getOrElse(false)) astForCtorCall(expr, argIdx)
+    else astForNonCtorCall(expr, argIdx)
+  }
+
+  private def astForNonCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
 
