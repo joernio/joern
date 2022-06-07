@@ -26,7 +26,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
   override def call(): Vector[ReachableByResult] = {
-    if (task.callDepth > context.config.maxCallDepth) {
+    if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
       Vector()
     } else {
       implicit val sem: Semantics = context.semantics
