@@ -77,21 +77,36 @@ class PCodeMapper(
   }
 
   def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName: String, code: String): CfgNodeNew = {
-    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
-    val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
     val callNode =
-      createCall(cpgOperationName, nativeInstruction.toString) // s"${firstOp.code} $operation ${secondOp.code}"))
-    connectCallToArgument(callNode, firstOp)
-    connectCallToArgument(callNode, secondOp)
+      createCall(cpgOperationName, nativeInstruction.toString)
+    // we need this for MIPS
+    if (pcodeOp.getOutput.isRegister) {
+      val firstOp  = resolveVarNode(pcodeOp.getOutput, 1)
+      val secondOp = resolveVarNode(pcodeOp.getInput(0), 2)
+      val thirdOp  = resolveVarNode(pcodeOp.getInput(1), 3)
+      connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, secondOp)
+      connectCallToArgument(callNode, thirdOp)
+    } else {
+      val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+      val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
+      connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, secondOp)
+    }
     callNode
   }
 
   def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
-    val output   = resolveVarNode(pcodeOp.getInputs.headOption.get, 1)
     val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 2)
     val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
-    connectCallToArgument(callNode, output)
     connectCallToArgument(callNode, secondOp)
+    if (pcodeOp.getOutput != null && pcodeOp.getOutput.isRegister) {
+      val output = resolveVarNode(pcodeOp.getOutput, 1)
+      connectCallToArgument(callNode, output)
+    } else {
+      val output = resolveVarNode(pcodeOp.getInputs.headOption.get, 1)
+      connectCallToArgument(callNode, output)
+    }
     callNode
   }
   def resolveVarNode1(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
