@@ -97,16 +97,11 @@ class PCodeMapper(
   }
 
   def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
-    val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 2)
+    val firstop  = resolveVarNode(pcodeOp.getInput(1), 1)
+    val secondOp = resolveVarNode(pcodeOp.getInput(2), 2)
     val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
+    connectCallToArgument(callNode, firstop)
     connectCallToArgument(callNode, secondOp)
-    if (pcodeOp.getOutput != null && pcodeOp.getOutput.isRegister) {
-      val output = resolveVarNode(pcodeOp.getOutput, 1)
-      connectCallToArgument(callNode, output)
-    } else {
-      val output = resolveVarNode(pcodeOp.getInputs.headOption.get, 1)
-      connectCallToArgument(callNode, output)
-    }
     callNode
   }
   def resolveVarNode1(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
@@ -171,17 +166,23 @@ class PCodeMapper(
     }
   }
   def handleAssignment(pcodeOp: PcodeOp, code: String): CfgNodeNew = {
-    handleStore(pcodeOp)
-    // val firstOp = createCallNode(
-    //  pcodeOp.getOutput.toString,
-    //  pcodeOp.getOutput.toString,
-    //  pcodeOp.getSeqnum.getTarget.getOffsetAsBigInteger.intValue()
-    // ) // , 0)
-    // val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 1)
-    // val callNode = createCall("<operator>.assignment", code=code)//s"${firstOp.code} = ${secondOp.code}")
-    // connectCallToArgument(callNode, firstOp)
-    // connectCallToArgument(callNode, secondOp)
-    // callNode
+    val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 2)
+    val callNode = createCall("<operator>.assignment", code = code) // s"${firstOp.code} = ${secondOp.code}")
+    connectCallToArgument(callNode, secondOp)
+    if (pcodeOp.getOutput.isRegister) {
+      val firstOp = resolveVarNode(pcodeOp.getOutput, 1)
+      connectCallToArgument(callNode, firstOp)
+    } else {
+      val firstOp = createIdentifier(
+        pcodeOp.getOutput.toString(),
+        pcodeOp.getOutput.toString,
+        1,
+        "TODO",
+        pcodeOp.getSeqnum.getTarget.getOffsetAsBigInteger.intValue()
+      )
+      connectCallToArgument(callNode, firstOp)
+    }
+    callNode
   }
   def handleTwoArguments1(
     diffGraphBuilder: DiffGraphBuilder,

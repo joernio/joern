@@ -11,15 +11,16 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   }
 
   "A call should contain exactly one node with all mandatory fields set" in {
-    cpg.call
+    def result = cpg.call
       .name("<operator>.assignment")
       .where(_.method.name("main"))
       .where(
         _.argument
           .order(2)
-          .code("a")
+          .code("0xa")
       )
-      .l match {
+      .l
+    result match {
       case List(x) =>
         x.name shouldBe "<operator>.assignment"
       case _ => fail()
@@ -27,25 +28,25 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   }
 
   "A method with name 'main' should have a call with the according code" in {
-    val x = cpg.method
+    val result = cpg.method
       .name("main")
       .call
       .name("<operator>.assignment")
       .where(
         _.argument
           .order(2)
-          .code("a")
+          .code("0xa")
       )
       .head
       .code
 
-    x shouldBe "MOV dword ptr [RBP + -0x4],0xa"
+    result shouldBe "MOV dword ptr [RBP + -0x4],0xa"
   }
 
   "A call should have a method with the name 'main' " in {
     val x = cpg.call
       .name("<operator>.assignment")
-      .where(_.argument.order(2).code("a"))
+      .where(_.argument.order(2).code("0xa"))
       .method
       .l
       .last
