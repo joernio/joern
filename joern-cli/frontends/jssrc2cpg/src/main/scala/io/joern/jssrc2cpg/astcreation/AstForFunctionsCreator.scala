@@ -30,11 +30,20 @@ trait AstForFunctionsCreator {
     createBabelNodeInfo(param) match {
       case rest @ BabelNodeInfo(BabelAst.RestElement) =>
         val paramName = rest.code.replace("...", "")
+        val tpe       = typeFor(rest)
         if (createLocals) {
-          val localNode = createLocalNode(paramName, Defines.ANY.label)
+          val localNode = createLocalNode(paramName, tpe)
           diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
         }
-        createParameterInNode(paramName, rest.code, index, isVariadic = true, rest.lineNumber, rest.columnNumber)
+        createParameterInNode(
+          paramName,
+          rest.code,
+          index,
+          isVariadic = true,
+          rest.lineNumber,
+          rest.columnNumber,
+          Some(tpe)
+        )
       case assignmentPattern @ BabelNodeInfo(BabelAst.AssignmentPattern) =>
         val lhsElement = assignmentPattern.json("left")
         val rhsElement = assignmentPattern.json("right")
@@ -69,34 +78,40 @@ trait AstForFunctionsCreator {
             param
           case other =>
             additionalBlockStatements.addOne(convertParamWithDefault(assignmentPattern))
+            val tpe = typeFor(other)
             createParameterInNode(
               other.code,
               other.code,
               index,
               isVariadic = false,
               other.lineNumber,
-              other.columnNumber
+              other.columnNumber,
+              Some(tpe)
             )
         }
       case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
         val name = generateUnusedVariableName(usedVariableNames, Set.empty, s"param$index")
+        val tpe  = typeFor(arrPattern)
         val param = createParameterInNode(
           name,
           arrPattern.code,
           index,
           isVariadic = false,
           arrPattern.lineNumber,
-          arrPattern.columnNumber
+          arrPattern.columnNumber,
+          Some(tpe)
         )
         additionalBlockStatements.addAll(arrPattern.json("elements").arr.toList.map {
           case element if !element.isNull =>
             createBabelNodeInfo(element) match {
               case ident @ BabelNodeInfo(BabelAst.Identifier) =>
                 val paramName      = code(ident.json)
+                val tpe            = typeFor(ident)
                 val localParamNode = createIdentifierNode(paramName, ident)
-                val paramNode      = createIdentifierNode(name, ident)
-                val keyNode        = createFieldIdentifierNode(paramName, ident.lineNumber, ident.columnNumber)
-                val accessAst      = createFieldAccessCallAst(paramNode, keyNode, ident.lineNumber, ident.columnNumber)
+                localParamNode.typeFullName = tpe
+                val paramNode = createIdentifierNode(name, ident)
+                val keyNode   = createFieldIdentifierNode(paramName, ident.lineNumber, ident.columnNumber)
+                val accessAst = createFieldAccessCallAst(paramNode, keyNode, ident.lineNumber, ident.columnNumber)
                 Ast.storeInDiffGraph(accessAst, diffGraph)
                 createAssignmentCallAst(
                   localParamNode,
@@ -112,22 +127,26 @@ trait AstForFunctionsCreator {
         param
       case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
         val name = generateUnusedVariableName(usedVariableNames, Set.empty, s"param$index")
+        val tpe  = typeFor(objPattern)
         val param = createParameterInNode(
           name,
           objPattern.code,
           index,
           isVariadic = false,
           objPattern.lineNumber,
-          objPattern.columnNumber
+          objPattern.columnNumber,
+          Some(tpe)
         )
         additionalBlockStatements.addAll(objPattern.json("properties").arr.toList.map { element =>
           createBabelNodeInfo(element) match {
             case prop @ BabelNodeInfo(BabelAst.ObjectProperty) =>
               val paramName      = code(prop.json("key"))
+              val tpe            = typeFor(prop)
               val localParamNode = createIdentifierNode(paramName, prop)
-              val paramNode      = createIdentifierNode(name, prop)
-              val keyNode        = createFieldIdentifierNode(paramName, prop.lineNumber, prop.columnNumber)
-              val accessAst      = createFieldAccessCallAst(paramNode, keyNode, prop.lineNumber, prop.columnNumber)
+              localParamNode.typeFullName = tpe
+              val paramNode = createIdentifierNode(name, prop)
+              val keyNode   = createFieldIdentifierNode(paramName, prop.lineNumber, prop.columnNumber)
+              val accessAst = createFieldAccessCallAst(paramNode, keyNode, prop.lineNumber, prop.columnNumber)
               Ast.storeInDiffGraph(accessAst, diffGraph)
               createAssignmentCallAst(
                 localParamNode,
@@ -141,9 +160,27 @@ trait AstForFunctionsCreator {
         })
         param
       case id @ BabelNodeInfo(BabelAst.Identifier) =>
-        createParameterInNode(id.json("name").str, id.code, index, isVariadic = false, id.lineNumber, id.columnNumber)
+        val tpe = typeFor(id)
+        createParameterInNode(
+          id.json("name").str,
+          id.code,
+          index,
+          isVariadic = false,
+          id.lineNumber,
+          id.columnNumber,
+          Some(tpe)
+        )
       case other =>
-        createParameterInNode(other.code, other.code, index, isVariadic = false, other.lineNumber, other.columnNumber)
+        val tpe = typeFor(other)
+        createParameterInNode(
+          other.code,
+          other.code,
+          index,
+          isVariadic = false,
+          other.lineNumber,
+          other.columnNumber,
+          Some(tpe)
+        )
     }
   }
 

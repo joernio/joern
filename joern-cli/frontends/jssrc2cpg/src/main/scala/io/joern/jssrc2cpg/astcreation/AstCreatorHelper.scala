@@ -18,6 +18,7 @@ import ujson.Value
 
 import scala.collection.mutable
 import scala.collection.SortedMap
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Success
 import scala.util.Try
 
@@ -47,14 +48,24 @@ trait AstCreatorHelper {
        |  Column: ${node.columnNumber.getOrElse(-1)}
        |  """.stripMargin
 
-  protected def notHandledYet(node: BabelNodeInfo): Ast = {
-    val text = notHandledText(node)
+  protected def notHandledYet(node: BabelNodeInfo, additionalInfo: String = ""): Ast = {
+    val text = if (additionalInfo.isEmpty) {
+      notHandledText(node)
+    } else {
+      s"$additionalInfo: ${notHandledText(node)}"
+    }
     logger.info(text)
     Ast(newUnknown(node))
   }
 
-  protected def registerType(typeName: String): Unit =
-    global.usedTypes.putIfAbsent(typeName, true)
+  protected def registerType(typeName: String, typeFullName: String): Unit = {
+    if (usedTypes.containsKey((typeName, typeName))) {
+      usedTypes.put((typeName, typeFullName), true)
+      usedTypes.remove((typeName, typeName))
+    } else if (!usedTypes.keys().asScala.exists(_._1 == typeName)) {
+      usedTypes.putIfAbsent((typeName, typeFullName), true)
+    }
+  }
 
   private def nodeType(node: Value): BabelAst.BabelNode =
     BabelAst.fromString(node("type").str)

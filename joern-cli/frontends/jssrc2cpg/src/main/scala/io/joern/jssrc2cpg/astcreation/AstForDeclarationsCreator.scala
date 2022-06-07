@@ -57,7 +57,7 @@ trait AstForDeclarationsCreator {
       case Some(f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression)) =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
-      case _ => Defines.ANY.label
+      case _ => init.map(typeFor).getOrElse(Defines.ANY.label)
     }
 
     val localNode = createLocalNode(id.code, typeFullName)

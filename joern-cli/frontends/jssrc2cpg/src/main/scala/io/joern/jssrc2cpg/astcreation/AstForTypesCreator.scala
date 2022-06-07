@@ -99,8 +99,7 @@ trait AstForTypesCreator {
     val metaTypeName             = s"$typeName<meta>"
     val metaTypeFullName         = s"$typeFullName<meta>"
 
-    val classTypeNode = createTypeNode(typeName, typeFullName)
-    Ast.storeInDiffGraph(Ast(classTypeNode), diffGraph)
+    registerType(typeName, typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
@@ -121,8 +120,7 @@ trait AstForTypesCreator {
 
     addModifier(typeDeclNode, clazz.json)
 
-    val classMetaTypeNode = createTypeNode(metaTypeName, metaTypeFullName)
-    Ast.storeInDiffGraph(Ast(classMetaTypeNode), diffGraph)
+    registerType(metaTypeName, metaTypeFullName)
 
     val metaTypeDeclNode = createTypeDeclNode(
       metaTypeName,
@@ -237,8 +235,7 @@ trait AstForTypesCreator {
   protected def astForInterface(tsInterface: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(tsInterface)
 
-    val classTypeNode = createTypeNode(typeName, typeFullName)
-    Ast.storeInDiffGraph(Ast(classTypeNode), diffGraph)
+    registerType(typeName, typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString

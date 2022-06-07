@@ -1,17 +1,13 @@
 package io.joern.jssrc2cpg
 
 import better.files.File
-import io.joern.jssrc2cpg.passes.AstCreationPass
-import io.joern.jssrc2cpg.passes.BuiltinTypesPass
-import io.joern.jssrc2cpg.passes.CallLinkerPass
-import io.joern.jssrc2cpg.passes.JsMetaDataPass
+import io.joern.jssrc2cpg.passes.{AstCreationPass, BuiltinTypesPass, CallLinkerPass, JsMetaDataPass, TypeNodePass}
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.passes.frontend.TypeNodePass
 
 import scala.util.Try
 
@@ -32,7 +28,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
           }
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
         astCreationPass.createAndApply()
-        new TypeNodePass(astCreationPass.usedTypes(), cpg).createAndApply()
+        new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new CallLinkerPass(cpg).createAndApply()
         new JsMetaDataPass(cpg).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()

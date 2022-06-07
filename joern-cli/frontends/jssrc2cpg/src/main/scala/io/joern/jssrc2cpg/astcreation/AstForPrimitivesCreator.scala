@@ -12,6 +12,8 @@ trait AstForPrimitivesCreator {
   protected def astForIdentifier(ident: BabelNodeInfo): Ast = {
     val name      = ident.json("name").str
     val identNode = createIdentifierNode(name, ident)
+    val tpe       = typeFor(ident)
+    identNode.typeFullName = tpe
     scope.addVariableReference(name, identNode)
     Ast(identNode)
   }

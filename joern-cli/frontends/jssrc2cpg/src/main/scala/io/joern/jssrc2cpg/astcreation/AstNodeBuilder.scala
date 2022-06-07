@@ -68,10 +68,11 @@ trait AstNodeBuilder {
     val line   = func.lineNumber
     val column = func.columnNumber
     val code   = "RET"
+    val tpe    = typeFor(func)
     NewMethodReturn()
       .code(code)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(tpe)
       .lineNumber(line)
       .columnNumber(column)
   }
@@ -385,9 +386,6 @@ trait AstNodeBuilder {
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
       .closureOriginalName(Some(closureOriginalName))
 
-  protected def createTypeNode(name: String, fullName: String): NewType =
-    NewType().name(name).fullName(fullName).typeDeclFullName(fullName)
-
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
   protected def createBlockNode(code: String, line: Option[Integer], column: Option[Integer]): NewBlock =
@@ -404,8 +402,7 @@ trait AstNodeBuilder {
     methodFullName: String,
     filename: String
   ): Ast = {
-    val typeNode = createTypeNode(methodName, methodFullName)
-    Ast.storeInDiffGraph(Ast(typeNode), diffGraph)
+    registerType(methodName, methodFullName)
 
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString

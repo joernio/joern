@@ -11,16 +11,19 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.datastructures.Stack.Stack
 import org.slf4j.{Logger, LoggerFactory}
 import ujson.Value
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val parserResult: ParseResult, val global: Global)
-    extends AstCreatorBase(parserResult.filename)
+class AstCreator(
+  val config: Config,
+  val parserResult: ParseResult,
+  val usedTypes: ConcurrentHashMap[(String, String), Boolean]
+) extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator
@@ -28,6 +31,7 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     with AstForDeclarationsCreator
     with AstForStatementsCreator
     with AstNodeBuilder
+    with TypeHelper
     with AstCreatorHelper {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
