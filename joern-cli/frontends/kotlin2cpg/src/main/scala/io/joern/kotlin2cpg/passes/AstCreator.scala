@@ -1582,16 +1582,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     scope.addToScope(expr.getName, node)
 
     val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
-      case typed: KtCallExpression =>
-        typeInfoProvider.isConstructorCall(typed).getOrElse(false)
-      case _ => false
+      case typed: KtCallExpression => typeInfoProvider.isConstructorCall(typed).getOrElse(false)
+      case _                       => false
     }
-    val rhsAsts = if (hasRHSCtorCall) {
-      // TODO: remove the hard case
-      Seq(astForCtorCall(expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression], Some(2)))
-    } else {
-      astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
-    }
+    val rhsAsts =
+      // TODO: remove the hard cast
+      if (hasRHSCtorCall)
+        Seq(astForCtorCall(expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression], Some(2)))
+      else astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
     val identifier     = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
     val assignmentNode = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
     val call           = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts)
@@ -1710,8 +1708,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
             case "ushl" => Some(Operators.shiftLeft)
             case "shr"  => Some(Operators.arithmeticShiftRight)
             case "ushr" => Some(Operators.logicalShiftRight)
-            case _ =>
-              None
+            case _      => None
           }
         case _ =>
           logger.warn(
@@ -1720,17 +1717,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           Some(Constants.unknownOperator)
       }
     }
-    val (fullName, signature) = if (operatorOption.isDefined) {
-      (operatorOption.get, TypeConstants.any)
-    } else {
+    val (fullName, signature) =
+      if (operatorOption.isDefined) (operatorOption.get, TypeConstants.any)
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
-      typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
-    }
-    val finalSignature = if (fullName.startsWith(Constants.operatorSuffix)) {
-      Constants.empty // TODO: add test case for this situation
-    } else {
-      signature
-    }
+      else typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+
+    val finalSignature =
+      // TODO: add test case for this situation
+      if (fullName.startsWith(Constants.operatorSuffix)) Constants.empty
+      else signature
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val name =
       if (operatorOption.isDefined) operatorOption.get
