@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Try
@@ -18,8 +19,8 @@ object JavaSrc2Cpg {
 }
 
 class JavaSrc2Cpg extends X2CpgFrontend[Config] {
-
   import JavaSrc2Cpg._
+  private val logger = LoggerFactory.getLogger(getClass)
 
   val sourceFileExtensions = Set(".java")
 
@@ -31,7 +32,13 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val sourceCodePath = config.inputPaths.head
       new MetaDataPass(cpg, language).createAndApply()
       val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
-      val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, config, cpg)
+      if (sourceFileNames.isEmpty) {
+        logger.error(s"no source files found in $sourcesDir")
+      } else {
+        logger.info(s"found ${sourceFileNames.size} source files")
+      }
+
+      val astCreator = new AstCreationPass(sourcesDir, sourceFileNames, config, cpg)
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
         .createAndApply()
