@@ -18,9 +18,9 @@ class StaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     */
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     cpg.method.foreach { method =>
-      methodFullNameToNode.get(method.fullName) match {
-        case Some(l) => methodFullNameToNode.put(method.fullName, method :: l)
-        case None    => methodFullNameToNode.put(method.fullName, List(method))
+      methodFullNameToNode.updateWith(method.fullName) {
+        case Some(l) => Some(method :: l)
+        case None    => Some(List(method))
       }
     }
 
