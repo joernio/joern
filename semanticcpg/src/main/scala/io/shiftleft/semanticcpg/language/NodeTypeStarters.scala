@@ -149,7 +149,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
 
   /** Shorthand for `cpg.method.name(name)`
     */
-  @Doc(info = "All methods with name matchine the given pattern")
+  @Doc(info = "All methods with a name that matches the given pattern")
   def method(namePattern: String): Traversal[Method] =
     method.name(namePattern)
 
