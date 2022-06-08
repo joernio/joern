@@ -32,11 +32,11 @@ object DependencyResolver {
       GradleDependencies.get(projectDir, gradleProjectName, gradleConfiguration) match {
         case Some(deps) => Some(deps)
         case None =>
-          logger.info(s"Could not download Gradle dependencies for project at path `$projectDir`")
+          logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
           None
       }
     } else {
-      logger.info(s"Could not find a supported build tool setup at path `$projectDir`")
+      logger.warn(s"Could not find a supported build tool setup at path `$projectDir`")
       None
     }
   }
