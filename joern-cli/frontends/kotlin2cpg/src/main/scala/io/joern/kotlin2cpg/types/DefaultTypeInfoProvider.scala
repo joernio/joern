@@ -612,11 +612,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean = {
     descriptorForNameReference(expr)
-      .collect {
+      .exists {
         case _: LazyJavaClassDescriptor => true
         case _: LazyClassDescriptor     => true
+        case _ => false
       }
-      .getOrElse(false)
   }
 
   private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {
