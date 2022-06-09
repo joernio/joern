@@ -575,24 +575,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
     val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
 
-    val out = {
-      if (hasReturnTypeFromTypeParams) {
-        if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
-          val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
-          TypeRenderer.render(firstSuperType)
-        } else {
-          val renderedReturnT = TypeRenderer.render(returnT)
-          if (renderedReturnT == TypeConstants.tType) {
-            TypeConstants.javaLangObject
-          } else {
-            renderedReturnT
-          }
-        }
+    if (hasReturnTypeFromTypeParams) {
+      if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
+        val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
+        TypeRenderer.render(firstSuperType)
       } else {
-        TypeRenderer.render(fnDesc.getReturnType)
+        val renderedReturnT = TypeRenderer.render(returnT)
+        if (renderedReturnT == TypeConstants.tType) {
+          TypeConstants.javaLangObject
+        } else {
+          renderedReturnT
+        }
       }
+    } else {
+      TypeRenderer.render(fnDesc.getReturnType)
     }
-    out
   }
 
   def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {
