@@ -546,7 +546,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     if (expr == null) {
       return defaultValue
     }
-    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames =
       try {
         expr.getValueParameters.asScala.map { p =>
@@ -563,9 +562,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
 
     val methodName =
-      if (fnDesc.isEmpty)
-        s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}"
-      else s"${TypeRenderer.renderFqName(fnDesc.get)}${TypeConstants.initPrefix}"
+      Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+        .map { info => s"${TypeRenderer.renderFqName(info)}${TypeConstants.initPrefix}" }
+        .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
@@ -615,7 +614,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .exists {
         case _: LazyJavaClassDescriptor => true
         case _: LazyClassDescriptor     => true
-        case _ => false
+        case _                          => false
       }
   }
 
