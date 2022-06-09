@@ -42,7 +42,7 @@ trait AstCreatorHelper {
 
   private def notHandledText(node: BabelNodeInfo): String =
     s"""Node type '${node.node.toString}' not handled yet!
-       |  Code: '${node.code}'
+       |  Code: '${shortenCode(node.code, length = 50)}'
        |  File: '${parserResult.fullPath}'
        |  Line: ${node.lineNumber.getOrElse(-1)}
        |  Column: ${node.columnNumber.getOrElse(-1)}

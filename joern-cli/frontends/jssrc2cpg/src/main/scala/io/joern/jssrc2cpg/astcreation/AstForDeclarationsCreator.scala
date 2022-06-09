@@ -180,12 +180,24 @@ trait AstForDeclarationsCreator {
     index: Int,
     localTmpName: String
   ): Ast = {
-    val lhsElement = element.json("left")
     val rhsElement = element.json("right")
-    val lhsAst     = astForNode(lhsElement)
-    Ast.storeInDiffGraph(lhsAst, diffGraph)
-    val rhsAst = astForNodeWithFunctionReference(rhsElement)
+    val rhsAst     = astForNodeWithFunctionReference(rhsElement)
     Ast.storeInDiffGraph(rhsAst, diffGraph)
+
+    val lhsElement = element.json("left")
+    val lhsAst = createBabelNodeInfo(lhsElement) match {
+      case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        Ast.storeInDiffGraph(sourceAst, diffGraph)
+        astForDeconstruction(objPattern, sourceAst)
+      case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        Ast.storeInDiffGraph(sourceAst, diffGraph)
+        astForDeconstruction(arrPattern, sourceAst)
+      case _ => astForNode(lhsElement)
+    }
+    Ast.storeInDiffGraph(lhsAst, diffGraph)
+
     val testAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
       val keyNode =
@@ -233,12 +245,24 @@ trait AstForDeclarationsCreator {
     key: BabelNodeInfo,
     localTmpName: String
   ): Ast = {
-    val lhsElement = element.json("left")
     val rhsElement = element.json("right")
-    val lhsAst     = astForNode(lhsElement)
-    Ast.storeInDiffGraph(lhsAst, diffGraph)
-    val rhsAst = astForNodeWithFunctionReference(rhsElement)
+    val rhsAst     = astForNodeWithFunctionReference(rhsElement)
     Ast.storeInDiffGraph(rhsAst, diffGraph)
+
+    val lhsElement = element.json("left")
+    val lhsAst = createBabelNodeInfo(lhsElement) match {
+      case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        Ast.storeInDiffGraph(sourceAst, diffGraph)
+        astForDeconstruction(objPattern, sourceAst)
+      case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        Ast.storeInDiffGraph(sourceAst, diffGraph)
+        astForDeconstruction(arrPattern, sourceAst)
+      case _ => astForNode(lhsElement)
+    }
+    Ast.storeInDiffGraph(lhsAst, diffGraph)
+
     val testAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
       val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)

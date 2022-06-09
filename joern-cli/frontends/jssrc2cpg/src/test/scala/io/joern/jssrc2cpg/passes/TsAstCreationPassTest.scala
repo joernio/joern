@@ -3,10 +3,24 @@ package io.joern.jssrc2cpg.passes
 import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Inside
 
 class TsAstCreationPassTest extends AbstractPassTest with Inside {
+
+  "AST generation for simple TS constructs" should {
+
+    "have correct structure for casts" in AstFixture("""
+        | const x = "foo" as string;
+        |""".stripMargin) { cpg =>
+      inside(cpg.call(Operators.cast).l) { case List(call) =>
+        call.argument(1).head.code shouldBe "string"
+        call.argument(2).head.code shouldBe "\"foo\""
+      }
+    }
+
+  }
 
   "AST generation for TS classes" should {
 

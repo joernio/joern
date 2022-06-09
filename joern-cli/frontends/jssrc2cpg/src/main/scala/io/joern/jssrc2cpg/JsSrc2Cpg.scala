@@ -8,7 +8,9 @@ import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.utils.HashUtil
 
+import java.nio.file.Path
 import scala.util.Try
 
 class JsSrc2Cpg extends X2CpgFrontend[Config] {
@@ -26,11 +28,14 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
               skippedFiles = result.skippedFiles ++ partialResult.skippedFiles
             )
           }
+
+        val hash = HashUtil.sha256(astgenResult.parsedFiles.map(p => Path.of(p._2)).toSeq)
+
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new CallLinkerPass(cpg).createAndApply()
-        new JsMetaDataPass(cpg).createAndApply()
+        new JsMetaDataPass(cpg, hash).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
         report.print()
       }

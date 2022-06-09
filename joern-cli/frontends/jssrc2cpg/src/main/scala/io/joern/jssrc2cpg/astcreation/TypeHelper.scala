@@ -92,6 +92,8 @@ trait TypeHelper {
     typeAnnotation.node match {
       case BabelAst.TypeAnnotation   => typeForFlowType(createBabelNodeInfo(typeAnnotation.json(TYPE_ANNOTATION_KEY)))
       case BabelAst.TSTypeAnnotation => typeForTsType(createBabelNodeInfo(typeAnnotation.json(TYPE_ANNOTATION_KEY)))
+      case _: BabelAst.FlowType      => typeForFlowType(createBabelNodeInfo(typeAnnotation.json))
+      case _: BabelAst.TSType        => typeForTsType(createBabelNodeInfo(typeAnnotation.json))
       case _ =>
         notHandledYet(typeAnnotation, TYPE_NOT_HANDLED_TEXT)
         Defines.ANY.label
@@ -108,7 +110,6 @@ trait TypeHelper {
       registerType(tpe, tpe)
       tpe
     } else {
-      notHandledYet(node, TYPE_NOT_HANDLED_TEXT)
       Defines.ANY.label
     }
   }

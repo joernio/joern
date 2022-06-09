@@ -18,6 +18,12 @@ trait AstForPrimitivesCreator {
     Ast(identNode)
   }
 
+  protected def astForSuperKeyword(superKeyword: BabelNodeInfo): Ast =
+    Ast(createIdentifierNode("super", superKeyword))
+
+  protected def astForImportKeyword(importKeyword: BabelNodeInfo): Ast =
+    Ast(createIdentifierNode("import", importKeyword))
+
   protected def astForNullLiteral(nullLiteral: BabelNodeInfo): Ast =
     Ast(createLiteralNode(nullLiteral.code, Some(Defines.NULL.label), nullLiteral.lineNumber, nullLiteral.columnNumber))
 

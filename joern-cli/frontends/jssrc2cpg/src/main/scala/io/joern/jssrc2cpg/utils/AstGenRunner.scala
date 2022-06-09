@@ -22,10 +22,10 @@ object AstGenRunner {
       case out if !out.startsWith("Converted") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- Failed to parse '${in / filename}': '$reason'")
+        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
         Some(filename)
       case out =>
-        logger.info(s"\t+ $out")
+        logger.debug(s"\t+ $out")
         None
     }
     skipped.flatten
@@ -33,13 +33,13 @@ object AstGenRunner {
 
   def execute(in: File, out: File): AstGenRunnerResult = {
     logger.debug(s"\t+ Running astgen in '$in' ...")
-    ExternalCommand.run(s"astgen -o $out", in.toString()) match {
+    ExternalCommand.run(s"astgen -t ts -o $out", in.toString()) match {
       case Success(result) =>
         val parsed  = SourceFiles.determine(Set(out.toString()), Set(".json")).toSet
         val skipped = skippedFiles(in, result.toSet)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>
-        logger.error("\t- astgen failed!", f)
+        logger.error("\t- running astgen failed!", f)
         AstGenRunnerResult()
     }
   }
