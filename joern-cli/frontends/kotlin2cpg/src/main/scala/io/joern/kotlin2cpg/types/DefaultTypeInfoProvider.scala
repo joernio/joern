@@ -431,29 +431,23 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        fnDescriptor.getDispatchReceiverParameter == null
-      case _ => true
-    }
+    resolvedCallDescriptor(expr)
+      .map(_.getDispatchReceiverParameter == null)
+      .getOrElse(true)
   }
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
-    val isStaticBasedOnStructure = {
-      expr.getReceiverExpression match {
-        case _: KtSuperExpression => true
-        case _                    => false
-      }
+    val isStaticBasedOnStructure = expr.getReceiverExpression match {
+      case _: KtSuperExpression => true
+      case _                    => false
     }
     if (isStaticBasedOnStructure) return CallKinds.StaticCall
 
-    val isDynamicBasedOnStructure =
-      expr.getReceiverExpression match {
-        case _: KtArrayAccessExpression => true
-        case _: KtThisExpression        => true
-        case _                          => false
-      }
+    val isDynamicBasedOnStructure = expr.getReceiverExpression match {
+      case _: KtArrayAccessExpression => true
+      case _: KtThisExpression        => true
+      case _                          => false
+    }
     if (isDynamicBasedOnStructure) return CallKinds.DynamicCall
 
     val resolvedDesc = resolvedCallDescriptor(expr)
