@@ -375,7 +375,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           }
         if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
         else (fullName, signature)
-      }.getOrElse(defaultValue)
+      }
+      .getOrElse(defaultValue)
   }
 
   def containingDeclFullName(expr: KtCallExpression): Option[String] = {
