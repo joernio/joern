@@ -367,19 +367,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
         val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
         val fullName =
-          if (isCtor) {
-            s"$renderedFqName${TypeConstants.initPrefix}:$signature"
-          } else {
-            s"$renderedFqName:$signature"
-          }
-
-        if (!isValidRender(fullName) || !isValidRender(signature)) {
-          defaultValue
-        } else {
-          (fullName, signature)
-        }
-      case None =>
-        defaultValue
+          if (isCtor) s"$renderedFqName${TypeConstants.initPrefix}:$signature"
+          else s"$renderedFqName:$signature"
+        if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
+        else (fullName, signature)
+      case None => defaultValue
     }
   }
 
@@ -414,11 +406,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             val renderedFqName = TypeRenderer.renderFqName(originalDesc)
             s"$renderedFqName:$signature"
           }
-        if (!isValidRender(fullName) || !isValidRender(signature)) {
-          defaultValue
-        } else {
-          (fullName, signature)
-        }
+        if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
+        else (fullName, signature)
       case None => defaultValue
     }
   }
