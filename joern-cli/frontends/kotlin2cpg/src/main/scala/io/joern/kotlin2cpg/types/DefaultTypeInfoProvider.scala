@@ -388,10 +388,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
-    val isStaticBasedOnStructure = expr.getReceiverExpression match {
-      case _: KtSuperExpression => true
-      case _                    => false
-    }
+    val isStaticBasedOnStructure  = expr.getReceiverExpression.isInstanceOf[KtSuperExpression]
     if (isStaticBasedOnStructure) return CallKinds.StaticCall
 
     val isDynamicBasedOnStructure = expr.getReceiverExpression match {
@@ -401,17 +398,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
     if (isDynamicBasedOnStructure) return CallKinds.DynamicCall
 
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        val isExtension = DescriptorUtils.isExtension(fnDescriptor)
-        val isStatic    = DescriptorUtils.isStaticDeclaration(fnDescriptor) || hasStaticDesc(expr)
+    resolvedCallDescriptor(expr)
+      .map { desc =>
+        val isExtension = DescriptorUtils.isExtension(desc)
+        val isStatic    = DescriptorUtils.isStaticDeclaration(desc) || hasStaticDesc(expr)
 
         if (isExtension) CallKinds.ExtensionCall
         else if (isStatic) CallKinds.StaticCall
         else CallKinds.DynamicCall
-      case None => CallKinds.Unknown
-    }
+      }.getOrElse(CallKinds.Unknown)
   }
 
   def fullNameWithSignature(expr: KtQualifiedExpression, defaultValue: (String, String)): (String, String) = {
