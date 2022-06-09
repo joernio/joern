@@ -307,9 +307,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       desc = resolvedCallForSubexpression.getResultingDescriptor
     } yield desc
 
-    descMaybe.collect { case desc: FunctionDescriptor =>
-      desc
-    }
+    descMaybe.collect { case desc: FunctionDescriptor => desc }
   }
 
   def isConstructorCall(expr: KtCallExpression): Option[Boolean] = {
@@ -376,13 +374,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        val originalDesc = fnDescriptor.getOriginal
-        TypeRenderer.render(originalDesc.getReturnType)
-      case None => defaultValue
-    }
+    resolvedCallDescriptor(expr)
+      .map(_.getOriginal)
+      .map { desc => TypeRenderer.render(desc.getReturnType) }
+      .getOrElse(defaultValue)
   }
 
   def fullNameWithSignature(expr: KtBinaryExpression, defaultValue: (String, String)): (String, String) = {
@@ -413,9 +408,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def containingDeclFullName(expr: KtCallExpression): Option[String] = {
-     resolvedCallDescriptor(expr)
-       .map(_.getContainingDeclaration)
-       .map(TypeRenderer.renderFqName)
+    resolvedCallDescriptor(expr)
+      .map(_.getContainingDeclaration)
+      .map(TypeRenderer.renderFqName)
   }
 
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String = {
