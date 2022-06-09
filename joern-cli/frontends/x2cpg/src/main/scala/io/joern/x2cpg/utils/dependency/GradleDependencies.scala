@@ -61,8 +61,11 @@ object GradleDependencies {
        |    if (project.name.equals(gradleProjectName)) {
        |      def compileDepsCopyTaskName = taskName + "_compileDeps"
        |      tasks.register(compileDepsCopyTaskName, Copy) {
-       |        def myConfig = project.configurations.find { it.name.equals(gradleConfigurationName) }
-       |        def componentIds = myConfig.incoming.resolutionResult.allDependencies.collect { it.selected.id }
+       |        def selectedConfig = project.configurations.find { it.name.equals(gradleConfigurationName) }
+       |        def componentIds = []
+       |        if (selectedConfig != null) {
+       |          componentIds = selectedConfig.incoming.resolutionResult.allDependencies.collect { it.selected.id }
+       |        }
        |        def result = dependencies.createArtifactResolutionQuery()
        |                                 .forComponents(componentIds)
        |                                 .withArtifacts(JvmLibrary, SourcesArtifact)
