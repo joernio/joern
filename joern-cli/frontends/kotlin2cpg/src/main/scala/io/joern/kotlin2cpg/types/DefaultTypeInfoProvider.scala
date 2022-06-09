@@ -311,10 +311,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val relevantDesc = originalDesc match {
           case typedDesc: TypeAliasConstructorDescriptorImpl =>
             typedDesc.getUnderlyingConstructorDescriptor
-          case typedDesc: FunctionDescriptor =>
-            if (!typedDesc.isActual && typedDesc.getOverriddenDescriptors.asScala.nonEmpty) {
-              typedDesc.getOverriddenDescriptors.asScala.toList.head
-            } else typedDesc
+          case typedDesc: FunctionDescriptor if !typedDesc.isActual =>
+            val overwriddenDescriptors = typedDesc.getOverriddenDescriptors.asScala.toList
+            if (overwriddenDescriptors.nonEmpty) overwriddenDescriptors.head
+            else typedDesc
+          case _ => originalDesc
         }
         val returnTypeFullName =
           if (isConstructorCall(expr).getOrElse(false)) TypeConstants.void
