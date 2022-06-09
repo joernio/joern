@@ -413,21 +413,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def containingDeclFullName(expr: KtCallExpression): Option[String] = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc.map { fnDescriptor =>
-      val decl = fnDescriptor.getContainingDeclaration
-      TypeRenderer.renderFqName(decl)
-    }
+     resolvedCallDescriptor(expr)
+       .map(_.getContainingDeclaration)
+       .map(TypeRenderer.renderFqName)
   }
 
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        val decl = fnDescriptor.getContainingDeclaration
-        TypeRenderer.renderFqName(decl)
-      case None => defaultValue
-    }
+    resolvedCallDescriptor(expr)
+      .map(_.getContainingDeclaration)
+      .map(TypeRenderer.renderFqName)
+      .getOrElse(defaultValue)
   }
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean = {
