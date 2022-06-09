@@ -100,16 +100,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    val isStatic =
-      resolvedDesc
-        .map(_.getSource)
-        .collect { case s: JavaSourceElement => s }
-        .map(_.getJavaElement)
-        .collect { case bjm: BinaryJavaMethod => bjm }
-        .map(_.isStatic)
-        .getOrElse(false)
-    isStatic
+    resolvedCallDescriptor(expr)
+      .map(_.getSource)
+      .collect { case s: JavaSourceElement => s }
+      .map(_.getJavaElement)
+      .collect { case bjm: BinaryJavaMethod => bjm }
+      .map(_.isStatic)
+      .getOrElse(false)
   }
 
   def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String) = {
@@ -161,11 +158,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def typeFullName(expr: KtCallExpression, defaultValue: String): String = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        val originalDesc = fnDescriptor.getOriginal
-
+    resolvedCallDescriptor(expr)
+      .map(_.getOriginal)
+      .map { originalDesc =>
         val isCtor = originalDesc match {
           case _: ClassConstructorDescriptorImpl     => true
           case _: TypeAliasConstructorDescriptorImpl => true
@@ -177,8 +172,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           else originalDesc
         if (isCtor) TypeConstants.void
         else renderedReturnType(relevantDesc.getOriginal)
-      case None => defaultValue
-    }
+      }
+      .getOrElse(defaultValue)
   }
 
   def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String = {
@@ -279,21 +274,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     expr match {
       case typedExpr: KtCallExpression =>
         Option(typedExpr.getFirstChild)
-          .collect { case firstChild: KtExpression =>
-            firstChild
-          }
+          .collect { case firstChild: KtExpression => firstChild }
           .getOrElse(expr)
       case typedExpr: KtQualifiedExpression =>
         Option(typedExpr.getSelectorExpression)
-          .collect { case call: KtCallExpression =>
-            subexpressionForResolvedCallInfo(call)
-          }
+          .collect { case call: KtCallExpression => subexpressionForResolvedCallInfo(call) }
           .getOrElse(typedExpr)
       case typedExpr: KtBinaryExpression =>
         Option(typedExpr.getChildren.toList(1))
-          .collect { case secondChild: KtExpression =>
-            secondChild
-          }
+          .collect { case secondChild: KtExpression => secondChild }
           .getOrElse(expr)
       case _ => expr
     }
@@ -316,15 +305,14 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         case _: ClassConstructorDescriptorImpl     => Some(true)
         case _: TypeAliasConstructorDescriptorImpl => Some(true)
         case _                                     => Some(false)
-      }.getOrElse(None)
+      }
+      .getOrElse(None)
   }
 
   def fullNameWithSignature(expr: KtCallExpression, defaultValue: (String, String)): (String, String) = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        val originalDesc = fnDescriptor.getOriginal
-
+    resolvedCallDescriptor(expr)
+      .map(_.getOriginal)
+      .map { originalDesc =>
         val isCtor = originalDesc match {
           case _: ClassConstructorDescriptorImpl     => true
           case _: TypeAliasConstructorDescriptorImpl => true
@@ -332,15 +320,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         }
 
         val relevantDesc = originalDesc match {
-            case typedDesc: TypeAliasConstructorDescriptorImpl =>
-              typedDesc.getUnderlyingConstructorDescriptor
-            case typedDesc: FunctionDescriptor =>
-              if (!typedDesc.isActual && typedDesc.getOverriddenDescriptors.asScala.nonEmpty) {
-                typedDesc.getOverriddenDescriptors.asScala.toList.head
-              } else {
-                typedDesc
-              }
-          }
+          case typedDesc: TypeAliasConstructorDescriptorImpl =>
+            typedDesc.getUnderlyingConstructorDescriptor
+          case typedDesc: FunctionDescriptor =>
+            if (!typedDesc.isActual && typedDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+              typedDesc.getOverriddenDescriptors.asScala.toList.head
+            } else typedDesc
+        }
         val returnTypeFullName =
           if (isCtor) TypeConstants.void
           else renderedReturnType(relevantDesc.getOriginal)
@@ -358,8 +344,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           else s"$renderedFqName:$signature"
         if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
         else (fullName, signature)
-      case None => defaultValue
-    }
+      }
+      .getOrElse(defaultValue)
   }
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String = {
@@ -577,14 +563,14 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames =
       try {
-        expr.getValueParameters.asScala .map { p =>
-            val explicitTypeFullName =
-              Option(p.getTypeReference)
-                .map(_.getText)
-                .getOrElse(TypeConstants.cpgUnresolved)
-            // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-            parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
-          }
+        expr.getValueParameters.asScala.map { p =>
+          val explicitTypeFullName =
+            Option(p.getTypeReference)
+              .map(_.getText)
+              .getOrElse(TypeConstants.cpgUnresolved)
+          // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+          parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
+        }
       } catch {
         case _: Throwable => List()
       }
@@ -642,8 +628,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     descriptorForNameReference(expr)
       .collect {
         case _: LazyJavaClassDescriptor => true
-        case _: LazyClassDescriptor => true
-      }.getOrElse(false)
+        case _: LazyClassDescriptor     => true
+      }
+      .getOrElse(false)
   }
 
   private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {
