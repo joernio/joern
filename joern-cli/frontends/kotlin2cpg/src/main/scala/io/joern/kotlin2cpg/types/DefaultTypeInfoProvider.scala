@@ -65,15 +65,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val t0  = System.currentTimeMillis()
       val res = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       val t1  = System.currentTimeMillis()
-      logger.info("Kotlin compiler analysis finished in `" + (t1 - t0) + "` ms.")
+      logger.info(s"Kotlin compiler analysis finished in `${(t1 - t0)}` ms.")
       res.getBindingContext
     } catch {
       case noDesc: NoDescriptorForDeclarationException =>
-        logger.error("Kotlin compiler analysis failed with _missing declaration_ exception `" + noDesc.toString + "`.")
+        logger.error(s"Kotlin compiler analysis failed with _missing declaration_ exception `${noDesc.toString}`.")
         hasEmptyBindingContext = true
         BindingContext.EMPTY
       case e: Throwable =>
-        logger.error("Kotlin compiler analysis failed with exception `" + e.toString + "`:` + " + e.getMessage + " +`.")
+        logger.error(s"Kotlin compiler analysis failed with exception `${e.toString}`:`${e.getMessage}`.")
         hasEmptyBindingContext = true
         BindingContext.EMPTY
     }
@@ -88,7 +88,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       if (args.isEmpty) ""
       else if (args.size == 1) TypeConstants.any
       else TypeConstants.any + ("," + TypeConstants.any) * (args.size - 1)
-    TypeConstants.any + "(" + argsSignature + ")"
+    s"${TypeConstants.any}($argsSignature)"
   }
 
   def fullName(expr: KtTypeAlias, defaultValue: String): String = {
@@ -127,7 +127,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           relevantDesc.getValueParameters.asScala.toSeq
             .map { valueParam => TypeRenderer.render(valueParam.getOriginal.getType) }
             .mkString(",")
-        val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+        val signature = s"$returnTypeFullName($renderedParameterTypes)"
         val fullName  = s"$renderedFqName:$signature"
 
         if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
@@ -172,19 +172,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           case _                                     => false
         }
         val relevantDesc =
-          if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty) {
+          if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty)
             originalDesc.getOverriddenDescriptors.asScala.toList.head
-          } else {
-            originalDesc
-          }
-        val returnTypeFullName = {
-          if (isCtor) {
-            TypeConstants.void
-          } else {
-            renderedReturnType(relevantDesc.getOriginal)
-          }
-        }
-        returnTypeFullName
+          else originalDesc
+        if (isCtor) TypeConstants.void
+        else renderedReturnType(relevantDesc.getOriginal)
       case None => defaultValue
     }
   }
