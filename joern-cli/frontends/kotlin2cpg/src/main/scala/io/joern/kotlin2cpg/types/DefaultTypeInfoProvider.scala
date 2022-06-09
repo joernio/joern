@@ -87,7 +87,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val argsSignature =
       if (args.isEmpty) ""
       else if (args.size == 1) TypeConstants.any
-      else TypeConstants.any + ("," + TypeConstants.any) * (args.size - 1)
+      else s"${TypeConstants.any}(${TypeConstants.any * (args.size - 1)})"
     s"${TypeConstants.any}($argsSignature)"
   }
 
