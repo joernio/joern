@@ -65,7 +65,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val t0  = System.currentTimeMillis()
       val res = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       val t1  = System.currentTimeMillis()
-      logger.info(s"Kotlin compiler analysis finished in `${(t1 - t0)}` ms.")
+      logger.info(s"Kotlin compiler analysis finished in `${t1 - t0}` ms.")
       res.getBindingContext
     } catch {
       case noDesc: NoDescriptorForDeclarationException =>
