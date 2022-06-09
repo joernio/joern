@@ -493,36 +493,34 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       case Some(fnDescriptor) =>
         val originalDesc          = fnDescriptor.getOriginal
         val renderedFqNameForDesc = TypeRenderer.renderFqName(originalDesc)
-        val renderedFqName =
+
+        val nameExtensionReceiverMaybe =
           if (originalDesc.getExtensionReceiverParameter != null) {
-            val extType = originalDesc.getExtensionReceiverParameter.getType
-            val extName = originalDesc.getName
-            val rendered =
-              if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) {
-                TypeConstants.javaLangObject
-              } else {
-                TypeRenderer.render(extType, false, false)
-              }
-            s"$rendered.$extName"
+            Some((originalDesc.getName, originalDesc.getExtensionReceiverParameter))
           } else {
-            renderedFqNameForDesc
+            None
           }
-        val valueParameters = originalDesc.getValueParameters.asScala.toSeq
+
+        val renderedFqName =
+          nameExtensionReceiverMaybe match {
+            case Some((name, extensionReceiverParameter)) =>
+              val extType = extensionReceiverParameter.getType
+              val rendered =
+                if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
+                else TypeRenderer.render(extType, false, false)
+              s"$rendered.$name"
+            case None =>
+              renderedFqNameForDesc
+          }
         val renderedParameterTypes =
-          valueParameters
-            .map { valueParam =>
-              TypeRenderer.render(valueParam.getType)
-            }
+          originalDesc.getValueParameters.asScala.toSeq
+            .map { valueParam => TypeRenderer.render(valueParam.getType) }
             .mkString(",")
         val renderedReturnType =
-          if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) {
-            TypeConstants.javaLangObject
-          } else {
-            TypeRenderer.render(originalDesc.getReturnType)
-          }
+          if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
+          else TypeRenderer.render(originalDesc.getReturnType)
         val signature = s"$renderedReturnType($renderedParameterTypes)"
-        val fn        = (s"$renderedFqName:$signature", signature)
-        fn
+        (s"$renderedFqName:$signature", signature)
       case None => defaultValue
     }
   }
