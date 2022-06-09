@@ -46,7 +46,6 @@ import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.types.UnresolvedType
-import org.jetbrains.kotlin.types.expressions.KotlinTypeInfo
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -161,16 +160,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedCallDescriptor(expr)
       .map(_.getOriginal)
       .map { originalDesc =>
-        val isCtor = originalDesc match {
-          case _: ClassConstructorDescriptorImpl     => true
-          case _: TypeAliasConstructorDescriptorImpl => true
-          case _                                     => false
-        }
         val relevantDesc =
           if (!originalDesc.isActual && originalDesc.getOverriddenDescriptors.asScala.nonEmpty)
             originalDesc.getOverriddenDescriptors.asScala.toList.head
           else originalDesc
-        if (isCtor) TypeConstants.void
+        if (isConstructorCall(expr).getOrElse(false)) TypeConstants.void
         else renderedReturnType(relevantDesc.getOriginal)
       }
       .getOrElse(defaultValue)
@@ -313,12 +307,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedCallDescriptor(expr)
       .map(_.getOriginal)
       .map { originalDesc =>
-        val isCtor = originalDesc match {
-          case _: ClassConstructorDescriptorImpl     => true
-          case _: TypeAliasConstructorDescriptorImpl => true
-          case _                                     => false
-        }
-
         val relevantDesc = originalDesc match {
           case typedDesc: TypeAliasConstructorDescriptorImpl =>
             typedDesc.getUnderlyingConstructorDescriptor
@@ -328,7 +316,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             } else typedDesc
         }
         val returnTypeFullName =
-          if (isCtor) TypeConstants.void
+          if (isConstructorCall(expr).getOrElse(false)) TypeConstants.void
           else renderedReturnType(relevantDesc.getOriginal)
         val renderedParameterTypes =
           relevantDesc.getValueParameters.asScala.toSeq
@@ -340,7 +328,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
         val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
         val fullName =
-          if (isCtor) s"$renderedFqName${TypeConstants.initPrefix}:$signature"
+          if (isConstructorCall(expr).getOrElse(false)) s"$renderedFqName${TypeConstants.initPrefix}:$signature"
           else s"$renderedFqName:$signature"
         if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
         else (fullName, signature)
