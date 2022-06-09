@@ -84,15 +84,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def erasedSignature(args: Seq[Any]): String = {
-    val argsSignature = {
-      if (args.isEmpty) {
-        ""
-      } else if (args.size == 1) {
-        TypeConstants.any
-      } else {
-        TypeConstants.any + ("," + TypeConstants.any) * (args.size - 1)
-      }
-    }
+    val argsSignature =
+      if (args.isEmpty) ""
+      else if (args.size == 1) TypeConstants.any
+      else TypeConstants.any + ("," + TypeConstants.any) * (args.size - 1)
     TypeConstants.any + "(" + argsSignature + ")"
   }
 
@@ -118,41 +113,35 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String) = {
-    val resolvedCall = bindingContext.get(BindingContext.COMPONENT_RESOLVED_CALL, expr)
-    if (resolvedCall != null) {
-      val fnDesc = resolvedCall.getResultingDescriptor
-      val relevantDesc =
-        if (!fnDesc.isActual && fnDesc.getOverriddenDescriptors.asScala.nonEmpty) {
-          fnDesc.getOverriddenDescriptors.asScala.toList.head
-        } else {
-          fnDesc
-        }
-      val renderedFqName     = TypeRenderer.renderFqName(relevantDesc)
-      val returnTypeFullName = renderedReturnType(relevantDesc.getOriginal)
+    Option(bindingContext.get(BindingContext.COMPONENT_RESOLVED_CALL, expr))
+      .map { resolvedCall =>
+        val fnDesc = resolvedCall.getResultingDescriptor
+        val relevantDesc =
+          if (!fnDesc.isActual && fnDesc.getOverriddenDescriptors.asScala.nonEmpty)
+            fnDesc.getOverriddenDescriptors.asScala.toList.head
+          else fnDesc
+        val renderedFqName     = TypeRenderer.renderFqName(relevantDesc)
+        val returnTypeFullName = renderedReturnType(relevantDesc.getOriginal)
 
-      val renderedParameterTypes =
-        relevantDesc.getValueParameters.asScala.toSeq
-          .map { valueParam =>
-            TypeRenderer.render(valueParam.getOriginal.getType)
-          }
-          .mkString(",")
-      val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
-      val fullName  = s"$renderedFqName:$signature"
+        val renderedParameterTypes =
+          relevantDesc.getValueParameters.asScala.toSeq
+            .map { valueParam => TypeRenderer.render(valueParam.getOriginal.getType) }
+            .mkString(",")
+        val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+        val fullName  = s"$renderedFqName:$signature"
 
-      if (!isValidRender(fullName) || !isValidRender(signature)) {
-        defaultValue
-      } else {
-        (fullName, signature)
+        if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
+        else (fullName, signature)
       }
-    } else {
-      defaultValue
-    }
+      .getOrElse(defaultValue)
   }
 
   def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    mapForEntity.getKeys
-      .contains(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT.getKey)
+    Option(mapForEntity)
+      .map(_.getKeys)
+      .map(_.contains(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT.getKey))
+      .getOrElse(false)
   }
 
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
