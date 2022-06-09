@@ -636,17 +636,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       }
     val paramTypeNames =
       try {
-        val nodeParams = expr.getValueParameters
-        nodeParams.asScala
+        expr.getValueParameters.asScala
           .map { p =>
-            val explicitTypeFullName = if (p.getTypeReference != null) {
-              p.getTypeReference.getText
-            } else {
-              TypeConstants.cpgUnresolved
-            }
+            val explicitTypeFullName =
+              if (p.getTypeReference != null) p.getTypeReference.getText
+              else TypeConstants.cpgUnresolved
             // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-            val typeFullName = parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
-            typeFullName
+            parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
           }
       } catch {
         case _: Throwable => List()
