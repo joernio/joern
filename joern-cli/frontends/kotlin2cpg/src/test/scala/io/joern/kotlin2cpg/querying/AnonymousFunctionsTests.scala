@@ -4,9 +4,11 @@ import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
+import org.scalatest.Ignore
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
+@Ignore
 class AnonymousFunctionsTests extends AnyFreeSpec with Matchers {
 
   implicit val resolver = NoResolve
@@ -25,15 +27,6 @@ class AnonymousFunctionsTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    // TODO: re-enable after all AST issues have been fixed
-    /*
-    "should contain a CALL node for `println`" in {
-      cpg.call.code(".*println.*").size shouldBe 1
-    }
-
-    "should contain a METHOD node for the lambda" in {
-      cpg.method.fullName(".*lambda.*").size shouldBe 1
-    }
-     */
+    // TODO: add tests
   }
 }
