@@ -311,16 +311,12 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def isConstructorCall(expr: KtCallExpression): Option[Boolean] = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
-        fnDescriptor match {
-          case _: ClassConstructorDescriptorImpl     => Some(true)
-          case _: TypeAliasConstructorDescriptorImpl => Some(true)
-          case _                                     => Some(false)
-        }
-      case None => None
-    }
+    resolvedCallDescriptor(expr)
+      .collect {
+        case _: ClassConstructorDescriptorImpl     => Some(true)
+        case _: TypeAliasConstructorDescriptorImpl => Some(true)
+        case _                                     => Some(false)
+      }.getOrElse(None)
   }
 
   def fullNameWithSignature(expr: KtCallExpression, defaultValue: (String, String)): (String, String) = {
@@ -335,8 +331,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           case _                                     => false
         }
 
-        val relevantDesc =
-          originalDesc match {
+        val relevantDesc = originalDesc match {
             case typedDesc: TypeAliasConstructorDescriptorImpl =>
               typedDesc.getUnderlyingConstructorDescriptor
             case typedDesc: FunctionDescriptor =>
@@ -346,15 +341,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
                 typedDesc
               }
           }
-
-        val returnTypeFullName = {
-          if (isCtor) {
-            TypeConstants.void
-          } else {
-            renderedReturnType(relevantDesc.getOriginal)
-          }
-        }
-
+        val returnTypeFullName =
+          if (isCtor) TypeConstants.void
+          else renderedReturnType(relevantDesc.getOriginal)
         val renderedParameterTypes =
           relevantDesc.getValueParameters.asScala.toSeq
             .map { valueParam =>
