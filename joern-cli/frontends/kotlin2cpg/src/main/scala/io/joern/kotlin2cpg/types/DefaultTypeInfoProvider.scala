@@ -612,13 +612,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         case _: Throwable => List()
       }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
-
     val methodName =
-      if (fnDesc.isEmpty) {
-        TypeConstants.cpgUnresolved + "." + TypeConstants.initPrefix
-      } else {
-        TypeRenderer.renderFqName(fnDesc.get) + TypeConstants.initPrefix
-      }
+      Option(fnDesc)
+        .map { desc => s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}" }
+        .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = TypeConstants.void + paramListSignature
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
