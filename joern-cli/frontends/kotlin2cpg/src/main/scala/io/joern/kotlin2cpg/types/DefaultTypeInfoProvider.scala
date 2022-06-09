@@ -268,15 +268,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     expr match {
       case typedExpr: KtCallExpression =>
         Option(typedExpr.getFirstChild)
-          .collect { case firstChild: KtExpression => firstChild }
+          .collect { case expr: KtExpression => expr }
           .getOrElse(expr)
       case typedExpr: KtQualifiedExpression =>
         Option(typedExpr.getSelectorExpression)
-          .collect { case call: KtCallExpression => subexpressionForResolvedCallInfo(call) }
+          .collect { case expr: KtCallExpression => expr }
+          .map(subexpressionForResolvedCallInfo)
           .getOrElse(typedExpr)
       case typedExpr: KtBinaryExpression =>
         Option(typedExpr.getChildren.toList(1))
-          .collect { case secondChild: KtExpression => secondChild }
+          .collect { case expr: KtExpression => expr }
           .getOrElse(expr)
       case _ => expr
     }
