@@ -562,11 +562,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         TypeRenderer.render(firstSuperType)
       } else {
         val renderedReturnT = TypeRenderer.render(returnT)
-        if (renderedReturnT == TypeConstants.tType) {
-          TypeConstants.javaLangObject
-        } else {
-          renderedReturnT
-        }
+        if (renderedReturnT == TypeConstants.tType) TypeConstants.javaLangObject
+        else renderedReturnT
       }
     } else {
       TypeRenderer.render(fnDesc.getReturnType)
@@ -580,14 +577,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val nodeParams = expr.getValueParameters
         nodeParams.asScala
           .map { p =>
-            val explicitTypeFullName = if (p.getTypeReference != null) {
-              p.getTypeReference.getText
-            } else {
-              TypeConstants.cpgUnresolved
-            }
+            val explicitTypeFullName =
+              if (p.getTypeReference != null) p.getTypeReference.getText
+              else TypeConstants.cpgUnresolved
             // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-            val typeFullName = parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
-            typeFullName
+            parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
           }
       } catch {
         case _: Throwable => List()
@@ -597,7 +591,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       Option(fnDesc)
         .map { desc => s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}" }
         .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
-    val signature = TypeConstants.void + paramListSignature
+    val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
   }
@@ -613,14 +607,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val nodeParams = expr.getValueParameters
         nodeParams.asScala
           .map { p =>
-            val explicitTypeFullName = if (p.getTypeReference != null) {
-              p.getTypeReference.getText
-            } else {
-              TypeConstants.cpgUnresolved
-            }
+            val explicitTypeFullName =
+              if (p.getTypeReference != null) p.getTypeReference.getText
+              else TypeConstants.cpgUnresolved
             // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-            val typeFullName = parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
-            typeFullName
+            parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
           }
       } catch {
         case _: Throwable => List()
@@ -628,12 +619,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
 
     val methodName =
-      if (fnDesc.isEmpty) {
+      if (fnDesc.isEmpty)
         TypeConstants.cpgUnresolved + "." + TypeConstants.initPrefix
-      } else {
-        TypeRenderer.renderFqName(fnDesc.get) + TypeConstants.initPrefix
-      }
-    val signature = TypeConstants.void + paramListSignature
+      else TypeRenderer.renderFqName(fnDesc.get) + TypeConstants.initPrefix
+    val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
   }
