@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.types.UnresolvedType
+import org.jetbrains.kotlin.types.expressions.KotlinTypeInfo
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -278,17 +279,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtClassLiteralExpression, defaultValue: (String, String)): (String, String) = {
-    val typeInfo = bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr)
-    if (typeInfo != null && typeInfo.getType != null && typeInfo.getType.getArguments.asScala.nonEmpty) {
-      val firstTypeArg = typeInfo.getType.getArguments.get(0)
-      val rendered     = TypeRenderer.render(firstTypeArg.getType)
-      val retType      = expressionType(expr, TypeConstants.any)
-      val signature    = s"$retType()"
-      val fullName     = s"$rendered.${TypeConstants.classLiteralReplacementMethodName}:$signature"
-      (fullName, signature)
-    } else {
-      defaultValue
-    }
+    Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
+      .map(_.getType)
+      .map(_.getArguments.asScala)
+      .filter(_.nonEmpty)
+      .map { typeArguments =>
+        val firstTypeArg = typeArguments.toList(0)
+        val rendered     = TypeRenderer.render(firstTypeArg.getType)
+        val retType      = expressionType(expr, TypeConstants.any)
+        val signature    = s"$retType()"
+        val fullName     = s"$rendered.${TypeConstants.classLiteralReplacementMethodName}:$signature"
+        (fullName, signature)
+      }
+      .getOrElse(defaultValue)
   }
 
   private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
@@ -560,28 +563,23 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val astDerivedFullName =
       containingFile.getPackageFqName.toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
     val astDerivedSignature = erasedSignature(expr.getValueParameters.asScala.toList)
-
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    if (mapForEntity == null || mapForEntity.getKeys == null) {
-      return (astDerivedFullName, astDerivedSignature)
-    }
-    val typeInfo        = mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey)
-    val theType         = typeInfo.getType
-    val constructorDesc = theType.getConstructor.getDeclarationDescriptor
-    val constructorType = constructorDesc.getDefaultType
-    val args            = constructorType.getArguments.asScala.drop(1)
-    val renderedArgs =
-      if (args.isEmpty) {
-        ""
-      } else if (args.size == 1) {
-        TypeConstants.javaLangObject
-      } else {
-        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
+    Option(bindingsForEntity(bindingContext, expr))
+      .map(_.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
+      .map { typeInfo =>
+        val theType         = typeInfo.getType
+        val constructorDesc = theType.getConstructor.getDeclarationDescriptor
+        val constructorType = constructorDesc.getDefaultType
+        val args            = constructorType.getArguments.asScala.drop(1)
+        val renderedArgs =
+          if (args.isEmpty) ""
+          else if (args.size == 1) TypeConstants.javaLangObject
+          else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
+        val signature = TypeConstants.javaLangObject + "(" + renderedArgs + ")"
+        val fullName =
+          containingFile.getPackageFqName.toString + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
+        (fullName, signature)
       }
-    val signature = TypeConstants.javaLangObject + "(" + renderedArgs + ")"
-    val fullName =
-      containingFile.getPackageFqName.toString + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
-    (fullName, signature)
+      .getOrElse((astDerivedFullName, astDerivedSignature))
   }
 
   private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
