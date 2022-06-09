@@ -10,6 +10,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import ujson.Value
 
 import scala.util.Try
@@ -92,6 +95,67 @@ trait AstForTypesCreator {
     val name     = methodNode.name.replace("<", s"$typeName<")
     val fullName = methodNode.fullName.replace("<", s"$typeName<")
     methodNode.name(name).fullName(fullName)
+  }
+
+  private def astsForEnumMember(tsEnumMember: BabelNodeInfo): Seq[Ast] = {
+    val name       = code(tsEnumMember.json("id"))
+    val memberNode = createMemberNode(name, tsEnumMember.code, dynamicTypeOption = None)
+    addModifier(memberNode, tsEnumMember.json)
+
+    if (hasKey(tsEnumMember.json, "initializer")) {
+      val lhsAst = astForNode(tsEnumMember.json("id"))
+      val rhsAst = astForNodeWithFunctionReference(tsEnumMember.json("initializer"))
+      val callNode =
+        createCallNode(
+          tsEnumMember.code,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH,
+          tsEnumMember.lineNumber,
+          tsEnumMember.columnNumber
+        )
+      val argAsts = List(lhsAst, rhsAst)
+      Seq(createCallAst(callNode, argAsts), Ast(memberNode))
+    } else {
+      Seq(Ast(memberNode))
+    }
+
+  }
+
+  protected def astForEnum(tsEnum: BabelNodeInfo): Ast = {
+    val (typeName, typeFullName) = calcTypeNameAndFullName(tsEnum)
+
+    registerType(typeName, typeFullName)
+
+    val astParentType     = methodAstParentStack.head.label
+    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+
+    val typeDeclNode = createTypeDeclNode(
+      typeName,
+      typeFullName,
+      parserResult.filename,
+      s"enum $typeName",
+      astParentType,
+      astParentFullName
+    )
+
+    addModifier(typeDeclNode, tsEnum.json)
+
+    methodAstParentStack.push(typeDeclNode)
+    dynamicInstanceTypeStack.push(typeFullName)
+
+    val memberAsts = tsEnum.json("members").arr.toSeq.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
+
+    methodAstParentStack.pop()
+    dynamicInstanceTypeStack.pop()
+
+    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+    if (calls.isEmpty) {
+      Ast(typeDeclNode).withChildren(member)
+    } else {
+      val init =
+        createAstForFakeStaticInitMethod(typeFullName, parserResult.filename, tsEnum.lineNumber, calls)
+      Ast(typeDeclNode).withChildren(member).withChild(init)
+    }
   }
 
   protected def astForClass(clazz: BabelNodeInfo): Ast = {

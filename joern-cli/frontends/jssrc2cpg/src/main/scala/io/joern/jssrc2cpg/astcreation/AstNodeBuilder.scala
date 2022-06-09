@@ -7,6 +7,7 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder {
@@ -309,6 +310,33 @@ trait AstNodeBuilder {
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
+
+  protected def createAstForFakeStaticInitMethod(
+    name: String,
+    filename: String,
+    lineNumber: Option[Integer],
+    childrenAsts: Seq[Ast]
+  ): Ast = {
+    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
+    val fakeStaticInitMethod =
+      NewMethod()
+        .name("<sinit>")
+        .fullName(s"$name:<sinit>")
+        .code(code)
+        .filename(filename)
+        .lineNumber(lineNumber)
+        .astParentType(NodeTypes.TYPE_DECL)
+        .astParentFullName(name)
+
+    val blockNode = NewBlock().typeFullName("ANY")
+
+    val methodReturn = NewMethodReturn()
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName("ANY")
+
+    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
+  }
 
   protected def createEqualsCallAst(
     destId: NewNode,

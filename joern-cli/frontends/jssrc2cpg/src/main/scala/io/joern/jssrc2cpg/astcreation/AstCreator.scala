@@ -131,6 +131,7 @@ class AstCreator(
     case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)               => astForVariableDeclaration(decl)
     case arrowExpr @ BabelNodeInfo(BabelAst.ArrowFunctionExpression)      => astForFunctionDeclaration(arrowExpr)
     case funcExpr @ BabelNodeInfo(BabelAst.FunctionExpression)            => astForFunctionDeclaration(funcExpr)
+    case tsEnum @ BabelNodeInfo(BabelAst.TSEnumDeclaration)               => astForEnum(tsEnum)
     case newExpr @ BabelNodeInfo(BabelAst.NewExpression)                  => astForNewExpression(newExpr)
     case thisExpr @ BabelNodeInfo(BabelAst.ThisExpression)                => astForThisExpression(thisExpr)
     case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)            => astForMemberExpression(memberExpr)
