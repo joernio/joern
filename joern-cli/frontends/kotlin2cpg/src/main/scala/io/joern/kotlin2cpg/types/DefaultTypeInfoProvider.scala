@@ -356,19 +356,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtBinaryExpression, defaultValue: (String, String)): (String, String) = {
-    val resolvedDesc = resolvedCallDescriptor(expr)
-    resolvedDesc match {
-      case Some(fnDescriptor) =>
+    resolvedCallDescriptor(expr)
+      .map { fnDescriptor =>
         val originalDesc = fnDescriptor.getOriginal
         val renderedParameterTypes =
           originalDesc.getValueParameters.asScala.toSeq
-            .map { valueParam =>
-              val t = valueParam.getType
-              TypeRenderer.render(t)
-            }
+            .map(_.getType)
+            .map { t => TypeRenderer.render(t) }
             .mkString(",")
         val renderedReturnType = TypeRenderer.render(originalDesc.getReturnType)
-        val signature          = renderedReturnType + "(" + renderedParameterTypes + ")"
+        val signature          = s"$renderedReturnType($renderedParameterTypes)"
         val fullName =
           if (originalDesc.isInstanceOf[ClassConstructorDescriptorImpl]) {
             s"$renderedReturnType.${TypeConstants.initPrefix}:$signature"
@@ -378,8 +375,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           }
         if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
         else (fullName, signature)
-      case None => defaultValue
-    }
+      }.getOrElse(defaultValue)
   }
 
   def containingDeclFullName(expr: KtCallExpression): Option[String] = {
