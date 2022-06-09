@@ -36,7 +36,7 @@ object DependencyResolver {
           None
       }
     } else {
-      logger.error(s"Could not find a supported build tool setup at path `$projectDir`")
+      logger.warn(s"Could not find a supported build tool setup at path `$projectDir`")
       None
     }
   }
