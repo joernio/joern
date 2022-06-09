@@ -336,7 +336,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
               TypeRenderer.render(valueParam.getOriginal.getType)
             }
             .mkString(",")
-        val signature = returnTypeFullName + "(" + renderedParameterTypes + ")"
+        val signature = s"$returnTypeFullName($renderedParameterTypes)"
 
         val renderedFqName = TypeRenderer.renderFqName(relevantDesc)
         val fullName =
