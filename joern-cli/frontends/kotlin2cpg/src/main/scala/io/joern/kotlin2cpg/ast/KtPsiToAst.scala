@@ -554,11 +554,10 @@ trait KtPsiToAst {
 
     val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(initExpr, TypeConstants.cpgUnresolved))
     val tmpName             = Constants.tmpLocalPrefix + tmpKeyPool.next
-    val localForTmpNode     = localNode(tmpName, callRhsTypeFullName)
-    val localForTmpAst      = Ast(localForTmpNode)
 
     val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
 
+    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
     val assignmentLhsNode = identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
@@ -567,7 +566,7 @@ trait KtPsiToAst {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val assignmentsForEntries = componentNCallAstsForDestructuringEntries(destructuringEntries, localForTmpNode)
-    localsForEntries ++ Seq(localForTmpAst) ++
+    localsForEntries ++ Seq(Ast(localForTmpNode)) ++
       Seq(assignmentAst) ++ assignmentsForEntries
   }
 
