@@ -1493,8 +1493,7 @@ trait KtPsiToAst {
     val opRef = expr.getOperationReference
 
     // TODO: add the rest of the operators
-    val operatorOption = {
-      opRef.getOperationSignTokenType match {
+    val operatorOption = opRef.getOperationSignTokenType match {
         case KtTokens.PLUS       => Some(Operators.addition)
         case KtTokens.MINUS      => Some(Operators.subtraction)
         case KtTokens.MUL        => Some(Operators.multiplication)
@@ -1538,7 +1537,6 @@ trait KtPsiToAst {
           )
           Some(Constants.unknownOperator)
       }
-    }
     val (fullName, signature) =
       if (operatorOption.isDefined) (operatorOption.get, TypeConstants.any)
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
