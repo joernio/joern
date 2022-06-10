@@ -31,11 +31,18 @@ object AstGenRunner {
     skipped.flatten
   }
 
+  private def filterFiles(files: List[String]): Set[String] = {
+    // We are not interested in JS / TS type definition files at this stage.
+    // TODO: maybe we can enable that later on and use the type definitions there
+    //  for enhancing the CPG with additional type information for functions
+    files.filterNot(f => f.endsWith(".t.ts.json") || f.endsWith(".d.ts.json")).toSet
+  }
+
   def execute(in: File, out: File): AstGenRunnerResult = {
     logger.debug(s"\t+ Running astgen in '$in' ...")
     ExternalCommand.run(s"astgen -t ts -o $out", in.toString()) match {
       case Success(result) =>
-        val parsed  = SourceFiles.determine(Set(out.toString()), Set(".json")).toSet
+        val parsed  = filterFiles(SourceFiles.determine(Set(out.toString()), Set(".json")))
         val skipped = skippedFiles(in, result.toSet)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>

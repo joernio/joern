@@ -286,6 +286,7 @@ trait AstForExpressionsCreator {
       case "<="         => Operators.lessEqualsThan
       case "instanceof" => Operators.instanceOf
       case "||"         => Operators.logicalOr
+      case "|"          => Operators.or
       case "&&"         => Operators.logicalAnd
       // special case (see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
       case "??"   => Operators.logicalOr
