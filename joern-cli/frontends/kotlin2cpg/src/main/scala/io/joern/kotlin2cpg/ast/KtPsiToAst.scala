@@ -416,9 +416,7 @@ trait KtPsiToAst {
     val lambdaMethodNode =
       methodNode(Constants.lambdaName, fullName, signature, relativizedPath, line(expr), column(expr))
 
-    val closureBindingEntriesForCaptured = scope
-      .pushClosureScope(lambdaMethodNode)
-      .collect {
+    val closureBindingEntriesForCaptured = scope.pushClosureScope(lambdaMethodNode).collect {
         case node: NewMethodParameterIn => node
         case node: NewLocal             => node
         case node: NewMember            => node
