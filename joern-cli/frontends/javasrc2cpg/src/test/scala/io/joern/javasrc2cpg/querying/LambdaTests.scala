@@ -20,8 +20,7 @@ import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends JavaSrcCode2CpgFixture {
   "nested lambdas" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |import java.util.ArrayList;
         |import java.util.List;
         |import java.util.stream.Collectors;
@@ -681,6 +680,15 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |  }
         |}
         |""".stripMargin)
+
+    "create the correct code string for call chains involving lambdas" in {
+      cpg.call.name("collect").l match {
+        case List(collectCall) =>
+          collectCall.code shouldBe "list.stream().map(<lambda>).collect(Collectors.toList())"
+
+        case result => fail(s"Expected single call to collect but got $result")
+      }
+    }
 
     "create a method node for the lambda" in {
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").l match {

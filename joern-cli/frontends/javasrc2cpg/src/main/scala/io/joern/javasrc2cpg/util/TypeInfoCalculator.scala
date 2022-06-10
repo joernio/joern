@@ -216,17 +216,18 @@ object TypeInfoCalculator {
   }
 
   object TypeConstants {
-    val Byte: String    = "byte"
-    val Short: String   = "short"
-    val Int: String     = "int"
-    val Long: String    = "long"
-    val Float: String   = "float"
-    val Double: String  = "double"
-    val Char: String    = "char"
-    val Boolean: String = "boolean"
-    val Object: String  = "java.lang.Object"
-    val Class: String   = "java.lang.Class"
-    val Void: String    = "void"
+    val Byte: String     = "byte"
+    val Short: String    = "short"
+    val Int: String      = "int"
+    val Long: String     = "long"
+    val Float: String    = "float"
+    val Double: String   = "double"
+    val Char: String     = "char"
+    val Boolean: String  = "boolean"
+    val Object: String   = "java.lang.Object"
+    val Class: String    = "java.lang.Class"
+    val Iterator: String = "java.util.Iterator"
+    val Void: String     = "void"
   }
 
   object UnresolvedConstants {

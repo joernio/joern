@@ -4,7 +4,7 @@ import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration,
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents}
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, NewBinding, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Binding, NewBinding, NewTypeDecl, TypeDecl}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -31,6 +31,16 @@ trait BindingTableAdapter[T] {
   def allParentsWithTypeMap(typeDecl: T): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)]
 
   def directBindingTableEntries(typeDeclFullName: String, typeDecl: T): collection.Seq[BindingTableEntry]
+}
+
+class BindingTableAdapterForFlatEntries(
+                                        bindings: collection.Seq[BindingTableEntry]
+) extends BindingTableAdapter[NewTypeDecl] {
+  override def directParents(typeDecl: NewTypeDecl): collection.Seq[ResolvedReferenceTypeDeclaration] = Seq.empty
+
+  override def allParentsWithTypeMap(typeDecl: NewTypeDecl): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = Seq.empty
+
+  override def directBindingTableEntries(typeDeclFullName: String, typeDecl: NewTypeDecl): collection.Seq[BindingTableEntry] = bindings
 }
 
 class BindingTableAdapterForJavaparser(

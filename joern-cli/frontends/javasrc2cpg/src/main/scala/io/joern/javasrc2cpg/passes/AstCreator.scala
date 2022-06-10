@@ -2,149 +2,28 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  AnnotationDeclaration,
-  BodyDeclaration,
-  CallableDeclaration,
-  ClassOrInterfaceDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.{AnnotationDeclaration, BodyDeclaration, CallableDeclaration, ClassOrInterfaceDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  AssignExpr,
-  BinaryExpr,
-  BooleanLiteralExpr,
-  CastExpr,
-  CharLiteralExpr,
-  ClassExpr,
-  ConditionalExpr,
-  DoubleLiteralExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  IntegerLiteralExpr,
-  LambdaExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MarkerAnnotationExpr,
-  MethodCallExpr,
-  NameExpr,
-  NormalAnnotationExpr,
-  NullLiteralExpr,
-  ObjectCreationExpr,
-  SingleMemberAnnotationExpr,
-  StringLiteralExpr,
-  SuperExpr,
-  TextBlockLiteralExpr,
-  ThisExpr,
-  UnaryExpr,
-  VariableDeclarationExpr
-}
+import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, BooleanLiteralExpr, CastExpr, CharLiteralExpr, ClassExpr, ConditionalExpr, DoubleLiteralExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, IntegerLiteralExpr, LambdaExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MethodCallExpr, NameExpr, NormalAnnotationExpr, NullLiteralExpr, ObjectCreationExpr, SingleMemberAnnotationExpr, StringLiteralExpr, SuperExpr, TextBlockLiteralExpr, ThisExpr, UnaryExpr, VariableDeclarationExpr}
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, WhileStmt}
 import com.github.javaparser.resolution.{SymbolResolver, UnsolvedSymbolException}
-import com.github.javaparser.resolution.declarations.{
-  ResolvedConstructorDeclaration,
-  ResolvedFieldDeclaration,
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeParameterDeclaration
-}
+import com.github.javaparser.resolution.declarations.{ResolvedConstructorDeclaration, ResolvedFieldDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeParameterDeclaration}
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
+import io.joern.javasrc2cpg.util.NodeBuilders.{assignmentNode, indexAccessNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.{NamedVariableNodeType, WildcardImportName}
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  BindingTableAdapterForLambdas,
-  BindingTableEntry,
-  LambdaBindingInfo,
-  NodeTypeInfo,
-  Scope,
-  TypeInfoCalculator
-}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForFlatEntries, BindingTableAdapterForJavaparser, BindingTableAdapterForLambdas, BindingTableEntry, LambdaBindingInfo, NodeTypeInfo, Scope, TypeInfoCalculator}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, UnresolvedConstants}
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators,
-  PropertyNames
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  HasFullName,
-  HasSignature,
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{HasFullName, HasSignature, NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.passes.frontend.TypeNodePass
+import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -194,6 +73,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolResolver)
   private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
   private val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
+
+  private val LambdaNamePrefix   = "lambda$"
+  private val lambdaKeyPool      = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val IndexNamePrefix    = "$idx"
+  private val indexKeyPool       = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val IterableNamePrefix = "$iterLocal"
+  private val iterableKeyPool    = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -352,6 +238,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         getBindingTable,
         methodSignature,
         new BindingTableAdapterForLambdas()
+      )
+    )
+  }
+
+  def getFlatBindingTable(typeDecl: NewTypeDecl, bindingEntries: Seq[BindingTableEntry]): BindingTable = {
+    val fullName = typeDecl.fullName
+
+    bindingTableCache.getOrElseUpdate(
+      fullName,
+      createBindingTable(
+        fullName,
+        typeDecl,
+        getBindingTable,
+        methodSignature,
+        new BindingTableAdapterForFlatEntries(bindingEntries)
       )
     )
   }
@@ -1173,7 +1074,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: DoStmt           => Seq(astForDo(x, order))
       case _: EmptyStmt        => Seq() // Intentionally skipping this
       case x: ExpressionStmt   => astsForExpression(x.getExpression, order, Some(ExpectedType.Void))
-      case x: ForEachStmt      => Seq(astForForEach(x, order))
+      case x: ForEachStmt      => astForForEach(x, order)
       case x: ForStmt          => Seq(astForFor(x, order))
       case x: IfStmt           => Seq(astForIf(x, order))
       case x: LabeledStmt      => astsForLabeledStatement(x, order)
@@ -1345,22 +1246,517 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForForEach(stmt: ForEachStmt, order: Int): Ast = {
+  private def iterableAssignAstsForNativeForEach(
+    iterableExpression: Expression,
+    iterableType: String,
+    order: Int
+  ): (NewLocal, Seq[Ast]) = {
+    val lineNo       = line(iterableExpression)
+    val expectedType = Some(ExpectedType(iterableType))
+
+    val iterableAst = astsForExpression(iterableExpression, order = 2, expectedType = expectedType) match {
+      case Nil =>
+        logger.error(s"Could not create AST for iterable expr $iterableExpression: $filename:l$lineNo")
+        Ast()
+
+      case iterableAst :: Nil => iterableAst
+
+      case iterableAsts =>
+        logger.warn(
+          s"Found multiple ASTS for iterable expr $iterableExpression: $filename:l$lineNo\nDropping all but the first!"
+        )
+        iterableAsts.head
+    }
+
+    val iterableName = nextIterableName()
+    val iterableLocalNode =
+      NewLocal()
+        .name(iterableName)
+        .code(iterableName)
+        .typeFullName(iterableType)
+        .order(order)
+        .lineNumber(lineNo)
+    val iterableLocalAst = Ast(iterableLocalNode)
+
+    val iterableAssignNode =
+      NewCall()
+        .name(Operators.assignment)
+        .methodFullName(Operators.assignment)
+        .typeFullName(iterableType)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(order + 1)
+        .lineNumber(lineNo)
+    val iterableAssignIdentifier =
+      NewIdentifier()
+        .name(iterableName)
+        .code(iterableName)
+        .typeFullName(iterableType)
+        .order(1)
+        .argumentIndex(1)
+        .lineNumber(lineNo)
+    val iterableAssignArgs = List(Ast(iterableAssignIdentifier), iterableAst)
+    val iterableAssignAst  =
+      callAst(iterableAssignNode, iterableAssignArgs)
+        .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
+
+    (iterableLocalNode, List(iterableLocalAst, iterableAssignAst))
+  }
+
+  private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
+    val idxName = nextIndexName()
+    val idxLocal =
+      NewLocal()
+        .name(idxName)
+        .typeFullName(TypeConstants.Int)
+        .code(idxName)
+        .lineNumber(lineNo)
+        .order(1)
+    scopeStack.addToScope(idxName, idxLocal)
+    idxLocal
+  }
+
+  private def nativeForEachIdxInitializerAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
+    val idxName = idxLocal.name
+    val idxInitializerCallNode =
+      NewCall()
+        .name(Operators.assignment)
+        .methodFullName(Operators.assignment)
+        .code(s"int $idxName = 0")
+        .typeFullName(TypeConstants.Int)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+    val idxIdentifierArg = identifierFromNamedVarType(idxLocal, lineNo, 1)
+    val zeroLiteral =
+      NewLiteral()
+        .code("0")
+        .typeFullName(TypeConstants.Int)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+    val idxInitializerArgAsts = List(Ast(idxIdentifierArg), Ast(zeroLiteral))
+    callAst(idxInitializerCallNode, idxInitializerArgAsts)
+      .withRefEdge(idxIdentifierArg, idxLocal)
+  }
+
+  private def nativeForEachCompareAst(
+    lineNo: Option[Integer],
+    iterableLocal: NamedVariableNodeType,
+    idxLocal: NewLocal
+  ): Ast = {
+    val idxName      = idxLocal.name
+    val iterableName = iterableLocal.name
+
+    val compareNode =
+      NewCall()
+        .name(Operators.lessThan)
+        .methodFullName(Operators.lessThan)
+        .code(s"$idxName < $iterableName.length")
+        .typeFullName(TypeConstants.Boolean)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(3)
+        .argumentIndex(3)
+        .lineNumber(lineNo)
+    val comparisonIdxIdentifier = identifierFromNamedVarType(idxLocal, lineNo, 1)
+    val comparisonFieldAccess =
+      NewCall()
+        .name(Operators.fieldAccess)
+        .methodFullName(Operators.fieldAccess)
+        .code(s"$iterableName.length")
+        .typeFullName(TypeConstants.Int)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+    val fieldAccessIdentifier = identifierFromNamedVarType(iterableLocal, lineNo, 1)
+    val fieldAccessFieldIdentifier =
+      NewFieldIdentifier()
+        .canonicalName("length")
+        .code("length")
+        .lineNumber(lineNo)
+        .order(2)
+        .argumentIndex(2)
+    val fieldAccessArgs = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
+    val fieldAccessAst  = callAst(comparisonFieldAccess, fieldAccessArgs)
+    val compareArgs     = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
+
+    callAst(compareNode, compareArgs)
+      .withRefEdge(comparisonIdxIdentifier, idxLocal)
+      .withRefEdge(fieldAccessIdentifier, iterableLocal)
+  }
+
+  private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
+    val incrementNode =
+      NewCall()
+        .name(Operators.postIncrement)
+        .methodFullName(Operators.postIncrement)
+        .code(s"${idxLocal.name}++")
+        .typeFullName(TypeConstants.Int)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(4)
+        .argumentIndex(4)
+        .lineNumber(lineNo)
+    val incrementArg    = identifierFromNamedVarType(idxLocal, lineNo, 1)
+    val incrementArgAst = Ast(incrementArg)
+    callAst(incrementNode, List(incrementArgAst))
+      .withRefEdge(incrementArg, idxLocal)
+  }
+
+  private def variableLocalForForEachBody(stmt: ForEachStmt): NewLocal = {
+    val lineNo = line(stmt)
+    // Create item local
+    val maybeVariable = stmt.getVariable.getVariables.asScala.toList match {
+      case Nil =>
+        logger.error(s"ForEach statement has empty variable list: $filename$lineNo")
+        None
+      case variable :: Nil => Some(variable)
+      case variable :: _ =>
+        logger.warn(s"ForEach statement defines multiple variables. Dropping all but the first: $filename$lineNo")
+        Some(variable)
+    }
+
+    val partialLocalNode = NewLocal().lineNumber(lineNo).order(1)
+
+    maybeVariable match {
+      case Some(variable) =>
+        val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse(UnresolvedConstants.UnresolvedType)
+        val localNode = partialLocalNode
+          .name(variable.getNameAsString)
+          .typeFullName(typeFullName)
+        scopeStack.addToScope(localNode.name, localNode)
+        localNode
+
+      case None =>
+        // Returning partialLocalNode here is fine since getting to this case means everything is
+        // broken anyways :)
+        partialLocalNode
+    }
+  }
+
+  private def variableAssignForNativeForEachBody(
+    variableLocal: NewLocal,
+    idxLocal: NewLocal,
+    iterableNode: NamedVariableNodeType
+  ): Ast = {
+    // Everything will be on the same line as the `for` statement, but this is the most useful
+    // solution for debugging.
+    val lineNo = variableLocal.lineNumber
+    val varAssignNode = assignmentNode()
+      .order(2)
+      .argumentIndex(2)
+      .lineNumber(lineNo)
+      .typeFullName(variableLocal.typeFullName)
+
+    val targetNode = identifierFromNamedVarType(variableLocal, lineNo, 1)
+
+    val indexAccess = indexAccessNode()
+      .order(2)
+      .argumentIndex(2)
+      .lineNumber(lineNo)
+      .typeFullName(iterableNode.typeFullName.replaceAll(raw"\[\]", ""))
+
+    val indexAccessIdentifier = identifierFromNamedVarType(iterableNode, lineNo, 1)
+    val indexAccessIndex      = identifierFromNamedVarType(idxLocal, lineNo, 2)
+
+    val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
+    val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
+
+    val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
+    callAst(varAssignNode, assignArgsAsts)
+      .withRefEdge(targetNode, variableLocal)
+      .withRefEdge(indexAccessIdentifier, iterableNode)
+      .withRefEdge(indexAccessIndex, idxLocal)
+  }
+
+  private def nativeForEachBodyAst(stmt: ForEachStmt, idxLocal: NewLocal, iterableNode: NamedVariableNodeType): Ast = {
+    val variableLocal     = variableLocalForForEachBody(stmt)
+    val variableLocalAst  = Ast(variableLocal)
+    val variableAssignAst = variableAssignForNativeForEachBody(variableLocal, idxLocal, iterableNode)
+
+    stmt.getBody match {
+      case block: BlockStmt =>
+        astForBlockStatement(block, order = 5, prefixAsts = List(variableLocalAst, variableAssignAst))
+
+      case stmt =>
+        val stmtAsts  = astsForStatement(stmt, 3)
+        val blockNode = NewBlock().order(5).lineNumber(variableLocal.lineNumber)
+        Ast(blockNode)
+          .withChild(variableLocalAst)
+          .withChild(variableAssignAst)
+          .withChildren(stmtAsts)
+    }
+  }
+
+  private def identifierFromNamedVarType(
+    local: NamedVariableNodeType,
+    lineNumber: Option[Integer],
+    order: Int
+  ): NewIdentifier = {
+    NewIdentifier()
+      .name(local.name)
+      .typeFullName(local.typeFullName)
+      .lineNumber(lineNumber)
+      .order(order)
+      .argumentIndex(order)
+  }
+
+  private def astsForNativeForEach(stmt: ForEachStmt, iterableType: String, order: Int): Seq[Ast] = {
+
+    // This is ugly, but for a case like `for (int x : new int[] { ... })` this creates a new LOCAL
+    // with the assignment `int[] $iterLocal0 = new int[] { ... }` before the FOR loop.
+    val (iterableSourceNode, tempIterableInitAsts) = stmt.getIterable match {
+      case nameExpr: NameExpr =>
+        scopeStack.lookupVariable(nameExpr.getNameAsString) match {
+          // If this is not the case, then the code is broken (iterable not in scope).
+          case Some(NodeTypeInfo(node: NamedVariableNodeType, _, _)) => (node, Nil)
+          case _ => iterableAssignAstsForNativeForEach(nameExpr, iterableType, order)
+        }
+      case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType, order)
+    }
+
     val forNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.FOR)
-      .order(order)
+      .order(order + tempIterableInitAsts.size)
 
-    val iterableAsts = astsForExpression(stmt.getIterable, 1, None)
-    val variableAsts =
-      astsForVariableDecl(stmt.getVariable, iterableAsts.size + 1)
+    val lineNo = line(stmt)
 
-    val bodyOrder = iterableAsts.size + variableAsts.size + 1
-    val bodyAsts  = astsForStatement(stmt.getBody, bodyOrder)
+    val idxLocal = nativeForEachIdxLocalNode(lineNo)
 
-    Ast(forNode)
-      .withChildren(iterableAsts)
-      .withChildren(variableAsts)
-      .withChildren(bodyAsts)
+    val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
+
+    val compareAst = nativeForEachCompareAst(lineNo, iterableSourceNode, idxLocal)
+
+    val incrementAst = nativeForEachIncrementAst(lineNo, idxLocal)
+
+    val bodyAst = nativeForEachBodyAst(stmt, idxLocal, iterableSourceNode)
+
+    val forAst = Ast(forNode)
+      .withChild(Ast(idxLocal))
+      .withChild(idxInitializerAst)
+      .withChild(compareAst)
+      .withChild(incrementAst)
+      .withChild(bodyAst)
+
+    tempIterableInitAsts ++ Seq(forAst)
+  }
+
+  private def astForIterableForEach(stmt: ForEachStmt, maybeTypeFullName: Option[String], order: Int): Seq[Ast] = {
+    val lineNo = line(stmt)
+    val iterableType = expressionReturnTypeFullName(stmt.getIterable).getOrElse(UnresolvedConstants.UnresolvedType)
+    // Create iter local
+   val iteratorLocalName = nextIterableName()
+    val iteratorLocalNode =
+      NewLocal()
+        .name(iteratorLocalName)
+        .code(iteratorLocalName)
+        .typeFullName(TypeConstants.Iterator)
+        .order(1)
+        .lineNumber(lineNo)
+
+    // Create local assign from iterator
+    val iteratorAssignNode =
+      assignmentNode()
+        .typeFullName(TypeConstants.Iterator)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+    val iteratorAssignIdentifier = identifierFromNamedVarType(iteratorLocalNode, lineNo, 1)
+    val iteratorMethodName = "iterator"
+    val iteratorMethodSignature = composeMethodLikeSignature(TypeConstants.Iterator, parameterTypes = Nil)
+    val iteratorMethodFullName = composeMethodFullName(
+      iterableType,
+      iteratorMethodName,
+      iteratorMethodSignature
+    )
+    // TODO: This is the only section that needs to be updated for unified native/collection foreach representations.
+    val iteratorCallNode =
+      NewCall()
+        .name(iteratorMethodName)
+        .methodFullName(iteratorMethodFullName)
+        .signature(iteratorMethodSignature)
+        .typeFullName(TypeConstants.Iterator)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .code(iteratorMethodFullName)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+    val actualIteratorAst = astsForExpression(stmt.getIterable, 0, expectedType = None) // TODO: Expected type here?
+    val iteratorCallAst =
+      callAst(iteratorCallNode, actualIteratorAst)
+        .withReceiverEdges(iteratorCallNode, actualIteratorAst.headOption.flatMap(_.root).toList)
+    val iteratorAssignAst =
+      callAst(iteratorAssignNode, Seq(Ast(iteratorAssignIdentifier), iteratorCallAst))
+        .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
+
+    // Add local HasNext call
+    val hasNextCallName = "hasNext"
+    val hasNextCallSignature = composeMethodLikeSignature(TypeConstants.Boolean, parameterTypes = Nil)
+    val hasNextCallFullName = composeMethodFullName(TypeConstants.Iterator, hasNextCallName, hasNextCallSignature)
+    val iteratorHasNextCallNode =
+      NewCall()
+        .name(hasNextCallName)
+        .methodFullName(hasNextCallFullName)
+        .signature(hasNextCallSignature)
+        .typeFullName(TypeConstants.Boolean)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .code(hasNextCallFullName)
+        .order(3)
+        .argumentIndex(3)
+        .lineNumber(lineNo)
+    val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 0)
+    val iteratorHasNextCallAst =
+      callAst(iteratorHasNextCallNode, Seq(Ast(iteratorHasNextCallReceiver)))
+        .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
+        .withReceiverEdge(iteratorHasNextCallNode, iteratorHasNextCallReceiver)
+
+    // Empty block update
+    val emptyUpdateNode = NewBlock().order(4).argumentIndex(4).lineNumber(lineNo)
+    val emptyUpdateAst  = Ast(emptyUpdateNode)
+
+    // Body
+    // According to the Java language specification, there should be exactly one variable defined here.
+    val (forVariableName, forVariableType) = stmt.getVariable.getVariables.asScala.headOption match {
+      case Some(variable) =>
+        val variableName = variable.getNameAsString
+        val variableType = typeInfoCalc.fullName(variable.getType).getOrElse(UnresolvedConstants.UnresolvedType)
+        (variableName, variableType)
+
+      case None => (nextIterableName(), UnresolvedConstants.UnresolvedType)
+    }
+    val variableLocal =
+      NewLocal()
+        .name(forVariableName)
+        .code(forVariableName)
+        .typeFullName(forVariableType)
+        .order(1)
+        .lineNumber(lineNo)
+    scopeStack.addToScope(forVariableName, variableLocal)
+
+    // -- assign from iterator.next
+    val varLocalAssignNode =
+      assignmentNode()
+        .typeFullName(forVariableType)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+    val varLocalAssignIdentifier = identifierFromNamedVarType(variableLocal, lineNo, 1)
+
+    val iterNextCallName = "next"
+    val iterNextCallSignature = composeMethodLikeSignature(forVariableType, parameterTypes = Nil)
+    val iterNextCallFullName = composeMethodFullName(TypeConstants.Iterator, iterNextCallName, iterNextCallSignature)
+    val iterNextCallNode =
+      NewCall()
+        .name(iterNextCallName)
+        .methodFullName(iterNextCallFullName)
+        .signature(iterNextCallSignature)
+        .typeFullName(forVariableType)
+        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+        .code(iterNextCallFullName)
+        .order(2)
+        .argumentIndex(2)
+        .lineNumber(lineNo)
+    val iterNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 0)
+    val iterNextCallAst =
+      callAst(iterNextCallNode, Seq(Ast(iterNextCallReceiver)))
+        .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
+        .withReceiverEdge(iterNextCallNode, iterNextCallReceiver)
+
+    val varLocalAssignAst =
+      callAst(varLocalAssignNode, Seq(Ast(varLocalAssignIdentifier), iterNextCallAst))
+        .withRefEdge(varLocalAssignIdentifier, variableLocal)
+
+    // -- rest of body
+    val bodyPrefixAsts = Seq(Ast(variableLocal), varLocalAssignAst)
+    val bodyAst = stmt.getBody match {
+      case block: BlockStmt =>
+        astForBlockStatement(block, 5, prefixAsts = bodyPrefixAsts)
+
+      case bodyStmt =>
+        val bodyBlockNode = NewBlock().order(5).argumentIndex(5).lineNumber(lineNo)
+        val bodyStmtAsts = astsForStatement(bodyStmt, bodyPrefixAsts.size + 1)
+        Ast(bodyBlockNode)
+        .withChildren(bodyPrefixAsts)
+        .withChildren(bodyStmtAsts)
+    }
+
+    val forNode =
+      NewControlStructure()
+        .controlStructureType(ControlStructureTypes.FOR)
+        .order(order)
+        .argumentIndex(order)
+        .code(ControlStructureTypes.FOR)
+        .lineNumber(lineNo)
+        .columnNumber(column(stmt))
+
+    val forAst = Ast(forNode)
+      .withChild(Ast(iteratorLocalNode))
+      .withChild(iteratorAssignAst)
+      .withChild(iteratorHasNextCallAst)
+      .withChild(emptyUpdateAst)
+      .withChild(bodyAst)
+
+    val javaUtilIteratorTypeDecl = NewTypeDecl().name("Iterator").fullName(TypeConstants.Iterator)
+    val constructedIteratorTypeDecl = NewTypeDecl().fullName(iteratorLocalNode.typeFullName).name(TypeNodePass.fullToShortName(iteratorLocalNode.typeFullName))
+
+    val javaUtilIteratorBindings = List(
+      BindingTableEntry(
+        hasNextCallName,
+        hasNextCallSignature,
+        hasNextCallFullName
+      ),
+      BindingTableEntry(
+        iterNextCallName,
+        iterNextCallSignature,
+        iterNextCallFullName
+      )
+    )
+
+    val javaUtilIteratorBindingTable = getFlatBindingTable(javaUtilIteratorTypeDecl, javaUtilIteratorBindings)
+    createBindingNodes(javaUtilIteratorTypeDecl, javaUtilIteratorBindingTable)
+
+    val constructedIteratorBindings = List(
+      BindingTableEntry(
+        iteratorMethodName,
+        iteratorMethodSignature,
+        iteratorMethodFullName
+      )
+    )
+    val constructedIteratorBindingTable = getFlatBindingTable(constructedIteratorTypeDecl, constructedIteratorBindings)
+    createBindingNodes(constructedIteratorTypeDecl, constructedIteratorBindingTable)
+
+    Seq(forAst)
+  }
+
+  def astForForEach(stmt: ForEachStmt, order: Int): Seq[Ast] = {
+    scopeStack.pushNewScope(BlockScope)
+
+    val ast = expressionReturnTypeFullName(stmt.getIterable) match {
+      case Some(typeFullName) if typeFullName.endsWith("[]") =>
+        astsForNativeForEach(stmt, typeFullName, order)
+
+      case maybeType =>
+        astForIterableForEach(stmt, maybeType, order)
+//        val forNode = NewControlStructure()
+//          .controlStructureType(ControlStructureTypes.FOR)
+//          .order(order)
+//
+//        val iterableAsts = astsForExpression(stmt.getIterable, 1, None)
+//        val variableAsts =
+//          astsForVariableDecl(stmt.getVariable, iterableAsts.size + 1)
+//
+//        val bodyOrder = iterableAsts.size + variableAsts.size + 1
+//        val bodyAsts  = astsForStatement(stmt.getBody, bodyOrder)
+//
+//        val ast = Ast(forNode)
+//          .withChildren(iterableAsts)
+//          .withChildren(variableAsts)
+//          .withChildren(bodyAsts)
+//        Seq(ast)
+    }
+
+    scopeStack.popScope()
+    ast
   }
 
   def astForSwitchStatement(stmt: SwitchStmt, order: Int): Ast = {
@@ -1465,7 +1861,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     stmt: BlockStmt,
     order: Int,
     codeStr: String = "<empty>",
-    localsToAdd: Seq[NewLocal] = Seq.empty
+    prefixAsts: Seq[Ast] = Seq.empty
   ): Ast = {
     scopeStack.pushNewScope(BlockScope)
 
@@ -1476,7 +1872,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    var orderOffset = localsToAdd.size
+    var orderOffset = prefixAsts.size
     val stmtAsts = withOrder(stmt.getStatements) { (x, o) =>
       val asts = astsForStatement(x, o + orderOffset)
       orderOffset += asts.size - 1
@@ -1485,7 +1881,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
     Ast(block)
-      .withChildren(localsToAdd.map(Ast(_)))
+      .withChildren(prefixAsts)
       .withChildren(stmtAsts)
   }
 
@@ -1593,7 +1989,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val initializerAst =
       expr.getInitializer.toScala
-        .map(astForArrayInitializerExpr(_, expr.getLevels.size() + 1, expectedType))
+        .map(astForArrayInitializerExpr(_, levelAsts.size + 1, expectedType))
 
     val args = (levelAsts ++ initializerAst.toList).toSeq
 
@@ -1854,7 +2250,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val resolvedExpectedType = Try(symbolResolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
       val initializerAsts = astsForExpression(initializer, 2, Some(ExpectedType(typeFullName, resolvedExpectedType)))
 
-      val code = s"$name = ${rootCode(initializerAsts)}"
+      val typeName = TypeNodePass.fullToShortName(typeFullName)
+      val code     = s"$typeName $name = ${rootCode(initializerAsts)}"
 
       val callNode = NewCall()
         .name(Operators.assignment)
@@ -1875,7 +2272,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .typeFullName(typeFullName)
         .lineNumber(line(variable))
         .columnNumber(column(variable))
-      val targetAst = Ast(identifier)
+      val localCorrespToIdent = scopeStack.lookupVariable(name).map(_.node)
+      val targetAst           = Ast(identifier).withRefEdges(identifier, localCorrespToIdent.toList)
 
       // Since all partial constructors will be dealt with here, don't pass them up.
       val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
@@ -1921,18 +2319,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val locals    = localsForVarDecl(varDecl, order)
     val localAsts = locals.map { Ast(_) }
 
-    val assignOrder = order + locals.size
-    val assignments =
-      assignmentsForVarDecl(varDecl.getVariables.asScala, line(varDecl), column(varDecl), assignOrder)
-
     locals.foreach { local =>
       scopeStack.addToScope(local.name, local)
     }
+
+    val assignOrder = order + locals.size
+    val assignments =
+      assignmentsForVarDecl(varDecl.getVariables.asScala, line(varDecl), column(varDecl), assignOrder)
 
     localAsts ++ assignments
   }
 
   def callAst(rootNode: NewCall, args: Seq[Ast]): Ast = {
+
+    val code = rootNode.code
+
     Ast(rootNode)
       .withChildren(args)
       .withArgEdges(rootNode, args.flatMap(_.root))
@@ -2395,10 +2796,26 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Try(call.resolve()) match {
       case Success(resolvedCall) =>
         call.getScope.toScala match {
-          case Some(scope) => s"${scope.toString}."
+          case Some(scope: NameExpr) => s"${scope.getNameAsString}."
 
-          case None =>
-            if (resolvedCall.isStatic) "" else "this."
+          case Some(_: SuperExpr) => "super."
+
+          case Some(_: ThisExpr) => "this."
+
+          case Some(scopeMethodCall: MethodCallExpr) =>
+            codePrefixForMethodCall(scopeMethodCall) match {
+              case "" => ""
+              case prefix =>
+                val argumentsCode = getArgumentCodeString(scopeMethodCall.getArguments)
+                s"$prefix${scopeMethodCall.getNameAsString}($argumentsCode)."
+            }
+
+          case Some(objectCreationExpr: ObjectCreationExpr) =>
+            val typeName        = objectCreationExpr.getTypeAsString
+            val argumentsString = getArgumentCodeString(objectCreationExpr.getArguments)
+            s"new $typeName($argumentsString)."
+
+          case _ => if (resolvedCall.isStatic) "" else "this."
         }
 
       case _ =>
@@ -2427,12 +2844,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  var lambdaCounter    = 0
-  val LambdaNamePrefix = "lambda$"
   private def nextLambdaName(): String = {
-    val name = s"$LambdaNamePrefix$lambdaCounter"
-    lambdaCounter += 1
-    name
+    s"$LambdaNamePrefix${lambdaKeyPool.next}"
+  }
+
+  private def nextIndexName(): String = {
+    s"$IndexNamePrefix${indexKeyPool.next}"
+  }
+
+  private def nextIterableName(): String = {
+    s"$IterableNamePrefix${iterableKeyPool.next}"
   }
 
   private def genericParamTypeMapForLambda(
@@ -2566,7 +2987,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     order: Int
   ): Ast = {
     body match {
-      case block: BlockStmt => astForBlockStatement(block, order, localsToAdd = localsForCapturedVars)
+      case block: BlockStmt => astForBlockStatement(block, order, prefixAsts = localsForCapturedVars.map(Ast(_)))
 
       case stmt =>
         val returnOrder = localsForCapturedVars.size + 1
@@ -2738,7 +3159,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForLambdaExpr(expr: LambdaExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
     scopeStack.pushNewScope(MethodScope(expectedType.getOrElse(ExpectedType.default)))
 
-    val capturedVariables = scopeStack.getCapturedVariables
+    val capturedVariables              = scopeStack.getCapturedVariables
     val closureBindingsForCapturedVars = closureBindingsForCapturedNodes(capturedVariables)
     val localsForCaptured              = localsForCapturedNodes(closureBindingsForCapturedVars)
     val implementedInfo                = getLambdaImplementedInfo(expr, expectedType)
@@ -2901,6 +3322,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case _ => argsAsts
     }
   }
+
+  private def getArgumentCodeString(args: NodeList[Expression]): String = {
+    args.asScala
+      .map {
+        case _: LambdaExpr => "<lambda>"
+        case other         => other.toString
+      }
+      .mkString(", ")
+  }
+
   private def astForMethodCall(call: MethodCallExpr, order: Int = 1, expectedReturnType: Option[ExpectedType]): Ast = {
     val maybeResolvedCall = Try(call.resolve())
     val maybeResolvedType = Try(call.calculateResolvedType())
@@ -2932,6 +3363,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
 
+    val argumentsCode = getArgumentCodeString(call.getArguments)
+
     val codePrefix = codePrefixForMethodCall(call)
     val callNode = NewCall()
       .typeFullName(expressionTypeFullName)
@@ -2939,7 +3372,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .methodFullName(methodFullName)
       .signature(signature)
       .dispatchType(dispatchType)
-      .code(s"$codePrefix${call.getNameAsString}(${call.getArguments.asScala.mkString(", ")})")
+      .code(s"$codePrefix${call.getNameAsString}($argumentsCode)")
       .order(order)
       .argumentIndex(order)
       .lineNumber(line(call))

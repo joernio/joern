@@ -2,7 +2,15 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier, Method, MethodParameterIn, MethodReturn, Modifier, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Block,
+  Identifier,
+  Method,
+  MethodParameterIn,
+  MethodReturn,
+  Modifier,
+  Return
+}
 import io.shiftleft.semanticcpg.language._
 
 class SynchronizedTests extends JavaSrcCodeToCpgFixture {
@@ -28,7 +36,14 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
     val List(method: Method) = cpg.method.name("foo").l
 
     method.astChildren.size shouldBe 6
-    val List(param: MethodParameterIn, _, body: Block, publicModifier: Modifier, staticModifier: Modifier, _: MethodReturn) = method.astChildren.l
+    val List(
+      param: MethodParameterIn,
+      _,
+      body: Block,
+      publicModifier: Modifier,
+      staticModifier: Modifier,
+      _: MethodReturn
+    ) = method.astChildren.l
     param.code shouldBe "String s"
     body.astChildren.head shouldBe a[Return]
     publicModifier.modifierType shouldBe ModifierTypes.PUBLIC
