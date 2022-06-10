@@ -669,8 +669,7 @@ trait KtPsiToAst {
       )
         .argumentIndex(2)
 
-      val componentNIdentifierAst = Ast(componentNIdentifierNode)
-        .withRefEdge(componentNIdentifierNode, localForTmpNode)
+      val componentNIdentifierAst = Ast(componentNIdentifierNode).withRefEdge(componentNIdentifierNode, localForTmpNode)
       val componentNAst = Ast(componentNCallNode)
         .withChild(componentNIdentifierAst)
         .withArgEdge(componentNCallNode, componentNIdentifierNode)
