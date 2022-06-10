@@ -548,7 +548,7 @@ trait KtPsiToAst {
     expr: KtDestructuringDeclaration
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val initExpr             = expr.getInitializer
-    val destructuringEntries = nonUnderscoreEntries(expr)
+    val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       Ast(localNode(entry.getName, typeFullName, None, line(entry), column(entry)))
@@ -594,7 +594,7 @@ trait KtPsiToAst {
     }
     val ctorCall = typedInit.get
 
-    val destructuringEntries = nonUnderscoreEntries(expr)
+    val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
@@ -709,14 +709,14 @@ trait KtPsiToAst {
       return Seq()
     }
     val destructuringRHS = typedInit.get
-    val localsForEntries = nonUnderscoreEntries(expr).map { entry =>
+    val localsForEntries = nonUnderscoreDestructuringEntries(expr).map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
       scope.addToScope(node.name, node)
       Ast(node)
     }
 
-    val assignmentsForEntries = nonUnderscoreEntries(expr).zipWithIndex.map { case (entry, idx) =>
+    val assignmentsForEntries = nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
       val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
       val assignmentLHSAst =
