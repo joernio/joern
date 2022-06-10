@@ -1493,49 +1493,49 @@ trait KtPsiToAst {
 
     // TODO: add the rest of the operators
     val operatorOption = opRef.getOperationSignTokenType match {
-        case KtTokens.PLUS       => Some(Operators.addition)
-        case KtTokens.MINUS      => Some(Operators.subtraction)
-        case KtTokens.MUL        => Some(Operators.multiplication)
-        case KtTokens.DIV        => Some(Operators.division)
-        case KtTokens.LT         => Some(Operators.lessThan)
-        case KtTokens.LTEQ       => Some(Operators.lessEqualsThan)
-        case KtTokens.GT         => Some(Operators.greaterThan)
-        case KtTokens.GTEQ       => Some(Operators.greaterEqualsThan)
-        case KtTokens.EXCLEQ     => Some(Operators.notEquals)
-        case KtTokens.EXCLEQEQEQ => Some(Operators.notEquals)
-        case KtTokens.EQ         => Some(Operators.assignment)
-        case KtTokens.EQEQ       => Some(Operators.equals)
-        case KtTokens.EQEQEQ     => Some(Operators.equals)
-        case KtTokens.ANDAND     => Some(Operators.logicalAnd)
-        case KtTokens.OROR       => Some(Operators.logicalOr)
-        case KtTokens.PLUSEQ     => Some(Operators.assignmentPlus)
-        case KtTokens.MINUSEQ    => Some(Operators.assignmentMinus)
-        case KtTokens.MULTEQ     => Some(Operators.assignmentMultiplication)
-        case KtTokens.DIVEQ      => Some(Operators.assignmentDivision)
-        case KtTokens.PERCEQ     => Some(Operators.assignmentModulo)
-        case KtTokens.PERC       => Some(Operators.modulo)
-        case KtTokens.ELVIS      => Some(Operators.elvis)
-        case KtTokens.RANGE      => Some(Operators.range)
-        case KtTokens.NOT_IN     => Some(Operators.notIn)
-        case KtTokens.IN_KEYWORD => Some(Operators.in)
-        case null =>
-          val opElement = expr.getOperationReference.getReferencedNameElement
-          opElement.getText match {
-            case "and"  => Some(Operators.and)
-            case "or"   => Some(Operators.or)
-            case "xor"  => Some(Operators.xor)
-            case "shl"  => Some(Operators.shiftLeft)
-            case "ushl" => Some(Operators.shiftLeft)
-            case "shr"  => Some(Operators.arithmeticShiftRight)
-            case "ushr" => Some(Operators.logicalShiftRight)
-            case _      => None
-          }
-        case _ =>
-          logger.warn(
-            "Unhandled operator token type `" + opRef.getOperationSignTokenType + "` for expression `" + expr.getText + "`."
-          )
-          Some(Constants.unknownOperator)
-      }
+      case KtTokens.PLUS       => Some(Operators.addition)
+      case KtTokens.MINUS      => Some(Operators.subtraction)
+      case KtTokens.MUL        => Some(Operators.multiplication)
+      case KtTokens.DIV        => Some(Operators.division)
+      case KtTokens.LT         => Some(Operators.lessThan)
+      case KtTokens.LTEQ       => Some(Operators.lessEqualsThan)
+      case KtTokens.GT         => Some(Operators.greaterThan)
+      case KtTokens.GTEQ       => Some(Operators.greaterEqualsThan)
+      case KtTokens.EXCLEQ     => Some(Operators.notEquals)
+      case KtTokens.EXCLEQEQEQ => Some(Operators.notEquals)
+      case KtTokens.EQ         => Some(Operators.assignment)
+      case KtTokens.EQEQ       => Some(Operators.equals)
+      case KtTokens.EQEQEQ     => Some(Operators.equals)
+      case KtTokens.ANDAND     => Some(Operators.logicalAnd)
+      case KtTokens.OROR       => Some(Operators.logicalOr)
+      case KtTokens.PLUSEQ     => Some(Operators.assignmentPlus)
+      case KtTokens.MINUSEQ    => Some(Operators.assignmentMinus)
+      case KtTokens.MULTEQ     => Some(Operators.assignmentMultiplication)
+      case KtTokens.DIVEQ      => Some(Operators.assignmentDivision)
+      case KtTokens.PERCEQ     => Some(Operators.assignmentModulo)
+      case KtTokens.PERC       => Some(Operators.modulo)
+      case KtTokens.ELVIS      => Some(Operators.elvis)
+      case KtTokens.RANGE      => Some(Operators.range)
+      case KtTokens.NOT_IN     => Some(Operators.notIn)
+      case KtTokens.IN_KEYWORD => Some(Operators.in)
+      case null =>
+        val opElement = expr.getOperationReference.getReferencedNameElement
+        opElement.getText match {
+          case "and"  => Some(Operators.and)
+          case "or"   => Some(Operators.or)
+          case "xor"  => Some(Operators.xor)
+          case "shl"  => Some(Operators.shiftLeft)
+          case "ushl" => Some(Operators.shiftLeft)
+          case "shr"  => Some(Operators.arithmeticShiftRight)
+          case "ushr" => Some(Operators.logicalShiftRight)
+          case _      => None
+        }
+      case _ =>
+        logger.warn(
+          "Unhandled operator token type `" + opRef.getOperationSignTokenType + "` for expression `" + expr.getText + "`."
+        )
+        Some(Constants.unknownOperator)
+    }
     val (fullName, signature) =
       if (operatorOption.isDefined) (operatorOption.get, TypeConstants.any)
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
