@@ -134,7 +134,7 @@ trait KtPsiToAst {
   ): Seq[Ast] = {
     ctors.map { ctor =>
       val constructorParams     = ctor.getValueParameters.asScala.toList
-      val defaultSignature      = typeInfoProvider.erasedSignature(constructorParams)
+      val defaultSignature      = typeInfoProvider.anySignature(constructorParams)
       val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
       val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
       val secondaryCtorMethodNode =
@@ -200,7 +200,7 @@ trait KtPsiToAst {
     }
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature = Option(ktClass.getPrimaryConstructor)
-      .map { _ => typeInfoProvider.erasedSignature(constructorParams) }
+      .map { _ => typeInfoProvider.anySignature(constructorParams) }
       .getOrElse(s"${TypeConstants.void}()")
     val defaultFullName = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
     val (fullName, signature) =
@@ -879,7 +879,7 @@ trait KtPsiToAst {
             val receiverPlaceholderType = TypeConstants.cpgUnresolved
             val shortName               = expr.getSelectorExpression.getFirstChild.getText
             val args                    = expression.getValueArguments
-            receiverPlaceholderType + "." + shortName + ":" + typeInfoProvider.erasedSignature(args.asScala.toList)
+            receiverPlaceholderType + "." + shortName + ":" + typeInfoProvider.anySignature(args.asScala.toList)
           case _: KtNameReferenceExpression =>
             Operators.fieldAccess
           case _ =>
@@ -894,7 +894,7 @@ trait KtPsiToAst {
         val receiverPlaceholderType = TypeConstants.cpgUnresolved
         val shortName               = expr.getSelectorExpression.getFirstChild.getText
         val args                    = expression.getValueArguments
-        s"$receiverPlaceholderType.$shortName:${typeInfoProvider.erasedSignature(args.asScala.toList)}"
+        s"$receiverPlaceholderType.$shortName:${typeInfoProvider.anySignature(args.asScala.toList)}"
       case _: KtNameReferenceExpression =>
         Operators.fieldAccess
       case _ =>
@@ -905,7 +905,7 @@ trait KtPsiToAst {
     val astDerivedSignature = if (astDerivedMethodFullName.startsWith(Constants.operatorSuffix)) {
       ""
     } else {
-      typeInfoProvider.erasedSignature(argAsts)
+      typeInfoProvider.anySignature(argAsts)
     }
     val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
