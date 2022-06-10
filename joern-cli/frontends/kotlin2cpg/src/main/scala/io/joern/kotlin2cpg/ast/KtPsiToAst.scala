@@ -158,12 +158,12 @@ trait KtPsiToAst {
   }
 
   def memberSetCall(param: KtParameter, classFullName: String)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(param, TypeConstants.any))
-    val paramName = param.getName
-    val paramIdentifier = identifierNode(paramName, typeFullName)
+    val typeFullName       = registerType(typeInfoProvider.typeFullName(param, TypeConstants.any))
+    val paramName          = param.getName
+    val paramIdentifier    = identifierNode(paramName, typeFullName)
     val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
-    val thisIdentifier = identifierNode(Constants.this_, classFullName)
-    val fieldIdentifier = fieldIdentifierNode(paramName)
+    val thisIdentifier     = identifierNode(Constants.this_, classFullName)
+    val fieldIdentifier    = fieldIdentifierNode(paramName)
     val fieldAccessCall =
       operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + paramName, Some(typeFullName))
     val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
@@ -416,7 +416,9 @@ trait KtPsiToAst {
     val lambdaMethodNode =
       methodNode(Constants.lambdaName, fullName, signature, relativizedPath, line(expr), column(expr))
 
-    val closureBindingEntriesForCaptured = scope.pushClosureScope(lambdaMethodNode).collect {
+    val closureBindingEntriesForCaptured = scope
+      .pushClosureScope(lambdaMethodNode)
+      .collect {
         case node: NewMethodParameterIn => node
         case node: NewLocal             => node
         case node: NewMember            => node
@@ -557,7 +559,7 @@ trait KtPsiToAst {
 
     val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
 
-    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
+    val localForTmpNode   = localNode(tmpName, callRhsTypeFullName)
     val assignmentLhsNode = identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
@@ -595,7 +597,9 @@ trait KtPsiToAst {
     val destructuringEntries = nonUnderscoreEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      Ast(localNode(entry.getName, typeFullName, None, line(entry), column(entry)))
+      val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
+      scope.addToScope(node.name, node)
+      Ast(node)
     }
 
     val ctorTypeFullName = registerType(typeInfoProvider.expressionType(ctorCall, TypeConstants.cpgUnresolved))
@@ -638,8 +642,10 @@ trait KtPsiToAst {
     val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
       val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-      val relevantLocal     = localsForEntries(idx).root.get
-      val assignmentLHSAst  = Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, relevantLocal)
+      val assignmentLHSAst = scope.lookupVariable(entry.getText) match {
+        case Some(refTo) => Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, refTo)
+        case None        => Ast(assignmentLHSNode)
+      }
 
       val componentNIdentifierNode = identifierNode(localForTmpNode.name, ctorTypeFullName, line(entry), column(entry))
         .argumentIndex(0)
@@ -705,14 +711,19 @@ trait KtPsiToAst {
     val destructuringRHS = typedInit.get
     val localsForEntries = nonUnderscoreEntries(expr).map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      Ast(localNode(entry.getName, typeFullName, None, line(entry), column(entry)))
+      val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
+      scope.addToScope(node.name, node)
+      Ast(node)
     }
 
     val assignmentsForEntries = nonUnderscoreEntries(expr).zipWithIndex.map { case (entry, idx) =>
       val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-      val relevantLocal     = localsForEntries(idx).root.get
-      val assignmentLHSAst  = Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, relevantLocal)
+      val assignmentLHSAst =
+        scope.lookupVariable(entry.getText) match {
+          case Some(refTo) => Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, refTo)
+          case None        => Ast(assignmentLHSNode)
+        }
 
       val componentNIdentifierTFN = registerType(typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any))
       val componentNIdentifierNode =
