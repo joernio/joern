@@ -82,11 +82,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     !render.contains("ERROR")
   }
 
-  def erasedSignature(args: Seq[Any]): String = {
+  def anySignature(args: Seq[Any]): String = {
     val argsSignature =
       if (args.isEmpty) ""
       else if (args.size == 1) TypeConstants.any
-      else s"${TypeConstants.any}(${TypeConstants.any * (args.size - 1)})"
+      else s"${TypeConstants.any}${s",${TypeConstants.any}" * (args.size - 1)}"
     s"${TypeConstants.any}($argsSignature)"
   }
 
@@ -472,7 +472,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val lambdaNum      = keyPool.next
     val astDerivedFullName =
       containingFile.getPackageFqName.toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
-    val astDerivedSignature = erasedSignature(expr.getValueParameters.asScala.toList)
+    val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
     Option(bindingsForEntity(bindingContext, expr))
       .map(_.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
       .map { typeInfo =>
