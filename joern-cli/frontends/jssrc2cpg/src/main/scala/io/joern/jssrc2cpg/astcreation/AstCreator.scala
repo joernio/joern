@@ -126,6 +126,9 @@ class AstCreator(
     case classExpr @ BabelNodeInfo(BabelAst.ClassExpression)              => astForClass(classExpr)
     case tsInterface @ BabelNodeInfo(BabelAst.TSInterfaceDeclaration)     => astForInterface(tsInterface)
     case tsModuleDecl @ BabelNodeInfo(BabelAst.TSModuleDeclaration)       => astForModule(tsModuleDecl)
+    case expDecl @ BabelNodeInfo(BabelAst.ExportNamedDeclaration)         => astForExportNamedDeclaration(expDecl)
+    case BabelNodeInfo(BabelAst.ExportAllDeclaration)                     => Ast() // TODO: cant be handled right now
+    case expDefDecl @ BabelNodeInfo(BabelAst.ExportDefaultDeclaration)    => astForExportDefaultDeclaration(expDefDecl)
     case impDecl @ BabelNodeInfo(BabelAst.ImportDeclaration)              => astForImportDeclaration(impDecl)
     case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)               => astForFunctionDeclaration(func)
     case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)               => astForVariableDeclaration(decl)
