@@ -559,7 +559,7 @@ trait KtPsiToAst {
 
     val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
 
-    val localForTmpNode   = localNode(tmpName, callRhsTypeFullName)
+    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
 
     val assignmentLhsNode = identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
@@ -1199,7 +1199,7 @@ trait KtPsiToAst {
         assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
       }
 
-    val stmtAsts        = astsForExpression(expr.getBody, None)
+    val stmtAsts             = astsForExpression(expr.getBody, None)
     val controlStructureBody = blockNode("", "")
     val controlStructureBodyAst = Ast(controlStructureBody).withChildren(
       localsForDestructuringVars ++
