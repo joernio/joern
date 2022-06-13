@@ -131,6 +131,7 @@ trait AstForDeclarationsCreator {
     val specifiers = declaration
       .json("specifiers")
       .arr
+      .toSeq
       .map { spec =>
         val exported = createBabelNodeInfo(spec("exported"))
         val local = if (hasKey(spec, "local")) {
@@ -161,7 +162,8 @@ trait AstForDeclarationsCreator {
       createExportAssignmentCallAst(name.code, exportCallAst, declaration)
     }
 
-    (fromAst +: (specifierAst ++ declAsts.toSeq.flatten)).foldLeft(Ast())(_.merge(_))
+    val asts = fromAst +: (specifierAst ++ declAsts.toSeq.flatten)
+    asts.foldLeft(Ast())(_.merge(_))
   }
 
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
@@ -173,7 +175,8 @@ trait AstForDeclarationsCreator {
         createExportAssignmentCallAst(name, exportCallAst, declaration)
       }
     }
-    declAsts.toSeq.flatten.foldLeft(Ast())(_.merge(_))
+    val asts = declAsts.toSeq.flatten
+    asts.foldLeft(Ast())(_.merge(_))
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
