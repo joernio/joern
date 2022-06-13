@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import ujson.Obj
 
 import scala.util.Try
 
@@ -246,6 +247,21 @@ trait AstForExpressionsCreator {
     )
   }
 
+  protected def astForLogicalExpression(logicalExpr: BabelNodeInfo): Ast =
+    astForBinaryExpression(logicalExpr)
+
+  protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
+    val op      = Operators.cast
+    val lhsNode = castExpr.json("typeAnnotation")
+    val lhsAst  = Ast(createLiteralNode(code(lhsNode), None, line(lhsNode), column(lhsNode)))
+    val rhsAst  = astForNodeWithFunctionReference(castExpr.json("expression"))
+
+    val callNode =
+      createCallNode(castExpr.code, op, DispatchTypes.STATIC_DISPATCH, castExpr.lineNumber, castExpr.columnNumber)
+    val argAsts = List(lhsAst, rhsAst)
+    createCallAst(callNode, argAsts)
+  }
+
   protected def astForBinaryExpression(binExpr: BabelNodeInfo): Ast = {
     val op = binExpr.json("operator").str match {
       case "+"          => Operators.addition
@@ -269,22 +285,19 @@ trait AstForExpressionsCreator {
       case ">="         => Operators.greaterEqualsThan
       case "<="         => Operators.lessEqualsThan
       case "instanceof" => Operators.instanceOf
-      case "case"       => "<operator>.case"
+      case "||"         => Operators.logicalOr
+      case "|"          => Operators.or
+      case "&&"         => Operators.logicalAnd
+      // special case (see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
+      case "??"   => Operators.logicalOr
+      case "case" => "<operator>.case"
       case other =>
         logger.warn(s"Unknown binary operator: '$other'")
         Operators.assignment
     }
 
     val lhsAst = astForNode(binExpr.json("left"))
-    val rhsAst = createBabelNodeInfo(binExpr.json("right")) match {
-      case f @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-        astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
-      case f @ BabelNodeInfo(BabelAst.FunctionExpression) =>
-        astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
-      case f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression) =>
-        astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
-      case _ => astForNode(binExpr.json("right"))
-    }
+    val rhsAst = astForNodeWithFunctionReference(binExpr.json("right"))
 
     val callNode =
       createCallNode(binExpr.code, op, DispatchTypes.STATIC_DISPATCH, binExpr.lineNumber, binExpr.columnNumber)
@@ -430,6 +443,16 @@ trait AstForExpressionsCreator {
       setIndices(blockChildrenAsts)
       Ast(blockNode).withChildren(blockChildrenAsts)
     }
+  }
+
+  protected def astForYieldExpression(yieldExpr: BabelNodeInfo): Ast = {
+    val retNode = createReturnNode(yieldExpr)
+    safeObj(yieldExpr.json, "argument")
+      .map { argument =>
+        val argAst = astForNode(Obj(argument))
+        createReturnAst(retNode, List(argAst))
+      }
+      .getOrElse(Ast(retNode))
   }
 
   def astForTemplateExpression(templateExpr: BabelNodeInfo): Ast = {

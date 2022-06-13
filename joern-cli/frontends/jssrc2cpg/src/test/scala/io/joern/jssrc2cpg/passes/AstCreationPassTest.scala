@@ -1544,6 +1544,27 @@ class AstCreationPassTest extends AbstractPassTest {
       }
     }
 
+    "be correct for logical expression '++'" in AstFixture("""
+           |function method(x) {
+           |  true && false;
+           |}
+        """.stripMargin) { cpg =>
+      def method = cpg.method.nameExact("method")
+      method.checkNodeCount(1)
+
+      def logicalCall = method.expandAst(NodeTypes.BLOCK).expandAst(NodeTypes.CALL)
+      logicalCall.checkNodeCount(1)
+      logicalCall.checkProperty(PropertyNames.NAME, Operators.logicalAnd)
+
+      def callArg1 = logicalCall.expandAst(NodeTypes.LITERAL).filter(PropertyNames.ARGUMENT_INDEX, 1)
+      callArg1.checkNodeCount(1)
+      callArg1.checkProperty(PropertyNames.CODE, "true")
+
+      def callArg2 = logicalCall.expandAst(NodeTypes.LITERAL).filter(PropertyNames.ARGUMENT_INDEX, 2)
+      callArg2.checkNodeCount(1)
+      callArg2.checkProperty(PropertyNames.CODE, "false")
+    }
+
     "be correct for unary expression '++'" in AstFixture("""
          |function method(x) {
          |  ++x;

@@ -6,14 +6,13 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.SimpleCpgPass
 import org.slf4j.LoggerFactory
 
-class JsMetaDataPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class JsMetaDataPass(cpg: Cpg, hash: String) extends SimpleCpgPass(cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     logger.debug("Generating meta-data.")
-    // TODO: re-add hash here:
-    val metaNode = NewMetaData().language(Languages.JSSRC).version("0.1")
+    val metaNode = NewMetaData().language(Languages.JSSRC).hash(hash).version("0.1")
     diffGraph.addNode(metaNode)
   }
 
