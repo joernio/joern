@@ -157,7 +157,7 @@ trait KtPsiToAst {
     }
   }
 
-  def memberSetCall(param: KtParameter, classFullName: String)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def memberSetCallAst(param: KtParameter, classFullName: String)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName       = registerType(typeInfoProvider.typeFullName(param, TypeConstants.any))
     val paramName          = param.getName
     val paramIdentifier    = identifierNode(paramName, typeFullName)
@@ -238,7 +238,7 @@ trait KtPsiToAst {
 
     val memberSetCalls = constructorParams.collect {
       case ctorParam if ctorParam.hasValOrVar =>
-        memberSetCall(ctorParam, classFullName)
+        memberSetCallAst(ctorParam, classFullName)
     }
 
     val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
