@@ -12,6 +12,8 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
+
   case class AstGenRunnerResult(
     parsedFiles: Set[(String, String)] = Set.empty,
     skippedFiles: Set[(String, String)] = Set.empty
@@ -35,7 +37,7 @@ object AstGenRunner {
     // We are not interested in JS / TS type definition files at this stage.
     // TODO: maybe we can enable that later on and use the type definitions there
     //  for enhancing the CPG with additional type information for functions
-    files.filterNot(f => f.endsWith(".t.ts.json") || f.endsWith(".d.ts.json")).toSet
+    files.filterNot(f => TYPE_DEFINITION_FILE_EXTENSIONS.exists(f.endsWith)).toSet
   }
 
   def execute(in: File, out: File): AstGenRunnerResult = {
