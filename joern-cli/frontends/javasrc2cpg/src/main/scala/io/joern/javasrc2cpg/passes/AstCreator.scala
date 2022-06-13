@@ -516,7 +516,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       val body = Ast(NewBlock().order(1)).withChildren(staticInits)
 
-      val methodReturn = methodReturnNode(None, None, "void")
+      val methodReturn = methodReturnNode("void", None, None, None)
 
       val methodAst =
         Ast(methodNode)
@@ -648,7 +648,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val thisAst = thisAstForMethod(typeFullName, lineNumber = None)
     val bodyAst = Ast(NewBlock().order(1).argumentIndex(1))
 
-    val returnNode = methodReturnNode(None, None, "void")
+    val returnNode = methodReturnNode("void", None, None, None)
     val returnAst  = Ast(returnNode)
 
     val modifiers = List(
@@ -1015,13 +1015,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForMethodReturn(methodDeclaration: MethodDeclaration): Ast = {
     val typeFullName = typeInfoCalc.fullName(methodDeclaration.getType).getOrElse(UnresolvedTypeDefault)
-    Ast(methodReturnNode(line(methodDeclaration.getType), column(methodDeclaration.getType), typeFullName))
+    Ast(methodReturnNode(typeFullName, None, line(methodDeclaration.getType), column(methodDeclaration.getType)))
   }
 
   private def astForConstructorReturn(constructorDeclaration: ConstructorDeclaration): Ast = {
     val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
     val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-    val node   = methodReturnNode(line, column, "void")
+    val node   = methodReturnNode("void", None, line, column)
     Ast(node)
   }
 
@@ -2488,7 +2488,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         )
       }
 
-    val retNode = methodReturnNode(lineNumber, columnNumber, "ANY")
+    val retNode = methodReturnNode("ANY", None, lineNumber, columnNumber)
 
     val lambdaMethodAst = Ast(lambdaMethodNode)
       .withChildren(parameterAsts)
