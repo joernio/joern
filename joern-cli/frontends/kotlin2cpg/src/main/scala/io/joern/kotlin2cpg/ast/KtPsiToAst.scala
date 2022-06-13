@@ -617,7 +617,7 @@ trait KtPsiToAst {
     val assignmentLhsNode = identifierNode(tmpName, ctorTypeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
-    val assignmentNode = operatorCallNode(Operators.assignment, tmpName + " = " + Constants.alloc, None)
+    val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.alloc}", None)
     val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
 
     val initReceiverNode = identifierNode(tmpName, ctorTypeFullName, line(expr), column(expr))
