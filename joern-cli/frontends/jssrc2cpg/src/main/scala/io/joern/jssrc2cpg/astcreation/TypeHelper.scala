@@ -32,13 +32,14 @@ trait TypeHelper {
       case BabelAst.StringLiteralTypeAnnotation => code(flowType.json)
       case BabelAst.StringTypeAnnotation        => Defines.STRING.label
       case BabelAst.SymbolTypeAnnotation        => Defines.SYMBOL.label
-      case BabelAst.ThisTypeAnnotation          => dynamicInstanceTypeStack.headOption.getOrElse(Defines.ANY.label)
-      case BabelAst.TupleTypeAnnotation         => Defines.ANY.label
-      case BabelAst.TypeofTypeAnnotation        => Defines.ANY.label
-      case BabelAst.UnionTypeAnnotation         => Defines.ANY.label
-      case BabelAst.VoidTypeAnnotation          => Defines.ANY.label
-      case BabelAst.IndexedAccessType           => Defines.ANY.label
-      case BabelAst.OptionalIndexedAccessType   => Defines.ANY.label
+      case BabelAst.ThisTypeAnnotation =>
+        dynamicInstanceTypeStack.headOption.getOrElse(Defines.ANY.label)
+      case BabelAst.TupleTypeAnnotation       => Defines.ANY.label
+      case BabelAst.TypeofTypeAnnotation      => Defines.ANY.label
+      case BabelAst.UnionTypeAnnotation       => Defines.ANY.label
+      case BabelAst.VoidTypeAnnotation        => Defines.ANY.label
+      case BabelAst.IndexedAccessType         => Defines.ANY.label
+      case BabelAst.OptionalIndexedAccessType => Defines.ANY.label
       case _ =>
         notHandledYet(flowType, TYPE_NOT_HANDLED_TEXT)
         Defines.ANY.label
@@ -47,39 +48,43 @@ trait TypeHelper {
 
   private def typeForTsType(tsType: BabelNodeInfo): String = {
     tsType.node match {
-      case BabelAst.TSAnyKeyword        => Defines.ANY.label
-      case BabelAst.TSBooleanKeyword    => Defines.BOOLEAN.label
-      case BabelAst.TSBigIntKeyword     => Defines.NUMBER.label
-      case BabelAst.TSIntrinsicKeyword  => code(tsType.json)
-      case BabelAst.TSNeverKeyword      => Defines.ANY.label
-      case BabelAst.TSNullKeyword       => Defines.NULL.label
-      case BabelAst.TSNumberKeyword     => Defines.NUMBER.label
-      case BabelAst.TSObjectKeyword     => Defines.OBJECT.label
-      case BabelAst.TSStringKeyword     => Defines.STRING.label
-      case BabelAst.TSSymbolKeyword     => Defines.SYMBOL.label
-      case BabelAst.TSUndefinedKeyword  => Defines.ANY.label
-      case BabelAst.TSUnknownKeyword    => Defines.ANY.label
-      case BabelAst.TSVoidKeyword       => Defines.ANY.label
-      case BabelAst.TSThisType          => dynamicInstanceTypeStack.headOption.getOrElse(Defines.ANY.label)
-      case BabelAst.TSFunctionType      => Defines.ANY.label
-      case BabelAst.TSConstructorType   => Defines.ANY.label
-      case BabelAst.TSTypeReference     => code(tsType.json)
-      case BabelAst.TSTypePredicate     => Defines.ANY.label
-      case BabelAst.TSTypeQuery         => Defines.ANY.label
-      case BabelAst.TSTypeLiteral       => Defines.ANY.label
-      case BabelAst.TSArrayType         => code(tsType.json)
-      case BabelAst.TSTupleType         => Defines.ANY.label
-      case BabelAst.TSOptionalType      => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TYPE_ANNOTATION_KEY)))
-      case BabelAst.TSRestType          => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TYPE_ANNOTATION_KEY)))
-      case BabelAst.TSUnionType         => Defines.ANY.label
-      case BabelAst.TSIntersectionType  => Defines.ANY.label
-      case BabelAst.TSConditionalType   => Defines.ANY.label
-      case BabelAst.TSInferType         => Defines.ANY.label
-      case BabelAst.TSParenthesizedType => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TYPE_ANNOTATION_KEY)))
-      case BabelAst.TSTypeOperator      => Defines.ANY.label
-      case BabelAst.TSIndexedAccessType => Defines.ANY.label
-      case BabelAst.TSMappedType        => Defines.ANY.label
-      case BabelAst.TSLiteralType       => Defines.ANY.label
+      case BabelAst.TSAnyKeyword       => Defines.ANY.label
+      case BabelAst.TSBooleanKeyword   => Defines.BOOLEAN.label
+      case BabelAst.TSBigIntKeyword    => Defines.NUMBER.label
+      case BabelAst.TSIntrinsicKeyword => code(tsType.json)
+      case BabelAst.TSNeverKeyword     => Defines.ANY.label
+      case BabelAst.TSNullKeyword      => Defines.NULL.label
+      case BabelAst.TSNumberKeyword    => Defines.NUMBER.label
+      case BabelAst.TSObjectKeyword    => Defines.OBJECT.label
+      case BabelAst.TSStringKeyword    => Defines.STRING.label
+      case BabelAst.TSSymbolKeyword    => Defines.SYMBOL.label
+      case BabelAst.TSUndefinedKeyword => Defines.ANY.label
+      case BabelAst.TSUnknownKeyword   => Defines.ANY.label
+      case BabelAst.TSVoidKeyword      => Defines.ANY.label
+      case BabelAst.TSThisType =>
+        dynamicInstanceTypeStack.headOption.getOrElse(Defines.ANY.label)
+      case BabelAst.TSFunctionType    => Defines.ANY.label
+      case BabelAst.TSConstructorType => Defines.ANY.label
+      case BabelAst.TSTypeReference   => code(tsType.json)
+      case BabelAst.TSTypePredicate   => Defines.ANY.label
+      case BabelAst.TSTypeQuery       => Defines.ANY.label
+      case BabelAst.TSTypeLiteral     => Defines.ANY.label
+      case BabelAst.TSArrayType       => code(tsType.json)
+      case BabelAst.TSTupleType       => Defines.ANY.label
+      case BabelAst.TSOptionalType =>
+        typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TYPE_ANNOTATION_KEY)))
+      case BabelAst.TSRestType =>
+        typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TYPE_ANNOTATION_KEY)))
+      case BabelAst.TSUnionType        => Defines.ANY.label
+      case BabelAst.TSIntersectionType => Defines.ANY.label
+      case BabelAst.TSConditionalType  => Defines.ANY.label
+      case BabelAst.TSInferType        => Defines.ANY.label
+      case BabelAst.TSParenthesizedType =>
+        typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TYPE_ANNOTATION_KEY)))
+      case BabelAst.TSTypeOperator                => Defines.ANY.label
+      case BabelAst.TSIndexedAccessType           => Defines.ANY.label
+      case BabelAst.TSMappedType                  => Defines.ANY.label
+      case BabelAst.TSLiteralType                 => Defines.ANY.label
       case BabelAst.TSExpressionWithTypeArguments => Defines.ANY.label
       case BabelAst.TSImportType                  => Defines.ANY.label
       case _ =>
@@ -101,16 +106,13 @@ trait TypeHelper {
   }
 
   protected def typeFor(node: BabelNodeInfo): String = {
-    if (hasKey(node.json, TYPE_ANNOTATION_KEY)) {
-      val tpe = typeForTypeAnnotation(createBabelNodeInfo(node.json(TYPE_ANNOTATION_KEY)))
-      registerType(tpe, tpe)
-      tpe
-    } else if (hasKey(node.json, RETURN_TYPE_KEY)) {
-      val tpe = typeForTypeAnnotation(createBabelNodeInfo(node.json(RETURN_TYPE_KEY)))
-      registerType(tpe, tpe)
-      tpe
-    } else {
-      Defines.ANY.label
+    Seq(TYPE_ANNOTATION_KEY, RETURN_TYPE_KEY).find(hasKey(node.json, _)) match {
+      case Some(key) =>
+        val tpe = typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
+        registerType(tpe, tpe)
+        tpe
+      case None =>
+        Defines.ANY.label
     }
   }
 
