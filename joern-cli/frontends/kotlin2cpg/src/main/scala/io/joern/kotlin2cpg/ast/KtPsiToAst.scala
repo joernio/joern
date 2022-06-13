@@ -1165,7 +1165,6 @@ trait KtPsiToAst {
       val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val entryName         = entry.getText
       val node              = localNode(entryName, entryTypeFullName, None, line(entry), column(entry))
-      // TODO: remove from scope after the block exits [add test where that is not the case]
       scope.addToScope(entryName, node)
       Ast(node)
     }.toList
