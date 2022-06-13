@@ -1170,6 +1170,7 @@ trait KtPsiToAst {
 
     val tmpName        = Constants.tmpLocalPrefix + tmpKeyPool.next
     val localForTmp    = localNode(tmpName, TypeConstants.any)
+    scope.addToScope(localForTmp.name, localForTmp)
     val localForTmpAst = Ast(localForTmp)
 
     val tmpIdentifier             = identifierNode(tmpName, TypeConstants.any)
