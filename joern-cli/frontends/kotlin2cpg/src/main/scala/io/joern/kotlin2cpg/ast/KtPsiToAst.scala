@@ -845,30 +845,6 @@ trait KtPsiToAst {
         List()
     }
 
-    // TODO: add more test cases for this
-    // TODO: use the typedecl from the scope here as soon as it's available
-    /*
-    val astDerivedMethodFullName = {
-      if (scopeContext.typeDecl.isDefined) {
-        // TODO: handle parameters here and insert the correct types
-        val name = expr.getSelectorExpression.getText.replace("(", "").replace(")", "")
-        scopeContext.typeDecl.get.fullName + "." + name + ":" + TypeConstants.any + "()"
-      } else
-        expr.getSelectorExpression match {
-          case expression: KtCallExpression =>
-            val receiverPlaceholderType = TypeConstants.cpgUnresolved
-            val shortName               = expr.getSelectorExpression.getFirstChild.getText
-            val args                    = expression.getValueArguments
-            receiverPlaceholderType + "." + shortName + ":" + typeInfoProvider.anySignature(args.asScala.toList)
-          case _: KtNameReferenceExpression =>
-            Operators.fieldAccess
-          case _ =>
-            // TODO: add more test cases for this scenario
-            ""
-        }
-    }
-     */
-
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
         val receiverPlaceholderType = TypeConstants.cpgUnresolved
