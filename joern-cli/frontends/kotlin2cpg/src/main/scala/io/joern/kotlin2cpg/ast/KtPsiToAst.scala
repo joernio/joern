@@ -1057,7 +1057,7 @@ trait KtPsiToAst {
     )
     val loopParameterName  = expr.getLoopParameter.getText
     val loopParameterLocal = localNode(loopParameterName, loopParameterTypeFullName)
-    scope.addToScope(loopParameterName, loopParameterLocal) // TODO: remove from scope after the block
+    scope.addToScope(loopParameterName, loopParameterLocal)
 
     val loopParameterIdentifier = identifierNode(loopParameterName, TypeConstants.any)
     val loopParameterAst        = Ast(loopParameterLocal).withRefEdge(loopParameterIdentifier, loopParameterLocal)
