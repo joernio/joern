@@ -4789,11 +4789,12 @@ class AstCreationPassTest extends AbstractPassTest {
         |export default name2 = "2";
         |export default function foo(param) {};
         |""".stripMargin) { cpg =>
-      cpg.local.code.l shouldBe List("name2")
+      cpg.local.code.l shouldBe List("foo", "name2")
       cpg.call(Operators.assignment).code.l shouldBe List(
         "exports[\"default\"] = name1",
         "name2 = \"2\"",
         "exports[\"default\"] = name2",
+        "function foo = function foo(param) {}",
         "exports[\"default\"] = foo"
       )
       cpg.method("foo").code.l shouldBe List("function foo(param) {}")

@@ -74,7 +74,15 @@ trait AstForDeclarationsCreator {
   private def extractDeclarationsFromExportDecl(declaration: BabelNodeInfo): Option[(Ast, Seq[String])] =
     safeObj(declaration.json, "declaration")
       .map { d =>
-        val ast   = astForNode(Obj(d))
+        val ast = createBabelNodeInfo(d) match {
+          case f @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
+            astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case f @ BabelNodeInfo(BabelAst.FunctionExpression) =>
+            astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression) =>
+            astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case _ => astForNode(d)
+        }
         val names = codeForExportObject(createBabelNodeInfo(Obj(d)))
         (ast, names)
       }
