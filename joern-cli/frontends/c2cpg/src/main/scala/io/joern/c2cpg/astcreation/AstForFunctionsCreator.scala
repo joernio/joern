@@ -274,6 +274,6 @@ trait AstForFunctionsCreator {
   }
 
   private def methodReturnNode(func: IASTNode, tpe: String): NewMethodReturn =
-    methodReturnNode(line(func), column(func), registerType(tpe))
+    methodReturnNode(registerType(tpe), None, line(func), column(func))
 
 }

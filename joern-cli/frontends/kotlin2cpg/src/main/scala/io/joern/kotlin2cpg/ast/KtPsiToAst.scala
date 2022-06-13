@@ -124,7 +124,7 @@ trait KtPsiToAst {
         methodNode(componentName, fullName, signature, relativizedPath),
         Seq(thisParam),
         methodBlockAst,
-        methodReturnNode(None, None, typeFullName)
+        methodReturnNode(typeFullName, None, None, None)
       )
     }
   }
@@ -151,7 +151,7 @@ trait KtPsiToAst {
       scope.popScope()
 
       val ctorMethodReturnNode =
-        methodReturnNode(Some(line(ctor)), Some(column(ctor)), typeFullName, Some(classFullName))
+        methodReturnNode(typeFullName, Some(classFullName), Some(line(ctor)), Some(column(ctor)))
       val ctorParams = constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn])
       methodAst(secondaryCtorMethodNode, ctorParams, ctorMethodBlockAst, ctorMethodReturnNode)
     }
@@ -243,10 +243,10 @@ trait KtPsiToAst {
 
     val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn = methodReturnNode(
-      Some(line(ktClass.getPrimaryConstructor)),
-      Some(column(ktClass.getPrimaryConstructor)),
       typeFullName,
-      Some(classFullName)
+      Some(classFullName),
+      Some(line(ktClass.getPrimaryConstructor)),
+      Some(column(ktClass.getPrimaryConstructor))
     )
     val constructorAst = methodAst(
       primaryCtorMethodNode,
@@ -322,7 +322,7 @@ trait KtPsiToAst {
 
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
-    val _methodReturnNode = methodReturnNode(Some(line(ktFn)), Some(column(ktFn)), typeFullName)
+    val _methodReturnNode = methodReturnNode(typeFullName, None, Some(line(ktFn)), Some(column(ktFn)))
     methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)
   }
 
@@ -456,7 +456,7 @@ trait KtPsiToAst {
       lambdaMethodNode,
       parametersAsts.flatMap(_.root.collectAll[NewMethodParameterIn]),
       bodyAst,
-      methodReturnNode(Some(line(expr)), Some(column(expr)), returnTypeFullName)
+      methodReturnNode(returnTypeFullName, None, Some(line(expr)), Some(column(expr)))
     ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
 
     val _methodRefNode =
