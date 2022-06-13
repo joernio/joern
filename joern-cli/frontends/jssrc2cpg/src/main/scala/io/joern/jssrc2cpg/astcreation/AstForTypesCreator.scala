@@ -44,7 +44,9 @@ trait AstForTypesCreator {
   private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
     val maybeClassConstructor = classConstructor(classExpr)
     val methodNode = maybeClassConstructor match {
-      case Some(classConstructor) => createMethodAstAndNode(createBabelNodeInfo(classConstructor))._2
+      case Some(classConstructor) =>
+        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(classConstructor))
+        methodNode
       case _ =>
         val code = "constructor() {}"
         val fakeConstructorCode = """{
@@ -61,7 +63,7 @@ trait AstForTypesCreator {
           |   "body": []
           | }
           |}""".stripMargin
-        val methodNode = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))._2
+        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))
         methodNode.code(code)
     }
     val name     = methodNode.name.replace("<", s"$typeName<")
@@ -89,7 +91,7 @@ trait AstForTypesCreator {
           |   "body": []
           | }
           |}""".stripMargin
-        val methodNode = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))._2
+        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))
         methodNode.code(code)
     }
     val name     = methodNode.name.replace("<", s"$typeName<")
@@ -216,7 +218,7 @@ trait AstForTypesCreator {
     classBodyElements.foreach { classElement =>
       val memberNode = createBabelNodeInfo(classElement) match {
         case m @ (BabelNodeInfo(BabelAst.ClassMethod) | BabelNodeInfo(BabelAst.ClassPrivateMethod)) =>
-          val function = createMethodAstAndNode(m)._2
+          val (_, function) = createMethodAstAndNode(m)
           addModifier(function, m.json)
           val fullName                = function.fullName.replace(s":${function.name}", s":$typeName:${function.name}")
           val classMethod             = function.fullName(fullName)

@@ -353,6 +353,9 @@ trait AstForFunctionsCreator {
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): Ast = createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall)._1
+  ): Ast = {
+    val (ast, _) = createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall)
+    ast
+  }
 
 }

@@ -28,7 +28,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   override def generateParts(): Array[(String, String)] = astGenRunnerResult.parsedFiles.toArray
 
-  def allUsedTypes(): List[(String, String)] = usedTypes.keys().asScala.filterNot(_._1 == Defines.ANY.label).toList
+  def allUsedTypes(): List[(String, String)] =
+    usedTypes.keys().asScala.filterNot { case (typeName, _) => typeName == Defines.ANY.label }.toList
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>

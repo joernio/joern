@@ -29,7 +29,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
             )
           }
 
-        val hash = HashUtil.sha256(astgenResult.parsedFiles.map(p => Path.of(p._2)).toSeq)
+        val hash = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => Path.of(file) }.toSeq)
 
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
         astCreationPass.createAndApply()

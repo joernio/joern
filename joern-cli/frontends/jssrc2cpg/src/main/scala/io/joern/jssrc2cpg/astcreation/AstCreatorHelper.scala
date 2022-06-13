@@ -62,7 +62,7 @@ trait AstCreatorHelper {
     if (usedTypes.containsKey((typeName, typeName))) {
       usedTypes.put((typeName, typeFullName), true)
       usedTypes.remove((typeName, typeName))
-    } else if (!usedTypes.keys().asScala.exists(_._1 == typeName)) {
+    } else if (!usedTypes.keys().asScala.exists { case (tpn, _) => tpn == typeName }) {
       usedTypes.putIfAbsent((typeName, typeFullName), true)
     }
   }
