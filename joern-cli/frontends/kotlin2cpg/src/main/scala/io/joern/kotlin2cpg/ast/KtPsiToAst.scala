@@ -165,11 +165,11 @@ trait KtPsiToAst {
     val thisIdentifier     = identifierNode(Constants.this_, classFullName)
     val fieldIdentifier    = fieldIdentifierNode(paramName)
     val fieldAccessCall =
-      operatorCallNode(Operators.fieldAccess, Constants.this_ + "." + paramName, Some(typeFullName))
+      operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.$paramName", Some(typeFullName))
     val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
 
     val assignmentNode =
-      operatorCallNode(Operators.assignment, fieldAccessCall.code + " = " + paramIdentifier.code)
+      operatorCallNode(Operators.assignment, s"${fieldAccessCall.code} = ${paramIdentifier.code}")
     callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
   }
 
