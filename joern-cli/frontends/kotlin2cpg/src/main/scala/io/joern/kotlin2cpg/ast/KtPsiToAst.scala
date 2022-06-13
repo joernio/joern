@@ -560,6 +560,8 @@ trait KtPsiToAst {
     val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
 
     val localForTmpNode   = localNode(tmpName, callRhsTypeFullName)
+    scope.addToScope(localForTmpNode.name, localForTmpNode)
+
     val assignmentLhsNode = identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
@@ -567,7 +569,9 @@ trait KtPsiToAst {
     val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
-    val assignmentsForEntries = componentNCallAstsForDestructuringEntries(destructuringEntries, localForTmpNode)
+    val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
+      assignmentAstForDestructuringEntry(entry, localForTmpNode.name, localForTmpNode.typeFullName, idx + 1)
+    }
     localsForEntries ++ Seq(Ast(localForTmpNode)) ++
       Seq(assignmentAst) ++ assignmentsForEntries
   }
@@ -1092,43 +1096,6 @@ trait KtPsiToAst {
     )
   }
 
-  def componentNCallAstsForDestructuringEntries(entries: Seq[KtDestructuringDeclarationEntry], localForTmp: NewLocal)(
-    implicit typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
-    withIndex(entries) { (entry, idx) =>
-      val entryTypeFullName     = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val entryIdentifier       = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-      val entryIdentifierAst    = astWithRefEdgeMaybe(entryIdentifier.name, entryIdentifier)
-      val componentNName        = Constants.componentNPrefix + idx
-      val fallbackSignature     = s"${TypeConstants.cpgUnresolved}()"
-      val fallbackFullName      = s"${TypeConstants.cpgUnresolved}$componentNName:$fallbackSignature"
-      val (fullName, signature) = typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val tmpName               = localForTmp.name
-      val componentNCallCode    = s"$tmpName.$componentNName()"
-
-      val tmpForComponentNIdentifier = identifierNode(tmpName, localForTmp.typeFullName).argumentIndex(0)
-      val tmpForComponentNIdentifierAst = Ast(tmpForComponentNIdentifier)
-        .withRefEdge(tmpForComponentNIdentifier, localForTmp)
-
-      val tmpComponentNCall = callNode(
-        componentNCallCode,
-        componentNName,
-        fullName,
-        signature,
-        entryTypeFullName,
-        DispatchTypes.DYNAMIC_DISPATCH
-      ).argumentIndex(2)
-      val tmpComponentNCallAst = Ast(tmpComponentNCall)
-        .withChild(tmpForComponentNIdentifierAst)
-        .withArgEdge(tmpComponentNCall, tmpForComponentNIdentifier)
-        .withReceiverEdge(tmpComponentNCall, tmpForComponentNIdentifier)
-
-      val componentNAssignment =
-        operatorCallNode(Operators.assignment, entryIdentifier.code + " = " + tmpComponentNCall.code)
-      callAst(componentNAssignment, List(entryIdentifierAst, tmpComponentNCallAst))
-    }
-  }
-
   // e.g. lowering:
   // for `for ((d1, d2) in l) { <statements> }`
   // BLOCK
@@ -1228,13 +1195,17 @@ trait KtPsiToAst {
     val tmpParameterNextAssignment    = operatorCallNode(Operators.assignment, s"$tmpName = ${iteratorNextCall.code}")
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
-    val componentNCalls = componentNCallAstsForDestructuringEntries(destructuringDeclEntries.asScala.toSeq, localForTmp)
+    val assignmentsForEntries =
+      destructuringDeclEntries.asScala.zipWithIndex.map { case (entry, idx) =>
+        assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
+      }
+
     val stmtAsts        = astsForExpression(expr.getBody, None)
     val controlStructureBody = blockNode("", "")
     val controlStructureBodyAst = Ast(controlStructureBody).withChildren(
       localsForDestructuringVars ++
         List(localForTmpAst, tmpParameterNextAssignmentAst) ++
-        componentNCalls ++
+        assignmentsForEntries ++
         stmtAsts
     )
 
