@@ -162,8 +162,14 @@ trait AstForDeclarationsCreator {
       createExportAssignmentCallAst(name.code, exportCallAst, declaration)
     }
 
+    val blockNode = createBlockNode(declaration.code, declaration.lineNumber, declaration.columnNumber)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
     val asts = fromAst +: (specifierAst ++ declAsts.toSeq.flatten)
-    asts.foldLeft(Ast())(_.merge(_))
+    setIndices(asts.toList)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
   }
 
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
@@ -175,8 +181,14 @@ trait AstForDeclarationsCreator {
         createExportAssignmentCallAst(name, exportCallAst, declaration)
       }
     }
+    val blockNode = createBlockNode(declaration.code, declaration.lineNumber, declaration.columnNumber)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
     val asts = declAsts.toSeq.flatten
-    asts.foldLeft(Ast())(_.merge(_))
+    setIndices(asts.toList)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
