@@ -605,7 +605,8 @@ trait KtPsiToAst {
     val ctorTypeFullName = registerType(typeInfoProvider.expressionType(ctorCall, TypeConstants.cpgUnresolved))
     val tmpName          = Constants.tmpLocalPrefix + tmpKeyPool.next
     val localForTmpNode  = localNode(tmpName, ctorTypeFullName)
-    val localForTmpAst   = Ast(localForTmpNode)
+    scope.addToScope(localForTmpNode.name, localForTmpNode)
+    val localForTmpAst = Ast(localForTmpNode)
 
     val assignmentRhsNode =
       operatorCallNode(Operators.alloc, Constants.alloc, Some(ctorTypeFullName), line(expr), column(expr))
@@ -640,53 +641,63 @@ trait KtPsiToAst {
       .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.root))
 
     val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
-      val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-      val assignmentLHSAst = scope.lookupVariable(entry.getText) match {
-        case Some(refTo) => Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, refTo)
-        case None        => Ast(assignmentLHSNode)
-      }
-
-      val componentNIdentifierNode = identifierNode(localForTmpNode.name, ctorTypeFullName, line(entry), column(entry))
-        .argumentIndex(0)
-
-      val componentIdx      = idx + 1
-      val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
-      val fallbackFullName =
-        s"${TypeConstants.cpgUnresolved}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
-      val (fullName, signature) =
-        typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode = s"${localForTmpNode.name}.${Constants.componentNPrefix}$componentIdx()"
-      val componentNCallNode = callNode(
-        componentNCallCode,
-        s"${Constants.componentNPrefix}$componentIdx",
-        fullName,
-        signature,
-        entryTypeFullName,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        line(entry),
-        column(entry)
-      )
-        .argumentIndex(2)
-
-      val componentNIdentifierAst = Ast(componentNIdentifierNode).withRefEdge(componentNIdentifierNode, localForTmpNode)
-      val componentNAst = Ast(componentNCallNode)
-        .withChild(componentNIdentifierAst)
-        .withArgEdge(componentNCallNode, componentNIdentifierNode)
-        .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
-
-      val assignmentCallNode = operatorCallNode(
-        Operators.assignment,
-        s"${entry.getText} = $componentNCallCode",
-        None,
-        line(entry),
-        column(entry)
-      )
-      callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
+      assignmentAstForDestructuringEntry(entry, localForTmpNode.name, localForTmpNode.typeFullName, idx + 1)
     }
 
     localsForEntries ++ Seq(localForTmpAst) ++
       Seq(assignmentAst) ++ Seq(initCallAst) ++ assignmentsForEntries
+  }
+
+  private def assignmentAstForDestructuringEntry(
+    entry: KtDestructuringDeclarationEntry,
+    componentNReceiverName: String,
+    componentNTypeFullName: String,
+    componentIdx: Integer
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+    val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
+    val assignmentLHSAst =
+      scope.lookupVariable(entry.getText) match {
+        case Some(refTo) => Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, refTo)
+        case None        => Ast(assignmentLHSNode)
+      }
+
+    val componentNIdentifierNode =
+      identifierNode(componentNReceiverName, componentNTypeFullName, line(entry), column(entry))
+        .argumentIndex(0)
+
+    val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
+    val fallbackFullName =
+      s"${TypeConstants.cpgUnresolved}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
+    val (fullName, signature) =
+      typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
+    val componentNCallCode = s"${componentNReceiverName}.${Constants.componentNPrefix}$componentIdx()"
+    val componentNCallNode = callNode(
+      componentNCallCode,
+      s"${Constants.componentNPrefix}$componentIdx",
+      fullName,
+      signature,
+      entryTypeFullName,
+      DispatchTypes.DYNAMIC_DISPATCH,
+      line(entry),
+      column(entry)
+    )
+      .argumentIndex(2)
+
+    val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
+    val componentNAst = Ast(componentNCallNode)
+      .withChild(componentNIdentifierAst)
+      .withArgEdge(componentNCallNode, componentNIdentifierNode)
+      .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
+
+    val assignmentCallNode = operatorCallNode(
+      Operators.assignment,
+      s"${entry.getText} = $componentNCallCode",
+      None,
+      line(entry),
+      column(entry)
+    )
+    callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
   }
 
   /*
@@ -708,62 +719,18 @@ trait KtPsiToAst {
       return Seq()
     }
     val destructuringRHS = typedInit.get
+
+    val initTypeFullName = registerType(typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any))
+    val assignmentsForEntries =
+      nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
+        assignmentAstForDestructuringEntry(entry, destructuringRHS.getText, initTypeFullName, idx + 1)
+      }
     val localsForEntries = nonUnderscoreDestructuringEntries(expr).map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
       scope.addToScope(node.name, node)
       Ast(node)
     }
-
-    val assignmentsForEntries = nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
-      val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-      val assignmentLHSAst =
-        scope.lookupVariable(entry.getText) match {
-          case Some(refTo) => Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, refTo)
-          case None        => Ast(assignmentLHSNode)
-        }
-
-      val componentNIdentifierTFN = registerType(typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any))
-      val componentNIdentifierNode =
-        identifierNode(destructuringRHS.getText, componentNIdentifierTFN, line(entry), column(entry))
-          .argumentIndex(0)
-
-      val componentIdx      = idx + 1
-      val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
-      val fallbackFullName =
-        s"${TypeConstants.cpgUnresolved}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
-      val (fullName, signature) =
-        typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-      val componentNCallCode = s"${destructuringRHS.getText}.${Constants.componentNPrefix}$componentIdx()"
-      val componentNCallNode = callNode(
-        componentNCallCode,
-        s"${Constants.componentNPrefix}$componentIdx",
-        fullName,
-        signature,
-        entryTypeFullName,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        line(entry),
-        column(entry)
-      )
-        .argumentIndex(2)
-
-      val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
-      val componentNAst = Ast(componentNCallNode)
-        .withChild(componentNIdentifierAst)
-        .withArgEdge(componentNCallNode, componentNIdentifierNode)
-        .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
-
-      val assignmentCallNode = operatorCallNode(
-        Operators.assignment,
-        s"${entry.getText} = $componentNCallCode",
-        None,
-        line(entry),
-        column(entry)
-      )
-      callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
-    }
-
     localsForEntries ++ assignmentsForEntries
   }
 
