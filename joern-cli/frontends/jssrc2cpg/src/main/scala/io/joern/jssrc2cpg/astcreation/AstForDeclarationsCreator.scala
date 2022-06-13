@@ -11,7 +11,6 @@ import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import ujson.Obj
 import ujson.Value
 
@@ -47,7 +46,7 @@ trait AstForDeclarationsCreator {
     val exportCallAst = if (name == "default") {
       createIndexAccessCallAst(
         createIdentifierNode(exportName, declaration),
-        createLiteralNode("\"default\"", None, declaration.lineNumber, declaration.columnNumber),
+        createLiteralNode("\"default\"", Some(Defines.STRING.label), declaration.lineNumber, declaration.columnNumber),
         declaration.lineNumber,
         declaration.columnNumber
       )
@@ -67,7 +66,7 @@ trait AstForDeclarationsCreator {
     createAssignmentCallAst(
       exportCallAst.nodes.head,
       createIdentifierNode(name, declaration),
-      s"${exportCallAst.nodes.head.asInstanceOf[NewCall].code} = $name",
+      s"${codeOf(exportCallAst.nodes.head)} = $name",
       declaration.lineNumber,
       declaration.columnNumber
     )
@@ -139,15 +138,12 @@ trait AstForDeclarationsCreator {
 
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration)
     val declAsts = declAstAndNames.map { case (ast, names) =>
-      (
-        ast,
-        names.map { name =>
-          if (exportName != "exports")
-            diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), "require"))
-          val exportCallAst = createExportCallAst(name, exportName, declaration)
-          createExportAssignmentCallAst(name, exportCallAst, declaration)
-        }
-      )
+      ast +: names.map { name =>
+        if (exportName != "exports")
+          diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), "require"))
+        val exportCallAst = createExportCallAst(name, exportName, declaration)
+        createExportAssignmentCallAst(name, exportCallAst, declaration)
+      }
     }
 
     val specifierAst = specifiers.map { case (name, alias) =>
@@ -157,30 +153,19 @@ trait AstForDeclarationsCreator {
       createExportAssignmentCallAst(name.code, exportCallAst, declaration)
     }
 
-    declAsts match {
-      case Some((ast, asts)) => (ast +: fromAst +: (specifierAst ++ asts)).foldLeft(Ast())(_.merge(_))
-      case None              => (fromAst +: specifierAst).foldLeft(Ast())(_.merge(_))
-    }
-
+    (fromAst +: (specifierAst ++ declAsts.toSeq.flatten)).foldLeft(Ast())(_.merge(_))
   }
 
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration)
     val declAsts = declAstAndNames.map { case (ast, names) =>
-      (
-        ast,
-        names.map { name =>
-          val exportCallAst = createExportCallAst("default", exportName, declaration)
-          createExportAssignmentCallAst(name, exportCallAst, declaration)
-        }
-      )
+      ast +: names.map { name =>
+        val exportCallAst = createExportCallAst("default", exportName, declaration)
+        createExportAssignmentCallAst(name, exportCallAst, declaration)
+      }
     }
-    declAsts match {
-      case Some((ast, asts)) => (ast +: asts).foldLeft(Ast())(_.merge(_))
-      case None              => Ast()
-    }
-
+    declAsts.toSeq.flatten.foldLeft(Ast())(_.merge(_))
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
