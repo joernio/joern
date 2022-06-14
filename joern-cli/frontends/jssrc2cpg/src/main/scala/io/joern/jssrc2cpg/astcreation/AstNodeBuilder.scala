@@ -83,7 +83,7 @@ trait AstNodeBuilder {
     var currOrder = 1
     asts.foreach { a =>
       a.root match {
-        case Some(x: ExpressionNew) if x.code != "this" =>
+        case Some(x: ExpressionNew) if x.code != "this" || x.isInstanceOf[NewLiteral] =>
           x.argumentIndex = currIndex
           x.order = currOrder
           currIndex = currIndex + 1

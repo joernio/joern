@@ -82,4 +82,16 @@ trait AstForTemplateDomCreator {
     Ast(domNode).withChild(exprAst)
   }
 
+  protected def astForJsxSpreadAttribute(jsxSpreadAttr: BabelNodeInfo): Ast = {
+    val domNode = createTemplateDomNode(
+      jsxSpreadAttr.node.toString,
+      jsxSpreadAttr.code,
+      jsxSpreadAttr.lineNumber,
+      jsxSpreadAttr.columnNumber
+    )
+    val argAst = astForNode(jsxSpreadAttr.json("argument"))
+    setIndices(List(argAst))
+    Ast(domNode).withChild(argAst)
+  }
+
 }
