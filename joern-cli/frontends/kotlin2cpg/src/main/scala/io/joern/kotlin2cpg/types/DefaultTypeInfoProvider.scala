@@ -469,27 +469,30 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
     val containingFile = expr.getContainingKtFile
     val fileName       = containingFile.getName
+    val packageName    = containingFile.getPackageFqName.toString
     val lambdaNum      = keyPool.next
     val astDerivedFullName =
-      containingFile.getPackageFqName.toString + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
+      packageName + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
     val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
-    Option(bindingsForEntity(bindingContext, expr))
-      .map(_.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
-      .map { typeInfo =>
-        val theType         = typeInfo.getType
-        val constructorDesc = theType.getConstructor.getDeclarationDescriptor
-        val constructorType = constructorDesc.getDefaultType
-        val args            = constructorType.getArguments.asScala.drop(1)
-        val renderedArgs =
-          if (args.isEmpty) ""
-          else if (args.size == 1) TypeConstants.javaLangObject
-          else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
-        val signature = TypeConstants.javaLangObject + "(" + renderedArgs + ")"
-        val fullName =
-          containingFile.getPackageFqName.toString + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
-        (fullName, signature)
-      }
-      .getOrElse((astDerivedFullName, astDerivedSignature))
+
+    val render = for {
+      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      typeInfo     <- Option(mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
+      theType = typeInfo.getType
+    } yield {
+      val constructorDesc = theType.getConstructor.getDeclarationDescriptor
+      val constructorType = constructorDesc.getDefaultType
+      val args            = constructorType.getArguments.asScala.drop(1)
+      val renderedArgs =
+        if (args.isEmpty) ""
+        else if (args.size == 1) TypeConstants.javaLangObject
+        else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
+      val signature = TypeConstants.javaLangObject + "(" + renderedArgs + ")"
+      val fullName =
+        packageName + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
+      (fullName, signature)
+    }
+    render.getOrElse((astDerivedFullName, astDerivedSignature))
   }
 
   private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
