@@ -30,6 +30,7 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForDeclarationsCreator
     with AstForStatementsCreator
+    with AstForTemplateDomCreator
     with AstNodeBuilder
     with TypeHelper
     with AstCreatorHelper {
@@ -183,6 +184,14 @@ class AstCreator(
     case bigIntLiteral @ BabelNodeInfo(BabelAst.BigIntLiteral)            => astForBigIntLiteral(bigIntLiteral)
     case templateLiteral @ BabelNodeInfo(BabelAst.TemplateLiteral)        => astForTemplateLiteral(templateLiteral)
     case templateElement @ BabelNodeInfo(BabelAst.TemplateElement)        => astForTemplateElement(templateElement)
+    case jsxElem @ BabelNodeInfo(BabelAst.JSXElement)                      => astForJsxElement(jsxElem)
+    case jsxOpeningElem @ BabelNodeInfo(BabelAst.JSXOpeningElement)        => astForJsxOpeningElement(jsxOpeningElem)
+    case jsxClosingElem @ BabelNodeInfo(BabelAst.JSXClosingElement)        => astForJsxClosingElement(jsxClosingElem)
+    case jsxText @ BabelNodeInfo(BabelAst.JSXText)                         => astForJsxText(jsxText)
+    case jsxExprContainer @ BabelNodeInfo(BabelAst.JSXExpressionContainer) => astForJsxExprContainer(jsxExprContainer)
+    case jsxSpread @ BabelNodeInfo(BabelAst.JSXSpreadChild)                => astForJsxExprContainer(jsxSpread)
+    case jsxFragment @ BabelNodeInfo(BabelAst.JSXFragment)                 => astForJsxFragment(jsxFragment)
+    case jsxAttr @ BabelNodeInfo(BabelAst.JSXAttribute)                    => astForJsxAttribute(jsxAttr)
     case BabelNodeInfo(BabelAst.EmptyStatement)                           => Ast()
     case other                                                            => notHandledYet(other)
   }
