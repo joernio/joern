@@ -512,19 +512,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
-      val explicitTypeFullName =
-        if (parameter.getTypeReference != null) parameter.getTypeReference.getText
-        else TypeConstants.cpgUnresolved
+      val explicitTypeFullName = Option(parameter.getTypeReference)
+        .map(_.getText)
+        .getOrElse(TypeConstants.cpgUnresolved)
       // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
       parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
-    val methodName =
-      Option(fnDesc)
-        .map { desc =>
-          s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
-        }
-        .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
+    val methodName = Option(fnDesc)
+      .map { desc =>
+        s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
+      }
+      .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
@@ -536,19 +535,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       return defaultValue
     }
     val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
-      val explicitTypeFullName =
-        Option(parameter.getTypeReference)
-          .map(_.getText)
-          .getOrElse(TypeConstants.cpgUnresolved)
+      val explicitTypeFullName = Option(parameter.getTypeReference)
+        .map(_.getText)
+        .getOrElse(TypeConstants.cpgUnresolved)
       // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
       parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
 
-    val methodName =
-      Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-        .map { info => s"${TypeRenderer.renderFqName(info)}${TypeConstants.initPrefix}" }
-        .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
+    val methodName = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+      .map { info => s"${TypeRenderer.renderFqName(info)}${TypeConstants.initPrefix}" }
+      .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
@@ -559,8 +556,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val returnTypeFullName = fnDescMaybe.map(renderedReturnType(_)).getOrElse(TypeConstants.cpgUnresolved)
     val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
       val explicitTypeFullName =
-        if (parameter.getTypeReference != null) parameter.getTypeReference.getText
-        else TypeConstants.cpgUnresolved
+        Option(parameter.getTypeReference)
+          .map(_.getText)
+          .getOrElse(TypeConstants.cpgUnresolved)
       // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
       parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
     }
@@ -584,12 +582,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean = {
-    descriptorForNameReference(expr)
-      .exists {
-        case _: LazyJavaClassDescriptor => true
-        case _: LazyClassDescriptor     => true
-        case _                          => false
-      }
+    descriptorForNameReference(expr).exists {
+      case _: LazyJavaClassDescriptor => true
+      case _: LazyClassDescriptor     => true
+      case _                          => false
+    }
   }
 
   private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {
@@ -599,24 +596,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
     descriptorForNameReference(expr)
-      .collect { case desc: ValueDescriptor =>
-        desc match {
-          case typedDesc: PropertyDescriptorImpl =>
-            TypeRenderer.renderFqName(typedDesc.getContainingDeclaration)
-          case _ => defaultValue
-        }
+      .collect { case desc: PropertyDescriptorImpl =>
+        TypeRenderer.renderFqName(desc.getContainingDeclaration)
       }
       .getOrElse(defaultValue)
   }
 
   def isReferencingMember(expr: KtNameReferenceExpression): Boolean = {
     descriptorForNameReference(expr)
-      .collect { case desc: ValueDescriptor =>
-        desc match {
-          case _: PropertyDescriptorImpl => true
-          case _                         => false
-        }
-      }
+      .collect { case _: PropertyDescriptorImpl => true }
       .getOrElse(false)
   }
 
