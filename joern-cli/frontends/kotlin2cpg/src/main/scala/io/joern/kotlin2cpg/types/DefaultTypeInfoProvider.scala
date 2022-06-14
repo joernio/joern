@@ -411,26 +411,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val originalDesc          = fnDescriptor.getOriginal
         val renderedFqNameForDesc = TypeRenderer.renderFqName(originalDesc)
 
-        val nameExtensionReceiverMaybe =
-          if (originalDesc.getExtensionReceiverParameter != null) {
-            Some((originalDesc.getName, originalDesc.getExtensionReceiverParameter))
-          } else {
-            None
-          }
+        val nameExtensionReceiverMaybe =  Option(originalDesc.getExtensionReceiverParameter)
+          .map{ parameter => (originalDesc.getName, parameter.getExtensionReceiverParameter) }
 
-        val renderedFqName =
-          nameExtensionReceiverMaybe match {
+        val renderedFqName = nameExtensionReceiverMaybe match {
             case Some((name, extensionReceiverParameter)) =>
               val extType = extensionReceiverParameter.getType
               val rendered =
                 if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
                 else TypeRenderer.render(extType, false, false)
               s"$rendered.$name"
-            case None =>
-              renderedFqNameForDesc
+            case None => renderedFqNameForDesc
           }
-        val renderedParameterTypes =
-          originalDesc.getValueParameters.asScala.toSeq
+        val renderedParameterTypes = originalDesc.getValueParameters.asScala.toSeq
             .map { valueParam => TypeRenderer.render(valueParam.getType) }
             .mkString(",")
         val renderedReturnType =
