@@ -521,11 +521,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       parameterType(parameter, explicitTypeFullName)
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
-    val methodName = Option(fnDesc)
-      .map { desc =>
-        s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
-      }
-      .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
+    val methodName = Option(fnDesc).map { desc =>
+      s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
+    }.getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
