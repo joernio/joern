@@ -512,11 +512,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
     val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
-      val explicitTypeFullName = Option(parameter.getTypeReference)
+      val explicitTypeFullName =
+        Option(parameter.getTypeReference)
         .map(_.getText)
+        .map(TypeRenderer.stripped)
         .getOrElse(TypeConstants.cpgUnresolved)
       // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-      parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
+      parameterType(parameter, explicitTypeFullName)
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
     val methodName = Option(fnDesc)
