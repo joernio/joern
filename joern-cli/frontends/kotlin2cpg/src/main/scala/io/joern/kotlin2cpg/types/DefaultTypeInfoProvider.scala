@@ -664,19 +664,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String = {
-    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-    fnDesc match {
-      case Some(desc) => TypeRenderer.render(desc.getReturnType)
-      case _          => defaultValue
-    }
+    Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+      .map{ desc => TypeRenderer.render(desc.getReturnType) }
+      .getOrElse(defaultValue)
   }
 
   def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String = {
-    val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-    fnDesc match {
-      case Some(desc) => TypeRenderer.render(desc.getReturnType)
-      case _          => defaultValue
-    }
+    Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+      .map{ desc => TypeRenderer.render(desc.getReturnType) }
+      .getOrElse(defaultValue)
   }
 
   def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
