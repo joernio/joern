@@ -49,31 +49,26 @@ import org.jetbrains.kotlin.types.UnresolvedType
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeInfoProvider {
   private val logger = LoggerFactory.getLogger(getClass)
 
   import DefaultTypeInfoProvider._
 
-  // TODO: remove this state
-  var hasEmptyBindingContext = false
-
-  lazy val bindingContext: BindingContext = {
-    logger.info("Running Kotlin compiler analysis...")
-    try {
-      val t0  = System.currentTimeMillis()
-      val res = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
-      val t1  = System.currentTimeMillis()
+  val bindingContext: BindingContext = {
+    Try {
+      logger.info("Running Kotlin compiler analysis...")
+      val t0             = System.currentTimeMillis()
+      val analysisResult = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
+      val t1             = System.currentTimeMillis()
       logger.info(s"Kotlin compiler analysis finished in `${t1 - t0}` ms.")
-      res.getBindingContext
-    } catch {
-      case noDesc: NoDescriptorForDeclarationException =>
-        logger.error(s"Kotlin compiler analysis failed with _missing declaration_ exception `${noDesc.toString}`.")
-        hasEmptyBindingContext = true
-        BindingContext.EMPTY
-      case e: Throwable =>
-        logger.error(s"Kotlin compiler analysis failed with exception `${e.toString}`:`${e.getMessage}`.")
-        hasEmptyBindingContext = true
+      analysisResult
+    } match {
+      case Success(analysisResult) => analysisResult.getBindingContext
+      case Failure(exc) =>
+        logger.error(s"Kotlin compiler analysis failed with exception `${exc.toString}`:`${exc.getMessage}`.")
         BindingContext.EMPTY
     }
   }
@@ -773,7 +768,7 @@ object DefaultTypeInfoProvider {
           "Encountered _no such field_ exception while retrieving type info for `" + entity.getName + "`: `" + noSuchField + "`."
         )
         KeyFMap.EMPTY_MAP
-      case e: Throwable =>
+      case e if NonFatal(e) =>
         logger.debug(
           "Encountered general exception while retrieving type info for `" + entity.getName + "`: `" + e + "`."
         )
