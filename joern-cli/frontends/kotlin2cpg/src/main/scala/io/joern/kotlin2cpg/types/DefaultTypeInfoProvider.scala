@@ -521,9 +521,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       parameterType(parameter, explicitTypeFullName)
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
-    val methodName = Option(fnDesc).map { desc =>
-      s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
-    }.getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
+    val methodName = Option(fnDesc)
+      .map { desc =>
+        s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
+      }
+      .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
@@ -564,20 +566,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
 
-    val methodName =
-      if (fnDescMaybe.isDefined && fnDescMaybe.get.getExtensionReceiverParameter != null) {
-        val erpType = fnDescMaybe.get.getExtensionReceiverParameter.getType
-        if (erpType.isInstanceOf[UnresolvedType]) {
-          s"${TypeConstants.cpgUnresolved}.${expr.getName}"
-        } else {
-          val theType      = fnDescMaybe.get.getExtensionReceiverParameter.getType
-          val renderedType = TypeRenderer.render(theType)
-          s"$renderedType.${expr.getName}"
-        }
-      } else expr.getFqName
-
+    val methodName = for {
+      fnDesc                 <- fnDescMaybe
+      extensionReceiverParam <- Option(fnDesc.getExtensionReceiverParameter)
+      erpType = extensionReceiverParam.getType
+    } yield {
+      if (erpType.isInstanceOf[UnresolvedType]) {
+        s"${TypeConstants.cpgUnresolved}.${expr.getName}"
+      } else {
+        val theType      = fnDescMaybe.get.getExtensionReceiverParameter.getType
+        val renderedType = TypeRenderer.render(theType)
+        s"$renderedType.${expr.getName}"
+      }
+    }
     val signature = s"$returnTypeFullName$paramListSignature"
-    val fullname  = s"$methodName:$signature"
+    val fullname  = s"${methodName.getOrElse(expr.getFqName)}:$signature"
     (fullname, signature)
   }
 
@@ -596,9 +599,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
     descriptorForNameReference(expr)
-      .collect { case desc: PropertyDescriptorImpl =>
-        TypeRenderer.renderFqName(desc.getContainingDeclaration)
-      }
+      .collect { case desc: PropertyDescriptorImpl => TypeRenderer.renderFqName(desc.getContainingDeclaration) }
       .getOrElse(defaultValue)
   }
 
@@ -611,16 +612,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
     descriptorForNameReference(expr)
       .collect {
-        case _: ValueDescriptor =>
-          NameReferenceKinds.Property
-        case _: LazyClassDescriptor =>
-          NameReferenceKinds.ClassName
-        case _: LazyJavaClassDescriptor =>
-          NameReferenceKinds.ClassName
-        case _: DeserializedClassDescriptor =>
-          NameReferenceKinds.ClassName
-        case _: EnumEntrySyntheticClassDescriptor =>
-          NameReferenceKinds.EnumEntry
+        case _: ValueDescriptor                   => NameReferenceKinds.Property
+        case _: LazyClassDescriptor               => NameReferenceKinds.ClassName
+        case _: LazyJavaClassDescriptor           => NameReferenceKinds.ClassName
+        case _: DeserializedClassDescriptor       => NameReferenceKinds.ClassName
+        case _: EnumEntrySyntheticClassDescriptor => NameReferenceKinds.EnumEntry
         case unhandled: Any =>
           logger.debug(
             s"Unhandled class in type info fetch in `nameReferenceKind[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
@@ -645,19 +641,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
     descriptorForNameReference(expr)
       .flatMap {
-        case typedDesc: ValueDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getType))
+        case typedDesc: ValueDescriptor => Some(TypeRenderer.render(typedDesc.getType))
         // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
-        case typedDesc: LazyClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: LazyJavaClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: DeserializedClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: EnumEntrySyntheticClassDescriptor =>
-          Some(TypeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: LazyPackageViewDescriptorImpl =>
-          Some(TypeRenderer.renderFqName(typedDesc))
+        case typedDesc: LazyClassDescriptor               => Some(TypeRenderer.render(typedDesc.getDefaultType))
+        case typedDesc: LazyJavaClassDescriptor           => Some(TypeRenderer.render(typedDesc.getDefaultType))
+        case typedDesc: DeserializedClassDescriptor       => Some(TypeRenderer.render(typedDesc.getDefaultType))
+        case typedDesc: EnumEntrySyntheticClassDescriptor => Some(TypeRenderer.render(typedDesc.getDefaultType))
+        case typedDesc: LazyPackageViewDescriptorImpl     => Some(TypeRenderer.renderFqName(typedDesc))
         case unhandled: Any =>
           logger.debug(s"Unhandled class type info fetch in for `${expr.getText}` with class `${unhandled.getClass}`.")
           None
@@ -670,15 +660,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     if (!expr.getValueParameters.isEmpty) {
       return None
     }
-
-    val containingQualifiedExpression =
-      Option(expr.getParent)
-        .map(_.getParent)
-        .map(_.getParent match {
-          case q: KtQualifiedExpression => Some(q)
-          case _                        => None
-        })
-        .getOrElse(None)
+    val containingQualifiedExpression = Option(expr.getParent)
+      .map(_.getParent)
+      .map(_.getParent match {
+        case q: KtQualifiedExpression => Some(q)
+        case _                        => None
+      })
+      .getOrElse(None)
     containingQualifiedExpression match {
       case Some(qualifiedExpression) =>
         resolvedCallDescriptor(qualifiedExpression) match {
@@ -710,7 +698,6 @@ object DefaultTypeInfoProvider {
 
   def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
     try {
-
       val thisField = bindings.getClass.getDeclaredField("this$0")
       thisField.setAccessible(true)
       val bindingTrace = thisField.get(bindings).asInstanceOf[NoScopeRecordCliBindingTrace]
