@@ -390,6 +390,18 @@ trait AstNodeBuilder {
 
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
+  protected def createTemplateDomNode(
+    name: String,
+    code: String,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): NewTemplateDom =
+    NewTemplateDom()
+      .name(name)
+      .code(code)
+      .lineNumber(line)
+      .columnNumber(column)
+
   protected def createBlockNode(code: String, line: Option[Integer], column: Option[Integer]): NewBlock =
     NewBlock()
       .typeFullName(Defines.ANY.label)
