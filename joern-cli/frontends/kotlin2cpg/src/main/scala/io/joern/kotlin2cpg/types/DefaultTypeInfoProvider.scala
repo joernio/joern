@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.psi.{
   KtCallExpression,
   KtClassLiteralExpression,
   KtClassOrObject,
+  KtConstructor,
   KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
@@ -491,11 +492,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
-    val typeParams        = fnDesc.getTypeParameters.asScala.toList
-    val returnT           = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
+    val returnT    = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
+    val typeParams = fnDesc.getTypeParameters.asScala.toList
+
     val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
     val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
-
     if (hasReturnTypeFromTypeParams) {
       if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
         val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
@@ -512,17 +513,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def fullNameWithSignature(expr: KtSecondaryConstructor, defaultValue: (String, String)): (String, String) = {
     val fnDesc = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-    val paramTypeNames = expr.getValueParameters .asScala.map { parameter =>
-        val explicitTypeFullName =
-          if (parameter.getTypeReference != null) parameter.getTypeReference.getText
-          else TypeConstants.cpgUnresolved
-        // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-        parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
-      }
+    val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
+      val explicitTypeFullName =
+        if (parameter.getTypeReference != null) parameter.getTypeReference.getText
+        else TypeConstants.cpgUnresolved
+      // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+      parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
+    }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
     val methodName =
       Option(fnDesc)
-        .map { desc => s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}" }
+        .map { desc =>
+          s"${TypeRenderer.renderFqName(desc.get)}${TypeConstants.initPrefix}"
+        }
         .getOrElse(s"${TypeConstants.cpgUnresolved}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
@@ -534,19 +537,14 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     if (expr == null) {
       return defaultValue
     }
-    val paramTypeNames =
-      try {
-        expr.getValueParameters.asScala.map { p =>
-          val explicitTypeFullName =
-            Option(p.getTypeReference)
-              .map(_.getText)
-              .getOrElse(TypeConstants.cpgUnresolved)
-          // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-          parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
-        }
-      } catch {
-        case _: Throwable => List()
-      }
+    val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
+      val explicitTypeFullName =
+        Option(parameter.getTypeReference)
+          .map(_.getText)
+          .getOrElse(TypeConstants.cpgUnresolved)
+      // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+      parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
+    }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
 
     val methodName =
@@ -559,34 +557,24 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtNamedFunction, defaultValue: (String, String)): (String, String) = {
-    val fnDesc = Option(bindingContext.get(BindingContext.FUNCTION, expr))
-    val returnTypeFullName =
-      fnDesc match {
-        case Some(desc) => renderedReturnType(desc)
-        case None       => TypeConstants.cpgUnresolved
-      }
-    val paramTypeNames =
-      try {
-        expr.getValueParameters.asScala
-          .map { p =>
-            val explicitTypeFullName =
-              if (p.getTypeReference != null) p.getTypeReference.getText
-              else TypeConstants.cpgUnresolved
-            // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-            parameterType(p, TypeRenderer.stripped(explicitTypeFullName))
-          }
-      } catch {
-        case _: Throwable => List()
-      }
+    val fnDescMaybe        = Option(bindingContext.get(BindingContext.FUNCTION, expr))
+    val returnTypeFullName = fnDescMaybe.map(renderedReturnType(_)).getOrElse(TypeConstants.cpgUnresolved)
+    val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
+      val explicitTypeFullName =
+        if (parameter.getTypeReference != null) parameter.getTypeReference.getText
+        else TypeConstants.cpgUnresolved
+      // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+      parameterType(parameter, TypeRenderer.stripped(explicitTypeFullName))
+    }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
 
     val methodName =
-      if (fnDesc.isDefined && fnDesc.get.getExtensionReceiverParameter != null) {
-        val erpType = fnDesc.get.getExtensionReceiverParameter.getType
+      if (fnDescMaybe.isDefined && fnDescMaybe.get.getExtensionReceiverParameter != null) {
+        val erpType = fnDescMaybe.get.getExtensionReceiverParameter.getType
         if (erpType.isInstanceOf[UnresolvedType]) {
           s"${TypeConstants.cpgUnresolved}.${expr.getName}"
         } else {
-          val theType      = fnDesc.get.getExtensionReceiverParameter.getType
+          val theType      = fnDescMaybe.get.getExtensionReceiverParameter.getType
           val renderedType = TypeRenderer.render(theType)
           s"$renderedType.${expr.getName}"
         }
@@ -658,13 +646,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-      .map{ desc => TypeRenderer.render(desc.getReturnType) }
+      .map { desc => TypeRenderer.render(desc.getReturnType) }
       .getOrElse(defaultValue)
   }
 
   def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-      .map{ desc => TypeRenderer.render(desc.getReturnType) }
+      .map { desc => TypeRenderer.render(desc.getReturnType) }
       .getOrElse(defaultValue)
   }
 
