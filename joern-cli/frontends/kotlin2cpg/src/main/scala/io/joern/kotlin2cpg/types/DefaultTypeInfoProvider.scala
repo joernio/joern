@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.psi.{
   KtCallExpression,
   KtClassLiteralExpression,
   KtClassOrObject,
-  KtConstructor,
   KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
@@ -43,7 +42,6 @@ import org.jetbrains.kotlin.psi.{
 }
 import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorUtils}
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
-import org.jetbrains.kotlin.resolve.`lazy`.NoDescriptorForDeclarationException
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.types.UnresolvedType
