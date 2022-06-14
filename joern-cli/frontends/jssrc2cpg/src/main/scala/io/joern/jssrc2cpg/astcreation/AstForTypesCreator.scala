@@ -10,6 +10,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import ujson.Value
 
 import scala.util.Try
@@ -41,7 +44,9 @@ trait AstForTypesCreator {
   private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
     val maybeClassConstructor = classConstructor(classExpr)
     val methodNode = maybeClassConstructor match {
-      case Some(classConstructor) => createMethodAstAndNode(createBabelNodeInfo(classConstructor))._2
+      case Some(classConstructor) =>
+        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(classConstructor))
+        methodNode
       case _ =>
         val code = "constructor() {}"
         val fakeConstructorCode = """{
@@ -58,7 +63,7 @@ trait AstForTypesCreator {
           |   "body": []
           | }
           |}""".stripMargin
-        val methodNode = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))._2
+        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))
         methodNode.code(code)
     }
     val name     = methodNode.name.replace("<", s"$typeName<")
@@ -86,7 +91,7 @@ trait AstForTypesCreator {
           |   "body": []
           | }
           |}""".stripMargin
-        val methodNode = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))._2
+        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))
         methodNode.code(code)
     }
     val name     = methodNode.name.replace("<", s"$typeName<")
@@ -94,13 +99,73 @@ trait AstForTypesCreator {
     methodNode.name(name).fullName(fullName)
   }
 
+  private def astsForEnumMember(tsEnumMember: BabelNodeInfo): Seq[Ast] = {
+    val name       = code(tsEnumMember.json("id"))
+    val memberNode = createMemberNode(name, tsEnumMember.code, dynamicTypeOption = None)
+    addModifier(memberNode, tsEnumMember.json)
+
+    if (hasKey(tsEnumMember.json, "initializer")) {
+      val lhsAst = astForNode(tsEnumMember.json("id"))
+      val rhsAst = astForNodeWithFunctionReference(tsEnumMember.json("initializer"))
+      val callNode =
+        createCallNode(
+          tsEnumMember.code,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH,
+          tsEnumMember.lineNumber,
+          tsEnumMember.columnNumber
+        )
+      val argAsts = List(lhsAst, rhsAst)
+      Seq(createCallAst(callNode, argAsts), Ast(memberNode))
+    } else {
+      Seq(Ast(memberNode))
+    }
+
+  }
+
+  protected def astForEnum(tsEnum: BabelNodeInfo): Ast = {
+    val (typeName, typeFullName) = calcTypeNameAndFullName(tsEnum)
+
+    registerType(typeName, typeFullName)
+
+    val astParentType     = methodAstParentStack.head.label
+    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+
+    val typeDeclNode = createTypeDeclNode(
+      typeName,
+      typeFullName,
+      parserResult.filename,
+      s"enum $typeName",
+      astParentType,
+      astParentFullName
+    )
+
+    addModifier(typeDeclNode, tsEnum.json)
+
+    methodAstParentStack.push(typeDeclNode)
+    dynamicInstanceTypeStack.push(typeFullName)
+
+    val memberAsts = tsEnum.json("members").arr.toSeq.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
+
+    methodAstParentStack.pop()
+    dynamicInstanceTypeStack.pop()
+
+    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+    if (calls.isEmpty) {
+      Ast(typeDeclNode).withChildren(member)
+    } else {
+      val init =
+        createAstForFakeStaticInitMethod(typeFullName, parserResult.filename, tsEnum.lineNumber, calls)
+      Ast(typeDeclNode).withChildren(member).withChild(init)
+    }
+  }
+
   protected def astForClass(clazz: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
     val metaTypeName             = s"$typeName<meta>"
     val metaTypeFullName         = s"$typeFullName<meta>"
 
-    val classTypeNode = createTypeNode(typeName, typeFullName)
-    Ast.storeInDiffGraph(Ast(classTypeNode), diffGraph)
+    registerType(typeName, typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
@@ -121,8 +186,7 @@ trait AstForTypesCreator {
 
     addModifier(typeDeclNode, clazz.json)
 
-    val classMetaTypeNode = createTypeNode(metaTypeName, metaTypeFullName)
-    Ast.storeInDiffGraph(Ast(classMetaTypeNode), diffGraph)
+    registerType(metaTypeName, metaTypeFullName)
 
     val metaTypeDeclNode = createTypeDeclNode(
       metaTypeName,
@@ -154,7 +218,7 @@ trait AstForTypesCreator {
     classBodyElements.foreach { classElement =>
       val memberNode = createBabelNodeInfo(classElement) match {
         case m @ (BabelNodeInfo(BabelAst.ClassMethod) | BabelNodeInfo(BabelAst.ClassPrivateMethod)) =>
-          val function = createMethodAstAndNode(m)._2
+          val (_, function) = createMethodAstAndNode(m)
           addModifier(function, m.json)
           val fullName                = function.fullName.replace(s":${function.name}", s":$typeName:${function.name}")
           val classMethod             = function.fullName(fullName)
@@ -237,8 +301,7 @@ trait AstForTypesCreator {
   protected def astForInterface(tsInterface: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(tsInterface)
 
-    val classTypeNode = createTypeNode(typeName, typeFullName)
-    Ast.storeInDiffGraph(Ast(classTypeNode), diffGraph)
+    registerType(typeName, typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString

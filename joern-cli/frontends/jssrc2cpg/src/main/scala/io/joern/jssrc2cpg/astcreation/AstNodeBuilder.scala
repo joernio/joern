@@ -7,6 +7,7 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder {
@@ -68,10 +69,11 @@ trait AstNodeBuilder {
     val line   = func.lineNumber
     val column = func.columnNumber
     val code   = "RET"
+    val tpe    = typeFor(func)
     NewMethodReturn()
       .code(code)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(tpe)
       .lineNumber(line)
       .columnNumber(column)
   }
@@ -309,6 +311,33 @@ trait AstNodeBuilder {
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
 
+  protected def createAstForFakeStaticInitMethod(
+    name: String,
+    filename: String,
+    lineNumber: Option[Integer],
+    childrenAsts: Seq[Ast]
+  ): Ast = {
+    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
+    val fakeStaticInitMethod =
+      NewMethod()
+        .name("<sinit>")
+        .fullName(s"$name:<sinit>")
+        .code(code)
+        .filename(filename)
+        .lineNumber(lineNumber)
+        .astParentType(NodeTypes.TYPE_DECL)
+        .astParentFullName(name)
+
+    val blockNode = NewBlock().typeFullName("ANY")
+
+    val methodReturn = NewMethodReturn()
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName("ANY")
+
+    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
+  }
+
   protected def createEqualsCallAst(
     destId: NewNode,
     sourceId: NewNode,
@@ -385,9 +414,6 @@ trait AstNodeBuilder {
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
       .closureOriginalName(Some(closureOriginalName))
 
-  protected def createTypeNode(name: String, fullName: String): NewType =
-    NewType().name(name).fullName(fullName).typeDeclFullName(fullName)
-
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
   protected def createTemplateDomNode(
@@ -416,8 +442,7 @@ trait AstNodeBuilder {
     methodFullName: String,
     filename: String
   ): Ast = {
-    val typeNode = createTypeNode(methodName, methodFullName)
-    Ast.storeInDiffGraph(Ast(typeNode), diffGraph)
+    registerType(methodName, methodFullName)
 
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString

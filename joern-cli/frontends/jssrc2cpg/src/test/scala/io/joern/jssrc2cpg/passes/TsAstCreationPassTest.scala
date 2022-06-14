@@ -3,10 +3,58 @@ package io.joern.jssrc2cpg.passes
 import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Inside
 
 class TsAstCreationPassTest extends AbstractPassTest with Inside {
+
+  "AST generation for simple TS constructs" should {
+
+    "have correct structure for casts" in AstFixture("""
+        | const x = "foo" as string;
+        |""".stripMargin) { cpg =>
+      inside(cpg.call(Operators.cast).l) { case List(call) =>
+        call.argument(1).head.code shouldBe "string"
+        call.argument(2).head.code shouldBe "\"foo\""
+      }
+    }
+
+  }
+
+  "AST generation for TS enums" should {
+
+    "have correct structure for simple enum" in AstFixture("""
+        |enum Direction {
+        |  Up = 1,
+        |  Down,
+        |  Left,
+        |  Right,
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.typeDecl("Direction").l) { case List(direction) =>
+        direction.name shouldBe "Direction"
+        direction.code shouldBe "enum Direction"
+        direction.fullName shouldBe "code.ts::program:Direction"
+        direction.filename shouldBe "code.ts"
+        direction.file.name.head shouldBe "code.ts"
+        inside(direction.method.name("<sinit>").l) { case List(init) =>
+          init.block.astChildren.isCall.code.head shouldBe "Up = 1"
+        }
+        inside(cpg.typeDecl("Direction").member.l) { case List(up, down, left, right) =>
+          up.name shouldBe "Up"
+          up.code shouldBe "Up = 1"
+          down.name shouldBe "Down"
+          down.code shouldBe "Down"
+          left.name shouldBe "Left"
+          left.code shouldBe "Left"
+          right.name shouldBe "Right"
+          right.code shouldBe "Right"
+        }
+      }
+    }
+
+  }
 
   "AST generation for TS classes" should {
 

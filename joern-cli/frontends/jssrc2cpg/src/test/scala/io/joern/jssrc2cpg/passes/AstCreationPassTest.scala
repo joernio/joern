@@ -1544,6 +1544,27 @@ class AstCreationPassTest extends AbstractPassTest {
       }
     }
 
+    "be correct for logical expression '++'" in AstFixture("""
+           |function method(x) {
+           |  true && false;
+           |}
+        """.stripMargin) { cpg =>
+      def method = cpg.method.nameExact("method")
+      method.checkNodeCount(1)
+
+      def logicalCall = method.expandAst(NodeTypes.BLOCK).expandAst(NodeTypes.CALL)
+      logicalCall.checkNodeCount(1)
+      logicalCall.checkProperty(PropertyNames.NAME, Operators.logicalAnd)
+
+      def callArg1 = logicalCall.expandAst(NodeTypes.LITERAL).filter(PropertyNames.ARGUMENT_INDEX, 1)
+      callArg1.checkNodeCount(1)
+      callArg1.checkProperty(PropertyNames.CODE, "true")
+
+      def callArg2 = logicalCall.expandAst(NodeTypes.LITERAL).filter(PropertyNames.ARGUMENT_INDEX, 2)
+      callArg2.checkNodeCount(1)
+      callArg2.checkProperty(PropertyNames.CODE, "false")
+    }
+
     "be correct for unary expression '++'" in AstFixture("""
          |function method(x) {
          |  ++x;
@@ -4735,6 +4756,84 @@ class AstCreationPassTest extends AbstractPassTest {
         .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
         .checkNodeCount(1)
     }
+  }
+
+  "AST generation for exports" should {
+    "have correct structure for simple names and aliases" in AstFixture("""
+        |export { name1, name2, name3 };
+        |export { variable4 as name4, variable5 as name5, name6 };
+        |export let name7, name8, name9;
+        |export let name10 = "10", name11 = "11", name12;
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List("name7", "name8", "name9", "name10", "name11", "name12")
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "exports.name1 = name1",
+        "exports.name2 = name2",
+        "exports.name3 = name3",
+        "exports.name4 = variable4",
+        "exports.name5 = variable5",
+        "exports.name6 = name6",
+        "exports.name7 = name7",
+        "exports.name8 = name8",
+        "exports.name9 = name9",
+        "name10 = \"10\"",
+        "name11 = \"11\"",
+        "exports.name10 = name10",
+        "exports.name11 = name11",
+        "exports.name12 = name12"
+      )
+    }
+
+    "have correct structure for defaults" in AstFixture("""
+        |export { name1 as default };
+        |export default name2 = "2";
+        |export default function foo(param) {};
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List("foo", "name2")
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "exports[\"default\"] = name1",
+        "name2 = \"2\"",
+        "exports[\"default\"] = name2",
+        "function foo = function foo(param) {}",
+        "exports[\"default\"] = foo"
+      )
+      cpg.method("foo").code.l shouldBe List("function foo(param) {}")
+    }
+
+    "have correct structure for export with from clause" in AstFixture("""
+      |export { import1 as name1, import2 as name2, name3 } from "Foo";
+      |export bar from "Bar";
+      |""".stripMargin) { cpg =>
+      def dep1 = getDependencies(cpg).filter(PropertyNames.NAME, "name1")
+      dep1.checkNodeCount(1)
+      dep1.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep1.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep2 = getDependencies(cpg).filter(PropertyNames.NAME, "name2")
+      dep2.checkNodeCount(1)
+      dep2.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep2.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep3 = getDependencies(cpg).filter(PropertyNames.NAME, "name3")
+      dep3.checkNodeCount(1)
+      dep3.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep3.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep4 = getDependencies(cpg).filter(PropertyNames.NAME, "bar")
+      dep4.checkNodeCount(1)
+      dep4.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Bar")
+      dep4.checkProperty(PropertyNames.VERSION, "require")
+
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "_Foo = require(\"Foo\")",
+        "_Foo.name1 = import1",
+        "_Foo.name2 = import2",
+        "_Foo.name3 = name3",
+        "_Bar = require(\"Bar\")",
+        "_Bar.bar = bar"
+      )
+    }
+
   }
 
   private def checkObjectInitialization(node: Node, member: (String, String)): Unit = {

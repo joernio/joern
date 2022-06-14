@@ -91,4 +91,23 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
       secondArg.argumentIndex shouldBe 1
     }
   }
+
+  "CPG for code with simple qualified-expression" - {
+    lazy val cpg = TestContext.buildCpg("""
+       |package mypkg
+       |
+       |import java.lang.Runtime
+       |
+       |fun main() {
+       |   Runtime.getRuntime().exec("ls -al")
+       |}
+       |""".stripMargin)
+
+    "should contain the correct argumentIndex values for its arguments" in {
+      val List(firstArg: Call, secondArg: Literal) =
+        cpg.call.methodFullNameExact("java.lang.Runtime.exec:java.lang.Process(java.lang.String)").argument.l
+      firstArg.argumentIndex shouldBe 0
+      secondArg.argumentIndex shouldBe 1
+    }
+  }
 }

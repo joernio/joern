@@ -79,7 +79,7 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "class with multiple initializers" - {
+  "class with multiple initializers" ignore {
     lazy val cpg = TestContext.buildCpg("""
         |package baz
         |

@@ -44,7 +44,7 @@ object PsiUtils {
     )
   }
 
-  def nonUnderscoreEntries(expr: KtDestructuringDeclaration): Seq[KtDestructuringDeclarationEntry] = {
+  def nonUnderscoreDestructuringEntries(expr: KtDestructuringDeclaration): Seq[KtDestructuringDeclarationEntry] = {
     val underscore = "_"
     expr.getEntries.asScala.filterNot(_.getText == underscore).toSeq
   }

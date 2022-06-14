@@ -97,13 +97,9 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           }
         }
 
-        val plugins = Seq()
         val stdlibJars =
-          if (config.withStdlibJarsInClassPath) {
-            ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
-          } else {
-            Seq()
-          }
+          if (config.withStdlibJarsInClassPath) ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
+          else Seq()
         val defaultContentRootJars =
           stdlibJars ++
             jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
@@ -112,10 +108,19 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
             }
         val messageCollector        = new ErrorLoggingMessageCollector
         val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
+        val plugins                 = Seq()
         val environment =
           CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
-        val sources          = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+        val sources =
+          entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+            .filterNot { entry =>
+              config.ignorePaths.exists { pathToIgnore =>
+                val parent = Paths.get(pathToIgnore).toAbsolutePath()
+                val child  = Paths.get(entry.filename)
+                child.startsWith(parent)
+              }
+            }
         val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
         val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 

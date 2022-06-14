@@ -58,10 +58,10 @@ abstract class AstCreatorBase(filename: String) {
   /** Create a method return node
     */
   def methodReturnNode(
-    line: Option[Integer],
-    column: Option[Integer],
     tfn: String,
-    dtfn: Option[String] = None
+    dtfn: Option[String] = None,
+    line: Option[Integer],
+    column: Option[Integer]
   ): NewMethodReturn =
     NewMethodReturn()
       .typeFullName(tfn)
