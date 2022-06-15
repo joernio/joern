@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.utils.Report
 import io.joern.jssrc2cpg.utils.TimeUtils
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.jssrc2cpg.utils.JsIOUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.utils.IOUtils
@@ -35,7 +36,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
       val (rootPath, fileName) = skippedFile
       val filePath             = Paths.get(rootPath, fileName)
-      val fileLOC              = IOUtils.readLinesInFile(filePath).size
+      val fileLOC              = JsIOUtils.countLinesInFile(filePath)
       report.addReportInfo(fileName, fileLOC)
     }
   }
@@ -44,7 +45,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     val (rootPath, jsonFilename) = input
     val ((gotCpg, filename), duration) = TimeUtils.time {
       val parseResult = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
-      val fileLOC     = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
+      val fileLOC     = JsIOUtils.countLinesInFile(Paths.get(parseResult.fullPath))
       report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
       Try {
         val localDiff = new AstCreator(config, parseResult, usedTypes).createAst()

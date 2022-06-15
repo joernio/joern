@@ -3,7 +3,6 @@ package io.joern.jssrc2cpg.utils
 import java.nio.file.{Path, Paths}
 import org.slf4j.LoggerFactory
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 
 import scala.collection.concurrent.TrieMap
@@ -25,9 +24,9 @@ object PackageJsonParser {
 
   def isValidProjectPackageJson(packageJsonPath: Path): Boolean = {
     if (packageJsonPath.toString.endsWith(PackageJsonParser.PACKAGE_JSON_FILENAME)) {
-      val isNotEmpty = Try(IOUtils.readLinesInFile(packageJsonPath)) match {
+      val isNotEmpty = Try(JsIOUtils.readFile(packageJsonPath)) match {
         case Success(content) =>
-          content.forall(l => StringUtils.isNotBlank(StringUtils.normalizeSpace(l)))
+          content.split("\n").forall(l => StringUtils.isNotBlank(StringUtils.normalizeSpace(l)))
         case Failure(_) => false
       }
       isNotEmpty && dependencies(packageJsonPath).nonEmpty
@@ -43,9 +42,8 @@ object PackageJsonParser {
         val lockDepsPath = packageJsonPath.resolveSibling(Paths.get(PACKAGE_JSON_LOCK_FILENAME))
 
         val lockDeps = Try {
-          val content      = IOUtils.readLinesInFile(lockDepsPath).mkString("\n")
           val objectMapper = new ObjectMapper
-          val packageJson  = objectMapper.readTree(content)
+          val packageJson  = objectMapper.readTree(JsIOUtils.readFile(lockDepsPath))
 
           var depToVersion = Map.empty[String, String]
           val dependencyIt = Option(packageJson.get("dependencies"))
@@ -63,9 +61,8 @@ object PackageJsonParser {
 
         // lazy val because we only evaluate this in case no package lock file is available.
         lazy val deps = Try {
-          val content      = IOUtils.readLinesInFile(depsPath).mkString("\n")
           val objectMapper = new ObjectMapper
-          val packageJson  = objectMapper.readTree(content)
+          val packageJson  = objectMapper.readTree(JsIOUtils.readFile(depsPath))
 
           var depToVersion = Map.empty[String, String]
           projectDependencies
