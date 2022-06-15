@@ -1,19 +1,16 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class CallTests extends AnyFreeSpec with Matchers {
+class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with two functions with the same name, but different params" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with two functions with the same name, but different params" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo(x: Int, y: Int): Int {
@@ -95,8 +92,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a class declaration " - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a class declaration " should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -152,8 +149,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to an implicitly imported stdlib fn " - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a call to an implicitly imported stdlib fn " should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun doSome(x: String) {
@@ -178,8 +175,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with invocation of extension function from stdlib" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with invocation of extension function from stdlib" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -196,8 +193,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple method call to decl of Java's stdlib" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple method call to decl of Java's stdlib" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun foo(x: String): Int {
@@ -215,8 +212,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple call to class from Java's stdlib imported with _as_" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple call to class from Java's stdlib imported with _as_" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import java.io.File as MyFile
@@ -235,8 +232,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple call with unknown identifier imported via _as_" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple call with unknown identifier imported via _as_" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import no.such.CaseClass as MyCaseClass
@@ -269,8 +266,8 @@ class CallTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call which has parenthesized expression as receiver" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call which has parenthesized expression as receiver" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun main() {

@@ -1,17 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ClassLiteralTests extends AnyFreeSpec with Matchers {
+class ClassLiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple class literals" - {
+  "CPG for code with simple class literals" should {
 
-    lazy val cpg = TestContext.buildCpg("""
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Bar {}

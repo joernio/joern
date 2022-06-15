@@ -1,16 +1,15 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.{Constants, TestContext}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Member, TypeRef}
+import io.joern.kotlin2cpg.Constants
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Member}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class CompanionObjectTests extends AnyFreeSpec with Matchers {
+class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple unnamed companion object" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple unnamed companion object" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class AClass {
@@ -67,8 +66,8 @@ class CompanionObjectTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple named companion object" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple named companion object" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class AClass {
