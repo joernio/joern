@@ -411,18 +411,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val originalDesc          = fnDescriptor.getOriginal
         val renderedFqNameForDesc = TypeRenderer.renderFqName(originalDesc)
 
-        val nameExtensionReceiverMaybe = Option(originalDesc.getExtensionReceiverParameter)
-          .map { parameter => (originalDesc.getName, parameter.getExtensionReceiverParameter) }
-
-        val renderedFqName = nameExtensionReceiverMaybe match {
-          case Some((name, extensionReceiverParameter)) =>
-            val extType = extensionReceiverParameter.getType
+        val renderedFqNameMaybe = for {
+          extensionReceiverParam <- Option(originalDesc.getExtensionReceiverParameter)
+          erpType = extensionReceiverParam.getType
+        } yield {
+          if (erpType.isInstanceOf[UnresolvedType]) {
+            s"${TypeConstants.cpgUnresolved}.${expr.getName}"
+          } else {
             val rendered =
               if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
-              else TypeRenderer.render(extType, false, false)
-            s"$rendered.$name"
-          case None => renderedFqNameForDesc
+              else TypeRenderer.render(erpType, false, false)
+            s"$rendered.${originalDesc.getName}"
+          }
         }
+        val renderedFqName = renderedFqNameMaybe.getOrElse(renderedFqNameForDesc)
+
         val renderedParameterTypes = originalDesc.getValueParameters.asScala.toSeq
           .map { valueParam => TypeRenderer.render(valueParam.getType) }
           .mkString(",")
