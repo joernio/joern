@@ -83,7 +83,7 @@ trait AstNodeBuilder {
     var currOrder = 1
     asts.foreach { a =>
       a.root match {
-        case Some(x: ExpressionNew) if x.code != "this" =>
+        case Some(x: ExpressionNew) if x.code != "this" || x.isInstanceOf[NewLiteral] =>
           x.argumentIndex = currIndex
           x.order = currOrder
           currIndex = currIndex + 1
@@ -415,6 +415,18 @@ trait AstNodeBuilder {
       .closureOriginalName(Some(closureOriginalName))
 
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
+
+  protected def createTemplateDomNode(
+    name: String,
+    code: String,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): NewTemplateDom =
+    NewTemplateDom()
+      .name(name)
+      .code(code)
+      .lineNumber(line)
+      .columnNumber(column)
 
   protected def createBlockNode(code: String, line: Option[Integer], column: Option[Integer]): NewBlock =
     NewBlock()

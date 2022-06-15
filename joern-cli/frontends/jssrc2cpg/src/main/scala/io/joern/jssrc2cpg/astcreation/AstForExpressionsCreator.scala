@@ -118,7 +118,12 @@ trait AstForExpressionsCreator {
   }
 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = Ast(
-    createLiteralNode(thisExpr.code, Some(Defines.ANY.label), thisExpr.lineNumber, thisExpr.columnNumber)
+    createLiteralNode(
+      thisExpr.code,
+      dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY.label)),
+      thisExpr.lineNumber,
+      thisExpr.columnNumber
+    )
   )
 
   protected def astForNewExpression(newExpr: BabelNodeInfo): Ast = {
