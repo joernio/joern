@@ -1,15 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class MethodParameterTests extends AnyFreeSpec with Matchers {
-
-  "CPG for code with a simple function definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple function definition" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun add1mul(x: Int, y: Int): Int {
@@ -40,8 +37,8 @@ class MethodParameterTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple class definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple class definition" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Foo {

@@ -1,14 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class MetaDataTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class MetaDataTests extends AnyFreeSpec with Matchers {
-
-  lazy val cpg = TestContext.buildCpg("""
+  lazy val cpg = code("""
       |class ClassFoo {}
       |""".stripMargin)
 

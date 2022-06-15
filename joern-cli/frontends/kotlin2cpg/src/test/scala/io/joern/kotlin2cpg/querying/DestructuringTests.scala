@@ -1,18 +1,16 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class DestructuringTests extends AnyFreeSpec with Matchers {
+class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with destructuring declaration and a variable as RHS" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring declaration and a variable as RHS" should {
+    lazy val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -84,8 +82,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring declaration and a variable as RHS, plus one `_`" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring declaration and a variable as RHS, plus one `_`" should {
+    lazy val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -109,8 +107,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring expression with a ctor-invocation RHS" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring expression with a ctor-invocation RHS" should {
+    lazy val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -226,8 +224,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring expression with a ctor-invocation RHS and an `_`" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring expression with a ctor-invocation RHS and an `_`" should {
+    lazy val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -251,8 +249,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring expression with a non-ctor-call RHS" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring expression with a non-ctor-call RHS" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)
@@ -361,8 +359,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring expression with a non-ctor-call RHS and an `_`" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring expression with a non-ctor-call RHS and an `_`" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)
@@ -392,8 +390,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring expression with a DQE call RHS" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring expression with a DQE call RHS" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)
@@ -515,8 +513,8 @@ class DestructuringTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring expression with a DQE call RHS and an `_`" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring expression with a DQE call RHS and an `_`" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)

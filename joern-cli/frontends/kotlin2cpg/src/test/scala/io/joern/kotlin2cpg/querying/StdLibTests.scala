@@ -1,14 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class StdLibTests extends AnyFreeSpec with Matchers {
-  "CPG for code with call to `takeIf`" - {
-    lazy val cpg = TestContext.buildCpg("""
+class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with call to `takeIf`" should {
+    lazy val cpg = code("""
         |  package mypkg
         |
         |  import kotlin.random.Random
@@ -36,8 +34,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a single call to println and a corresponding import" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a single call to println and a corresponding import" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.io.println
@@ -53,8 +51,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a single call to println, a corresponding import and a locally defined println method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a single call to println, a corresponding import and a locally defined println method" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun println(baz: String) {
@@ -72,8 +70,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to static class method of imported class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a call to static class method of imported class" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -96,8 +94,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a chained call to static class method of imported class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a chained call to static class method of imported class" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -111,8 +109,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to infix fn `to`" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a call to infix fn `to`" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -135,8 +133,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
     }
 
-    "CPG for code with calls to stdlib's `split`s" - {
-      lazy val cpg = TestContext.buildCpg("""
+    "CPG for code with calls to stdlib's `split`s" should {
+      lazy val cpg = code("""
           |package mypkg
           |
           |fun main() {
@@ -154,8 +152,8 @@ class StdLibTests extends AnyFreeSpec with Matchers {
       }
     }
 
-    "CPG for code with calls to stdlib's `trim`s" - {
-      lazy val cpg = TestContext.buildCpg("""
+    "CPG for code with calls to stdlib's `trim`s" should {
+      lazy val cpg = code("""
           |package mypkg
           |
           |fun trimParam(p: String): String {
