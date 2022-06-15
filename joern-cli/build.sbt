@@ -13,9 +13,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )
 
-// A temporary (hopefully) workaround for https://github.com/eclipse-equinox/equinox.bundles/issues/54
-dependencyOverrides += "org.eclipse.platform" % "org.eclipse.equinox.preferences" % "3.9.100"
-
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows

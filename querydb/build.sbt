@@ -19,9 +19,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"        %% "scalatest"    % Versions.scalatest % Test
 )
 
-// A temporary (hopefully) workaround for https://github.com/eclipse-equinox/equinox.bundles/issues/54
-dependencyOverrides += "org.eclipse.platform" % "org.eclipse.equinox.preferences" % "3.9.100"
-
 topLevelDirectory := Some(name.value)
 
 lazy val createDistribution = taskKey[File]("Create binary distribution of extension")
