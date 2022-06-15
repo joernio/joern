@@ -49,7 +49,7 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
 
   implicit def context: EngineContext =
     workspace.getActiveProject
-      .map(x => EngineContext(x.asInstanceOf[JoernProject].context.semantics))
+      .map(x => x.asInstanceOf[JoernProject].context)
       .getOrElse(EngineContext(JoernWorkspaceLoader.defaultSemantics))
 
   def banner(): Unit = {

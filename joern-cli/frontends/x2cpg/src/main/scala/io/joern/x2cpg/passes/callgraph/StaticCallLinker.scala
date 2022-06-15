@@ -14,9 +14,8 @@ class StaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   import StaticCallLinker._
   private val methodFullNameToNode = mutable.Map.empty[String, List[Method]]
 
-  /** Main method of enhancement - to be implemented by child class
-    */
   override def run(dstGraph: DiffGraphBuilder): Unit = {
+
     cpg.method.foreach { method =>
       methodFullNameToNode.updateWith(method.fullName) {
         case Some(l) => Some(method :: l)

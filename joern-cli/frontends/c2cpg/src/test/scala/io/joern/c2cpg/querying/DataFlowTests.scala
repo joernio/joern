@@ -2,6 +2,7 @@ package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
@@ -1930,6 +1931,274 @@ class DataFlowTests66 extends DataFlowCodeToCpgSuite {
     def sink   = cpg.method("foo").parameter.asOutput
     def source = cpg.method("foo").ast.isIdentifier.name("x")
     sink.reachableByFlows(source).size shouldBe 1
+  }
+
+}
+
+class DataFlowTests67 extends DataFlowCodeToCpgSuite {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    context = EngineContext(semantics, EngineConfig(maxCallDepth = -1))
+  }
+
+  override val code: String =
+    """
+      |void CWE415_Double_Free__malloc_free_char_53b_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53_bad()
+      |{
+      |    char * data;
+      |    /* Initialize data */
+      |    data = NULL;
+      |    data = (char *)malloc(100*sizeof(char));
+      |    if (data == NULL) {exit(-1);}
+      |    /* POTENTIAL FLAW: Free data in the source - the bad sink frees data as well */
+      |    free(data);
+      |    CWE415_Double_Free__malloc_free_char_53b_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53b_goodG2BSink(char * data);
+      |
+      |static void goodG2B()
+      |{
+      |    char * data;
+      |    /* Initialize data */
+      |    data = NULL;
+      |    data = (char *)malloc(100*sizeof(char));
+      |    if (data == NULL) {exit(-1);}
+      |    /* FIX: Do NOT free data in the source - the bad sink frees data */
+      |    CWE415_Double_Free__malloc_free_char_53b_goodG2BSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53b_goodB2GSink(char * data);
+      |
+      |static void goodB2G()
+      |{
+      |    char * data;
+      |    /* Initialize data */
+      |    data = NULL;
+      |    data = (char *)malloc(100*sizeof(char));
+      |    if (data == NULL) {exit(-1);}
+      |    /* POTENTIAL FLAW: Free data in the source - the bad sink frees data as well */
+      |    free(data);
+      |    CWE415_Double_Free__malloc_free_char_53b_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53c_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53b_badSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_53c_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53c_goodG2BSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53b_goodG2BSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_53c_goodG2BSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53c_goodB2GSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53b_goodB2GSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_53c_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53d_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53c_badSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_53d_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53d_goodG2BSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53c_goodG2BSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_53d_goodG2BSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53d_goodB2GSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_53c_goodB2GSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_53d_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53d_badSink(char * data)
+      |{
+      |    /* POTENTIAL FLAW: Possibly freeing memory twice */
+      |    free(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_53d_goodG2BSink(char * data)
+      |{
+      |    /* POTENTIAL FLAW: Possibly freeing memory twice */
+      |    free(data);
+      |}
+      |
+      |/* goodB2G uses the BadSource with the GoodSink */
+      |void CWE415_Double_Free__malloc_free_char_53d_goodB2GSink(char * data)
+      |{
+      |    /* do nothing */
+      |    /* FIX: Don't attempt to free the memory */
+      |    ; /* empty statement needed for some flow variants */
+      |}
+      |
+      |""".stripMargin
+
+  "should find flow for maxCallDepth = -1" in {
+    def freeArg = cpg.call("free").argument(1)
+    freeArg.reachableByFlows(freeArg).filter(path => path.elements.size > 1).size shouldBe 1
+  }
+}
+
+class DataFlowTests68 extends DataFlowCodeToCpgSuite {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    context = EngineContext(semantics, EngineConfig(maxCallDepth = -1))
+  }
+
+  override val code: String =
+    """
+      |void CWE415_Double_Free__malloc_free_char_54b_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54_bad()
+      |{
+      |    char * data;
+      |    /* Initialize data */
+      |    data = NULL;
+      |    data = (char *)malloc(100*sizeof(char));
+      |    if (data == NULL) {exit(-1);}
+      |    /* POTENTIAL FLAW: Free data in the source - the bad sink frees data as well */
+      |    free(data);
+      |    CWE415_Double_Free__malloc_free_char_54b_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54b_goodG2BSink(char * data);
+      |
+      |static void goodG2B()
+      |{
+      |    char * data;
+      |    /* Initialize data */
+      |    data = NULL;
+      |    data = (char *)malloc(100*sizeof(char));
+      |    if (data == NULL) {exit(-1);}
+      |    /* FIX: Do NOT free data in the source - the bad sink frees data */
+      |    CWE415_Double_Free__malloc_free_char_54b_goodG2BSink(data);
+      |}
+      |
+      |/* goodB2G uses the BadSource with the GoodSink */
+      |void CWE415_Double_Free__malloc_free_char_54b_goodB2GSink(char * data);
+      |
+      |static void goodB2G()
+      |{
+      |    char * data;
+      |    /* Initialize data */
+      |    data = NULL;
+      |    data = (char *)malloc(100*sizeof(char));
+      |    if (data == NULL) {exit(-1);}
+      |    /* POTENTIAL FLAW: Free data in the source - the bad sink frees data as well */
+      |    free(data);
+      |    CWE415_Double_Free__malloc_free_char_54b_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54_good()
+      |{
+      |    goodG2B();
+      |    goodB2G();
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54c_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54b_badSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54c_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54c_goodG2BSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54b_goodG2BSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54c_goodG2BSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54c_goodB2GSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54b_goodB2GSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54c_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54d_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54c_badSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54d_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54d_goodG2BSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54c_goodG2BSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54d_goodG2BSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54d_goodB2GSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54c_goodB2GSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54d_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54e_badSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54d_badSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54e_badSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54e_goodG2BSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54d_goodG2BSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54e_goodG2BSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54e_goodB2GSink(char * data);
+      |
+      |void CWE415_Double_Free__malloc_free_char_54d_goodB2GSink(char * data)
+      |{
+      |    CWE415_Double_Free__malloc_free_char_54e_goodB2GSink(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54e_badSink(char * data)
+      |{
+      |    /* POTENTIAL FLAW: Possibly freeing memory twice */
+      |    free(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54e_goodG2BSink(char * data)
+      |{
+      |    /* POTENTIAL FLAW: Possibly freeing memory twice */
+      |    free(data);
+      |}
+      |
+      |void CWE415_Double_Free__malloc_free_char_54e_goodB2GSink(char * data)
+      |{
+      |    /* do nothing */
+      |    /* FIX: Don't attempt to free the memory */
+      |    ; /* empty statement needed for some flow variants */
+      |}
+      |
+      |""".stripMargin
+
+  "should find flow for maxCallDepth = -1" in {
+    def freeArg = cpg.call("free").argument(1)
+    freeArg.reachableByFlows(freeArg).filter(path => path.elements.size > 1).size shouldBe 1
   }
 
 }
