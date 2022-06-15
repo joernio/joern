@@ -3,7 +3,6 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-
 class ObjectDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple object declaration" should {
     lazy val cpg = code("""

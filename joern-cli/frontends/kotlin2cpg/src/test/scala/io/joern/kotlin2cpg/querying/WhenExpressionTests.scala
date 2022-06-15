@@ -2,7 +2,6 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 
-
 class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `when`-expression" should {
     lazy val cpg = code("""

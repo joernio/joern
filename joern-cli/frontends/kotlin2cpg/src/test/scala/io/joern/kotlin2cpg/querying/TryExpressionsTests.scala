@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier}
 import io.shiftleft.semanticcpg.language._
 
-
 class TryExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `try`-expression" should {
     lazy val cpg = code("""

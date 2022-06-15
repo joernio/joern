@@ -16,17 +16,16 @@ class KotlinFrontend(withTestResourcePaths: Boolean = false) extends LanguageFro
   override val fileSuffix: String = ".kt"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val defaultContentRoot           =
+    val defaultContentRoot =
       BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
-    implicit val defaultConfig: Config = Config(
-      classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set()
-    )
+    implicit val defaultConfig: Config =
+      Config(classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set())
     new Kotlin2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
 
 class KotlinCode2CpgFixture(withOssDataflow: Boolean = false, withDefaultJars: Boolean = false)
-  extends Code2CpgFixture(new KotlinFrontend(withTestResourcePaths = withDefaultJars)) {
+    extends Code2CpgFixture(new KotlinFrontend(withTestResourcePaths = withDefaultJars)) {
   val defaultSemantics = {
     val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
     Semantics.fromList(new Parser().parseFile(semanticsFilename))

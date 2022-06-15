@@ -4,7 +4,6 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes}
 import io.shiftleft.semanticcpg.language._
 
-
 class SafeQualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   implicit val resolver = NoResolve
 

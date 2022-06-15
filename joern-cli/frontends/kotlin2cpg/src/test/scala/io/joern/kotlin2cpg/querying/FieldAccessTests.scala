@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifi
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
 
-
 class FieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple filed access of user-defined class" should {
