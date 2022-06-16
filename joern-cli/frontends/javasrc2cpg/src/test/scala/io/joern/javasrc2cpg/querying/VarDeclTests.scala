@@ -152,7 +152,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     assigZ.code shouldBe "int z = 3"
     assigZ.order shouldBe 5
 
-    assigX.code shouldBe "w = 1"
+    assigX.code shouldBe "x = 1"
     assigX.order shouldBe 6
   }
 }

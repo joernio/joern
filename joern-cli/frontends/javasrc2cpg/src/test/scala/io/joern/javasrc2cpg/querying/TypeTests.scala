@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.UnresolvedConstants
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -227,9 +227,9 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should default to <unresolvedType> with a matching type node for unresolved types" in {
-    val List(x)    = cpg.typ(UnresolvedConstants.UnresolvedType).l
+    val List(x)    = cpg.typ(TypeConstants.UnresolvedType).l
     val List(node) = cpg.identifier.name("UnknownType").l
-    node.typeFullName shouldBe UnresolvedConstants.UnresolvedType
+    node.typeFullName shouldBe TypeConstants.UnresolvedType
     node.typ.headOption shouldBe Some(x)
   }
 

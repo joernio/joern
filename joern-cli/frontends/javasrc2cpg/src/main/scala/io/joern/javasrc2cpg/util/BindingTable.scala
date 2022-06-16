@@ -33,16 +33,6 @@ trait BindingTableAdapter[T] {
   def directBindingTableEntries(typeDeclFullName: String, typeDecl: T): collection.Seq[BindingTableEntry]
 }
 
-class BindingTableAdapterForFlatEntries(
-                                        bindings: collection.Seq[BindingTableEntry]
-) extends BindingTableAdapter[NewTypeDecl] {
-  override def directParents(typeDecl: NewTypeDecl): collection.Seq[ResolvedReferenceTypeDeclaration] = Seq.empty
-
-  override def allParentsWithTypeMap(typeDecl: NewTypeDecl): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = Seq.empty
-
-  override def directBindingTableEntries(typeDeclFullName: String, typeDecl: NewTypeDecl): collection.Seq[BindingTableEntry] = bindings
-}
-
 class BindingTableAdapterForJavaparser(
   methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
 ) extends BindingTableAdapter[ResolvedReferenceTypeDeclaration] {

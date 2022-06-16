@@ -2,7 +2,16 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, Call, ControlStructure, FieldIdentifier, Identifier, Literal, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Block,
+  Call,
+  ControlStructure,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  Local
+}
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters._
@@ -24,7 +33,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     "create a local node for the array" in {
       val local = cpg.method.name("foo").local.nameExact("$iterLocal0").l match {
         case List(local) => local
-        case result => fail(s"Expected single iterator local but got $result")
+        case result      => fail(s"Expected single iterator local but got $result")
       }
 
       local.typeFullName shouldBe "java.lang.String[]"
@@ -32,15 +41,17 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "assign the array to the created local" in {
-      val assignment = cpg.method.name("foo").assignment
+      val assignment = cpg.method
+        .name("foo")
+        .assignment
         .find { assignment =>
           assignment.argument.l match {
             case List(identifier: Identifier, _: Call) if identifier.name == "$iterLocal0" => true
-            case _ => false
+            case _                                                                         => false
           }
         } match {
         case Some(iterAssign) => iterAssign
-        case result => fail(s"Expected an assign to iterLocal in method but got $result")
+        case result           => fail(s"Expected an assign to iterLocal in method but got $result")
       }
 
       assignment.name shouldBe Operators.assignment
@@ -67,7 +78,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
 
       val arrayInitializer = arrayAlloc.argument.l match {
         case List(arrayInitializer: Call) => arrayInitializer
-        case result => fail(s"Expected single argument ot arrayAlloc but got $result")
+        case result                       => fail(s"Expected single argument ot arrayAlloc but got $result")
       }
 
       val allocChildren = arrayAlloc.astChildren.l
@@ -446,9 +457,9 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
                      |""".stripMargin)
 
     "create a local for the iterator as a child of the FOR block" in {
-      val iterLocal = cpg.controlStructure.astChildren.l match {
-        case List(iterLocal: Local, _, _, _, _) => iterLocal
-        case result => fail(s"Expected iterLocal as first of 4 FOR children but got $result")
+      val iterLocal = cpg.method.name("foo").body.astChildren.l match {
+        case List(iterLocal: Local, _, _) => iterLocal
+        case result                       => fail(s"Expected iterLocal as first of 3 foo body children but got $result")
       }
 
       iterLocal.name shouldBe "$iterLocal0"
@@ -458,9 +469,9 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "assign items.iterator() to iterLocal" in {
-      val (iterLocal, iterAssign) = cpg.controlStructure.astChildren.l match {
-        case List(iterLocal: Local, iterAssign: Call, _, _, _) => (iterLocal, iterAssign)
-        case result => fail(s"Expected local and assign as first 2 FOR children but got $result")
+      val (iterLocal, iterAssign) = cpg.method.name("foo").body.astChildren.l match {
+        case List(iterLocal: Local, iterAssign: Call, _) => (iterLocal, iterAssign)
+        case result => fail(s"Expected local and assign in foo body but got $result")
       }
 
       iterAssign.name shouldBe Operators.assignment
@@ -500,9 +511,14 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "create hasNext() condition call" in {
-      val (iterLocal, conditionCall) = cpg.controlStructure.astChildren.l match {
-        case List(iterLocal: Local, _, conditionCall: Call, _, _) => (iterLocal, conditionCall)
-        case result => fail(s"Expected condition call as 3rd for child but got $result")
+      val (iterLocal, whileBlock) = cpg.method.name("foo").body.astChildren.l match {
+        case List(iterLocal: Local, _, whileBlock: ControlStructure) => (iterLocal, whileBlock)
+        case result => fail(s"Expected local and assign in foo body but got $result")
+      }
+
+      val conditionCall = whileBlock.condition.l match {
+        case List(conditionCall: Call) => conditionCall
+        case result                    => fail(s"Expected condition call but got $result")
       }
 
       conditionCall.name shouldBe "hasNext"
@@ -510,14 +526,14 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       conditionCall.signature shouldBe "boolean()"
       conditionCall.typeFullName shouldBe "boolean"
       conditionCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      conditionCall.order shouldBe 3
-      conditionCall.argumentIndex shouldBe 3
+      conditionCall.order shouldBe 1
+      conditionCall.argumentIndex shouldBe 1
 
       conditionCall.receiver.l match {
         case List(receiver: Identifier) =>
           receiver.name shouldBe "$iterLocal0"
           receiver.typeFullName shouldBe "java.util.Iterator"
-          receiver.order shouldBe 0
+          receiver.order shouldBe 1
           receiver.argumentIndex shouldBe 0
           receiver.refOut.toSet should contain(iterLocal)
 
@@ -525,24 +541,18 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       }
     }
 
-    "create an empty block for the update statement" in {
-      val updateBlock = cpg.controlStructure.astChildren.l match {
-        case List(_, _, _, updateBlock: Block, _) => updateBlock
-        case result => fail(s"Expected update block as 4th argument but got $result")
-      }
-
-      updateBlock.order shouldBe 4
-      updateBlock.argumentIndex shouldBe 4
-      updateBlock.astChildren.isEmpty shouldBe true
-    }
-
     "create an item local and assignment in the body of the FOR loop" in {
-      val (iterLocal, body) = cpg.controlStructure.astChildren.l match {
-        case List(iterLocal: Local, _, _, _, body: Block) => (iterLocal, body)
-        case result => fail(s"Expected body as last child of FOR but got $result")
+      val (iterLocal, whileBlock) = cpg.method.name("foo").body.astChildren.l match {
+        case List(iterLocal: Local, _, whileBlock: ControlStructure) => (iterLocal, whileBlock)
+        case result => fail(s"Expected local and assign in foo body but got $result")
       }
 
-      body.order shouldBe 5
+      val body = whileBlock.astChildren.l match {
+        case List(_, body: Block) => body
+        case result               => fail(s"Expected body as last child of FOR but got $result")
+      }
+
+      body.order shouldBe 2
 
       val (itemLocal, itemAssign, sinkCall) = body.astChildren.l match {
         case List(itemLocal: Local, itemAssign: Call, sinkCall: Call) => (itemLocal, itemAssign, sinkCall)
@@ -571,16 +581,16 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       assignTarget.refOut.toSet should contain(itemLocal)
 
       assignSource.name shouldBe "next"
-      assignSource.methodFullName shouldBe "java.util.Iterator.next:java.lang.String()"
-      assignSource.signature shouldBe "java.lang.String()"
-      assignSource.typeFullName shouldBe "java.lang.String"
+      assignSource.methodFullName shouldBe "java.util.Iterator.next:java.lang.Object()"
+      assignSource.signature shouldBe "java.lang.Object()"
+      assignSource.typeFullName shouldBe "java.lang.Object"
       assignSource.order shouldBe 2
       assignSource.argumentIndex shouldBe 2
       assignSource.receiver.l match {
         case List(iterIdent: Identifier) =>
           iterIdent.name shouldBe "$iterLocal0"
           iterIdent.typeFullName shouldBe "java.util.Iterator"
-          iterIdent.order shouldBe 0
+          iterIdent.order shouldBe 1
           iterIdent.argumentIndex shouldBe 0
           iterIdent.refOut.toSet should contain(iterLocal)
 
@@ -602,39 +612,6 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           itemIdent.refOut.toSet should contain(itemLocal)
 
         case result => fail(s"Expected single identifier arg to sink but got $result")
-      }
-    }
-
-    "create a binding for the constructed iterator() call" in {
-      cpg.all.collectAll[Binding].name("iterator").l match {
-        case List(iteratorBinding) =>
-          iteratorBinding.methodFullName shouldBe "java.util.List.iterator:java.util.Iterator()"
-          iteratorBinding.signature shouldBe "java.util.Iterator()"
-
-        case result => fail(s"Expected iterator binding but found $result")
-      }
-    }
-
-    "create a binding for the constructed hasNext() call" in {
-      cpg.all.collectAll[Binding].name("hasNext").l match {
-        case List(binding) =>
-          binding.methodFullName shouldBe "java.util.Iterator.hasNext:boolean()"
-          binding.signature shouldBe "boolean()"
-
-        case result => fail(s"Expected hasNext binding but found $result")
-      }
-    }
-
-    "create bindings for the constructed next() call" in {
-      cpg.all.collectAll[Binding].name("next").sortBy(_.signature).toList match {
-        case List(erasedBinding, binding) =>
-          erasedBinding.methodFullName shouldBe "java.util.Iterator.next:java.lang.String()"
-          erasedBinding.signature shouldBe "java.lang.Object()"
-
-          binding.methodFullName shouldBe "java.util.Iterator.next:java.lang.String()"
-          binding.signature shouldBe "java.lang.String()"
-
-        case result => fail(s"Expected two next bindings but found $result")
       }
     }
   }
@@ -743,19 +720,6 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
 
   "should handle complex boolean conditions" in {
     cpg.method.name("bar").ifBlock.condition.code.l shouldBe List("x || (y && z)")
-  }
-
-  "should parse a `foreach` loop as a for" in {
-    val List(forLoop: ControlStructure) = cpg.method.name("baz").forBlock.l
-    forLoop.controlStructureType shouldBe "FOR"
-    val List(iterator: Identifier, variable: Local, body: Block) = forLoop.astChildren.l
-
-    iterator.name shouldBe "xs"
-    iterator.typeFullName shouldBe "java.lang.Iterable"
-    variable.name shouldBe "x"
-    variable.typeFullName shouldBe "java.lang.Integer"
-
-    body.astChildren.head.code shouldBe "sum += x"
   }
 
   "should identify an else block" in {
