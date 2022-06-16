@@ -1,14 +1,11 @@
 package io.joern.kotlin2cpg
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class DefaultRegisteredTypesTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
-  "CPG for code with simple user-defined class" - {
-    lazy val cpg = TestContext.buildCpg("""
+class DefaultRegisteredTypesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with simple user-defined class" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class AClass
