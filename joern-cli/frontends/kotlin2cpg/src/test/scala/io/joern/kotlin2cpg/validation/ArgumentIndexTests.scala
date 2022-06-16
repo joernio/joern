@@ -1,14 +1,12 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.TestContext
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, Literal}
 import io.shiftleft.semanticcpg.language._
 
-class ArgumentIndexTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple if-expression inside DQE" - {
-    lazy val cpg = TestContext.buildCpg("""
+class ArgumentIndexTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with simple if-expression inside DQE" should {
+    lazy val cpg = code("""
         |package main
         |
         |import kotlin.random.Random
@@ -36,8 +34,8 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple when-expression inside DQE" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple when-expression inside DQE" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -65,8 +63,8 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple try-catch-expression inside DQE" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple try-catch-expression inside DQE" should {
+    lazy val cpg = code("""
         |package main
         |
         |fun main() {
@@ -92,8 +90,8 @@ class ArgumentIndexTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple qualified-expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple qualified-expression" should {
+    lazy val cpg = code("""
        |package mypkg
        |
        |import java.lang.Runtime

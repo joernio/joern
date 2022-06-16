@@ -1,21 +1,19 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.TestContext
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class DefaultImportsTests extends AnyFreeSpec with Matchers {
+class DefaultImportsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   // It tests if we take into consideration default imports: https://kotlinlang.org/docs/packages.html#default-imports
-  "cpg.typ.typeDeclFullName of constructed CPG should remain the same regardless if one uses default imports or explicitly uses FQNs" - {
+  "cpg.typ.typeDeclFullName of constructed CPG should remain the same regardless if one uses default imports or explicitly uses FQNs" should {
     "for kotlin.collections.mapOf" in {
-      val cpgExplicitFQNs = TestContext.buildCpg("""
+      val cpgExplicitFQNs = code("""
             |fun main(args: Array<String>) {
             |    val foo = kotlin.collections.mapOf("one" to 1)
             |}
             |""".stripMargin)
 
-      val cpgDefaultImports = TestContext.buildCpg("""
+      val cpgDefaultImports = code("""
             |fun main(args: Array<String>) {
             |    val foo = mapOf("one" to 1)
             |}
@@ -27,12 +25,12 @@ class DefaultImportsTests extends AnyFreeSpec with Matchers {
     }
 
     "for kotlin.comparisons.maxOf" in {
-      val cpgExplicitFQNs = TestContext.buildCpg("""
+      val cpgExplicitFQNs = code("""
             |fun main(args: Array<String>) {
             |    val foo = kotlin.comparisons.maxOf(5, 100)
             |}
             |""".stripMargin)
-      val cpgDefaultImports = TestContext.buildCpg("""
+      val cpgDefaultImports = code("""
             |fun main(args: Array<String>) {
             |    val foo = maxOf(5, 100)
             |}
