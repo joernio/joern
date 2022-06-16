@@ -1495,6 +1495,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): NewIdentifier = {
     NewIdentifier()
       .name(local.name)
+      .code(local.name)
       .typeFullName(local.typeFullName)
       .lineNumber(lineNumber)
       .order(order)
@@ -1551,15 +1552,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .name(iteratorLocalName)
         .code(iteratorLocalName)
         .typeFullName(TypeConstants.Iterator)
-        .order(1)
+        .order(order)
         .lineNumber(lineNo)
 
     // Create local assign from iterator
     val iteratorAssignNode =
       assignmentNode()
         .typeFullName(TypeConstants.Iterator)
-        .order(2)
-        .argumentIndex(2)
+        .order(order + 1)
+        .argumentIndex(order + 1)
         .lineNumber(lineNo)
     val iteratorAssignIdentifier = identifierFromNamedVarType(iteratorLocalNode, lineNo, 1)
     val iteratorMethodName = "iterator"
@@ -1601,18 +1602,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .typeFullName(TypeConstants.Boolean)
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .code(hasNextCallFullName)
-        .order(3)
-        .argumentIndex(3)
+        .order(1)
+        .argumentIndex(1)
         .lineNumber(lineNo)
-    val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 0)
+    val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 1).argumentIndex(0)
     val iteratorHasNextCallAst =
       callAst(iteratorHasNextCallNode, Seq(Ast(iteratorHasNextCallReceiver)))
         .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
         .withReceiverEdge(iteratorHasNextCallNode, iteratorHasNextCallReceiver)
 
     // Empty block update
-    val emptyUpdateNode = NewBlock().order(4).argumentIndex(4).lineNumber(lineNo)
-    val emptyUpdateAst  = Ast(emptyUpdateNode)
+//    val emptyUpdateNode = NewBlock().order(4).argumentIndex(4).lineNumber(lineNo)
+//    val emptyUpdateAst  = Ast(emptyUpdateNode)
 
     // Body
     // According to the Java language specification, there should be exactly one variable defined here.
@@ -1643,20 +1644,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val varLocalAssignIdentifier = identifierFromNamedVarType(variableLocal, lineNo, 1)
 
     val iterNextCallName = "next"
-    val iterNextCallSignature = composeMethodLikeSignature(forVariableType, parameterTypes = Nil)
+    val iterNextCallSignature = composeMethodLikeSignature(TypeConstants.Object, parameterTypes = Nil)
     val iterNextCallFullName = composeMethodFullName(TypeConstants.Iterator, iterNextCallName, iterNextCallSignature)
     val iterNextCallNode =
       NewCall()
         .name(iterNextCallName)
         .methodFullName(iterNextCallFullName)
         .signature(iterNextCallSignature)
-        .typeFullName(forVariableType)
+        .typeFullName(TypeConstants.Object)
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .code(iterNextCallFullName)
         .order(2)
         .argumentIndex(2)
         .lineNumber(lineNo)
-    val iterNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 0)
+    val iterNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 1).argumentIndex(0)
     val iterNextCallAst =
       callAst(iterNextCallNode, Seq(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
@@ -1670,10 +1671,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val bodyPrefixAsts = Seq(Ast(variableLocal), varLocalAssignAst)
     val bodyAst = stmt.getBody match {
       case block: BlockStmt =>
-        astForBlockStatement(block, 5, prefixAsts = bodyPrefixAsts)
+        astForBlockStatement(block, 2, prefixAsts = bodyPrefixAsts)
 
       case bodyStmt =>
-        val bodyBlockNode = NewBlock().order(5).argumentIndex(5).lineNumber(lineNo)
+        val bodyBlockNode = NewBlock().order(2).argumentIndex(2).lineNumber(lineNo)
         val bodyStmtAsts = astsForStatement(bodyStmt, bodyPrefixAsts.size + 1)
         Ast(bodyBlockNode)
         .withChildren(bodyPrefixAsts)
@@ -1682,50 +1683,55 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val forNode =
       NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FOR)
-        .order(order)
-        .argumentIndex(order)
+        .controlStructureType(ControlStructureTypes.WHILE)
+        .order(order + 2)
+        .argumentIndex(order + 3)
         .code(ControlStructureTypes.FOR)
         .lineNumber(lineNo)
         .columnNumber(column(stmt))
 
+//    val forAst = Ast(forNode)
+//      .withChild(Ast(iteratorLocalNode))
+//      .withChild(iteratorAssignAst)
+//      .withChild(iteratorHasNextCallAst)
+//      .withChild(emptyUpdateAst)
+//      .withChild(bodyAst)
+
     val forAst = Ast(forNode)
-      .withChild(Ast(iteratorLocalNode))
-      .withChild(iteratorAssignAst)
       .withChild(iteratorHasNextCallAst)
-      .withChild(emptyUpdateAst)
       .withChild(bodyAst)
+      .withConditionEdge(forNode, iteratorHasNextCallNode)
 
-    val javaUtilIteratorTypeDecl = NewTypeDecl().name("Iterator").fullName(TypeConstants.Iterator)
-    val constructedIteratorTypeDecl = NewTypeDecl().fullName(iteratorLocalNode.typeFullName).name(TypeNodePass.fullToShortName(iteratorLocalNode.typeFullName))
+//    val javaUtilIteratorTypeDecl = NewTypeDecl().name("Iterator").fullName(TypeConstants.Iterator)
+//    val constructedIteratorTypeDecl = NewTypeDecl().fullName(iteratorLocalNode.typeFullName).name(TypeNodePass.fullToShortName(iteratorLocalNode.typeFullName))
+//
+//    val javaUtilIteratorBindings = List(
+//      BindingTableEntry(
+//        hasNextCallName,
+//        hasNextCallSignature,
+//        hasNextCallFullName
+//      ),
+//      BindingTableEntry(
+//        iterNextCallName,
+//        iterNextCallSignature,
+//        iterNextCallFullName
+//      )
+//    )
+//
+//    val javaUtilIteratorBindingTable = getFlatBindingTable(javaUtilIteratorTypeDecl, javaUtilIteratorBindings)
+//    createBindingNodes(javaUtilIteratorTypeDecl, javaUtilIteratorBindingTable)
+//
+//    val constructedIteratorBindings = List(
+//      BindingTableEntry(
+//        iteratorMethodName,
+//        iteratorMethodSignature,
+//        iteratorMethodFullName
+//      )
+//    )
+//    val constructedIteratorBindingTable = getFlatBindingTable(constructedIteratorTypeDecl, constructedIteratorBindings)
+//    createBindingNodes(constructedIteratorTypeDecl, constructedIteratorBindingTable)
 
-    val javaUtilIteratorBindings = List(
-      BindingTableEntry(
-        hasNextCallName,
-        hasNextCallSignature,
-        hasNextCallFullName
-      ),
-      BindingTableEntry(
-        iterNextCallName,
-        iterNextCallSignature,
-        iterNextCallFullName
-      )
-    )
-
-    val javaUtilIteratorBindingTable = getFlatBindingTable(javaUtilIteratorTypeDecl, javaUtilIteratorBindings)
-    createBindingNodes(javaUtilIteratorTypeDecl, javaUtilIteratorBindingTable)
-
-    val constructedIteratorBindings = List(
-      BindingTableEntry(
-        iteratorMethodName,
-        iteratorMethodSignature,
-        iteratorMethodFullName
-      )
-    )
-    val constructedIteratorBindingTable = getFlatBindingTable(constructedIteratorTypeDecl, constructedIteratorBindings)
-    createBindingNodes(constructedIteratorTypeDecl, constructedIteratorBindingTable)
-
-    Seq(forAst)
+    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst)
   }
 
   def astForForEach(stmt: ForEachStmt, order: Int): Seq[Ast] = {
@@ -3083,7 +3089,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val lambdaMethodNode = createLambdaMethodNode(expr, parametersWithoutThis, returnType)
     addLambdaMethodBindingToDiffGraph(lambdaMethodNode)
 
-    val methodReturnNode = methodReturnNode(returnType, None,  line(expr), column(expr))
+    val returnNode = methodReturnNode(returnType, None,  line(expr), column(expr))
     val virtualModifier = Some(NewModifier().modifierType(ModifierTypes.VIRTUAL))
     val staticModifier  = Option.when(thisParam.isEmpty)(NewModifier().modifierType(ModifierTypes.STATIC))
     val privateModifier = Some(NewModifier().modifierType(ModifierTypes.PRIVATE))
@@ -3106,7 +3112,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .withChildren(modifiers)
         .withChildren(parameters)
         .withChild(lambdaMethodBody)
-        .withChild(Ast(methodReturnNode))
+        .withChild(Ast(returnNode))
 
     val lambdaMethodAst = identifiersMatchingParams.foldLeft(lambdaMethodAstWithoutRefs)((ast, identifier) =>
       ast.withRefEdge(identifier, lambdaParameterNamesToNodes(identifier.name))
