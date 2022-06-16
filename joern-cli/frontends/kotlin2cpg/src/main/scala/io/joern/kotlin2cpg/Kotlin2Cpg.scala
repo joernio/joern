@@ -51,6 +51,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
           System.exit(1)
         }
+
+        val maxHeapSize          = Runtime.getRuntime().maxMemory()
+        val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
+        logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
+
         val dependenciesPaths =
           if (config.downloadDependencies) {
             val gradleParams = Map(
