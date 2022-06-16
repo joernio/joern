@@ -33,7 +33,7 @@ object AstGenRunner {
 
   def execute(in: File, out: File): AstGenRunnerResult = {
     logger.debug(s"\t+ Running astgen in '$in' ...")
-    ExternalCommand.run(s"astgen -o $out", in.toString()) match {
+    ExternalCommand.run(s"astgen -t JavaScript -o $out", in.toString()) match {
       case Success(result) =>
         val parsed  = SourceFiles.determine(Set(out.toString()), Set(".json")).toSet
         val skipped = skippedFiles(in, result.toSet)
