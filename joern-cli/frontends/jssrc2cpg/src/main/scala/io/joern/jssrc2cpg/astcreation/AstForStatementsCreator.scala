@@ -16,8 +16,28 @@ trait AstForStatementsCreator {
 
   this: AstCreator =>
 
+  private def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = {
+    if (hasKey(alias.json, "right")) {
+      createBabelNodeInfo(alias.json("right")).node.toString == BabelAst.TSTypeReference.toString
+    } else {
+      createBabelNodeInfo(alias.json("typeAnnotation")).node.toString == BabelAst.TSTypeReference.toString
+    }
+  }
+
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
-    val blockStmts = json.arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toList
+    val blockStmts = json.arr
+      .map(createBabelNodeInfo)
+      .sortBy {
+        case _ @BabelNodeInfo(BabelAst.FunctionDeclaration)                            => 0
+        case a @ BabelNodeInfo(BabelAst.DeclareTypeAlias) if isPlainTypeAlias(a)       => 3
+        case a @ BabelNodeInfo(BabelAst.TypeAlias) if isPlainTypeAlias(a)              => 3
+        case a @ BabelNodeInfo(BabelAst.TSTypeAliasDeclaration) if isPlainTypeAlias(a) => 3
+        case _ @BabelNodeInfo(BabelAst.DeclareTypeAlias)                               => 2
+        case _ @BabelNodeInfo(BabelAst.TypeAlias)                                      => 2
+        case _ @BabelNodeInfo(BabelAst.TSTypeAliasDeclaration)                         => 2
+        case _                                                                         => 1
+      }
+      .toList
     val blockAsts = blockStmts.map {
       case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
         astForFunctionDeclaration(func, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)

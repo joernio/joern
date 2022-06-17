@@ -47,10 +47,10 @@ class AstCreator(
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
   protected val typeFullNameToPostfix         = mutable.HashMap.empty[String, Int]
-  protected val typeToNameAndFullName         = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
-  protected val functionFullNames             = mutable.HashSet.empty[String]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
+  protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
+  protected val functionFullNames             = mutable.HashSet.empty[String]
 
   // we track line and column numbers manually because astgen / @babel-parser sometimes
   // fails to deliver them at all -  strange, but this even happens with its latest version
@@ -135,6 +135,9 @@ class AstCreator(
     case arrowExpr @ BabelNodeInfo(BabelAst.ArrowFunctionExpression)       => astForFunctionDeclaration(arrowExpr)
     case funcExpr @ BabelNodeInfo(BabelAst.FunctionExpression)             => astForFunctionDeclaration(funcExpr)
     case tsEnum @ BabelNodeInfo(BabelAst.TSEnumDeclaration)                => astForEnum(tsEnum)
+    case alias @ BabelNodeInfo(BabelAst.DeclareTypeAlias)                  => astForTypeAlias(alias)
+    case alias @ BabelNodeInfo(BabelAst.TypeAlias)                         => astForTypeAlias(alias)
+    case alias @ BabelNodeInfo(BabelAst.TSTypeAliasDeclaration)            => astForTypeAlias(alias)
     case newExpr @ BabelNodeInfo(BabelAst.NewExpression)                   => astForNewExpression(newExpr)
     case thisExpr @ BabelNodeInfo(BabelAst.ThisExpression)                 => astForThisExpression(thisExpr)
     case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)             => astForMemberExpression(memberExpr)

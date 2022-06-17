@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -20,6 +21,48 @@ import scala.util.Try
 trait AstForTypesCreator {
 
   this: AstCreator =>
+
+  protected def astForTypeAlias(alias: BabelNodeInfo): Ast = {
+    val (aliasName, aliasFullName) = calcTypeNameAndFullName(alias)
+    val name = if (hasKey(alias.json, "right")) {
+      typeFor(createBabelNodeInfo(alias.json("right")))
+    } else {
+      typeFor(createBabelNodeInfo(alias.json))
+    }
+    registerType(aliasName, aliasFullName)
+
+    val astParentType     = methodAstParentStack.head.label
+    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+
+    val aliasTypeDeclNode =
+      createTypeDeclNode(aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
+    seenAliasTypes.add(aliasTypeDeclNode)
+
+    val typeDeclNodeAst =
+      if (
+        !Defines.values
+          .exists { case typeName: Defines.Tpe => typeName.label == name } && !seenAliasTypes.exists(_.name == name)
+      ) {
+        val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Some(name))
+        val typeDeclNode = createTypeDeclNode(
+          typeName,
+          typeFullName,
+          parserResult.filename,
+          alias.code,
+          astParentType,
+          astParentFullName,
+          alias = Some(aliasFullName)
+        )
+        registerType(typeName, typeFullName)
+        Ast(typeDeclNode)
+      } else {
+        seenAliasTypes
+          .collectFirst { case typeDecl if typeDecl.name == name => Ast(typeDecl.aliasTypeFullName(aliasFullName)) }
+          .getOrElse(Ast())
+      }
+
+    Ast(aliasTypeDeclNode).merge(typeDeclNodeAst)
+  }
 
   private def isConstructor(json: Value): Boolean = {
     createBabelNodeInfo(json) match {
@@ -139,6 +182,7 @@ trait AstForTypesCreator {
       astParentType,
       astParentFullName
     )
+    seenAliasTypes.add(typeDeclNode)
 
     addModifier(typeDeclNode, tsEnum.json)
 
@@ -183,6 +227,7 @@ trait AstForTypesCreator {
       astParentFullName,
       inherits = superClass ++ implements ++ mixins
     )
+    seenAliasTypes.add(typeDeclNode)
 
     addModifier(typeDeclNode, clazz.json)
 
@@ -317,6 +362,7 @@ trait AstForTypesCreator {
       astParentFullName,
       inherits = extendz
     )
+    seenAliasTypes.add(typeDeclNode)
 
     addModifier(typeDeclNode, tsInterface.json)
 

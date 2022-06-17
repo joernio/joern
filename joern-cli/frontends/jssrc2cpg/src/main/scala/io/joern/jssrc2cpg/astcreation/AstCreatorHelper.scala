@@ -209,7 +209,10 @@ trait AstCreatorHelper {
     }
   }
 
-  protected def calcTypeNameAndFullName(classNode: BabelNodeInfo): (String, String) = {
+  protected def calcTypeNameAndFullName(
+    classNode: BabelNodeInfo,
+    preCalculatedName: Option[String] = None
+  ): (String, String) = {
     def calcTypeName(classNode: BabelNodeInfo): String = {
       val typeName = Try(createBabelNodeInfo(classNode.json("id")).code).toOption match {
         case Some(ident) => ident
@@ -220,26 +223,20 @@ trait AstCreatorHelper {
       typeName
     }
 
-    typeToNameAndFullName.get(classNode) match {
-      case Some(nameAndFullName) =>
-        nameAndFullName
-      case None =>
-        val name             = calcTypeName(classNode)
-        val fullNamePrefix   = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
-        val intendedFullName = fullNamePrefix + name
-        val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
+    val name             = preCalculatedName.getOrElse(calcTypeName(classNode))
+    val fullNamePrefix   = parserResult.filename + ":" + computeScopePath(scope.getScopeHead) + ":"
+    val intendedFullName = fullNamePrefix + name
+    val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
 
-        val resultingFullName =
-          if (postfix == 0) {
-            intendedFullName
-          } else {
-            intendedFullName + postfix.toString
-          }
+    val resultingFullName =
+      if (postfix == 0) {
+        intendedFullName
+      } else {
+        intendedFullName + postfix.toString
+      }
 
-        typeFullNameToPostfix.put(intendedFullName, postfix + 1)
-        (name, resultingFullName)
-    }
-
+    typeFullNameToPostfix.put(intendedFullName, postfix + 1)
+    (name, resultingFullName)
   }
 
   protected def createVariableReferenceLinks(): Unit = {
