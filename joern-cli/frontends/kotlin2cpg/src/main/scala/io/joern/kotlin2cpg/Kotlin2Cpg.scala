@@ -44,11 +44,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       if (config.inputPaths.size == 1) {
         val sourceDir = config.inputPaths.head
         if (!Files.exists(Paths.get(sourceDir))) {
-          println("The specified input path `" + sourceDir + "` is not a file that exists. Exiting.")
+          println(s"The specified input path `$sourceDir` is not a file that exists. Exiting.")
           System.exit(1)
         }
         if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
+          println(s"The specified input path `$sourceDir` is not a directory. Exiting.")
           System.exit(1)
         }
 
@@ -56,32 +56,16 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
         logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
 
-        val dependenciesPaths =
-          if (config.downloadDependencies) {
-            val gradleParams = Map(
-              GradleConfigKeys.ProjectName       -> config.gradleProjectName,
-              GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
-            ).collect { case (key, Some(value)) => (key, value) }
-
-            val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
-            DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
-              case Some(deps) =>
-                logger.info(s"Using ${deps.size} dependency jars.")
-                deps
-              case None =>
-                logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
-                println("Could not fetch dependencies when explicitly asked to. Exiting.")
-                System.exit(1)
-                Seq()
-            }
-          } else {
-            logger.info(s"Not using any dependency jars.")
-            Seq()
-          }
+        val dependenciesPaths = if (config.downloadDependencies) {
+          downloadDependencies(sourceDir, config)
+        } else {
+          logger.info(s"Not using any dependency jars.")
+          Seq()
+        }
 
         val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
         if (filesWithKtExtension.isEmpty) {
-          println("The provided input directory does not contain files ending in '.kt' `" + sourceDir + "`. Exiting.")
+          println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
           System.exit(1)
         }
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
@@ -105,27 +89,28 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val stdlibJars =
           if (config.withStdlibJarsInClassPath) ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
           else Seq()
-        val defaultContentRootJars =
-          stdlibJars ++
-            jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
-            dependenciesPaths.map { path =>
-              DefaultContentRootJarPath(path, false)
-            }
+        val defaultContentRootJars = stdlibJars ++
+          jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+          dependenciesPaths.map { path =>
+            DefaultContentRootJarPath(path, false)
+          }
         val messageCollector        = new ErrorLoggingMessageCollector
         val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-        val plugins                 = Seq()
+        if (dirsForSourcesToCompile.isEmpty) {
+          logger.warn("The list of directories to analyze is empty.")
+        }
+        val plugins = Seq()
         val environment =
           CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
-        val sources =
-          entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-            .filterNot { entry =>
-              config.ignorePaths.exists { pathToIgnore =>
-                val parent = Paths.get(pathToIgnore).toAbsolutePath()
-                val child  = Paths.get(entry.filename)
-                child.startsWith(parent)
-              }
-            }
+        val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+        val sources = sourceEntries.filterNot { entry =>
+          config.ignorePaths.exists { pathToIgnore =>
+            val parent = Paths.get(pathToIgnore).toAbsolutePath()
+            val child  = Paths.get(entry.filename)
+            child.startsWith(parent)
+          }
+        }
         val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
         val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
@@ -145,6 +130,25 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         println("This frontend requires exactly one input path")
         System.exit(1)
       }
+    }
+  }
+
+  private def downloadDependencies(sourceDir: String, config: Config): scala.collection.Seq[String] = {
+    val gradleParams = Map(
+      GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+    ).collect { case (key, Some(value)) => (key, value) }
+
+    val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+    DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
+      case Some(deps) =>
+        logger.info(s"Using ${deps.size} dependency jars.")
+        deps
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
+        println("Could not fetch dependencies when explicitly asked to. Exiting.")
+        System.exit(1)
+        Seq()
     }
   }
 
@@ -177,7 +181,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         // TODO: support Windows paths
         val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
         if (willFilter) {
-          logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
+          logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
         }
         willFilter
       }
