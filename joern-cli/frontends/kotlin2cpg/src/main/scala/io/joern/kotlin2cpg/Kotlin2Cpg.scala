@@ -96,11 +96,15 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           }
         val messageCollector        = new ErrorLoggingMessageCollector
         val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-        val plugins                 = Seq()
+        if (dirsForSourcesToCompile.isEmpty) {
+          logger.warn("The list of directories to analyze is empty.")
+        }
+        val plugins = Seq()
         val environment =
           CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
-        val sources = entriesForSources(environment.getSourceFiles.asScala, sourceDir).filterNot { entry =>
+        val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+        val sources = sourceEntries.filterNot { entry =>
           config.ignorePaths.exists { pathToIgnore =>
             val parent = Paths.get(pathToIgnore).toAbsolutePath()
             val child  = Paths.get(entry.filename)
