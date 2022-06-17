@@ -56,13 +56,12 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
         logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
 
-        val dependenciesPaths =
-          if (config.downloadDependencies) {
-            downloadDependencies(sourceDir, config)
-          } else {
-            logger.info(s"Not using any dependency jars.")
-            Seq()
-          }
+        val dependenciesPaths = if (config.downloadDependencies) {
+          downloadDependencies(sourceDir, config)
+        } else {
+          logger.info(s"Not using any dependency jars.")
+          Seq()
+        }
 
         val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
         if (filesWithKtExtension.isEmpty) {
@@ -90,27 +89,24 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val stdlibJars =
           if (config.withStdlibJarsInClassPath) ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
           else Seq()
-        val defaultContentRootJars =
-          stdlibJars ++
-            jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
-            dependenciesPaths.map { path =>
-              DefaultContentRootJarPath(path, false)
-            }
+        val defaultContentRootJars = stdlibJars ++
+          jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+          dependenciesPaths.map { path =>
+            DefaultContentRootJarPath(path, false)
+          }
         val messageCollector        = new ErrorLoggingMessageCollector
         val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
         val plugins                 = Seq()
         val environment =
           CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
 
-        val sources =
-          entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-            .filterNot { entry =>
-              config.ignorePaths.exists { pathToIgnore =>
-                val parent = Paths.get(pathToIgnore).toAbsolutePath()
-                val child  = Paths.get(entry.filename)
-                child.startsWith(parent)
-              }
-            }
+        val sources = entriesForSources(environment.getSourceFiles.asScala, sourceDir).filterNot { entry =>
+          config.ignorePaths.exists { pathToIgnore =>
+            val parent = Paths.get(pathToIgnore).toAbsolutePath()
+            val child  = Paths.get(entry.filename)
+            child.startsWith(parent)
+          }
+        }
         val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
         val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
