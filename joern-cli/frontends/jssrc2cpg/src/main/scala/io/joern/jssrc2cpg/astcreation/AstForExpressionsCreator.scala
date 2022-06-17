@@ -80,7 +80,7 @@ trait AstForExpressionsCreator {
               (receiverAst, None, receiverAst, baseNode)
             case _ =>
               // TODO: check for used nodes
-              val tmpVarName  = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+              val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = createIdentifierNode(tmpVarName, base)
               scope.addVariableReference(tmpVarName, baseTmpNode)
               val baseAst = astForNodeWithFunctionReference(base.json)
@@ -133,7 +133,7 @@ trait AstForExpressionsCreator {
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
-    val tmpAllocName      = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+    val tmpAllocName      = generateUnusedVariableName(usedVariableNames, "_tmp")
     val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.ANY.label)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
 
@@ -395,7 +395,7 @@ trait AstForExpressionsCreator {
       scope.pushNewBlockScope(blockNode)
       localAstParentStack.push(blockNode)
 
-      val tmpName      = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+      val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
       val localTmpNode = createLocalNode(tmpName, Defines.ANY.label)
       diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
 
@@ -482,7 +482,7 @@ trait AstForExpressionsCreator {
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
-    val tmpName   = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+    val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
     val localNode = createLocalNode(tmpName, Defines.ANY.label)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 

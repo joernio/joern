@@ -10,6 +10,14 @@ trait TypeHelper {
   private val RETURN_TYPE_KEY       = "returnType"
   private val TYPE_NOT_HANDLED_TEXT = "Type calculation"
 
+  protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = {
+    if (hasKey(alias.json, "right")) {
+      createBabelNodeInfo(alias.json("right")).node.toString == BabelAst.TSTypeReference.toString
+    } else {
+      createBabelNodeInfo(alias.json("typeAnnotation")).node.toString == BabelAst.TSTypeReference.toString
+    }
+  }
+
   private def typeForFlowType(flowType: BabelNodeInfo): String = {
     flowType.node match {
       case BabelAst.AnyTypeAnnotation            => Defines.ANY.label

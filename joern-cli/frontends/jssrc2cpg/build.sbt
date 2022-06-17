@@ -21,6 +21,8 @@ scalacOptions ++= Seq() ++ (
     case Some((3, _)) => Seq()
     case _ =>
       Seq(
+        "-Ypatmat-exhaust-depth",
+        "40",
         "-deprecation", // Emit warning and location for usages of deprecated APIs.
         "-encoding",
         "utf-8",         // Specify character encoding used by source files.
