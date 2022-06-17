@@ -44,11 +44,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       if (config.inputPaths.size == 1) {
         val sourceDir = config.inputPaths.head
         if (!Files.exists(Paths.get(sourceDir))) {
-          println("The specified input path `" + sourceDir + "` is not a file that exists. Exiting.")
+          println(s"The specified input path `$sourceDir` is not a file that exists. Exiting.")
           System.exit(1)
         }
         if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
+          println(s"The specified input path `$sourceDir` is not a directory. Exiting.")
           System.exit(1)
         }
 
@@ -81,7 +81,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 
         val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
         if (filesWithKtExtension.isEmpty) {
-          println("The provided input directory does not contain files ending in '.kt' `" + sourceDir + "`. Exiting.")
+          println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
           System.exit(1)
         }
         logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
@@ -177,7 +177,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         // TODO: support Windows paths
         val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
         if (willFilter) {
-          logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
+          logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
         }
         willFilter
       }
