@@ -58,22 +58,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 
         val dependenciesPaths =
           if (config.downloadDependencies) {
-            val gradleParams = Map(
-              GradleConfigKeys.ProjectName       -> config.gradleProjectName,
-              GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
-            ).collect { case (key, Some(value)) => (key, value) }
-
-            val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
-            DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
-              case Some(deps) =>
-                logger.info(s"Using ${deps.size} dependency jars.")
-                deps
-              case None =>
-                logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
-                println("Could not fetch dependencies when explicitly asked to. Exiting.")
-                System.exit(1)
-                Seq()
-            }
+            downloadDependencies(sourceDir, config)
           } else {
             logger.info(s"Not using any dependency jars.")
             Seq()
@@ -145,6 +130,25 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         println("This frontend requires exactly one input path")
         System.exit(1)
       }
+    }
+  }
+
+  private def downloadDependencies(sourceDir: String, config: Config): scala.collection.Seq[String] = {
+    val gradleParams = Map(
+      GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+    ).collect { case (key, Some(value)) => (key, value) }
+
+    val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+    DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
+      case Some(deps) =>
+        logger.info(s"Using ${deps.size} dependency jars.")
+        deps
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
+        println("Could not fetch dependencies when explicitly asked to. Exiting.")
+        System.exit(1)
+        Seq()
     }
   }
 
