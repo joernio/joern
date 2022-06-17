@@ -16,28 +16,28 @@ trait AstForStatementsCreator {
 
   this: AstCreator =>
 
-  private def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = {
-    if (hasKey(alias.json, "right")) {
-      createBabelNodeInfo(alias.json("right")).node.toString == BabelAst.TSTypeReference.toString
-    } else {
-      createBabelNodeInfo(alias.json("typeAnnotation")).node.toString == BabelAst.TSTypeReference.toString
+  /** Sort all block statements with the following result:
+    *   - all function declarations go first
+    *   - all type aliases that are not plain type references go last
+    *   - all remaining type aliases go before that
+    *   - all remaining statements go second
+    *
+    * We do this to get TypeDecls created at the right spot so we can make use of them for the type aliases.
+    */
+  private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
+    blockStatements.sortBy {
+      case _ @BabelNodeInfo(BabelAst.FunctionDeclaration)                            => 0
+      case a @ BabelNodeInfo(BabelAst.DeclareTypeAlias) if isPlainTypeAlias(a)       => 3
+      case a @ BabelNodeInfo(BabelAst.TypeAlias) if isPlainTypeAlias(a)              => 3
+      case a @ BabelNodeInfo(BabelAst.TSTypeAliasDeclaration) if isPlainTypeAlias(a) => 3
+      case _ @BabelNodeInfo(BabelAst.DeclareTypeAlias)                               => 2
+      case _ @BabelNodeInfo(BabelAst.TypeAlias)                                      => 2
+      case _ @BabelNodeInfo(BabelAst.TSTypeAliasDeclaration)                         => 2
+      case _                                                                         => 1
     }
-  }
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
-    val blockStmts = json.arr
-      .map(createBabelNodeInfo)
-      .sortBy {
-        case _ @BabelNodeInfo(BabelAst.FunctionDeclaration)                            => 0
-        case a @ BabelNodeInfo(BabelAst.DeclareTypeAlias) if isPlainTypeAlias(a)       => 3
-        case a @ BabelNodeInfo(BabelAst.TypeAlias) if isPlainTypeAlias(a)              => 3
-        case a @ BabelNodeInfo(BabelAst.TSTypeAliasDeclaration) if isPlainTypeAlias(a) => 3
-        case _ @BabelNodeInfo(BabelAst.DeclareTypeAlias)                               => 2
-        case _ @BabelNodeInfo(BabelAst.TypeAlias)                                      => 2
-        case _ @BabelNodeInfo(BabelAst.TSTypeAliasDeclaration)                         => 2
-        case _                                                                         => 1
-      }
-      .toList
+    val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
     val blockAsts = blockStmts.map {
       case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
         astForFunctionDeclaration(func, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
@@ -218,7 +218,7 @@ trait AstForStatementsCreator {
     val collectionName = code(collection)
 
     // _iterator assignment:
-    val iteratorName      = generateUnusedVariableName(usedVariableNames, Set.empty, "_iterator")
+    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
     val iteratorLocalNode = createLocalNode(iteratorName, Defines.ANY.label)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
 
@@ -279,7 +279,7 @@ trait AstForStatementsCreator {
     val iteratorAssignmentAst  = createCallAst(iteratorAssignmentNode, iteratorAssignmentArgs)
 
     // _result:
-    val resultName      = generateUnusedVariableName(usedVariableNames, Set.empty, "_result")
+    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
     val resultLocalNode = createLocalNode(resultName, Defines.ANY.label)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     val resultNode = createIdentifierNode(resultName, forInOfStmt)

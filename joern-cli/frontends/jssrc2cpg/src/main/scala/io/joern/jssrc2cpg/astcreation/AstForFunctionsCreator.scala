@@ -49,7 +49,7 @@ trait AstForFunctionsCreator {
         val rhsElement = assignmentPattern.json("right")
         createBabelNodeInfo(lhsElement) match {
           case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
-            val name = generateUnusedVariableName(usedVariableNames, Set.empty, s"param$index")
+            val name = generateUnusedVariableName(usedVariableNames, s"param$index")
             val param = createParameterInNode(
               name,
               assignmentPattern.code,
@@ -63,7 +63,7 @@ trait AstForFunctionsCreator {
             additionalBlockStatements.addOne(astForDeconstruction(objPattern, rhsAst, Some(name)))
             param
           case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-            val name = generateUnusedVariableName(usedVariableNames, Set.empty, s"param$index")
+            val name = generateUnusedVariableName(usedVariableNames, s"param$index")
             val param = createParameterInNode(
               name,
               assignmentPattern.code,
@@ -90,7 +90,7 @@ trait AstForFunctionsCreator {
             )
         }
       case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-        val name = generateUnusedVariableName(usedVariableNames, Set.empty, s"param$index")
+        val name = generateUnusedVariableName(usedVariableNames, s"param$index")
         val tpe  = typeFor(arrPattern)
         val param = createParameterInNode(
           name,
@@ -126,7 +126,7 @@ trait AstForFunctionsCreator {
         })
         param
       case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
-        val name = generateUnusedVariableName(usedVariableNames, Set.empty, s"param$index")
+        val name = generateUnusedVariableName(usedVariableNames, s"param$index")
         val tpe  = typeFor(objPattern)
         val param = createParameterInNode(
           name,

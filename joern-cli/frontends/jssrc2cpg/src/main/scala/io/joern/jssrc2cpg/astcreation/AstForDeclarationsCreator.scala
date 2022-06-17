@@ -509,7 +509,7 @@ trait AstForDeclarationsCreator {
   }
 
   protected def astForDeconstruction(pattern: BabelNodeInfo, sourceAst: Ast, paramName: Option[String] = None): Ast = {
-    val localTmpName = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+    val localTmpName = generateUnusedVariableName(usedVariableNames, "_tmp")
 
     val blockNode = createBlockNode(pattern.code, pattern.lineNumber, pattern.columnNumber)
     scope.pushNewBlockScope(blockNode)
