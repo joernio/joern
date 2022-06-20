@@ -802,18 +802,10 @@ trait KtPsiToAst {
         List(Ast(node))
       case _ => List()
     }
-
-    val astDerivedMethodFullName = Operators.fieldAccess
-    val astDerivedSignature      = ""
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType      = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val methodName   = Operators.fieldAccess
-    val dispatchType = DispatchTypes.STATIC_DISPATCH
+    val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
-    val _callNode =
-      callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr))
+    val _callNode    = operatorCallNode(Operators.fieldAccess, expr.getText, Some(retType), line(expr), column(expr))
     val root         = Ast(withArgumentIndex(_callNode, argIdx))
     val receiverNode = receiverAst.root.get
     val ast = root
