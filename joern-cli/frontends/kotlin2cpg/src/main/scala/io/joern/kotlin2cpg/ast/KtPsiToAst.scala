@@ -556,17 +556,15 @@ trait KtPsiToAst {
 
     val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(initExpr, TypeConstants.cpgUnresolved))
     val tmpName             = Constants.tmpLocalPrefix + tmpKeyPool.next
-
-    val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
-
-    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
+    val localForTmpNode     = localNode(tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
 
-    val assignmentLhsNode = identifierNode(tmpName, callRhsTypeFullName, line(expr), column(expr))
+    val assignmentLhsNode = identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
-    val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName = ${initExpr.getText}", None)
-    val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
+    val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${initExpr.getText}", None)
+    val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
+    val assignmentAst    = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
@@ -613,14 +611,14 @@ trait KtPsiToAst {
     val localForTmpAst = Ast(localForTmpNode)
 
     val assignmentRhsNode =
-      operatorCallNode(Operators.alloc, Constants.alloc, Some(ctorTypeFullName), line(expr), column(expr))
-    val assignmentLhsNode = identifierNode(tmpName, ctorTypeFullName, line(expr), column(expr))
+      operatorCallNode(Operators.alloc, Constants.alloc, Some(localForTmpNode.typeFullName), line(expr), column(expr))
+    val assignmentLhsNode = identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
     val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.alloc}", None)
     val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
 
-    val initReceiverNode = identifierNode(tmpName, ctorTypeFullName, line(expr), column(expr))
+    val initReceiverNode = identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr))
       .argumentIndex(0)
     val initReceiverAst = Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmpNode)
 
@@ -825,13 +823,11 @@ trait KtPsiToAst {
       else if (isExtensionCall) 0
       else if (isStaticCall) 1
       else 1
-    val receiverAst        = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
-    val selectorOrderCount = argIdxForReceiver
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
     val argAsts = expr.getSelectorExpression match {
       case selectorExpression: KtCallExpression =>
         withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-          val selectorOrder    = if (isStaticCall) idx else selectorOrderCount + idx + 1
-          val selectorArgIndex = if (isStaticCall) idx else selectorOrder - 1
+          val selectorArgIndex = if (isStaticCall) idx else argIdxForReceiver + idx
           astsForExpression(arg.getArgumentExpression, Some(selectorArgIndex))
         }.flatten
       case typedExpr: KtNameReferenceExpression =>
