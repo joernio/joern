@@ -832,9 +832,7 @@ trait KtPsiToAst {
         }.flatten
       case typedExpr: KtNameReferenceExpression =>
         val argIdx = if (isStaticCall) 1 else 2
-        val node =
-          fieldIdentifierNode(typedExpr.getText)
-            .argumentIndex(argIdx)
+        val node = fieldIdentifierNode(typedExpr.getText).argumentIndex(argIdx)
         List(Ast(node))
       case _ =>
         List()
