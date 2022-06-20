@@ -510,7 +510,7 @@ trait KtPsiToAst {
       }
     )
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val args = List(astsForExpression(expr.getBaseExpression, Some(1)).headOption.getOrElse(Ast()))
+    val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node = operatorCallNode(operatorType, expr.getText, Some(typeFullName), line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), args)
@@ -527,7 +527,7 @@ trait KtPsiToAst {
       }
     )
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val args = List(astsForExpression(expr.getBaseExpression, Some(1)).headOption.getOrElse(Ast()))
+    val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node = operatorCallNode(operatorType, expr.getText, Some(typeFullName), line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), args)
@@ -914,14 +914,14 @@ trait KtPsiToAst {
   }
 
   private def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val tryAstOption = astsForExpression(expr.getTryBlock, Some(1)).headOption
+    val tryAstOption = astsForExpression(expr.getTryBlock, None).headOption
       .getOrElse(Ast())
     val clauseAsts = withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, idx) =>
-      astsForExpression(entry.getCatchBody, Some(idx + 1))
+      astsForExpression(entry.getCatchBody, None)
     }.flatten
     val finallyAsts = Option(expr.getFinallyBlock)
       .map(_.getFinalExpression)
-      .map(astsForExpression(_, Some(clauseAsts.size + 2)))
+      .map(astsForExpression(_, None))
       .getOrElse(Seq())
     val node = controlStructureNode(expr.getText, ControlStructureTypes.TRY, line(expr), column(expr))
     controlStructureAst(node, None, tryAstOption :: (clauseAsts ++ finallyAsts).toList)
@@ -934,9 +934,9 @@ trait KtPsiToAst {
       // TODO: remove the `last`
       typeInfoProvider.expressionType(expr.getTryBlock.getStatements.asScala.last, TypeConstants.any)
     )
-    val tryBlockAst = astsForExpression(expr.getTryBlock, Some(1)).headOption.getOrElse(Ast())
+    val tryBlockAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
     val clauseAsts = withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, idx) =>
-      astsForExpression(entry.getCatchBody, Some(idx + 1))
+      astsForExpression(entry.getCatchBody, None)
     }.flatten
     val node = operatorCallNode(Operators.tryCatch, expr.getText, Some(typeFullName), line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), List(tryBlockAst) ++ clauseAsts)
@@ -949,15 +949,15 @@ trait KtPsiToAst {
   }
 
   def astForWhile(expr: KtWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val conditionAst = astsForExpression(expr.getCondition, Some(1)).headOption
-    val stmtAsts     = astsForExpression(expr.getBody, Some(2))
+    val conditionAst = astsForExpression(expr.getCondition, None).headOption
+    val stmtAsts     = astsForExpression(expr.getBody, None)
     val node         = controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
     controlStructureAst(node, conditionAst, stmtAsts.toList)
   }
 
   def astForDoWhile(expr: KtDoWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val conditionAst = astsForExpression(expr.getCondition, Some(2)).headOption
-    val stmtAsts     = astsForExpression(expr.getBody, Some(1))
+    val conditionAst = astsForExpression(expr.getCondition, None).headOption
+    val stmtAsts     = astsForExpression(expr.getBody, None)
     val node         = controlStructureNode(expr.getText, ControlStructureTypes.DO, line(expr), column(expr))
     controlStructureAst(node, conditionAst, stmtAsts.toList, true)
   }
