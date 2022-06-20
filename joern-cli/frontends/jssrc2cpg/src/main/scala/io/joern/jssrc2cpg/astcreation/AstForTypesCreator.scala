@@ -100,35 +100,32 @@ trait AstForTypesCreator {
     methodNode.code(code)
   }
 
-  private def fixMethodName(name: String, withTypeName: String): String =
-    name.replace("<", s"$withTypeName<")
+  private def fixMethodNames(methodNode: NewMethod, withTypeName: String): NewMethod = {
+    val name     = methodNode.name.replace("<", s"$withTypeName<")
+    val fullName = methodNode.fullName.replace("<", s"$withTypeName<")
+    methodNode.name(name).fullName(fullName)
+  }
 
   private def classConstructor(clazz: BabelNodeInfo): Option[Value] =
     classMembers(clazz).find(isConstructor)
 
   private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
-    val maybeClassConstructor = classConstructor(classExpr)
-    val methodNode = maybeClassConstructor match {
+    val methodNode = classConstructor(classExpr) match {
       case Some(classConstructor) =>
         val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(classConstructor))
         methodNode
       case _ =>
         createFakeConstructor("constructor() {}")
     }
-    val name     = fixMethodName(methodNode.name, typeName)
-    val fullName = fixMethodName(methodNode.fullName, typeName)
-    methodNode.name(name).fullName(fullName)
+    fixMethodNames(methodNode, typeName)
   }
 
   private def interfaceConstructor(typeName: String, tsInterface: BabelNodeInfo): NewMethod = {
-    val maybeInterfaceConstructor = classConstructor(tsInterface)
-    val methodNode = maybeInterfaceConstructor match {
+    val methodNode = classConstructor(tsInterface) match {
       case Some(interfaceConstructor) => createMethodDefinitionNode(createBabelNodeInfo(interfaceConstructor))
       case _                          => createFakeConstructor(s"new: $typeName")
     }
-    val name     = fixMethodName(methodNode.name, typeName)
-    val fullName = fixMethodName(methodNode.fullName, typeName)
-    methodNode.name(name).fullName(fullName)
+    fixMethodNames(methodNode, typeName)
   }
 
   private def astsForEnumMember(tsEnumMember: BabelNodeInfo): Seq[Ast] = {
@@ -192,10 +189,8 @@ trait AstForTypesCreator {
     }
   }
 
-  private def fixMethodName(method: NewMethod, withTypeName: String): NewMethod = {
-    val fullName = method.fullName.replace(s":${method.name}", s":$withTypeName:${method.name}")
-    method.fullName(fullName)
-  }
+  private def fixMethodFullName(method: NewMethod, withTypeName: String): NewMethod =
+    method.fullName(method.fullName.replace(s":${method.name}", s":$withTypeName:${method.name}"))
 
   protected def astForClass(clazz: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
@@ -259,7 +254,7 @@ trait AstForTypesCreator {
         case BabelAst.ClassMethod | BabelAst.ClassPrivateMethod =>
           val (_, function) = createMethodAstAndNode(nodeInfo)
           addModifier(function, nodeInfo.json)
-          val classMethod             = fixMethodName(function, typeName)
+          val classMethod             = fixMethodFullName(function, typeName)
           val dynamicTypeHintFullName = Some(classMethod.fullName)
           createMemberNode(classMethod.name, nodeInfo.code, dynamicTypeHintFullName)
         case _ =>
@@ -374,7 +369,7 @@ trait AstForTypesCreator {
       val memberNodes = nodeInfo.node match {
         case BabelAst.TSCallSignatureDeclaration =>
           val functionNode            = createMethodDefinitionNode(nodeInfo)
-          val classMethod             = fixMethodName(functionNode, typeName)
+          val classMethod             = fixMethodFullName(functionNode, typeName)
           val dynamicTypeHintFullName = Some(classMethod.fullName)
           val bindingNode             = createBindingNode()
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
