@@ -686,7 +686,6 @@ trait KtPsiToAst {
       line(entry),
       column(entry)
     )
-      .argumentIndex(2)
 
     val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
     val componentNAst = Ast(componentNCallNode)
@@ -998,7 +997,6 @@ trait KtPsiToAst {
       Constants.javaUtilIterator,
       DispatchTypes.DYNAMIC_DISPATCH
     )
-      .argumentIndex(2)
 
     val iteratorAssignmentRhsAst = Ast(iteratorAssignmentRhs)
       .withChild(Ast(iteratorAssignmentRhsIdentifier))
@@ -1047,7 +1045,7 @@ trait KtPsiToAst {
       s"${TypeConstants.javaLangObject}()",
       TypeConstants.javaLangObject,
       DispatchTypes.DYNAMIC_DISPATCH
-    ).argumentIndex(2)
+    )
     val iteratorNextCallAst = Ast(iteratorNextCall)
       .withChild(iteratorNextIdentifierAst)
       .withArgEdge(iteratorNextCall, iteratorNextIdentifier)
@@ -1106,7 +1104,6 @@ trait KtPsiToAst {
       Constants.javaUtilIterator,
       DispatchTypes.DYNAMIC_DISPATCH
     )
-      .argumentIndex(2)
 
     val iteratorAssignmentRhsAst = Ast(iteratorAssignmentRhs)
       .withChild(Ast(iteratorAssignmentRhsIdentifier))
@@ -1161,7 +1158,7 @@ trait KtPsiToAst {
       s"${TypeConstants.javaLangObject}()",
       TypeConstants.javaLangObject,
       DispatchTypes.DYNAMIC_DISPATCH
-    ).argumentIndex(2)
+    )
 
     val iteratorNextCallAst = Ast(iteratorNextCall)
       .withChild(iteratorNextIdentifierAst)
@@ -1292,7 +1289,6 @@ trait KtPsiToAst {
       line(expr),
       column(expr)
     )
-      .argumentIndex(2)
     val initCallAst = Ast(initCallNode)
       .withChildren(List(initReceiverAst) ++ argAsts)
       .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.root))
