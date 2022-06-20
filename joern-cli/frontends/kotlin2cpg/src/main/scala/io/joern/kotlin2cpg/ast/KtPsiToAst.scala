@@ -933,7 +933,7 @@ trait KtPsiToAst {
       typeInfoProvider.expressionType(expr.getTryBlock.getStatements.asScala.last, TypeConstants.any)
     )
     val tryBlockAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
-    val clauseAsts = withIndex(expr.getCatchClauses.asScala.toSeq) { (entry, idx) =>
+    val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { entry =>
       astsForExpression(entry.getCatchBody, None)
     }.flatten
     val node = operatorCallNode(Operators.tryCatch, expr.getText, Some(typeFullName), line(expr), column(expr))
