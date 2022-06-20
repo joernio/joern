@@ -2,8 +2,10 @@ package io.joern.javasrc2cpg.util
 
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.resolution.types.ResolvedReferenceType
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier}
 
 import scala.collection.mutable
 import scala.util.Try
@@ -48,5 +50,43 @@ object Util {
         getAllParents(ancestor, result)
       }
     }
+  }
+
+  // TODO: Move to x2cpg once order setting is no longer required
+  // TODO: Switch to this for all operators. Some were moved in https://github.com/joernio/joern/pull/1437,
+  // but that PR was long enough as is.
+  def operatorCallNode(
+    name: String,
+    code: String,
+    order: Int,
+    typeFullName: Option[String] = None,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewCall = {
+    NewCall()
+      .name(name)
+      .methodFullName(name)
+      .code(code)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(typeFullName.getOrElse(TypeConstants.UnresolvedType))
+      .lineNumber(line)
+      .columnNumber(column)
+      .order(order)
+      .argumentIndex(order)
+  }
+
+  def fieldIdentifierNode(
+    name: String,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewFieldIdentifier = {
+    NewFieldIdentifier()
+      .canonicalName(name)
+      .code(name)
+      .lineNumber(line)
+      .columnNumber(column)
+      .order(2)
+      .argumentIndex(2)
   }
 }
