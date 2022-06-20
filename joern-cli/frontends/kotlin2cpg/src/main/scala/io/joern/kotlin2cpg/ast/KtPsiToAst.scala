@@ -346,7 +346,7 @@ trait KtPsiToAst {
   }
 
   def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val children = astsForExpression(expr.getReturnedExpression, Some(1))
+    val children = astsForExpression(expr.getReturnedExpression, None)
     returnAst(returnNode(expr.getText, line(expr), column(expr)), children.toList)
   }
 
@@ -354,8 +354,8 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val args = astsForExpression(expr.getLeftHandSide, Some(1)) ++
-      Seq(astForTypeReference(expr.getTypeReference, Some(2)))
+    val args = astsForExpression(expr.getLeftHandSide, None) ++
+      Seq(astForTypeReference(expr.getTypeReference, None))
     val node = operatorCallNode(Operators.is, expr.getText, None, line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
@@ -364,7 +364,7 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val args = astsForExpression(expr.getLeft, Some(1)) ++ Seq(astForTypeReference(expr.getRight, Some(2)))
+    val args = astsForExpression(expr.getLeft, None) ++ Seq(astForTypeReference(expr.getRight, None))
     val node = operatorCallNode(Operators.cast, expr.getText, None, line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
@@ -563,7 +563,7 @@ trait KtPsiToAst {
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
 
     val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${initExpr.getText}", None)
-    val assignmentRhsAst = astsForExpression(initExpr, Some(2)).head
+    val assignmentRhsAst = astsForExpression(initExpr, None).head
     val assignmentAst    = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
@@ -1243,9 +1243,9 @@ trait KtPsiToAst {
   def astForIfAsExpression(expr: KtIfExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val conditionAsts = astsForExpression(expr.getCondition, Some(1))
-    val thenAsts      = astsForExpression(expr.getThen, Some(2))
-    val elseAsts      = astsForExpression(expr.getElse, Some(3))
+    val conditionAsts = astsForExpression(expr.getCondition, None)
+    val thenAsts      = astsForExpression(expr.getThen, None)
+    val elseAsts      = astsForExpression(expr.getElse, None)
 
     val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = operatorCallNode(Operators.conditional, expr.getText, Some(returnTypeFullName), line(expr), column(expr))
