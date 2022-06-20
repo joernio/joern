@@ -805,15 +805,12 @@ trait KtPsiToAst {
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
-    val _callNode    = operatorCallNode(Operators.fieldAccess, expr.getText, Some(retType), line(expr), column(expr))
-    val root         = Ast(withArgumentIndex(_callNode, argIdx))
-    val receiverNode = receiverAst.root.get
-    val ast = root
-      .withChild(receiverAst)
-      .withArgEdge(_callNode, receiverNode)
-      .withChildren(argAsts)
-      .withArgEdges(_callNode, argAsts.map(_.root.get))
-    ast.withReceiverEdge(_callNode, receiverNode)
+    val node = operatorCallNode(Operators.fieldAccess, expr.getText, Some(retType), line(expr), column(expr))
+    val nodeWithIdx = argIdx match {
+      case Some(idx) => node.argumentIndex(idx)
+      case None      => node
+    }
+    callAst(nodeWithIdx, List(receiverAst) ++ argAsts.toList)
   }
 
   private def astDerivedFullNameWithSignature(expr: KtQualifiedExpression, argAsts: List[Ast])(implicit
