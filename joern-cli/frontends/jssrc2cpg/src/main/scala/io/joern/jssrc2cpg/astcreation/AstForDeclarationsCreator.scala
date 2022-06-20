@@ -367,13 +367,7 @@ trait AstForDeclarationsCreator {
       val accessAst =
         createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       Ast.storeInDiffGraph(accessAst, diffGraph)
-      val voidCallNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        element.lineNumber,
-        element.columnNumber
-      )
+      val voidCallNode = createVoidCallNode(element.lineNumber, element.columnNumber)
       createEqualsCallAst(accessAst.nodes.head, voidCallNode, element.lineNumber, element.columnNumber)
     }
     Ast.storeInDiffGraph(testAst, diffGraph)
@@ -432,13 +426,7 @@ trait AstForDeclarationsCreator {
       val accessAst =
         createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       Ast.storeInDiffGraph(accessAst, diffGraph)
-      val voidCallNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        element.lineNumber,
-        element.columnNumber
-      )
+      val voidCallNode = createVoidCallNode(element.lineNumber, element.columnNumber)
       createEqualsCallAst(accessAst.nodes.head, voidCallNode, element.lineNumber, element.columnNumber)
     }
     Ast.storeInDiffGraph(testAst, diffGraph)

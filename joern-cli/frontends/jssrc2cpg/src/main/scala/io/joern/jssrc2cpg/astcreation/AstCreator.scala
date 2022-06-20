@@ -158,7 +158,7 @@ class AstCreator(
       case BabelAst.ConditionalExpression    => astForConditionalExpression(nodeInfo)
       case BabelAst.TaggedTemplateExpression => astForTemplateExpression(nodeInfo)
       case BabelAst.ObjectExpression         => astForObjectExpression(nodeInfo)
-      case BabelAst.YieldExpression          => astForYieldExpression(nodeInfo)
+      case BabelAst.YieldExpression          => astForReturnStatement(nodeInfo)
       case BabelAst.ExpressionStatement      => astForExpressionStatement(nodeInfo)
       case BabelAst.IfStatement              => astForIfStatement(nodeInfo)
       case BabelAst.BlockStatement           => astForBlockStatement(nodeInfo)

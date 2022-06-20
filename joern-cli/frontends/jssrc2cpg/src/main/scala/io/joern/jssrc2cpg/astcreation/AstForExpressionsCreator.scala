@@ -12,7 +12,6 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import ujson.Obj
 
 import scala.util.Try
 
@@ -79,7 +78,6 @@ trait AstForExpressionsCreator {
               scope.addVariableReference(base.code, baseNode)
               (receiverAst, None, receiverAst, baseNode)
             case _ =>
-              // TODO: check for used nodes
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = createIdentifierNode(tmpVarName, base)
               scope.addVariableReference(tmpVarName, baseTmpNode)
@@ -445,16 +443,6 @@ trait AstForExpressionsCreator {
       setIndices(blockChildrenAsts)
       Ast(blockNode).withChildren(blockChildrenAsts)
     }
-  }
-
-  protected def astForYieldExpression(yieldExpr: BabelNodeInfo): Ast = {
-    val retNode = createReturnNode(yieldExpr)
-    safeObj(yieldExpr.json, "argument")
-      .map { argument =>
-        val argAst = astForNode(Obj(argument))
-        createReturnAst(retNode, List(argAst))
-      }
-      .getOrElse(Ast(retNode))
   }
 
   def astForTemplateExpression(templateExpr: BabelNodeInfo): Ast = {
