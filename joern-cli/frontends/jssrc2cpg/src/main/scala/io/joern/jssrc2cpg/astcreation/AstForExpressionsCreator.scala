@@ -211,15 +211,12 @@ trait AstForExpressionsCreator {
         Operators.assignment
     }
 
-    createBabelNodeInfo(assignment.json("left")) match {
-      case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
+    val nodeInfo = createBabelNodeInfo(assignment.json("left"))
+    nodeInfo.node match {
+      case BabelAst.ObjectPattern | BabelAst.ArrayPattern =>
         val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
         Ast.storeInDiffGraph(rhsAst, diffGraph)
-        astForDeconstruction(objPattern, rhsAst)
-      case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-        val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
-        Ast.storeInDiffGraph(rhsAst, diffGraph)
-        astForDeconstruction(arrPattern, rhsAst)
+        astForDeconstruction(nodeInfo, rhsAst)
       case _ =>
         val lhsAst = astForNode(assignment.json("left"))
         val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
@@ -487,27 +484,30 @@ trait AstForExpressionsCreator {
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
-      val propertyInfo = createBabelNodeInfo(property)
-      val (lhsNode, rhsAst) = propertyInfo match {
-        case objMethod @ BabelNodeInfo(BabelAst.ObjectMethod) =>
-          val keyName = objMethod.json("key")("name").str
-          val keyNode = createFieldIdentifierNode(keyName, objMethod.lineNumber, objMethod.columnNumber)
-          (keyNode, astForFunctionDeclaration(objMethod, shouldCreateFunctionReference = true))
-        case objProperty @ BabelNodeInfo(BabelAst.ObjectProperty) =>
-          val keyName = code(objProperty.json("key"))
-          val keyNode = createFieldIdentifierNode(keyName, objProperty.lineNumber, objProperty.columnNumber)
-          val ast     = astForNodeWithFunctionReference(objProperty.json("value"))
+      val nodeInfo = createBabelNodeInfo(property)
+      val (lhsNode, rhsAst) = nodeInfo.node match {
+        case BabelAst.ObjectMethod =>
+          val keyName = nodeInfo.json("key")("name").str
+          val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
+          (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
+        case BabelAst.ObjectProperty =>
+          val keyName = code(nodeInfo.json("key"))
+          val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
+          val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
           (keyNode, ast)
-        case spread @ BabelNodeInfo(BabelAst.SpreadElement) =>
-          val keyName = code(spread.json("argument"))
-          val keyNode = createFieldIdentifierNode(keyName, spread.lineNumber, spread.columnNumber)
-          (keyNode, astForNode(spread.json))
-        case _ => ???
+        case BabelAst.SpreadElement =>
+          val keyName = code(nodeInfo.json("argument"))
+          val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
+          (keyNode, astForNode(nodeInfo.json))
+        case _ =>
+          // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
+          // just to make the compiler happy here.
+          ???
       }
 
-      val leftHandSideTmpNode = createIdentifierNode(tmpName, propertyInfo)
+      val leftHandSideTmpNode = createIdentifierNode(tmpName, nodeInfo)
       val leftHandSideFieldAccessAst =
-        createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, propertyInfo.lineNumber, propertyInfo.columnNumber)
+        createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
 
       Ast.storeInDiffGraph(leftHandSideFieldAccessAst, diffGraph)
       Ast.storeInDiffGraph(rhsAst, diffGraph)
@@ -516,8 +516,8 @@ trait AstForExpressionsCreator {
         leftHandSideFieldAccessAst.nodes.head,
         rhsAst.nodes.head,
         s"$tmpName.${lhsNode.canonicalName} = ${codeOf(rhsAst.nodes.head)}",
-        propertyInfo.lineNumber,
-        propertyInfo.columnNumber
+        nodeInfo.lineNumber,
+        nodeInfo.columnNumber
       )
     }
 

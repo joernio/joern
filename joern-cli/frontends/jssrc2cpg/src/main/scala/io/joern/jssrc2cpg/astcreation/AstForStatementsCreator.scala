@@ -25,24 +25,27 @@ trait AstForStatementsCreator {
     * We do this to get TypeDecls created at the right spot so we can make use of them for the type aliases.
     */
   private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
-    blockStatements.sortBy {
-      case _ @BabelNodeInfo(BabelAst.FunctionDeclaration)                            => 0
-      case a @ BabelNodeInfo(BabelAst.DeclareTypeAlias) if isPlainTypeAlias(a)       => 3
-      case a @ BabelNodeInfo(BabelAst.TypeAlias) if isPlainTypeAlias(a)              => 3
-      case a @ BabelNodeInfo(BabelAst.TSTypeAliasDeclaration) if isPlainTypeAlias(a) => 3
-      case _ @BabelNodeInfo(BabelAst.DeclareTypeAlias)                               => 2
-      case _ @BabelNodeInfo(BabelAst.TypeAlias)                                      => 2
-      case _ @BabelNodeInfo(BabelAst.TSTypeAliasDeclaration)                         => 2
-      case _                                                                         => 1
+    blockStatements.sortBy { nodeInfo =>
+      nodeInfo.node match {
+        case BabelAst.FunctionDeclaration                                  => 0
+        case BabelAst.DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 3
+        case BabelAst.TypeAlias if isPlainTypeAlias(nodeInfo)              => 3
+        case BabelAst.TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 3
+        case BabelAst.DeclareTypeAlias                                     => 2
+        case BabelAst.TypeAlias                                            => 2
+        case BabelAst.TSTypeAliasDeclaration                               => 2
+        case _                                                             => 1
+      }
     }
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
     val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
-    val blockAsts = blockStmts.map {
-      case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-        astForFunctionDeclaration(func, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-      case other =>
-        astForNode(other.json)
+    val blockAsts = blockStmts.map { nodeInfo =>
+      nodeInfo.node match {
+        case BabelAst.FunctionDeclaration =>
+          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case _ => astForNode(nodeInfo.json)
+      }
     }
     setIndices(blockAsts)
     blockAsts
@@ -285,9 +288,10 @@ trait AstForStatementsCreator {
     val resultNode = createIdentifierNode(resultName, forInOfStmt)
 
     // loop variable:
-    val loopVariableName = createBabelNodeInfo(forInOfStmt.json("left")) match {
-      case v @ BabelNodeInfo(BabelAst.VariableDeclaration) => code(v.json("declarations").arr.head)
-      case other                                           => code(other.json)
+    val nodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
+    val loopVariableName = nodeInfo.node match {
+      case BabelAst.VariableDeclaration => code(nodeInfo.json("declarations").arr.head)
+      case _                            => code(nodeInfo.json)
     }
 
     val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY.label)

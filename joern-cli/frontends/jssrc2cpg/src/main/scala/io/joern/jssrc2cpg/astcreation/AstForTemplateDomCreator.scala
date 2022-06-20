@@ -74,9 +74,10 @@ trait AstForTemplateDomCreator {
       jsxExprContainer.lineNumber,
       jsxExprContainer.columnNumber
     )
-    val exprAst = createBabelNodeInfo(jsxExprContainer.json("expression")) match {
-      case BabelNodeInfo(BabelAst.JSXEmptyExpression) => Ast()
-      case other                                      => astForNode(other.json)
+    val nodeInfo = createBabelNodeInfo(jsxExprContainer.json("expression"))
+    val exprAst = nodeInfo.node match {
+      case BabelAst.JSXEmptyExpression => Ast()
+      case _                           => astForNode(nodeInfo.json)
     }
     setIndices(List(exprAst))
     Ast(domNode).withChild(exprAst)
