@@ -103,7 +103,7 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
-      val typeFullName  = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
+      val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
 
       val thisParam       = methodParameterNode(Constants.this_, typeDecl.fullName).order(0)
       val thisIdentifier  = identifierNode(Constants.this_, typeDecl.fullName)
@@ -116,10 +116,10 @@ trait KtPsiToAst {
         List(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
       )
 
-      val componentIdx = idx + 1
+      val componentIdx  = idx + 1
       val componentName = s"${Constants.componentNPrefix}$componentIdx"
-      val signature = s"$typeFullName()"
-      val fullName = s"${typeDecl.fullName}.$componentName:$signature"
+      val signature     = s"$typeFullName()"
+      val fullName      = s"${typeDecl.fullName}.$componentName:$signature"
       methodAst(
         methodNode(componentName, fullName, signature, relativizedPath),
         Seq(thisParam),
