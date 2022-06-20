@@ -65,9 +65,9 @@ trait AstForTypesCreator {
   }
 
   private def isConstructor(json: Value): Boolean = {
-    createBabelNodeInfo(json) match {
-      case BabelNodeInfo(BabelAst.TSConstructSignatureDeclaration) => true
-      case _ => hasKey(json, "kind") && json("kind").str == "constructor"
+    createBabelNodeInfo(json).node match {
+      case BabelAst.TSConstructSignatureDeclaration => true
+      case _                                        => safeStr(json, "kind").contains("constructor")
     }
 
   }
@@ -261,25 +261,26 @@ trait AstForTypesCreator {
     val classBodyElements = classMembers(clazz, withConstructor = false)
 
     classBodyElements.foreach { classElement =>
-      val memberNode = createBabelNodeInfo(classElement) match {
-        case m @ (BabelNodeInfo(BabelAst.ClassMethod) | BabelNodeInfo(BabelAst.ClassPrivateMethod)) =>
-          val (_, function) = createMethodAstAndNode(m)
-          addModifier(function, m.json)
+      val nodeInfo = createBabelNodeInfo(classElement)
+      val memberNode = nodeInfo.node match {
+        case BabelAst.ClassMethod | BabelAst.ClassPrivateMethod =>
+          val (_, function) = createMethodAstAndNode(nodeInfo)
+          addModifier(function, nodeInfo.json)
           val fullName                = function.fullName.replace(s":${function.name}", s":$typeName:${function.name}")
           val classMethod             = function.fullName(fullName)
           val functionFullName        = classMethod.fullName
           val dynamicTypeHintFullName = Some(functionFullName)
-          createMemberNode(classMethod.name, m.code, dynamicTypeHintFullName)
-        case other =>
-          val name = other match {
-            case classProperty @ BabelNodeInfo(BabelAst.ClassProperty) =>
-              code(classProperty.json("key"))
-            case privateName @ BabelNodeInfo(BabelAst.ClassPrivateProperty) =>
-              code(privateName.json("key")("id"))
+          createMemberNode(classMethod.name, nodeInfo.code, dynamicTypeHintFullName)
+        case _ =>
+          val name = nodeInfo.node match {
+            case BabelAst.ClassProperty =>
+              code(nodeInfo.json("key"))
+            case BabelAst.ClassPrivateProperty =>
+              code(nodeInfo.json("key")("id"))
             // TODO: name field most likely needs adjustment for other Babel AST types
-            case _ => other.code
+            case _ => nodeInfo.code
           }
-          createMemberNode(name, other.code, dynamicTypeOption = None)
+          createMemberNode(name, nodeInfo.code, dynamicTypeOption = None)
       }
       addModifier(memberNode, classElement)
       if (classElement("static").bool) {
@@ -297,21 +298,20 @@ trait AstForTypesCreator {
   }
 
   protected def addModifier(node: NewNode, json: Value): Unit = {
-    createBabelNodeInfo(json) match {
-      case BabelNodeInfo(BabelAst.ClassPrivateProperty) =>
+    createBabelNodeInfo(json).node match {
+      case BabelAst.ClassPrivateProperty =>
         diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PRIVATE), EdgeTypes.AST)
       case _ =>
-        if (hasKey(json, "abstract") && json("abstract").bool)
+        if (safeBool(json, "abstract").contains(true))
           diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.ABSTRACT), EdgeTypes.AST)
-        if (hasKey(json, "static") && json("static").bool)
+        if (safeBool(json, "static").contains(true))
           diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.STATIC), EdgeTypes.AST)
-        if (hasKey(json, "accessibility") && json("accessibility").str == "public")
+        if (safeStr(json, "accessibility").contains("public"))
           diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PUBLIC), EdgeTypes.AST)
-        if (hasKey(json, "accessibility") && json("accessibility").str == "private")
+        if (safeStr(json, "accessibility").contains("private"))
           diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PRIVATE), EdgeTypes.AST)
-        if (hasKey(json, "accessibility") && json("accessibility").str == "protected") {
+        if (safeStr(json, "accessibility").contains("protected"))
           diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PROTECTED), EdgeTypes.AST)
-        }
     }
   }
 
@@ -330,9 +330,10 @@ trait AstForTypesCreator {
     methodAstParentStack.push(namespaceNode)
     dynamicInstanceTypeStack.push(fullName)
 
-    val blockAst = createBabelNodeInfo(tsModuleDecl.json("body")) match {
-      case module @ BabelNodeInfo(BabelAst.TSModuleDeclaration) => astForModule(module)
-      case other                                                => astForBlockStatement(other)
+    val nodeInfo = createBabelNodeInfo(tsModuleDecl.json("body"))
+    val blockAst = nodeInfo.node match {
+      case BabelAst.TSModuleDeclaration => astForModule(nodeInfo)
+      case _                            => astForBlockStatement(nodeInfo)
     }
 
     methodAstParentStack.pop()
@@ -379,9 +380,10 @@ trait AstForTypesCreator {
     val interfaceBodyElements = classMembers(tsInterface, withConstructor = false)
 
     interfaceBodyElements.foreach { classElement =>
-      val memberNodes = createBabelNodeInfo(classElement) match {
-        case m @ BabelNodeInfo(BabelAst.TSCallSignatureDeclaration) =>
-          val functionNode = createMethodDefinitionNode(m)
+      val nodeInfo = createBabelNodeInfo(classElement)
+      val memberNodes = nodeInfo.node match {
+        case BabelAst.TSCallSignatureDeclaration =>
+          val functionNode = createMethodDefinitionNode(nodeInfo)
           val fullName     = functionNode.fullName.replace(s":${functionNode.name}", s":$typeName:${functionNode.name}")
           val classMethod  = functionNode.fullName(fullName)
           val functionFullName        = classMethod.fullName
@@ -390,22 +392,22 @@ trait AstForTypesCreator {
           val bindingNode = createBindingNode()
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
-          addModifier(functionNode, m.json)
-          Seq(createMemberNode(classMethod.name, m.code, dynamicTypeHintFullName))
-        case other =>
-          val names = other match {
-            case propSignature @ BabelNodeInfo(BabelAst.TSPropertySignature) =>
-              if (hasKey(propSignature.json("key"), "value")) {
-                Seq(propSignature.json("key")("value").str)
-              } else Seq(code(propSignature.json("key")))
-            case indexSignature @ BabelNodeInfo(BabelAst.TSIndexSignature) =>
-              indexSignature.json("parameters").arr.toSeq.map(_("name").str)
+          addModifier(functionNode, nodeInfo.json)
+          Seq(createMemberNode(classMethod.name, nodeInfo.code, dynamicTypeHintFullName))
+        case _ =>
+          val names = nodeInfo.node match {
+            case BabelAst.TSPropertySignature =>
+              if (hasKey(nodeInfo.json("key"), "value")) {
+                Seq(nodeInfo.json("key")("value").str)
+              } else Seq(code(nodeInfo.json("key")))
+            case BabelAst.TSIndexSignature =>
+              nodeInfo.json("parameters").arr.toSeq.map(_("name").str)
             // TODO: name field most likely needs adjustment for other Babel AST types
-            case _ => Seq(other.code)
+            case _ => Seq(nodeInfo.code)
           }
           names.map { n =>
-            val node = createMemberNode(n, other.code, dynamicTypeOption = None)
-            addModifier(node, other.json)
+            val node = createMemberNode(n, nodeInfo.code, dynamicTypeOption = None)
+            addModifier(node, nodeInfo.json)
             node
           }
       }

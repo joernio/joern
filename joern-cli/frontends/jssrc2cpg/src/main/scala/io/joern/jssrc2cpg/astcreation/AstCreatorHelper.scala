@@ -41,7 +41,7 @@ trait AstCreatorHelper {
   }
 
   private def notHandledText(node: BabelNodeInfo): String =
-    s"""Node type '${node.node.toString}' not handled yet!
+    s"""Node type '${node.node}' not handled yet!
        |  Code: '${shortenCode(node.code, length = 50)}'
        |  File: '${parserResult.fullPath}'
        |  Line: ${node.lineNumber.getOrElse(-1)}
@@ -85,6 +85,12 @@ trait AstCreatorHelper {
     StringUtils.abbreviate(code, math.max(MIN_CODE_LENGTH, length))
 
   protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
+
+  protected def safeStr(node: Value, key: String): Option[String] =
+    if (hasKey(node, key)) Some(node(key).str) else None
+
+  protected def safeBool(node: Value, key: String): Option[Boolean] =
+    if (hasKey(node, key)) Some(node(key).bool) else None
 
   protected def safeObj(node: Value, key: String): Option[mutable.LinkedHashMap[String, Value]] = Try(
     node(key).obj
@@ -151,19 +157,13 @@ trait AstCreatorHelper {
       }
       .mkString(":")
 
-  private def calcMethodName(func: BabelNodeInfo): String = func match {
-    case BabelNodeInfo(BabelAst.TSCallSignatureDeclaration) =>
-      "anonymous"
-    case BabelNodeInfo(BabelAst.TSConstructSignatureDeclaration) =>
-      "<constructor>"
-    case _ if hasKey(func.json, "kind") && func.json("kind").str == "method" =>
-      func.json("key")("name").str
-    case _ if hasKey(func.json, "kind") && func.json("kind").str == "constructor" =>
-      "<constructor>"
-    case _ if func.json("id").isNull =>
-      "anonymous"
-    case _ =>
-      func.json("id")("name").str
+  private def calcMethodName(func: BabelNodeInfo): String = func.node match {
+    case BabelAst.TSCallSignatureDeclaration                     => "anonymous"
+    case BabelAst.TSConstructSignatureDeclaration                => "<constructor>"
+    case _ if safeStr(func.json, "kind").contains("method")      => func.json("key")("name").str
+    case _ if safeStr(func.json, "kind").contains("constructor") => "<constructor>"
+    case _ if func.json("id").isNull                             => "anonymous"
+    case _                                                       => func.json("id")("name").str
   }
 
   protected def calcMethodNameAndFullName(func: BabelNodeInfo): (String, String) = {

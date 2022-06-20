@@ -25,25 +25,17 @@ trait AstForDeclarationsCreator {
   private val REQUIRE_KEYWORD = "require"
   private val IMPORT_KEYWORD  = "import"
 
-  private def codeForExportObject(obj: BabelNodeInfo): Seq[String] = obj match {
-    case varDecl @ BabelNodeInfo(BabelAst.VariableDeclaration) =>
-      varDecl.json("declarations").arr.toSeq.map(d => code(d("id")))
-    case funcDecl @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-      Seq(code(funcDecl.json("id")))
-    case assignmentExpr @ BabelNodeInfo(BabelAst.AssignmentExpression) =>
-      Seq(code(assignmentExpr.json("left")))
-    case classDecl @ BabelNodeInfo(BabelAst.ClassDeclaration) =>
-      Seq(code(classDecl.json("id")))
-    case id @ BabelNodeInfo(BabelAst.Identifier) =>
-      Seq(code(id.json))
-    case tpeAliasDecl @ BabelNodeInfo(BabelAst.TSTypeAliasDeclaration) =>
-      Seq(code(tpeAliasDecl.json("id")))
-    case intDecl @ BabelNodeInfo(BabelAst.TSInterfaceDeclaration) =>
-      Seq(code(intDecl.json("id")))
-    case enumDecl @ BabelNodeInfo(BabelAst.TSEnumDeclaration) =>
-      Seq(code(enumDecl.json("id")))
-    case other =>
-      notHandledYet(other, "Lowering export declaration")
+  private def codeForExportObject(obj: BabelNodeInfo): Seq[String] = obj.node match {
+    case BabelAst.VariableDeclaration    => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
+    case BabelAst.FunctionDeclaration    => Seq(code(obj.json("id")))
+    case BabelAst.AssignmentExpression   => Seq(code(obj.json("left")))
+    case BabelAst.ClassDeclaration       => Seq(code(obj.json("id")))
+    case BabelAst.Identifier             => Seq(obj.code)
+    case BabelAst.TSTypeAliasDeclaration => Seq(code(obj.json("id")))
+    case BabelAst.TSInterfaceDeclaration => Seq(code(obj.json("id")))
+    case BabelAst.TSEnumDeclaration      => Seq(code(obj.json("id")))
+    case _ =>
+      notHandledYet(obj, "Lowering export declaration")
       Seq.empty
   }
 
@@ -84,13 +76,14 @@ trait AstForDeclarationsCreator {
   private def extractDeclarationsFromExportDecl(declaration: BabelNodeInfo): Option[(Ast, Seq[String])] =
     safeObj(declaration.json, "declaration")
       .map { d =>
-        val ast = createBabelNodeInfo(d) match {
-          case f @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-            astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-          case f @ BabelNodeInfo(BabelAst.FunctionExpression) =>
-            astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-          case f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression) =>
-            astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+        val nodeInfo = createBabelNodeInfo(d)
+        val ast = nodeInfo.node match {
+          case BabelAst.FunctionDeclaration =>
+            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case BabelAst.FunctionExpression =>
+            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case BabelAst.ArrowFunctionExpression =>
+            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
           case _ => astForNode(d)
         }
         val names = codeForExportObject(createBabelNodeInfo(Obj(d)))
@@ -213,14 +206,13 @@ trait AstForDeclarationsCreator {
   }
 
   private def handleRequireCallForDependencies(lhs: Value, rhs: Value): Unit = {
-    val rhsCode = code(rhs)
-    val groupId = rhsCode.substring(rhsCode.indexOf(s"$REQUIRE_KEYWORD(") + 9, rhsCode.indexOf(")") - 1)
-    val names = createBabelNodeInfo(lhs) match {
-      case arrayPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-        arrayPattern.json("elements").arr.toList.map(code)
-      case objectPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
-        objectPattern.json("properties").arr.toList.map(code)
-      case _ => List(code(lhs))
+    val rhsCode  = code(rhs)
+    val groupId  = rhsCode.substring(rhsCode.indexOf(s"$REQUIRE_KEYWORD(") + 9, rhsCode.indexOf(")") - 1)
+    val nodeInfo = createBabelNodeInfo(lhs)
+    val names = nodeInfo.node match {
+      case BabelAst.ArrayPattern  => nodeInfo.json("elements").arr.toList.map(code)
+      case BabelAst.ObjectPattern => nodeInfo.json("properties").arr.toList.map(code)
+      case _                      => List(code(lhs))
     }
     names.foreach(name => diffGraph.addNode(createDependencyNode(name, groupId, REQUIRE_KEYWORD)))
   }
@@ -230,13 +222,13 @@ trait AstForDeclarationsCreator {
     val init = Try(createBabelNodeInfo(declarator("init"))).toOption
 
     val typeFullName = init match {
-      case Some(f @ BabelNodeInfo(BabelAst.FunctionExpression)) =>
+      case Some(f: BabelNodeInfo) if f.node == BabelAst.FunctionExpression =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
-      case Some(f @ BabelNodeInfo(BabelAst.FunctionDeclaration)) =>
+      case Some(f: BabelNodeInfo) if f.node == BabelAst.FunctionDeclaration =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
-      case Some(f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression)) =>
+      case Some(f: BabelNodeInfo) if f.node == BabelAst.ArrowFunctionExpression =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
       case _ => init.map(typeFor).getOrElse(Defines.ANY.label)
@@ -249,36 +241,23 @@ trait AstForDeclarationsCreator {
     if (init.isEmpty) {
       Ast()
     } else {
-      createBabelNodeInfo(id.json) match {
-        case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
-          val sourceAst = init.get match {
-            case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
-              handleRequireCallForDependencies(id.json, init.get.json)
-              astForNodeWithFunctionReference(requireCall.json)
-            case initExpr =>
-              astForNodeWithFunctionReference(initExpr.json)
-          }
+      val sourceAst = init.get match {
+        case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
+          handleRequireCallForDependencies(id.json, init.get.json)
+          astForNodeWithFunctionReference(requireCall.json)
+        case initExpr =>
+          astForNodeWithFunctionReference(initExpr.json)
+      }
+      val nodeInfo = createBabelNodeInfo(id.json)
+      nodeInfo.node match {
+        case BabelAst.ObjectPattern =>
           Ast.storeInDiffGraph(sourceAst, diffGraph)
-          astForDeconstruction(objPattern, sourceAst)
-        case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-          val sourceAst = init.get match {
-            case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
-              handleRequireCallForDependencies(id.json, init.get.json)
-              astForNodeWithFunctionReference(requireCall.json)
-            case initExpr =>
-              astForNodeWithFunctionReference(initExpr.json)
-          }
+          astForDeconstruction(nodeInfo, sourceAst)
+        case BabelAst.ArrayPattern =>
           Ast.storeInDiffGraph(sourceAst, diffGraph)
-          astForDeconstruction(arrPattern, sourceAst)
+          astForDeconstruction(nodeInfo, sourceAst)
         case _ =>
           val destAst = astForNode(id.json)
-          val sourceAst = init.get match {
-            case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
-              handleRequireCallForDependencies(id.json, init.get.json)
-              astForNodeWithFunctionReference(requireCall.json)
-            case initExpr =>
-              astForNodeWithFunctionReference(initExpr.json)
-          }
           val assigmentCallAst =
             createAssignmentCallAst(
               destAst.nodes.head,
@@ -367,15 +346,16 @@ trait AstForDeclarationsCreator {
     Ast.storeInDiffGraph(rhsAst, diffGraph)
 
     val lhsElement = element.json("left")
-    val lhsAst = createBabelNodeInfo(lhsElement) match {
-      case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
+    val nodeInfo   = createBabelNodeInfo(lhsElement)
+    val lhsAst = nodeInfo.node match {
+      case BabelAst.ObjectPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         Ast.storeInDiffGraph(sourceAst, diffGraph)
-        astForDeconstruction(objPattern, sourceAst)
-      case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
+        astForDeconstruction(nodeInfo, sourceAst)
+      case BabelAst.ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         Ast.storeInDiffGraph(sourceAst, diffGraph)
-        astForDeconstruction(arrPattern, sourceAst)
+        astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
     }
     Ast.storeInDiffGraph(lhsAst, diffGraph)
@@ -432,15 +412,16 @@ trait AstForDeclarationsCreator {
     Ast.storeInDiffGraph(rhsAst, diffGraph)
 
     val lhsElement = element.json("left")
-    val lhsAst = createBabelNodeInfo(lhsElement) match {
-      case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
+    val nodeInfo   = createBabelNodeInfo(lhsElement)
+    val lhsAst = nodeInfo.node match {
+      case BabelAst.ObjectPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         Ast.storeInDiffGraph(sourceAst, diffGraph)
-        astForDeconstruction(objPattern, sourceAst)
-      case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
+        astForDeconstruction(nodeInfo, sourceAst)
+      case BabelAst.ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         Ast.storeInDiffGraph(sourceAst, diffGraph)
-        astForDeconstruction(arrPattern, sourceAst)
+        astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
     }
     Ast.storeInDiffGraph(lhsAst, diffGraph)
@@ -531,39 +512,42 @@ trait AstForDeclarationsCreator {
         pattern.columnNumber
       )
 
-    val subTreeAsts = pattern match {
-      case BabelNodeInfo(BabelAst.ObjectPattern) =>
+    val subTreeAsts = pattern.node match {
+      case BabelAst.ObjectPattern =>
         pattern.json("properties").arr.toList.map { element =>
-          createBabelNodeInfo(element) match {
-            case rest @ BabelNodeInfo(BabelAst.RestElement) => astForNode(rest.json)
+          val nodeInfo = createBabelNodeInfo(element)
+          nodeInfo.node match {
+            case BabelAst.RestElement => astForNode(nodeInfo.json)
             case _ =>
-              createBabelNodeInfo(element("value")) match {
-                case ident @ BabelNodeInfo(BabelAst.Identifier) =>
-                  convertDestructingObjectElement(ident, createBabelNodeInfo(element("key")), localTmpName)
-                case assignment @ BabelNodeInfo(BabelAst.AssignmentPattern) =>
+              val nodeInfo = createBabelNodeInfo(element("value"))
+              nodeInfo.node match {
+                case BabelAst.Identifier =>
+                  convertDestructingObjectElement(nodeInfo, createBabelNodeInfo(element("key")), localTmpName)
+                case BabelAst.AssignmentPattern =>
                   convertDestructingObjectElementWithDefault(
-                    assignment,
+                    nodeInfo,
                     createBabelNodeInfo(element("key")),
                     localTmpName
                   )
-                case other => astForNode(other.json)
+                case _ => astForNode(nodeInfo.json)
               }
           }
         }
-      case BabelNodeInfo(BabelAst.ArrayPattern) =>
+      case BabelAst.ArrayPattern =>
         pattern.json("elements").arr.toList.zipWithIndex.map {
           case (element, index) if !element.isNull =>
-            createBabelNodeInfo(element) match {
-              case ident @ BabelNodeInfo(BabelAst.Identifier) =>
-                convertDestructingArrayElement(ident, index, localTmpName)
-              case assignment @ BabelNodeInfo(BabelAst.AssignmentPattern) =>
-                convertDestructingArrayElementWithDefault(assignment, index, localTmpName)
-              case other => astForNode(other.json)
+            val nodeInfo = createBabelNodeInfo(element)
+            nodeInfo.node match {
+              case BabelAst.Identifier =>
+                convertDestructingArrayElement(nodeInfo, index, localTmpName)
+              case BabelAst.AssignmentPattern =>
+                convertDestructingArrayElementWithDefault(nodeInfo, index, localTmpName)
+              case _ => astForNode(nodeInfo.json)
             }
           case _ => Ast()
         }
-      case other =>
-        List(convertDestructingObjectElement(other, other, localTmpName))
+      case _ =>
+        List(convertDestructingObjectElement(pattern, pattern, localTmpName))
     }
 
     val returnTmpNode = createIdentifierNode(localTmpName, pattern)
