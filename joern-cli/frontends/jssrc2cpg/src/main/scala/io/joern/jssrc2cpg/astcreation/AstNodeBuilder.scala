@@ -288,6 +288,9 @@ trait AstNodeBuilder {
     .columnNumber(column)
     .typeFullName(Defines.ANY.label)
 
+  protected def createVoidCallNode(line: Option[Integer], column: Option[Integer]): NewCall =
+    createCallNode("void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH, line, column)
+
   protected def createFieldIdentifierNode(
     name: String,
     line: Option[Integer],
