@@ -46,7 +46,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   private val firstParam       = params.headOption
   private val lastParam        = params.lastOption
   private val firstOutputParam = firstParam.flatMap(_.asOutput.headOption)
-  private val lastOutputParam  = method.parameter.sortBy(_.order).asOutput.lastOption
+  private val lastOutputParam  = method.parameter.sortBy(_.index).asOutput.lastOption
 
   private val lastActualCfgNode = exitNode._cfgIn.nextOption()
 
