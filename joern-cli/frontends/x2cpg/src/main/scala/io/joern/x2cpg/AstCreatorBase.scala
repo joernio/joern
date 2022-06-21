@@ -112,7 +112,7 @@ abstract class AstCreatorBase(filename: String) {
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
     * main purpose of this method is to automatically assign the correct argument indices.
     */
-  def callAst(callNode: NewCall, arguments: List[Ast] = List(), receiver: Option[Ast] = None): Ast = {
+  def callAst(callNode: NewCall, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None): Ast = {
 
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcv          = receiver.getOrElse(Ast())
@@ -130,7 +130,7 @@ abstract class AstCreatorBase(filename: String) {
       .withReceiverEdges(callNode, receiverRoot)
   }
 
-  private def setArgumentIndices(arguments: List[Ast]) = {
+  private def setArgumentIndices(arguments: Seq[Ast]) = {
     withIndex(arguments) { case (a, i) =>
       a.root.collect { case x: ExpressionNew =>
         x.argumentIndex = i

@@ -227,7 +227,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
   "should allow traversing from call to arguments" in {
     cpg.call("add").argument.size shouldBe 3
-    val List(arg0) = cpg.call("add").argument(0).l
+    val List(arg0) = cpg.call("add").receiver.l
     arg0.isInstanceOf[nodes.Identifier] shouldBe true
     arg0.asInstanceOf[nodes.Identifier].name shouldBe "this"
     arg0.code shouldBe "this"
@@ -302,6 +302,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
+    val callArgs = call.argument.l
     val List(identifier: Identifier, argument: Call) = call.argument.l
     identifier.order shouldBe 0
     identifier.argumentIndex shouldBe 0

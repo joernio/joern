@@ -2,155 +2,24 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  AnnotationDeclaration,
-  BodyDeclaration,
-  CallableDeclaration,
-  ClassOrInterfaceDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.{AnnotationDeclaration, BodyDeclaration, CallableDeclaration, ClassOrInterfaceDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  AssignExpr,
-  BinaryExpr,
-  BooleanLiteralExpr,
-  CastExpr,
-  CharLiteralExpr,
-  ClassExpr,
-  ConditionalExpr,
-  DoubleLiteralExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  IntegerLiteralExpr,
-  LambdaExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MarkerAnnotationExpr,
-  MethodCallExpr,
-  NameExpr,
-  NormalAnnotationExpr,
-  NullLiteralExpr,
-  ObjectCreationExpr,
-  SingleMemberAnnotationExpr,
-  StringLiteralExpr,
-  SuperExpr,
-  TextBlockLiteralExpr,
-  ThisExpr,
-  UnaryExpr,
-  VariableDeclarationExpr
-}
+import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, BooleanLiteralExpr, CastExpr, CharLiteralExpr, ClassExpr, ConditionalExpr, DoubleLiteralExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, IntegerLiteralExpr, LambdaExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MethodCallExpr, NameExpr, NormalAnnotationExpr, NullLiteralExpr, ObjectCreationExpr, SingleMemberAnnotationExpr, StringLiteralExpr, SuperExpr, TextBlockLiteralExpr, ThisExpr, UnaryExpr, VariableDeclarationExpr}
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, WhileStmt}
 import com.github.javaparser.resolution.{SymbolResolver, UnsolvedSymbolException}
-import com.github.javaparser.resolution.declarations.{
-  ResolvedConstructorDeclaration,
-  ResolvedFieldDeclaration,
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeParameterDeclaration
-}
+import com.github.javaparser.resolution.declarations.{ResolvedConstructorDeclaration, ResolvedFieldDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeParameterDeclaration}
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.NodeBuilders.{assignmentNode, indexAccessNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.{NamedVariableNodeType, WildcardImportName}
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  BindingTableAdapterForLambdas,
-  BindingTableEntry,
-  LambdaBindingInfo,
-  NodeTypeInfo,
-  Scope,
-  TypeInfoCalculator
-}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, BindingTableAdapterForLambdas, BindingTableEntry, LambdaBindingInfo, NodeTypeInfo, Scope, TypeInfoCalculator}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.Util.{
-  composeMethodFullName,
-  composeMethodLikeSignature,
-  fieldIdentifierNode,
-  operatorCallNode,
-  rootCode,
-  rootType
-}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators,
-  PropertyNames
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  HasFullName,
-  HasSignature,
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, fieldIdentifierNode, operatorCallNode, rootCode, rootType}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, HasFullName, HasSignature, NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -743,7 +612,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .columnNumber(column(entry))
           .argumentIndex(o)
           .order(o)
-      callAst(callNode, children)
+      callAstWithRecvArgEdge(callNode, children)
     }
 
     Ast(entryNode).withChildren(args)
@@ -1145,7 +1014,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val args = astsForExpression(stmt.getExpression, order = 1, None)
 
-    callAst(throwNode, args)
+    callAstWithRecvArgEdge(throwNode, args)
   }
 
   def astForCatchClause(catchClause: CatchClause, order: Int): Ast = {
@@ -1414,7 +1283,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(lineNo)
     val iterableAssignArgs = List(Ast(iterableAssignIdentifier), iterableAst)
     val iterableAssignAst =
-      callAst(iterableAssignNode, iterableAssignArgs)
+      callAstWithRecvArgEdge(iterableAssignNode, iterableAssignArgs)
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
     (iterableLocalNode, List(iterableLocalAst, iterableAssignAst))
@@ -1451,7 +1320,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .argumentIndex(2)
         .lineNumber(lineNo)
     val idxInitializerArgAsts = List(Ast(idxIdentifierArg), Ast(zeroLiteral))
-    callAst(idxInitializerCallNode, idxInitializerArgAsts)
+    callAstWithRecvArgEdge(idxInitializerCallNode, idxInitializerArgAsts)
       .withRefEdge(idxIdentifierArg, idxLocal)
   }
 
@@ -1481,10 +1350,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val fieldAccessIdentifier      = identifierFromNamedVarType(iterableLocal, lineNo, 1)
     val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
-    val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
+    val fieldAccessAst             = callAstWithRecvArgEdge(comparisonFieldAccess, fieldAccessArgs)
     val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
 
-    callAst(compareNode, compareArgs)
+    callAstWithRecvArgEdge(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
       .withRefEdge(fieldAccessIdentifier, iterableLocal)
   }
@@ -1499,7 +1368,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     )
     val incrementArg    = identifierFromNamedVarType(idxLocal, lineNo, 1)
     val incrementArgAst = Ast(incrementArg)
-    callAst(incrementNode, List(incrementArgAst))
+    callAstWithRecvArgEdge(incrementNode, List(incrementArgAst))
       .withRefEdge(incrementArg, idxLocal)
   }
 
@@ -1561,10 +1430,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val indexAccessIndex      = identifierFromNamedVarType(idxLocal, lineNo, 2)
 
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
-    val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
+    val indexAccessAst      = callAstWithRecvArgEdge(indexAccess, indexAccessArgsAsts)
 
     val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
-    callAst(varAssignNode, assignArgsAsts)
+    callAstWithRecvArgEdge(varAssignNode, assignArgsAsts)
       .withRefEdge(targetNode, variableLocal)
       .withRefEdge(indexAccessIdentifier, iterableNode)
       .withRefEdge(indexAccessIndex, idxLocal)
@@ -1680,12 +1549,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .order(2)
         .argumentIndex(2)
         .lineNumber(lineNo)
-    val actualIteratorAst = astsForExpression(iterExpr, 0, expectedType = None) // TODO: Expected type here?
-    val iteratorCallAst =
-      callAst(iteratorCallNode, actualIteratorAst)
-        .withReceiverEdges(iteratorCallNode, actualIteratorAst.headOption.flatMap(_.root).toList)
 
-    callAst(iteratorAssignNode, Seq(Ast(iteratorAssignIdentifier), iteratorCallAst))
+    val actualIteratorAst = astsForExpression(iterExpr, 0, expectedType = None).toList match {
+      case Nil =>
+        logger.warn(s"Could not create receiver ast for iterator $iterExpr")
+        None
+
+      case ast :: Nil => Some(ast)
+
+      case ast :: _ =>
+        logger.warn(s"Created multiple receiver asts for $iterExpr. Dropping all but the first.")
+        Some(ast)
+    }
+
+    val iteratorCallAst =
+      callAstWithRecvArgEdge(iteratorCallNode, receiver = actualIteratorAst)
+
+    callAstWithRecvArgEdge(iteratorAssignNode, List(Ast(iteratorAssignIdentifier), iteratorCallAst))
       .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
   }
 
@@ -1706,9 +1586,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(lineNo)
     val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 1).argumentIndex(0)
 
-    callAst(iteratorHasNextCallNode, Seq(Ast(iteratorHasNextCallReceiver)))
+    callAstWithRecvArgEdge(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)))
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
-      .withReceiverEdge(iteratorHasNextCallNode, iteratorHasNextCallReceiver)
   }
 
   private def astForIterableForEachItemAssign(iteratorLocalNode: NewLocal, variableLocal: NewLocal): Ast = {
@@ -1738,11 +1617,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(lineNo)
     val iterNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo, 1).argumentIndex(0)
     val iterNextCallAst =
-      callAst(iterNextCallNode, Seq(Ast(iterNextCallReceiver)))
+      callAstWithRecvArgEdge(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
-        .withReceiverEdge(iterNextCallNode, iterNextCallReceiver)
 
-    callAst(varLocalAssignNode, Seq(Ast(varLocalAssignIdentifier), iterNextCallAst))
+    callAstWithRecvArgEdge(varLocalAssignNode, List(Ast(varLocalAssignIdentifier), iterNextCallAst))
       .withRefEdge(varLocalAssignIdentifier, variableLocal)
   }
 
@@ -1894,7 +1772,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(stmt))
 
     val args = astsForExpression(stmt.getCheck, 1, Some(ExpectedType.Boolean))
-    callAst(callNode, args)
+    callAstWithRecvArgEdge(callNode, args)
   }
 
   private def astForBlockStatement(
@@ -1973,7 +1851,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       column = column(expr)
     )
 
-    callAst(callNode, argsAsts)
+    callAstWithRecvArgEdge(callNode, argsAsts)
   }
 
   def astForArrayAccessExpr(expr: ArrayAccessExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
@@ -1998,11 +1876,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         Some(ExpectedType.Int)
       )
     }
-    callAst(callNode, args)
+    callAstWithRecvArgEdge(callNode, args)
   }
 
   def astForArrayCreationExpr(expr: ArrayCreationExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
-    val name         = Operators.alloc
     val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
     val callNode = operatorCallNode(Operators.alloc, code = expr.toString, order = order, typeFullName = typeFullName)
 
@@ -2020,7 +1897,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val args = (levelAsts ++ initializerAst.toList).toSeq
 
-    callAst(callNode, args)
+    callAstWithRecvArgEdge(callNode, args)
   }
 
   def astForArrayInitializerExpr(expr: ArrayInitializerExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
@@ -2055,7 +1932,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
       .toSeq
 
-    val ast = callAst(callNode, args)
+    val ast = callAstWithRecvArgEdge(callNode, args)
 
     if (expr.getValues.size() > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
@@ -2113,7 +1990,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       column = column(expr)
     )
 
-    callAst(callNode, args)
+    callAstWithRecvArgEdge(callNode, args)
   }
 
   def astForCastExpr(expr: CastExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
@@ -2143,7 +2020,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val exprAst = astsForExpression(expr.getExpression, 2, None)
 
-    callAst(callNode, Seq(typeAst) ++ exprAst)
+    callAstWithRecvArgEdge(callNode, Seq(typeAst) ++ exprAst)
   }
 
   def astsForAssignExpr(expr: AssignExpr, order: Int, expectedExprType: Option[ExpectedType]): Seq[Ast] = {
@@ -2184,7 +2061,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val callNode = operatorCallNode(operatorName, code, order, Some(typeFullName), line(expr), column(expr))
 
     if (partialConstructorQueue.isEmpty) {
-      val assignAst = callAst(callNode, targetAst ++ argsAsts)
+      val assignAst = callAstWithRecvArgEdge(callNode, targetAst ++ argsAsts)
       Seq(assignAst)
     } else {
       if (partialConstructorQueue.size > 1) {
@@ -2198,14 +2075,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           // In this case we have a simple assign. No block needed.
           // e.g. Foo f = new Foo();
           val initAst = completeInitForConstructor(partialConstructor, identifier, 2)
-          Seq(callAst(callNode, targetAst ++ argsAsts), initAst)
+          Seq(callAstWithRecvArgEdge(callNode, targetAst ++ argsAsts), initAst)
 
         case _ =>
           // In this case the left hand side is more complex than an identifier, so
           // we need to contain the constructor in a block.
           // e.g. items[10] = new Foo();
           val valueAst = partialConstructor.blockAst
-          Seq(callAst(callNode, targetAst ++ Seq(valueAst)))
+          Seq(callAstWithRecvArgEdge(callNode, targetAst ++ Seq(valueAst)))
       }
     }
   }
@@ -2278,7 +2155,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val targetAst           = Ast(identifier).withRefEdges(identifier, localCorrespToIdent.toList)
 
       // Since all partial constructors will be dealt with here, don't pass them up.
-      val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
+      val declAst = callAstWithRecvArgEdge(callNode, Seq(targetAst) ++ initializerAsts)
 
       val constructorAsts = partialConstructorQueue
         .map { partialConstructor =>
@@ -2308,12 +2185,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val args = partialConstructor.initArgs
 
-    Ast(initNode)
-      .withChild(Ast(objectNode))
-      .withReceiverEdge(initNode, objectNode)
-      .withChildren(args)
-      .withArgEdge(initNode, objectNode)
-      .withArgEdges(initNode, args.flatMap(_.root))
+    callAstWithRecvArgEdge(initNode, args.toList, Some(Ast(objectNode)))
   }
 
   def astsForVariableDecl(varDecl: VariableDeclarationExpr, order: Int): Seq[Ast] = {
@@ -2332,13 +2204,31 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     localAsts ++ assignments
   }
 
-  def callAst(rootNode: NewCall, args: Seq[Ast]): Ast = {
 
-    val code = rootNode.code
+  // TODO: This is an almost exact copy of the method in x2cpg. Fix this.
+  // The reason this exists here is that some dataflow tests are failing without the arg edge
+  // to the receiver.
+  def callAstWithRecvArgEdge(callNode: NewCall, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None): Ast = {
+    val receiverRoot = receiver.flatMap(_.root).toList
+    val rcv          = receiver.getOrElse(Ast())
+    receiverRoot match {
+      case List(x: ExpressionNew) =>
+        x.argumentIndex = 0
+      case _ =>
+    }
 
-    Ast(rootNode)
-      .withChildren(args)
-      .withArgEdges(rootNode, args.flatMap(_.root))
+    withIndex(arguments) { case (a, i) =>
+      a.root.collect { case x: ExpressionNew =>
+        x.argumentIndex = i
+      }
+    }
+
+    Ast(callNode)
+      .withChild(rcv)
+      .withChildren(arguments)
+      .withArgEdges(callNode, receiverRoot)
+      .withArgEdges(callNode, arguments.flatMap(_.root))
+      .withReceiverEdges(callNode, receiverRoot)
   }
 
   def astForClassExpr(expr: ClassExpr, order: Int): Ast = {
@@ -2369,7 +2259,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .order(2)
     val fieldIdAst = Ast(fieldIdentifier)
 
-    callAst(callNode, Seq(idAst, fieldIdAst))
+    callAstWithRecvArgEdge(callNode, Seq(idAst, fieldIdAst))
   }
 
   def astForConditionalExpr(expr: ConditionalExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
@@ -2395,7 +2285,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(expr))
       .typeFullName(typeFullName)
 
-    callAst(callNode, condAst ++ thenAst ++ elseAst)
+    callAstWithRecvArgEdge(callNode, condAst ++ thenAst ++ elseAst)
   }
 
   def astForEnclosedExpression(expr: EnclosedExpr, order: Int, expectedType: Option[ExpectedType]): Seq[Ast] = {
@@ -2430,7 +2320,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .code(fieldIdentifier.toString)
     val fieldIdAst = Ast(fieldIdentifierNode)
 
-    callAst(callNode, identifierAsts ++ Seq(fieldIdAst))
+    callAstWithRecvArgEdge(callNode, identifierAsts ++ Seq(fieldIdAst))
   }
 
   def astForInstanceOfExpr(expr: InstanceOfExpr, order: Int): Ast = {
@@ -2457,7 +2347,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .typeFullName(typeFullName)
     val typeAst = Ast(typeNode)
 
-    callAst(callNode, exprAst ++ Seq(typeAst))
+    callAstWithRecvArgEdge(callNode, exprAst ++ Seq(typeAst))
   }
 
   def astForNameExpr(x: NameExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
@@ -2516,7 +2406,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val identifierAst = Ast(identifier)
         val fieldIdentAst = Ast(fieldIdentifier)
 
-        callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
+        callAstWithRecvArgEdge(fieldAccess, Seq(identifierAst, fieldIdentAst))
 
       case _ =>
         val identifier = NewIdentifier()
@@ -2668,15 +2558,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .withArgEdge(assignmentNode, allocAst.root.get)
 
     val identifierForInit = identifier.copy.order(0).argumentIndex(0)
-    val initAst = Ast(
-      initNode
-        .order(2)
-        .argumentIndex(2)
-    ).withChild(Ast(identifierForInit))
-      .withReceiverEdge(initNode, identifierForInit)
-      .withChildren(args)
-      .withArgEdge(initNode, identifierForInit)
-      .withArgEdges(initNode, args.flatMap(_.root))
+    val initWithOrder = initNode.order(2).argumentIndex(2)
+    val initAst = callAstWithRecvArgEdge(initWithOrder, args, Some(Ast(identifierForInit)))
 
     val returnAst = Ast(identifier.copy.order(3).argumentIndex(3))
 
@@ -2736,17 +2619,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .typeFullName(typeFullName)
     val thisAst = Ast(thisNode)
 
-    val ast = callAst(callNode, Seq(thisAst) ++ args)
-
-    // ast.root should just be `callNode`, but do a sanity check in any case.
-    ast.root match {
-      case None =>
-        logger.warn("Attempting to create constructor invocation without root")
-        ast
-
-      case Some(root) =>
-        ast.withReceiverEdge(root, thisNode)
-    }
+    callAstWithRecvArgEdge(callNode, args, Some(thisAst))
   }
 
   private def astsForExpression(expression: Expression, order: Int, expectedType: Option[ExpectedType]): Seq[Ast] = {
@@ -3314,7 +3187,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             .lineNumber(line(call))
             .columnNumber(column(call))
 
-        val arrayInitializerAst = callAst(arrayInitializer, varargs)
+        val arrayInitializerAst = callAstWithRecvArgEdge(arrayInitializer, varargs)
 
         regularArgs ++ Seq(arrayInitializerAst)
 
@@ -3383,14 +3256,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         objectNode.map(Ast(_)).toList
     }
 
-    val ast = callAst(callNode, scopeAsts ++ argumentAsts)
-
-    scopeAsts.headOption.flatMap(_.root) match {
-      case None => ast
-
-      case Some(rootNode) =>
-        ast.withReceiverEdge(callNode, rootNode)
-    }
+    callAstWithRecvArgEdge(callNode, argumentAsts, scopeAsts.headOption)
   }
 
   def astForSuperExpr(superExpr: SuperExpr, order: Int, expectedType: Option[ExpectedType]): Ast = {
