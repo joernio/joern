@@ -924,20 +924,9 @@ trait KtPsiToAst {
       else DispatchTypes.STATIC_DISPATCH
 
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
-    val argAsts = expr.getSelectorExpression match {
-      case selectorExpression: KtCallExpression =>
-        withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-          val selectorArgIndex = if (isStaticCall) idx else argIdxForReceiver + idx
-          astsForExpression(arg.getArgumentExpression, Some(selectorArgIndex))
-        }.flatten
-      case typedExpr: KtNameReferenceExpression =>
-        val argIdx = if (isStaticCall) 1 else 2
-        val node   = fieldIdentifierNode(typedExpr.getText).argumentIndex(argIdx)
-        List(Ast(node))
-      case _ => List()
-    }
+    val argAsts     = selectorExpressionArgAsts(expr)
 
-    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts.toList)
+    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
