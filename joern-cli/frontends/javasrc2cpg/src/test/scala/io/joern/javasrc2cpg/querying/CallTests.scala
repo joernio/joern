@@ -60,6 +60,48 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "code fields" should {
+    "be correct for chained calls starting at a constructor invocation" in {
+      val cpg = code("""
+          |class Foo {
+          |  private String value;
+          |
+          |  public String getValue() {
+          |    return value;
+          |  }
+          |
+          |  public static void test() {
+          |    String s = new Foo().getValue();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.name("getValue").l match {
+        case List(getValueCall) =>
+          getValueCall.code shouldBe "new Foo().getValue()"
+
+        case result => fail(s"Expected single getValue call but got $result")
+      }
+    }
+
+    "be correct for constructor invocations" in {
+      val cpg = code("""
+          |class Foo {
+          |
+          |  public static void test() {
+          |    Foo f = new Foo();
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.call.name("<init>").l match {
+        case List(initCall: Call) =>
+          initCall.code shouldBe "new Foo()"
+
+        case result => fail(s"Expected single init call but got $result")
+      }
+    }
+  }
+
   "call to method with generic return type" should {
     val cpg = code("""
         |class Foo {

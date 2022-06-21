@@ -78,7 +78,7 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
   "should contain a type decl for `foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Bar").l
     x.name shouldBe "Bar"
-    x.code shouldBe "Bar"
+    x.code shouldBe "class Bar"
     x.fullName shouldBe "a.b.c.d.Bar"
     x.isExternal shouldBe false
     x.inheritsFromTypeFullName should contain theSameElementsAs List("a.b.c.d.Woo")

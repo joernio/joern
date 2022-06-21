@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Block,
   Identifier,
@@ -34,10 +35,19 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
   "it should process a synchronized method the same as a non-synchronized method" in {
     val List(method: Method) = cpg.method.name("foo").l
 
-    method.astChildren.size shouldBe 4
-    val List(param: MethodParameterIn, _, body: Block, _: MethodReturn) = method.astChildren.l
+    method.astChildren.size shouldBe 6
+    val List(
+      param: MethodParameterIn,
+      _,
+      body: Block,
+      publicModifier: Modifier,
+      staticModifier: Modifier,
+      _: MethodReturn
+    ) = method.astChildren.l
     param.code shouldBe "String s"
     body.astChildren.head shouldBe a[Return]
+    publicModifier.modifierType shouldBe ModifierTypes.PUBLIC
+    staticModifier.modifierType shouldBe ModifierTypes.STATIC
   }
 
   "it should create a synchronized block" in {

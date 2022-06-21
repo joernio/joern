@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.freespec.AnyFreeSpec
@@ -46,9 +47,9 @@ class InferenceJarTests extends AnyFreeSpec with Matchers {
 
     "it should fail to resolve the type for Deps" in {
       val call = cpg.method.name("test1").call.name("foo").head
-      call.methodFullName shouldBe "<unresolvedReceiverType>.foo:ANY()"
-      call.signature shouldBe "ANY()"
-      call.typeFullName shouldBe "ANY"
+      call.methodFullName shouldBe s"${TypeConstants.UnresolvedReceiver}.foo:${TypeConstants.UnresolvedType}()"
+      call.signature shouldBe s"${TypeConstants.UnresolvedType}()"
+      call.typeFullName shouldBe s"${TypeConstants.UnresolvedType}"
     }
   }
 }
