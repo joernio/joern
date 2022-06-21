@@ -908,6 +908,58 @@ trait KtPsiToAst {
       .withArgEdges(node, argAsts.map(_.root.get))
   }
 
+  private def astForQualifiedExpressionWithReceiverEdge(
+    expr: KtQualifiedExpression,
+    callKind: CallKinds.CallKind,
+    argIdx: Option[Int]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val isDynamicCall = callKind == CallKinds.DynamicCall
+    val isStaticCall  = callKind == CallKinds.StaticCall
+    val argIdxForReceiver =
+      if (isDynamicCall) 0
+      else if (isStaticCall) 1
+      else 1
+    val dispatchType =
+      if (callKind == CallKinds.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
+      else DispatchTypes.STATIC_DISPATCH
+
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
+    val argAsts = expr.getSelectorExpression match {
+      case selectorExpression: KtCallExpression =>
+        withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+          val selectorArgIndex = if (isStaticCall) idx else argIdxForReceiver + idx
+          astsForExpression(arg.getArgumentExpression, Some(selectorArgIndex))
+        }.flatten
+      case typedExpr: KtNameReferenceExpression =>
+        val argIdx = if (isStaticCall) 1 else 2
+        val node   = fieldIdentifierNode(typedExpr.getText).argumentIndex(argIdx)
+        List(Ast(node))
+      case _ => List()
+    }
+
+    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts.toList)
+    val (fullName, signature) =
+      typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
+    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
+    val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val methodName = expr.getSelectorExpression.getFirstChild.getText
+
+    val node = withArgumentIndex(
+      callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr)),
+      argIdx
+    )
+    val receiverNode =
+      if (argAsts.size == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) argAsts.head.root.get
+      else receiverAst.root.get
+
+    Ast(node)
+      .withChild(receiverAst)
+      .withArgEdge(node, receiverNode)
+      .withChildren(argAsts)
+      .withArgEdges(node, argAsts.map(_.root.get))
+      .withReceiverEdge(node, receiverNode)
+  }
+
   private def astDerivedFullNameWithSignature(expr: KtQualifiedExpression, argAsts: List[Ast])(implicit
     typeInfoProvider: TypeInfoProvider
   ): (String, String) = {
@@ -933,8 +985,6 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val callKind        = typeInfoProvider.bindingKind(expr)
-    val isStaticCall    = callKind == CallKinds.StaticCall
-    val isDynamicCall   = callKind == CallKinds.DynamicCall
     val isExtensionCall = callKind == CallKinds.ExtensionCall
 
     val hasThisSuperOrNameRefReceiver = expr.getReceiverExpression match {
@@ -957,10 +1007,6 @@ trait KtPsiToAst {
         false
     }
     val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
-    val argIdxForReceiver =
-      if (isDynamicCall) 0
-      else if (isStaticCall) 1
-      else 1
     if (isFieldAccessCall) {
       astForQualifiedExpressionFieldAccess(expr, argIdx)
     } else if (isExtensionCall) {
@@ -970,44 +1016,7 @@ trait KtPsiToAst {
     } else if (noAstForReceiver) {
       astForQualifiedExpressionWithNoAstForReceiver(expr, argIdx)
     } else {
-      val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
-      val argAsts = expr.getSelectorExpression match {
-        case selectorExpression: KtCallExpression =>
-          withIndex(selectorExpression.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-            val selectorArgIndex = if (isStaticCall) idx else argIdxForReceiver + idx
-            astsForExpression(arg.getArgumentExpression, Some(selectorArgIndex))
-          }.flatten
-        case typedExpr: KtNameReferenceExpression =>
-          val argIdx = if (isStaticCall) 1 else 2
-          val node   = fieldIdentifierNode(typedExpr.getText).argumentIndex(argIdx)
-          List(Ast(node))
-        case _ => List()
-      }
-
-      val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts.toList)
-      val (fullName, signature) =
-        typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
-      registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-      val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-      val methodName = expr.getSelectorExpression.getFirstChild.getText
-      val dispatchType =
-        if (callKind == CallKinds.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
-        else DispatchTypes.STATIC_DISPATCH
-
-      val node = withArgumentIndex(
-        callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr)),
-        argIdx
-      )
-      val receiverNode = receiverAst.root.get
-      val ast =
-        Ast(node)
-          .withChild(receiverAst)
-          .withArgEdge(node, receiverNode)
-          .withChildren(argAsts)
-          .withArgEdges(node, argAsts.map(_.root.get))
-      if (argAsts.size == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef])
-        ast.withReceiverEdge(node, argAsts.head.root.get)
-      else ast.withReceiverEdge(node, receiverNode)
+      astForQualifiedExpressionWithReceiverEdge(expr, callKind, argIdx)
     }
   }
 
