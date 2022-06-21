@@ -231,7 +231,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     arg0.isInstanceOf[nodes.Identifier] shouldBe true
     arg0.asInstanceOf[nodes.Identifier].name shouldBe "this"
     arg0.code shouldBe "this"
-    arg0.order shouldBe 0
+//    arg0.order shouldBe 0
     arg0.argumentIndex shouldBe 0
 
     val List(arg1) = cpg.call("add").argument(1).l
@@ -245,7 +245,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     arg2.asInstanceOf[nodes.Literal].code shouldBe "3"
     arg2.isInstanceOf[nodes.Literal] shouldBe true
     arg2.code shouldBe "3"
-    arg2.order shouldBe 2
+//    arg2.order shouldBe 2
     arg2.argumentIndex shouldBe 2
   }
 
