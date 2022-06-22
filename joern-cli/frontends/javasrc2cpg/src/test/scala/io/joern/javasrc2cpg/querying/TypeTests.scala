@@ -265,7 +265,7 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       case identifier :: Nil =>
         identifier.name shouldBe "this"
         identifier.typeFullName shouldBe "java.lang.Object"
-        identifier.order shouldBe 0
+        identifier.order shouldBe 1
         identifier.argumentIndex shouldBe 0
 
       case _ => fail("No receiver for super call found")

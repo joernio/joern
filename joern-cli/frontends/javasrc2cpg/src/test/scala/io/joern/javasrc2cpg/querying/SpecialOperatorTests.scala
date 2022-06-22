@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, TypeRef}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class SpecialOperatorTests extends JavaSrcCodeToCpgFixture {
@@ -28,8 +28,7 @@ class SpecialOperatorTests extends JavaSrcCodeToCpgFixture {
 
     call.argument.size shouldBe 2
     call.order shouldBe 1
-    call.argumentIndex shouldBe 1
-    call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+    call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
     val List(o: Identifier, t: TypeRef) = call.argument.l
     o.code shouldBe "o"
@@ -53,7 +52,7 @@ class SpecialOperatorTests extends JavaSrcCodeToCpgFixture {
     call.argument.size shouldBe 2
     call.order shouldBe 2
     call.argumentIndex shouldBe 2
-    call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+    call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
     val List(t: TypeRef, i: Identifier) = call.argument.l
 

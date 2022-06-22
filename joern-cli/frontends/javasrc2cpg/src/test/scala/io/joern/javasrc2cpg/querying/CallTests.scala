@@ -218,10 +218,10 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     val List(x) = cpg.call("add").l
     x.code shouldBe "this.add(argc, 3)"
     x.name shouldBe "add"
-    x.order shouldBe 2
+    x.order shouldBe 1
     x.methodFullName shouldBe "test.Foo.add:int(int,int)"
     x.signature shouldBe "int(int,int)"
-    x.argumentIndex shouldBe 2
+    x.argumentIndex shouldBe 1
     x.lineNumber shouldBe Some(9)
   }
 
@@ -238,7 +238,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     arg1.isInstanceOf[nodes.Identifier] shouldBe true
     arg1.asInstanceOf[nodes.Identifier].name shouldBe "argc"
     arg1.code shouldBe "argc"
-    arg1.order shouldBe 1
+//    arg1.order shouldBe 2
     arg1.argumentIndex shouldBe 1
 
     val List(arg2) = cpg.call("add").argument(2).l
@@ -266,7 +266,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
   "should handle unresolved calls with appropriate defaults" in {
     val List(call: Call) = cpg.typeDecl.name("Foo").ast.isCall.name("foo").l
-    call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+    call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     call.methodFullName shouldBe "test.Foo.foo:void(int)"
     call.signature shouldBe "void(int)"
     call.code shouldBe "foo(argc)"
@@ -283,13 +283,13 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     val List(objName: Identifier, argument: Literal) = call.astChildren.l
 
-    objName.order shouldBe 0
+    objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
     objName.code shouldBe "myObj"
     objName.name shouldBe "myObj"
 
     argument.code shouldBe "\"Hello, world!\""
-    argument.order shouldBe 1
+    argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
   }
 
@@ -302,9 +302,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val callArgs = call.argument.l
     val List(identifier: Identifier, argument: Call) = call.argument.l
-    identifier.order shouldBe 0
+    identifier.order shouldBe 1
     identifier.argumentIndex shouldBe 0
     identifier.code shouldBe "this"
     identifier.name shouldBe "this"
@@ -328,13 +327,15 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     val List(objName: Identifier, argument: Call) = call.astChildren.l
 
-    objName.order shouldBe 0
+    objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
     objName.name shouldBe "this"
     objName.code shouldBe "this"
 
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
+    argument.order shouldBe 2
+    argument.argumentIndex shouldBe 1
 
     val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
     ident.name shouldBe "this"

@@ -72,8 +72,6 @@ object Util {
       .typeFullName(typeFullName.getOrElse(TypeConstants.UnresolvedType))
       .lineNumber(line)
       .columnNumber(column)
-      .order(order)
-      .argumentIndex(order)
   }
 
   def fieldIdentifierNode(
@@ -86,7 +84,5 @@ object Util {
       .code(name)
       .lineNumber(line)
       .columnNumber(column)
-      .order(2)
-      .argumentIndex(2)
   }
 }

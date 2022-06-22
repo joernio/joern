@@ -27,7 +27,6 @@ class MethodReturnTests extends JavaSrcCodeToCpgFixture {
     val List(x) = cpg.method.name("foo").ast.isReturn.l
     x.code shouldBe "return 1;"
     x.order shouldBe 1
-    x.argumentIndex shouldBe 1
     x.astChildren.size shouldBe 1
     x.argumentOut.size shouldBe 1
   }

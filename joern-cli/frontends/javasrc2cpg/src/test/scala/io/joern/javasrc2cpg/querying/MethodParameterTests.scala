@@ -16,7 +16,8 @@ class MethodParameterTests2 extends JavaSrcCode2CpgFixture {
 
     "have correct parameter properties for 'this'" in {
       val List(param) = cpg.method.name("foo").parameter.name("this").l
-      param.order shouldBe 0
+      param.order shouldBe 1
+      param.index shouldBe 0
       param.lineNumber shouldBe Some(3)
       param.columnNumber shouldBe None
       param.typeFullName shouldBe "Foo"
@@ -24,7 +25,8 @@ class MethodParameterTests2 extends JavaSrcCode2CpgFixture {
 
     "have correct parameter properties for p1" in {
       val List(param) = cpg.method.name("foo").parameter.name("p1").l
-      param.order shouldBe 1
+      param.order shouldBe 2
+      param.index shouldBe 1
       param.lineNumber shouldBe Some(3)
       param.columnNumber shouldBe Some(11)
       param.typeFullName shouldBe "int"
@@ -32,7 +34,8 @@ class MethodParameterTests2 extends JavaSrcCode2CpgFixture {
 
     "have correct parameter properties for p2" in {
       val List(param) = cpg.method.name("foo").parameter.name("p2").l
-      param.order shouldBe 2
+      param.order shouldBe 3
+      param.index shouldBe 2
       param.lineNumber shouldBe Some(3)
       param.columnNumber shouldBe Some(19)
       param.typeFullName shouldBe "int"

@@ -329,12 +329,12 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           thisParam.name shouldBe "this"
           thisParam.code shouldBe "this"
           thisParam.typeFullName shouldBe "Foo"
-          thisParam.order shouldBe 0
+          thisParam.order shouldBe 3
           thisParam.index shouldBe 0
 
           inputParam.name shouldBe "input"
           inputParam.typeFullName shouldBe "java.lang.String"
-          inputParam.order shouldBe 1
+          inputParam.order shouldBe 4
           inputParam.index shouldBe 1
 
         case result => fail(s"Expected two params for lambda method but got $result")
@@ -362,7 +362,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         case List(inputParam) =>
           inputParam.name shouldBe "input"
           inputParam.typeFullName shouldBe "java.lang.String"
-          inputParam.order shouldBe 1
+          inputParam.order shouldBe 4
           inputParam.index shouldBe 1
 
         case result => fail(s"Expected a single param for lambda method but got $result")
@@ -503,13 +503,13 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
               input.name shouldBe "input"
               input.code shouldBe "java.lang.Integer input"
               input.typeFullName shouldBe "java.lang.Integer"
-              input.order shouldBe 1
+              input.order shouldBe 4
               input.index shouldBe 1
 
               moreInput.name shouldBe "moreInput"
               moreInput.code shouldBe "java.lang.Integer moreInput"
               moreInput.typeFullName shouldBe "java.lang.Integer"
-              moreInput.order shouldBe 2
+              moreInput.order shouldBe 5
               moreInput.index shouldBe 2
 
             case result => fail(s"Expected two lambda parameters but got $result")
