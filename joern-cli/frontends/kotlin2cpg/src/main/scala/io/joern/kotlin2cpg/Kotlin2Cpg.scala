@@ -157,7 +157,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
     dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
       val f = File(classpathEntry)
       val files =
-        if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
+        if (f.isDirectory) f.listRecursively.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
         else Seq()
       acc ++ files
     })
