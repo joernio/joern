@@ -58,7 +58,6 @@ object Util {
   def operatorCallNode(
     name: String,
     code: String,
-    order: Int,
     typeFullName: Option[String] = None,
     line: Option[Integer] = None,
     column: Option[Integer] = None
