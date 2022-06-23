@@ -53,11 +53,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
   def createCpg(config: Config): Try[Cpg] = {
     val ret = withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      if (config.inputPaths.size != 1) {
-        throw new RuntimeException("This frontend requires exactly one input path")
-      }
-      val rawSourceCodePath = config.inputPaths.head
-      val rawSourceCodeFile = new JFile(rawSourceCodePath)
+      val rawSourceCodeFile = new JFile(config.inputPath)
       val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
       val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
         sourceTarget

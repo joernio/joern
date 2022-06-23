@@ -7,7 +7,7 @@ import scopt.OParser
 case class DefaultContentRootJarPath(path: String, isResource: Boolean)
 
 final case class Config(
-  inputPaths: Set[String] = Set.empty,
+  inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   ignorePaths: Set[String] = Set.empty,
   classpath: Set[String] = Set.empty,
@@ -18,7 +18,7 @@ final case class Config(
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
-    copy(inputPaths = inputPaths + inputPath)
+    copy(inputPath = inputPath)
 
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }

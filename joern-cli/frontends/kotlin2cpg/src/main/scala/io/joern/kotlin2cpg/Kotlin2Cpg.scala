@@ -43,94 +43,88 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
-      if (config.inputPaths.size == 1) {
-        val sourceDir = config.inputPaths.head
-        if (!Files.exists(Paths.get(sourceDir))) {
-          println(s"The specified input path `$sourceDir` is not a file that exists. Exiting.")
-          System.exit(1)
-        }
-        if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println(s"The specified input path `$sourceDir` is not a directory. Exiting.")
-          System.exit(1)
-        }
-
-        val maxHeapSize          = Runtime.getRuntime().maxMemory()
-        val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
-        logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
-
-        val dependenciesPaths = if (config.downloadDependencies) {
-          downloadDependencies(sourceDir, config)
-        } else {
-          logger.info(s"Not using any dependency jars.")
-          Seq()
-        }
-
-        val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
-        if (filesWithKtExtension.isEmpty) {
-          println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
-          System.exit(1)
-        }
-        logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
-
-        val filesWithJavaExtension = SourceFiles.determine(Set(sourceDir), Set(".java"))
-        if (filesWithJavaExtension.nonEmpty) {
-          logger.info(
-            s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
-          )
-        }
-
-        val jarsAtConfigClassPath = findJarsIn(config.classpath)
-        if (config.classpath.nonEmpty) {
-          if (jarsAtConfigClassPath.nonEmpty) {
-            logger.info(s"Found ${jarsAtConfigClassPath.size} jars in the specified classpath.")
-          } else {
-            logger.warn("No jars found in the specified classpath.")
-          }
-        }
-
-        val stdlibJars =
-          if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths
-          else Seq()
-        val defaultContentRootJars = stdlibJars ++
-          jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
-          dependenciesPaths.map { path =>
-            DefaultContentRootJarPath(path, false)
-          }
-        val messageCollector        = new ErrorLoggingMessageCollector
-        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-        if (dirsForSourcesToCompile.isEmpty) {
-          logger.warn("The list of directories to analyze is empty.")
-        }
-        val plugins = Seq()
-        val environment =
-          CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
-
-        val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-        val sources = sourceEntries.filterNot { entry =>
-          config.ignorePaths.exists { pathToIgnore =>
-            val parent = Paths.get(pathToIgnore).toAbsolutePath()
-            val child  = Paths.get(entry.filename)
-            child.startsWith(parent)
-          }
-        }
-        val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
-        val typeInfoProvider = new DefaultTypeInfoProvider(environment)
-
-        new MetaDataPass(cpg, Languages.KOTLIN).createAndApply()
-        val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
-        astCreator.createAndApply()
-        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
-
-        val configCreator = new ConfigPass(configFiles, cpg)
-        configCreator.createAndApply()
-
-        val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
-        if (!hasAtLeastOneMethodNode) {
-          logger.warn("Resulting CPG does not contain any METHOD nodes.")
-        }
-      } else {
-        println("This frontend requires exactly one input path")
+      val sourceDir = config.inputPath
+      if (!Files.exists(Paths.get(sourceDir))) {
+        println(s"The specified input path `$sourceDir` is not a file that exists. Exiting.")
         System.exit(1)
+      }
+      if (!Files.isDirectory(Paths.get(sourceDir))) {
+        println(s"The specified input path `$sourceDir` is not a directory. Exiting.")
+        System.exit(1)
+      }
+
+      val maxHeapSize          = Runtime.getRuntime().maxMemory()
+      val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
+      logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
+
+      val dependenciesPaths = if (config.downloadDependencies) {
+        downloadDependencies(sourceDir, config)
+      } else {
+        logger.info(s"Not using any dependency jars.")
+        Seq()
+      }
+
+      val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
+      if (filesWithKtExtension.isEmpty) {
+        println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
+        System.exit(1)
+      }
+      logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+
+      val filesWithJavaExtension = SourceFiles.determine(Set(sourceDir), Set(".java"))
+      if (filesWithJavaExtension.nonEmpty) {
+        logger.info(
+          s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
+        )
+      }
+
+      val jarsAtConfigClassPath = findJarsIn(config.classpath)
+      if (config.classpath.nonEmpty) {
+        if (jarsAtConfigClassPath.nonEmpty) {
+          logger.info(s"Found ${jarsAtConfigClassPath.size} jars in the specified classpath.")
+        } else {
+          logger.warn("No jars found in the specified classpath.")
+        }
+      }
+      val stdlibJars =
+        if (config.withStdlibJarsInClassPath) ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
+        else Seq()
+      val defaultContentRootJars = stdlibJars ++
+        jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+        dependenciesPaths.map { path =>
+          DefaultContentRootJarPath(path, false)
+        }
+      val messageCollector        = new ErrorLoggingMessageCollector
+      val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
+      if (dirsForSourcesToCompile.isEmpty) {
+        logger.warn("The list of directories to analyze is empty.")
+      }
+      val plugins = Seq()
+      val environment =
+        CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
+
+      val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+      val sources = sourceEntries.filterNot { entry =>
+        config.ignorePaths.exists { pathToIgnore =>
+          val parent = Paths.get(pathToIgnore).toAbsolutePath()
+          val child  = Paths.get(entry.filename)
+          child.startsWith(parent)
+        }
+      }
+      val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
+      val typeInfoProvider = new DefaultTypeInfoProvider(environment)
+
+      new MetaDataPass(cpg, Languages.KOTLIN).createAndApply()
+      val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
+      astCreator.createAndApply()
+      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+
+      val configCreator = new ConfigPass(configFiles, cpg)
+      configCreator.createAndApply()
+
+      val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
+      if (!hasAtLeastOneMethodNode) {
+        logger.warn("Resulting CPG does not contain any METHOD nodes.")
       }
     }
   }

@@ -7,14 +7,14 @@ import scopt.OParser
 /** Command line configuration parameters
   */
 final case class Config(
-  inputPaths: Set[String] = Set.empty,
+  inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   inferenceJarPaths: Set[String] = Set.empty,
   skipDependencyDownload: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
-    copy(inputPaths = inputPaths + inputPath)
+    copy(inputPath = inputPath)
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 

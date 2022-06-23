@@ -20,14 +20,9 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
+        val partialResult = AstGenRunner.execute(File(config.inputPath), tmpDir)
         val astgenResult =
-          config.inputPaths.foldLeft(AstGenRunnerResult()) { (result, input) =>
-            val partialResult = AstGenRunner.execute(File(input), tmpDir)
-            result.copy(
-              parsedFiles = result.parsedFiles ++ partialResult.parsedFiles,
-              skippedFiles = result.skippedFiles ++ partialResult.skippedFiles
-            )
-          }
+          AstGenRunnerResult(parsedFiles = partialResult.parsedFiles, skippedFiles = partialResult.skippedFiles)
 
         val hash = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => Path.of(file) }.toSeq)
 
