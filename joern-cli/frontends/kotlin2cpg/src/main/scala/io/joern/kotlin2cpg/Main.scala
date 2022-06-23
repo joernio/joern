@@ -17,7 +17,7 @@ final case class Config(
   gradleConfigurationName: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
-  override def withAdditionalInputPath(inputPath: String): Config =
+  override def withInputPath(inputPath: String): Config =
     copy(inputPaths = inputPaths + inputPath)
 
   override def withOutputPath(x: String): Config = copy(outputPath = x)

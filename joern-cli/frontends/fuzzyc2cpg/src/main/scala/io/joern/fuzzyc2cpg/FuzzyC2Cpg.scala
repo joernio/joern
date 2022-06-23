@@ -46,8 +46,8 @@ object FuzzyC2Cpg {
     sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp")
   ) extends X2CpgConfig[Config] {
 
-    override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-    override def withOutputPath(x: String): Config                  = copy(outputPath = x)
+    override def withInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
+    override def withOutputPath(x: String): Config        = copy(outputPath = x)
   }
 
   def main(args: Array[String]): Unit = {

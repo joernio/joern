@@ -13,7 +13,7 @@ final case class Config(
   skipDependencyDownload: Boolean = false
 ) extends X2CpgConfig[Config] {
 
-  override def withAdditionalInputPath(inputPath: String): Config =
+  override def withInputPath(inputPath: String): Config =
     copy(inputPaths = inputPaths + inputPath)
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
