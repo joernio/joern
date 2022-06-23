@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
+import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
