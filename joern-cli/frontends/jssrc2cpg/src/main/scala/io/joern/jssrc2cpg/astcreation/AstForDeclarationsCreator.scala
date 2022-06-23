@@ -55,7 +55,7 @@ trait AstForDeclarationsCreator {
     } else {
       createFieldAccessCallAst(
         createIdentifierNode(exportName, declaration),
-        createIdentifierNode(name, declaration),
+        createFieldIdentifierNode(name, declaration.lineNumber, declaration.columnNumber),
         declaration.lineNumber,
         declaration.columnNumber
       )
@@ -124,7 +124,6 @@ trait AstForDeclarationsCreator {
           declaration.lineNumber,
           declaration.columnNumber
         )
-      Ast.storeInDiffGraph(destAst, diffGraph)
       Ast.storeInDiffGraph(sourceAst, diffGraph)
       assigmentCallAst
     }
@@ -251,10 +250,8 @@ trait AstForDeclarationsCreator {
       val nodeInfo = createBabelNodeInfo(id.json)
       nodeInfo.node match {
         case BabelAst.ObjectPattern =>
-          Ast.storeInDiffGraph(sourceAst, diffGraph)
           astForDeconstruction(nodeInfo, sourceAst)
         case BabelAst.ArrayPattern =>
-          Ast.storeInDiffGraph(sourceAst, diffGraph)
           astForDeconstruction(nodeInfo, sourceAst)
         case _ =>
           val destAst = astForNode(id.json)
@@ -350,11 +347,9 @@ trait AstForDeclarationsCreator {
     val lhsAst = nodeInfo.node match {
       case BabelAst.ObjectPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case BabelAst.ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
     }
@@ -410,11 +405,9 @@ trait AstForDeclarationsCreator {
     val lhsAst = nodeInfo.node match {
       case BabelAst.ObjectPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case BabelAst.ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
     }

@@ -88,10 +88,9 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
     "have correct modifier" in AstFixture("""
         |abstract class Greeter {
         |  static a: string;
-        |  #b: string;
-        |  private c: string;
-        |  public d: string;
-        |  protected e: string;
+        |  private b: string;
+        |  public c: string;
+        |  protected d: string;
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.typeDecl.name("Greeter.*").l) { case List(greeter, greeterMeta) =>
@@ -99,9 +98,9 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
         greeter.name shouldBe "Greeter"
         cpg.typeDecl.isAbstract.head shouldBe greeter
         greeterMeta.member.isStatic.head shouldBe greeterMeta.member.name("a").head
-        greeter.member.isPrivate.l shouldBe List(greeter.member.name("b").head, greeter.member.name("c").head)
-        greeter.member.isPublic.head shouldBe greeter.member.name("d").head
-        greeter.member.isProtected.head shouldBe greeter.member.name("e").head
+        greeter.member.isPrivate.head shouldBe greeter.member.name("b").head
+        greeter.member.isPublic.head shouldBe greeter.member.name("c").head
+        greeter.member.isProtected.head shouldBe greeter.member.name("d").head
       }
     }
 
