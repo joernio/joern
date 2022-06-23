@@ -171,19 +171,13 @@ trait AstForExpressionsCreator {
     val memberNodeInfo   = createBabelNodeInfo(memberExpr.json("property"))
     val memberNode =
       if (memberIsComputed) {
-        astForNode(memberNodeInfo.json)
+        val node = astForNode(memberNodeInfo.json)
+        Ast.storeInDiffGraph(node, diffGraph)
+        node
       } else {
         Ast(createFieldIdentifierNode(memberNodeInfo.code, memberNodeInfo.lineNumber, memberNodeInfo.columnNumber))
       }
-    Ast.storeInDiffGraph(memberNode, diffGraph)
-    val accessAst =
-      createFieldAccessCallAst(
-        baseAst.nodes.head,
-        memberNode.nodes.head,
-        memberExpr.lineNumber,
-        memberExpr.columnNumber
-      )
-    accessAst
+    createFieldAccessCallAst(baseAst.nodes.head, memberNode.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
   }
 
   protected def astForAssignmentExpression(assignment: BabelNodeInfo): Ast = {

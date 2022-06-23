@@ -4760,12 +4760,27 @@ class AstCreationPassTest extends AbstractPassTest {
 
   "AST generation for exports" should {
     "have correct structure for simple names and aliases" in AstFixture("""
+        |var name1, name2, name3, name6;
+        |var variable4, variable5;
         |export { name1, name2, name3 };
         |export { variable4 as name4, variable5 as name5, name6 };
         |export let name7, name8, name9;
         |export let name10 = "10", name11 = "11", name12;
         |""".stripMargin) { cpg =>
-      cpg.local.code.l shouldBe List("name7", "name8", "name9", "name10", "name11", "name12")
+      cpg.local.code.l shouldBe List(
+        "name1",
+        "name2",
+        "name3",
+        "name6",
+        "variable4",
+        "variable5",
+        "name7",
+        "name8",
+        "name9",
+        "name10",
+        "name11",
+        "name12"
+      )
       cpg.call(Operators.assignment).code.l shouldBe List(
         "exports.name1 = name1",
         "exports.name2 = name2",
@@ -4785,11 +4800,12 @@ class AstCreationPassTest extends AbstractPassTest {
     }
 
     "have correct structure for defaults" in AstFixture("""
+        |var name1;
         |export { name1 as default };
         |export default name2 = "2";
         |export default function foo(param) {};
         |""".stripMargin) { cpg =>
-      cpg.local.code.l shouldBe List("foo", "name2")
+      cpg.local.code.l shouldBe List("name1", "foo", "name2")
       cpg.call(Operators.assignment).code.l shouldBe List(
         "exports[\"default\"] = name1",
         "name2 = \"2\"",

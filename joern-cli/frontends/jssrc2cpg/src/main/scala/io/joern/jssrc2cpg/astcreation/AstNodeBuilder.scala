@@ -81,16 +81,24 @@ trait AstNodeBuilder {
   protected def setIndices(asts: List[Ast], receiver: Option[Ast] = None): Unit = {
     var currIndex = 1
     var currOrder = 1
-    asts.foreach { a =>
+
+    val remainingAsts = asts match {
+      case head :: rest
+          if head.root.exists(x => x.isInstanceOf[NewIdentifier] && x.asInstanceOf[NewIdentifier].code == "this") =>
+        val x = head.root.get.asInstanceOf[NewIdentifier]
+        x.argumentIndex = 0
+        x.order = 1
+        currOrder = currOrder + 1
+        rest
+      case others => others
+    }
+
+    remainingAsts.foreach { a =>
       a.root match {
-        case Some(x: ExpressionNew) if x.code != "this" || x.isInstanceOf[NewLiteral] =>
+        case Some(x: ExpressionNew) =>
           x.argumentIndex = currIndex
           x.order = currOrder
           currIndex = currIndex + 1
-          currOrder = currOrder + 1
-        case Some(x: ExpressionNew) =>
-          x.argumentIndex = 0
-          x.order = 1
           currOrder = currOrder + 1
         case _ =>
           currIndex = currIndex + 1
