@@ -18,35 +18,35 @@ class SolidityDataflowFixture extends AnyFlatSpec with Matchers {
 
   val code: String  = ""
   lazy val cpg: Cpg = Solidity2CpgTestContext.buildCpgWithDataflow(code)
-
-
-  def getConstSourceSink(
-                          methodName: String,
-                          sourceCode: String = "\"MALICIOUS\"",
-                          sinkPattern: String = ".*println.*"
-                        ): (Traversal[Literal], Traversal[Expression]) = {
-    getMultiFnSourceSink(methodName, methodName, sourceCode, sinkPattern)
-  }
-
-  def getMultiFnSourceSink(
-                            sourceMethodName: String,
-                            sinkMethodName: String,
-                            sourceCode: String = "\"MALICIOUS\"",
-                            sinkPattern: String = ".*println.*"
-                          ): (Traversal[Literal], Traversal[Expression]) = {
-    val sourceMethod = cpg.method(s".*$sourceMethodName").head
-    val sinkMethod = cpg.method(s".*$sinkMethodName").head
-
-    def source = sourceMethod.literal.code(sourceCode)
-
-    def sink = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
-    if (source.size <= 0) {
-      fail(s"Could not find source $sourceCode in method $sourceMethodName")
-    }
-    if (sink.size <= 0) {
-      fail(s"Could not find sink $sinkPattern for method $sinkMethodName")
-    }
-
-    (source, sink)
-  }
+//
+//
+//  def getConstSourceSink(
+//                          methodName: String,
+//                          sourceCode: String = "\"MALICIOUS\"",
+//                          sinkPattern: String = ".*println.*"
+//                        ): (Traversal[Literal], Traversal[Expression]) = {
+//    getMultiFnSourceSink(methodName, methodName, sourceCode, sinkPattern)
+//  }
+//
+//  def getMultiFnSourceSink(
+//                            sourceMethodName: String,
+//                            sinkMethodName: String,
+//                            sourceCode: String = "\"MALICIOUS\"",
+//                            sinkPattern: String = ".*println.*"
+//                          ): (Traversal[Literal], Traversal[Expression]) = {
+//    val sourceMethod = cpg.method(s".*$sourceMethodName").head
+//    val sinkMethod = cpg.method(s".*$sinkMethodName").head
+//
+//    def source = sourceMethod.literal.code(sourceCode)
+//
+//    def sink = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
+//    if (source.size <= 0) {
+//      fail(s"Could not find source $sourceCode in method $sourceMethodName")
+//    }
+//    if (sink.size <= 0) {
+//      fail(s"Could not find sink $sinkPattern for method $sinkMethodName")
+//    }
+//
+//    (source, sink)
+//  }
 }

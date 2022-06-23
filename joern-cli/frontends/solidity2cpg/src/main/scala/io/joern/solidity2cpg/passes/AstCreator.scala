@@ -4,7 +4,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -162,6 +162,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ModifierDefinition =>
         // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
         val methodReturn = NewMethodReturn().typeFullName("")
+
         Ast(methodNode)
           .withChildren(parameters)
           .withChild(body)
@@ -169,6 +170,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: FunctionDefinition =>
         /** passing returnParameters if found
           */
+        var modifierMethod = Ast()
         val returnParams = if (x.returnParameters != null) x.returnParameters else List()
         val funcType = if (returnParams.nonEmpty) {
           ":" ++ returnParams
@@ -224,6 +226,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           */
         if (x.visibility != null && !x.visibility.equals("default")) {
           code.append(" "+x.visibility)
+          modifierMethod = x.visibility match {
+            case "public" => Ast(NewModifier().modifierType(ModifierTypes.PUBLIC).code(x.visibility))
+            case "private" => Ast(NewModifier().modifierType(ModifierTypes.PRIVATE).code(x.visibility))
+          }
         }
 
         /** adding returns into "code" if given
@@ -252,17 +258,18 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
             .code(code.toString())
             .filename(filename.substring(0, filename.length - 4) + "sol")
         )
+          .withChild(modifierMethod)
           .withChildren(parameters)
           .withChild(body)
           .withChildren(modifiers)
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-//        mAst.nodes.foreach { n =>
-//          val code  = n.properties.getOrElse("CODE", null)
-//          val order = n.properties.getOrElse("ORDER", null)
-//          println((order, n.label(), code))
-//        }
+        mAst.nodes.foreach { n =>
+          val code  = n.properties.getOrElse("CODE", null)
+          val order = n.properties.getOrElse("ORDER", null)
+          println((order, n.label(), code))
+        }
 
         mAst
       case x =>
@@ -715,13 +722,19 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
     }
     if (operation.falseBody != null) {
+      val elseNode =
+        Ast(NewControlStructure()
+          .controlStructureType(ControlStructureTypes.ELSE)
+          .order(3)
+          .argumentIndex(3)
+          .code("else"))
       operation.falseBody match {
         case x: Block => {
-          fb = astForBody(x, 3)
+          fb = elseNode.withChild(astForBody(x, 3))
           foundf = true
         }
         case x =>  {
-          fb = astForStatement(x, 3)
+          fb = elseNode.withChild(astForStatement(x, 3))
           foundf = true}
       }
     }
