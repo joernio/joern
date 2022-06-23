@@ -100,3 +100,19 @@ class CMethodTest5 extends CCodeToCpgSuite(fileSuffix = ".cpp") {
     }
   }
 }
+
+class CMethodTest6 extends CCodeToCpgSuite(fileSuffix = ".cpp") {
+  override val code = """
+      |void foo<A,
+      |         B,
+      |         C>() {};
+      |""".stripMargin
+
+  "should be correct for methods with line breaks / whitespace" in {
+    inside(cpg.method("foo").l) { case List(foo) =>
+      foo.name shouldBe "foo"
+      foo.fullName shouldBe "foo<A,B,C>"
+      foo.signature shouldBe "void foo<A,B,C> ()"
+    }
+  }
+}
