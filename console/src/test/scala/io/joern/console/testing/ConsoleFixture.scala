@@ -91,7 +91,7 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
         .collect {
           case List(h, t) if h == "--define" => t
         }
-      c2cpg.run(Config(Set(inputPath), outputPath, defines = defines.toSet))
+      c2cpg.run(Config(inputPath, outputPath, defines = defines.toSet))
       Some(outputPath)
     }
 

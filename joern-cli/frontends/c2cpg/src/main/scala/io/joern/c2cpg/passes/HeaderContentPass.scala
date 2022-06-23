@@ -19,7 +19,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
   private val systemIncludePaths =
     IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)
 
-  private val absolutePath: String = File(config.inputPaths.head).path.toAbsolutePath.normalize().toString
+  private val absolutePath: String = File(config.inputPath).path.toAbsolutePath.normalize().toString
   private val filename: String     = s"$absolutePath:<includes>"
   private val globalName: String   = NamespaceTraversal.globalNamespaceName
   private val fullName: String     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
