@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.compiler
 
-import better.files.{File, Resource}
+import better.files.{File}
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
-import io.joern.kotlin2cpg.types.DefaultTypeInfoProvider
+import java.nio.file.Paths
 import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSeverity,
   CompilerMessageSourceLocation,
@@ -29,27 +29,24 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
   }
 
   "KotlinCoreEnvironment generation on simple test code which calls external libraries" - {
-    val projectDirUrlOpt = Resource.url("code/ktmin")
-    projectDirUrlOpt should not be empty
-    val projectDir                   = projectDirUrlOpt.get
-    val projectDependenciesDirUrlOpt = Resource.url("code/ktmin/dependencies")
-    projectDependenciesDirUrlOpt should not be empty
-    val projectDependenciesDirUrl = projectDependenciesDirUrlOpt.get
+    val uri                     = ClassLoader.getSystemResource("code/ktmin").toURI
+    val projectDirPath          = Paths.get(uri).toString
+    val projectDependenciesPath = Paths.get(projectDirPath, "dependencies")
 
     "should not receive a compiler error message when the dependencies of the project have been provided" in {
-      val defaultContentRootJarsDir = File(projectDependenciesDirUrl.getPath)
+      val defaultContentRootJarsDir = File(projectDependenciesPath)
       val contentRoots = defaultContentRootJarsDir.listRecursively
         .filter(_.pathAsString.endsWith("jar"))
         .map { f => DefaultContentRootJarPath(f.pathAsString, false) }
         .toSeq
       val messageCollector = new ErrorCountMessageCollector()
-      CompilerAPI.makeEnvironment(Seq(projectDir.getPath), contentRoots, Seq(), messageCollector)
+      CompilerAPI.makeEnvironment(Seq(projectDirPath), contentRoots, Seq(), messageCollector)
       messageCollector.hasErrors() shouldBe false
     }
 
     "should receive a compiler error message when the dependencies of the project have not been provided" in {
       val messageCollector = new ErrorCountMessageCollector()
-      CompilerAPI.makeEnvironment(Seq(projectDir.getPath), Seq(), Seq(), messageCollector)
+      CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
       messageCollector.hasErrors() shouldBe false
     }
   }
