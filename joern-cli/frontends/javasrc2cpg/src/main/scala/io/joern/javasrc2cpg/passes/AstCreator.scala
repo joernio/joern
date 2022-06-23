@@ -294,10 +294,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val namespaceBlock = packageDecl match {
       case Some(decl) =>
         val packageName = decl.getName.toString
-        val name        = packageName.split("\\.").lastOption.getOrElse("")
+        val fullName    = filename + ":" + packageName
         NewNamespaceBlock()
-          .name(name)
-          .fullName(packageName)
+          .name(packageName)
+          .fullName(fullName)
       case None =>
         globalNamespaceBlock()
     }
