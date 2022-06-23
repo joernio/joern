@@ -24,18 +24,28 @@ trait AstForFunctionsCreator {
     methodFullName: String,
     signature: String
   ): Ast = {
+    val normalizedName     = StringUtils.normalizeSpace(methodName)
+    val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
+
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
       val newTypeDeclNode =
-        newTypeDecl(methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
+        newTypeDecl(
+          normalizedName,
+          normalizedFullName,
+          method.filename,
+          normalizedName,
+          astParentType,
+          astParentFullName
+        )
       Ast.storeInDiffGraph(Ast(newTypeDeclNode), diffGraph)
       newTypeDeclNode
     }
 
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
+    val functionBinding = NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
