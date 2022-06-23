@@ -10,6 +10,7 @@ import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTP
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack._
+import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 
@@ -88,16 +89,16 @@ trait AstForFunctionsCreator {
     val signature =
       returnType + " " + fullname + " " + parameterListSignature(lambdaExpression, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(lambdaExpression, includeParamNames = true)
-    val methodNode: NewMethod = NewMethod()
-      .name(name)
+    val methodNode = NewMethod()
+      .name(StringUtils.normalizeSpace(name))
       .code(code)
       .isExternal(false)
-      .fullName(fullname)
+      .fullName(StringUtils.normalizeSpace(fullname))
       .lineNumber(linenumber)
       .lineNumberEnd(lineEnd(lambdaExpression))
       .columnNumber(columnnumber)
       .columnNumberEnd(columnEnd(lambdaExpression))
-      .signature(signature)
+      .signature(StringUtils.normalizeSpace(signature))
       .filename(filename)
 
     scope.pushNewScope(methodNode)
@@ -135,15 +136,15 @@ trait AstForFunctionsCreator {
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDecl, includeParamNames = true)
     val methodNode = NewMethod()
-      .name(name)
+      .name(StringUtils.normalizeSpace(name))
       .code(code)
       .isExternal(false)
-      .fullName(fullname)
+      .fullName(StringUtils.normalizeSpace(fullname))
       .lineNumber(linenumber)
       .lineNumberEnd(lineEnd(funcDecl))
       .columnNumber(columnnumber)
       .columnNumberEnd(columnEnd(funcDecl))
-      .signature(signature)
+      .signature(StringUtils.normalizeSpace(signature))
       .filename(filename)
 
     scope.pushNewScope(methodNode)
@@ -181,15 +182,15 @@ trait AstForFunctionsCreator {
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDef, includeParamNames = true)
     val methodNode = NewMethod()
-      .name(name)
+      .name(StringUtils.normalizeSpace(name))
       .code(code)
       .isExternal(false)
-      .fullName(fullname)
+      .fullName(StringUtils.normalizeSpace(fullname))
       .lineNumber(linenumber)
       .lineNumberEnd(lineEnd(funcDef))
       .columnNumber(columnnumber)
       .columnNumberEnd(columnEnd(funcDef))
-      .signature(signature)
+      .signature(StringUtils.normalizeSpace(signature))
       .filename(filename)
 
     methodAstParentStack.push(methodNode)
