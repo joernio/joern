@@ -347,11 +347,9 @@ trait AstForDeclarationsCreator {
     val lhsAst = nodeInfo.node match {
       case BabelAst.ObjectPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case BabelAst.ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
     }
@@ -407,11 +405,9 @@ trait AstForDeclarationsCreator {
     val lhsAst = nodeInfo.node match {
       case BabelAst.ObjectPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case BabelAst.ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        Ast.storeInDiffGraph(sourceAst, diffGraph)
         astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
     }

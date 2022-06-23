@@ -207,7 +207,6 @@ trait AstForExpressionsCreator {
     nodeInfo.node match {
       case BabelAst.ObjectPattern | BabelAst.ArrayPattern =>
         val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
-        Ast.storeInDiffGraph(rhsAst, diffGraph)
         astForDeconstruction(nodeInfo, rhsAst)
       case _ =>
         val lhsAst = astForNode(assignment.json("left"))
