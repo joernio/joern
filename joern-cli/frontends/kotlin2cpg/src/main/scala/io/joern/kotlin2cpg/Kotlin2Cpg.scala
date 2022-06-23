@@ -38,6 +38,11 @@ case class FileContentAtPath(content: String, relativizedPath: String, filename:
 class Kotlin2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(getClass)
   val parsingError   = "KOTLIN2CPG_PARSING_ERROR"
+  private val defaultKotlinStdlibContentRootJarPaths = Seq(
+    DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true)
+  )
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
@@ -87,7 +92,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         }
 
         val stdlibJars =
-          if (config.withStdlibJarsInClassPath) ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
+          if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths
           else Seq()
         val defaultContentRootJars = stdlibJars ++
           jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
