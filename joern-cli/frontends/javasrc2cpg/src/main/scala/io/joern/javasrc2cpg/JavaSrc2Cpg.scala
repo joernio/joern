@@ -47,7 +47,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   private def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
     val sourceFile = File(sourceCodePath)
     if (sourceFile.isDirectory) {
-      val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
+      val sourceFileNames = SourceFiles.determine(sourceCodePath, sourceFileExtensions)
       (sourceCodePath, sourceFileNames)
     } else {
       val dir = File.newTemporaryDirectory("javasrc").deleteOnExit()

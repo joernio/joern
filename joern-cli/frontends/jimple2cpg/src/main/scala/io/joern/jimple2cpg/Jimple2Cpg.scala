@@ -105,7 +105,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   ): List[String] = {
     (
       extractSourceFilesFromArchive(sourceCodePath, archiveFileExtensions) ++
-        moveClassFiles(SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions))
+        moveClassFiles(SourceFiles.determine(sourceCodePath, sourceFileExtensions))
     ).distinct
   }
 

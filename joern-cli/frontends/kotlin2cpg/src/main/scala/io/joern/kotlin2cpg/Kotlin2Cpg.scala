@@ -64,14 +64,14 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         Seq()
       }
 
-      val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
+      val filesWithKtExtension = SourceFiles.determine(sourceDir, Set(".kt"))
       if (filesWithKtExtension.isEmpty) {
         println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
         System.exit(1)
       }
       logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
-      val filesWithJavaExtension = SourceFiles.determine(Set(sourceDir), Set(".java"))
+      val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
       if (filesWithJavaExtension.nonEmpty) {
         logger.info(
           s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."

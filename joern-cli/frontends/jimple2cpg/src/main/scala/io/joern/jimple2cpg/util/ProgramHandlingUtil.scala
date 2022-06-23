@@ -145,7 +145,7 @@ object ProgramHandlingUtil {
       ) {
         List(sourceCodeDir)
       } else {
-        SourceFiles.determine(Set(sourceCodeDir), archiveFileExtensions)
+        SourceFiles.determine(sourceCodeDir, archiveFileExtensions)
       }
     archives.flatMap { x => unzipArchive(new ZipFile(x), sourceCodeDir) }
   }
