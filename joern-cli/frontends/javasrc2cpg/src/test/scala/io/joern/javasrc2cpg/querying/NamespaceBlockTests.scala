@@ -20,9 +20,9 @@ class NamespaceBlockTests extends JavaSrcCodeToCpgFixture {
 
   "should contain correct namespace block for known file" in {
     val List(x) = cpg.namespaceBlock.filename(".*.java").l
-    x.name shouldBe "bar"
+    x.name shouldBe "foo.bar"
     x.filename should not be ""
-    x.fullName shouldBe s"foo.bar"
+    x.fullName should endWith(":foo.bar")
     x.order shouldBe 1
   }
 
@@ -35,7 +35,7 @@ class NamespaceBlockTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from namespace block to namespace" in {
-    cpg.namespaceBlock.filename(".*java").namespace.name.l shouldBe List("bar")
+    cpg.namespaceBlock.filename(".*java").namespace.name.l shouldBe List("foo.bar")
   }
 
 }
