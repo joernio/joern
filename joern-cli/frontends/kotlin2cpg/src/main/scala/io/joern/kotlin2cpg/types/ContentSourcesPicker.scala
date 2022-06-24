@@ -37,10 +37,4 @@ object ContentSourcesPicker {
       .flatten
       .toSeq
   }
-
-  val defaultKotlinStdlibContentRootJarPaths = Seq(
-    DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
-    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
-    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true)
-  )
 }

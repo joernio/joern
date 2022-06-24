@@ -1,4 +1,4 @@
-package io.joern.kotlin2cpg.types
+package io.joern.kotlin2cpg.compiler
 
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
 

@@ -2,7 +2,8 @@ package io.joern.kotlin2cpg.plugins
 
 import better.files.File
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
-import io.joern.kotlin2cpg.types.{CompilerAPI, CompilerPluginInfo, ContentSourcesPicker, DefaultTypeInfoProvider}
+import io.joern.kotlin2cpg.compiler.{CompilerAPI, CompilerPluginInfo}
+import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.allopen.{AllOpenComponentRegistrar, AllOpenConfigurationKeys}
 import org.jetbrains.kotlin.cli.common.messages.{
