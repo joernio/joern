@@ -52,6 +52,7 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
       c.methodFullName shouldBe "<operator>.fieldAccess"
       c.name shouldBe "<operator>.fieldAccess"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.argument.code.l shouldBe List("AClass", "m")
 
       val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l
       firstArg.code shouldBe "AClass"
