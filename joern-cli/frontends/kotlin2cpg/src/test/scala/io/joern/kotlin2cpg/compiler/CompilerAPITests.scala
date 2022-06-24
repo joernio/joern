@@ -10,19 +10,24 @@ import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSourceLocation,
   MessageCollector
 }
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.slf4j.LoggerFactory
 
 class CompilerAPITests extends AnyFreeSpec with Matchers {
+
   class ErrorCountMessageCollector extends MessageCollector {
+    private val logger = LoggerFactory.getLogger(getClass)
+
     var errorCount = 0
     override def report(
       compilerMessageSeverity: CompilerMessageSeverity,
-      s: String,
+      message: String,
       compilerMessageSourceLocation: CompilerMessageSourceLocation
     ): Unit = {
-      println("message from compiler: " + s)
       if (compilerMessageSeverity.isError) {
+        logger.debug(s"Received message from compiler: ${message}")
         errorCount += 1
       }
     }
@@ -41,14 +46,18 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
         .map { f => DefaultContentRootJarPath(f.pathAsString, false) }
         .toSeq
       val messageCollector = new ErrorCountMessageCollector()
-      CompilerAPI.makeEnvironment(Seq(projectDirPath), contentRoots, Seq(), messageCollector)
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), contentRoots, Seq(), messageCollector)
+
+      KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe false
     }
 
     "should receive a compiler error message when the dependencies of the project have not been provided" in {
       val messageCollector = new ErrorCountMessageCollector()
-      CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
-      messageCollector.hasErrors() shouldBe false
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
+
+      KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
+      messageCollector.hasErrors() shouldBe true
     }
   }
 }
