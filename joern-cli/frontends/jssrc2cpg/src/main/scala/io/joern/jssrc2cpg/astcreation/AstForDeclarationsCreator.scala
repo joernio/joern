@@ -270,6 +270,18 @@ trait AstForDeclarationsCreator {
     }
   }
 
+  protected def astForTSImportEqualsDeclaration(impDecl: BabelNodeInfo): Ast = {
+    val name          = impDecl.json("id")("name").str
+    val referenceNode = createBabelNodeInfo(impDecl.json("moduleReference"))
+    val referenceName = referenceNode.node match {
+      case BabelAst.TSExternalModuleReference => referenceNode.json("expression")("value").str
+      case _                                  => referenceNode.code
+    }
+    diffGraph.addNode(createDependencyNode(name, referenceName, IMPORT_KEYWORD))
+    createImportNodeAndAttachToAst(impDecl, referenceName, name)
+    Ast()
+  }
+
   protected def astForImportDeclaration(impDecl: BabelNodeInfo): Ast = {
     val source     = impDecl.json("source")("value").str
     val specifiers = impDecl.json("specifiers").arr
