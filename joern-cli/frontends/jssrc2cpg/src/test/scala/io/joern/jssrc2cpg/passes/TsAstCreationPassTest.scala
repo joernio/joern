@@ -4,6 +4,8 @@ import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.Import
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Inside
 
@@ -18,6 +20,27 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
         call.argument(1).head.code shouldBe "string"
         call.argument(2).head.code shouldBe "\"foo\""
       }
+    }
+
+    "have correct structure for import assignments" in AstFixture("""
+        |import fs = require('fs')
+        |import models = require('../models/index')
+        |""".stripMargin) { cpg =>
+      def fsDep = getDependencies(cpg).filter(PropertyNames.NAME, "fs")
+      fsDep.checkNodeCount(1)
+      fsDep.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "fs")
+
+      def modelsDep = getDependencies(cpg).filter(PropertyNames.NAME, "models")
+      modelsDep.checkNodeCount(1)
+      modelsDep.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "../models/index")
+
+      val List(fs: Import, models: Import) = getImports(cpg).l
+      fs.code shouldBe "import fs = require('fs')"
+      fs.importedEntity shouldBe Some("fs")
+      fs.importedAs shouldBe Some("fs")
+      models.code shouldBe "import models = require('../models/index')"
+      models.importedEntity shouldBe Some("../models/index")
+      models.importedAs shouldBe Some("models")
     }
 
   }
