@@ -10,10 +10,14 @@ import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSourceLocation,
   MessageCollector
 }
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class CompilerAPITests extends AnyFreeSpec with Matchers {
+
+  private val shouldPrintCompilerErrors = false // change to true when needed for debugging
+
   class ErrorCountMessageCollector extends MessageCollector {
     var errorCount = 0
     override def report(
@@ -21,8 +25,8 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
       s: String,
       compilerMessageSourceLocation: CompilerMessageSourceLocation
     ): Unit = {
-      println("message from compiler: " + s)
       if (compilerMessageSeverity.isError) {
+        if (shouldPrintCompilerErrors) println("message from compiler: " + s)
         errorCount += 1
       }
     }
@@ -41,14 +45,18 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
         .map { f => DefaultContentRootJarPath(f.pathAsString, false) }
         .toSeq
       val messageCollector = new ErrorCountMessageCollector()
-      CompilerAPI.makeEnvironment(Seq(projectDirPath), contentRoots, Seq(), messageCollector)
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), contentRoots, Seq(), messageCollector)
+
+      KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe false
     }
 
     "should receive a compiler error message when the dependencies of the project have not been provided" in {
       val messageCollector = new ErrorCountMessageCollector()
-      CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
-      messageCollector.hasErrors() shouldBe false
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
+
+      KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
+      messageCollector.hasErrors() shouldBe true
     }
   }
 }
