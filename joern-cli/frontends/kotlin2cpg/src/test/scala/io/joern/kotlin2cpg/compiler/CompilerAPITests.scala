@@ -1,7 +1,9 @@
 package io.joern.kotlin2cpg.compiler
 
-import better.files.{File}
+import better.files.File
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
+import io.shiftleft.utils.ProjectRoot
+
 import java.nio.file.Paths
 import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSeverity,
@@ -29,8 +31,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
   }
 
   "KotlinCoreEnvironment generation on simple test code which calls external libraries" - {
-    val uri                     = ClassLoader.getSystemResource("code/ktmin").toURI
-    val projectDirPath          = Paths.get(uri).toString
+    val projectDirPath          = ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin")
     val projectDependenciesPath = Paths.get(projectDirPath, "dependencies")
 
     "should not receive a compiler error message when the dependencies of the project have been provided" in {
