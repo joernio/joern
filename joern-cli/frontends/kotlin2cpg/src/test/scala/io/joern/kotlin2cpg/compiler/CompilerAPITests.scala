@@ -13,20 +13,21 @@ import org.jetbrains.kotlin.cli.common.messages.{
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.slf4j.LoggerFactory
 
 class CompilerAPITests extends AnyFreeSpec with Matchers {
 
-  private val shouldPrintCompilerErrors = false // change to true when needed for debugging
-
   class ErrorCountMessageCollector extends MessageCollector {
+    private val logger = LoggerFactory.getLogger(getClass)
+
     var errorCount = 0
     override def report(
       compilerMessageSeverity: CompilerMessageSeverity,
-      s: String,
+      message: String,
       compilerMessageSourceLocation: CompilerMessageSourceLocation
     ): Unit = {
       if (compilerMessageSeverity.isError) {
-        if (shouldPrintCompilerErrors) println("message from compiler: " + s)
+        logger.debug(s"Received message from compiler: ${message}")
         errorCount += 1
       }
     }
