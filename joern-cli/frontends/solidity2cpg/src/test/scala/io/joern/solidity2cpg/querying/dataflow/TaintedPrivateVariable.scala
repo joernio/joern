@@ -32,14 +32,13 @@ class TaintedPrivateVariable extends SolidityDataflowFixture {
         .where(_.hasModifier(ModifierTypes.PUBLIC))
         .call
         .name(s"${Operators.assignment}.*")
-        .where(_.argument(1).isCall.nameExact(Operators.fieldAccess))
-      println(cpg.method.where(_.hasModifier(ModifierTypes.PUBLIC)).name.l)
-      println(cpg.method.where(_.hasModifier(ModifierTypes.PUBLIC)).call.name.l)
-      println(sink.name.l)
-
+        .where(_.argument.isCall.nameExact(Operators.fieldAccess))
+      println(sink.code.l)
       def source = cpg.method.parameter
-
-      println(sink.reachableByFlows(source).p)
+      println(source.code.l)
+//      sink.reachableByFlows(source).p
+//      println(sink.reachableByFlows(source).p)
+      println(sink.reachableByFlows(source).p.foreach(x => println(x)))
     }
 
   }

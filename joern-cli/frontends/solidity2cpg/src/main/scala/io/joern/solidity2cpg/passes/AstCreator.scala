@@ -265,11 +265,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-        mAst.nodes.foreach { n =>
-          val code  = n.properties.getOrElse("CODE", null)
-          val order = n.properties.getOrElse("ORDER", null)
-          println((order, n.label(), code))
-        }
+//        mAst.nodes.foreach { n =>
+//          val code  = n.properties.getOrElse("CODE", null)
+//          val order = n.properties.getOrElse("ORDER", null)
+//          println((order, n.label(), code))
+//        }
 
         mAst
       case x =>
@@ -652,7 +652,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForBinaryOperation(operation: BinaryOperation, order: Int): Ast = {
-    val operatorName = operation.operator match {
+
+    val operatorName =
+      operation.operator match {
       case "+"  => Operators.addition
       case "-"  => Operators.subtraction
       case "*"  => Operators.multiplication
@@ -680,12 +682,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case _ => ""
     }
     val lft = astForExpression(operation.left, 1)
-
     val rht = astForExpression(operation.right, 2)
-
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
-
+//    println("here")
+//println(operatorName)
     val callNode = NewCall()
       .name(operatorName)
       .methodFullName(operatorName)
@@ -824,12 +825,28 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       else
         ""
     }
-    Ast(NewIdentifier()
-                .name(identifier.name)
-                .code(identifier.name)
-                .typeFullName(typeFullName)
-                .order(1)
-                .argumentIndex(1))
+    if (membersList.contains(identifier.name)) {
+      val fieldAccessBlock = NewCall()
+        .name(Operators.fieldAccess)
+        .code(identifier.name)
+        .methodFullName(Operators.fieldAccess)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .order(order)
+      Ast(fieldAccessBlock).withChild(
+        Ast(NewIdentifier()
+        .name(identifier.name)
+        .code(identifier.name)
+        .typeFullName(typeFullName)
+        .order(1)
+        .argumentIndex(1)))
+    } else {
+      Ast(NewIdentifier()
+        .name(identifier.name)
+        .code(identifier.name)
+        .typeFullName(typeFullName)
+        .order(1)
+        .argumentIndex(1))
+    }
 
   }
 
@@ -838,7 +855,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
     val fieldAccess = NewCall()
       .name(memberAccess.memberName)
-//      .name(Operators.fieldAccess)
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(name+"."+memberAccess.memberName)
@@ -896,6 +912,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
       astForVarDecl(x, varOrder)
     }
+
 
     val initial =
       if (statement.initialValue != null) astsForDefinition(statement.initialValue, statement.variables.size + 1)
