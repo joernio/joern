@@ -7,7 +7,7 @@ object SourceFiles {
   /** For a given input path, determine all source files by inspecting filename extensions.
     */
   def determine(inputPath: String, sourceFileExtensions: Set[String]): List[String] = {
-    determine(inputPath, sourceFileExtensions)
+    determine(Set(inputPath), sourceFileExtensions)
   }
 
   /** For a given array of input paths, determine all source files by inspecting filename extensions.
