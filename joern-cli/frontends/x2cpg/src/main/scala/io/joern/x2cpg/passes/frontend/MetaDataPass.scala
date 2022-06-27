@@ -1,18 +1,19 @@
 package io.joern.x2cpg.passes.frontend
 
+import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMetaData, NewNamespaceBlock}
-import io.shiftleft.passes.{KeyPool, SimpleCpgPass}
+import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}
 
 /** A pass that creates a MetaData node, specifying that this is a CPG for language, and a NamespaceBlock for anything
   * that cannot be assigned to any other namespace.
   */
-class MetaDataPass(cpg: Cpg, language: String, keyPool: Option[KeyPool] = None)
-    extends SimpleCpgPass(cpg, keyPool = keyPool) {
+class MetaDataPass(cpg: Cpg, language: String, root: String) extends SimpleCpgPass(cpg) {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     def addMetaDataNode(diffGraph: DiffGraphBuilder): Unit = {
-      val metaNode = NewMetaData().language(language).version("0.1")
+      val absolutePathToRoot = File(root).path.toAbsolutePath.toString
+      val metaNode           = NewMetaData().language(language).root(absolutePathToRoot).version("0.1")
       diffGraph.addNode(metaNode)
     }
 

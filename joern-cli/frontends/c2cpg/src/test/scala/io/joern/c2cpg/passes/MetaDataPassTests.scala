@@ -14,7 +14,7 @@ class MetaDataPassTests extends AnyWordSpec with Matchers {
 
   "MetaDataPass" should {
     val cpg = Cpg.emptyCpg
-    new MetaDataPass(cpg, Languages.C).createAndApply()
+    new MetaDataPass(cpg, Languages.C, "").createAndApply()
 
     "create exactly two nodes" in {
       cpg.graph.V.asScala.size shouldBe 2
