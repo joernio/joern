@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-/** Test code that shows how code property graphs can be generated using the FuzzyC language frontend
-  */
+/** Test code that shows how code property graphs can be generated using the c2cpg language frontend */
 class GenerationTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
 
   "should generate and load CPG for example code" in withTestCpg(
