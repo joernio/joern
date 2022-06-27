@@ -12,7 +12,6 @@ val ZeroturnaroundVersion = "1.15"
 dependsOn(
   Projects.semanticcpg,
   Projects.macros,
-  Projects.fuzzyc2cpg % Test,
   Projects.c2cpg      % Test,
   Projects.x2cpg      % "compile->compile;test->test"
 )

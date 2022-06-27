@@ -349,12 +349,8 @@ trait PluginHandling {
         .guessLanguage(src)
         .map { x =>
           val lang = x.toLowerCase
-          // TODO we should eventually rename the languages in the
-          // spec to `OLDC` and `C` at which point the match below
-          // is no longer required.
           lang match {
             case "newc" => "c"
-            case "c"    => "oldc"
             case _      => lang
           }
         }
