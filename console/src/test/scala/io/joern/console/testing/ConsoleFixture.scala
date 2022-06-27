@@ -66,7 +66,7 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
 
   override def forLanguage(language: String): Option[CpgGenerator] = language match {
     case Languages.C | Languages.NEWC => Some(new CTestingFrontend)
-    case _              => None // no other languages are tested here
+    case _                            => None // no other languages are tested here
   }
 
   private class CTestingFrontend extends CpgGenerator {

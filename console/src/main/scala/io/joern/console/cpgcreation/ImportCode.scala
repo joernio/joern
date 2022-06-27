@@ -40,7 +40,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  def c: SourceBasedFrontend    = new SourceBasedFrontend("c", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
+  def c: SourceBasedFrontend = new SourceBasedFrontend("c", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
   def cpp: SourceBasedFrontend =
     new SourceBasedFrontend("cpp", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", "cpp")
   def java: SourceBasedFrontend = new SourceBasedFrontend("java", Languages.JAVASRC, "Java Source Frontend", "java")
