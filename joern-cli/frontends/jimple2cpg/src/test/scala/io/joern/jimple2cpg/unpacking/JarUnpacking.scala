@@ -19,7 +19,7 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    Try(getClass.getResource("/unpacking")) match {
+    Try(getClass.getResource("/unpacking").toURI) match {
       case Success(x) =>
         implicit val defaultConfig: Config = Config()
         cpg = new Jimple2Cpg().createCpg(x.getPath).get
