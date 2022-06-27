@@ -114,7 +114,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
       val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
-      new MetaDataPass(cpg, Languages.KOTLIN).createAndApply()
+      new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
       val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()

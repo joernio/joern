@@ -11,8 +11,7 @@ import scala.util.Try
 class Php2Cpg extends X2CpgFrontend[Config] {
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      new MetaDataPass(cpg, Languages.PHP).createAndApply()
-
+      new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
     }
   }
 }

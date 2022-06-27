@@ -26,7 +26,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      new MetaDataPass(cpg, language).createAndApply()
+      new MetaDataPass(cpg, language, config.inputPath).createAndApply()
       val (sourcesDir, sourceFileNames) = getSourcesFromDir(config.inputPath)
       if (sourceFileNames.isEmpty) {
         logger.error(s"no source files found in $sourcesDir")

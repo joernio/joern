@@ -65,7 +65,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       }
 
       configureSoot()
-      new MetaDataPass(cpg, language).createAndApply()
+      new MetaDataPass(cpg, language, config.inputPath).createAndApply()
 
       val sourceFileExtensions  = Set(".class", ".jimple")
       val archiveFileExtensions = Set(".jar", ".war")
