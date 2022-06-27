@@ -30,7 +30,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new CallLinkerPass(cpg).createAndApply()
-        new JsMetaDataPass(cpg, hash).createAndApply()
+        new JsMetaDataPass(cpg, hash, config.inputPath).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
         report.print()
       }
