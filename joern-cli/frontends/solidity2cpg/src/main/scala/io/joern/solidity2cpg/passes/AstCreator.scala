@@ -229,6 +229,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           modifierMethod = x.visibility match {
             case "public" => Ast(NewModifier().modifierType(ModifierTypes.PUBLIC).code(x.visibility))
             case "private" => Ast(NewModifier().modifierType(ModifierTypes.PRIVATE).code(x.visibility))
+            case _ => Ast()
           }
         }
 
@@ -265,11 +266,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-        mAst.nodes.foreach { n =>
-          val code  = n.properties.getOrElse("CODE", null)
-          val order = n.properties.getOrElse("ORDER", null)
-          println((order, n.label(), code))
-        }
+//        mAst.nodes.foreach { n =>
+//          val code  = n.properties.getOrElse("CODE", null)
+//          val order = n.properties.getOrElse("ORDER", null)
+//          println((order, n.label(), code))
+//        }
 
         mAst
       case x =>
@@ -474,7 +475,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val newMember    = NewMember()
     var typefullName = ""
     var code         = ""
-    var modifierMethod = Ast()
     varDecl.typeName match {
       case x: ElementaryTypeName => typefullName = registerType(x.name)
       case x: Mapping => {
@@ -495,9 +495,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case _         => visibility = ""
     }
 
-    modifierMethod = varDecl.visibility match {
+    val modifierMethod = varDecl.visibility match {
       case "public" => Ast(NewModifier().modifierType(ModifierTypes.PUBLIC).code(varDecl.visibility))
       case "private" => Ast(NewModifier().modifierType(ModifierTypes.PRIVATE).code(varDecl.visibility))
+      case _ => Ast()
     }
 
     typeMap.addOne(varDecl.name, typefullName)
