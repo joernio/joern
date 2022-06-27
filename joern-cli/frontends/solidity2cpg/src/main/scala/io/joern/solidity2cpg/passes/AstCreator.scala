@@ -265,15 +265,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChild(methodReturn)
 
         // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-//        mAst.nodes.foreach { n =>
-//          val code  = n.properties.getOrElse("CODE", null)
-//          val order = n.properties.getOrElse("ORDER", null)
-//          println((order, n.label(), code))
-//        }
+        mAst.nodes.foreach { n =>
+          val code  = n.properties.getOrElse("CODE", null)
+          val order = n.properties.getOrElse("ORDER", null)
+          println((order, n.label(), code))
+        }
 
         mAst
       case x =>
-        logger.warn(s"Unhandled statement of type ${x.getClass}")
+        logger.warn(s"Unhandled statement of tyvar modifierMethod = Ast()pe ${x.getClass}")
         Ast() // etc
     }
 
@@ -474,6 +474,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val newMember    = NewMember()
     var typefullName = ""
     var code         = ""
+    var modifierMethod = Ast()
     varDecl.typeName match {
       case x: ElementaryTypeName => typefullName = registerType(x.name)
       case x: Mapping => {
@@ -493,6 +494,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: String => visibility = " " + x
       case _         => visibility = ""
     }
+
+    modifierMethod = varDecl.visibility match {
+      case "public" => Ast(NewModifier().modifierType(ModifierTypes.PUBLIC).code(varDecl.visibility))
+      case "private" => Ast(NewModifier().modifierType(ModifierTypes.PRIVATE).code(varDecl.visibility))
+    }
+
     typeMap.addOne(varDecl.name, typefullName)
     membersList = membersList :+ (varDecl.name)
     newMember
@@ -502,6 +509,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(order)
 
     Ast(newMember)
+      .withChild(modifierMethod)
 
   }
 
@@ -821,31 +829,43 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForIdentifier(identifier: Identifier, order: Int): Ast = {
     val typeFullName = {
       if (typeMap.contains(identifier.name))
-        typeMap.get(identifier.name).toList(typeMap.get(identifier.name).size-1)
+        typeMap.get(identifier.name).toList(typeMap.get(identifier.name).size - 1)
       else
         ""
     }
+//    println(identifier.name)
+//    membersList.foreach(x => print(x + " "))
+//    println()
     if (membersList.contains(identifier.name)) {
+//      println("here")
       val fieldAccessBlock = NewCall()
         .name(Operators.fieldAccess)
         .code(identifier.name)
         .methodFullName(Operators.fieldAccess)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .order(order)
-      Ast(fieldAccessBlock).withChild(
-        Ast(NewIdentifier()
-        .name(identifier.name)
-        .code(identifier.name)
+      val thisID = Ast(NewIdentifier()
+        .name("this")
+        .code("this")
         .typeFullName(typeFullName)
         .order(1)
-        .argumentIndex(1)))
+        .argumentIndex(1))
+      val fieldID = Ast(NewFieldIdentifier()
+        .canonicalName(identifier.name)
+        .argumentIndex(2)
+        .order(2)
+        .code(identifier.name)
+      )
+      Ast(fieldAccessBlock)
+        .withChild(thisID)
+        .withChild(fieldID)
     } else {
       Ast(NewIdentifier()
         .name(identifier.name)
         .code(identifier.name)
         .typeFullName(typeFullName)
-        .order(1)
-        .argumentIndex(1))
+        .order(order)
+        .argumentIndex(order))
     }
 
   }
