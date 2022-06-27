@@ -10,7 +10,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
 
 class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
@@ -22,7 +22,7 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     Try(getClass.getResource("/unpacking").toURI) match {
       case Success(x) =>
         implicit val defaultConfig: Config = Config()
-        cpg = new Jimple2Cpg().createCpg(x.getPath).get
+        cpg = new Jimple2Cpg().createCpg(Paths.get(x).toString).get
       case Failure(x: Throwable) =>
         fail("Unable to obtain test resources.", x)
     }
