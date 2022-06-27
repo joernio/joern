@@ -225,8 +225,8 @@ class CfgCreationPassTest extends AnyWordSpec with Matchers {
 
     "be correct for outer program function which declares foo function object" in {
       new CfgFixture("function foo(x, y) { return; }") {
-        succOf(":program") shouldBe expected(("foo", 2, AlwaysEdge))
-        succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("foo", 3, AlwaysEdge))
+        succOf(":program") shouldBe expected(("foo", 1, AlwaysEdge))
+        succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("foo", 2, AlwaysEdge))
         succOf("foo", NodeTypes.METHOD_REF) shouldBe expected(
           ("function foo = function foo(x, y) { return; }", AlwaysEdge)
         )

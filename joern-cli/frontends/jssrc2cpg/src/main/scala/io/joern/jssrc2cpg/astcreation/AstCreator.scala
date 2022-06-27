@@ -46,6 +46,7 @@ class AstCreator(
   protected val metaTypeRefIdStack            = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
+  protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
   protected val typeFullNameToPostfix         = mutable.HashMap.empty[String, Int]
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
@@ -93,6 +94,11 @@ class AstCreator(
         .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullName)
 
+    val functionTypeAndTypeDeclAst =
+      createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
+    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
+    rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
+
     methodAstParentStack.push(programMethod)
 
     val blockNode = NewBlock().typeFullName("ANY")
@@ -115,10 +121,6 @@ class AstCreator(
     scope.popScope()
     methodAstParentStack.pop()
 
-    val functionTypeAndTypeDeclAst =
-      createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
-    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
-
     methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
   }
 
@@ -133,6 +135,7 @@ class AstCreator(
       case BabelAst.ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)
       case BabelAst.ImportDeclaration         => astForImportDeclaration(nodeInfo)
       case BabelAst.FunctionDeclaration       => astForFunctionDeclaration(nodeInfo)
+      case BabelAst.TSDeclareFunction         => astForTSDeclareFunction(nodeInfo)
       case BabelAst.VariableDeclaration       => astForVariableDeclaration(nodeInfo)
       case BabelAst.ArrowFunctionExpression   => astForFunctionDeclaration(nodeInfo)
       case BabelAst.FunctionExpression        => astForFunctionDeclaration(nodeInfo)

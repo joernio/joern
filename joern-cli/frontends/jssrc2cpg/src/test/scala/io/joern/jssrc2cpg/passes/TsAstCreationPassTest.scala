@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Import
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Inside
 
@@ -41,6 +43,20 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       models.code shouldBe "import models = require('../models/index')"
       models.importedEntity shouldBe Some("../models/index")
       models.importedAs shouldBe Some("models")
+    }
+
+    "have correct structure for declare functions" in AstFixture("""
+        |declare function foo(arg: string): string
+        |""".stripMargin) { cpg =>
+      val List(func: Method) = cpg.method("foo").l
+      func.code shouldBe "declare function foo(arg: string): string"
+      func.name shouldBe "foo"
+      func.fullName shouldBe "code.ts::program:foo"
+      val List(_, arg: MethodParameterIn) = cpg.method("foo").parameter.l
+      arg.name shouldBe "arg"
+      arg.typeFullName shouldBe Defines.STRING.label
+      arg.code shouldBe "arg: string"
+      arg.index shouldBe 1
     }
 
   }
@@ -104,6 +120,27 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
           greet.code should (
             startWith("greet() {") and endWith("}")
           )
+        }
+      }
+    }
+
+    "have correct structure for declared classes with empty constructor" in AstFixture("""
+        |declare class Greeter {
+        |  greeting: string;
+        |  constructor(arg: string);
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
+        greeter.name shouldBe "Greeter"
+        greeter.code shouldBe "class Greeter"
+        greeter.fullName shouldBe "code.ts::program:Greeter"
+        greeter.filename shouldBe "code.ts"
+        greeter.file.name.head shouldBe "code.ts"
+        val constructor = greeter.method.name("Greeter<constructor>").head
+        greeter.method.isConstructor.head shouldBe constructor
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting) =>
+          greeting.name shouldBe "greeting"
+          greeting.code shouldBe "greeting: string;"
         }
       }
     }
