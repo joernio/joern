@@ -26,6 +26,17 @@ Specification: https://cpg.joern.io
 - JDK 11 (newer versions _might_ work, but have not been properly tested)
 - _optional_: gcc and g++ (for auto-discovery of C/C++ system header files if included/used in your C/C++ code)
 
+### Quick Develope
+Quick way to develop Joern with VSCode:
+
+- Install VSCode and Docker;
+- Install the plugin `ms-vscode-remote.remote-containers`;
+- Open Joern project folder in [VSCode](https://docs.microsoft.com/en-us/azure-sphere/app-development/container-build-vscode#build-and-debug-the-project); <br>
+Visual Studio Code detects the new files and opens a message box saying: `Folder contains a Dev Container configuration file. Reopen to folder to develop in a container.`
+- Select the `Reopen in Container` button to reopen the folder in the container created by the `.devcontainer/Dockerfile` file;
+- Switch to `scalameta.metals` sidebar in VSCode, and select `import build` in `BUILD COMMANDS`;
+- After `import build` success, you can develope Joern project with `Goto definition`, `Code Completions`, `Find references`, `Find implementations` and so on.
+
 ## Quick Installation
 
 ```
