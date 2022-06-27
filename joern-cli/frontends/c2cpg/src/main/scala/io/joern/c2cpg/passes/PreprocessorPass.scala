@@ -18,7 +18,7 @@ class PreprocessorPass(config: Config) {
   private val parser = new CdtParser(config)
 
   def run(): ParIterable[String] =
-    SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).par.flatMap(runOnPart)
+    SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).par.flatMap(runOnPart)
 
   private def preprocessorStatement2String(stmt: IASTPreprocessorStatement): Option[String] = stmt match {
     case s: IASTPreprocessorIfStatement =>

@@ -8,7 +8,7 @@ import scopt.OParser
 import scala.util.control.NonFatal
 
 final case class Config(
-  inputPaths: Set[String] = Set.empty,
+  inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   includePaths: Set[String] = Set.empty,
   defines: Set[String] = Set.empty,
@@ -19,8 +19,8 @@ final case class Config(
   includePathsAutoDiscovery: Boolean = true
 ) extends X2CpgConfig[Config] {
 
-  override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-  override def withOutputPath(x: String): Config                  = copy(outputPath = x)
+  override def withInputPath(inputPath: String): Config = copy(inputPath = inputPath)
+  override def withOutputPath(x: String): Config        = copy(outputPath = x)
 }
 
 private object Frontend {

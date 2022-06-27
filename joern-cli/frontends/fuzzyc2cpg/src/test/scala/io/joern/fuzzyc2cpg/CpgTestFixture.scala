@@ -15,7 +15,7 @@ case class CpgTestFixture(projectName: String) {
 
   val cpg: Cpg  = Cpg.emptyCpg
   val dirName   = ProjectRoot.relativise(s"joern-cli/frontends/fuzzyc2cpg/src/test/resources/testcode/$projectName")
-  val filenames = SourceFiles.determine(Set(dirName), Set(".c"))
+  val filenames = SourceFiles.determine(dirName, Set(".c"))
 
   new MetaDataPass(cpg, Languages.C).createAndApply()
   new AstCreationPass(filenames, cpg).createAndApply()

@@ -44,7 +44,7 @@ object AstGenRunner {
     logger.debug(s"\t+ Running astgen in '$in' ...")
     ExternalCommand.run(s"astgen -t ts -o $out", in.toString()) match {
       case Success(result) =>
-        val parsed  = filterFiles(SourceFiles.determine(Set(out.toString()), Set(".json")))
+        val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")))
         val skipped = skippedFiles(in, result.toSet)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>

@@ -41,13 +41,13 @@ object FuzzyC2Cpg {
   private val logger = LoggerFactory.getLogger(classOf[FuzzyC2Cpg])
 
   final case class Config(
-    inputPaths: Set[String] = Set.empty,
+    inputPath: String = "",
     outputPath: String = X2CpgConfig.defaultOutputPath,
     sourceFileExtensions: Set[String] = Set(".c", ".cc", ".cpp", ".h", ".hpp")
   ) extends X2CpgConfig[Config] {
 
-    override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-    override def withOutputPath(x: String): Config                  = copy(outputPath = x)
+    override def withInputPath(inputPath: String): Config = copy(inputPath = inputPath)
+    override def withOutputPath(x: String): Config        = copy(outputPath = x)
   }
 
   def main(args: Array[String]): Unit = {
@@ -76,7 +76,7 @@ object FuzzyC2Cpg {
       case Some(config) =>
         try {
           val fuzzyc = new FuzzyC2Cpg()
-          val cpg    = fuzzyc.runAndOutput(config.inputPaths, config.sourceFileExtensions, Some(config.outputPath))
+          val cpg    = fuzzyc.runAndOutput(Set(config.inputPath), config.sourceFileExtensions, Some(config.outputPath))
           cpg.close()
         } catch {
           case NonFatal(ex) =>

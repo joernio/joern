@@ -32,7 +32,7 @@ class AstCreationPassTests
           file.write("//foo")
           file.path.toAbsolutePath.toString
         }
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPaths = Set(dir.path.toString)))
+        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPath = dir.path.toString))
           .createAndApply()
         val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:<global>")
         cpg.namespaceBlock.fullName.l shouldBe expectedNamespaceFullNames

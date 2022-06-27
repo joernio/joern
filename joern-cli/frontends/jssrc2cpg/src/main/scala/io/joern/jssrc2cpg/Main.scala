@@ -6,11 +6,11 @@ import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.X2CpgMain
 import scopt.OParser
 
-final case class Config(inputPaths: Set[String] = Set.empty, outputPath: String = X2CpgConfig.defaultOutputPath)
+final case class Config(inputPath: String = "", outputPath: String = X2CpgConfig.defaultOutputPath)
     extends X2CpgConfig[Config] {
 
-  override def withAdditionalInputPath(inputPath: String): Config = copy(inputPaths = inputPaths + inputPath)
-  override def withOutputPath(x: String): Config                  = copy(outputPath = x)
+  override def withInputPath(inputPath: String): Config = copy(inputPath = inputPath)
+  override def withOutputPath(x: String): Config        = copy(outputPath = x)
 }
 
 private object Frontend {
@@ -27,7 +27,7 @@ private object Frontend {
 object Main extends X2CpgMain(cmdLineParser, new JsSrc2Cpg()) {
 
   def run(config: Config, jssrc2cpg: JsSrc2Cpg): Unit = {
-    if (Environment.allPathsExist(config.inputPaths) && Environment.valid()) {
+    if (Environment.allPathsExist(Set(config.inputPath)) && Environment.valid()) {
       jssrc2cpg.run(config)
     } else {
       System.exit(1)

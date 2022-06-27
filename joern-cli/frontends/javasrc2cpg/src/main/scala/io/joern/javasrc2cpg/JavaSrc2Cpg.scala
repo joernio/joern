@@ -26,12 +26,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      if (config.inputPaths.size != 1) {
-        throw new RuntimeException("This frontend requires exactly one input path")
-      }
-      val sourceCodePath = config.inputPaths.head
       new MetaDataPass(cpg, language).createAndApply()
-      val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
+      val (sourcesDir, sourceFileNames) = getSourcesFromDir(config.inputPath)
       if (sourceFileNames.isEmpty) {
         logger.error(s"no source files found in $sourcesDir")
       } else {
@@ -51,7 +47,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   private def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
     val sourceFile = File(sourceCodePath)
     if (sourceFile.isDirectory) {
-      val sourceFileNames = SourceFiles.determine(Set(sourceCodePath), sourceFileExtensions)
+      val sourceFileNames = SourceFiles.determine(sourceCodePath, sourceFileExtensions)
       (sourceCodePath, sourceFileNames)
     } else {
       val dir = File.newTemporaryDirectory("javasrc").deleteOnExit()
