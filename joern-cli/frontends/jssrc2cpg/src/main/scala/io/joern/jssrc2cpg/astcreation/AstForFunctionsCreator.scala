@@ -228,6 +228,15 @@ trait AstForFunctionsCreator {
     )
   }
 
+  protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
+    val functionNode = createMethodDefinitionNode(func)
+    val bindingNode  = createBindingNode()
+    diffGraph.addEdge(rootTypeDecl.head, bindingNode, EdgeTypes.BINDS)
+    diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
+    addModifier(functionNode, func.json)
+    Ast(functionNode)
+  }
+
   protected def createMethodDefinitionNode(func: BabelNodeInfo): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodNode                   = createMethodNode(methodName, methodFullName, func)
@@ -237,8 +246,11 @@ trait AstForFunctionsCreator {
     val thisNode =
       createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
 
-    val paramNodes =
+    val paramNodes = if (hasKey(func.json, "parameters")) {
       handleParameters(func.json("parameters").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
+    } else {
+      handleParameters(func.json("params").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
+    }
 
     val methodReturnNode = createMethodReturnNode(func)
 

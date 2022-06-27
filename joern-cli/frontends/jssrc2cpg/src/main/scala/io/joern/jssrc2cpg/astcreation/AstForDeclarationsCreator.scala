@@ -11,6 +11,7 @@ import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.HasName
 import ujson.Obj
 import ujson.Value
 
@@ -25,15 +26,23 @@ trait AstForDeclarationsCreator {
   private val REQUIRE_KEYWORD = "require"
   private val IMPORT_KEYWORD  = "import"
 
-  private def codeForExportObject(obj: BabelNodeInfo): Seq[String] = obj.node match {
+  private def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
     case BabelAst.VariableDeclaration    => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
-    case BabelAst.FunctionDeclaration    => Seq(code(obj.json("id")))
     case BabelAst.AssignmentExpression   => Seq(code(obj.json("left")))
     case BabelAst.ClassDeclaration       => Seq(code(obj.json("id")))
     case BabelAst.Identifier             => Seq(obj.code)
     case BabelAst.TSTypeAliasDeclaration => Seq(code(obj.json("id")))
     case BabelAst.TSInterfaceDeclaration => Seq(code(obj.json("id")))
     case BabelAst.TSEnumDeclaration      => Seq(code(obj.json("id")))
+    case BabelAst.TSModuleDeclaration    => Seq(code(obj.json("id")))
+    case BabelAst.TSDeclareFunction if hasKey(obj.json, "id") && !obj.json("id").isNull =>
+      Seq(code(obj.json("id")))
+    case BabelAst.TSDeclareFunction =>
+      defaultName.toSeq
+    case BabelAst.FunctionDeclaration if hasKey(obj.json, "id") && !obj.json("id").isNull =>
+      Seq(code(obj.json("id")))
+    case BabelAst.FunctionDeclaration =>
+      defaultName.toSeq
     case _ =>
       notHandledYet(obj, "Lowering export declaration")
       Seq.empty
@@ -86,7 +95,8 @@ trait AstForDeclarationsCreator {
             astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
           case _ => astForNode(d)
         }
-        val names = codeForExportObject(createBabelNodeInfo(Obj(d)))
+        val defaultName = ast.root.collect { case r: HasName => r.name }
+        val names       = codeForExportObject(createBabelNodeInfo(Obj(d)), defaultName)
         (ast, names)
       }
 

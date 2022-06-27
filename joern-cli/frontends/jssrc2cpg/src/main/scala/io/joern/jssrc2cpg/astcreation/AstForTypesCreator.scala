@@ -111,9 +111,11 @@ trait AstForTypesCreator {
 
   private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
     val methodNode = classConstructor(classExpr) match {
-      case Some(classConstructor) =>
+      case Some(classConstructor) if hasKey(classConstructor, "body") =>
         val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(classConstructor))
         methodNode
+      case Some(classConstructor) =>
+        createMethodDefinitionNode(createBabelNodeInfo(classConstructor))
       case _ =>
         createFakeConstructor("constructor() {}")
     }
@@ -189,7 +191,7 @@ trait AstForTypesCreator {
     }
   }
 
-  private def fixMethodFullName(method: NewMethod, withTypeName: String): NewMethod =
+  protected def fixMethodFullName(method: NewMethod, withTypeName: String): NewMethod =
     method.fullName(method.fullName.replace(s":${method.name}", s":$withTypeName:${method.name}"))
 
   protected def astForClass(clazz: BabelNodeInfo): Ast = {
@@ -316,10 +318,14 @@ trait AstForTypesCreator {
     methodAstParentStack.push(namespaceNode)
     dynamicInstanceTypeStack.push(fullName)
 
-    val nodeInfo = createBabelNodeInfo(tsModuleDecl.json("body"))
-    val blockAst = nodeInfo.node match {
-      case BabelAst.TSModuleDeclaration => astForModule(nodeInfo)
-      case _                            => astForBlockStatement(nodeInfo)
+    val blockAst = if (hasKey(tsModuleDecl.json, "body")) {
+      val nodeInfo = createBabelNodeInfo(tsModuleDecl.json("body"))
+      nodeInfo.node match {
+        case BabelAst.TSModuleDeclaration => astForModule(nodeInfo)
+        case _                            => astForBlockStatement(nodeInfo)
+      }
+    } else {
+      Ast()
     }
 
     methodAstParentStack.pop()
