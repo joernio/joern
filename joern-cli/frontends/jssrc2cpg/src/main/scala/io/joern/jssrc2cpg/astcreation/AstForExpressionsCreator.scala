@@ -126,7 +126,7 @@ trait AstForExpressionsCreator {
 
   protected def astForNewExpression(newExpr: BabelNodeInfo): Ast = {
     val callee    = newExpr.json("callee")
-    val blockNode = createBlockNode(newExpr.code, newExpr.lineNumber, newExpr.columnNumber)
+    val blockNode = createBlockNode(newExpr)
 
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
@@ -342,7 +342,7 @@ trait AstForExpressionsCreator {
   }
 
   protected def astForSequenceExpression(seq: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(seq.code, seq.lineNumber, seq.columnNumber)
+    val blockNode = createBlockNode(seq)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
@@ -379,7 +379,7 @@ trait AstForExpressionsCreator {
         )
       )
     } else {
-      val blockNode = createBlockNode(arrExpr.code, lineNumber, columnNumber)
+      val blockNode = createBlockNode(arrExpr)
       scope.pushNewBlockScope(blockNode)
       localAstParentStack.push(blockNode)
 
@@ -455,7 +455,7 @@ trait AstForExpressionsCreator {
   }
 
   protected def astForObjectExpression(objExpr: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(objExpr.code, objExpr.lineNumber, objExpr.columnNumber)
+    val blockNode = createBlockNode(objExpr)
 
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)

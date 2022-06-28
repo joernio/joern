@@ -439,12 +439,12 @@ trait AstNodeBuilder {
       .lineNumber(line)
       .columnNumber(column)
 
-  protected def createBlockNode(code: String, line: Option[Integer], column: Option[Integer]): NewBlock =
+  protected def createBlockNode(node: BabelNodeInfo): NewBlock =
     NewBlock()
       .typeFullName(Defines.ANY.label)
-      .code(code)
-      .lineNumber(line)
-      .columnNumber(column)
+      .code(node.code)
+      .lineNumber(node.lineNumber)
+      .columnNumber(node.columnNumber)
 
   protected def createFunctionTypeAndTypeDeclAst(
     methodNode: NewMethod,
