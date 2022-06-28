@@ -6,21 +6,22 @@ import io.joern.console.scan._
 import io.joern.console.QueryBundle
 import io.joern.console.Query
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
+import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.language._
 
 class CQueryTestSuite extends DataFlowCodeToCpgSuite {
   val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
-    semanticsFilename = argumentProvider.testSemanticsFilename
     super.beforeAll()
+    semanticsFilename = argumentProvider.testSemanticsFilename
   }
 
   def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
-  def concatedQueryCodeExamples: String =
+  def concatQueryCodeExamples: String =
     allQueries
       .map { q =>
         q.codeExamples.positive
@@ -44,5 +45,5 @@ class CQueryTestSuite extends DataFlowCodeToCpgSuite {
       .toSetImmutable
   }
 
-  override val code: String = concatedQueryCodeExamples
+  protected val cpg: TestCpg = code(concatQueryCodeExamples)
 }

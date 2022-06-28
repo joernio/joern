@@ -8,10 +8,9 @@ import overflowdb.traversal._
 
 class MetaDataTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain exactly one node with all mandatory fields set" in {
     val List(x) = cpg.metaData.l

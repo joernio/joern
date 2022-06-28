@@ -18,4 +18,5 @@ class HeapBasedOverflowTests extends CQueryTestSuite {
       case _ => fail()
     }
   }
+
 }

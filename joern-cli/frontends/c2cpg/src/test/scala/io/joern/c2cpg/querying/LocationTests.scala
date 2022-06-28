@@ -7,13 +7,12 @@ class LocationTests extends CCodeToCpgSuite {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
-  override val code = """
-   int my_func(int param1) {
-      int x = foo(param1);
-   }"""
+  private val cpg = code("""
+   |int my_func(int param1) {
+   |   int x = foo(param1);
+   |}""".stripMargin)
 
   "should return location for method" in {
-
     val locations = cpg.method.name("my_func").location.l
     locations.size shouldBe 1
 
@@ -28,7 +27,6 @@ class LocationTests extends CCodeToCpgSuite {
   }
 
   "should return location for parameter" in {
-
     val locations = cpg.parameter.name("param1").location.l
     locations.size shouldBe 1
 
@@ -43,7 +41,6 @@ class LocationTests extends CCodeToCpgSuite {
   }
 
   "should return location for return parameter" in {
-
     val locations = cpg.method.name("my_func").methodReturn.location.l
     locations.size shouldBe 1
 
@@ -58,7 +55,6 @@ class LocationTests extends CCodeToCpgSuite {
   }
 
   "should return location for call" in {
-
     val locations = cpg.call.name("foo").location.l
     locations.size shouldBe 1
 

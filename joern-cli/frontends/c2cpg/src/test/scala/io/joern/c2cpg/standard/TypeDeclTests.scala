@@ -9,14 +9,14 @@ import java.io.File
 
 class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
-  override val code: String = """
+  private val cpg = code("""
    | class foo : bar {
    |   char x;
    |   int y;
    |   int method () {}
    | };
    |
-   | typedef int mytype;""".stripMargin
+   | typedef int mytype;""".stripMargin)
 
   "should contain a type decl for `foo` with correct fields" in {
     val List(x) = cpg.typeDecl("foo").l

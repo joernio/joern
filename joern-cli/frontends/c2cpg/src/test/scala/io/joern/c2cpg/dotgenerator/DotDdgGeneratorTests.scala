@@ -5,10 +5,10 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._
 
-class DotDdgGeneratorTest1 extends DataFlowCodeToCpgSuite {
+class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
 
-  override val code: String =
-    """
+  "DotDdgGeneratorTest1" should {
+    val cpg = code("""
       |int foo(int param1, char *param2) {
       |   int i = 0;
       |   while(i < 10) {
@@ -18,9 +18,8 @@ class DotDdgGeneratorTest1 extends DataFlowCodeToCpgSuite {
       |   }
       |   return 0;
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
-  "A DdgDotGenerator" should {
     "create correct dot graph" in {
       implicit val s: Semantics = semantics
       inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
@@ -31,27 +30,26 @@ class DotDdgGeneratorTest1 extends DataFlowCodeToCpgSuite {
       }
     }
   }
-}
 
-class DotDdgGeneratorTest2 extends DataFlowCodeToCpgSuite {
-
-  override val code: String =
-    """
+  "DotDdgGeneratorTest2" should {
+    val cpg = code("""
       |int foo() {
       |int x = 42;
       |woo(x);
       |baz(x);
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
-  "A DdgDotGenerator" should {
-    "create correct dot graph" in {
-      implicit val s: Semantics = semantics
-      inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
-        val lines = elem.split("\n")
-        lines.count(x => x.contains("->") && x.contains("\"x\"")) shouldBe 3
+    "A DdgDotGenerator" should {
+      "create correct dot graph" in {
+        implicit val s: Semantics = semantics
+        inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
+          val lines = elem.split("\n")
+          lines.count(x => x.contains("->") && x.contains("\"x\"")) shouldBe 3
+        }
       }
     }
+
   }
 
 }
