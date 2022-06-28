@@ -4850,6 +4850,34 @@ class AstCreationPassTest extends AbstractPassTest {
       )
     }
 
+    "have correct structure for export all with from clause" in AstFixture("""
+       |export * from "Foo";
+       |export * as B from "Bar";
+       |export * from "./some/Module";
+       |""".stripMargin) { cpg =>
+      def dep1 = getDependencies(cpg).filter(PropertyNames.NAME, "Foo")
+      dep1.checkNodeCount(1)
+      dep1.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep1.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep2 = getDependencies(cpg).filter(PropertyNames.NAME, "B")
+      dep2.checkNodeCount(1)
+      dep2.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Bar")
+      dep2.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep3 = getDependencies(cpg).filter(PropertyNames.NAME, "Module")
+      dep3.checkNodeCount(1)
+      dep3.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "./some/Module")
+      dep3.checkProperty(PropertyNames.VERSION, "require")
+
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "_Foo = require(\"Foo\")",
+        "_Bar = require(\"Bar\")",
+        "exports.B = _Bar",
+        "_Module = require(\"./some/Module\")"
+      )
+    }
+
   }
 
   private def checkObjectInitialization(node: Node, member: (String, String)): Unit = {
