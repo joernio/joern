@@ -45,7 +45,7 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       models.importedAs shouldBe Some("models")
     }
 
-    "have correct structure for declare functions" in AstFixture("""
+    "have correct structure for declared functions" in AstFixture("""
         |declare function foo(arg: string): string
         |""".stripMargin) { cpg =>
       val List(func: Method) = cpg.method("foo").l
@@ -57,6 +57,8 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       arg.typeFullName shouldBe Defines.STRING.label
       arg.code shouldBe "arg: string"
       arg.index shouldBe 1
+      val List(parentTypeDecl) = cpg.typeDecl.name(":program").l
+      parentTypeDecl.bindsOut.expandRef().l should contain(func)
     }
 
   }
