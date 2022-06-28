@@ -72,7 +72,7 @@ If the installation script fails for any reason, try
 Visual Studio Code detects the new files and opens a message box saying: `Folder contains a Dev Container configuration file. Reopen to folder to develop in a container.`
 - Select the `Reopen in Container` button to reopen the folder in the container created by the `.devcontainer/Dockerfile` file
 - Switch to `scalameta.metals` sidebar in VSCode, and select `import build` in `BUILD COMMANDS`
-- After `import build` success, you can develope Joern project with `Goto definition`, `Code Completions`, `Find references`, `Find implementations` and so on.
+- After `import build` succeeds, you are ready to start writing code for Joern
 
 ## QueryDB (queries plugin)
 Quick way to develop and test QueryDB:
