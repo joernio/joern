@@ -4872,9 +4872,11 @@ class AstCreationPassTest extends AbstractPassTest {
 
       cpg.call(Operators.assignment).code.l shouldBe List(
         "_Foo = require(\"Foo\")",
+        "exports.Foo = _Foo",
         "_Bar = require(\"Bar\")",
         "exports.B = _Bar",
-        "_Module = require(\"./some/Module\")"
+        "_Module = require(\"./some/Module\")",
+        "exports.Module = _Module"
       )
     }
 

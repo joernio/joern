@@ -227,7 +227,19 @@ trait AstForDeclarationsCreator {
     if (exportName != EXPORT_KEYWORD) {
       diffGraph.addNode(createDependencyNode(name, depGroupId, REQUIRE_KEYWORD))
     }
-    createAstForFrom(exportName, declaration)
+    val fromCallAst   = createAstForFrom(exportName, declaration)
+    val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, declaration)
+    Ast.storeInDiffGraph(exportCallAst, diffGraph)
+    val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration)
+
+    val blockNode = createBlockNode(declaration.code, declaration.lineNumber, declaration.columnNumber)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+    val asts = List(fromCallAst, exportCallAst, assignmentCallAst)
+    setIndices(asts)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
