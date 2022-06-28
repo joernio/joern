@@ -24,7 +24,7 @@ class PCodeMapper(
 ) {
   private val logger                                 = LoggerFactory.getLogger(getClass)
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
-  private val pcodeOps: Array[PcodeOp]               = nativeInstruction.getPcode()
+  private val pcodeOps: List[PcodeOp]               = nativeInstruction.getPcode().toList//highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
@@ -42,7 +42,7 @@ class PCodeMapper(
 
   def getInstruction: Instruction = nativeInstruction
 
-  def getPcodeOps: Array[PcodeOp] = pcodeOps
+  def getPcodeOps: List[PcodeOp] = pcodeOps
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
@@ -56,9 +56,11 @@ class PCodeMapper(
         nativeInstruction.toString,
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
-    } else if (pcodeOps.length == 1) {
-      // we don't need to fill the hashmap for one PcodeOp
-      // map to node and return
+      //} else if (pcodeOps.length == 1) {
+      //  // we don't need to fill the hashmap for one PcodeOp
+      //  // map to node and return
+      //  mapCallNode(pcodeOps.head)
+    } else if(nativeInstruction.getMnemonicString == "CMP"){
       mapCallNode(pcodeOps.head)
     } else {
       mapCallNode(pcodeOps.last)
@@ -326,7 +328,7 @@ class PCodeMapper(
       case FLOAT_INT2FLOAT =>
         handleSingleArgument(pcodeOp, "<operator>.int2float", pcodeOp.getMnemonic)
       case FLOAT_LESS | INT_SLESS | INT_LESS =>
-        handleTwoArguments(pcodeOp, "<operator>.less", "<")
+        handleTwoArguments(pcodeOp, "<operator>.goto", "<")
       case FLOAT_LESSEQUAL | INT_SLESSEQUAL | INT_LESSEQUAL =>
         handleTwoArguments(pcodeOp, "<operator>.lessThanEqual", "<=")
       case FLOAT_NAN =>
@@ -374,7 +376,6 @@ class PCodeMapper(
       case INT_SUB | FLOAT_SUB | PTRSUB =>
         handleTwoArguments(pcodeOp, "<operator>.subtraction", "-")
       case INT_XOR =>
-        // TODO
         handleTwoArguments(pcodeOp, "<operator>.xor", "^")
       case COPY | LOAD | SUBPIECE =>
         handleAssignment(pcodeOp, nativeInstruction.toString)
@@ -439,7 +440,7 @@ class PCodeMapper(
   }
 
   def connectCallToArgument(call: CfgNodeNew, argument: CfgNodeNew): Unit = {
-    diffGraphBuilder.addNode(argument)
+    //diffGraphBuilder.addNode(argument)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }

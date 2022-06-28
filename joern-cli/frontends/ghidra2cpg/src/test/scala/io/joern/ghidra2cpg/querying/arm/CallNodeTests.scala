@@ -49,7 +49,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
       .l
     def y = cpg.method
       .name("main")
-      .call
+      .call.name("test")
       .map(x => s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}")
       .l // .mkString("\n")
     println(y)
