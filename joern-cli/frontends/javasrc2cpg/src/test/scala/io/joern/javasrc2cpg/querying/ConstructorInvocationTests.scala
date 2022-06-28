@@ -140,16 +140,16 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
-        obj.order shouldBe 1
+        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "b"
         obj.typeFullName shouldBe "Bar"
         obj.code shouldBe "b"
         initArg1.code shouldBe "4"
-        initArg1.order shouldBe 2
+        initArg1.order shouldBe 1
         initArg1.argumentIndex shouldBe 1
         initArg2.code shouldBe "2"
-        initArg2.order shouldBe 3
+        initArg2.order shouldBe 2
         initArg2.argumentIndex shouldBe 2
 
       case res => fail(s"Expected main method in Bar but found $res")
@@ -181,16 +181,16 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
-        obj.order shouldBe 1
+        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "b"
         obj.typeFullName shouldBe "Bar"
         obj.code shouldBe "b"
         initArg1.code shouldBe "4"
-        initArg1.order shouldBe 2
+        initArg1.order shouldBe 1
         initArg1.argumentIndex shouldBe 1
         initArg2.code shouldBe "2"
-        initArg2.order shouldBe 3
+        initArg2.order shouldBe 2
         initArg2.argumentIndex shouldBe 2
 
       case res => fail(s"Expected main method in Bar but found $res")
@@ -229,13 +229,13 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
         init.argument.size shouldBe 2
         val List(obj: Identifier, initArg1: Literal) = init.argument.l
-        obj.order shouldBe 1
+        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$obj0"
         obj.typeFullName shouldBe "Bar"
 
         initArg1.code shouldBe "42"
-        initArg1.order shouldBe 2
+        initArg1.order shouldBe 1
         initArg1.argumentIndex shouldBe 1
 
       case res => fail(s"Expected method bar in Bar but found $res")
@@ -274,13 +274,13 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
         init.argument.size shouldBe 2
         val List(obj: Identifier, initArg1: Literal) = init.argument.l
-        obj.order shouldBe 1
+        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$obj3"
         obj.typeFullName shouldBe "Bar"
 
         initArg1.code shouldBe "42"
-        initArg1.order shouldBe 2
+        initArg1.order shouldBe 1
         initArg1.argumentIndex shouldBe 1
 
       case res => fail(s"Expected method test3 in Bar but found $res")
@@ -299,12 +299,12 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
         val List(obj: Identifier, initArg1: Call) = init.argument.l
         obj.name shouldBe "this"
-        obj.order shouldBe 1
+        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.typeFullName shouldBe "Bar"
 
         initArg1.code shouldBe "x + y"
-        initArg1.order shouldBe 2
+        initArg1.order shouldBe 1
         initArg1.argumentIndex shouldBe 1
 
       case res => fail(s"Expected Bar constructor but found $res")
@@ -325,11 +325,11 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         obj.name shouldBe "this"
         obj.typeFullName shouldBe "Foo"
         obj.argumentIndex shouldBe 0
-        obj.order shouldBe 1
+        obj.order shouldBe 0
         obj.code shouldBe "this"
 
         initArg.code shouldBe "x"
-        initArg.order shouldBe 2
+        initArg.order shouldBe 1
         initArg.argumentIndex shouldBe 1
 
       case res => fail(s"Expected Bar constructor but found $res")

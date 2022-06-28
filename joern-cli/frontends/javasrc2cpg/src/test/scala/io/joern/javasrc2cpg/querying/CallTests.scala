@@ -283,13 +283,13 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     val List(objName: Identifier, argument: Literal) = call.astChildren.l
 
-    objName.order shouldBe 1
+    objName.order shouldBe 0
     objName.argumentIndex shouldBe 0
     objName.code shouldBe "myObj"
     objName.name shouldBe "myObj"
 
     argument.code shouldBe "\"Hello, world!\""
-    argument.order shouldBe 2
+    argument.order shouldBe 1
     argument.argumentIndex shouldBe 1
   }
 
@@ -303,7 +303,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(identifier: Identifier, argument: Call) = call.argument.l
-    identifier.order shouldBe 1
+    identifier.order shouldBe 0
     identifier.argumentIndex shouldBe 0
     identifier.code shouldBe "this"
     identifier.name shouldBe "this"
@@ -327,14 +327,14 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     val List(objName: Identifier, argument: Call) = call.astChildren.l
 
-    objName.order shouldBe 1
+    objName.order shouldBe 0
     objName.argumentIndex shouldBe 0
     objName.name shouldBe "this"
     objName.code shouldBe "this"
 
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
-    argument.order shouldBe 2
+    argument.order shouldBe 1
     argument.argumentIndex shouldBe 1
 
     val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l

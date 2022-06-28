@@ -153,6 +153,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -801,6 +802,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .dynamicTypeHintFullName(Seq(typeFullName))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .index(0)
+      .order(0)
 
     Ast(node)
   }
@@ -2143,6 +2145,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     withIndex(arguments) { case (a, i) =>
       a.root.collect { case x: ExpressionNew =>
         x.argumentIndex = i
+        x.order = i
       }
     }
   }
@@ -2156,6 +2159,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     receiverRoot match {
       case List(x: ExpressionNew) =>
         x.argumentIndex = 0
+        x.order = 0
       case _ =>
     }
 
@@ -2457,11 +2461,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val assignmentAst = astWithRecvArgEdge(assignmentNode, List(identifierAst, allocAst))
 
-    val identifierForInit = identifier.copy
-    val initWithOrder     = initNode
-    val initAst           = astWithRecvArgEdge(initWithOrder, args, Some(Ast(identifierForInit)))
+    val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
+    val identifierForInit          = identifierWithDefaultOrder.copy
+    val initWithDefaultOrder       = initNode.order(PropertyDefaults.Order)
+    val initAst                    = astWithRecvArgEdge(initWithDefaultOrder, args, Some(Ast(identifierForInit)))
 
-    val returnAst = Ast(identifier.copy)
+    val returnAst = Ast(identifierWithDefaultOrder.copy)
 
     Ast(blockNode)
       .withChild(assignmentAst)
@@ -2689,6 +2694,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .name(name)
           .typeFullName(typ)
           .index(idx + 1)
+          .order(idx + 1)
           .code(s"$typ $name")
           .evaluationStrategy(EvaluationStrategies.BY_SHARING)
           .lineNumber(line(expr))
@@ -2763,13 +2769,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val bodyAst = if (returnType == TypeConstants.Void) {
           astsForStatement(stmt)
         } else {
-          val returnAst = Ast(
+          val returnNode =
             NewReturn()
               .code(s"return ${body.toString}")
               .lineNumber(line(body))
-          )
-          val argumentAst = astsForStatement(stmt)
-          Seq(returnAst.withChildren(argumentAst))
+          val returnArgs = astsForStatement(stmt)
+          Seq(astWithRecvArgEdge(returnNode, returnArgs))
         }
 
         blockAst
@@ -2855,10 +2860,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val lambdaMethodAstWithoutRefs =
       Ast(lambdaMethodNode)
-        .withChildren(modifiers)
         .withChildren(parameters)
         .withChild(lambdaMethodBody)
         .withChild(Ast(returnNode))
+        .withChildren(modifiers)
 
     val lambdaMethodAst = identifiersMatchingParams.foldLeft(lambdaMethodAstWithoutRefs)((ast, identifier) =>
       ast.withRefEdge(identifier, lambdaParameterNamesToNodes(identifier.name))
@@ -3169,6 +3174,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(parameter))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .index(childNum)
+      .order(childNum)
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 

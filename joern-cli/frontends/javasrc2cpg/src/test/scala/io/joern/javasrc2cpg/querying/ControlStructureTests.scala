@@ -503,7 +503,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         case List(items: Identifier) =>
           items.name shouldBe "items"
           items.typeFullName shouldBe "java.util.List"
-          items.order shouldBe 1
+          items.order shouldBe 0
           items.argumentIndex shouldBe 0
 
         case result => fail(s"Expected single identifier receiver but got $result")
@@ -532,7 +532,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         case List(receiver: Identifier) =>
           receiver.name shouldBe "$iterLocal0"
           receiver.typeFullName shouldBe "java.util.Iterator"
-          receiver.order shouldBe 1
+          receiver.order shouldBe 0
           receiver.argumentIndex shouldBe 0
           receiver.refOut.toSet should contain(iterLocal)
 
@@ -589,7 +589,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         case List(iterIdent: Identifier) =>
           iterIdent.name shouldBe "$iterLocal0"
           iterIdent.typeFullName shouldBe "java.util.Iterator"
-          iterIdent.order shouldBe 1
+          iterIdent.order shouldBe 0
           iterIdent.argumentIndex shouldBe 0
           iterIdent.refOut.toSet should contain(iterLocal)
 
