@@ -678,6 +678,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case "="  => Operators.assignment
       case "&&" => Operators.logicalAnd
       case "||" => Operators.logicalOr
+      case "==" => Operators.equals
 //      case _: ShlExpr  => Operators.shiftLeft
 //      case _: ShrExpr  => Operators.logicalShiftRight
 //      case _: UshrExpr => Operators.arithmeticShiftRight
