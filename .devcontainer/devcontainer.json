@@ -6,7 +6,6 @@
 		"scala-lang.scala",
 		"scalameta.metals",
 		"scala-lang.scala-snippets",
-		"eamodio.gitlens",
 		"VisualStudioExptTeam.vscodeintellicode"
 	]
 }
