@@ -52,7 +52,7 @@ trait AstForStatementsCreator {
   }
 
   protected def astForBlockStatement(block: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(block.code, block.lineNumber, block.columnNumber)
+    val blockNode = createBlockNode(block)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
@@ -185,7 +185,7 @@ trait AstForStatementsCreator {
 
     val switchExpressionAst = astForNode(switchStmt.json("discriminant"))
 
-    val blockNode = createBlockNode(switchNode.code, switchStmt.lineNumber, switchNode.columnNumber)
+    val blockNode = createBlockNode(switchStmt)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -213,7 +213,7 @@ trait AstForStatementsCreator {
     */
   protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
     // surrounding block:
-    val blockNode = createBlockNode(forInOfStmt.code, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val blockNode = createBlockNode(forInOfStmt)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -375,7 +375,7 @@ trait AstForStatementsCreator {
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), accessAst)
     val loopVariableAssignmentAst  = createCallAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
 
-    val whileLoopBlockNode = createBlockNode(forInOfStmt.code, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val whileLoopBlockNode = createBlockNode(forInOfStmt)
     scope.pushNewBlockScope(whileLoopBlockNode)
     localAstParentStack.push(whileLoopBlockNode)
 

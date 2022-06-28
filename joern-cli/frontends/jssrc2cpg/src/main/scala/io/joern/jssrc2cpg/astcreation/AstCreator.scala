@@ -134,6 +134,7 @@ class AstCreator(
       case BabelAst.TSModuleDeclaration       => astForModule(nodeInfo)
       case BabelAst.ExportNamedDeclaration    => astForExportNamedDeclaration(nodeInfo)
       case BabelAst.ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)
+      case BabelAst.ExportAllDeclaration      => astForExportAllDeclaration(nodeInfo)
       case BabelAst.ImportDeclaration         => astForImportDeclaration(nodeInfo)
       case BabelAst.FunctionDeclaration       => astForFunctionDeclaration(nodeInfo)
       case BabelAst.TSDeclareFunction         => astForTSDeclareFunction(nodeInfo)
