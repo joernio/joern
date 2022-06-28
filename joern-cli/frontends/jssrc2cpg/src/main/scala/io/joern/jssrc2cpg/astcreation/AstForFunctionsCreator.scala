@@ -13,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import ujson.Arr
 import ujson.Value
 
@@ -228,10 +229,14 @@ trait AstForFunctionsCreator {
     )
   }
 
+  private def getParentTypeDecl: NewTypeDecl = {
+    methodAstParentStack.collectFirst { case n: NewTypeDecl => n }.getOrElse(rootTypeDecl.head)
+  }
+
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
     val functionNode = createMethodDefinitionNode(func)
     val bindingNode  = createBindingNode()
-    diffGraph.addEdge(rootTypeDecl.head, bindingNode, EdgeTypes.BINDS)
+    diffGraph.addEdge(getParentTypeDecl, bindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
     addModifier(functionNode, func.json)
     Ast(functionNode)

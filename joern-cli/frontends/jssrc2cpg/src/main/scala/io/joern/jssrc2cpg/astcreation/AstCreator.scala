@@ -128,6 +128,7 @@ class AstCreator(
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
       case BabelAst.ClassDeclaration          => astForClass(nodeInfo)
+      case BabelAst.DeclareClass              => astForClass(nodeInfo)
       case BabelAst.ClassExpression           => astForClass(nodeInfo)
       case BabelAst.TSInterfaceDeclaration    => astForInterface(nodeInfo)
       case BabelAst.TSModuleDeclaration       => astForModule(nodeInfo)
