@@ -4799,6 +4799,21 @@ class AstCreationPassTest extends AbstractPassTest {
       )
     }
 
+    "have correct structure export assignments" in AstFixture("""
+        |var foo = 1;
+        |var bar = 2;
+        |export = foo;
+        |export = bar;
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List("foo", "bar")
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "foo = 1",
+        "bar = 2",
+        "exports.foo = foo",
+        "exports.bar = bar"
+      )
+    }
+
     "have correct structure for defaults" in AstFixture("""
         |var name1;
         |export { name1 as default };
@@ -5090,24 +5105,6 @@ class AstCreationPassTest extends AbstractPassTest {
     def pushCallArg = pushCall.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ARGUMENT_INDEX, 2)
     pushCallArg.checkNodeCount(1)
     pushCallArg.checkProperty(PropertyNames.CODE, s"$element")
-  }
-
-  private object AstFixture extends Fixture {
-    def apply(code: String)(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val file = dir / "code.js"
-        file.write(code)
-        file.deleteOnExit()
-        val cpg = new JsSrc2CpgFrontend().execute(dir.toJava)
-        f(cpg)
-      }
-    }
-
-    def apply(testFile: File)(f: Cpg => Unit): Unit = {
-      val file = testFile
-      val cpg  = new JsSrc2CpgFrontend().execute(file.parent.toJava)
-      f(cpg)
-    }
   }
 
 }

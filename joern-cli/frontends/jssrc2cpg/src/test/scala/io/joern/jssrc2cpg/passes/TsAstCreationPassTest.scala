@@ -1,33 +1,35 @@
 package io.joern.jssrc2cpg.passes
 
-import better.files.File
-import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Import
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Inside
 
-class TsAstCreationPassTest extends AbstractPassTest with Inside {
+class TsAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple TS constructs" should {
 
-    "have correct structure for casts" in AstFixture("""
+    "have correct structure for casts" in AstFixture(
+      """
         | const x = "foo" as string;
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.call(Operators.cast).l) { case List(call) =>
         call.argument(1).head.code shouldBe "string"
         call.argument(2).head.code shouldBe "\"foo\""
       }
     }
 
-    "have correct structure for import assignments" in AstFixture("""
+    "have correct structure for import assignments" in AstFixture(
+      """
         |import fs = require('fs')
         |import models = require('../models/index')
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       def fsDep = getDependencies(cpg).filter(PropertyNames.NAME, "fs")
       fsDep.checkNodeCount(1)
       fsDep.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "fs")
@@ -45,9 +47,12 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       models.importedAs shouldBe Some("models")
     }
 
-    "have correct structure for declared functions" in AstFixture("""
+    "have correct structure for declared functions" in AstFixture(
+      """
         |declare function foo(arg: string): string
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       val List(func: Method) = cpg.method("foo").l
       func.code shouldBe "declare function foo(arg: string): string"
       func.name shouldBe "foo"
@@ -65,14 +70,17 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
 
   "AST generation for TS enums" should {
 
-    "have correct structure for simple enum" in AstFixture("""
+    "have correct structure for simple enum" in AstFixture(
+      """
         |enum Direction {
         |  Up = 1,
         |  Down,
         |  Left,
         |  Right,
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.typeDecl("Direction").l) { case List(direction) =>
         direction.name shouldBe "Direction"
         direction.code shouldBe "enum Direction"
@@ -99,14 +107,17 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
 
   "AST generation for TS classes" should {
 
-    "have correct structure for simple classes" in AstFixture("""
+    "have correct structure for simple classes" in AstFixture(
+      """
         |class Greeter {
         |  greeting: string;
         |  greet() {
         |    return "Hello, " + this.greeting;
         |  }
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         greeter.code shouldBe "class Greeter"
@@ -126,12 +137,15 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct structure for declared classes with empty constructor" in AstFixture("""
+    "have correct structure for declared classes with empty constructor" in AstFixture(
+      """
         |declare class Greeter {
         |  greeting: string;
         |  constructor(arg: string);
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         greeter.code shouldBe "class Greeter"
@@ -147,14 +161,17 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct modifier" in AstFixture("""
+    "have correct modifier" in AstFixture(
+      """
         |abstract class Greeter {
         |  static a: string;
         |  private b: string;
         |  public c: string;
         |  protected d: string;
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.typeDecl.name("Greeter.*").l) { case List(greeter, greeterMeta) =>
         greeterMeta.name shouldBe "Greeter<meta>"
         greeter.name shouldBe "Greeter"
@@ -166,7 +183,8 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct structure for simple interfaces" in AstFixture("""
+    "have correct structure for simple interfaces" in AstFixture(
+      """
         |interface Greeter {
         |  greeting: string;
         |  name?: string;
@@ -174,7 +192,9 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
         |  "foo": string;
         |  (source: string, subString: string): boolean;
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         greeter.code shouldBe "interface Greeter"
@@ -208,11 +228,14 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct structure for interface constructor" in AstFixture("""
+    "have correct structure for interface constructor" in AstFixture(
+      """
        |interface Greeter {
        |  new (param: string) : Greeter
        |}
-       |""".stripMargin) { cpg =>
+       |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         greeter.code shouldBe "interface Greeter"
@@ -230,11 +253,14 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct structure for simple namespace" in AstFixture("""
+    "have correct structure for simple namespace" in AstFixture(
+      """
        |namespace A {
        |  class Foo {};
        |}
-       |""".stripMargin) { cpg =>
+       |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.namespaceBlock("A").l) { case List(a) =>
         a.code should startWith("namespace A")
         a.fullName shouldBe "code.ts::program:A"
@@ -242,7 +268,8 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct structure for nested namespaces" in AstFixture("""
+    "have correct structure for nested namespaces" in AstFixture(
+      """
         |namespace A {
         |  namespace B {
         |    namespace C {
@@ -250,7 +277,9 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
         |    }
         |  }
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.namespaceBlock("A").l) { case List(a) =>
         a.code should startWith("namespace A")
         a.fullName shouldBe "code.ts::program:A"
@@ -268,11 +297,14 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-    "have correct structure for nested namespaces with path" in AstFixture("""
+    "have correct structure for nested namespaces with path" in AstFixture(
+      """
          |namespace A.B.C {
          |  class Foo {};
          |}
-         |""".stripMargin) { cpg =>
+         |""".stripMargin,
+      "code.ts"
+    ) { cpg =>
       inside(cpg.namespaceBlock("A").l) { case List(a) =>
         a.code should startWith("namespace A")
         a.fullName shouldBe "code.ts::program:A"
@@ -290,18 +322,6 @@ class TsAstCreationPassTest extends AbstractPassTest with Inside {
       }
     }
 
-  }
-
-  private object AstFixture extends Fixture {
-    def apply(code: String)(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val file = dir / "code.ts"
-        file.write(code)
-        file.deleteOnExit()
-        val cpg = new JsSrc2CpgFrontend().execute(dir.toJava)
-        f(cpg)
-      }
-    }
   }
 
 }

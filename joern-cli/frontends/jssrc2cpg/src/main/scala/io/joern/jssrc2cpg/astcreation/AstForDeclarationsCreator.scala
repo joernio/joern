@@ -82,8 +82,8 @@ trait AstForDeclarationsCreator {
       declaration.columnNumber
     )
 
-  private def extractDeclarationsFromExportDecl(declaration: BabelNodeInfo): Option[(Ast, Seq[String])] =
-    safeObj(declaration.json, "declaration")
+  private def extractDeclarationsFromExportDecl(declaration: BabelNodeInfo, key: String): Option[(Ast, Seq[String])] =
+    safeObj(declaration.json, key)
       .map { d =>
         val nodeInfo = createBabelNodeInfo(d)
         val ast = nodeInfo.node match {
@@ -173,7 +173,7 @@ trait AstForDeclarationsCreator {
     localAstParentStack.push(blockNode)
 
     val fromAst         = createAstForFrom(exportName, declaration)
-    val declAstAndNames = extractDeclarationsFromExportDecl(declaration)
+    val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
     val declAsts = declAstAndNames.map { case (ast, names) =>
       ast +: names.map { name =>
         if (exportName != EXPORT_KEYWORD)
@@ -202,9 +202,30 @@ trait AstForDeclarationsCreator {
     Ast(blockNode).withChildren(asts)
   }
 
+  protected def astForExportAssignment(assignment: BabelNodeInfo): Ast = {
+    val expressionAstWithNames = extractDeclarationsFromExportDecl(assignment, "expression")
+
+    val blockNode = createBlockNode(assignment)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val declAsts = expressionAstWithNames.map { case (ast, names) =>
+      ast +: names.map { name =>
+        val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, assignment)
+        createExportAssignmentCallAst(name, exportCallAst, assignment)
+      }
+    }
+
+    val asts = declAsts.toSeq.flatten
+    setIndices(asts.toList)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
+  }
+
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
     val exportName      = extractExportFromNameFromExportDecl(declaration)
-    val declAstAndNames = extractDeclarationsFromExportDecl(declaration)
+    val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
 
     val blockNode = createBlockNode(declaration)
     scope.pushNewBlockScope(blockNode)
