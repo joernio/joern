@@ -14,8 +14,8 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     */
   def repr: String =
     node match {
-      case method: MethodBase                         => method.name
-      case methodReturn: MethodReturnBase             => methodReturn.code
+      case method: Method                             => method.name
+      case methodReturn: MethodReturn                 => methodReturn.code
       case expr: Expression                           => expr.code
       case call: CallRepr if !call.isInstanceOf[Call] => call.code
     }

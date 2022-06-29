@@ -57,7 +57,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   // to generated node types.
 
   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
-  implicit def toExtendedNode(node: AbstractNode): NodeMethods                = new NodeMethods(node)
+  implicit def toExtendedNode(node: StoredNode): NodeMethods                  = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)

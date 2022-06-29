@@ -10,23 +10,16 @@ import scala.jdk.CollectionConverters._
 // Many method of this class should return individual nodes instead of Traversal[...].
 // But over time through some opague implicits the versions returning Traversal[...]
 // got exposed and for now we do not want to break the API.
-class NodeMethods(val node: AbstractNode) extends AnyVal with NodeExtension {
+class NodeMethods(val node: StoredNode) extends AnyVal with NodeExtension {
 
   def location(implicit finder: NodeExtensionFinder): NewLocation =
-    node match {
-      case storedNode: StoredNode => LocationCreator(storedNode)
-      case _                      => LocationCreator.emptyLocation("", None)
-    }
+    LocationCreator(node)
 
   def file: Traversal[File] =
-    node match {
-      case storedNode: StoredNode =>
-        Traversal.fromSingle(storedNode).file
-      case _ =>
-        Traversal.empty
-    }
+    Traversal.fromSingle(node).file
 
-  def newTagNode(tagName: String): NewTagNodePairTraversal = newTagNodePair(tagName, "")
+  def newTagNode(tagName: String): NewTagNodePairTraversal =
+    newTagNodePair(tagName, "")
 
   def newTagNodePair(tagName: String, tagValue: String): NewTagNodePairTraversal = {
     new NewTagNodePairTraversal(
@@ -38,22 +31,15 @@ class NodeMethods(val node: AbstractNode) extends AnyVal with NodeExtension {
     )
   }
 
-  def tagList: Traversal[TagBase] =
-    node match {
-      case storedNode: StoredNode =>
-        storedNode._taggedByOut.asScala
-          .map { case tagNode: HasName with HasValue =>
-            (tagNode.name, Option(tagNode.value))
-          }
-          .distinct
-          .collect { case (name, Some(value)) =>
-            NewTag()
-              .name(name)
-              .value(value)
-              .asInstanceOf[TagBase]
-          }
-      case _ =>
-        Traversal.empty
+  def tagList: Traversal[NewTag] = {
+    node._taggedByOut.asScala
+      .map { case tagNode: HasName with HasValue =>
+        (tagNode.name, Option(tagNode.value))
+      }
+      .distinct
+      .collect { case (name, Some(value)) =>
+        NewTag().name(name).value(value)
+      }
     }
 
 }
