@@ -5107,22 +5107,4 @@ class AstCreationPassTest extends AbstractPassTest {
     pushCallArg.checkProperty(PropertyNames.CODE, s"$element")
   }
 
-  private object AstFixture extends Fixture {
-    def apply(code: String)(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val file = dir / "code.js"
-        file.write(code)
-        file.deleteOnExit()
-        val cpg = new JsSrc2CpgFrontend().execute(dir.toJava)
-        f(cpg)
-      }
-    }
-
-    def apply(testFile: File)(f: Cpg => Unit): Unit = {
-      val file = testFile
-      val cpg  = new JsSrc2CpgFrontend().execute(file.parent.toJava)
-      f(cpg)
-    }
-  }
-
 }
