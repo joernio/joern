@@ -2,8 +2,9 @@ package io.joern.c2cpg.testfixtures
 
 import io.joern.c2cpg.{C2Cpg, Config}
 import io.joern.c2cpg.parser.FileDefaults
+import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.LanguageFrontend
 import org.scalatest.Inside
 
 import java.io.File
@@ -24,5 +25,5 @@ class C2CpgFrontend(override val fileSuffix: String = FileDefaults.C_EXT) extend
 }
 
 class CCodeToCpgSuite(fileSuffix: String = FileDefaults.C_EXT)
-    extends CodeToCpgFixture(new C2CpgFrontend(fileSuffix))
+    extends Code2CpgFixture(new C2CpgFrontend(fileSuffix))
     with Inside

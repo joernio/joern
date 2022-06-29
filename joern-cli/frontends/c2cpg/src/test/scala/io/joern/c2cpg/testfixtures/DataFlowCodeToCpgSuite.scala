@@ -6,26 +6,15 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
 
-import scala.sys.process.Process
-import scala.util.Try
-
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
-  var semanticsFilename: String =
-    ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  var semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
 
   var semantics: Semantics = _
-
-  val viewer: ImageViewer = (pathStr: String) =>
-    Try {
-      Process(Seq("xdg-open", pathStr)).!!
-    }
 
   implicit var context: EngineContext = _
 
@@ -35,11 +24,9 @@ class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
     context = EngineContext(semantics)
   }
 
-  override def passes(cpg: Cpg): Unit = {
-    applyDefaultOverlays(cpg)
-    val context = new LayerCreatorContext(cpg)
-    val options = new OssDataFlowOptions()
-    new OssDataFlow(options).run(context)
+  override def applyPasses(cpg: Cpg): Unit = {
+    super.applyPasses(cpg)
+    new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
   }
 
   protected implicit def int2IntegerOption(x: Int): Option[Integer] = Some(x)

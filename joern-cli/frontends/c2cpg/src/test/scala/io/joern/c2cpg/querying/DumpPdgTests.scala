@@ -10,16 +10,13 @@ import java.nio.file.Files
 
 class DumpPdgTests extends DataFlowCodeToCpgSuite {
 
-  override val code: String =
-    """
-      |int foo() {}
-      |int bar() {}
-      |""".stripMargin
-
   "DumpPdg" should {
+    val cpg = code("""
+        |int foo() {}
+        |int bar() {}
+        |""".stripMargin)
 
     "create two dot files for a CPG containing two methods" in {
-
       File.usingTemporaryDirectory("dumppdg") { tmpDir =>
         val opts                  = PdgDumpOptions(tmpDir.path.toString)
         implicit val s: Semantics = semantics

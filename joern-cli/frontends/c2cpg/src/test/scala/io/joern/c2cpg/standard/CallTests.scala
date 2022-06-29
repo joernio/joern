@@ -9,13 +9,13 @@ class CallTests extends CCodeToCpgSuite {
 
   implicit val resolver: NoResolve.type = NoResolve
 
-  override val code: String = """
+  private val cpg = code("""
     |int add(int x, int y) {
     |  return x + y;
     |}
     |int main(int argc, char **argv) {
     |  printf("%d\n", add((1+2), 3));
-    |}""".stripMargin
+    |}""".stripMargin)
 
   "should contain a call node for `add` with correct fields" in {
     val List(x) = cpg.call("add").l
