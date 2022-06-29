@@ -4799,6 +4799,21 @@ class AstCreationPassTest extends AbstractPassTest {
       )
     }
 
+    "have correct structure export assignments" in AstFixture("""
+        |var foo = 1;
+        |var bar = 2;
+        |export = foo;
+        |export = bar;
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List("foo", "bar")
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "foo = 1",
+        "bar = 2",
+        "exports.foo = foo",
+        "exports.bar = bar"
+      )
+    }
+
     "have correct structure for defaults" in AstFixture("""
         |var name1;
         |export { name1 as default };
