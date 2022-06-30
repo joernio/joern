@@ -26,34 +26,4 @@ class NodeMethods(val node: AbstractNode) extends AnyVal with NodeExtension {
         Traversal.empty
     }
 
-  def newTagNode(tagName: String): NewTagNodePairTraversal = newTagNodePair(tagName, "")
-
-  def newTagNodePair(tagName: String, tagValue: String): NewTagNodePairTraversal = {
-    new NewTagNodePairTraversal(
-      Traversal.fromSingle(
-        NewTagNodePair()
-          .tag(NewTag().name(tagName).value(tagValue))
-          .node(node)
-      )
-    )
-  }
-
-  def tagList: Traversal[TagBase] =
-    node match {
-      case storedNode: StoredNode =>
-        storedNode._taggedByOut.asScala
-          .map { case tagNode: HasName with HasValue =>
-            (tagNode.name, Option(tagNode.value))
-          }
-          .distinct
-          .collect { case (name, Some(value)) =>
-            NewTag()
-              .name(name)
-              .value(value)
-              .asInstanceOf[TagBase]
-          }
-      case _ =>
-        Traversal.empty
-    }
-
 }
