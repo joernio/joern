@@ -40,6 +40,6 @@ class NodeMethods(val node: StoredNode) extends AnyVal with NodeExtension {
       .collect { case (name, Some(value)) =>
         NewTag().name(name).value(value)
       }
-    }
+  }
 
 }
