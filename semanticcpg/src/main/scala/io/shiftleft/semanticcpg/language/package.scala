@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  AbstractNode,
   Annotation,
   AnnotationParameterAssign,
   AstNode,
@@ -191,7 +190,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def graphToInterproceduralDot(cpg: Cpg): InterproceduralNodeDot =
     new InterproceduralNodeDot(cpg)
 
-  implicit def toTraversal[NodeType <: AbstractNode](node: NodeType): Traversal[NodeType] =
+  implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Traversal[NodeType] =
     Traversal.fromSingle(node)
 
   implicit def toSteps[A](trav: Traversal[A]): Steps[A] = new Steps(trav)

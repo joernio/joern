@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
 import io.shiftleft.passes.DiffGraph
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import overflowdb.NodeOrDetachedNode
 
 import scala.jdk.CollectionConverters._
 
@@ -35,7 +36,7 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
       cpg.graph.V().asScala.toSet shouldBe Set(existingContainedNode)
 
       val newContainedNode = newTestNode()
-      val newNode          = newTestNode(containedNodes = List(existingContainedNode, newContainedNode))
+      val newNode          = newTestNode(evidence = List(existingContainedNode, newContainedNode))
       new NewNodeSteps(newNode.start).store()
       val diffGraph = diffGraphBuilder.build()
       diffGraph.nodes.toSet shouldBe Set(newNode)
@@ -49,8 +50,8 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
       implicit val diffGraphBuilder = DiffGraph.newBuilder
       val cpg                       = Cpg.emptyCpg
       val newContainedNodeL1        = newTestNode()
-      val newContainedNodeL0        = newTestNode(containedNodes = List(newContainedNodeL1))
-      val newNode                   = newTestNode(containedNodes = List(newContainedNodeL0))
+      val newContainedNodeL0        = newTestNode(evidence = List(newContainedNodeL1))
+      val newNode                   = newTestNode(evidence = List(newContainedNodeL0))
       new NewNodeSteps(newNode.start).store()
       val diffGraph = diffGraphBuilder.build()
 
@@ -64,6 +65,6 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
 }
 
 object NewNodeNodeStepsTest {
-  def newTestNode(containedNodes: List[AbstractNode] = Nil): NewFinding =
-    NewFinding().evidence(containedNodes)
+  def newTestNode(evidence: Seq[AbstractNode] = Seq.empty): NewFinding =
+    NewFinding().evidence(evidence)
 }
