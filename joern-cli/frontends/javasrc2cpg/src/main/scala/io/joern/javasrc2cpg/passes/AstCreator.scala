@@ -2739,7 +2739,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): List[ClosureBindingEntry] = {
     captured
       .map { capturedNode =>
-        val closureBindingId   = s"$lambdaMethodName:${capturedNode.name}"
+        val closureBindingId   = s"$filename:$lambdaMethodName:${capturedNode.name}"
         val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
 
         ClosureBindingEntry(capturedNode, closureBindingNode)
