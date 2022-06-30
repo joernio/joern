@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
 import io.shiftleft.passes.DiffGraph
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.NodeOrDetachedNode
 
 import scala.jdk.CollectionConverters._
 
