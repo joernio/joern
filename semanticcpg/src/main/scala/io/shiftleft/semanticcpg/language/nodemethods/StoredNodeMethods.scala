@@ -26,5 +26,5 @@ class StoredNodeMethods(val node: StoredNode) extends AnyVal with NodeExtension 
           .name(name)
           .value(value)
       }
-    }
+  }
 }
