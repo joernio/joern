@@ -8,7 +8,7 @@ import java.util
 /** mixin trait for test nodes */
 trait DummyNodeImpl extends StoredNode {
   // Members declared in io.shiftleft.codepropertygraph.generated.nodes.AbstractNode
-  def label: String = ???
+  // def label: String = ???
 
   // Members declared in overflowdb.Element
   def graph(): overflowdb.Graph                                                                          = ???

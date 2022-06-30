@@ -19,6 +19,7 @@ import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => Ori
 import io.shiftleft.semanticcpg.language.types.propertyaccessors._
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
 import overflowdb.traversal._
+import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
   *
@@ -30,7 +31,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   // to generated node types.
 
   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
-  implicit def toExtendedNode(node: AbstractNode): NodeMethods                = new NodeMethods(node)
+  implicit def toExtendedNode(node: NodeOrDetachedNode): NodeMethods          = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
