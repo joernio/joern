@@ -1,33 +1,7 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Annotation,
-  AnnotationParameterAssign,
-  AstNode,
-  Call,
-  CfgNode,
-  ControlStructure,
-  Expression,
-  File,
-  Identifier,
-  Import,
-  Literal,
-  Local,
-  Member,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodRef,
-  MethodReturn,
-  Namespace,
-  NamespaceBlock,
-  NewNode,
-  StoredNode,
-  Tag,
-  Type,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
 import io.shiftleft.semanticcpg.language.bindingextension.{
   MethodTraversal => BindingMethodTraversal,
@@ -56,7 +30,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   // to generated node types.
 
   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
-  implicit def toExtendedNode(node: StoredNode): NodeMethods                  = new NodeMethods(node)
+  implicit def toExtendedNode(node: AbstractNode): NodeMethods                = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
