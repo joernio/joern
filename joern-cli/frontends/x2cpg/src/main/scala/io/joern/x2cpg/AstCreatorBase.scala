@@ -75,7 +75,7 @@ abstract class AstCreatorBase(filename: String) {
   /** For a given return node and arguments, create an AST that represents the return instruction. The main purpose of
     * this method is to automatically assign the correct argument indices.
     */
-  def returnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
+  def returnAst(returnNode: NewReturn, arguments: Seq[Ast] = List()): Ast = {
     setArgumentIndices(arguments)
     Ast(returnNode)
       .withChildren(arguments)
@@ -114,7 +114,7 @@ abstract class AstCreatorBase(filename: String) {
     * main purpose of this method is to automatically assign the correct argument indices.
     */
   def callAst(
-    rootNode: NewNode,
+    callNode: NewCall,
     arguments: Seq[Ast] = List(),
     receiver: Option[Ast] = None,
     withRecvArgEdge: Boolean = false
@@ -130,13 +130,12 @@ abstract class AstCreatorBase(filename: String) {
     val recvArgEdgeDest = if (withRecvArgEdge) receiverRoot else Nil
 
     setArgumentIndices(arguments)
-    Ast(rootNode)
+    Ast(callNode)
       .withChild(rcv)
       .withChildren(arguments)
-      .withArgEdges(rootNode, recvArgEdgeDest)
-      .withArgEdges(rootNode, arguments.flatMap(_.root))
-      .withReceiverEdges(rootNode, receiverRoot)
-
+      .withArgEdges(callNode, recvArgEdgeDest)
+      .withArgEdges(callNode, arguments.flatMap(_.root))
+      .withReceiverEdges(callNode, receiverRoot)
   }
 
   def setArgumentIndices(arguments: Seq[Ast]): Unit = {

@@ -1789,7 +1789,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     if (ret.getExpression.isPresent) {
       val expectedType = scopeStack.getEnclosingMethodReturnType
       val exprAsts     = astsForExpression(ret.getExpression.get(), expectedType)
-      callAst(returnNode, exprAsts)
+      returnAst(returnNode, exprAsts)
     } else {
       Ast(returnNode)
     }
@@ -2742,7 +2742,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
               .code(s"return ${body.toString}")
               .lineNumber(line(body))
           val returnArgs = astsForStatement(stmt)
-          Seq(callAst(returnNode, returnArgs))
+          Seq(returnAst(returnNode, returnArgs))
         }
 
         blockAst
