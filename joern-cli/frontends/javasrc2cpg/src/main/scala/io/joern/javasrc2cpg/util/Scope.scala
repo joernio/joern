@@ -32,18 +32,12 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     super.pushNewScope(scope)
   }
 
-  def getCapturedVariables: List[NewNode with HasTypeFullName with HasNameMutable] = {
-    stack
-      .foldLeft(List.empty[NewNode]) { (acc, stackEntry) =>
-        acc ++ stackEntry.variables.values.map(_.node)
-      }
-      .collect {
-        case param: NewMethodParameterIn => param
-        case local: NewLocal             => local
-      }
-      .groupBy(_.name)
-      .map { case (_, vars) => vars.head }
-      .toList
+  def getCapturedVariables: List[NodeTypeInfo] = {
+    stack.foldLeft(List.empty[NodeTypeInfo]) { (acc, stackEntry) =>
+      acc ++ stackEntry.variables.values
+    }.filter { x =>
+      x.node.isInstanceOf[NewMethodParameterIn] || x.node.isInstanceOf[NewLocal]
+    }
   }
 
   override def popScope(): Option[ScopeType] = {
