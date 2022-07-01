@@ -7,9 +7,6 @@ import java.util
 
 /** mixin trait for test nodes */
 trait DummyNodeImpl extends StoredNode {
-  // Members declared in io.shiftleft.codepropertygraph.generated.nodes.AbstractNode
-  // def label: String = ???
-
   // Members declared in overflowdb.Element
   def graph(): overflowdb.Graph                                                                          = ???
   def property[A](x$1: overflowdb.PropertyKey[A]): A                                                     = ???
@@ -30,12 +27,6 @@ trait DummyNodeImpl extends StoredNode {
 
   // Members declared in scala.Equals
   def canEqual(that: Any): Boolean = ???
-
-  // Members declared in overflowdb.Node
-  // def addEdge(x$1: String, x$2: overflowdb.Node, x$3: java.util.Map[String, Object]): overflowdb.Edge = ???
-  // def addEdge(x$1: String, x$2: overflowdb.Node, x$3: Object*): overflowdb.Edge = ???
-  // def addEdgeSilent(x$1: String, x$2: overflowdb.Node, x$3: java.util.Map[String, Object]): Unit = ???
-  // def addEdgeSilent(x$1: String, x$2: overflowdb.Node, x$3: Object*): Unit = ???
 
   def both(x$1: String*): java.util.Iterator[overflowdb.Node]  = ???
   def both(): java.util.Iterator[overflowdb.Node]              = ???
