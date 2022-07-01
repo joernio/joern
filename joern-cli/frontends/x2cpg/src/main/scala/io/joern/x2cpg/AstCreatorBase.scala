@@ -2,17 +2,7 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewNamespaceBlock,
-  NewReturn
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewControlStructure, NewMethod, NewMethodParameterIn, NewMethodReturn, NewNamespaceBlock, NewNode, NewReturn}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -112,8 +102,11 @@ abstract class AstCreatorBase(filename: String) {
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
     * main purpose of this method is to automatically assign the correct argument indices.
     */
-  def callAst(callNode: NewCall, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None): Ast = {
+  def callAst(callNode: NewCall, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None, withRecvArgEdge: Boolean = false): Ast = {
+    astWithRecvAndArgs(callNode, arguments, receiver, withRecvArgEdge)
+  }
 
+  def astWithRecvAndArgs(rootNode: NewNode, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None, withRecvArgEdge: Boolean = false): Ast = {
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcv          = receiver.getOrElse(Ast())
     receiverRoot match {
@@ -122,15 +115,19 @@ abstract class AstCreatorBase(filename: String) {
       case _ =>
     }
 
+    val recvArgEdgeDest = if (withRecvArgEdge) receiverRoot else Nil
+
     setArgumentIndices(arguments)
-    Ast(callNode)
+    Ast(rootNode)
       .withChild(rcv)
       .withChildren(arguments)
-      .withArgEdges(callNode, arguments.flatMap(_.root))
-      .withReceiverEdges(callNode, receiverRoot)
+      .withArgEdges(rootNode, recvArgEdgeDest)
+      .withArgEdges(rootNode, arguments.flatMap(_.root))
+      .withReceiverEdges(rootNode, receiverRoot)
+
   }
 
-  private def setArgumentIndices(arguments: Seq[Ast]) = {
+  def setArgumentIndices(arguments: Seq[Ast]): Unit = {
     withIndex(arguments) { case (a, i) =>
       a.root.collect { case x: ExpressionNew =>
         x.argumentIndex = i

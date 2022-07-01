@@ -231,7 +231,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     arg0.isInstanceOf[nodes.Identifier] shouldBe true
     arg0.asInstanceOf[nodes.Identifier].name shouldBe "this"
     arg0.code shouldBe "this"
-    arg0.order shouldBe 0
+    arg0.order shouldBe 1
     arg0.argumentIndex shouldBe 0
 
     val List(arg1) = cpg.call("add").argument(1).l
@@ -245,7 +245,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     arg2.asInstanceOf[nodes.Literal].code shouldBe "3"
     arg2.isInstanceOf[nodes.Literal] shouldBe true
     arg2.code shouldBe "3"
-    arg2.order shouldBe 2
+    arg2.order shouldBe 3
     arg2.argumentIndex shouldBe 2
   }
 
@@ -283,13 +283,13 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     val List(objName: Identifier, argument: Literal) = call.astChildren.l
 
-    objName.order shouldBe 0
+    objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
     objName.code shouldBe "myObj"
     objName.name shouldBe "myObj"
 
     argument.code shouldBe "\"Hello, world!\""
-    argument.order shouldBe 1
+    argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
   }
 
@@ -303,7 +303,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(identifier: Identifier, argument: Call) = call.argument.l
-    identifier.order shouldBe 0
+    identifier.order shouldBe 1
     identifier.argumentIndex shouldBe 0
     identifier.code shouldBe "this"
     identifier.name shouldBe "this"
@@ -327,7 +327,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     val List(objName: Identifier, argument: Call) = call.astChildren.l
 
-    objName.order shouldBe 0
+    objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
     objName.name shouldBe "this"
     objName.code shouldBe "this"
@@ -335,7 +335,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
     argument.code shouldBe "obj"
-    argument.order shouldBe 1
+    argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
 
     val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
