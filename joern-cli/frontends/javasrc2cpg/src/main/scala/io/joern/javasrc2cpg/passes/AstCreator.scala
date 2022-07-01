@@ -242,8 +242,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     asteriskImports match {
       case imp :: Nil =>
-        val importNode = NewIdentifier().name(WildcardImportName).typeFullName(imp.getNameAsString)
-        scopeStack.addToScope(WildcardImportName, importNode)
+        val name = WildcardImportName
+        val typeFullName = imp.getNameAsString
+        val importNode = NewIdentifier().name(name).typeFullName(typeFullName)
+        scopeStack.addToScope(name, importNode)
 
       case _ => // Only try to guess a wildcard import if exactly one is defined
     }
@@ -614,6 +616,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeParameterMap = getTypeParameterMap(Try(typ.resolve()))
     typeParameterMap.foreach { case (identifier, node) =>
+//      node.typeFullName
       scopeStack.addToScope(identifier, node)
     }
 
@@ -1422,10 +1425,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
     val idxName = nextIndexName()
+    val typeFullName = TypeConstants.Int
     val idxLocal =
       NewLocal()
         .name(idxName)
-        .typeFullName(TypeConstants.Int)
+        .typeFullName(typeFullName)
         .code(idxName)
         .lineNumber(lineNo)
         .order(1)
@@ -2322,6 +2326,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val localAsts = locals.map { Ast(_) }
 
     locals.foreach { local =>
+//      local.typeFullName
       scopeStack.addToScope(local.name, local)
     }
 
@@ -2932,6 +2937,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
 
     parameterNodes.foreach { paramNode =>
+//      paramNode.typeFullName
       scopeStack.addToScope(paramNode.name, paramNode)
     }
 
