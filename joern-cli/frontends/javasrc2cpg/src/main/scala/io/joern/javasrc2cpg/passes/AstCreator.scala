@@ -786,7 +786,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
-    val nodeTypeInfo = NodeTypeInfo(memberNode, isField = true, isStatic = fieldDeclaration.isStatic)
+    val nodeTypeInfo = NodeTypeInfo(memberNode, isField = true)
     scopeStack.addToScope(name, nodeTypeInfo)
 
     memberAst
@@ -1611,7 +1611,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case nameExpr: NameExpr =>
         scopeStack.lookupVariable(nameExpr.getNameAsString) match {
           // If this is not the case, then the code is broken (iterable not in scope).
-          case Some(NodeTypeInfo(node: NamedVariableNodeType, _, _)) => (node, Nil)
+          case Some(NodeTypeInfo(node: NamedVariableNodeType, _)) => (node, Nil)
           case _ => iterableAssignAstsForNativeForEach(nameExpr, iterableType, order)
         }
       case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType, order)

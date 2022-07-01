@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-case class NodeTypeInfo(node: VariableNodeType, isField: Boolean = false, isStatic: Boolean = false)
+case class NodeTypeInfo(node: VariableNodeType, isField: Boolean = false)
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
