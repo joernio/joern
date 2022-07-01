@@ -1457,16 +1457,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def nativeForEachCompareAst(
     lineNo: Option[Integer],
-    iterableLocal: NewNode,
-    iterableName: String,
-    iterableTypeFullName: String,
+    iterableLocal: NodeTypeInfo,
     idxLocal: NewLocal
   ): Ast = {
     val idxName      = idxLocal.name
 
     val compareNode = operatorCallNode(
       Operators.lessThan,
-      code = s"$idxName < $iterableName.length",
+      code = s"$idxName < ${iterableLocal.name}.length",
       order = 3,
       typeFullName = Some(TypeConstants.Boolean),
       line = lineNo
@@ -1474,12 +1472,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val comparisonIdxIdentifier = identifierFromNamedVarType(idxName, idxLocal.typeFullName, lineNo, 1)
     val comparisonFieldAccess = operatorCallNode(
       Operators.fieldAccess,
-      code = s"$iterableName.length",
+      code = s"${iterableLocal.name}.length",
       order = 2,
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val fieldAccessIdentifier      = identifierFromNamedVarType(iterableName, iterableTypeFullName, lineNo, 1)
+    val fieldAccessIdentifier      = identifierFromNamedVarType(iterableLocal.name, iterableLocal.typeFullName, lineNo, 1)
     val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
@@ -1487,7 +1485,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     callAst(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdge(fieldAccessIdentifier, iterableLocal)
+      .withRefEdge(fieldAccessIdentifier, iterableLocal.node)
   }
 
   private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
@@ -1629,6 +1627,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val idxLocal          = nativeForEachIdxLocalNode(lineNo)
     val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
+    // TODO next: pass NodeTypeInfo around
     val compareAst        = nativeForEachCompareAst(lineNo, iterableSourceNode, iterableName, iterableTypeFullName, idxLocal)
     val incrementAst      = nativeForEachIncrementAst(lineNo, idxLocal)
     val bodyAst           = nativeForEachBodyAst(stmt, idxLocal, iterableSourceNode, iterableName, iterableTypeFullName)
