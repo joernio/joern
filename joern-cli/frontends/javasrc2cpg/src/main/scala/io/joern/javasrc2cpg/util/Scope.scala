@@ -5,19 +5,7 @@ import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{MethodScope, NamespaceScope, 
 import io.joern.javasrc2cpg.util.Scope.{VariableNodeType, WildcardImportName}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{ScopeElement, Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  DeclarationNew,
-  HasName,
-  HasNameMutable,
-  HasTypeFullName,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewNamespaceBlock,
-  NewNode,
-  NewTypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
