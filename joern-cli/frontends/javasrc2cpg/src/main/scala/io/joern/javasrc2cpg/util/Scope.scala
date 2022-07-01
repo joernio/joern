@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.util
 
 import io.joern.javasrc2cpg.passes.ExpectedType
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{MethodScope, NamespaceScope, ScopeType, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.{VariableNodeType, WildcardImportName}
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{ScopeElement, Scope => X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-case class NodeTypeInfo(node: VariableNodeType, isField: Boolean = false, isStatic: Boolean = false)
+case class NodeTypeInfo(node: NewNode, typeFullName: String, isField: Boolean = false, isStatic: Boolean = false)
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
@@ -62,8 +62,8 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     }
   }
 
-  def addToScope(identifier: String, node: VariableNodeType): Unit = {
-    addToScope(identifier, NodeTypeInfo(node))
+  def addToScope(identifier: String, node: NewNode, typeFullName: String): Unit = {
+    addToScope(identifier, NodeTypeInfo(node, typeFullName = typeFullName))
   }
 
   def getEnclosingTypeDecl: Option[NewTypeDecl] = {
@@ -109,7 +109,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
   }
 
   def lookupVariableType(identifier: String): Option[String] = {
-    lookupVariable(identifier).map(_.node.typeFullName)
+    lookupVariable(identifier).map(_.typeFullName)
   }
 
   def getWildcardType(identifier: String): Option[String] = {
