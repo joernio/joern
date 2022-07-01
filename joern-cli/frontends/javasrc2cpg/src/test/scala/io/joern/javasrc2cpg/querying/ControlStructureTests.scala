@@ -503,7 +503,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         case List(items: Identifier) =>
           items.name shouldBe "items"
           items.typeFullName shouldBe "java.util.List"
-          items.order shouldBe 0
+          items.order shouldBe 1
           items.argumentIndex shouldBe 0
 
         case result => fail(s"Expected single identifier receiver but got $result")
@@ -527,7 +527,6 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       conditionCall.typeFullName shouldBe "boolean"
       conditionCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       conditionCall.order shouldBe 1
-      conditionCall.argumentIndex shouldBe 1
 
       conditionCall.receiver.l match {
         case List(receiver: Identifier) =>

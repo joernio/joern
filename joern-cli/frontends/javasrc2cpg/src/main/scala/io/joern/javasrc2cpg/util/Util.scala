@@ -58,7 +58,6 @@ object Util {
   def operatorCallNode(
     name: String,
     code: String,
-    order: Int,
     typeFullName: Option[String] = None,
     line: Option[Integer] = None,
     column: Option[Integer] = None
@@ -72,8 +71,6 @@ object Util {
       .typeFullName(typeFullName.getOrElse(TypeConstants.UnresolvedType))
       .lineNumber(line)
       .columnNumber(column)
-      .order(order)
-      .argumentIndex(order)
   }
 
   def fieldIdentifierNode(
@@ -86,7 +83,5 @@ object Util {
       .code(name)
       .lineNumber(line)
       .columnNumber(column)
-      .order(2)
-      .argumentIndex(2)
   }
 }
