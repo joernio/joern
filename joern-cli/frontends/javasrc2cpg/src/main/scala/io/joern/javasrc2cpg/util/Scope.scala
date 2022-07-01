@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-case class NodeTypeInfo(node: NewNode, typeFullName: String, isField: Boolean = false, isStatic: Boolean = false)
+case class NodeTypeInfo(node: NewNode, name: String, typeFullName: String, isField: Boolean = false, isStatic: Boolean = false)
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
@@ -62,8 +62,8 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     }
   }
 
-  def addToScope(identifier: String, node: NewNode, typeFullName: String): Unit = {
-    addToScope(identifier, NodeTypeInfo(node, typeFullName = typeFullName))
+  def addToScope(identifier: String, node: NewNode, name: String, typeFullName: String): Unit = {
+    addToScope(identifier, NodeTypeInfo(node, name = name, typeFullName = typeFullName))
   }
 
   def getEnclosingTypeDecl: Option[NewTypeDecl] = {
