@@ -1368,7 +1368,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     iterableExpression: Expression,
     iterableType: String,
     order: Int
-  ): (NewLocal, String, String, Seq[Ast]) = {
+  ): (NodeTypeInfo, Seq[Ast]) = {
     val lineNo       = line(iterableExpression)
     val expectedType = Some(ExpectedType(iterableType))
 
@@ -1416,7 +1416,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       callAst(iterableAssignNode, iterableAssignArgs)
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
-    (iterableLocalNode, iterableLocalNode.name, iterableLocalNode.typeFullName, List(iterableLocalAst, iterableAssignAst))
+    (NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, iterableLocalNode.typeFullName),
+      List(iterableLocalAst, iterableAssignAst))
   }
 
   private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
@@ -1537,9 +1538,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def variableAssignForNativeForEachBody(
     variableLocal: NewLocal,
     idxLocal: NewLocal,
-    iterableNode: NewNode,
-    iterableName: String,
-    iterableTypeFullName: String,
+    iterable: NodeTypeInfo
   ): Ast = {
     // Everything will be on the same line as the `for` statement, but this is the most useful
     // solution for debugging.
@@ -1556,9 +1555,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .order(2)
       .argumentIndex(2)
       .lineNumber(lineNo)
-      .typeFullName(iterableTypeFullName.replaceAll(raw"\[\]", ""))
+      .typeFullName(iterable.typeFullName.replaceAll(raw"\[\]", ""))
 
-    val indexAccessIdentifier = identifierFromNamedVarType(iterableName, iterableTypeFullName, lineNo, 1)
+    val indexAccessIdentifier = identifierFromNamedVarType(iterable.name, iterable.typeFullName, lineNo, 1)
     val indexAccessIndex      = identifierFromNamedVarType(idxLocal.name, idxLocal.typeFullName, lineNo, 2)
 
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
@@ -1567,14 +1566,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
     callAst(varAssignNode, assignArgsAsts)
       .withRefEdge(targetNode, variableLocal)
-      .withRefEdge(indexAccessIdentifier, iterableNode)
+      .withRefEdge(indexAccessIdentifier, iterable.node)
       .withRefEdge(indexAccessIndex, idxLocal)
   }
 
-  private def nativeForEachBodyAst(stmt: ForEachStmt, idxLocal: NewLocal, iterableNode: NewNode, iterableName: String, iterableTypeFullName: String): Ast = {
+  private def nativeForEachBodyAst(stmt: ForEachStmt, idxLocal: NewLocal, iterable: NodeTypeInfo): Ast = {
     val variableLocal     = variableLocalForForEachBody(stmt)
     val variableLocalAst  = Ast(variableLocal)
-    val variableAssignAst = variableAssignForNativeForEachBody(variableLocal, idxLocal, iterableNode, iterableName, iterableTypeFullName)
+    val variableAssignAst = variableAssignForNativeForEachBody(variableLocal, idxLocal, iterable)
 
     stmt.getBody match {
       case block: BlockStmt =>
@@ -1609,11 +1608,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     // This is ugly, but for a case like `for (int x : new int[] { ... })` this creates a new LOCAL
     // with the assignment `int[] $iterLocal0 = new int[] { ... }` before the FOR loop.
-    val (iterableSourceNode, iterableName, iterableTypeFullName, tempIterableInitAsts) = stmt.getIterable match {
+    val (iterableSource: NodeTypeInfo, tempIterableInitAsts) = stmt.getIterable match {
       case nameExpr: NameExpr =>
         scopeStack.lookupVariable(nameExpr.getNameAsString) match {
           // If this is not the case, then the code is broken (iterable not in scope).
-          case Some(nodeTypeInfo) => (nodeTypeInfo.node, nodeTypeInfo.name, nodeTypeInfo.typeFullName, Nil)
+          case Some(nodeTypeInfo) => (nodeTypeInfo, Nil)
           case _ => iterableAssignAstsForNativeForEach(nameExpr, iterableType, order)
         }
       case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType, order)
@@ -1628,9 +1627,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val idxLocal          = nativeForEachIdxLocalNode(lineNo)
     val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
     // TODO next: pass NodeTypeInfo around
-    val compareAst        = nativeForEachCompareAst(lineNo, iterableSourceNode, iterableName, iterableTypeFullName, idxLocal)
+    val compareAst        = nativeForEachCompareAst(lineNo, iterableSource, idxLocal)
     val incrementAst      = nativeForEachIncrementAst(lineNo, idxLocal)
-    val bodyAst           = nativeForEachBodyAst(stmt, idxLocal, iterableSourceNode, iterableName, iterableTypeFullName)
+    val bodyAst           = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
 
     val forAst = Ast(forNode)
       .withChild(Ast(idxLocal))
