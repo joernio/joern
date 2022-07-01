@@ -114,15 +114,6 @@ abstract class AstCreatorBase(filename: String) {
     * main purpose of this method is to automatically assign the correct argument indices.
     */
   def callAst(
-    callNode: NewCall,
-    arguments: Seq[Ast] = List(),
-    receiver: Option[Ast] = None,
-    withRecvArgEdge: Boolean = false
-  ): Ast = {
-    astWithRecvAndArgs(callNode, arguments, receiver, withRecvArgEdge)
-  }
-
-  def astWithRecvAndArgs(
     rootNode: NewNode,
     arguments: Seq[Ast] = List(),
     receiver: Option[Ast] = None,
