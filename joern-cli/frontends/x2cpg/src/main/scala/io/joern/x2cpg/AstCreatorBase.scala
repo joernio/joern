@@ -2,7 +2,18 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewControlStructure, NewMethod, NewMethodParameterIn, NewMethodReturn, NewNamespaceBlock, NewNode, NewReturn}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodReturn,
+  NewNamespaceBlock,
+  NewNode,
+  NewReturn
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -102,11 +113,21 @@ abstract class AstCreatorBase(filename: String) {
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
     * main purpose of this method is to automatically assign the correct argument indices.
     */
-  def callAst(callNode: NewCall, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None, withRecvArgEdge: Boolean = false): Ast = {
+  def callAst(
+    callNode: NewCall,
+    arguments: Seq[Ast] = List(),
+    receiver: Option[Ast] = None,
+    withRecvArgEdge: Boolean = false
+  ): Ast = {
     astWithRecvAndArgs(callNode, arguments, receiver, withRecvArgEdge)
   }
 
-  def astWithRecvAndArgs(rootNode: NewNode, arguments: Seq[Ast] = List(), receiver: Option[Ast] = None, withRecvArgEdge: Boolean = false): Ast = {
+  def astWithRecvAndArgs(
+    rootNode: NewNode,
+    arguments: Seq[Ast] = List(),
+    receiver: Option[Ast] = None,
+    withRecvArgEdge: Boolean = false
+  ): Ast = {
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcv          = receiver.getOrElse(Ast())
     receiverRoot match {

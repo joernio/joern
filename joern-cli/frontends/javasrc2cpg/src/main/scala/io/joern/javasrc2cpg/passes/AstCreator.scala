@@ -1599,7 +1599,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(lineNo)
     val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo)
 
-    astWithRecvAndArgs(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)), withRecvArgEdge = true)
+    astWithRecvAndArgs(
+      iteratorHasNextCallNode,
+      receiver = Some(Ast(iteratorHasNextCallReceiver)),
+      withRecvArgEdge = true
+    )
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
   }
 
@@ -2432,7 +2436,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
     val identifierForInit          = identifierWithDefaultOrder.copy
     val initWithDefaultOrder       = initNode.order(PropertyDefaults.Order)
-    val initAst                    = astWithRecvAndArgs(initWithDefaultOrder, args, Some(Ast(identifierForInit)), withRecvArgEdge = true)
+    val initAst = astWithRecvAndArgs(initWithDefaultOrder, args, Some(Ast(identifierForInit)), withRecvArgEdge = true)
 
     val returnAst = Ast(identifierWithDefaultOrder.copy)
 
