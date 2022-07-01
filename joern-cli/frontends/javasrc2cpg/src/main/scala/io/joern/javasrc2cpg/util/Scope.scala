@@ -127,8 +127,6 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
 object Scope {
   val WildcardImportName: String = "*"
-  type VariableNodeType      = NewNode with HasTypeFullName
-  type NamedVariableNodeType = VariableNodeType with HasName
 
   object ScopeTypes {
     sealed trait ScopeType

@@ -89,7 +89,7 @@ import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedTy
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.NodeBuilders.{assignmentNode, indexAccessNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.{NamedVariableNodeType, WildcardImportName}
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
@@ -157,14 +157,13 @@ import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-import java.util.UUID.randomUUID
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
 
-case class ClosureBindingEntry(node: NamedVariableNodeType, binding: NewClosureBinding)
+case class ClosureBindingEntry(nodeTypeInfo: NodeTypeInfo, binding: NewClosureBinding)
 
 case class LambdaImplementedInfo(
   implementedInterface: Option[ResolvedReferenceType],
@@ -2962,7 +2961,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def closureBindingsForCapturedNodes(
-    captured: List[NamedVariableNodeType],
+    captured: List[NodeTypeInfo],
     lambdaMethodName: String
   ): List[ClosureBindingEntry] = {
     captured.map { capturedNode =>
@@ -2974,11 +2973,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def localsForCapturedNodes(closureBindingEntries: List[ClosureBindingEntry]): List[NewLocal] = {
     val localsForCaptured =
-      closureBindingEntries.map { case ClosureBindingEntry(node, binding) =>
+      closureBindingEntries.map { case ClosureBindingEntry(nodeTypeInfo, binding) =>
         val local = NewLocal()
-          .name(node.name)
-          .code(node.name)
-          .typeFullName(node.typeFullName)
+          .name(nodeTypeInfo.name)
+          .code(nodeTypeInfo.name)
+          .typeFullName(nodeTypeInfo.typeFullName)
           .closureBindingId(binding.closureBindingId)
         local
       }
@@ -3037,9 +3036,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     bindingEntries: Iterable[ClosureBindingEntry],
     methodRef: NewMethodRef
   ): Unit = {
-    bindingEntries.foreach { case ClosureBindingEntry(node, closureBinding) =>
+    bindingEntries.foreach { case ClosureBindingEntry(nodeTypeInfo, closureBinding) =>
       diffGraph.addNode(closureBinding)
-      diffGraph.addEdge(closureBinding, node, EdgeTypes.REF)
+      diffGraph.addEdge(closureBinding, nodeTypeInfo.node, EdgeTypes.REF)
       diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE)
     }
   }
