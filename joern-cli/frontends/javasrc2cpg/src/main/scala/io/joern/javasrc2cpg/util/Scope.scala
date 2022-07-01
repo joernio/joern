@@ -10,7 +10,13 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-case class NodeTypeInfo(node: NewNode, name: String, typeFullName: String, isField: Boolean = false, isStatic: Boolean = false)
+case class NodeTypeInfo(
+  node: NewNode,
+  name: String,
+  typeFullName: String,
+  isField: Boolean = false,
+  isStatic: Boolean = false
+)
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
@@ -36,7 +42,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     stack.flatMap(_.variables.values).filter { nodeTypeInfo =>
       val node = nodeTypeInfo.node
       node.isInstanceOf[NewMethodParameterIn] ||
-        node.isInstanceOf[NewLocal]
+      node.isInstanceOf[NewLocal]
     }
   }
 

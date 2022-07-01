@@ -233,15 +233,17 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
 
     val allIdentifiers: Map[String, List[CfgNode]] = {
       val results = mutable.Map.empty[String, List[CfgNode]]
-      method.ast.collect {
-        case identifier: Identifier =>
-          (identifier.name, identifier)
-        case methodParameterIn: MethodParameterIn =>
-          (methodParameterIn.name, methodParameterIn)
-      }.foreach { case (name, node) =>
-        val oldValues = results.getOrElse(name, Nil)
-        results.put(name, node :: oldValues)
-      }
+      method.ast
+        .collect {
+          case identifier: Identifier =>
+            (identifier.name, identifier)
+          case methodParameterIn: MethodParameterIn =>
+            (methodParameterIn.name, methodParameterIn)
+        }
+        .foreach { case (name, node) =>
+          val oldValues = results.getOrElse(name, Nil)
+          results.put(name, node :: oldValues)
+        }
       results.toMap
     }
 

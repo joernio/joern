@@ -230,17 +230,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def addImportsToScope(compilationUnit: CompilationUnit): Unit = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
     specificImports.foreach { importStmt =>
-      val name = importStmt.getName.getIdentifier
+      val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
-      val importNode = NewIdentifier().name(name).typeFullName(typeFullName)
+      val importNode   = NewIdentifier().name(name).typeFullName(typeFullName)
       scopeStack.addToScope(importNode, name, typeFullName)
     }
 
     asteriskImports match {
       case imp :: Nil =>
-        val name = WildcardImportName
+        val name         = WildcardImportName
         val typeFullName = imp.getNameAsString
-        val importNode = NewIdentifier().name(name).typeFullName(typeFullName)
+        val importNode   = NewIdentifier().name(name).typeFullName(typeFullName)
         scopeStack.addToScope(importNode, name, typeFullName)
 
       case _ => // Only try to guess a wildcard import if exactly one is defined
@@ -784,7 +784,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
-    val nodeTypeInfo = NodeTypeInfo(memberNode, name = name, typeFullName = typeFullName, isField = true, isStatic = fieldDeclaration.isStatic)
+    val nodeTypeInfo = NodeTypeInfo(
+      memberNode,
+      name = name,
+      typeFullName = typeFullName,
+      isField = true,
+      isStatic = fieldDeclaration.isStatic
+    )
     scopeStack.addToScope(name, nodeTypeInfo)
 
     memberAst
@@ -1415,12 +1421,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       callAst(iterableAssignNode, iterableAssignArgs)
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
-    (NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, iterableLocalNode.typeFullName),
-      List(iterableLocalAst, iterableAssignAst))
+    (
+      NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, iterableLocalNode.typeFullName),
+      List(iterableLocalAst, iterableAssignAst)
+    )
   }
 
   private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
-    val idxName = nextIndexName()
+    val idxName      = nextIndexName()
     val typeFullName = TypeConstants.Int
     val idxLocal =
       NewLocal()
@@ -1455,12 +1463,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withRefEdge(idxIdentifierArg, idxLocal)
   }
 
-  private def nativeForEachCompareAst(
-    lineNo: Option[Integer],
-    iterableLocal: NodeTypeInfo,
-    idxLocal: NewLocal
-  ): Ast = {
-    val idxName      = idxLocal.name
+  private def nativeForEachCompareAst(lineNo: Option[Integer], iterableLocal: NodeTypeInfo, idxLocal: NewLocal): Ast = {
+    val idxName = idxLocal.name
 
     val compareNode = operatorCallNode(
       Operators.lessThan,
@@ -1477,7 +1481,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val fieldAccessIdentifier      = identifierFromNamedVarType(iterableLocal.name, iterableLocal.typeFullName, lineNo, 1)
+    val fieldAccessIdentifier = identifierFromNamedVarType(iterableLocal.name, iterableLocal.typeFullName, lineNo, 1)
     val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
@@ -1519,7 +1523,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     maybeVariable match {
       case Some(variable) =>
-        val name = variable.getNameAsString
+        val name         = variable.getNameAsString
         val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse(TypeConstants.UnresolvedType)
         val localNode = partialLocalNode
           .name(name)
@@ -1612,7 +1616,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         scopeStack.lookupVariable(nameExpr.getNameAsString) match {
           // If this is not the case, then the code is broken (iterable not in scope).
           case Some(nodeTypeInfo) => (nodeTypeInfo, Nil)
-          case _ => iterableAssignAstsForNativeForEach(nameExpr, iterableType, order)
+          case _                  => iterableAssignAstsForNativeForEach(nameExpr, iterableType, order)
         }
       case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType, order)
     }
@@ -1626,9 +1630,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val idxLocal          = nativeForEachIdxLocalNode(lineNo)
     val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
     // TODO next: pass NodeTypeInfo around
-    val compareAst        = nativeForEachCompareAst(lineNo, iterableSource, idxLocal)
-    val incrementAst      = nativeForEachIncrementAst(lineNo, idxLocal)
-    val bodyAst           = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
+    val compareAst   = nativeForEachCompareAst(lineNo, iterableSource, idxLocal)
+    val incrementAst = nativeForEachIncrementAst(lineNo, idxLocal)
+    val bodyAst      = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
 
     val forAst = Ast(forNode)
       .withChild(Ast(idxLocal))
@@ -1665,10 +1669,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       typeFullName = Some(TypeConstants.Iterator),
       line = lineNo
     )
-    val iteratorAssignIdentifier = identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo, 1)
-    val iteratorMethodName       = "iterator"
-    val iteratorMethodSignature  = composeMethodLikeSignature(TypeConstants.Iterator, parameterTypes = Nil)
-    val iteratorMethodFullName   = composeMethodFullName(iterableType, iteratorMethodName, iteratorMethodSignature)
+    val iteratorAssignIdentifier =
+      identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo, 1)
+    val iteratorMethodName      = "iterator"
+    val iteratorMethodSignature = composeMethodLikeSignature(TypeConstants.Iterator, parameterTypes = Nil)
+    val iteratorMethodFullName  = composeMethodFullName(iterableType, iteratorMethodName, iteratorMethodSignature)
     // TODO: This is the only section that needs to be updated for unified native/collection foreach representations.
     val iteratorCallNode =
       NewCall()
@@ -1705,7 +1710,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .order(1)
         .argumentIndex(1)
         .lineNumber(lineNo)
-    val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo, 1).argumentIndex(0)
+    val iteratorHasNextCallReceiver =
+      identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo, 1).argumentIndex(0)
 
     callAst(iteratorHasNextCallNode, Seq(Ast(iteratorHasNextCallReceiver)))
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
@@ -1737,7 +1743,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .order(2)
         .argumentIndex(2)
         .lineNumber(lineNo)
-    val iterNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo, 1).argumentIndex(0)
+    val iterNextCallReceiver =
+      identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo, 1).argumentIndex(0)
     val iterNextCallAst =
       callAst(iterNextCallNode, Seq(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
