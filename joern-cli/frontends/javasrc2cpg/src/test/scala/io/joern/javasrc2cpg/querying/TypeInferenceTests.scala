@@ -46,12 +46,12 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           obj.name shouldBe "b"
           obj.code shouldBe "b"
           obj.typeFullName shouldBe "a.b.c.Bar"
-          obj.order shouldBe 0
+          obj.order shouldBe 1
           obj.argumentIndex shouldBe 0
 
           arg.typeFullName shouldBe "int"
           arg.code shouldBe "0"
-          arg.order shouldBe 1
+          arg.order shouldBe 2
           arg.argumentIndex shouldBe 1
 
         case res => fail(s"Expected identifier and literal arguments for init but got $res")
@@ -125,7 +125,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should find typeFullName for param from import" in {
-    cpg.method.name("test3").parameter.order(1).l match {
+    cpg.method.name("test3").parameter.index(1).l match {
       case param :: Nil =>
         param.name shouldBe "b"
         param.typeFullName shouldBe "a.b.c.Bar"
@@ -206,7 +206,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     call.argument.l match {
       case (obj: Identifier) :: Nil =>
         obj.name shouldBe "this"
-        obj.order shouldBe 0
+        obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
         obj.typeFullName shouldBe "pakfoo.Foo"
 
@@ -231,7 +231,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
       call.argument.l match {
         case (obj: Identifier) :: Nil =>
           obj.name shouldBe "super"
-          obj.order shouldBe 0
+          obj.order shouldBe 1
           obj.argumentIndex shouldBe 0
           obj.typeFullName shouldBe "e.Unknown"
 

@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewMethodReturn,
   NewNamespaceBlock,
+  NewNode,
   NewReturn
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -74,7 +75,7 @@ abstract class AstCreatorBase(filename: String) {
   /** For a given return node and arguments, create an AST that represents the return instruction. The main purpose of
     * this method is to automatically assign the correct argument indices.
     */
-  def returnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
+  def returnAst(returnNode: NewReturn, arguments: Seq[Ast] = List()): Ast = {
     setArgumentIndices(arguments)
     Ast(returnNode)
       .withChildren(arguments)
@@ -112,8 +113,12 @@ abstract class AstCreatorBase(filename: String) {
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
     * main purpose of this method is to automatically assign the correct argument indices.
     */
-  def callAst(callNode: NewCall, arguments: List[Ast] = List(), receiver: Option[Ast] = None): Ast = {
-
+  def callAst(
+    callNode: NewCall,
+    arguments: Seq[Ast] = List(),
+    receiver: Option[Ast] = None,
+    withRecvArgEdge: Boolean = false
+  ): Ast = {
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcv          = receiver.getOrElse(Ast())
     receiverRoot match {
@@ -122,15 +127,18 @@ abstract class AstCreatorBase(filename: String) {
       case _ =>
     }
 
+    val recvArgEdgeDest = if (withRecvArgEdge) receiverRoot else Nil
+
     setArgumentIndices(arguments)
     Ast(callNode)
       .withChild(rcv)
       .withChildren(arguments)
+      .withArgEdges(callNode, recvArgEdgeDest)
       .withArgEdges(callNode, arguments.flatMap(_.root))
       .withReceiverEdges(callNode, receiverRoot)
   }
 
-  private def setArgumentIndices(arguments: List[Ast]) = {
+  def setArgumentIndices(arguments: Seq[Ast]): Unit = {
     withIndex(arguments) { case (a, i) =>
       a.root.collect { case x: ExpressionNew =>
         x.argumentIndex = i
