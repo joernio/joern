@@ -2953,7 +2953,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val returnType = maybeBoundMethodReturnType.orElse(maybeResolvedLambdaType)
-
     returnType.map(typeInfoCalc.fullName).getOrElse(TypeConstants.UnresolvedType)
   }
 
@@ -2968,13 +2967,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     captured: List[NamedVariableNodeType],
     lambdaMethodName: String
   ): List[ClosureBindingEntry] = {
-    captured
-      .map { capturedNode =>
-        val closureBindingId   = s"$lambdaMethodName:${capturedNode.name}"
-        val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
-
-        ClosureBindingEntry(capturedNode, closureBindingNode)
-      }
+    captured.map { capturedNode =>
+      val closureBindingId   = s"$lambdaMethodName:${capturedNode.name}"
+      val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
+      ClosureBindingEntry(capturedNode, closureBindingNode)
+    }
   }
 
   private def localsForCapturedNodes(closureBindingEntries: List[ClosureBindingEntry]): List[NewLocal] = {
