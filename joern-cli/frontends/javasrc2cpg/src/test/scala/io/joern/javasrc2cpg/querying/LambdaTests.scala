@@ -106,8 +106,8 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create locals for captured identifiers in the lambda method" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.l match {
-        case List(fallbackLocal: Local, inputLocal: Local) =>
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.sortBy(_.name) match {
+        case Seq(fallbackLocal: Local, inputLocal: Local) =>
           inputLocal.name shouldBe "input"
           inputLocal.code shouldBe "input"
           inputLocal.typeFullName shouldBe "java.lang.String"
@@ -121,8 +121,8 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.all.collectAll[ClosureBinding].l match {
-        case List(fallbackClosureBinding, _) =>
+      cpg.all.collectAll[ClosureBinding].sortBy(_.closureOriginalName) match {
+        case Seq(fallbackClosureBinding, _) =>
           fallbackClosureBinding.label shouldBe "CLOSURE_BINDING"
 
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
