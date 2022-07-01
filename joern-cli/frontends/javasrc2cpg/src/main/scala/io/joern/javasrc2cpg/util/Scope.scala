@@ -62,8 +62,8 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     }
   }
 
-  def addToScope(identifier: String, node: NewNode, name: String, typeFullName: String): Unit = {
-    addToScope(identifier, NodeTypeInfo(node, name = name, typeFullName = typeFullName))
+  def addToScope(node: NewNode, name: String, typeFullName: String): Unit = {
+    addToScope(identifier = name, NodeTypeInfo(node, name = name, typeFullName = typeFullName))
   }
 
   def getEnclosingTypeDecl: Option[NewTypeDecl] = {

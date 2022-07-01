@@ -234,7 +234,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val name = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
       val importNode = NewIdentifier().name(name).typeFullName(typeFullName)
-      scopeStack.addToScope(name, importNode, name, typeFullName)
+      scopeStack.addToScope(importNode, name, typeFullName)
     }
 
     asteriskImports match {
@@ -242,7 +242,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val name = WildcardImportName
         val typeFullName = imp.getNameAsString
         val importNode = NewIdentifier().name(name).typeFullName(typeFullName)
-        scopeStack.addToScope(name, importNode, name, typeFullName)
+        scopeStack.addToScope(importNode, name, typeFullName)
 
       case _ => // Only try to guess a wildcard import if exactly one is defined
     }
@@ -613,7 +613,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeParameterMap = getTypeParameterMap(Try(typ.resolve()))
     typeParameterMap.foreach { case (identifier, node) =>
-      scopeStack.addToScope(identifier, node, node.name, node.typeFullName)
+      scopeStack.addToScope(node, node.name, node.typeFullName)
     }
 
     val enumEntryAsts = if (typ.isEnumDeclaration) {
@@ -807,7 +807,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     parameterAsts.foreach { ast =>
       ast.root match {
-        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p.name, p, p.name, p.typeFullName)
+        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p, p.name, p.typeFullName)
         case _                             => // This should never happen
       }
     }
@@ -1032,7 +1032,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeParamMap = getTypeParameterMap(methodDeclaration.getTypeParameters.asScala)
     typeParamMap.foreach { case (identifier, typeParam) =>
-      scopeStack.addToScope(identifier, typeParam, typeParam.name, typeParam.typeFullName)
+      scopeStack.addToScope(typeParam, typeParam.name, typeParam.typeFullName)
     }
 
     val parameterAsts = astsForParameterList(methodDeclaration.getParameters)
@@ -1429,7 +1429,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(idxName)
         .lineNumber(lineNo)
         .order(1)
-    scopeStack.addToScope(idxName, idxLocal, idxName, typeFullName)
+    scopeStack.addToScope(idxLocal, idxName, typeFullName)
     idxLocal
   }
 
@@ -1527,7 +1527,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .name(name)
           .code(variable.getNameAsString)
           .typeFullName(typeFullName)
-        scopeStack.addToScope(name, localNode, name, typeFullName)
+        scopeStack.addToScope(localNode, name, typeFullName)
         localNode
 
       case None =>
@@ -2325,7 +2325,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val localAsts = locals.map { Ast(_) }
 
     locals.foreach { local =>
-      scopeStack.addToScope(local.name, local, local.name, local.typeFullName)
+      scopeStack.addToScope(local, local.name, local.typeFullName)
     }
 
     val assignOrder = order + locals.size
@@ -2932,7 +2932,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
 
     parameterNodes.foreach { paramNode =>
-      scopeStack.addToScope(paramNode.name, paramNode, paramNode.name, paramNode.typeFullName)
+      scopeStack.addToScope(paramNode, paramNode.name, paramNode.typeFullName)
     }
 
     parameterNodes.map(Ast(_))
@@ -2984,7 +2984,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .closureBindingId(binding.closureBindingId)
         local
       }
-    localsForCaptured.foreach { local => scopeStack.addToScope(local.name, local, local.name, local.typeFullName) }
+    localsForCaptured.foreach { local => scopeStack.addToScope(local, local.name, local.typeFullName) }
     localsForCaptured
   }
 
@@ -3434,7 +3434,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 
-    scopeStack.addToScope(parameter.getNameAsString, parameterNode, parameter.getNameAsString, parameterNode.typeFullName)
+    scopeStack.addToScope(parameterNode, parameter.getNameAsString, parameterNode.typeFullName)
     ast.withChildren(annotationAsts)
   }
 
