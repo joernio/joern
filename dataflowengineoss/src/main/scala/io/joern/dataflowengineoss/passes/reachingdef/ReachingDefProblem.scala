@@ -231,19 +231,24 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     */
   private def initKill(method: Method, gen: Map[StoredNode, Set[Definition]]): Map[StoredNode, Set[Definition]] = {
 
-    val allIdentifiers: Map[String, List[CfgNode]] = method.ast
-      .collect {
-        case x if x.isInstanceOf[Identifier] || x.isInstanceOf[MethodParameterIn] =>
-          x.asInstanceOf[HasName]
+    val allIdentifiers: Map[String, List[CfgNode]] = {
+      val results = mutable.Map.empty[String, List[CfgNode]]
+      method.ast.collect {
+        case identifier: Identifier =>
+          (identifier.name, identifier)
+        case methodParameterIn: MethodParameterIn =>
+          (methodParameterIn.name, methodParameterIn)
+      }.foreach { case (name, node) =>
+        val oldValues = results.getOrElse(name, Nil)
+        results.put(name, node :: oldValues)
       }
-      .l
-      .groupBy(_.name)
-      .withDefaultValue(List.empty[CfgNode])
-      .map { case (k, v) => (k, v.map(_.asInstanceOf[CfgNode])) }
+      results.toMap
+    }
 
-    val allCalls: Map[String, List[Call]] = method.call.l
-      .groupBy(_.code)
-      .withDefaultValue(List.empty[Call])
+    val allCalls: Map[String, List[Call]] =
+      method.call.l
+        .groupBy(_.code)
+        .withDefaultValue(List.empty[Call])
 
     // We filter out field accesses to ensure that they propagate
     // taint unharmed.
@@ -279,7 +284,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
             * new Box()` should kill any previous calls to `x.value`, `x.length()`, etc.
             */
           val sameObjects: Iterable[Call] = allCalls.values.flatten
-            .filter(_.asInstanceOf[HasName].name == Operators.fieldAccess)
+            .filter(_.name == Operators.fieldAccess)
             .filter(_.ast.isIdentifier.nameExact(identifier.name).nonEmpty)
 
           sameIdentifiers ++ sameObjects
