@@ -286,20 +286,16 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    // TODO: Add 0th parameter logic
     "create a 0th `this` parameter" in {
-      val lambdaChildren = cpg.method.name(".*lambda.*").astChildren.l
       cpg.method.name(".*lambda.*").parameter.l match {
         case List(thisParam, inputParam) =>
           thisParam.name shouldBe "this"
           thisParam.code shouldBe "this"
           thisParam.typeFullName shouldBe "Foo"
-//          thisParam.order shouldBe 0
           thisParam.index shouldBe 0
 
           inputParam.name shouldBe "input"
           inputParam.typeFullName shouldBe "java.lang.String"
-//          inputParam.order shouldBe 1
           inputParam.index shouldBe 1
 
         case result => fail(s"Expected two params for lambda method but got $result")
