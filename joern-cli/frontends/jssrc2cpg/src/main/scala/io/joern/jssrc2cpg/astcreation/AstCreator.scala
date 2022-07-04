@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.x2cpg.datastructures.Stack._
-import io.joern.jssrc2cpg.parser.BabelAst
-import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.Scope
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
