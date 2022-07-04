@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
+import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import ujson.Obj
 

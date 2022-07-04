@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.parser
+package io.joern.jssrc2cpg.io
 
 import better.files.File
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
