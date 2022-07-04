@@ -2,27 +2,21 @@ package io.joern.javasrc2cpg.util
 
 import io.joern.javasrc2cpg.passes.ExpectedType
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{MethodScope, NamespaceScope, ScopeType, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.{VariableNodeType, WildcardImportName}
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{ScopeElement, Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  DeclarationNew,
-  HasName,
-  HasNameMutable,
-  HasTypeFullName,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewNamespaceBlock,
-  NewNode,
-  NewTypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-case class NodeTypeInfo(node: VariableNodeType, isField: Boolean = false, isStatic: Boolean = false)
+case class NodeTypeInfo(
+  node: NewNode,
+  name: String,
+  typeFullName: String,
+  isField: Boolean = false,
+  isStatic: Boolean = false
+)
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
@@ -44,18 +38,12 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     super.pushNewScope(scope)
   }
 
-  def getCapturedVariables: List[NewNode with HasTypeFullName with HasNameMutable] = {
-    stack
-      .foldLeft(List.empty[NewNode]) { (acc, stackEntry) =>
-        acc ++ stackEntry.variables.values.map(_.node)
-      }
-      .collect {
-        case param: NewMethodParameterIn => param
-        case local: NewLocal             => local
-      }
-      .groupBy(_.name)
-      .map { case (_, vars) => vars.head }
-      .toList
+  def getCapturedVariables: List[NodeTypeInfo] = {
+    stack.flatMap(_.variables.values).filter { nodeTypeInfo =>
+      val node = nodeTypeInfo.node
+      node.isInstanceOf[NewMethodParameterIn] ||
+      node.isInstanceOf[NewLocal]
+    }
   }
 
   override def popScope(): Option[ScopeType] = {
@@ -74,8 +62,8 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     }
   }
 
-  def addToScope(identifier: String, node: VariableNodeType): Unit = {
-    addToScope(identifier, NodeTypeInfo(node))
+  def addToScope(node: NewNode, name: String, typeFullName: String): Unit = {
+    addToScope(identifier = name, NodeTypeInfo(node, name = name, typeFullName = typeFullName))
   }
 
   def getEnclosingTypeDecl: Option[NewTypeDecl] = {
@@ -121,7 +109,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
   }
 
   def lookupVariableType(identifier: String): Option[String] = {
-    lookupVariable(identifier).map(_.node.typeFullName)
+    lookupVariable(identifier).map(_.typeFullName)
   }
 
   def getWildcardType(identifier: String): Option[String] = {
@@ -139,8 +127,6 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
 object Scope {
   val WildcardImportName: String = "*"
-  type VariableNodeType      = NewNode with HasTypeFullName
-  type NamedVariableNodeType = VariableNodeType with HasName
 
   object ScopeTypes {
     sealed trait ScopeType

@@ -89,7 +89,7 @@ import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedTy
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.NodeBuilders.{assignmentNode, indexAccessNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.{NamedVariableNodeType, WildcardImportName}
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
@@ -164,7 +164,7 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
 
-case class ClosureBindingEntry(node: NamedVariableNodeType, binding: NewClosureBinding)
+case class ClosureBindingEntry(nodeTypeInfo: NodeTypeInfo, binding: NewClosureBinding)
 
 case class LambdaImplementedInfo(
   implementedInterface: Option[ResolvedReferenceType],
@@ -231,18 +231,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def addImportsToScope(compilationUnit: CompilationUnit): Unit = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
     specificImports.foreach { importStmt =>
-      val name = importStmt.getName.getIdentifier
-      val importNode =
-        NewIdentifier()
-          .name(name)
-          .typeFullName(importStmt.getNameAsString) // fully qualified name
-      scopeStack.addToScope(name, NodeTypeInfo(importNode))
+      val name         = importStmt.getName.getIdentifier
+      val typeFullName = importStmt.getNameAsString // fully qualified name
+      val importNode   = NewIdentifier().name(name).typeFullName(typeFullName)
+      scopeStack.addToScope(importNode, name, typeFullName)
     }
 
     asteriskImports match {
       case imp :: Nil =>
-        val importNode = NewIdentifier().name(WildcardImportName).typeFullName(imp.getNameAsString)
-        scopeStack.addToScope(WildcardImportName, importNode)
+        val name         = WildcardImportName
+        val typeFullName = imp.getNameAsString
+        val importNode   = NewIdentifier().name(name).typeFullName(typeFullName)
+        scopeStack.addToScope(importNode, name, typeFullName)
 
       case _ => // Only try to guess a wildcard import if exactly one is defined
     }
@@ -592,7 +592,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeParameterMap = getTypeParameterMap(Try(typ.resolve()))
     typeParameterMap.foreach { case (identifier, node) =>
-      scopeStack.addToScope(identifier, node)
+      scopeStack.addToScope(node, node.name, node.typeFullName)
     }
 
     val enumEntryAsts = if (typ.isEnumDeclaration) {
@@ -748,7 +748,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
-    val nodeTypeInfo = NodeTypeInfo(memberNode, isField = true, isStatic = fieldDeclaration.isStatic)
+    val nodeTypeInfo = NodeTypeInfo(
+      memberNode,
+      name = name,
+      typeFullName = typeFullName,
+      isField = true,
+      isStatic = fieldDeclaration.isStatic
+    )
     scopeStack.addToScope(name, nodeTypeInfo)
 
     memberAst
@@ -770,7 +776,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     parameterAsts.foreach { ast =>
       ast.root match {
-        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p.name, p)
+        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p, p.name, p.typeFullName)
         case _                             => // This should never happen
       }
     }
@@ -985,7 +991,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeParamMap = getTypeParameterMap(methodDeclaration.getTypeParameters.asScala)
     typeParamMap.foreach { case (identifier, typeParam) =>
-      scopeStack.addToScope(identifier, typeParam)
+      scopeStack.addToScope(typeParam, typeParam.name, typeParam.typeFullName)
     }
 
     val parameterAsts = astsForParameterList(methodDeclaration.getParameters)
@@ -1288,7 +1294,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def iterableAssignAstsForNativeForEach(
     iterableExpression: Expression,
     iterableType: String
-  ): (NewLocal, Seq[Ast]) = {
+  ): (NodeTypeInfo, Seq[Ast]) = {
     val lineNo       = line(iterableExpression)
     val expectedType = Some(ExpectedType(iterableType))
 
@@ -1328,18 +1334,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       callAst(iterableAssignNode, iterableAssignArgs)
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
-    (iterableLocalNode, List(iterableLocalAst, iterableAssignAst))
+    (
+      NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, iterableLocalNode.typeFullName),
+      List(iterableLocalAst, iterableAssignAst)
+    )
   }
 
   private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
-    val idxName = nextIndexName()
+    val idxName      = nextIndexName()
+    val typeFullName = TypeConstants.Int
     val idxLocal =
       NewLocal()
         .name(idxName)
-        .typeFullName(TypeConstants.Int)
+        .typeFullName(typeFullName)
         .code(idxName)
         .lineNumber(lineNo)
-    scopeStack.addToScope(idxName, idxLocal)
+    scopeStack.addToScope(idxLocal, idxName, typeFullName)
     idxLocal
   }
 
@@ -1351,7 +1361,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line = lineNo,
       typeFullName = Some(TypeConstants.Int)
     )
-    val idxIdentifierArg = identifierFromNamedVarType(idxLocal, lineNo)
+    val idxIdentifierArg = identifierFromNamedVarType(idxName, idxLocal.typeFullName, lineNo)
     val zeroLiteral =
       NewLiteral()
         .code("0")
@@ -1362,28 +1372,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withRefEdge(idxIdentifierArg, idxLocal)
   }
 
-  private def nativeForEachCompareAst(
-    lineNo: Option[Integer],
-    iterableLocal: NamedVariableNodeType,
-    idxLocal: NewLocal
-  ): Ast = {
-    val idxName      = idxLocal.name
-    val iterableName = iterableLocal.name
+  private def nativeForEachCompareAst(lineNo: Option[Integer], iterableLocal: NodeTypeInfo, idxLocal: NewLocal): Ast = {
+    val idxName = idxLocal.name
 
     val compareNode = operatorCallNode(
       Operators.lessThan,
-      code = s"$idxName < $iterableName.length",
+      code = s"$idxName < ${iterableLocal.name}.length",
       typeFullName = Some(TypeConstants.Boolean),
       line = lineNo
     )
-    val comparisonIdxIdentifier = identifierFromNamedVarType(idxLocal, lineNo)
+    val comparisonIdxIdentifier = identifierFromNamedVarType(idxName, idxLocal.typeFullName, lineNo)
     val comparisonFieldAccess = operatorCallNode(
       Operators.fieldAccess,
-      code = s"$iterableName.length",
+      code = s"${iterableLocal.name}.length",
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val fieldAccessIdentifier      = identifierFromNamedVarType(iterableLocal, lineNo)
+    val fieldAccessIdentifier      = identifierFromNamedVarType(iterableLocal.name, iterableLocal.typeFullName, lineNo)
     val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
@@ -1391,7 +1396,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     callAst(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdge(fieldAccessIdentifier, iterableLocal)
+      .withRefEdge(fieldAccessIdentifier, iterableLocal.node)
   }
 
   private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
@@ -1401,7 +1406,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val incrementArg    = identifierFromNamedVarType(idxLocal, lineNo)
+    val incrementArg    = identifierFromNamedVarType(idxLocal.name, idxLocal.typeFullName, lineNo)
     val incrementArgAst = Ast(incrementArg)
     callAst(incrementNode, List(incrementArgAst))
       .withRefEdge(incrementArg, idxLocal)
@@ -1424,17 +1429,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     maybeVariable match {
       case Some(variable) =>
+        val name         = variable.getNameAsString
         val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse(TypeConstants.UnresolvedType)
         val localNode = partialLocalNode
-          .name(variable.getNameAsString)
+          .name(name)
           .code(variable.getNameAsString)
           .typeFullName(typeFullName)
-        scopeStack.addToScope(localNode.name, localNode)
+        scopeStack.addToScope(localNode, name, typeFullName)
         localNode
 
       case None =>
-        // Returning partialLocalNode here is fine since getting to this case means everything is
-        // broken anyways :)
+        // Returning partialLocalNode here is fine since getting to this case means everything is broken anyways :)
         partialLocalNode
     }
   }
@@ -1442,7 +1447,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def variableAssignForNativeForEachBody(
     variableLocal: NewLocal,
     idxLocal: NewLocal,
-    iterableNode: NamedVariableNodeType
+    iterable: NodeTypeInfo
   ): Ast = {
     // Everything will be on the same line as the `for` statement, but this is the most useful
     // solution for debugging.
@@ -1451,14 +1456,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(lineNo)
       .typeFullName(variableLocal.typeFullName)
 
-    val targetNode = identifierFromNamedVarType(variableLocal, lineNo)
+    val targetNode = identifierFromNamedVarType(variableLocal.name, variableLocal.typeFullName, lineNo)
 
     val indexAccess = indexAccessNode()
       .lineNumber(lineNo)
-      .typeFullName(iterableNode.typeFullName.replaceAll(raw"\[]", ""))
+      .typeFullName(iterable.typeFullName.replaceAll(raw"\[]", ""))
 
-    val indexAccessIdentifier = identifierFromNamedVarType(iterableNode, lineNo)
-    val indexAccessIndex      = identifierFromNamedVarType(idxLocal, lineNo)
+    val indexAccessIdentifier = identifierFromNamedVarType(iterable.name, iterable.typeFullName, lineNo)
+    val indexAccessIndex      = identifierFromNamedVarType(idxLocal.name, idxLocal.typeFullName, lineNo)
 
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
     val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
@@ -1466,14 +1471,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
     callAst(varAssignNode, assignArgsAsts)
       .withRefEdge(targetNode, variableLocal)
-      .withRefEdge(indexAccessIdentifier, iterableNode)
+      .withRefEdge(indexAccessIdentifier, iterable.node)
       .withRefEdge(indexAccessIndex, idxLocal)
   }
 
-  private def nativeForEachBodyAst(stmt: ForEachStmt, idxLocal: NewLocal, iterableNode: NamedVariableNodeType): Ast = {
+  private def nativeForEachBodyAst(stmt: ForEachStmt, idxLocal: NewLocal, iterable: NodeTypeInfo): Ast = {
     val variableLocal     = variableLocalForForEachBody(stmt)
     val variableLocalAst  = Ast(variableLocal)
-    val variableAssignAst = variableAssignForNativeForEachBody(variableLocal, idxLocal, iterableNode)
+    val variableAssignAst = variableAssignForNativeForEachBody(variableLocal, idxLocal, iterable)
 
     stmt.getBody match {
       case block: BlockStmt =>
@@ -1489,11 +1494,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def identifierFromNamedVarType(local: NamedVariableNodeType, lineNumber: Option[Integer]): NewIdentifier = {
+  private def identifierFromNamedVarType(
+    localName: String,
+    localTypeFullName: String,
+    lineNumber: Option[Integer]
+  ): NewIdentifier = {
     NewIdentifier()
-      .name(local.name)
-      .code(local.name)
-      .typeFullName(local.typeFullName)
+      .name(localName)
+      .code(localName)
+      .typeFullName(localTypeFullName)
       .lineNumber(lineNumber)
   }
 
@@ -1501,12 +1510,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     // This is ugly, but for a case like `for (int x : new int[] { ... })` this creates a new LOCAL
     // with the assignment `int[] $iterLocal0 = new int[] { ... }` before the FOR loop.
-    val (iterableSourceNode, tempIterableInitAsts) = stmt.getIterable match {
+    val (iterableSource: NodeTypeInfo, tempIterableInitAsts) = stmt.getIterable match {
       case nameExpr: NameExpr =>
         scopeStack.lookupVariable(nameExpr.getNameAsString) match {
           // If this is not the case, then the code is broken (iterable not in scope).
-          case Some(NodeTypeInfo(node: NamedVariableNodeType, _, _)) => (node, Nil)
-          case _ => iterableAssignAstsForNativeForEach(nameExpr, iterableType)
+          case Some(nodeTypeInfo) => (nodeTypeInfo, Nil)
+          case _                  => iterableAssignAstsForNativeForEach(nameExpr, iterableType)
         }
       case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType)
     }
@@ -1518,9 +1527,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val idxLocal          = nativeForEachIdxLocalNode(lineNo)
     val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
-    val compareAst        = nativeForEachCompareAst(lineNo, iterableSourceNode, idxLocal)
-    val incrementAst      = nativeForEachIncrementAst(lineNo, idxLocal)
-    val bodyAst           = nativeForEachBodyAst(stmt, idxLocal, iterableSourceNode)
+    // TODO next: pass NodeTypeInfo around
+    val compareAst   = nativeForEachCompareAst(lineNo, iterableSource, idxLocal)
+    val incrementAst = nativeForEachIncrementAst(lineNo, idxLocal)
+    val bodyAst      = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
 
     val forAst = Ast(forNode)
       .withChild(Ast(idxLocal))
@@ -1550,10 +1560,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): Ast = {
     val iteratorAssignNode =
       operatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
-    val iteratorAssignIdentifier = identifierFromNamedVarType(iteratorLocalNode, lineNo)
-    val iteratorMethodName       = "iterator"
-    val iteratorMethodSignature  = composeMethodLikeSignature(TypeConstants.Iterator, parameterTypes = Nil)
-    val iteratorMethodFullName   = composeMethodFullName(iterableType, iteratorMethodName, iteratorMethodSignature)
+    val iteratorAssignIdentifier =
+      identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
+    val iteratorMethodName      = "iterator"
+    val iteratorMethodSignature = composeMethodLikeSignature(TypeConstants.Iterator, parameterTypes = Nil)
+    val iteratorMethodFullName  = composeMethodFullName(iterableType, iteratorMethodName, iteratorMethodSignature)
     // TODO: This is the only section that needs to be updated for unified native/collection foreach representations.
     val iteratorCallNode =
       NewCall()
@@ -1597,7 +1608,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .code(hasNextCallFullName)
         .lineNumber(lineNo)
-    val iteratorHasNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo)
+    val iteratorHasNextCallReceiver =
+      identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
 
     callAst(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)), withRecvArgEdge = true)
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
@@ -1610,7 +1622,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       assignmentNode()
         .typeFullName(forVariableType)
         .lineNumber(lineNo)
-    val varLocalAssignIdentifier = identifierFromNamedVarType(variableLocal, lineNo)
+    val varLocalAssignIdentifier = identifierFromNamedVarType(variableLocal.name, variableLocal.typeFullName, lineNo)
 
     val iterNextCallName      = "next"
     val iterNextCallSignature = composeMethodLikeSignature(TypeConstants.Object, parameterTypes = Nil)
@@ -1624,7 +1636,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .code(iterNextCallFullName)
         .lineNumber(lineNo)
-    val iterNextCallReceiver = identifierFromNamedVarType(iteratorLocalNode, lineNo)
+    val iterNextCallReceiver =
+      identifierFromNamedVarType(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
     val iterNextCallAst =
       callAst(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)), withRecvArgEdge = true)
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
@@ -2049,7 +2062,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val name = variable.getName.toString
       val typeFullName = typeInfoCalc
         .fullName(variable.getType)
-        .orElse(scopeStack.lookupVariable(variable.getTypeAsString).map(_.node.typeFullName)) // TODO: TYPE_CLEANUP
+        .orElse(scopeStack.lookupVariable(variable.getTypeAsString).map(_.typeFullName)) // TODO: TYPE_CLEANUP
         .getOrElse(TypeConstants.UnresolvedType)
       val code = s"${variable.getType} $name"
 
@@ -2127,12 +2140,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astsForVariableDecl(varDecl: VariableDeclarationExpr): Seq[Ast] = {
-
     val locals    = localsForVarDecl(varDecl)
     val localAsts = locals.map { Ast(_) }
 
     locals.foreach { local =>
-      scopeStack.addToScope(local.name, local)
+      scopeStack.addToScope(local, local.name, local.typeFullName)
     }
 
     val assignments =
@@ -2669,7 +2681,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
 
     parameterNodes.foreach { paramNode =>
-      scopeStack.addToScope(paramNode.name, paramNode)
+      scopeStack.addToScope(paramNode, paramNode.name, paramNode.typeFullName)
     }
 
     parameterNodes.map(Ast(_))
@@ -2690,7 +2702,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val returnType = maybeBoundMethodReturnType.orElse(maybeResolvedLambdaType)
-
     returnType.map(typeInfoCalc.fullName).getOrElse(TypeConstants.UnresolvedType)
   }
 
@@ -2702,29 +2713,27 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def closureBindingsForCapturedNodes(
-    captured: List[NamedVariableNodeType],
+    captured: List[NodeTypeInfo],
     lambdaMethodName: String
   ): List[ClosureBindingEntry] = {
-    captured
-      .map { capturedNode =>
-        val closureBindingId   = s"$filename:$lambdaMethodName:${capturedNode.name}"
-        val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
-
-        ClosureBindingEntry(capturedNode, closureBindingNode)
-      }
+    captured.map { capturedNode =>
+      val closureBindingId   = s"$filename:$lambdaMethodName:${capturedNode.name}"
+      val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
+      ClosureBindingEntry(capturedNode, closureBindingNode)
+    }
   }
 
   private def localsForCapturedNodes(closureBindingEntries: List[ClosureBindingEntry]): List[NewLocal] = {
     val localsForCaptured =
-      closureBindingEntries.map { case ClosureBindingEntry(node, binding) =>
+      closureBindingEntries.map { case ClosureBindingEntry(nodeTypeInfo, binding) =>
         val local = NewLocal()
-          .name(node.name)
-          .code(node.name)
-          .typeFullName(node.typeFullName)
+          .name(nodeTypeInfo.name)
+          .code(nodeTypeInfo.name)
+          .typeFullName(nodeTypeInfo.typeFullName)
           .closureBindingId(binding.closureBindingId)
         local
       }
-    localsForCaptured.foreach { local => scopeStack.addToScope(local.name, local) }
+    localsForCaptured.foreach { local => scopeStack.addToScope(local, local.name, local.typeFullName) }
     localsForCaptured
   }
 
@@ -2770,9 +2779,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     bindingEntries: Iterable[ClosureBindingEntry],
     methodRef: NewMethodRef
   ): Unit = {
-    bindingEntries.foreach { case ClosureBindingEntry(node, closureBinding) =>
+    bindingEntries.foreach { case ClosureBindingEntry(nodeTypeInfo, closureBinding) =>
       diffGraph.addNode(closureBinding)
-      diffGraph.addEdge(closureBinding, node, EdgeTypes.REF)
+      diffGraph.addEdge(closureBinding, nodeTypeInfo.node, EdgeTypes.REF)
       diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE)
     }
   }
@@ -3146,7 +3155,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 
-    scopeStack.addToScope(parameter.getNameAsString, parameterNode)
+    scopeStack.addToScope(parameterNode, parameter.getNameAsString, parameterNode.typeFullName)
     ast.withChildren(annotationAsts)
   }
 
