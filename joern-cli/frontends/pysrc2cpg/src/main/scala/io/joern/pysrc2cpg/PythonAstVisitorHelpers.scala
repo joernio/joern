@@ -3,19 +3,20 @@ package io.joern.pysrc2cpg
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, nodes}
 import io.joern.pysrc2cpg.memop.{Load, MemoryOperation, Store}
 import io.joern.pythonparser.ast
+import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 
 import scala.collection.mutable
 
 trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
   protected def codeOf(node: nodes.NewNode): String = {
-    node.asInstanceOf[nodes.HasCode].code
+    node.asInstanceOf[AstNodeNew].code
   }
 
   protected def lineAndColOf(node: ast.iattributes): LineAndColumn = {
     // node.end_col_offset - 1 because the end column offset of the parser points
     // behind the last symbol.
-    new LineAndColumn(node.lineno, node.col_offset, node.end_lineno, node.end_col_offset - 1)
+    LineAndColumn(node.lineno, node.col_offset, node.end_lineno, node.end_col_offset - 1)
   }
 
   private var tmpCounter = 0
