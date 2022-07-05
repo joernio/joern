@@ -418,10 +418,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
-  protected def createStarredUnpackOperatorCall(
-    unpackOperand: NewNode,
-    lineAndColumn: LineAndColumn
-  ): NewNode = {
+  protected def createStarredUnpackOperatorCall(unpackOperand: NewNode, lineAndColumn: LineAndColumn): NewNode = {
     val code     = "*" + codeOf(unpackOperand)
     val callNode = nodeBuilder.callNode(code, "<operator>.starredUnpack", DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
@@ -429,11 +426,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
-  protected def createAssignment(
-    lhsNode: NewNode,
-    rhsNode: NewNode,
-    lineAndColumn: LineAndColumn
-  ): NewNode = {
+  protected def createAssignment(lhsNode: NewNode, rhsNode: NewNode, lineAndColumn: LineAndColumn): NewNode = {
     val code     = codeOf(lhsNode) + " = " + codeOf(rhsNode)
     val callNode = nodeBuilder.callNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
@@ -479,11 +472,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     identifierNode
   }
 
-  protected def createIndexAccess(
-    baseNode: NewNode,
-    indexNode: NewNode,
-    lineAndColumn: LineAndColumn
-  ): NewNode = {
+  protected def createIndexAccess(baseNode: NewNode, indexNode: NewNode, lineAndColumn: LineAndColumn): NewNode = {
     val code = codeOf(baseNode) + "[" + codeOf(indexNode) + "]"
     val indexAccessNode =
       nodeBuilder.callNode(code, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
@@ -509,11 +498,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     }
   }
 
-  protected def createFieldAccess(
-    baseNode: NewNode,
-    fieldName: String,
-    lineAndColumn: LineAndColumn
-  ): NewCall = {
+  protected def createFieldAccess(baseNode: NewNode, fieldName: String, lineAndColumn: LineAndColumn): NewCall = {
     val fieldIdNode = nodeBuilder.fieldIdentifierNode(fieldName, lineAndColumn)
 
     val code     = codeOf(baseNode) + "." + codeOf(fieldIdNode)
@@ -523,11 +508,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     callNode
   }
 
-  protected def createTypeRef(
-    typeName: String,
-    typeFullName: String,
-    lineAndColumn: LineAndColumn
-  ): NewTypeRef = {
+  protected def createTypeRef(typeName: String, typeFullName: String, lineAndColumn: LineAndColumn): NewTypeRef = {
     nodeBuilder.typeRefNode("class " + typeName + "(...)", typeFullName, lineAndColumn)
   }
 
@@ -558,30 +539,18 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     returnNode
   }
 
-  protected def addAstChildNodes(
-    parentNode: NewNode,
-    startIndex: AutoIncIndex,
-    childNodes: Iterable[NewNode]
-  ): Unit = {
+  protected def addAstChildNodes(parentNode: NewNode, startIndex: AutoIncIndex, childNodes: Iterable[NewNode]): Unit = {
     childNodes.foreach { childNode =>
       val orderIndex = startIndex.getAndInc
       edgeBuilder.astEdge(childNode, parentNode, orderIndex)
     }
   }
 
-  protected def addAstChildNodes(
-    parentNode: NewNode,
-    startIndex: Int,
-    childNodes: Iterable[NewNode]
-  ): Unit = {
+  protected def addAstChildNodes(parentNode: NewNode, startIndex: Int, childNodes: Iterable[NewNode]): Unit = {
     addAstChildNodes(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
-  protected def addAstChildNodes(
-    parentNode: NewNode,
-    startIndex: AutoIncIndex,
-    childNodes: NewNode*
-  ): Unit = {
+  protected def addAstChildNodes(parentNode: NewNode, startIndex: AutoIncIndex, childNodes: NewNode*): Unit = {
     addAstChildNodes(parentNode, startIndex, childNodes)
   }
 
@@ -601,27 +570,15 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     }
   }
 
-  protected def addAstChildrenAsArguments(
-    parentNode: NewNode,
-    startIndex: Int,
-    childNodes: Iterable[NewNode]
-  ): Unit = {
+  protected def addAstChildrenAsArguments(parentNode: NewNode, startIndex: Int, childNodes: Iterable[NewNode]): Unit = {
     addAstChildrenAsArguments(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 
-  protected def addAstChildrenAsArguments(
-    parentNode: NewNode,
-    startIndex: AutoIncIndex,
-    childNodes: NewNode*
-  ): Unit = {
+  protected def addAstChildrenAsArguments(parentNode: NewNode, startIndex: AutoIncIndex, childNodes: NewNode*): Unit = {
     addAstChildrenAsArguments(parentNode, startIndex, childNodes)
   }
 
-  protected def addAstChildrenAsArguments(
-    parentNode: NewNode,
-    startIndex: Int,
-    childNodes: NewNode*
-  ): Unit = {
+  protected def addAstChildrenAsArguments(parentNode: NewNode, startIndex: Int, childNodes: NewNode*): Unit = {
     addAstChildrenAsArguments(parentNode, new AutoIncIndex(startIndex), childNodes)
   }
 }
