@@ -46,6 +46,15 @@ class PCodeMapper(
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
+  def handleCompare(pcodeOp: PcodeOp): CfgNodeNew = {
+    val callNode = createCall("<operator>.equal", nativeInstruction.toString)
+    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+    val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
+    connectCallToArgument(callNode, firstOp)
+    connectCallToArgument(callNode, secondOp)
+   callNode
+  }
+
   def getCallNode: CfgNodeNew = {
     if (pcodeOps.isEmpty) {
       // It looks like that for some instructions,
@@ -60,8 +69,9 @@ class PCodeMapper(
       //  // we don't need to fill the hashmap for one PcodeOp
       //  // map to node and return
       //  mapCallNode(pcodeOps.head)
-    } else if(nativeInstruction.getMnemonicString == "CMP"){
-      mapCallNode(pcodeOps.head)
+    } else if(nativeInstruction.getMnemonicString.startsWith("CMP")){
+      //mapCallNode(pcodeOps.head)
+      handleCompare(pcodeOps.head)
     } else {
       mapCallNode(pcodeOps.last)
     }
@@ -440,7 +450,7 @@ class PCodeMapper(
   }
 
   def connectCallToArgument(call: CfgNodeNew, argument: CfgNodeNew): Unit = {
-    //diffGraphBuilder.addNode(argument)
+    diffGraphBuilder.addNode(argument)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }
