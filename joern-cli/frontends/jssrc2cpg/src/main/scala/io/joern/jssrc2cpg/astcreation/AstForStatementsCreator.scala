@@ -9,6 +9,8 @@ import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import ujson.Obj
 import ujson.Value
 
@@ -153,11 +155,64 @@ trait AstForStatementsCreator {
     Ast(forNode).withChild(initAst).withChild(testAst).withChild(updateAst).withChild(bodyAst)
   }
 
-  protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast =
-    Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK))
+  protected def astForLabeledStatement(labelStmt: BabelNodeInfo): Ast = {
+    val labelName = code(labelStmt.json("label"))
+    val labeledNode = NewJumpTarget()
+      .parserTypeName(labelStmt.node.toString)
+      .name(labelName)
+      .code(s"$labelName:")
+      .lineNumber(labelStmt.lineNumber)
+      .columnNumber(labelStmt.columnNumber)
 
-  protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast =
-    Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE))
+    val blockNode = createBlockNode(labelStmt)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+    val bodyAst = astForNodeWithFunctionReference(labelStmt.json("body"))
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val labelAsts = List(Ast(labeledNode), bodyAst)
+    setIndices(labelAsts)
+    Ast(blockNode).withChildren(labelAsts)
+  }
+
+  protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
+    val labelAst = safeObj(breakStmt.json, "label")
+      .map { label =>
+        val labelNode = Obj(label)
+        val labelCode = code(labelNode)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(breakStmt.node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(breakStmt.lineNumber)
+            .columnNumber(breakStmt.columnNumber)
+            .order(1)
+        )
+      }
+      .getOrElse(Ast())
+    Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK)).withChild(labelAst)
+  }
+
+  protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
+    val labelAst = safeObj(continueStmt.json, "label")
+      .map { label =>
+        val labelNode = Obj(label)
+        val labelCode = code(labelNode)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(continueStmt.node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(continueStmt.lineNumber)
+            .columnNumber(continueStmt.columnNumber)
+            .order(1)
+        )
+      }
+      .getOrElse(Ast())
+    Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE)).withChild(labelAst)
+  }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
     val argumentAst = astForNode(throwStmt.json("argument"))

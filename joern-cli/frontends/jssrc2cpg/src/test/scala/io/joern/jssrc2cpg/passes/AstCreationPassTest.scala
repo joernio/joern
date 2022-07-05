@@ -1213,6 +1213,31 @@ class AstCreationPassTest extends AbstractPassTest {
         .checkProperty(PropertyNames.ORDER, 1)
     }
 
+    "handle labeled statements and" should {
+
+      "be correct for continue" in AstFixture("""
+          |var i, j;
+          |loop1: for (i = 0; i < 3; i++) {
+          |   loop2: for (j = 0; j < 3; j++) {
+          |      if (i === 1 && j === 1) {
+          |         continue loop1;
+          |      }
+          |      console.log("i = " + i + ", j = " + j);
+          |   }
+          |}
+          |""".stripMargin) { cpg =>
+        inside(cpg.jumpTarget.l) { case List(loop1, loop2) =>
+          loop1.code shouldBe "loop1:"
+          loop2.code shouldBe "loop2:"
+        }
+        inside(cpg.controlStructure.code("continue.*").l) { case List(continue) =>
+          continue.code shouldBe "continue loop1;"
+          continue.controlStructureType shouldBe ControlStructureTypes.CONTINUE
+        }
+      }
+
+    }
+
     "handle switch statements and" should {
       "be correct for switch with one case" in AstFixture("switch (x) { case 1: y; }") { cpg =>
         def program = cpg.method.nameExact(":program")

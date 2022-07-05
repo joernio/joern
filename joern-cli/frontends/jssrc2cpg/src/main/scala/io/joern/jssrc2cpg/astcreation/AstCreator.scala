@@ -176,6 +176,7 @@ class AstCreator(
       case BabelAst.SwitchStatement           => astForSwitchStatement(nodeInfo)
       case BabelAst.BreakStatement            => astForBreakStatement(nodeInfo)
       case BabelAst.ContinueStatement         => astForContinueStatement(nodeInfo)
+      case BabelAst.LabeledStatement          => astForLabeledStatement(nodeInfo)
       case BabelAst.ThrowStatement            => astForThrowStatement(nodeInfo)
       case BabelAst.ForInStatement            => astForInOfStatement(nodeInfo)
       case BabelAst.ForOfStatement            => astForInOfStatement(nodeInfo)
