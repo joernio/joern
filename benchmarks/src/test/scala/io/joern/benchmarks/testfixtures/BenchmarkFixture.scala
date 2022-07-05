@@ -133,24 +133,24 @@ object BenchmarkCpgContext {
 }
 
 class BenchmarkCpgContext {
-  private var inputPaths: String = ""
+  private var inputPath: String = ""
 
   def buildCpg(): Cpg = {
     val cpgPath = java.io.File.createTempFile("benchmark", ".odb").getAbsolutePath
-    val cpg = (guessLanguage(inputPaths) match {
+    val cpg = guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(Set(inputPaths), cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(Set(inputPaths), cpgPath))
-          case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPaths'"))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(inputPath, cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(inputPath, cpgPath))
+          case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>
         Failure(
           new RuntimeException(
-            s"Unable to guess which language frontend to use to parse the benchmark at '$inputPaths'"
+            s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'"
           )
         )
-    })
+    }
     applyDefaultOverlays(cpg.get)
     val context = new LayerCreatorContext(cpg.get)
     val options = new OssDataFlowOptions()
@@ -159,7 +159,7 @@ class BenchmarkCpgContext {
   }
 
   private def withSource(codePath: String): BenchmarkCpgContext = {
-    this.inputPaths = codePath
+    this.inputPath = codePath
     this
   }
 }
