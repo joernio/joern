@@ -31,7 +31,7 @@ private object Frontend {
         .text(s"extra jars used only for type information")
         .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path)),
       opt[Unit]("fetch-dependencies")
-        .text("attempt to fetch dependencies ")
+        .text("attempt to fetch dependencies jars for extra type information")
         .action((_, c) => c.copy(fetchDependencies = true))
     )
   }
