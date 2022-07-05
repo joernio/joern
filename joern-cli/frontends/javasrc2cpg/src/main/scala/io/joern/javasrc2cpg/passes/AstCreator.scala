@@ -119,9 +119,6 @@ import io.shiftleft.codepropertygraph.generated.{
   Operators
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  HasFullName,
-  HasSignature,
   NewAnnotation,
   NewAnnotationLiteral,
   NewAnnotationParameter,
@@ -635,10 +632,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val defaultConstructorBindingEntry =
       defaultConstructorAst
         .flatMap(_.root)
-        .collect { case defaultConstructor: NewNode with HasFullName with HasSignature =>
-          defaultConstructor
-        }
-        .map { defaultConstructor =>
+        .collect { case defaultConstructor: NewMethod =>
           BindingTableEntry("<init>", defaultConstructor.signature, defaultConstructor.fullName)
         }
 
