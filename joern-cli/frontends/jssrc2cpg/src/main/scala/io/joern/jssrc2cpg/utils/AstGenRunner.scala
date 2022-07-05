@@ -6,15 +6,38 @@ import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
+import scala.util.matching.Regex
 
 object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
+
+  private val MINIFIED_PATH_REGEX: Regex = ".*([.-]min\\.js|bundle\\.js)".r
+
+  private val IGNORED_FOLDERS_REGEX: Seq[Regex] =
+    List("__.*__".r, "\\..*".r, "jest-cache".r, "codemods".r, "e2e".r, "e2e-beta".r, "eslint-rules".r, "flow-typed".r)
+
+  private val IGNORED_FILES_REGEX: Seq[Regex] = List(
+    ".*jest\\.config.*".r,
+    ".*webpack\\..*\\.js".r,
+    ".*vue\\.config\\.js".r,
+    ".*babel\\.config\\.js".r,
+    ".*chunk-vendors.*\\.js".r, // commonly found in webpack / vue.js projects
+    ".*app~.*\\.js".r,          // commonly found in webpack / vue.js projects
+    ".*\\.chunk\\.js".r,        // see: https://github.com/ShiftLeftSecurity/product/issues/8197
+    ".*\\.babelrc.*".r,
+    ".*\\.eslint.*".r,
+    ".*\\.tslint.*".r,
+    ".*\\.stylelintrc\\.js".r,
+    ".*rollup\\.config.*".r,
+    ".*\\.types\\.js".r,
+    ".*\\.cjs\\.js".r,
+    ".*eslint-local-rules\\.js".r
+  )
 
   case class AstGenRunnerResult(
     parsedFiles: List[(String, String)] = List.empty,
@@ -35,14 +58,28 @@ object AstGenRunner {
     skipped.flatten
   }
 
-  private def shouldBeIgnoredByUserConfig(filePath: String, config: Config, out: File): Boolean = {
-    val resolvedFilePath = filePath.replace(out.pathAsString, config.inputPath)
-    val isInIgnoredFiles = config.ignoredFiles.exists {
+  private def ignoredByUserConfig(filePath: String, config: Config, out: File): Boolean = {
+    val resolvedFilePath = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
+    lazy val isInIgnoredFiles = config.ignoredFiles.exists {
       case ignorePath if File(ignorePath).isDirectory => resolvedFilePath.startsWith(ignorePath)
       case ignorePath                                 => resolvedFilePath == ignorePath
     }
-    if (isInIgnoredFiles || config.ignoredFilesRegex.matches(resolvedFilePath)) {
-      logger.debug(s"'$filePath' ignored by user configuration")
+    lazy val isInIgnoredFileRegex = config.ignoredFilesRegex.matches(resolvedFilePath)
+    if (isInIgnoredFiles || isInIgnoredFileRegex) {
+      logger.debug(s"'$resolvedFilePath' ignored by user configuration")
+      true
+    } else {
+      false
+    }
+  }
+
+  private def ignoredByDefault(filePath: String, config: Config, out: File): Boolean = {
+    val resolvedFilePath       = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
+    lazy val isInIgnoredFolder = IGNORED_FOLDERS_REGEX.exists(_.matches(resolvedFilePath))
+    lazy val isIgnoredFile     = IGNORED_FILES_REGEX.exists(_.matches(resolvedFilePath))
+    lazy val isMinifiedFile    = MINIFIED_PATH_REGEX.matches(resolvedFilePath)
+    if (isInIgnoredFolder || isIgnoredFile || isMinifiedFile) {
+      logger.debug(s"'$resolvedFilePath' ignored by default")
       true
     } else {
       false
@@ -51,12 +88,13 @@ object AstGenRunner {
 
   private def filterFiles(files: List[String], config: Config, out: File): List[String] = {
     files.filter {
-      case filePath if TYPE_DEFINITION_FILE_EXTENSIONS.exists(filePath.endsWith) =>
-        // We are not interested in JS / TS type definition files at this stage.
-        // TODO: maybe we can enable that later on and use the type definitions there
-        //  for enhancing the CPG with additional type information for functions
-        false
-      case filePath => !shouldBeIgnoredByUserConfig(filePath.stripSuffix(".json"), config, out)
+      // We are not interested in JS / TS type definition files at this stage.
+      // TODO: maybe we can enable that later on and use the type definitions there
+      //  for enhancing the CPG with additional type information for functions
+      case filePath if TYPE_DEFINITION_FILE_EXTENSIONS.exists(filePath.endsWith) => false
+      case filePath if ignoredByUserConfig(filePath, config, out)                => false
+      case filePath if ignoredByDefault(filePath, config, out)                   => false
+      case _                                                                     => true
     }
   }
 

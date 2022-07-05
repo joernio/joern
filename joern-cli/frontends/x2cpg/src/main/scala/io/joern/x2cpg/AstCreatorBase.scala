@@ -2,18 +2,7 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
