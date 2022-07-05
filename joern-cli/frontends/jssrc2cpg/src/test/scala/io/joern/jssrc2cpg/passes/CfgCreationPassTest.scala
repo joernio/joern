@@ -277,6 +277,45 @@ class CfgCreationPassTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "be correct for labeled expressions with continue" in {
+      new CfgFixture("""
+          |var i, j;
+          |loop1: for (i = 0; i < 3; i++) {
+          |   loop2: for (j = 0; j < 3; j++) {
+          |      if (i === 1 && j === 1) {
+          |         continue loop1;
+          |      }
+          |      console.log("");
+          |   }
+          |}
+          |""".stripMargin) {
+        succOf(":program") shouldBe expected(("loop1:", AlwaysEdge))
+        succOf("loop1:") shouldBe expected(("i", AlwaysEdge))
+        succOf("i") shouldBe expected(("0", AlwaysEdge))
+        succOf("0") shouldBe expected(("i = 0", AlwaysEdge))
+        succOf("i = 0") shouldBe expected(("i", 1, AlwaysEdge))
+        succOf("i", 1) shouldBe expected(("3", AlwaysEdge))
+        succOf("3") shouldBe expected(("i < 3", AlwaysEdge))
+        succOf("i < 3") shouldBe expected(("loop2:", AlwaysEdge), ("RET", AlwaysEdge))
+        succOf("loop2:") shouldBe expected(("j", AlwaysEdge))
+        succOf("j") shouldBe expected(("0", 1, AlwaysEdge))
+        succOf("0", 1) shouldBe expected(("j = 0", AlwaysEdge))
+        succOf("j = 0") shouldBe expected(("j", 1, AlwaysEdge))
+        succOf("j", 1) shouldBe expected(("3", 1, AlwaysEdge))
+        succOf("3", 1) shouldBe expected(("j < 3", AlwaysEdge))
+        succOf("j < 3") shouldBe expected(("i", 2, AlwaysEdge))
+        succOf("i", 2) shouldBe expected(("i++", AlwaysEdge))
+        succOf("i++") shouldBe expected(("i", 3, AlwaysEdge))
+        succOf("i", 3) shouldBe expected(("1", AlwaysEdge))
+        succOf("1") shouldBe expected(("i === 1", AlwaysEdge))
+        succOf("i === 1") shouldBe expected(("j", AlwaysEdge), ("i === 1 && j === 1", AlwaysEdge))
+        succOf("i === 1 && j === 1") shouldBe expected(("continue loop1;", AlwaysEdge), ("console", AlwaysEdge))
+        succOf("continue loop1;") shouldBe expected(("loop1:", AlwaysEdge))
+        succOf("console") shouldBe expected(("log", AlwaysEdge))
+        succOf("log") shouldBe expected(("console.log", AlwaysEdge))
+      }
+    }
+
     // WHILE Loops
     "be correct for plain while loop" in {
       new CfgFixture("while (x < 1) { y = 2; }") {
