@@ -10,7 +10,7 @@ final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   inferenceJarPaths: Set[String] = Set.empty,
-  skipDependencyDownload: Boolean = false
+  fetchDependencies: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -30,9 +30,9 @@ private object Frontend {
       opt[String]("inference-jar-paths")
         .text(s"extra jars used only for type information")
         .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path)),
-      opt[Unit]("skip-dependency-download")
-        .text("don't attempt to download dependency jars for type information")
-        .action((_, c) => c.copy(skipDependencyDownload = true))
+      opt[Unit]("fetch-dependencies")
+        .text("attempt to fetch dependencies jars for extra type information")
+        .action((_, c) => c.copy(fetchDependencies = true))
     )
   }
 }

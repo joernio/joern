@@ -18,8 +18,7 @@ class JavaSrc2CpgTestContext {
       val config = Config(
         inputPath = writeCodeToFile(code, "javasrc2cpgTest", ".java").getAbsolutePath,
         outputPath = "",
-        inferenceJarPaths = inferenceJarPaths,
-        skipDependencyDownload = true
+        inferenceJarPaths = inferenceJarPaths
       )
       val cpg = javaSrc2Cpg.createCpg(config)
       applyDefaultOverlays(cpg.get)
