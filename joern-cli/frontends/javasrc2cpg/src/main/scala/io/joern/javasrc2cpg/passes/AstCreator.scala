@@ -88,7 +88,14 @@ import com.github.javaparser.resolution.declarations.{
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{assignmentNode, identifierNode, indexAccessNode, modifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.{
+  annotationLiteralNode,
+  assignmentNode,
+  identifierNode,
+  indexAccessNode,
+  modifierNode,
+  operatorCallNode
+}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
@@ -102,7 +109,7 @@ import io.joern.javasrc2cpg.util.{
   Scope,
   TypeInfoCalculator
 }
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, unresolvedConstants}
 import io.joern.javasrc2cpg.util.Util.{
   composeMethodFullName,
   composeMethodLikeSignature,
@@ -140,6 +147,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodParameterIn,
   NewMethodRef,
+  NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
   NewNode,
@@ -754,19 +762,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val thisAst = Ast(thisNodeForMethod(typeFullName, line(constructorDeclaration)))
 
-    val bodyAst         = astForMethodBody(Some(constructorDeclaration.getBody))
-    val methodReturnAst = astForConstructorReturn(constructorDeclaration)
+    val bodyAst      = astForMethodBody(Some(constructorDeclaration.getBody))
+    val methodReturn = constructorReturnNode(constructorDeclaration)
 
-    val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
+    val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
 
     scopeStack.popScope()
 
-    Ast(constructorNode)
-      .withChild(thisAst)
-      .withChildren(parameterAsts)
-      .withChild(bodyAst)
-      .withChild(methodReturnAst)
-      .withChildren(annotationAsts)
+    methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, methodReturn, annotations = annotationAsts)
   }
 
   private def thisNodeForMethod(typeFullName: String, lineNumber: Option[Integer]): NewMethodParameterIn = {
@@ -814,38 +817,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForAnnotationLiteralExpr(literalExpr: LiteralExpr): Ast = {
     val valueNode =
       literalExpr match {
-        case literal: StringLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(literal.getValue)
-            .name(literal.getValue)
-        case literal: IntegerLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(literal.getValue)
-            .name(literal.getValue)
-        case literal: BooleanLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(java.lang.Boolean.toString(literal.getValue))
-            .name(java.lang.Boolean.toString(literal.getValue))
-        case literal: CharLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(literal.getValue)
-            .name(literal.getValue)
-        case literal: DoubleLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(literal.getValue)
-            .name(literal.getValue)
-        case literal: LongLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(literal.getValue)
-            .name(literal.getValue)
-        case _: NullLiteralExpr =>
-          NewAnnotationLiteral()
-            .code("null")
-            .name("null")
-        case literal: TextBlockLiteralExpr =>
-          NewAnnotationLiteral()
-            .code(literal.getValue)
-            .name(literal.getValue)
+        case literal: StringLiteralExpr    => annotationLiteralNode(literal.getValue)
+        case literal: IntegerLiteralExpr   => annotationLiteralNode(literal.getValue)
+        case literal: BooleanLiteralExpr   => annotationLiteralNode(java.lang.Boolean.toString(literal.getValue))
+        case literal: CharLiteralExpr      => annotationLiteralNode(literal.getValue)
+        case literal: DoubleLiteralExpr    => annotationLiteralNode(literal.getValue)
+        case literal: LongLiteralExpr      => annotationLiteralNode(literal.getValue)
+        case _: NullLiteralExpr            => annotationLiteralNode("null")
+        case literal: TextBlockLiteralExpr => annotationLiteralNode(literal.getValue)
       }
 
     Ast(valueNode)
@@ -1009,11 +988,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     methodAstWithAnnotations(methodNode, thisNode ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
   }
 
-  private def astForConstructorReturn(constructorDeclaration: ConstructorDeclaration): Ast = {
+  private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
     val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
     val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-    val node   = methodReturnNode(TypeConstants.Void, None, line, column)
-    Ast(node)
+    methodReturnNode(TypeConstants.Void, None, line, column)
   }
 
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
