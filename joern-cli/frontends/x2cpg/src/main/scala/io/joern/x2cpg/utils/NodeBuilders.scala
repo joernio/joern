@@ -10,17 +10,7 @@ object NodeBuilders {
       .name(name)
       .code(name)
 
-  def assignmentNode(): NewCall =
-    NewCall()
-      .name(Operators.assignment)
-      .methodFullName(Operators.assignment)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-
-  def indexAccessNode(): NewCall =
-    NewCall()
-      .name(Operators.indexAccess)
-      .methodFullName(Operators.indexAccess)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+  def callNode()
 
   def identifierNode(
     name: String,
