@@ -1,7 +1,7 @@
 name := "macros"
 
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.2")
+crossScalaVersions := Seq("2.13.8", "3.1.3")
 
 dependsOn(Projects.semanticcpg % Test)
 
