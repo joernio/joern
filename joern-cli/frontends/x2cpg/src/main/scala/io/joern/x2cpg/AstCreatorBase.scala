@@ -30,11 +30,27 @@ abstract class AstCreatorBase(filename: String) {
     method: NewMethod,
     parameters: Seq[NewMethodParameterIn],
     body: Ast,
-    methodReturn: NewMethodReturn
+    methodReturn: NewMethodReturn,
+    modifiers: Seq[NewModifier] = Nil
+  ): Ast =
+    methodAstWithAnnotations(method, parameters.map(Ast(_)), body, methodReturn, modifiers, annotations = Nil)
+
+  /** Creates an AST that represents an entire method, including its content and with support for both method and
+    * parameter annotations.
+    */
+  def methodAstWithAnnotations(
+    method: NewMethod,
+    parameters: Seq[Ast],
+    body: Ast,
+    methodReturn: NewMethodReturn,
+    modifiers: Seq[NewModifier] = Nil,
+    annotations: Seq[Ast] = Nil
   ): Ast =
     Ast(method)
-      .withChildren(parameters.map(Ast(_)))
+      .withChildren(parameters)
       .withChild(body)
+      .withChildren(modifiers.map(Ast(_)))
+      .withChildren(annotations)
       .withChild(Ast(methodReturn))
 
   /** Creates an AST that represents a method stub, containing information about the method, its parameters, and the
