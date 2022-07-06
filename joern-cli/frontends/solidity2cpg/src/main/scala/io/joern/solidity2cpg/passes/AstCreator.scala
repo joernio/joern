@@ -127,11 +127,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(methods)
       .withChildren(memberAsts)
 
-      mAst.nodes.foreach { n =>
-        val code  = n.properties.getOrElse("CODE", null)
-        val order = n.properties.getOrElse("ORDER", null)
-        println((order, n.label(), code))
-      }
+//      mAst.nodes.foreach { n =>
+//        val code  = n.properties.getOrElse("CODE", null)
+//        val order = n.properties.getOrElse("ORDER", null)
+//        println((order, n.label(), code))
+//      }
     mAst
   }
 
@@ -490,9 +490,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         code = getMappingKeyAndValue(x)
       }
       case x: ArrayTypeName => {
-        println(x)
         x.baseTypeName match {
           case x: ElementaryTypeName => typefullName = registerType(x.name)
+          case x: ArrayTypeName => x.baseTypeName match {
+            case x:  ElementaryTypeName => typefullName = registerType(x.name)
+          }
         }
       }
       case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
@@ -641,7 +643,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForUnaryOperation(operation: UnaryOperation, order: Int): Ast = {
-    println(operation.subExpression)
+//    println(operation.subExpression)
     val subExpression = astForExpression(operation.subExpression, 1)
     val operatorName = if (operation.isPrefix) operation.operator match {
       case "!"  => Operators.logicalNot
@@ -706,9 +708,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val rht = astForExpression(operation.right, 2)
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
-//    println(operatorName)
-//    println("here")
-//println(operatorName)
+//    println(order)
     val callNode = NewCall()
       .name(operatorName)
       .methodFullName(operatorName)
@@ -733,7 +733,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var foundt = false
     var foundf = false
     if (operation.trueBody != null) {
-//      println("trueBody")
       operation.trueBody match {
         case x: Block => {
 
@@ -746,7 +745,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
     }
     if (operation.falseBody != null) {
-//      println("false body")
       val elseNode =
         Ast(NewControlStructure()
           .controlStructureType(ControlStructureTypes.ELSE)
@@ -755,10 +753,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .code("else"))
       operation.falseBody match {
         case x: Block => {
+//          fb = astForBody(x, 3)
           fb = elseNode.withChild(astForBody(x, 1))
           foundf = true
         }
         case x =>  {
+          fb = astForStatement(x, 3)
           fb = elseNode.withChild(astForStatement(x, 1))
           foundf = true}
       }
@@ -791,13 +791,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       ast = Ast(ifNode)
         .withChild(opNode)
     }
-//    println("done")
     val ifAst = opNode.root match {
       case Some(r) =>
         ast.withConditionEdge(ifNode, r)
       case None => ast
     }
-//    println(ifAst.root.map(_.properties(PropertyNames.CODE)).mkString(""))
     ifAst
   }
   private def astForNewExpression(x: NewExpression , order : Int): Ast = {
@@ -852,11 +850,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       else
         ""
     }
-//    println(identifier.name)
-//    membersList.foreach(x => print(x + " "))
-//    println()
     if (membersList.contains(identifier.name)) {
-//      println("here")
       val fieldAccessBlock = NewCall()
         .name(Operators.fieldAccess)
         .code(identifier.name)
