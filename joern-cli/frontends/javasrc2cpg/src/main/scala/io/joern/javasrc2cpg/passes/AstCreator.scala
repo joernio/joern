@@ -768,7 +768,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
 
-    methodAstWithAnnotations(constructorNode, thisAst :: parameterAsts, bodyAst, methodReturn, annotations = annotationAsts)
+    methodAstWithAnnotations(
+      constructorNode,
+      thisAst :: parameterAsts,
+      bodyAst,
+      methodReturn,
+      annotations = annotationAsts
+    )
   }
 
   private def thisNodeForMethod(typeFullName: String, lineNumber: Option[Integer]): NewMethodParameterIn = {
@@ -2171,7 +2177,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .lineNumber(line(nameExpr))
           .columnNumber(column(nameExpr))
 
-        val fieldAccess = operatorCallNode(Operators.fieldAccess, name, Some(typeFullName), line(nameExpr), column(nameExpr))
+        val fieldAccess =
+          operatorCallNode(Operators.fieldAccess, name, Some(typeFullName), line(nameExpr), column(nameExpr))
 
         val identifierAst = Ast(identifier)
         val fieldIdentAst = Ast(fieldIdentifier)
@@ -2241,6 +2248,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val initFullName = composeMethodFullName(typeFullName, NameConstants.Init, signature)
 
     val allocNode = operatorCallNode(Operators.alloc, expr.toString, Some(typeFullName), line(expr), column(expr))
+      .signature(composeMethodLikeSignature(typeFullName, Nil))
 
     val initNode = NewCall()
       .name(NameConstants.Init)
@@ -2865,7 +2873,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             .map(_.fullName)
             .getOrElse(TypeConstants.UnresolvedType)
         val (regularArgs, varargs) = argsAsts.splitAt(paramCount - 1)
-        val arrayInitializer = operatorCallNode(Operators.arrayInitializer, Operators.arrayInitializer, Some(expectedVariadicTypeFullName), line(call), column(call))
+        val arrayInitializer = operatorCallNode(
+          Operators.arrayInitializer,
+          Operators.arrayInitializer,
+          Some(expectedVariadicTypeFullName),
+          line(call),
+          column(call)
+        )
 
         val arrayInitializerAst = callAst(arrayInitializer, varargs)
 
