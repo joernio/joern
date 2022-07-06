@@ -158,7 +158,6 @@ class SimpleBenchmark17 extends IfspecSimpleFixture(JAVA_EXT, 17) {
 
 }
 
-
 // Webstore3
 class SimpleBenchmark18 extends IfspecSimpleFixture(JAVA_EXT, 18) {
 
@@ -167,4 +166,3 @@ class SimpleBenchmark18 extends IfspecSimpleFixture(JAVA_EXT, 18) {
   }
 
 }
-

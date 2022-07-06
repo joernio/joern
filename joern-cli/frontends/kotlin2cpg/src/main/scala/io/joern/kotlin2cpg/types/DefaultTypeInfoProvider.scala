@@ -203,9 +203,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(getSuperclassDescriptors)
       .filter(_.asScala.nonEmpty)
-      .map(_.asScala.map { superClassDesc =>
-        TypeRenderer.render(superClassDesc.getDefaultType)
-      }.toList)
+      .map(
+        _.asScala
+          .map { superClassDesc =>
+            TypeRenderer.render(superClassDesc.getDefaultType)
+          }
+          .toList
+      )
       .getOrElse(defaultValue)
   }
 

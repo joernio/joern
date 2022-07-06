@@ -45,7 +45,10 @@ class ExceptionsBenchmark4 extends IfspecExceptionsFixture(JAVA_EXT, 4) {
 class ExceptionsBenchmark5 extends IfspecExceptionsFixture(JAVA_EXT, 5) {
 
   s"Exceptions$benchmarkNo" should "report insecure" taggedAs (Exceptions, ImplicitFlows) in {
-    assertIsInsecure(cpg.call(".*nextInt.*").receiver, cpg.call.methodFullName(".*writeToDisk.*", ".*writeToDB.*").argument(1))
+    assertIsInsecure(
+      cpg.call(".*nextInt.*").receiver,
+      cpg.call.methodFullName(".*writeToDisk.*", ".*writeToDB.*").argument(1)
+    )
   }
 
 }
