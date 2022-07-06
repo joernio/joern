@@ -78,7 +78,6 @@ import com.github.javaparser.ast.stmt.{
 }
 import com.github.javaparser.resolution.{SymbolResolver, UnsolvedSymbolException}
 import com.github.javaparser.resolution.declarations.{
-  ResolvedConstructorDeclaration,
   ResolvedFieldDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
@@ -88,7 +87,14 @@ import com.github.javaparser.resolution.declarations.{
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{annotationLiteralNode, identifierNode, modifierNode, operatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.{
+  annotationLiteralNode,
+  callNode,
+  fieldIdentifierNode,
+  identifierNode,
+  modifierNode,
+  operatorCallNode
+}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
@@ -102,14 +108,8 @@ import io.joern.javasrc2cpg.util.{
   Scope,
   TypeInfoCalculator
 }
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, unresolvedConstants}
-import io.joern.javasrc2cpg.util.Util.{
-  composeMethodFullName,
-  composeMethodLikeSignature,
-  fieldIdentifierNode,
-  rootCode,
-  rootType
-}
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, rootCode, rootType}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -121,7 +121,6 @@ import io.shiftleft.codepropertygraph.generated.{
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
-  NewAnnotationLiteral,
   NewAnnotationParameter,
   NewAnnotationParameterAssign,
   NewArrayInitializer,
@@ -294,15 +293,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         globalNamespaceBlock()
     }
     Ast(namespaceBlock.filename(absolutePath(filename)))
-  }
-
-  private def constructorSignature(
-    constructor: ResolvedConstructorDeclaration,
-    typeParamValues: ResolvedTypeParametersMap
-  ): String = {
-    val parameterTypes = calcParameterTypes(constructor, typeParamValues)
-
-    composeMethodLikeSignature(TypeConstants.Void, parameterTypes)
   }
 
   private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
@@ -1483,19 +1473,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val iteratorAssignNode =
       operatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
     val iteratorAssignIdentifier = identifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
-    val iteratorMethodName       = "iterator"
-    val iteratorMethodSignature  = composeMethodLikeSignature(TypeConstants.Iterator, parameterTypes = Nil)
-    val iteratorMethodFullName   = composeMethodFullName(iterableType, iteratorMethodName, iteratorMethodSignature)
-    // TODO: This is the only section that needs to be updated for unified native/collection foreach representations.
+
     val iteratorCallNode =
-      NewCall()
-        .name(iteratorMethodName)
-        .methodFullName(iteratorMethodFullName)
-        .signature(iteratorMethodSignature)
-        .typeFullName(TypeConstants.Iterator)
-        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
-        .code(iteratorMethodFullName)
-        .lineNumber(lineNo)
+      callNode(
+        "iterator",
+        Some(iterableType),
+        TypeConstants.Iterator,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        lineNumber = lineNo
+      )
 
     val actualIteratorAst = astsForExpression(iterExpr, expectedType = None).toList match {
       case Nil =>
@@ -1517,18 +1503,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def hasNextCallAstForForEach(iteratorLocalNode: NewLocal, lineNo: Option[Integer]): Ast = {
-    val hasNextCallName      = "hasNext"
-    val hasNextCallSignature = composeMethodLikeSignature(TypeConstants.Boolean, parameterTypes = Nil)
-    val hasNextCallFullName  = composeMethodFullName(TypeConstants.Iterator, hasNextCallName, hasNextCallSignature)
     val iteratorHasNextCallNode =
-      NewCall()
-        .name(hasNextCallName)
-        .methodFullName(hasNextCallFullName)
-        .signature(hasNextCallSignature)
-        .typeFullName(TypeConstants.Boolean)
-        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
-        .code(hasNextCallFullName)
-        .lineNumber(lineNo)
+      callNode(
+        "hasNext",
+        Some(TypeConstants.Iterator),
+        TypeConstants.Boolean,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        lineNumber = lineNo
+      )
     val iteratorHasNextCallReceiver = identifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
 
     callAst(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)), withRecvArgEdge = true)
@@ -1542,18 +1524,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
     val varLocalAssignIdentifier = identifierNode(variableLocal.name, variableLocal.typeFullName, lineNo)
 
-    val iterNextCallName      = "next"
-    val iterNextCallSignature = composeMethodLikeSignature(TypeConstants.Object, parameterTypes = Nil)
-    val iterNextCallFullName  = composeMethodFullName(TypeConstants.Iterator, iterNextCallName, iterNextCallSignature)
     val iterNextCallNode =
-      NewCall()
-        .name(iterNextCallName)
-        .methodFullName(iterNextCallFullName)
-        .signature(iterNextCallSignature)
-        .typeFullName(TypeConstants.Object)
-        .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
-        .code(iterNextCallFullName)
-        .lineNumber(lineNo)
+      callNode(
+        "next",
+        Some(TypeConstants.Iterator),
+        TypeConstants.Object,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        lineNumber = lineNo
+      )
     val iterNextCallReceiver = identifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
     val iterNextCallAst =
       callAst(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)), withRecvArgEdge = true)
@@ -2189,6 +2167,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   }
 
+  private def argumentTypesForMethodLike(
+    maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration],
+    argumentAsts: Seq[Ast]
+  ): collection.Seq[String] = {
+    maybeResolvedMethodLike match {
+      case Success(resolvedMethodLike) =>
+        calcParameterTypes(resolvedMethodLike, ResolvedTypeParametersMap.empty())
+      case _ =>
+        // Fall back to actual argument types instead of expected parameter types if the method
+        // could not be resolved. This could lead to methodFullName and signature mismatches between
+        // call nodes and the corresponding method nodes.
+        argumentAsts.map(arg => rootType(arg).getOrElse(TypeConstants.UnresolvedType))
+    }
+  }
+
   /** The below representation for constructor invocations and object creations was chosen for the sake of consistency
     * with the Java frontend. It follows the bytecode approach of splitting a constructor call into separate `alloc` and
     * `init` calls.
@@ -2223,31 +2216,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .orElse(expectedType.map(_.fullName))
       .getOrElse(TypeConstants.UnresolvedType)
 
-    val signature =
-      maybeResolvedExpr match {
-        case Success(constructor) =>
-          constructorSignature(constructor, ResolvedTypeParametersMap.empty())
-        case _ =>
-          // Fallback. Method could not be resolved. So we fall back to using
-          // expressionTypeFullName and the argument types to approximate the method
-          // signature.
-          val argumentTypes = argumentAsts.map(arg => rootType(arg).getOrElse(TypeConstants.UnresolvedType))
-          composeMethodLikeSignature(TypeConstants.Void, argumentTypes)
-      }
-
-    val initFullName = composeMethodFullName(typeFullName, NameConstants.Init, signature)
+    val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr, argumentAsts)
 
     val allocNode = operatorCallNode(Operators.alloc, expr.toString, Some(typeFullName), line(expr), column(expr))
       .signature(composeMethodLikeSignature(typeFullName, Nil))
 
-    val initNode = NewCall()
-      .name(NameConstants.Init)
-      .methodFullName(initFullName)
-      .lineNumber(line(expr))
-      .typeFullName(TypeConstants.Void)
-      .code(expr.toString)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .signature(signature)
+    val initNode = callNode(
+      NameConstants.Init,
+      Some(typeFullName),
+      TypeConstants.Void,
+      DispatchTypes.STATIC_DISPATCH,
+      argumentTypes,
+      expr.toString,
+      line(expr)
+    )
 
     // Assume that a block ast is required, since there isn't enough information to decide otherwise.
     // This simplifies logic elsewhere, and unnecessary blocks will be garbage collected soon.
@@ -2322,21 +2304,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .getOrElse(TypeConstants.UnresolvedType)
     val argTypes = argumentTypesForCall(Try(stmt.resolve()), args)
 
-    val signature = s"${TypeConstants.Void}(${argTypes.mkString(",")})"
-    val callNode = NewCall()
-      .name(NameConstants.Init)
-      .methodFullName(composeMethodFullName(typeFullName, NameConstants.Init, signature))
-      .code(stmt.toString)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .signature(signature)
-      .typeFullName(TypeConstants.Void)
+    val callRoot = callNode(
+      NameConstants.Init,
+      Some(typeFullName),
+      TypeConstants.Void,
+      DispatchTypes.STATIC_DISPATCH,
+      argTypes,
+      stmt.toString,
+      line(stmt),
+      column(stmt)
+    )
 
     val thisNode = identifierNode(NameConstants.This, typeFullName)
     val thisAst  = Ast(thisNode)
 
-    callAst(callNode, args, Some(thisAst), withRecvArgEdge = true)
+    callAst(callRoot, args, Some(thisAst), withRecvArgEdge = true)
   }
 
   private def astsForExpression(expression: Expression, expectedType: Option[ExpectedType]): Seq[Ast] = {
@@ -2896,37 +2878,32 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .orElse(expectedReturnType.map(_.fullName))
       .getOrElse(TypeConstants.UnresolvedType)
 
-    val signature =
-      maybeResolvedCall match {
-        case Success(method) =>
-          methodSignature(method, ResolvedTypeParametersMap.empty())
-        case _ =>
-          // Fallback. Method could not be resolved. So we fall back to using
-          // expressionTypeFullName and the argument types to approximate the method
-          // signature.
-          val argumentTypes = argumentAsts.map(arg => rootType(arg).getOrElse(TypeConstants.UnresolvedType))
-          composeMethodLikeSignature(expressionTypeFullName, argumentTypes)
+    val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall, argumentAsts)
+    val returnType = maybeResolvedCall
+      .map { resolvedCall =>
+        typeInfoCalc.fullName(resolvedCall.getReturnType, ResolvedTypeParametersMap.empty())
       }
+      .getOrElse(expressionTypeFullName)
 
     val receiverTypeOption = targetTypeForCall(call)
     val receiverType       = receiverTypeOption.getOrElse(TypeConstants.UnresolvedReceiver)
 
-    val methodFullName = composeMethodFullName(receiverType, call.getNameAsString, signature)
-
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
+    val codePrefix    = codePrefixForMethodCall(call)
+    val callCode      = s"$codePrefix${call.getNameAsString}($argumentsCode)"
 
-    val codePrefix = codePrefixForMethodCall(call)
-    val callNode = NewCall()
-      .typeFullName(expressionTypeFullName)
-      .name(call.getNameAsString)
-      .methodFullName(methodFullName)
-      .signature(signature)
-      .dispatchType(dispatchType)
-      .code(s"$codePrefix${call.getNameAsString}($argumentsCode)")
-      .lineNumber(line(call))
-      .columnNumber(column(call))
+    val callRoot = callNode(
+      call.getNameAsString,
+      Some(receiverType),
+      returnType,
+      dispatchType,
+      argumentTypes,
+      callCode,
+      line(call),
+      column(call)
+    ).typeFullName(expressionTypeFullName) // Use concrete return type but `Object` in signature for generics
 
     val scopeAsts = call.getScope.toScala match {
       case Some(scope) =>
@@ -2934,11 +2911,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       case None =>
         val objectNode =
-          createObjectNode(receiverTypeOption.getOrElse(TypeConstants.UnresolvedType), call, callNode)
+          createObjectNode(receiverTypeOption.getOrElse(TypeConstants.UnresolvedType), call, callRoot)
         objectNode.map(Ast(_)).toList
     }
 
-    callAst(callNode, argumentAsts, scopeAsts.headOption, withRecvArgEdge = true)
+    callAst(callRoot, argumentAsts, scopeAsts.headOption, withRecvArgEdge = true)
   }
 
   def astForSuperExpr(superExpr: SuperExpr, expectedType: Option[ExpectedType]): Ast = {
