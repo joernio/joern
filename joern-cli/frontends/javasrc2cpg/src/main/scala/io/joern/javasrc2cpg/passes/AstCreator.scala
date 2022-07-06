@@ -88,7 +88,7 @@ import com.github.javaparser.resolution.declarations.{
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{assignmentNode, identifierNode, indexAccessNode}
+import io.joern.x2cpg.utils.NodeBuilders.{assignmentNode, identifierNode, indexAccessNode, modifierNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
@@ -140,7 +140,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodParameterIn,
   NewMethodRef,
-  NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
   NewNode,
@@ -310,7 +309,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameterTypes = calcParameterTypes(method, typeParamValues)
 
     val returnType =
-      Try(method.getReturnType).toOption
+      Try(method.getReturnType)
         .map(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
         .getOrElse(TypeConstants.UnresolvedType)
 
@@ -429,9 +428,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def identifierForTypeParameter(typeParameter: TypeParameter): NewIdentifier = {
     val name = typeParameter.getNameAsString
     val typeFullName = typeParameter.getTypeBound.asScala.headOption
-      .flatMap { bound =>
-        typeInfoCalc.fullName(bound)
-      }
+      .flatMap(typeInfoCalc.fullName)
       .getOrElse(TypeConstants.Object)
 
     identifierNode(name, typeFullName)
@@ -439,10 +436,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def identifierForResolvedTypeParameter(typeParameter: ResolvedTypeParameterDeclaration): NewIdentifier = {
     val name = typeParameter.getName
-    val typeFullName = Try(typeParameter.getUpperBound) match {
-      case Success(upperBound) => typeInfoCalc.fullName(upperBound)
-      case Failure(_)          => TypeConstants.Object
-    }
+    val typeFullName = Try(typeParameter.getUpperBound)
+      .map(typeInfoCalc.fullName)
+      .getOrElse(TypeConstants.Object)
     identifierNode(name, typeFullName)
   }
 
@@ -460,9 +456,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .fullName(fullName)
         .signature(signature)
 
-      val staticModifier = NewModifier()
-        .modifierType(ModifierTypes.STATIC)
-        .code(ModifierTypes.STATIC)
+      val staticModifier = modifierNode(ModifierTypes.STATIC)
 
       val body = Ast(NewBlock()).withChildren(staticInits)
 
@@ -503,11 +497,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(NewModifier().modifierType(_))
+    val accessModifier = accessModifierType.map(modifierNode)
 
-    val abstractModifier = Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(
-      NewModifier().modifierType(ModifierTypes.ABSTRACT)
-    )
+    val abstractModifier =
+      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(modifierNode(ModifierTypes.ABSTRACT))
 
     List(accessModifier, abstractModifier).flatten
   }
@@ -528,14 +521,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       } else {
         Seq()
       }
-      maybeJavaObjectType ++ (extendedTypes ++ implementedTypes)
-        .map(typ => typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType))
-        .toList
+      val inheritsFromTypeNames =
+        (extendedTypes ++ implementedTypes).map { typ =>
+          typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType)
+        }
+      maybeJavaObjectType ++ inheritsFromTypeNames
     } else {
       List.empty[String]
     }
 
-    val resolvedType = Try(typ.resolve()).toOption
+    val resolvedType = Try(typ.resolve())
     val name         = resolvedType.map(typeInfoCalc.name).getOrElse(typ.getNameAsString)
     val typeFullName = resolvedType.map(typeInfoCalc.fullName).getOrElse(typ.getNameAsString)
 
@@ -654,8 +649,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val returnNode = methodReturnNode(TypeConstants.Void, None, None, None)
 
-    val modifiers =
-      List(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), NewModifier().modifierType(ModifierTypes.PUBLIC))
+    val modifiers = List(modifierNode(ModifierTypes.CONSTRUCTOR), modifierNode(ModifierTypes.PUBLIC))
 
     methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, returnNode, modifiers)
   }
@@ -688,17 +682,19 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def modifiersForFieldDeclaration(decl: FieldDeclaration): Seq[Ast] = {
     val staticModifier =
-      Option.when(decl.isStatic)(NewModifier().modifierType(ModifierTypes.STATIC).code(ModifierTypes.STATIC))
+      Option.when(decl.isStatic)(modifierNode(ModifierTypes.STATIC))
 
-    val accessModifier = if (decl.isPublic) {
-      Some(NewModifier().modifierType(ModifierTypes.PUBLIC).code(ModifierTypes.PUBLIC))
-    } else if (decl.isPrivate) {
-      Some(NewModifier().modifierType(ModifierTypes.PRIVATE).code(ModifierTypes.PRIVATE))
-    } else if (decl.isProtected) {
-      Some(NewModifier().modifierType(ModifierTypes.PROTECTED).code(ModifierTypes.PROTECTED))
-    } else {
-      None
-    }
+    val accessModifierType =
+      if (decl.isPublic)
+        Some(ModifierTypes.PUBLIC)
+      else if (decl.isPrivate)
+        Some(ModifierTypes.PRIVATE)
+      else if (decl.isProtected)
+        Some(ModifierTypes.PROTECTED)
+      else
+        None
+
+    val accessModifier = accessModifierType.map(modifierNode)
 
     List(staticModifier, accessModifier).flatten.map(Ast(_))
   }
@@ -930,11 +926,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def modifiersForMethod(methodDeclaration: MethodDeclaration): Seq[NewModifier] = {
-    val isInterfaceMethod         = scopeStack.getEnclosingTypeDecl.exists(_.code.contains("interface "))
-    val isAbstractMethod          = methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)
-    val abstractModifier          = Option.when(isAbstractMethod)(NewModifier().modifierType(ModifierTypes.ABSTRACT))
+    val isInterfaceMethod = scopeStack.getEnclosingTypeDecl.exists(_.code.contains("interface "))
+
+    val abstractModifier =
+      Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
+        modifierNode(ModifierTypes.ABSTRACT)
+      }
+
     val staticVirtualModifierType = if (methodDeclaration.isStatic) ModifierTypes.STATIC else ModifierTypes.VIRTUAL
-    val staticVirtualModifier     = Some(NewModifier().modifierType(staticVirtualModifierType))
+    val staticVirtualModifier     = Some(modifierNode(staticVirtualModifierType))
+
     val accessModifierType = if (methodDeclaration.isPublic) {
       Some(ModifierTypes.PUBLIC)
     } else if (methodDeclaration.isPrivate) {
@@ -945,7 +946,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(NewModifier().modifierType(_))
+    val accessModifier = accessModifierType.map(modifierNode)
 
     List(accessModifier, abstractModifier, staticVirtualModifier).flatten
   }
@@ -1665,7 +1666,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
 
-    val modifier = Ast(NewModifier().modifierType("SYNCHRONIZED"))
+    val modifier = Ast(modifierNode("SYNCHRONIZED"))
 
     val exprAsts = astsForExpression(stmt.getExpression, None)
     val bodyAst  = astForBlockStatement(stmt.getBody)
@@ -2724,9 +2725,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
     val returnNode       = methodReturnNode(returnType, None, line(expr), column(expr))
-    val virtualModifier  = Some(NewModifier().modifierType(ModifierTypes.VIRTUAL))
-    val staticModifier   = Option.when(thisParam.isEmpty)(NewModifier().modifierType(ModifierTypes.STATIC))
-    val privateModifier  = Some(NewModifier().modifierType(ModifierTypes.PRIVATE))
+    val virtualModifier  = Some(modifierNode(ModifierTypes.VIRTUAL))
+    val staticModifier   = Option.when(thisParam.isEmpty)(modifierNode(ModifierTypes.STATIC))
+    val privateModifier  = Some(modifierNode(ModifierTypes.PRIVATE))
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier).flatten.map(Ast(_))
 

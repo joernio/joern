@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewModifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 object NodeBuilders {
@@ -27,4 +27,6 @@ object NodeBuilders {
     .lineNumber(line)
     .columnNumber(column)
     .dynamicTypeHintFullName(dynamicTypeHintFullName)
+
+  def modifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 }
