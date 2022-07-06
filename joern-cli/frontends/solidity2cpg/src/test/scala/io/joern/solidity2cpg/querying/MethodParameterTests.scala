@@ -37,7 +37,7 @@ class MethodParameterTests extends SolidityCodeToCpgFixture {
 
     val List(y) = cpg.parameter.filter(_.method.name == "foo").name("param2").l
     y.code shouldBe "uint[] memory param2"
-    y.typeFullName shouldBe "uint[]"
+    y.typeFullName shouldBe "uint[] memory"
 //    y.lineNumber shouldBe Some(3)
 //    y.columnNumber shouldBe Some(27)
     y.order shouldBe 2

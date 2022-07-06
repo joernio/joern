@@ -127,11 +127,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(methods)
       .withChildren(memberAsts)
 
-//      mAst.nodes.foreach { n =>
-//        val code  = n.properties.getOrElse("CODE", null)
-//        val order = n.properties.getOrElse("ORDER", null)
-//        println((order, n.label(), code))
-//      }
+      mAst.nodes.foreach { n =>
+        val code  = n.properties.getOrElse("CODE", null)
+        val order = n.properties.getOrElse("ORDER", null)
+        println((order, n.label(), code))
+      }
     mAst
   }
 
@@ -302,7 +302,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           typefullName += x.length
         }
         typefullName += "]"
-        registerType(typefullName)
+        if (varDecl.storageLocation != null) {
+          typefullName += " "+varDecl.storageLocation
+          registerType(typefullName)
+        } else {
+          registerType(typefullName)
+        }
       }
 //      case x:
     }
@@ -319,7 +324,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     NewMethodParameter
       .name(varDecl.name)
-      .code(typefullName + code + visibility + storage + " " + varDecl.name)
+      .code(typefullName + code + visibility /*+ storage*/ + " " + varDecl.name)
       .typeFullName(typefullName)
       .order(order)
       .evaluationStrategy(getEvaluationStrategy(varDecl.typeName.getType))
@@ -413,6 +418,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: String => visibility = x + " "
       case _         => visibility = ""
     }
+    if (varDecl.storageLocation != null) {
+      typefullName += " "+varDecl.storageLocation
+    }
     newID
       .name(varDecl.name)
       .code(code + visibility + varDecl.name)
@@ -481,10 +489,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         typefullName = registerType("mapping")
         code = getMappingKeyAndValue(x)
       }
-      case x: ArrayTypeName =>
+      case x: ArrayTypeName => {
+        println(x)
         x.baseTypeName match {
           case x: ElementaryTypeName => typefullName = registerType(x.name)
         }
+      }
       case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
       case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
     }
@@ -631,6 +641,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForUnaryOperation(operation: UnaryOperation, order: Int): Ast = {
+    println(operation.subExpression)
     val subExpression = astForExpression(operation.subExpression, 1)
     val operatorName = if (operation.isPrefix) operation.operator match {
       case "!"  => Operators.logicalNot
@@ -695,6 +706,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val rht = astForExpression(operation.right, 2)
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
+//    println(operatorName)
 //    println("here")
 //println(operatorName)
     val callNode = NewCall()
@@ -721,6 +733,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var foundt = false
     var foundf = false
     if (operation.trueBody != null) {
+//      println("trueBody")
       operation.trueBody match {
         case x: Block => {
 
@@ -733,6 +746,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
     }
     if (operation.falseBody != null) {
+//      println("false body")
       val elseNode =
         Ast(NewControlStructure()
           .controlStructureType(ControlStructureTypes.ELSE)
@@ -741,11 +755,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .code("else"))
       operation.falseBody match {
         case x: Block => {
-          fb = elseNode.withChild(astForBody(x, 3))
+          fb = elseNode.withChild(astForBody(x, 1))
           foundf = true
         }
         case x =>  {
-          fb = elseNode.withChild(astForStatement(x, 3))
+          fb = elseNode.withChild(astForStatement(x, 1))
           foundf = true}
       }
     }
@@ -775,12 +789,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     } else {
       ast = Ast(ifNode)
+        .withChild(opNode)
     }
+//    println("done")
     val ifAst = opNode.root match {
       case Some(r) =>
         ast.withConditionEdge(ifNode, r)
       case None => ast
     }
+//    println(ifAst.root.map(_.properties(PropertyNames.CODE)).mkString(""))
     ifAst
   }
   private def astForNewExpression(x: NewExpression , order : Int): Ast = {
@@ -858,9 +875,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(2)
         .code(identifier.name)
       )
+      val children = Seq(thisID, fieldID)
       Ast(fieldAccessBlock)
-        .withChild(thisID)
-        .withChild(fieldID)
+        .withChildren(children)
+        .withArgEdges(fieldAccessBlock, children.flatMap(_.root))
     } else {
       Ast(NewIdentifier()
         .name(identifier.name)
@@ -906,7 +924,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForStringLiteral(x: StringLiteral, order : Int): Ast = {
-    Ast()
+    Ast(NewLiteral().code("\""+x.value+"\"").order(order))
   }
 
   private def astForIndexAccess(x: IndexAccess, order : Int): Ast = {
@@ -915,9 +933,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForTupleExpression(expression: TupleExpression, order : Int): Ast = {
     val components = withOrder(expression.components) {
-      case (x, order) => astForExpression(x, order+order)
+      case (x, size) => astForExpression(x, size+order-1)
     }
-    Ast()withChildren(components)
+    Ast().withChildren(components)
   }
 
   private def astsForDefinition(x: BaseASTNode, order: Int): Ast = {
