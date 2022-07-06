@@ -72,10 +72,10 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
     val globalBlock = createGlobalBlock(dstGraph)
     Traversal(cpg.graph.nodes()).whereNot(_.inE(EdgeTypes.AST)).foreach {
       case srcNode: HasFilename if FileDefaults.isHeaderFile(srcNode.filename) =>
-        dstGraph.addEdge(globalBlock, srcNode.asInstanceOf[StoredNode], EdgeTypes.AST)
+        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
         setExternal(srcNode, dstGraph)
       case srcNode: Local =>
-        dstGraph.addEdge(globalBlock, srcNode.asInstanceOf[StoredNode], EdgeTypes.AST)
+        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
       case _ =>
     }
   }
