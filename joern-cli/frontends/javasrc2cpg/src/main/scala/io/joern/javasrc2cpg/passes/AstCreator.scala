@@ -684,14 +684,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val staticModifier =
       Option.when(decl.isStatic)(modifierNode(ModifierTypes.STATIC))
 
-    val accessModifierType = if (decl.isPublic)
-      Some(ModifierTypes.PUBLIC)
-    else if (decl.isPrivate)
-      Some(ModifierTypes.PRIVATE)
-    else if (decl.isProtected)
-      Some(ModifierTypes.PROTECTED)
-    else
-      None
+    val accessModifierType =
+      if (decl.isPublic)
+        Some(ModifierTypes.PUBLIC)
+      else if (decl.isPrivate)
+        Some(ModifierTypes.PRIVATE)
+      else if (decl.isProtected)
+        Some(ModifierTypes.PROTECTED)
+      else
+        None
 
     val accessModifier = accessModifierType.map(modifierNode)
 
