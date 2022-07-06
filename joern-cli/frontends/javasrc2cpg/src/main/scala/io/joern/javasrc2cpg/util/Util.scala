@@ -51,20 +51,4 @@ object Util {
       }
     }
   }
-
-  // TODO: Move to x2cpg once order setting is no longer required
-  // TODO: Switch to this for all operators. Some were moved in https://github.com/joernio/joern/pull/1437,
-  // but that PR was long enough as is.
-
-  def fieldIdentifierNode(
-    name: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .canonicalName(name)
-      .code(name)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
 }
