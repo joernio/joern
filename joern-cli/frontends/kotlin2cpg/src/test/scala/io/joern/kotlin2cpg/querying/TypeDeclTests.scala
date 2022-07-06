@@ -1,17 +1,15 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Binding
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class TypeDeclTests extends AnyFreeSpec with Matchers {
+class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for simple class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for simple class" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import java.lang.Object
@@ -61,8 +59,8 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with user-defined class which has no specific superclasses" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with user-defined class which has no specific superclasses" should {
+    lazy val cpg = code("""
         |package main
         |
         |class AClass
@@ -79,8 +77,8 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "class with multiple initializers" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "class with multiple initializers" ignore {
+    lazy val cpg = code("""
         |package baz
         |
         |import kotlin.io.println
@@ -108,8 +106,8 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
      */
   }
 
-  "CPG for code with simple class declaration and usage" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple class declaration and usage" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -132,8 +130,8 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with usage of setter of simple user-defined class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with usage of setter of simple user-defined class" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |class Simple {
@@ -161,8 +159,8 @@ class TypeDeclTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with class defined inside user-defined function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with class defined inside user-defined function" should {
+    lazy val cpg = code("""
        |package mypkg
        |
        |fun doSomething(x: String): String {

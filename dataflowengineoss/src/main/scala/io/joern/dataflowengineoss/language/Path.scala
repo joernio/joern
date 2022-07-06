@@ -19,7 +19,7 @@ object Path {
 
         val trackedSymbol = cfgNode match {
           case _: MethodParameterIn =>
-            val paramsPretty = method.parameter.toList.sortBy(_.order).map(_.code).mkString(", ")
+            val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
             s"$methodName($paramsPretty)"
           case _ => cfgNode.statement.repr
         }

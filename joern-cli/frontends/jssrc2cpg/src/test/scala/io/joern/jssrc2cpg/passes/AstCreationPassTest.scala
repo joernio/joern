@@ -1,8 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
 import better.files.File
-import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -1215,6 +1213,31 @@ class AstCreationPassTest extends AbstractPassTest {
         .checkProperty(PropertyNames.ORDER, 1)
     }
 
+    "handle labeled statements and" should {
+
+      "be correct for continue" in AstFixture("""
+          |var i, j;
+          |loop1: for (i = 0; i < 3; i++) {
+          |   loop2: for (j = 0; j < 3; j++) {
+          |      if (i === 1 && j === 1) {
+          |         continue loop1;
+          |      }
+          |      console.log("i = " + i + ", j = " + j);
+          |   }
+          |}
+          |""".stripMargin) { cpg =>
+        inside(cpg.jumpTarget.l) { case List(loop1, loop2) =>
+          loop1.code shouldBe "loop1:"
+          loop2.code shouldBe "loop2:"
+        }
+        inside(cpg.controlStructure.code("continue.*").l) { case List(continue) =>
+          continue.code shouldBe "continue loop1;"
+          continue.controlStructureType shouldBe ControlStructureTypes.CONTINUE
+        }
+      }
+
+    }
+
     "handle switch statements and" should {
       "be correct for switch with one case" in AstFixture("switch (x) { case 1: y; }") { cpg =>
         def program = cpg.method.nameExact(":program")
@@ -1542,6 +1565,27 @@ class AstCreationPassTest extends AbstractPassTest {
           identifierZ.checkNodeCount(1)
           identifierZ.checkProperty(PropertyNames.ORDER, 2)
       }
+    }
+
+    "be correct for logical expression '++'" in AstFixture("""
+           |function method(x) {
+           |  true && false;
+           |}
+        """.stripMargin) { cpg =>
+      def method = cpg.method.nameExact("method")
+      method.checkNodeCount(1)
+
+      def logicalCall = method.expandAst(NodeTypes.BLOCK).expandAst(NodeTypes.CALL)
+      logicalCall.checkNodeCount(1)
+      logicalCall.checkProperty(PropertyNames.NAME, Operators.logicalAnd)
+
+      def callArg1 = logicalCall.expandAst(NodeTypes.LITERAL).filter(PropertyNames.ARGUMENT_INDEX, 1)
+      callArg1.checkNodeCount(1)
+      callArg1.checkProperty(PropertyNames.CODE, "true")
+
+      def callArg2 = logicalCall.expandAst(NodeTypes.LITERAL).filter(PropertyNames.ARGUMENT_INDEX, 2)
+      callArg2.checkNodeCount(1)
+      callArg2.checkProperty(PropertyNames.CODE, "false")
     }
 
     "be correct for unary expression '++'" in AstFixture("""
@@ -4737,6 +4781,145 @@ class AstCreationPassTest extends AbstractPassTest {
     }
   }
 
+  "AST generation for exports" should {
+    "have correct structure for simple names and aliases" in AstFixture("""
+        |var name1, name2, name3, name6;
+        |var variable4, variable5;
+        |export { name1, name2, name3 };
+        |export { variable4 as name4, variable5 as name5, name6 };
+        |export let name7, name8, name9;
+        |export let name10 = "10", name11 = "11", name12;
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List(
+        "name1",
+        "name2",
+        "name3",
+        "name6",
+        "variable4",
+        "variable5",
+        "name7",
+        "name8",
+        "name9",
+        "name10",
+        "name11",
+        "name12"
+      )
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "exports.name1 = name1",
+        "exports.name2 = name2",
+        "exports.name3 = name3",
+        "exports.name4 = variable4",
+        "exports.name5 = variable5",
+        "exports.name6 = name6",
+        "exports.name7 = name7",
+        "exports.name8 = name8",
+        "exports.name9 = name9",
+        "name10 = \"10\"",
+        "name11 = \"11\"",
+        "exports.name10 = name10",
+        "exports.name11 = name11",
+        "exports.name12 = name12"
+      )
+    }
+
+    "have correct structure export assignments" in AstFixture("""
+        |var foo = 1;
+        |var bar = 2;
+        |export = foo;
+        |export = bar;
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List("foo", "bar")
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "foo = 1",
+        "bar = 2",
+        "exports.foo = foo",
+        "exports.bar = bar"
+      )
+    }
+
+    "have correct structure for defaults" in AstFixture("""
+        |var name1;
+        |export { name1 as default };
+        |export default name2 = "2";
+        |export default function foo(param) {};
+        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List("name1", "foo", "name2")
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "exports[\"default\"] = name1",
+        "name2 = \"2\"",
+        "exports[\"default\"] = name2",
+        "function foo = function foo(param) {}",
+        "exports[\"default\"] = foo"
+      )
+      cpg.method("foo").code.l shouldBe List("function foo(param) {}")
+    }
+
+    "have correct structure for export with from clause" in AstFixture("""
+      |export { import1 as name1, import2 as name2, name3 } from "Foo";
+      |export bar from "Bar";
+      |""".stripMargin) { cpg =>
+      def dep1 = getDependencies(cpg).filter(PropertyNames.NAME, "name1")
+      dep1.checkNodeCount(1)
+      dep1.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep1.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep2 = getDependencies(cpg).filter(PropertyNames.NAME, "name2")
+      dep2.checkNodeCount(1)
+      dep2.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep2.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep3 = getDependencies(cpg).filter(PropertyNames.NAME, "name3")
+      dep3.checkNodeCount(1)
+      dep3.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep3.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep4 = getDependencies(cpg).filter(PropertyNames.NAME, "bar")
+      dep4.checkNodeCount(1)
+      dep4.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Bar")
+      dep4.checkProperty(PropertyNames.VERSION, "require")
+
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "_Foo = require(\"Foo\")",
+        "_Foo.name1 = import1",
+        "_Foo.name2 = import2",
+        "_Foo.name3 = name3",
+        "_Bar = require(\"Bar\")",
+        "_Bar.bar = bar"
+      )
+    }
+
+    "have correct structure for export all with from clause" in AstFixture("""
+       |export * from "Foo";
+       |export * as B from "Bar";
+       |export * from "./some/Module";
+       |""".stripMargin) { cpg =>
+      def dep1 = getDependencies(cpg).filter(PropertyNames.NAME, "Foo")
+      dep1.checkNodeCount(1)
+      dep1.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
+      dep1.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep2 = getDependencies(cpg).filter(PropertyNames.NAME, "B")
+      dep2.checkNodeCount(1)
+      dep2.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Bar")
+      dep2.checkProperty(PropertyNames.VERSION, "require")
+
+      def dep3 = getDependencies(cpg).filter(PropertyNames.NAME, "Module")
+      dep3.checkNodeCount(1)
+      dep3.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "./some/Module")
+      dep3.checkProperty(PropertyNames.VERSION, "require")
+
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "_Foo = require(\"Foo\")",
+        "exports.Foo = _Foo",
+        "_Bar = require(\"Bar\")",
+        "exports.B = _Bar",
+        "_Module = require(\"./some/Module\")",
+        "exports.Module = _Module"
+      )
+    }
+
+  }
+
   private def checkObjectInitialization(node: Node, member: (String, String)): Unit = {
     def block = Traversal.fromSingle(node)
     block.checkNodeCount(1)
@@ -4945,24 +5128,6 @@ class AstCreationPassTest extends AbstractPassTest {
     def pushCallArg = pushCall.expand(EdgeTypes.ARGUMENT).filter(PropertyNames.ARGUMENT_INDEX, 2)
     pushCallArg.checkNodeCount(1)
     pushCallArg.checkProperty(PropertyNames.CODE, s"$element")
-  }
-
-  private object AstFixture extends Fixture {
-    def apply(code: String)(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val file = dir / "code.js"
-        file.write(code)
-        file.deleteOnExit()
-        val cpg = new JsSrc2CpgFrontend().execute(dir.toJava)
-        f(cpg)
-      }
-    }
-
-    def apply(testFile: File)(f: Cpg => Unit): Unit = {
-      val file = testFile
-      val cpg  = new JsSrc2CpgFrontend().execute(file.parent.toJava)
-      f(cpg)
-    }
   }
 
 }

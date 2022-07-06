@@ -1,17 +1,15 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 
 // TODO: also add test with refs inside TYPE_DECL
 
-class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
-  "CPG for code with shadowed local inside lambda" - {
-    lazy val cpg = TestContext.buildCpg("""
+class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with shadowed local inside lambda" should {
+    lazy val cpg = code("""
         |package main
         |
         |fun main() {
@@ -39,8 +37,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with identifier referencing two possible locals" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with identifier referencing two possible locals" should {
+    lazy val cpg = code("""
         |fun foo() {
         |  val x: String = "n"
         |  1.let {
@@ -67,8 +65,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with locals with the same name, but in different scopes" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with locals with the same name, but in different scopes" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -102,8 +100,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "should find references for simple case" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "should find references for simple case" should {
+    lazy val cpg = code("""
         |fun foo(x: Int): Int {
         |  val y = x
         |  return y
@@ -121,8 +119,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "should find references inside expressions" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "should find references inside expressions" should {
+    lazy val cpg = code("""
         |fun foo(x: Int): Int {
         |  val y = 1 + x
         |  return y
@@ -135,8 +133,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to `also` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a call to `also` scope function without an explicitly-defined parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -152,8 +150,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to `apply` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a call to `apply` scope function without an explicitly-defined parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -169,8 +167,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a call to `let` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a call to `let` scope function without an explicitly-defined parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -186,8 +184,8 @@ class IdentifierReferencesTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code call to `run` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code call to `run` scope function without an explicitly-defined parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {

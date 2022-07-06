@@ -1,15 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.TestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
-  "CPG for code with QE of receiver for which the type cannot be inferred" - {
-    lazy val cpg = TestContext.buildCpg("""
+class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with QE of receiver for which the type cannot be inferred" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -27,8 +25,8 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple stdlib fns" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple stdlib fns" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.collections.HashMap
@@ -56,8 +54,8 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with stdlib mutable list of items of class without type info available" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with stdlib mutable list of items of class without type info available" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import com.intellij.ide.util.projectWizard.importSources.DetectedProjectRoot
@@ -82,8 +80,8 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with QE expression without type info" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with QE expression without type info" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |object AClass {
@@ -118,8 +116,8 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with extension fn defined on unresolvable type " - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with extension fn defined on unresolvable type " should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import com.intellij.openapi.editor.*
@@ -139,8 +137,8 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with extension fn defined on resolvable type with unresolvable subtypes" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with extension fn defined on resolvable type with unresolvable subtypes" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import com.intellij.openapi.editor.*
@@ -161,8 +159,8 @@ class ResolutionErrorsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `containsKey` call on collection of elements without corresponding imported class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `containsKey` call on collection of elements without corresponding imported class" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import io.no.SuchPackage

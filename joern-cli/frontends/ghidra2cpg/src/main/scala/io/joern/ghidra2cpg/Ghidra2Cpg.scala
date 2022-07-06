@@ -33,11 +33,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
     * the CPG.
     */
   override def createCpg(config: Config): Try[Cpg] = {
-    if (config.inputPaths.size != 1) {
-      throw new RuntimeException("This frontend requires exactly one input path")
-    }
-
-    val inputFile = new File(config.inputPaths.head)
+    val inputFile = new File(config.inputPath)
     if (!inputFile.isDirectory && !inputFile.isFile) {
       throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }
@@ -118,7 +114,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       .map(x => x.getAddress().getOffset -> x.getValue.toString)
       .toMap
 
-    new MetaDataPass(cpg, Languages.GHIDRA).createAndApply()
+    new MetaDataPass(cpg, Languages.GHIDRA, fileAbsolutePath).createAndApply()
     new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {

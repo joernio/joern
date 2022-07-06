@@ -1,0 +1,21 @@
+plugins {
+  id 'org.jetbrains.kotlin.jvm' version '1.5.31'
+  id 'application'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+  implementation 'com.google.code.gson:gson:2.9.0'
+}
+
+application {
+  mainClass = 'ktmin.AppKt'
+}
+
+tasks.named('wrapper') {
+    gradleVersion = '7.4.2'
+}

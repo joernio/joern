@@ -13,10 +13,8 @@ class JsSrc2CpgFrontend(override val fileSuffix: String = ".js") extends Languag
   def execute(sourceCodePath: java.io.File): Cpg = {
     var _cpg = Cpg.emptyCpg
     File.usingTemporaryFile("cpg", ".bin") { cpgFile =>
-      val packageJson = File(sourceCodePath.getAbsolutePath) / "package.json"
-      packageJson.createIfNotExists()
       val jssrc2cpg = new JsSrc2Cpg()
-      val config    = Config(inputPaths = Set(sourceCodePath.getAbsolutePath), outputPath = cpgFile.toString())
+      val config    = Config(inputPath = sourceCodePath.getAbsolutePath, outputPath = cpgFile.toString())
       val cpg       = jssrc2cpg.createCpg(config).get
       val context   = new LayerCreatorContext(cpg)
       new Base().run(context)

@@ -1,16 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
+class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
 
-  "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun add1mul(x: Int, y: Int): Int {
@@ -31,8 +28,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple class definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple class definition" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -56,8 +53,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with type alias of a stdlib type" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with type alias of a stdlib type" should {
+    lazy val cpg = code("""
         |typealias FooList = List<Int>
         |
         |fun foo() {
@@ -72,8 +69,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with array access" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with array access" should {
+    lazy val cpg = code("""
         |fun foo(): Int {
         |  val x = listOf(1, 2, 3)
         |  return x[0]
@@ -86,8 +83,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `this` expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `this` expression" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -104,8 +101,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a class definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a class definition" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Foo: Object {
@@ -123,8 +120,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with Java stdlib" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with Java stdlib" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo(cmd: String) {
@@ -149,8 +146,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code using the Javalin web framework" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code using the Javalin web framework" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import io.javalin.Javalin
@@ -220,8 +217,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code using the http4k framework" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code using the http4k framework" should {
+    lazy val cpg = code("""
         |package com.example
         |
         |import org.http4k.core.HttpHandler
@@ -283,8 +280,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with addition of aliased type and its original" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with addition of aliased type and its original" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |typealias MyInt = Int

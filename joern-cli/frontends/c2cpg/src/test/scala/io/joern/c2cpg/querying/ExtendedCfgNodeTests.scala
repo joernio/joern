@@ -16,14 +16,13 @@ class ExtendedCfgNodeTests extends DataFlowCodeToCpgSuite {
     s = semantics
   }
 
-  override val code: String =
-    """
+  private val cpg = code("""
       |int foo(int y) {
       | int x = source();
       | x += y;
       | sink(y);
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "allow traversing from argument of sink back to param via `ddgIn`" in {
     inside(cpg.method("sink").parameter.argument.ddgIn.l) { case List(param: nodes.MethodParameterIn) =>

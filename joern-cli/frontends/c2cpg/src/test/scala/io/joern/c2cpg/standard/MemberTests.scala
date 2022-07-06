@@ -5,12 +5,11 @@ import io.shiftleft.semanticcpg.language._
 
 class MemberTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       |struct foo {
       |  int x;
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain MEMBER node with correct properties" in {
     val List(x) = cpg.member.l

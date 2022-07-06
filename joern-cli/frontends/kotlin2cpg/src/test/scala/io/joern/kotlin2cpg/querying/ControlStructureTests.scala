@@ -1,17 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ControlStructure, Identifier, Local}
-import io.shiftleft.semanticcpg
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ControlStructureTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple if-else" - {
-    lazy val cpg = TestContext.buildCpg("""
+class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with simple if-else" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo(x: Int): Int {
@@ -27,8 +23,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `when` statement with assignment in its conditional" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `when` statement with assignment in its conditional" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -51,8 +47,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with multiple control structures" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with multiple control structures" should {
+    lazy val cpg = code("""
         |import kotlin.random.Random
         |
         |class ClassFoo {
@@ -116,8 +112,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `for`-statements" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `for`-statements" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -137,8 +133,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `if`-statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `if`-statement" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -161,8 +157,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with try-catch-finally statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with try-catch-finally statement" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun main() {
@@ -189,8 +185,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with try-catch statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with try-catch statement" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun main() {
@@ -214,8 +210,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `for-in` loop which has a simple variable loop parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `for-in` loop which has a simple variable loop parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -323,8 +319,8 @@ class ControlStructureTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `for-in` loop which has a destructuring declaration loop parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `for-in` loop which has a destructuring declaration loop parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |data class AClass(val x: String, val y: Int)

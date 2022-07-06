@@ -32,7 +32,7 @@ class FileTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from file to its namespace blocks" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set("b")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set("a.b")
   }
 
   "should allow traversing from file to its methods via namespace block" in {

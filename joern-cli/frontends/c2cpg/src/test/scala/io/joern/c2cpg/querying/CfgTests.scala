@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       | int foo(int x, int y) {
       |  if (y < 10)
       |    goto end;
@@ -16,7 +15,7 @@ class CfgTests extends CCodeToCpgSuite {
       |  end:
       |  printf("foo");
       | }
-    """.stripMargin
+    """.stripMargin)
 
   "should find that sink is control dependent on condition" in {
     val controllers = cpg.call("sink").controlledBy.isCall.toSetMutable

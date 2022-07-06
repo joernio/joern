@@ -1,20 +1,16 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class CallsToConstructorTests extends AnyFreeSpec with Matchers {
+class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with call to constructor of Java stdlib object inside declaration" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to constructor of Java stdlib object inside declaration" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import java.io.File
@@ -85,8 +81,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call to constructor of Java stdlib object inside QE" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to constructor of Java stdlib object inside QE" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import java.io.File
@@ -149,8 +145,8 @@ class CallsToConstructorTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call to simple constructor of user-defined class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to simple constructor of user-defined class" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class AClass(val x: String) {

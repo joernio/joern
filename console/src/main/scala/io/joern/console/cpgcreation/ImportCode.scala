@@ -40,8 +40,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  def oldc: SourceBasedFrontend = new SourceBasedFrontend("oldc", Languages.C)
-  def c: SourceBasedFrontend    = new SourceBasedFrontend("c", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
+  def c: SourceBasedFrontend = new SourceBasedFrontend("c", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
   def cpp: SourceBasedFrontend =
     new SourceBasedFrontend("cpp", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", "cpp")
   def java: SourceBasedFrontend = new SourceBasedFrontend("java", Languages.JAVASRC, "Java Source Frontend", "java")
@@ -85,7 +84,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   class SourceBasedFrontend(
     name: String,
     language: String = Languages.C,
-    description: String = "Fuzzy Parser for C/C++",
+    description: String = "Eclipse CDT based parser for C/C++",
     extension: String = "c"
   ) extends Frontend(name, language, description) {
 
@@ -110,7 +109,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   }
 
   private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, java, jvm, javascript, golang, llvm, oldc, python, csharp)
+    List(c, cpp, ghidra, java, jvm, javascript, golang, llvm, python, csharp)
 
   /** Provide an overview of the available CPG generators (frontends)
     */

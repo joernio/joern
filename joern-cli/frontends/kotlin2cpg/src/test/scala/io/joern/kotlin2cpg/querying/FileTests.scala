@@ -1,18 +1,15 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+import java.io.File
 
-import java.io.{File => JFile}
+class FileTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class FileTests extends AnyFreeSpec with Matchers {
-
-  "CPG for code with simple class definition and one method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple class definition and one method" should {
+    lazy val cpg = code("""
         |package mypkg.bar
         |
         |class Foo {
@@ -38,7 +35,7 @@ class FileTests extends AnyFreeSpec with Matchers {
 
     "should allow traversing from file to its methods" in {
       cpg.file
-        .name(".*.kt".replace("/", s"\\${JFile.separator}"))
+        .name(".*.kt".replace("/", s"\\${File.separator}"))
         .method
         .name
         .toSet shouldBe Set("baz", "<init>", "add")

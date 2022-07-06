@@ -1,16 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ExtensionTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple extension function definitions" - {
+class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with simple extension function definitions" should {
     implicit val resolver = NoResolve
 
-    lazy val cpg = TestContext.buildCpg("""
+    lazy val cpg = code("""
         |package mypkg
         |
         |class Example {
@@ -35,12 +33,12 @@ class ExtensionTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with differently-scoped extension-fns on stdlib type" - {
+  "CPG for code with differently-scoped extension-fns on stdlib type" should {
     implicit val resolver = NoResolve
 
     // TODO: add test cases after the lowering is clear:
     //   --> right now we cannot differentiate between the fn definitions at different scopes
-    lazy val cpg = TestContext.buildCpg("""
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun String.hash() = "HASH_PLACEHOLDER_1: $this"

@@ -1,14 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-
-class NamespaceBlockTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple namespace declaration" - {
-    lazy val cpg = TestContext.buildCpg("""
+class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with simple namespace declaration" should {
+    lazy val cpg = code("""
         |package com.test.PackageFoo
         |
         |class ClassFoo {
@@ -53,8 +50,8 @@ class NamespaceBlockTests extends AnyFreeSpec with Matchers {
 
   }
 
-  "CPG for code with imports of simple Android packages" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with imports of simple Android packages" should {
+    lazy val cpg = code("""
        |package mypkg
        |
        |import android.content.Intent

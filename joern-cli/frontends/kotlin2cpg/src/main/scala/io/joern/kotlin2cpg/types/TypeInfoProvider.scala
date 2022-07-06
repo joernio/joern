@@ -74,7 +74,7 @@ trait TypeInfoProvider {
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
 
-  def erasedSignature(args: Seq[Any]): String
+  def anySignature(args: Seq[Any]): String
 
   def returnTypeFullName(expr: KtLambdaExpression): String
 

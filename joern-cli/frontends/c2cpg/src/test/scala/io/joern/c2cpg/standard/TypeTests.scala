@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class TypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       | class Foo {
       |  member_type x;
       | };
@@ -15,7 +14,7 @@ class TypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
       | ret_type myFunc(param_type param) {
       |   local_type y;
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   "should create TYPE node with correct fields for class member" in {
     val List(x) = cpg.typ.name("member_type").l

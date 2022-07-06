@@ -1,0 +1,11 @@
+{
+	"name": "dev environment",
+	"dockerFile": "Dockerfile",
+	"extensions": [
+		"vscjava.vscode-java-pack",
+		"scala-lang.scala",
+		"scalameta.metals",
+		"scala-lang.scala-snippets",
+		"VisualStudioExptTeam.vscodeintellicode"
+	]
+}

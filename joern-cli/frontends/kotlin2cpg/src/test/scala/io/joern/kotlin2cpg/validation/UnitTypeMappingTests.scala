@@ -1,18 +1,11 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.TestContext
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.edges.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, FieldIdentifier, Identifier}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
 
-class UnitTypeMappingTests extends AnyFreeSpec with Matchers {
-  "CPG for code with definion of simple fn returning `kotlin.Unit`" - {
-    lazy val cpg = TestContext.buildCpg("""
+class UnitTypeMappingTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with definion of simple fn returning `kotlin.Unit`" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {

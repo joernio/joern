@@ -43,13 +43,13 @@ class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
 
 class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
 
-  override def config: ConsoleConfig = JoernConsole.config
+  override val config: ConsoleConfig = JoernConsole.defaultConfig
 
   implicit def semantics: Semantics = context.semantics
 
   implicit def context: EngineContext =
     workspace.getActiveProject
-      .map(x => EngineContext(x.asInstanceOf[JoernProject].context.semantics))
+      .map(x => x.asInstanceOf[JoernProject].context)
       .getOrElse(EngineContext(JoernWorkspaceLoader.defaultSemantics))
 
   def banner(): Unit = {
@@ -80,13 +80,13 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
 
 object JoernConsole {
 
-  def config: ConsoleConfig = new ConsoleConfig()
+  def defaultConfig: ConsoleConfig = new ConsoleConfig()
 
   def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
       override def context: EngineContext =
         EngineContext(Semantics.fromList(new Parser().parseFile(JoernWorkspaceLoader.defaultSemanticsFile)))
-      override def config = new ConsoleConfig(
+      override val config = new ConsoleConfig(
         install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
       )
     }

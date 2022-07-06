@@ -83,16 +83,19 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         nullType.describe()
       case typeVariable: ResolvedTypeVariable =>
         val typeParamDecl   = typeVariable.asTypeParameter()
-        val substitutedType = typeParamValues.getValue(typeParamDecl)
+        val substitutedType = Try(typeParamValues.getValue(typeParamDecl))
 
-        // This is the way the library tells us there is no substitution happened.
-        if (substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl) {
+        // This is the way the library tells us there is no substitution happened or getValue throws an exception.
+        if (
+          substitutedType.isFailure ||
+          (substitutedType.get.isTypeVariable && substitutedType.get.asTypeParameter() == typeParamDecl)
+        ) {
           val extendsBoundOption = typeParamDecl.getBounds.asScala.find(_.isExtends)
           extendsBoundOption
             .map(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
             .getOrElse(objectType(fullyQualified))
         } else {
-          nameOrFullName(substitutedType, typeParamValues, fullyQualified)
+          nameOrFullName(substitutedType.get, typeParamValues, fullyQualified)
         }
       case lambdaConstraintType: ResolvedLambdaConstraintType =>
         nameOrFullName(lambdaConstraintType.getBound, typeParamValues, fullyQualified)
@@ -216,17 +219,25 @@ object TypeInfoCalculator {
   }
 
   object TypeConstants {
-    val Byte: String    = "byte"
-    val Short: String   = "short"
-    val Int: String     = "int"
-    val Long: String    = "long"
-    val Float: String   = "float"
-    val Double: String  = "double"
-    val Char: String    = "char"
-    val Boolean: String = "boolean"
-    val Object: String  = "java.lang.Object"
-    val Class: String   = "java.lang.Class"
+    val Byte: String                = "byte"
+    val Short: String               = "short"
+    val Int: String                 = "int"
+    val Long: String                = "long"
+    val Float: String               = "float"
+    val Double: String              = "double"
+    val Char: String                = "char"
+    val Boolean: String             = "boolean"
+    val Object: String              = "java.lang.Object"
+    val Class: String               = "java.lang.Class"
+    val Iterator: String            = "java.util.Iterator"
+    val Void: String                = "void"
+    val UnresolvedType: String      = "<unresolvedType>"
+    val UnresolvedSignature: String = "<unresolvedSignature>"
+    val UnresolvedReceiver: String  = "<unresolvedReceiverType>"
   }
+
+  val unresolvedConstants =
+    List(TypeConstants.UnresolvedType, TypeConstants.UnresolvedSignature, TypeConstants.UnresolvedReceiver)
 
   object TypeNameConstants {
     val Object: String = "Object"
@@ -251,5 +262,9 @@ object TypeInfoCalculator {
     "java.lang.Boolean"
   )
 
-  val UnresolvedTypeDefault = "ANY"
+  def apply(global: Global, symbolResolver: SymbolResolver): TypeInfoCalculator = {
+    val typeInfoCalculator = new TypeInfoCalculator(global, symbolResolver)
+    unresolvedConstants.foreach(typeInfoCalculator.registerType)
+    typeInfoCalculator
+  }
 }

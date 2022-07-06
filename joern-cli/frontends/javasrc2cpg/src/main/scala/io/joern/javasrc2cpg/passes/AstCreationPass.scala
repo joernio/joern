@@ -9,8 +9,7 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   CombinedTypeSolver,
   JarTypeSolver,
-  JavaParserTypeSolver,
-  ReflectionTypeSolver
+  JavaParserTypeSolver
 }
 import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.util.{CachingReflectionTypeSolver, SourceRootFinder}
@@ -89,15 +88,15 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
       combinedTypeSolver.add(javaParserTypeSolver)
     }
 
-    val resolvedDeps = if (config.skipDependencyDownload) {
-      Seq()
-    } else {
+    val resolvedDeps = if (config.fetchDependencies) {
       DependencyResolver.getDependencies(Paths.get(codeDir)) match {
         case Some(deps) => deps
         case None =>
           logger.warn(s"Could not fetch dependencies for project at path $codeDir")
           Seq()
       }
+    } else {
+      Seq()
     }
 
     // Add solvers for inference jars

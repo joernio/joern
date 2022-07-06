@@ -1,15 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-import overflowdb.traversal.jIteratortoTraversal
 
-class DelegatedPropertiesTests extends AnyFreeSpec with Matchers {
+class DelegatedPropertiesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple delegated properties" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple delegated properties" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class MyClass {

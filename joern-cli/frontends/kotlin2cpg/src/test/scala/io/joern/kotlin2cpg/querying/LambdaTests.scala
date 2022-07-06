@@ -1,20 +1,16 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.{Constants, TestContext}
+import io.joern.kotlin2cpg.Constants
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, ClosureBinding, MethodRef}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 import overflowdb.traversal.jIteratortoTraversal
 
-class LambdaTests extends AnyFreeSpec with Matchers {
-
-  implicit val resolver = NoResolve
-
-  "CPG for code with a simple lambda which captures a method parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
+  "CPG for code with a simple lambda which captures a method parameter" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |// TODO: test with `fun foo(x: String, y: String): Int {`
@@ -46,8 +42,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple lambda which captures a local" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple lambda which captures a local" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.collections.List
@@ -85,8 +81,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a list iterator lambda" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a list iterator lambda" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo(x: String): Int {
@@ -106,7 +102,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(14)
@@ -153,7 +149,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -166,8 +162,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a scope function lambda" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a scope function lambda" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun throughTakeIf(x: String): String? {
@@ -183,7 +179,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
@@ -219,7 +215,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -232,8 +228,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a lambda mapping values of a collection" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a lambda mapping values of a collection" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun mappedListWith(p: String): List<String> {
@@ -252,7 +248,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(28)
@@ -291,7 +287,7 @@ class LambdaTests extends AnyFreeSpec with Matchers {
       td.code shouldBe "LAMBDA_TYPE_DECL"
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_generated.kt_no1>:java.lang.Object(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
@@ -304,8 +300,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with destructuring inside lambda" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with destructuring inside lambda" should {
+    lazy val cpg = code("""
        |package mypkg
        |
        |fun main(args: Array<String>) {
@@ -319,8 +315,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple lambda which captures a method parameter inside method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple lambda which captures a method parameter inside method" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class AClass {
@@ -343,8 +339,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple lambda which captures a method parameter, nested twice" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple lambda which captures a method parameter, nested twice" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun foo(x: String): Int {
@@ -377,8 +373,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call with lambda inside method definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call with lambda inside method definition" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -410,8 +406,8 @@ class LambdaTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with nested lambdas" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with nested lambdas" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun doSomething(p: String): Int {

@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion    = "1.3.542"
+val cpgVersion    = "1.3.550"
 val js2cpgVersion = "0.2.158"
 
 lazy val joerncli          = Projects.joerncli
@@ -12,7 +12,6 @@ lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
 lazy val benchmarks        = Projects.benchmarks
-lazy val fuzzyc2cpg        = Projects.fuzzyc2cpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
@@ -30,7 +29,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   dataflowengineoss,
   macros,
   semanticcpg,
-  fuzzyc2cpg,
   c2cpg,
   x2cpg,
   pysrc2cpg,

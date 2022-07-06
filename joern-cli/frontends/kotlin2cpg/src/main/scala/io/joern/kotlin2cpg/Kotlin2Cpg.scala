@@ -7,12 +7,9 @@ import org.jetbrains.kotlin.psi.KtFile
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.kotlin2cpg.types.{
-  CompilerAPI,
-  ContentSourcesPicker,
-  DefaultTypeInfoProvider,
-  ErrorLoggingMessageCollector
-}
+
+import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
+import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -38,103 +35,116 @@ case class FileContentAtPath(content: String, relativizedPath: String, filename:
 class Kotlin2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(getClass)
   val parsingError   = "KOTLIN2CPG_PARSING_ERROR"
+  private val defaultKotlinStdlibContentRootJarPaths = Seq(
+    DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true)
+  )
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
-      if (config.inputPaths.size == 1) {
-        val sourceDir = config.inputPaths.head
-        if (!Files.exists(Paths.get(sourceDir))) {
-          println("The specified input path `" + sourceDir + "` is not a file that exists. Exiting.")
-          System.exit(1)
-        }
-        if (!Files.isDirectory(Paths.get(sourceDir))) {
-          println("The specified input path `" + sourceDir + "` is not a directory. Exiting.")
-          System.exit(1)
-        }
-        val dependenciesPaths =
-          if (config.downloadDependencies) {
-            val gradleParams = Map(
-              GradleConfigKeys.ProjectName       -> config.gradleProjectName,
-              GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
-            ).collect { case (key, Some(value)) => (key, value) }
-
-            val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
-            DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
-              case Some(deps) =>
-                logger.info(s"Using ${deps.size} dependency jars.")
-                deps
-              case None =>
-                logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
-                println("Could not fetch dependencies when explicitly asked to. Exiting.")
-                System.exit(1)
-                Seq()
-            }
-          } else {
-            logger.info(s"Not using any dependency jars.")
-            Seq()
-          }
-
-        val filesWithKtExtension = SourceFiles.determine(Set(sourceDir), Set(".kt"))
-        if (filesWithKtExtension.isEmpty) {
-          println("The provided input directory does not contain files ending in '.kt' `" + sourceDir + "`. Exiting.")
-          System.exit(1)
-        }
-        logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
-
-        val filesWithJavaExtension = SourceFiles.determine(Set(sourceDir), Set(".java"))
-        if (filesWithJavaExtension.nonEmpty) {
-          logger.info(
-            s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
-          )
-        }
-
-        val jarsAtConfigClassPath = findJarsIn(config.classpath)
-        if (config.classpath.nonEmpty) {
-          if (jarsAtConfigClassPath.nonEmpty) {
-            logger.info(s"Found ${jarsAtConfigClassPath.size} jars in the specified classpath.")
-          } else {
-            logger.warn("No jars found in the specified classpath.")
-          }
-        }
-
-        val plugins = Seq()
-        val stdlibJars =
-          if (config.withStdlibJarsInClassPath) {
-            ContentSourcesPicker.defaultKotlinStdlibContentRootJarPaths
-          } else {
-            Seq()
-          }
-        val defaultContentRootJars =
-          stdlibJars ++
-            jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
-            dependenciesPaths.map { path =>
-              DefaultContentRootJarPath(path, false)
-            }
-        val messageCollector        = new ErrorLoggingMessageCollector
-        val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-        val environment =
-          CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
-
-        val sources          = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-        val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
-        val typeInfoProvider = new DefaultTypeInfoProvider(environment)
-
-        new MetaDataPass(cpg, Languages.KOTLIN).createAndApply()
-        val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
-        astCreator.createAndApply()
-        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
-
-        val configCreator = new ConfigPass(configFiles, cpg)
-        configCreator.createAndApply()
-
-        val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
-        if (!hasAtLeastOneMethodNode) {
-          logger.warn("Resulting CPG does not contain any METHOD nodes.")
-        }
-      } else {
-        println("This frontend requires exactly one input path")
+      val sourceDir = config.inputPath
+      if (!Files.exists(Paths.get(sourceDir))) {
+        println(s"The specified input path `$sourceDir` is not a file that exists. Exiting.")
         System.exit(1)
       }
+      if (!Files.isDirectory(Paths.get(sourceDir))) {
+        println(s"The specified input path `$sourceDir` is not a directory. Exiting.")
+        System.exit(1)
+      }
+
+      val maxHeapSize          = Runtime.getRuntime().maxMemory()
+      val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
+      logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
+
+      val dependenciesPaths = if (config.downloadDependencies) {
+        downloadDependencies(sourceDir, config)
+      } else {
+        logger.info(s"Not using any dependency jars.")
+        Seq()
+      }
+
+      val filesWithKtExtension = SourceFiles.determine(sourceDir, Set(".kt"))
+      if (filesWithKtExtension.isEmpty) {
+        println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
+        System.exit(1)
+      }
+      logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+
+      val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
+      if (filesWithJavaExtension.nonEmpty) {
+        logger.info(
+          s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
+        )
+      }
+
+      val jarsAtConfigClassPath = findJarsIn(config.classpath)
+      if (config.classpath.nonEmpty) {
+        if (jarsAtConfigClassPath.nonEmpty) {
+          logger.info(s"Found ${jarsAtConfigClassPath.size} jars in the specified classpath.")
+        } else {
+          logger.warn("No jars found in the specified classpath.")
+        }
+      }
+      val stdlibJars =
+        if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths
+        else Seq()
+      val defaultContentRootJars = stdlibJars ++
+        jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+        dependenciesPaths.map { path =>
+          DefaultContentRootJarPath(path, false)
+        }
+      val messageCollector        = new ErrorLoggingMessageCollector
+      val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
+      if (dirsForSourcesToCompile.isEmpty) {
+        logger.warn("The list of directories to analyze is empty.")
+      }
+      val plugins = Seq()
+      val environment =
+        CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
+
+      val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
+      val sources = sourceEntries.filterNot { entry =>
+        config.ignorePaths.exists { pathToIgnore =>
+          val parent = Paths.get(pathToIgnore).toAbsolutePath()
+          val child  = Paths.get(entry.filename)
+          child.startsWith(parent)
+        }
+      }
+      val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
+      val typeInfoProvider = new DefaultTypeInfoProvider(environment)
+
+      new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
+      val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
+      astCreator.createAndApply()
+      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+
+      val configCreator = new ConfigPass(configFiles, cpg)
+      configCreator.createAndApply()
+
+      val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
+      if (!hasAtLeastOneMethodNode) {
+        logger.warn("Resulting CPG does not contain any METHOD nodes.")
+      }
+    }
+  }
+
+  private def downloadDependencies(sourceDir: String, config: Config): scala.collection.Seq[String] = {
+    val gradleParams = Map(
+      GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+    ).collect { case (key, Some(value)) => (key, value) }
+
+    val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+    DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
+      case Some(deps) =>
+        logger.info(s"Using ${deps.size} dependency jars.")
+        deps
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
+        println("Could not fetch dependencies when explicitly asked to. Exiting.")
+        System.exit(1)
+        Seq()
     }
   }
 
@@ -143,7 +153,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
     dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
       val f = File(classpathEntry)
       val files =
-        if (f.isDirectory) f.list.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
+        if (f.isDirectory) f.listRecursively.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
         else Seq()
       acc ++ files
     })
@@ -167,7 +177,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         // TODO: support Windows paths
         val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
         if (willFilter) {
-          logger.debug("Filtered file at `" + fwp.f.getVirtualFilePath + "`.")
+          logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
         }
         willFilter
       }

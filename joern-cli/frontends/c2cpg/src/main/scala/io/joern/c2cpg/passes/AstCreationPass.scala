@@ -27,10 +27,10 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
   private val parser: CdtParser = new CdtParser(config)
 
   private def sourceFiles: Set[String] =
-    SourceFiles.determine(config.inputPaths, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
+    SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
   private def headerFiles: Set[String] = {
-    val allHeaderFiles         = SourceFiles.determine(config.inputPaths, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
+    val allHeaderFiles         = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
     val alreadySeenHeaderFiles = CGlobal.headerFiles
     allHeaderFiles -- alreadySeenHeaderFiles
   }

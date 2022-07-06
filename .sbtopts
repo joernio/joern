@@ -1,1 +1,2 @@
--J-Xmx2G
+-J-Xms3G
+-J-Xmx3G

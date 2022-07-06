@@ -4,6 +4,12 @@ import better.files._
 
 object SourceFiles {
 
+  /** For a given input path, determine all source files by inspecting filename extensions.
+    */
+  def determine(inputPath: String, sourceFileExtensions: Set[String]): List[String] = {
+    determine(Set(inputPath), sourceFileExtensions)
+  }
+
   /** For a given array of input paths, determine all source files by inspecting filename extensions.
     */
   def determine(inputPaths: Set[String], sourceFileExtensions: Set[String]): List[String] = {

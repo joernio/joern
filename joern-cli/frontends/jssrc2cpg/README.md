@@ -35,7 +35,4 @@ Make sure you have it installed. See: https://github.com/joernio/astgen
 
 ## Warning
 
-This is work in progress. Types from TS code and TSX/JSX constructs are currently missing.
-
-Use https://github.com/ShiftLeftSecurity/js2cpg for CPG generation for JS/TS code
-with transpilation of such constructs.
+This is work in progress. Use https://github.com/ShiftLeftSecurity/js2cpg as a mature alternative.

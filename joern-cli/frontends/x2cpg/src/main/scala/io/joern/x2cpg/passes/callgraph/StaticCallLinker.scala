@@ -12,13 +12,15 @@ import scala.collection.mutable
 class StaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   import StaticCallLinker._
-  private val methodFullNameToNode = mutable.Map.empty[String, StoredNode]
+  private val methodFullNameToNode = mutable.Map.empty[String, List[Method]]
 
-  /** Main method of enhancement - to be implemented by child class
-    */
   override def run(dstGraph: DiffGraphBuilder): Unit = {
+
     cpg.method.foreach { method =>
-      methodFullNameToNode.put(method.fullName, method)
+      methodFullNameToNode.updateWith(method.fullName) {
+        case Some(l) => Some(method :: l)
+        case None    => Some(List(method))
+      }
     }
 
     cpg.call.foreach { call =>
@@ -44,7 +46,9 @@ class StaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private def linkStaticCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     val resolvedMethodOption = methodFullNameToNode.get(call.methodFullName)
     if (resolvedMethodOption.isDefined) {
-      dstGraph.addEdge(call, resolvedMethodOption.get, EdgeTypes.CALL)
+      resolvedMethodOption.get.foreach { dst =>
+        dstGraph.addEdge(call, dst, EdgeTypes.CALL)
+      }
     } else {
       logger.info(
         s"Unable to link static CALL with METHOD_FULL_NAME ${call.methodFullName}, NAME ${call.name}, " +

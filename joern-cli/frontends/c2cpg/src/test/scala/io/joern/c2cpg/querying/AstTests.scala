@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CAstTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       | int foo(int y) {
       |   int x = 10;
       |   if (x > 10) {
@@ -18,7 +17,7 @@ class CAstTests extends CCodeToCpgSuite {
       |     }
       |   }
       | }
-    """.stripMargin
+    """.stripMargin)
 
   "should identify four blocks" in {
     cpg.method.name("foo").ast.isBlock.l.size shouldBe 4
@@ -137,8 +136,7 @@ class CAstTests extends CCodeToCpgSuite {
 
 class CAstTests2 extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       |void foo(int bar) {
       | char buf[10];
       | int i;
@@ -146,7 +144,7 @@ class CAstTests2 extends CCodeToCpgSuite {
       |   buf[i] = 42;
       | }
       |}
-    """.stripMargin
+    """.stripMargin)
 
   "should find index `i` used for buf" in {
 

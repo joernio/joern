@@ -1,15 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class UnaryOpTests extends AnyFreeSpec with Matchers {
+class UnaryOpTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with calls to unary operators" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with calls to unary operators" should {
+    lazy val cpg = code("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  val y: Boolean = true

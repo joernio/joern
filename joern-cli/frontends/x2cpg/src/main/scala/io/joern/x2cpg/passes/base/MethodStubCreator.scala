@@ -18,7 +18,7 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   // Since the method fullNames for fuzzyc are not unique, we do not have
   // a 1to1 relation and may overwrite some values. This is ok for now.
-  private val methodFullNameToNode   = mutable.LinkedHashMap[String, MethodBase]()
+  private val methodFullNameToNode   = mutable.LinkedHashMap[String, Method]()
   private val methodToParameterCount = mutable.LinkedHashMap[NameAndSignature, Int]()
 
   override def run(dstGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
@@ -65,7 +65,7 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
     signature: String,
     parameterCount: Int,
     dstGraph: DiffGraphBuilder
-  ): MethodBase = {
+  ): NewMethod = {
     val methodNode = addLineNumberInfo(
       NewMethod()
         .name(name)

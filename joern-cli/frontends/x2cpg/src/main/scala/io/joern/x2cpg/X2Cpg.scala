@@ -18,7 +18,7 @@ object X2CpgConfig {
 }
 
 trait X2CpgConfig[R] {
-  def withAdditionalInputPath(inputPath: String): R
+  def withInputPath(inputPath: String): R
   def withOutputPath(x: String): R
 }
 
@@ -81,39 +81,27 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     }
   }
 
-  /** Create a CPG for code at `inputNames` with default frontend configuration. If `outputName` exists, it is the file
-    * name of the resulting CPG. Otherwise, the CPG is held in memory.
-    */
-  def createCpg(inputNames: List[String], outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
-    val defaultWithInputPaths = inputNames
-      .foldLeft(defaultConfig) { (c, x) => c.withAdditionalInputPath(x).asInstanceOf[T] }
-    val config = if (!outputName.contains(X2CpgConfig.defaultOutputPath)) {
-      if (outputName.isEmpty) {
-        defaultWithInputPaths.withOutputPath("").asInstanceOf[T]
-      } else {
-        defaultWithInputPaths.withOutputPath(outputName.get).asInstanceOf[T]
-      }
-    } else {
-      defaultWithInputPaths
-    }
-    createCpg(config)
-  }
-
   /** Create a CPG for code at `inputName` (a single location) with default frontend configuration. If `outputName`
     * exists, it is the file name of the resulting CPG. Otherwise, the CPG is held in memory.
     */
   def createCpg(inputName: String, outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
-    createCpg(List(inputName), outputName)(defaultConfig)
+    val defaultWithInputPath = defaultConfig.withInputPath(inputName).asInstanceOf[T]
+    val config = if (!outputName.contains(X2CpgConfig.defaultOutputPath)) {
+      if (outputName.isEmpty) {
+        defaultWithInputPath.withOutputPath("").asInstanceOf[T]
+      } else {
+        defaultWithInputPath.withOutputPath(outputName.get).asInstanceOf[T]
+      }
+    } else {
+      defaultWithInputPath
+    }
+    createCpg(config)
   }
 
   /** Create a CPG in memory for file at `inputName` with default configuration.
     */
   def createCpg(inputName: String)(implicit defaultConfig: T): Try[Cpg] = createCpg(inputName, None)(defaultConfig)
 
-  /** Create a CPG in memory for files at `inputNames` with default configuration.
-    */
-  def createCpg(inputNames: List[String])(implicit defaultConfig: T): Try[Cpg] =
-    createCpg(inputNames, None)(defaultConfig)
 }
 
 object X2Cpg {
@@ -139,10 +127,9 @@ object X2Cpg {
     val builder = OParser.builder[R]
     import builder._
     OParser.sequence(
-      arg[String]("input-dirs")
-        .unbounded()
-        .text("list of source files and/or source directories")
-        .action((x, c) => c.withAdditionalInputPath(x)),
+      arg[String]("input-dir")
+        .text("source directory")
+        .action((x, c) => c.withInputPath(x)),
       opt[String]("output")
         .abbr("o")
         .text("output filename")
