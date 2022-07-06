@@ -768,7 +768,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
 
-    methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, methodReturn, annotations = annotationAsts)
+    methodAstWithAnnotations(constructorNode, thisAst :: parameterAsts, bodyAst, methodReturn, annotations = annotationAsts)
   }
 
   private def thisNodeForMethod(typeFullName: String, lineNumber: Option[Integer]): NewMethodParameterIn = {
