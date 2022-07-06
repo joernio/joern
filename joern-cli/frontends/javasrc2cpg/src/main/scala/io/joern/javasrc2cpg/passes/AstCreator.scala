@@ -309,7 +309,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameterTypes = calcParameterTypes(method, typeParamValues)
 
     val returnType =
-      Try(method.getReturnType).toOption
+      Try(method.getReturnType)
         .map(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
         .getOrElse(TypeConstants.UnresolvedType)
 
@@ -428,9 +428,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def identifierForTypeParameter(typeParameter: TypeParameter): NewIdentifier = {
     val name = typeParameter.getNameAsString
     val typeFullName = typeParameter.getTypeBound.asScala.headOption
-      .flatMap { bound =>
-        typeInfoCalc.fullName(bound)
-      }
+      .flatMap(typeInfoCalc.fullName)
       .getOrElse(TypeConstants.Object)
 
     identifierNode(name, typeFullName)
@@ -438,10 +436,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def identifierForResolvedTypeParameter(typeParameter: ResolvedTypeParameterDeclaration): NewIdentifier = {
     val name = typeParameter.getName
-    val typeFullName = Try(typeParameter.getUpperBound) match {
-      case Success(upperBound) => typeInfoCalc.fullName(upperBound)
-      case Failure(_)          => TypeConstants.Object
-    }
+    val typeFullName = Try(typeParameter.getUpperBound)
+      .map(typeInfoCalc.fullName)
+      .getOrElse(TypeConstants.Object)
     identifierNode(name, typeFullName)
   }
 
@@ -524,14 +521,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       } else {
         Seq()
       }
+      val inheritsFromTypeNames =
+        (extendedTypes ++ implementedTypes).map { typ =>
+          typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType)
+        }
+
       maybeJavaObjectType ++ (extendedTypes ++ implementedTypes)
         .map(typ => typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType))
         .toList
+      maybeJavaObjectType ++ inheritsFromTypeNames
     } else {
       List.empty[String]
     }
 
-    val resolvedType = Try(typ.resolve()).toOption
+    val resolvedType = Try(typ.resolve())
     val name         = resolvedType.map(typeInfoCalc.name).getOrElse(typ.getNameAsString)
     val typeFullName = resolvedType.map(typeInfoCalc.fullName).getOrElse(typ.getNameAsString)
 
@@ -685,15 +688,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val staticModifier =
       Option.when(decl.isStatic)(modifierNode(ModifierTypes.STATIC))
 
-    val accessModifierType = if (decl.isPublic) {
+    val accessModifierType = if (decl.isPublic)
       Some(ModifierTypes.PUBLIC)
-    } else if (decl.isPrivate) {
+    else if (decl.isPrivate)
       Some(ModifierTypes.PRIVATE)
-    } else if (decl.isProtected) {
+    else if (decl.isProtected)
       Some(ModifierTypes.PROTECTED)
-    } else {
+    else
       None
-    }
+
     val accessModifier = accessModifierType.map(modifierNode)
 
     List(staticModifier, accessModifier).flatten.map(Ast(_))
