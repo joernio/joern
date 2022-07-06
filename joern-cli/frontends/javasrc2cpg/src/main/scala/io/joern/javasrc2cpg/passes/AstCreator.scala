@@ -114,7 +114,6 @@ import io.joern.javasrc2cpg.util.Util.{
   composeMethodFullName,
   composeMethodLikeSignature,
   fieldIdentifierNode,
-  operatorCallNode,
   rootCode,
   rootType
 }
@@ -2021,14 +2020,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val typeName = TypeNodePass.fullToShortName(typeFullName)
       val code     = s"$typeName $name = ${rootCode(initializerAsts)}"
 
-      val callNode = NewCall()
-        .name(Operators.assignment)
-        .methodFullName(Operators.assignment)
-        .code(code)
-        .lineNumber(lineNumber)
-        .columnNumber(columnNumber)
-        .typeFullName(typeFullName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      val callNode = operatorCallNode(Operators.assignment, code, Some(typeFullName), lineNumber, columnNumber)
 
       val identifier          = identifierNode(name, typeFullName, line(variable), column(variable))
       val localCorrespToIdent = scopeStack.lookupVariable(name).map(_.node)
@@ -2071,12 +2063,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astForClassExpr(expr: ClassExpr): Ast = {
-    val callNode = NewCall()
-      .name(Operators.fieldAccess)
-      .typeFullName(TypeConstants.Class)
-      .methodFullName(Operators.fieldAccess)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(expr.toString)
+    val someTypeFullName = Some(TypeConstants.Class)
+    val callNode = operatorCallNode(Operators.fieldAccess, expr.toString, someTypeFullName, line(expr), column(expr))
 
     val identifierType = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.UnresolvedType)
     val identifier     = identifierNode(expr.getTypeAsString, identifierType, line(expr), column(expr))
@@ -2104,14 +2092,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.map(_.fullName))
         .getOrElse(TypeConstants.UnresolvedType)
 
-    val callNode = NewCall()
-      .name(Operators.conditional)
-      .methodFullName(Operators.conditional)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(expr.toString)
-      .lineNumber(line(expr))
-      .columnNumber(column(expr))
-      .typeFullName(typeFullName)
+    val callNode = operatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     callAst(callNode, condAst ++ thenAst ++ elseAst)
   }
@@ -2126,14 +2107,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.map(_.fullName))
         .getOrElse(TypeConstants.UnresolvedType)
 
-    val callNode = NewCall()
-      .name(Operators.fieldAccess)
-      .methodFullName(Operators.fieldAccess)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(expr.toString)
-      .lineNumber(line(expr))
-      .columnNumber(column(expr))
-      .typeFullName(typeFullName)
+    val callNode = operatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, None)
@@ -2148,14 +2122,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
-    val callNode = NewCall()
-      .name(Operators.instanceOf)
-      .methodFullName(Operators.instanceOf)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(expr.toString)
-      .lineNumber(line(expr))
-      .columnNumber(column(expr))
-      .typeFullName(TypeConstants.Boolean)
+    val booleanTypeFullName = Some(TypeConstants.Boolean)
+    val callNode = operatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
     val exprAst      = astsForExpression(expr.getExpression, None)
     val typeFullName = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.UnresolvedType)
@@ -2203,14 +2171,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .lineNumber(line(nameExpr))
           .columnNumber(column(nameExpr))
 
-        val fieldAccess = NewCall()
-          .name(Operators.fieldAccess)
-          .methodFullName(Operators.fieldAccess)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code(name)
-          .typeFullName(typeFullName)
-          .lineNumber(line(nameExpr))
-          .columnNumber(column(nameExpr))
+        val fieldAccess = operatorCallNode(Operators.fieldAccess, name, Some(typeFullName), line(nameExpr), column(nameExpr))
 
         val identifierAst = Ast(identifier)
         val fieldIdentAst = Ast(fieldIdentifier)
@@ -2260,7 +2221,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val maybeResolvedExpr = Try(expr.resolve())
     val argumentAsts      = argAstsForCall(expr, maybeResolvedExpr, expr.getArguments)
 
-    val allocFullName = Operators.alloc
     val typeFullName = typeInfoCalc
       .fullName(expr.getType)
       .orElse(expectedType.map(_.fullName))
@@ -2280,15 +2240,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val initFullName = composeMethodFullName(typeFullName, NameConstants.Init, signature)
 
-    val allocNode = NewCall()
-      .name(allocFullName)
-      .methodFullName(allocFullName)
-      .code(expr.toString)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(typeFullName)
-      .lineNumber(line(expr))
-      .columnNumber(column(expr))
-      .signature(s"$typeFullName()")
+    val allocNode = operatorCallNode(Operators.alloc, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     val initNode = NewCall()
       .name(NameConstants.Init)
@@ -2334,11 +2286,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val allocAst = Ast(allocNode)
 
-    val assignmentNode = NewCall()
-      .name(Operators.assignment)
-      .methodFullName(Operators.assignment)
-      .typeFullName(allocNode.typeFullName)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+    val assignmentNode = operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(allocNode.typeFullName))
 
     val assignmentAst = callAst(assignmentNode, List(identifierAst, allocAst))
 
@@ -2917,15 +2865,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             .map(_.fullName)
             .getOrElse(TypeConstants.UnresolvedType)
         val (regularArgs, varargs) = argsAsts.splitAt(paramCount - 1)
-        val arrayInitializer =
-          NewCall()
-            .name(Operators.arrayInitializer)
-            .methodFullName(Operators.arrayInitializer)
-            .code(Operators.arrayInitializer)
-            .typeFullName(expectedVariadicTypeFullName)
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .lineNumber(line(call))
-            .columnNumber(column(call))
+        val arrayInitializer = operatorCallNode(Operators.arrayInitializer, Operators.arrayInitializer, Some(expectedVariadicTypeFullName), line(call), column(call))
 
         val arrayInitializerAst = callAst(arrayInitializer, varargs)
 
