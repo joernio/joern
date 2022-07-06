@@ -525,10 +525,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         (extendedTypes ++ implementedTypes).map { typ =>
           typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType)
         }
-
-      maybeJavaObjectType ++ (extendedTypes ++ implementedTypes)
-        .map(typ => typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType))
-        .toList
       maybeJavaObjectType ++ inheritsFromTypeNames
     } else {
       List.empty[String]
