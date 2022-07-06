@@ -88,12 +88,7 @@ import com.github.javaparser.resolution.declarations.{
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{
-  annotationLiteralNode,
-  identifierNode,
-  modifierNode,
-  operatorCallNode
-}
+import io.joern.x2cpg.utils.NodeBuilders.{annotationLiteralNode, identifierNode, modifierNode, operatorCallNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
@@ -1392,12 +1387,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     // Everything will be on the same line as the `for` statement, but this is the most useful
     // solution for debugging.
     val lineNo = variableLocal.lineNumber
-    val varAssignNode = operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(variableLocal.typeFullName), lineNo)
+    val varAssignNode =
+      operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(variableLocal.typeFullName), lineNo)
 
     val targetNode = identifierNode(variableLocal.name, variableLocal.typeFullName, lineNo)
 
     val indexAccessTypeFullName = iterable.typeFullName.replaceAll(raw"\[]", "")
-    val indexAccess = operatorCallNode(Operators.indexAccess, PropertyDefaults.Code, Some(indexAccessTypeFullName), lineNo)
+    val indexAccess =
+      operatorCallNode(Operators.indexAccess, PropertyDefaults.Code, Some(indexAccessTypeFullName), lineNo)
 
     val indexAccessIdentifier = identifierNode(iterable.name, iterable.typeFullName, lineNo)
     val indexAccessIndex      = identifierNode(idxLocal.name, idxLocal.typeFullName, lineNo)
@@ -1541,7 +1538,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForIterableForEachItemAssign(iteratorLocalNode: NewLocal, variableLocal: NewLocal): Ast = {
     val lineNo          = variableLocal.lineNumber
     val forVariableType = variableLocal.typeFullName
-    val varLocalAssignNode = operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
+    val varLocalAssignNode =
+      operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
     val varLocalAssignIdentifier = identifierNode(variableLocal.name, variableLocal.typeFullName, lineNo)
 
     val iterNextCallName      = "next"

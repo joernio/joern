@@ -10,8 +10,6 @@ object NodeBuilders {
       .name(name)
       .code(name)
 
-  def callNode()
-
   def identifierNode(
     name: String,
     typeFullName: String,
