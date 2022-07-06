@@ -9,7 +9,7 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-object Nodes {
+object Util {
   def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
     nodes
       .NewCall()

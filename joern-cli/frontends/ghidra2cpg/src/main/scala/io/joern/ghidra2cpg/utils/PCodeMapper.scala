@@ -4,7 +4,7 @@ import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Func
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
-import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
+import io.joern.ghidra2cpg.utils.Util.{createCallNode, createIdentifier, createLiteral}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
