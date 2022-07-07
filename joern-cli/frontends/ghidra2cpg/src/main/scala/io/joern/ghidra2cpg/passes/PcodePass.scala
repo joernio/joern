@@ -291,6 +291,11 @@ class PcodePass(
     handleBody(diffGraphBuilder, function, methodNode, blockNode)
     diffGraphBuilder.absorb(localDiffGraph)
   }
+  def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
+    diffGraphBuilder.addNode(argument)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
+  }
 
   override def generateParts(): Array[Function] = functions.toArray
 }
