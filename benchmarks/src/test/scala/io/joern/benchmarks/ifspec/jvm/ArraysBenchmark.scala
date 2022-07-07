@@ -62,7 +62,7 @@ class ArraysBenchmark6 extends IfspecArraysFixture(JVM_EXT, 6) {
 // ArraySizeStrongUpdate
 class ArraysBenchmark7 extends IfspecArraysFixture(JVM_EXT, 7) {
 
-  s"Arrays$benchmarkNo" should "report secure" taggedAs (Arrays, ExplicitFlows)  in {
+  s"Arrays$benchmarkNo" should "report secure" taggedAs (Arrays, ExplicitFlows) in {
     assertIsSecure(cpg.fieldAccess.code(".*secret"), cpg.call(".*println.*").argument(1))
   }
 

@@ -5,7 +5,7 @@ dependsOn(Projects.console, Projects.console % "test->test", Projects.c2cpg, Pro
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"             %% "requests"          % "0.7.1",
-  "com.github.scopt"        %% "scopt"             % "4.0.1",
+  "com.github.scopt"        %% "scopt"             % "4.1.0",
   "com.github.pathikrit"    %% "better-files"      % "3.9.1",
   "io.circe"                %% "circe-generic"     % "0.14.2",
   "org.reflections"          % "reflections"       % "0.10.2",
