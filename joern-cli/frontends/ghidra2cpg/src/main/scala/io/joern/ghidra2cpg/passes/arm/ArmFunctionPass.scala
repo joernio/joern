@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.passes.arm
 
 import ghidra.program.model.listing.{Function, Program}
-import io.joern.ghidra2cpg.Decompiler
+import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.ArmProcessor
 import io.joern.ghidra2cpg.utils.Util.{checkIfExternal, createMethodNode, createReturnNode}

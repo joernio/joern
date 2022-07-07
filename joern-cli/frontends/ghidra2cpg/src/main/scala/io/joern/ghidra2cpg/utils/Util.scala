@@ -1,7 +1,8 @@
 package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{Function, Program}
-import io.joern.ghidra2cpg.{Decompiler, Types}
+import io.joern.ghidra2cpg.utils.Util._
+import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
