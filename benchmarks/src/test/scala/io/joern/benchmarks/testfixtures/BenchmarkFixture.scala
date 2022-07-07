@@ -30,9 +30,9 @@ abstract class BenchmarkFixture(
     with Matchers
     with BeforeAndAfterAll {
 
-  val semanticsFile: String = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
-  lazy val defaultSemantics: Semantics           = Semantics.fromList(new Parser().parseFile(semanticsFile))
-  implicit val resolver: ICallResolver           = NoResolve
+  val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
+  lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
+  implicit val resolver: ICallResolver = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
   private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
@@ -146,9 +146,7 @@ class BenchmarkCpgContext {
         }
       case None =>
         Failure(
-          new RuntimeException(
-            s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'"
-          )
+          new RuntimeException(s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'")
         )
     }
     applyDefaultOverlays(cpg.get)

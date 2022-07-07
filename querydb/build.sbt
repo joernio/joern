@@ -7,14 +7,14 @@ dependsOn(
   Projects.macros,
   Projects.ghidra2cpg,
   Projects.ghidra2cpg % "test->test",
-  Projects.c2cpg      % "test->test",
+  Projects.c2cpg      % "test->test"
 )
 
 libraryDependencies ++= Seq(
   "com.lihaoyi"          %% "sourcecode"   % "0.2.8",
   "com.lihaoyi"          %% "upickle"      % "1.6.0",
   "com.github.pathikrit" %% "better-files" % "3.9.1",
-  "com.github.scopt"     %% "scopt"        % "4.0.1",
+  "com.github.scopt"     %% "scopt"        % "4.1.0",
   "org.scalatest"        %% "scalatest"    % Versions.scalatest % Test
 )
 

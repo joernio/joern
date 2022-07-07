@@ -39,7 +39,7 @@ object BenchmarkTags {
   object Simple           extends Tag("Simple")
   // Additional tags for JInfoFlow
   object Context extends Tag("Context")
-  object Events   extends Tag("Event")
+  object Events  extends Tag("Event")
 
   def TAGS: Seq[String] = Seq(
     Aliasing.name,
@@ -63,7 +63,7 @@ object BenchmarkTags {
     Library.name,
     Simple.name,
     Context.name,
-    Events.name,
+    Events.name
   )
 
   val confusionMatrix = mutable.Map.empty[String, Array[Int]]
