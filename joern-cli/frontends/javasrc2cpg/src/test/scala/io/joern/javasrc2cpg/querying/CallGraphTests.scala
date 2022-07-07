@@ -1,24 +1,23 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 
-class CallGraphTests extends JavaSrcCodeToCpgFixture {
+class CallGraphTests extends JavaSrcCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code = """
-       class Foo {
-        int add(int x, int y) {
-         return x + y;
-        }
-        int main(int argc, char argv) {
-         System.out.println(add(1+2, 3));
-        }
-       }
+  lazy val cpg = code(
     """
+       |class Foo {
+       | int add(int x, int y) {
+       |  return x + y;
+       | }
+       | int main(int argc, char argv) {
+       |  System.out.println(add(1+2, 3));
+       | }
+       |}
+    """.stripMargin
+  )
 
   "should find that add is called by main" in {
     cpg.method.name("add").caller.name.toSetMutable shouldBe Set("main")
