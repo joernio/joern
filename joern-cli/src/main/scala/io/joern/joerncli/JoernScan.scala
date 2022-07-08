@@ -17,7 +17,8 @@ import org.json4s.{Formats, NoTypeHints}
 import scala.jdk.CollectionConverters._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "latest"
+  val defaultDbVersion: String    = "latest"
+  val defaultDumpQueryDestination = "/tmp/querydb.json"
 }
 
 case class JoernScanConfig(
@@ -25,7 +26,7 @@ case class JoernScanConfig(
   overwrite: Boolean = false,
   store: Boolean = false,
   dump: Boolean = false,
-  dumpDestination: String = "/tmp/querydb.json",
+  dumpDestination: String = JoernScanConfig.defaultDumpQueryDestination,
   listQueryNames: Boolean = false,
   updateQueryDb: Boolean = false,
   queryDbVersion: String = JoernScanConfig.defaultDbVersion,
@@ -59,8 +60,8 @@ object JoernScan extends App with BridgeBase {
       .text("Store graph changes made by scanner")
 
     opt[Unit]("dump")
-      .action((_, c) => c.copy(dump = true))
-      .text("Dump available queries to a temporary file")
+      .action((_, c) => c.copy(dump = true, dumpDestination = JoernScanConfig.defaultDumpQueryDestination))
+      .text(s"Dump available queries to a file at `${JoernScanConfig.defaultDumpQueryDestination}`")
 
     opt[String]("dump-to")
       .action((x, c) => c.copy(dumpDestination = x, dump = true))
