@@ -39,10 +39,14 @@ case class JoernScanConfig(
 
 object JoernScan extends App with BridgeBase {
 
+  val implementationVersion = getClass.getPackage.getImplementationVersion
+
   val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
 
   val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
-    head("Creates a code property graph and scans it with queries from installed bundles")
+    head(
+      s"Creates a code property graph and scans it with queries from installed bundles.\nVersion: `$implementationVersion`"
+    )
     help("help")
       .text("Prints this usage text")
 
