@@ -3025,7 +3025,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.map(_.fullName))
         .getOrElse(TypeConstants.UnresolvedType)
 
-    val identifier = identifierNode(NameConstants.Super, typeFullName, line(superExpr), column(superExpr))
+    val identifier =
+      identifierNode(NameConstants.Super, typeFullName, line(superExpr), column(superExpr))
+        .name(NameConstants.This) // Necessary for closed source dataflow
 
     Ast(identifier)
   }
