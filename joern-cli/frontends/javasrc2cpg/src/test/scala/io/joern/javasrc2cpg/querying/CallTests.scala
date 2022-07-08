@@ -156,8 +156,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "call to super method" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class Foo {
         |  @Override
         |  public String toString() {
