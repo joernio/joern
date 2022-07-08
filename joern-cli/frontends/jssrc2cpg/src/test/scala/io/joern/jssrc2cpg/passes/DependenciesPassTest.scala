@@ -13,7 +13,7 @@ class DependenciesPassTest extends AbstractPassTest {
   "DependenciesPass" should {
 
     "ignore empty package.json" in {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
         json.write("")
         PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
@@ -21,7 +21,7 @@ class DependenciesPassTest extends AbstractPassTest {
     }
 
     "ignore package.json without any useful content" in {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
         json.write("""
             |{
@@ -37,7 +37,7 @@ class DependenciesPassTest extends AbstractPassTest {
     }
 
     "ignore package.json without dependencies" in {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
         json.write("{}")
         PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
@@ -132,7 +132,7 @@ class DependenciesPassTest extends AbstractPassTest {
       packageJsonContent: String,
       packageJsonName: String = PackageJsonParser.PACKAGE_JSON_FILENAME
     )(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val file = dir / "file.js"
         val json = dir / packageJsonName
         file.write(code)
