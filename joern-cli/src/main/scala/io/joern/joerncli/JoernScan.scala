@@ -17,7 +17,8 @@ import org.json4s.{Formats, NoTypeHints}
 import scala.jdk.CollectionConverters._
 
 object JoernScanConfig {
-  val defaultDbVersion: String = "latest"
+  val defaultDbVersion: String    = "latest"
+  val defaultDumpQueryDestination = "/tmp/querydb.json"
 }
 
 case class JoernScanConfig(
@@ -25,6 +26,7 @@ case class JoernScanConfig(
   overwrite: Boolean = false,
   store: Boolean = false,
   dump: Boolean = false,
+  dumpDestination: String = JoernScanConfig.defaultDumpQueryDestination,
   listQueryNames: Boolean = false,
   updateQueryDb: Boolean = false,
   queryDbVersion: String = JoernScanConfig.defaultDbVersion,
@@ -58,8 +60,12 @@ object JoernScan extends App with BridgeBase {
       .text("Store graph changes made by scanner")
 
     opt[Unit]("dump")
-      .action((_, c) => c.copy(dump = true))
-      .text("Dump available queries to file")
+      .action((_, c) => c.copy(dump = true, dumpDestination = JoernScanConfig.defaultDumpQueryDestination))
+      .text(s"Dump available queries to a file at `${JoernScanConfig.defaultDumpQueryDestination}`")
+
+    opt[String]("dump-to")
+      .action((x, c) => c.copy(dumpDestination = x, dump = true))
+      .text("Dump available queries to a specific file")
 
     opt[Unit]("list-query-names")
       .action((_, c) => c.copy(listQueryNames = true))
@@ -100,7 +106,7 @@ object JoernScan extends App with BridgeBase {
 
   private def run(config: JoernScanConfig): Unit = {
     if (config.dump) {
-      dumpQueriesAsJson()
+      dumpQueriesAsJson(config.dumpDestination)
     } else if (config.listQueryNames) {
       listQueryNames()
     } else if (config.listLanguages) {
@@ -112,12 +118,10 @@ object JoernScan extends App with BridgeBase {
     }
   }
 
-  private def dumpQueriesAsJson(): Unit = {
+  private def dumpQueriesAsJson(outFileName: String): Unit = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
     implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
-    // TODO allow specifying file from the outside and make this portable
-    val outFileName = "/tmp/querydb.json"
     better.files
       .File(outFileName)
       .write(Serialization.write(queryDb.allQueries))
