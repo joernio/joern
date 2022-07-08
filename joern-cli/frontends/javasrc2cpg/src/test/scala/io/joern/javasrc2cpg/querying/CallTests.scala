@@ -154,6 +154,28 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Object[])"
     }
   }
+
+  "call to super method" should {
+    val cpg = code("""
+        |class Foo {
+        |  @Override
+        |  public String toString() {
+        |    return super.toString();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a `super` receiver with fields correctly set" in {
+      val superReceiver = cpg.call.name("toString").receiver.collectAll[Identifier].head
+      superReceiver.name shouldBe "this"
+      superReceiver.code shouldBe "super"
+      superReceiver.typeFullName shouldBe "java.lang.Object"
+      superReceiver.order shouldBe 1
+      superReceiver.argumentIndex shouldBe 0
+      superReceiver.lineNumber shouldBe Some(5)
+      superReceiver.columnNumber shouldBe Some(12)
+    }
+  }
 }
 
 class CallTests extends JavaSrcCodeToCpgFixture {
