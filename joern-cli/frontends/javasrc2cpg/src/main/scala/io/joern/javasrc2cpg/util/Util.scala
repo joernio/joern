@@ -51,37 +51,4 @@ object Util {
       }
     }
   }
-
-  // TODO: Move to x2cpg once order setting is no longer required
-  // TODO: Switch to this for all operators. Some were moved in https://github.com/joernio/joern/pull/1437,
-  // but that PR was long enough as is.
-  def operatorCallNode(
-    name: String,
-    code: String,
-    typeFullName: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewCall = {
-    NewCall()
-      .name(name)
-      .methodFullName(name)
-      .code(code)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(typeFullName.getOrElse(TypeConstants.UnresolvedType))
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def fieldIdentifierNode(
-    name: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .canonicalName(name)
-      .code(name)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
 }
