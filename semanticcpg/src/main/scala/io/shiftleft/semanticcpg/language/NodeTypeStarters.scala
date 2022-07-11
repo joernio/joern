@@ -59,6 +59,17 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
   def comment(code: String): Traversal[Comment] =
     comment.has(Properties.CODE -> code)
 
+  /** Traverse to all config files
+    */
+  @Doc(info = "All config files")
+  def configFile: Traversal[ConfigFile] =
+    InitialTraversal.from[ConfigFile](cpg.graph, NodeTypes.CONFIG_FILE)
+
+  /** Shorthand for `cpg.configFile.name(name)`
+    */
+  def configFile(name: String): Traversal[ConfigFile] =
+    configFile.name(name)
+
   @Doc(info = "All control structures (source-based frontends)")
   def controlStructure: Traversal[ControlStructure] =
     InitialTraversal.from[ControlStructure](cpg.graph, NodeTypes.CONTROL_STRUCTURE)
