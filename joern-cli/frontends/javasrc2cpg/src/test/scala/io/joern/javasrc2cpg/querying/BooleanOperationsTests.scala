@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class BooleanOperationsTests extends JavaSrcCode2CpgFixture {
 
-  lazy val cpg = code(
-    """
+  lazy val cpg = code("""
       | public class Foo {
       |   public static void main(String[] args) {
       |     boolean a = 1 == 2;
@@ -24,8 +23,7 @@ class BooleanOperationsTests extends JavaSrcCode2CpgFixture {
       |     boolean k = true;
       |   }
       | }
-      |""".stripMargin
-  )
+      |""".stripMargin)
 
   val vars = Seq(
     ("a", "boolean"),

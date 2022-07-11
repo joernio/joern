@@ -26,8 +26,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   }
 
   "a simple single argument constructor" should {
-    lazy val fooCpg = code(
-      """
+    lazy val fooCpg = code("""
         |class Foo {
         |  int x;
         |
@@ -35,8 +34,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         |    this.x = x;
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     "create the correct Ast for the constructor" in {
       fooCpg.method.name("Foo").l match {
         case List(cons: Method) =>

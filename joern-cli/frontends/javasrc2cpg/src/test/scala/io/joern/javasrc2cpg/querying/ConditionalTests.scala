@@ -8,16 +8,14 @@ import io.shiftleft.semanticcpg.language._
 class ConditionalTests extends JavaSrcCode2CpgFixture {
 
   "should parse ternary expression" in {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |class Foo {
         |  public int foo(int x) {
         |    int y = (x > 5) ? 10 : 2 + 20;
         |    return y;
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     val List(ternaryExpr: Call)                                  = cpg.method.name("foo").call(Operators.conditional).l
     val List(condition: Call, thenExpr: Literal, elseExpr: Call) = ternaryExpr.argument.l
@@ -33,16 +31,14 @@ class ConditionalTests extends JavaSrcCode2CpgFixture {
   }
 
   "should find unresolved field-access args" in {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |class Foo {
         |  public int[] bar(boolean allowNull) {
         |    int[] y = allowNull ? this.cache : this.cacheNoNull;
         |    return y;
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     val List(conditional: Call) = cpg.method.name("bar").call(Operators.conditional).l
     val List(condition: Identifier, thenExpr: Call, elseExpr: Call) = conditional.argument.l
 
@@ -57,15 +53,13 @@ class ConditionalTests extends JavaSrcCode2CpgFixture {
   }
 
   "should be able to parse nested conditionals" in {
-    lazy val cpg = code(
-    """
+    lazy val cpg = code("""
       |class Foo {
       |  public int baz(int input) {
       |    return (input > 10) ? 55 : ((input < 15) ? 42 : 39);
       |  }
       |}
-      |""".stripMargin
-    )
+      |""".stripMargin)
     val method = cpg.method.name("baz").head
     method.call(Operators.conditional).size shouldBe 2
     val List(parentC: Call, childC: Call) = method.call(Operators.conditional).l

@@ -8,15 +8,13 @@ import io.shiftleft.semanticcpg.language._
 class ArrayTests extends JavaSrcCode2CpgFixture {
 
   "array initializer expressions" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |class Foo {
         |  public void foo() {
         |    int[] x = {0, 1, 2};
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     "initialize array with constant initialization expression" in {
       def m = cpg.method(".*foo.*")
 
@@ -35,15 +33,13 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
   }
 
   "array initializers without constant initialization expressions" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |class Foo {
         |  public void bar() {
         |    int[][] x = new int[5][2];
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "initialize an array with empty initialization expression" in {
       def m = cpg.method(".*bar.*")
@@ -60,8 +56,7 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
   }
 
   "array index accesses" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |class Foo {
         |  public void baz() {
         |    int[] x = new int[2];
@@ -69,9 +64,7 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
         |    x[1] = x[0] + 2;
         |  }
         |}
-        |""".stripMargin
-
-    )
+        |""".stripMargin)
 
     "be handled correctly" in {
       def m = cpg.method(".*baz.*")

@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class AnnotationTests extends JavaSrcCode2CpgFixture {
   "normal value annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.NormalAnnotation;
         |public class SomeClass {
         |
@@ -16,8 +15,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head
@@ -47,8 +45,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "single annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.SingleAnnotation;
         |public class SomeClass {
         |
@@ -57,8 +54,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head
@@ -88,8 +84,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "function marker annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.MarkerAnnotation;
         |public class SomeClass {
         |
@@ -98,8 +93,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head
       annotationNode.code shouldBe "@MarkerAnnotation()"
@@ -113,8 +107,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "class marker annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.MarkerAnnotation;
         |public class SomeClass {
         |
@@ -123,8 +116,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test annotation node properties" in {
       import scala.jdk.CollectionConverters._
@@ -140,8 +132,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "parameter annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.MarkerAnnotation;
         |public class SomeClass {
         |
@@ -149,8 +140,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").parameter.name("x").annotation.head
       annotationNode.code shouldBe "@MarkerAnnotation"
@@ -160,14 +150,12 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "field annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.MarkerAnnotation;
         |public class SomeClass {
         |  @MarkerAnnotation int x;
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test annotation node properties" in {
       val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.head
@@ -178,8 +166,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "function value annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.NormalAnnotation;
         |public class SomeClass {
         |
@@ -188,8 +175,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head
       annotationNode.code shouldBe "@NormalAnnotation(value = 2)"
@@ -206,8 +192,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "function value annotations with array initializers" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.NormalAnnotation;
         |public class SomeClass {
         |
@@ -216,8 +201,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head
       annotationNode.code shouldBe "@NormalAnnotation(value = { \"aaa\", \"bbb\" })"
@@ -254,8 +238,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
   }
 
   "nested annotations" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import some.NormalAnnotation;
         |import some.OtherAnnotation;
         |public class SomeClass {
@@ -265,8 +248,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |
         |  }
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head

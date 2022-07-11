@@ -9,9 +9,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
 
-
-  lazy val cpg: Cpg = code(
-    """
+  lazy val cpg: Cpg = code("""
       | class Foo {
       |   static void main(int argc, char argv) {
       |     int a = 1;
@@ -22,8 +20,7 @@ class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
       |     int f = b / a;
       |   }
       | }
-      |""".stripMargin
-  )
+      |""".stripMargin)
 
   val vars = Seq(("a", "int"), ("b", "int"), ("c", "int"), ("d", "int"), ("e", "int"), ("f", "int"))
 

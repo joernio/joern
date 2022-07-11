@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CallGraphTests extends JavaSrcCode2CpgFixture {
 
-  lazy val cpg = code(
-    """
+  lazy val cpg = code("""
        |class Foo {
        | int add(int x, int y) {
        |  return x + y;
@@ -16,8 +15,7 @@ class CallGraphTests extends JavaSrcCode2CpgFixture {
        |  System.out.println(add(1+2, 3));
        | }
        |}
-    """.stripMargin
-  )
+    """.stripMargin)
 
   "should find that add is called by main" in {
     cpg.method.name("add").caller.name.toSetMutable shouldBe Set("main")
