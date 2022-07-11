@@ -47,6 +47,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
 
   def jvm: Frontend    = new Frontend("jvm", Languages.JAVA, "Java/Dalvik Bytecode Frontend (based on SOOT's jimple)")
   def ghidra: Frontend = new Frontend("ghidra", Languages.GHIDRA, "ghidra reverse engineering frontend")
+  def kotlin: SourceBasedFrontend =
+    new SourceBasedFrontend("kotlin", Languages.KOTLIN, "Kotlin Source Frontend", "kotlin")
 
   def python: Frontend     = new Frontend("python", Languages.PYTHON, "Python Source Frontend")
   def golang: Frontend     = new Frontend("golang", Languages.GOLANG, "Golang Source Frontend")
