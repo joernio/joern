@@ -371,7 +371,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ExpressionStatement          => astForExpression(x.expression, order)
 //      case x: VariableDeclaration          => astForVarDecl(x, order) // TODO: This is not a statement
       case x: EmitStatement                => Ast()
-      case x: ForStatement                 => Ast()
+      case x: ForStatement                 => astForForStatement(x, order)
       case x: IfStatement                  => astForIfStatement(x, order)
       case x: ReturnStatement              => astForReturn(x, order)
       case x: VariableDeclarationStatement => astForVarDeclStmt(x, order)
@@ -625,6 +625,36 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
     }
   }
+
+  private def astForForStatement(statement: ForStatement, order: Int): Ast = {
+    val initial = astForStatement(statement.initExpression, 1)
+    val conditionExpr = astForExpression(statement.conditionExpression, 2)
+    val loopExpr = astForStatement(statement.loopExpression, 3)
+    val body = {
+      statement.body match {
+        case x: Block => astForBody(x, 4)
+        case x: BaseASTNode => astForExpression(x, 4)
+      }
+    }
+    val code = "for (" + initial.root.map(_.properties(PropertyNames.CODE)).mkString("") +"; "+ conditionExpr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "; " + loopExpr.root.map(_.properties(PropertyNames.CODE)).mkString("")+")"
+    val forNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.FOR)
+      .order(order)
+      .argumentIndex(order)
+      .code(code)
+ val ast = Ast(forNode)
+    .withChild(initial)
+    .withChild(conditionExpr)
+    .withChild(loopExpr)
+    .withChild(body)
+
+    conditionExpr.root match {
+      case Some(r) => ast.withConditionEdge(forNode, r)
+      case None => ast
+    }
+
+  }
+
   private def astForNumberLiteral(numberLiteral: NumberLiteral, order: Int): Ast = {
     var code         = ""
     val typeFullName = registerType(numberLiteral.number)
@@ -643,7 +673,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForUnaryOperation(operation: UnaryOperation, order: Int): Ast = {
-//    println(operation.subExpression)
     val subExpression = astForExpression(operation.subExpression, 1)
     val operatorName = if (operation.isPrefix) operation.operator match {
       case "!"  => Operators.logicalNot
@@ -708,7 +737,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val rht = astForExpression(operation.right, 2)
     val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
-//    println(order)
     val callNode = NewCall()
       .name(operatorName)
       .methodFullName(operatorName)
@@ -857,6 +885,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .methodFullName(Operators.fieldAccess)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .order(order)
+        .argumentIndex(order)
       val thisID = Ast(NewIdentifier()
         .name("this")
         .code("this")
@@ -886,22 +915,24 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForMemberAccess(memberAccess: MemberAccess, order : Int): Ast = {
     val expr = astForExpression(memberAccess.expression, order)
-    val name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
+    val name = if (expr.root.map(_.properties(PropertyNames.NAME)).mkString("").equals(Operators.fieldAccess) ) {
+     expr.nodes(2).properties(PropertyNames.CANONICAL_NAME)+""
+    } else {
+      expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
+    }
     val fieldAccess = NewCall()
       .name(memberAccess.memberName)
-      .methodFullName(Operators.fieldAccess)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(name+"."+memberAccess.memberName)
       .argumentIndex(order)
       .order(order)
-    val fieldIdentifierNode = Ast(NewFieldIdentifier()
-      .canonicalName(name)
-      .argumentIndex(2)
-      .order(2)
-      .code(name))
+//    val fieldIdentifierNode = Ast(NewFieldIdentifier()
+//      .canonicalName(name)
+//      .argumentIndex(2)
+//      .order(2)
+//      .code(name))
     Ast(fieldAccess)
       .withChild(expr)
-      .withChild(fieldIdentifierNode)
+//      .withChild(fieldIdentifierNode)
   }
 
   private def astForBooleanLiteral(literal: BooleanLiteral, order : Int): Ast = {
