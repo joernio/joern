@@ -103,4 +103,210 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
       sink.reachableByFlows(source).toSeq should not be Seq()
     }
   }
+
+  "CPG for code with `if` control expressions without blocks" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun doSomething(p: Int): Int {
+        |  val someVal = p
+        |
+        |  val afterThen = if (p % 2 == 0) someVal else 42
+        |  println(afterThen)
+        |
+        |  val afterElse = if (p % 2 == 0) 42 else someVal
+        |  println(afterElse)
+        |
+        |  return 41
+        |}
+        |
+        |fun main() {
+        |  val dicey = Random.nextInt()
+        |  doSomething(dicey)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the `then` branch" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterThen")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through the `else` branch" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterElse")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with `if` control expressions with blocks" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun doSomething(p: Int): Int {
+        |  val someVal = p
+        |
+        |  val afterThen = if (p % 2 == 0) { someVal } else { 42 }
+        |  println(afterThen)
+        |
+        |  val afterElse = if (p % 2 == 0) { 42 } else { someVal }
+        |  println(afterElse)
+        |
+        |  return 41
+        |}
+        |
+        |fun main() {
+        |  val dicey = Random.nextInt()
+        |  doSomething(dicey)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the `then` branch" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterThen")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through the `else` branch" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterElse")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with `try` control expressions" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun doSomething(p: Int): Int {
+        |  val someVal = p
+        |
+        |  val afterBody = try { someVal } catch(e: Exception) { 0 }
+        |  println(afterBody)
+        |
+        |  val afterCatch = try { 41 / 0 } catch(e: Exception) { someVal }
+        |  println(afterCatch)
+        |
+        |  return 41
+        |}
+        |
+        |fun main() {
+        |  val dicey = Random.nextInt()
+        |  doSomething(dicey)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the `try` branch" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterBody")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through the `catch` branch" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterCatch")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with `if` control structures" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun doSomething(p: Int): Int {
+        |  var tickOne = 0
+        |  if (p % 2 == 0) {
+        |    tickOne = p
+        |  } else {
+        |    println("NOPNOPNOPNOPNOPNOPNOPNOPNOPNOP")
+        |  }
+        |  val afterIfFromThen = tickOne
+        |  println(afterIfFromThen)
+        |
+        |  var tickTwo = 0
+        |  if (p % 2 == 0) {
+        |    println("NOPNOPNOPNOPNOPNOPNOPNOPNOPNOP")
+        |  } else {
+        |    tickTwo = p
+        |  }
+        |  val afterIfFromElse = tickTwo
+        |  println(afterIfFromElse)
+        |
+        |  return 41
+        |}
+        |
+        |fun main() {
+        |  val dicey = Random.nextInt()
+        |  doSomething(dicey)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through `then`-block of `if` control structure" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterIfFromThen")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through `else`-block of `if` control structure" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterIfFromElse")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with `try` control structures" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import kotlin.random.Random
+        |
+        |fun doSomething(p: Int): Int {
+        |  var tickOne = 0
+        |  try {
+        |    0x41414141 / 0
+        |  } catch (e: Exception) {
+        |    tickOne = p
+        |  }
+        |  val afterTryFromCatch = tickOne
+        |  println(afterTryFromCatch)
+        |
+        |  var tickTwo = 0
+        |  try {
+        |    tickTwo = p
+        |    0x41414141 / 0
+        |  } catch (e: Exception) {
+        |    println("NOPNOPNOPNOPNOPNOPNOPNOPNOPNOP")
+        |  }
+        |  val afterTryFromBody = tickTwo
+        |  println(afterTryFromBody)
+        |
+        |  return 41
+        |}
+        |
+        |fun main() {
+        |  val dicey = Random.nextInt()
+        |  doSomething(dicey)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through `catch`-block of `try` control structure" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterTryFromCatch")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through body of `try` control structure" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterTryFromBody")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
 }
