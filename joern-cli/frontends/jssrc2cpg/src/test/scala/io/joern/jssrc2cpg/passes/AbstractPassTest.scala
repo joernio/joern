@@ -34,14 +34,6 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
     }
   }
 
-  protected def getDependencies(cpg: Cpg): Traversal[Node] = {
-    TraversalSource(cpg.graph).label(NodeTypes.DEPENDENCY)
-  }
-
-  protected def getImports(cpg: Cpg): Traversal[Node] = {
-    TraversalSource(cpg.graph).label(NodeTypes.IMPORT)
-  }
-
   protected implicit class NodeWrapper[T <: Node](nodes: Traversal[T]) {
     def expandAst(filterLabels: String*): Traversal[T] = {
       expand(EdgeTypes.AST, filterLabels: _*)

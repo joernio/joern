@@ -4584,22 +4584,22 @@ class AstCreationPassTest extends AbstractPassTest {
 
   "AST generation for dependencies" should {
     "have no dependencies if none are declared at all" in AstFixture("var x = 1;") { cpg =>
-      getDependencies(cpg).l.size shouldBe 0
+      cpg.dependency.l.size shouldBe 0
     }
 
     "have correct dependencies (imports)" in AstFixture("""
         |import {a} from "depA";
         |import {b} from "depB";
         |""".stripMargin) { cpg =>
-      getDependencies(cpg).checkNodeCount(2)
+      val List(depA, depB) = cpg.dependency.l
 
-      def depA = getDependencies(cpg).filter(PropertyNames.NAME, "a")
-      depA.checkNodeCount(1)
-      depA.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depA")
+      depA.name shouldBe "a"
+      depA.version shouldBe "import"
+      depA.dependencyGroupId shouldBe Some("depA")
 
-      def depB = getDependencies(cpg).filter(PropertyNames.NAME, "b")
-      depB.checkNodeCount(1)
-      depB.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depB")
+      depB.name shouldBe "b"
+      depB.version shouldBe "import"
+      depB.dependencyGroupId shouldBe Some("depB")
     }
 
     "have correct import nodes" in AstFixture("""
@@ -4608,7 +4608,7 @@ class AstCreationPassTest extends AbstractPassTest {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
-      val List(a: Import, b: Import, c: Import, d: Import) = getImports(cpg).l
+      val List(a: Import, b: Import, c: Import, d: Import) = cpg.staticImport.l
       a.code shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Some("depA")
       a.importedAs shouldBe Some("a")
@@ -4632,17 +4632,14 @@ class AstCreationPassTest extends AbstractPassTest {
         |const a = require("depA");
         |const b = require("depB");
         |""".stripMargin) { cpg =>
-      getDependencies(cpg).checkNodeCount(2)
+      val List(depA, depB) = cpg.dependency.l
 
-      def depA = getDependencies(cpg).filter(PropertyNames.NAME, "a")
-      depA.checkNodeCount(1)
-      depA.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depA")
-      depA.checkProperty(PropertyNames.VERSION, "require")
-
-      def depB = getDependencies(cpg).filter(PropertyNames.NAME, "b")
-      depB.checkNodeCount(1)
-      depB.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depB")
-      depB.checkProperty(PropertyNames.VERSION, "require")
+      depA.name shouldBe "a"
+      depA.dependencyGroupId shouldBe Some("depA")
+      depA.version shouldBe "require"
+      depB.name shouldBe "b"
+      depB.dependencyGroupId shouldBe Some("depB")
+      depB.version shouldBe "require"
     }
 
     "have correct dependencies (strange requires)" in AstFixture("""
@@ -4652,57 +4649,50 @@ class AstCreationPassTest extends AbstractPassTest {
         |var { d, e } = require('depD');
         |var [ f, g ] = require('depE');
         |""".stripMargin) { cpg =>
-      getDependencies(cpg).checkNodeCount(7)
+      val List(depA, depB, depC, depD, depE, depF, depG) = cpg.dependency.l
 
-      def depA = getDependencies(cpg).filter(PropertyNames.NAME, "_")
-      depA.checkNodeCount(1)
-      depA.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depA")
-      depA.checkProperty(PropertyNames.VERSION, "require")
+      depA.name shouldBe "_"
+      depA.dependencyGroupId shouldBe Some("depA")
+      depA.version shouldBe "require"
 
-      def depB = getDependencies(cpg).filter(PropertyNames.NAME, "b")
-      depB.checkNodeCount(1)
-      depB.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depB")
-      depB.checkProperty(PropertyNames.VERSION, "require")
+      depB.name shouldBe "b"
+      depB.dependencyGroupId shouldBe Some("depB")
+      depB.version shouldBe "require"
 
-      def depC = getDependencies(cpg).filter(PropertyNames.NAME, "c")
-      depC.checkNodeCount(1)
-      depC.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depC")
-      depC.checkProperty(PropertyNames.VERSION, "require")
+      depC.name shouldBe "c"
+      depC.dependencyGroupId shouldBe Some("depC")
+      depC.version shouldBe "require"
 
-      def depD = getDependencies(cpg).filter(PropertyNames.NAME, "d")
-      depD.checkNodeCount(1)
-      depD.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depD")
-      depD.checkProperty(PropertyNames.VERSION, "require")
+      depD.name shouldBe "d"
+      depD.dependencyGroupId shouldBe Some("depD")
+      depD.version shouldBe "require"
 
-      def depE = getDependencies(cpg).filter(PropertyNames.NAME, "e")
-      depE.checkNodeCount(1)
-      depE.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depD")
-      depE.checkProperty(PropertyNames.VERSION, "require")
+      depE.name shouldBe "e"
+      depE.dependencyGroupId shouldBe Some("depD")
+      depE.version shouldBe "require"
 
-      def depF = getDependencies(cpg).filter(PropertyNames.NAME, "f")
-      depF.checkNodeCount(1)
-      depF.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depE")
-      depF.checkProperty(PropertyNames.VERSION, "require")
+      depF.name shouldBe "f"
+      depF.dependencyGroupId shouldBe Some("depE")
+      depF.version shouldBe "require"
 
-      def depG = getDependencies(cpg).filter(PropertyNames.NAME, "g")
-      depG.checkNodeCount(1)
-      depG.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depE")
-      depG.checkProperty(PropertyNames.VERSION, "require")
+      depG.name shouldBe "g"
+      depG.dependencyGroupId shouldBe Some("depE")
+      depG.version shouldBe "require"
     }
 
     "have correct dependencies (mixed)" in AstFixture("""
         |import {a} from "depA";
         |const b = require("depB");
         |""".stripMargin) { cpg =>
-      getDependencies(cpg).checkNodeCount(2)
+      val List(depA, depB) = cpg.dependency.l
 
-      def depA = getDependencies(cpg).filter(PropertyNames.NAME, "a")
-      depA.checkNodeCount(1)
-      depA.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depA")
+      depA.name shouldBe "a"
+      depA.dependencyGroupId shouldBe Some("depA")
+      depA.version shouldBe "import"
 
-      def depB = getDependencies(cpg).filter(PropertyNames.NAME, "b")
-      depB.checkNodeCount(1)
-      depB.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "depB")
+      depB.name shouldBe "b"
+      depB.dependencyGroupId shouldBe Some("depB")
+      depB.version shouldBe "require"
     }
 
     "have correct dependencies (different variations of import)" in AstFixture("""
@@ -4716,68 +4706,68 @@ class AstCreationPassTest extends AbstractPassTest {
        |import defaultMember2 from "module-name";
        |import "module-name";
        |""".stripMargin) { cpg =>
-      def deps = getDependencies(cpg)
-      deps.checkNodeCount(12)
+      val List(
+        name,
+        otherName,
+        member1,
+        alias1,
+        member3,
+        member4,
+        member5,
+        alias2,
+        defaultMember1,
+        alias3,
+        defaultMember2,
+        moduleName
+      ) = cpg.dependency.l
 
-      deps
-        .filter(PropertyNames.NAME, "name")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      name.name shouldBe "name"
+      name.dependencyGroupId shouldBe Some("module-name")
+      name.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "otherName")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      otherName.name shouldBe "otherName"
+      otherName.dependencyGroupId shouldBe Some("module-name")
+      otherName.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "member1")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      member1.name shouldBe "member1"
+      member1.dependencyGroupId shouldBe Some("module-name")
+      member1.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "alias1")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      alias1.name shouldBe "alias1"
+      alias1.dependencyGroupId shouldBe Some("module-name")
+      alias1.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "member3")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      member3.name shouldBe "member3"
+      member3.dependencyGroupId shouldBe Some("module-name")
+      member3.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "member4")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      member4.name shouldBe "member4"
+      member4.dependencyGroupId shouldBe Some("module-name")
+      member4.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "member5")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      member5.name shouldBe "member5"
+      member5.dependencyGroupId shouldBe Some("module-name")
+      member5.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "alias2")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      alias2.name shouldBe "alias2"
+      alias2.dependencyGroupId shouldBe Some("module-name")
+      alias2.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "defaultMember1")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      defaultMember1.name shouldBe "defaultMember1"
+      defaultMember1.dependencyGroupId shouldBe Some("module-name")
+      defaultMember1.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "alias3")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      alias3.name shouldBe "alias3"
+      alias3.dependencyGroupId shouldBe Some("module-name")
+      alias3.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "defaultMember2")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      defaultMember2.name shouldBe "defaultMember2"
+      defaultMember2.dependencyGroupId shouldBe Some("module-name")
+      defaultMember2.version shouldBe "import"
 
-      deps
-        .filter(PropertyNames.NAME, "module-name")
-        .filter(PropertyNames.DEPENDENCY_GROUP_ID, "module-name")
-        .checkNodeCount(1)
+      moduleName.name shouldBe "module-name"
+      moduleName.dependencyGroupId shouldBe Some("module-name")
+      moduleName.version shouldBe "import"
     }
   }
 
@@ -4858,25 +4848,23 @@ class AstCreationPassTest extends AbstractPassTest {
       |export { import1 as name1, import2 as name2, name3 } from "Foo";
       |export bar from "Bar";
       |""".stripMargin) { cpg =>
-      def dep1 = getDependencies(cpg).filter(PropertyNames.NAME, "name1")
-      dep1.checkNodeCount(1)
-      dep1.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
-      dep1.checkProperty(PropertyNames.VERSION, "require")
+      val List(name1, name2, name3, bar) = cpg.dependency.l
 
-      def dep2 = getDependencies(cpg).filter(PropertyNames.NAME, "name2")
-      dep2.checkNodeCount(1)
-      dep2.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
-      dep2.checkProperty(PropertyNames.VERSION, "require")
+      name1.name shouldBe "name1"
+      name1.dependencyGroupId shouldBe Some("Foo")
+      name1.version shouldBe "require"
 
-      def dep3 = getDependencies(cpg).filter(PropertyNames.NAME, "name3")
-      dep3.checkNodeCount(1)
-      dep3.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
-      dep3.checkProperty(PropertyNames.VERSION, "require")
+      name2.name shouldBe "name2"
+      name2.dependencyGroupId shouldBe Some("Foo")
+      name2.version shouldBe "require"
 
-      def dep4 = getDependencies(cpg).filter(PropertyNames.NAME, "bar")
-      dep4.checkNodeCount(1)
-      dep4.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Bar")
-      dep4.checkProperty(PropertyNames.VERSION, "require")
+      name3.name shouldBe "name3"
+      name3.dependencyGroupId shouldBe Some("Foo")
+      name3.version shouldBe "require"
+
+      bar.name shouldBe "bar"
+      bar.dependencyGroupId shouldBe Some("Bar")
+      bar.version shouldBe "require"
 
       cpg.call(Operators.assignment).code.l shouldBe List(
         "_Foo = require(\"Foo\")",
@@ -4893,20 +4881,19 @@ class AstCreationPassTest extends AbstractPassTest {
        |export * as B from "Bar";
        |export * from "./some/Module";
        |""".stripMargin) { cpg =>
-      def dep1 = getDependencies(cpg).filter(PropertyNames.NAME, "Foo")
-      dep1.checkNodeCount(1)
-      dep1.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Foo")
-      dep1.checkProperty(PropertyNames.VERSION, "require")
+      val List(dep1, dep2, dep3) = cpg.dependency.l
 
-      def dep2 = getDependencies(cpg).filter(PropertyNames.NAME, "B")
-      dep2.checkNodeCount(1)
-      dep2.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "Bar")
-      dep2.checkProperty(PropertyNames.VERSION, "require")
+      dep1.name shouldBe "Foo"
+      dep1.dependencyGroupId shouldBe Some("Foo")
+      dep1.version shouldBe "require"
 
-      def dep3 = getDependencies(cpg).filter(PropertyNames.NAME, "Module")
-      dep3.checkNodeCount(1)
-      dep3.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "./some/Module")
-      dep3.checkProperty(PropertyNames.VERSION, "require")
+      dep2.name shouldBe "B"
+      dep2.dependencyGroupId shouldBe Some("Bar")
+      dep2.version shouldBe "require"
+
+      dep3.name shouldBe "Module"
+      dep3.dependencyGroupId shouldBe Some("./some/Module")
+      dep3.version shouldBe "require"
 
       cpg.call(Operators.assignment).code.l shouldBe List(
         "_Foo = require(\"Foo\")",
