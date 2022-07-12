@@ -398,4 +398,157 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
     }
   }
 
+  "CPG for code with string interpolation" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun doSomething(p1: Int, p2: String): String {
+        |    val interpolated = "BEGIN - $p1 - $p2 END"
+        |    return "NOTHING"
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething(41414141, "42424242")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the interpolated values" in {
+      def sink = cpg.identifier.name("interpolated")
+
+      val sourceP1 = cpg.method.name("doSomething").parameter.order(1)
+      sink.reachableByFlows(sourceP1).toSeq should not be Seq()
+
+      val sourceP2 = cpg.method.name("doSomething").parameter.order(2)
+      sink.reachableByFlows(sourceP2).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with call to array index access" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun doSomething(p: String): String {
+        |    val aList = listOf(p, "two", "three")
+        |    val outOfList = aList[0]
+        |    return aList
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething("AMESSAGE")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through index access operator" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.code("outOfList")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with call to map index access" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun doSomething(p: String): String? {
+        |    val aMap = mapOf("one" to p, "two" to "SECOND_VALUE")
+        |    val outOfMap = aMap["one"]
+        |    return outOfMap
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething("FIRST_VALUE")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through index access operator" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.code("outOfMap")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with member assignment" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |class AClass {
+        |    var x: String = "INITIAL"
+        |}
+        |
+        |fun doSomething(p1: String): String {
+        |    val aClass = AClass()
+        |    aClass.x = p1
+        |    val aVal = aClass.x
+        |    return "NOTHING"
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething("AMESSAGE")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the assignment" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.code("aVal")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with user-defined class containing one member defined inline" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |class AClass {
+        |    var x: String = "INITIAL"
+        |}
+        |
+        |fun doSomething(p1: String): String {
+        |    val aClass = AClass()
+        |    aClass.x = p1
+        |    val aVal = aClass.x
+        |    return "NOTHING"
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething("AMESSAGE")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through an assignment call of its member" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.code("aVal")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with user-defined class containing one member defined inside its ctor" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |class AClass(var x: String)
+        |
+        |fun doSomething(p1: String): String {
+        |    val aClass = AClass()
+        |    aClass.x = p1
+        |    val aVal = aClass.x
+        |    return "NOTHING"
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething("AMESSAGE")
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through an assignment call of its member" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.code("aVal")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
 }
