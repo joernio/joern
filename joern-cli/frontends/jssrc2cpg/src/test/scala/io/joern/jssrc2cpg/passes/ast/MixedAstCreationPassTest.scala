@@ -1,0 +1,1231 @@
+package io.joern.jssrc2cpg.passes.ast
+
+import better.files.File
+import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language._
+
+class MixedAstCreationPassTest extends AbstractPassTest {
+
+  "AST method full names" should {
+    "anonymous arrow function full name 1" in AstFixture("var func = (x) => x") { cpg =>
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+    }
+    "anonymous arrow function full name 2" in AstFixture("this.func = (x) => x") { cpg =>
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+    }
+    "anonymous function expression full name 1" in AstFixture("var func = function (x) {x}") { cpg =>
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+    }
+    "anonymous function expression full name 2" in AstFixture("this.func = function (x) {x}") { cpg =>
+      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+    }
+    "anonymous constructor full name 1" in AstFixture("class X { constructor(){} }") { cpg =>
+      cpg.method.fullName.toSetMutable should contain("code.js::program:X<constructor>")
+    }
+    "anonymous constructor of anonymous class full name" in AstFixture("""
+                                                                         |var x = class {
+                                                                         |  constructor(y) {
+                                                                         |  }
+                                                                         |}""".stripMargin) { cpg =>
+      cpg.method.fullName.toSetMutable should contain("code.js::program:_anon_cdecl<constructor>")
+    }
+  }
+
+  "AST variable scoping and linking" should {
+    "have correct references for single local var" in AstFixture("""
+         | var x
+         | x = 1
+        """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(localX)       = methodBlock.astChildren.isLocal.l
+      val List(assignment)   = methodBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for single local let" in AstFixture("""
+         | let x
+         | x = 1
+        """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(localX)       = methodBlock.astChildren.isLocal.l
+      val List(assignment)   = methodBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for undeclared local" in AstFixture("x = 1") { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(localX)       = methodBlock.astChildren.isLocal.l
+      val List(assignment)   = methodBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for undeclared local with 2 refs" in AstFixture("""
+         | x = 1
+         | x = 2
+       """.stripMargin) { cpg =>
+      val List(method)        = cpg.method.nameExact(":program").l
+      val List(methodBlock)   = method.astChildren.isBlock.l
+      val List(localX)        = methodBlock.astChildren.isLocal.l
+      val List(assignment1)   = methodBlock.astChildren.isCall.order(1).l
+      val List(identifierX1)  = assignment1.astChildren.isIdentifier.l
+      val List(localXViaRef1) = identifierX1.refOut.l
+      localXViaRef1 shouldBe localX
+
+      val List(assignment2)   = methodBlock.astChildren.isCall.order(2).l
+      val List(identifierX2)  = assignment2.astChildren.isIdentifier.l
+      val List(localXViaRef2) = identifierX2.refOut.l
+      localXViaRef2 shouldBe localX
+    }
+
+    "have correct references for undeclared local in block" in AstFixture("""
+        | {
+        |   x = 1
+        | }
+       """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(localX)       = methodBlock.astChildren.isLocal.l
+      val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
+      val List(assignment)   = nestedBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for single var in block" in AstFixture("""
+        | {
+        |   var x
+        | }
+        | x = 1
+       """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
+      val List(localX)       = nestedBlock.astChildren.isLocal.l
+      val List(assignment)   = methodBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for single post declared var" in AstFixture("""
+         | x = 1
+         | var x
+        """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(localX)       = methodBlock.astChildren.isLocal.l
+      val List(assignment)   = methodBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for single post declared var in block" in AstFixture("""
+          | x = 1
+          | {
+          |   var x
+          | }
+        """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
+      val List(localX)       = nestedBlock.astChildren.isLocal.l
+      val List(assignment)   = methodBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for single nested access to let" in AstFixture("""
+          | let x
+          | {
+          |   x = 1
+          | }
+        """.stripMargin) { cpg =>
+      val List(method)       = cpg.method.nameExact(":program").l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      val List(localX)       = methodBlock.astChildren.isLocal.l
+      val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
+      val List(assignment)   = nestedBlock.astChildren.isCall.l
+      val List(identifierX)  = assignment.astChildren.isIdentifier.l
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+    }
+
+    "have correct references for shadowing let" in AstFixture("""
+          | let x
+          | {
+          |   let x
+          |   x = 1
+          | }
+          | x = 1
+        """.stripMargin) { cpg =>
+      val List(method)            = cpg.method.nameExact(":program").l
+      val List(methodBlock)       = method.astChildren.isBlock.l
+      val List(outerLocalX)       = methodBlock.astChildren.isLocal.l
+      val List(nestedBlock)       = methodBlock.astChildren.isBlock.l
+      val List(innerLocalX)       = nestedBlock.astChildren.isLocal.l
+      val List(innerAssignment)   = nestedBlock.astChildren.isCall.l
+      val List(innerIdentifierX)  = innerAssignment.astChildren.isIdentifier.l
+      val List(innerLocalXViaRef) = innerIdentifierX.refOut.l
+      innerLocalXViaRef shouldBe innerLocalX
+
+      val List(outerAssignment)   = methodBlock.astChildren.isCall.l
+      val List(outerIdentifierX)  = outerAssignment.astChildren.isIdentifier.l
+      val List(outerLocalXViaRef) = outerIdentifierX.refOut.l
+      outerLocalXViaRef shouldBe outerLocalX
+    }
+
+    "have correct closure binding (single variable)" in AstFixture("""
+         | function foo()
+         | {
+         |   x = 1
+         |   function bar() {
+         |     x = 2
+         |   }
+         | }
+        """.stripMargin) { cpg =>
+      val List(fooMethod)      = cpg.method.nameExact("foo").l
+      val List(fooBlock)       = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBinding) = barRef.captureOut.l
+      closureBinding.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+      closureBinding.closureOriginalName shouldBe Some("x")
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+
+      closureBinding.refOut.head shouldBe fooLocalX
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
+      barLocals.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+
+      val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      identifierX.refOut.head shouldBe barLocals
+    }
+
+    "have correct closure binding (two variables)" in AstFixture("""
+         | function foo()
+         | {
+         |   x = 1
+         |   y = 1
+         |   function bar() {
+         |     x = 2
+         |     y = 2
+         |   }
+         | }
+        """.stripMargin) { cpg =>
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooBlock)  = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX) = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(fooLocalY) = fooBlock.astChildren.isLocal.nameExact("y").l
+      val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+
+      val List(closureBindForY, closureBindForX) = barRef.captureOut.l
+
+      closureBindForX.closureOriginalName shouldBe Some("x")
+      closureBindForX.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+      closureBindForX.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindForX.refOut.head shouldBe fooLocalX
+
+      closureBindForY.closureOriginalName shouldBe Some("y")
+      closureBindForY.closureBindingId shouldBe Some("code.js::program:foo:bar:y")
+      closureBindForY.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindForY.refOut.head shouldBe fooLocalY
+
+      val List(barMethod)                    = cpg.method.nameExact("bar").l
+      val List(barMethodBlock)               = barMethod.astChildren.isBlock.l
+      val List(barLocalsForY, barLocalsForX) = barMethodBlock.astChildren.isLocal.l
+
+      barLocalsForX.name shouldBe "x"
+      barLocalsForX.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+
+      val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      identifierX.refOut.head shouldBe barLocalsForX
+
+      barLocalsForY.name shouldBe "y"
+      barLocalsForY.closureBindingId shouldBe Some("code.js::program:foo:bar:y")
+
+      val List(identifierY) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("y").l
+      identifierY.refOut.head shouldBe barLocalsForY
+    }
+
+    "have correct closure binding for capturing over 2 levels" in AstFixture("""
+         | function foo()
+         | {
+         |   x = 1
+         |   function bar() {
+         |     x = 2
+         |     function baz() {
+         |       x = 3
+         |     }
+         |   }
+         | }
+        """.stripMargin) { cpg =>
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooBlock)  = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX) = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+
+      val List(closureBindingXInFoo) = barRef.captureOut.l
+      closureBindingXInFoo.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+      closureBindingXInFoo.closureOriginalName shouldBe Some("x")
+      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXInFoo.refOut.head shouldBe fooLocalX
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+
+      val List(barLocalX) = barMethodBlock.astChildren.isLocal.nameExact("x").l
+      barLocalX.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+
+      val List(barIdentifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      barIdentifierX.refOut.head shouldBe barLocalX
+
+      val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBindingXInBar) = bazRef.captureOut.l
+      closureBindingXInBar.closureBindingId shouldBe Some("code.js::program:foo:bar:baz:x")
+      closureBindingXInBar.closureOriginalName shouldBe Some("x")
+      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXInBar.refOut.head shouldBe barLocalX
+
+      val List(bazMethod)      = cpg.method.nameExact("baz").l
+      val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
+      val List(bazLocalX)      = bazMethodBlock.astChildren.isLocal.nameExact("x").l
+      bazLocalX.closureBindingId shouldBe Some("code.js::program:foo:bar:baz:x")
+
+      val List(bazIdentifierX) = bazMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      bazIdentifierX.refOut.head shouldBe bazLocalX
+    }
+
+    "have correct closure binding for capturing over 2 levels with intermediate blocks" in AstFixture("""
+          | function foo()
+          | {
+          |   x = 1
+          |   function bar() {
+          |     x = 2
+          |     {
+          |       function baz() {
+          |         {
+          |            x = 3
+          |         }
+          |       }
+          |     }
+          |   }
+          | }
+        """.stripMargin) { cpg =>
+      val List(fooMethod)            = cpg.method.nameExact("foo").l
+      val List(fooBlock)             = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX)            = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(barRef)               = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBindingXInFoo) = barRef.captureOut.l
+      closureBindingXInFoo.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+      closureBindingXInFoo.closureOriginalName shouldBe Some("x")
+      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXInFoo.refOut.head shouldBe fooLocalX
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+
+      val List(barLocalX) = barMethodBlock.astChildren.isLocal.nameExact("x").l
+      barLocalX.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+
+      val List(barIdentifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      barIdentifierX.refOut.head shouldBe barLocalX
+
+      val List(barMethodInnerBlock)  = barMethodBlock.astChildren.isBlock.l
+      val List(bazRef)               = barMethodInnerBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBindingXInBar) = bazRef.captureOut.l
+      closureBindingXInBar.closureBindingId shouldBe Some("code.js::program:foo:bar:baz:x")
+      closureBindingXInBar.closureOriginalName shouldBe Some("x")
+      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXInBar.refOut.head shouldBe barLocalX
+
+      val List(bazMethod)      = cpg.method.nameExact("baz").l
+      val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
+
+      val List(bazLocalX) = bazMethodBlock.astChildren.isLocal.nameExact("x").l
+      bazLocalX.closureBindingId shouldBe Some("code.js::program:foo:bar:baz:x")
+
+      val List(bazMethodInnerBlock) = bazMethodBlock.astChildren.isBlock.l
+      val List(bazIdentifierX)      = bazMethodInnerBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      bazIdentifierX.refOut.head shouldBe bazLocalX
+    }
+
+    "have correct closure binding for capturing over 2 levels with no intermediate use" in AstFixture("""
+          | function foo()
+          | {
+          |   x = 1
+          |   function bar() {
+          |     function baz() {
+          |       x = 3
+          |     }
+          |   }
+          | }
+        """.stripMargin) { cpg =>
+      val List(fooMethod)            = cpg.method.nameExact("foo").l
+      val List(fooBlock)             = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX)            = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(barRef)               = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBindingXInFoo) = barRef.captureOut.l
+      closureBindingXInFoo.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+      closureBindingXInFoo.closureOriginalName shouldBe Some("x")
+      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXInFoo.refOut.head shouldBe fooLocalX
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+
+      val List(barLocalX) = barMethodBlock.astChildren.isLocal.nameExact("x").l
+      barLocalX.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
+
+      val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBindingXInBar) = bazRef.captureOut.l
+      closureBindingXInBar.closureBindingId shouldBe Some("code.js::program:foo:bar:baz:x")
+      closureBindingXInBar.closureOriginalName shouldBe Some("x")
+      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXInBar.refOut.head shouldBe barLocalX
+
+      val List(bazMethod)      = cpg.method.nameExact("baz").l
+      val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
+
+      val List(bazLocalX) = bazMethodBlock.astChildren.isLocal.nameExact("x").l
+      bazLocalX.closureBindingId shouldBe Some("code.js::program:foo:bar:baz:x")
+
+      val List(bazIdentifierX) = bazMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      bazIdentifierX.refOut.head shouldBe bazLocalX
+    }
+
+    "have correct closure binding for capturing the same variable into 2 different anonymous methods" in AstFixture("""
+          | function foo()
+          | {
+          |   var x = 1
+          |   var anon1 = y => 2*x
+          |   var anon2 = y => 2*x
+          | }
+        """.stripMargin) { cpg =>
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooBlock)  = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX) = fooBlock.astChildren.isLocal.nameExact("x").l
+
+      val List(anon1Ref) =
+        fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:anonymous").l
+
+      val List(closureBindingXAnon1) = anon1Ref.captureOut.l
+      closureBindingXAnon1.closureBindingId shouldBe Some("code.js::program:foo:anonymous:x")
+      closureBindingXAnon1.closureOriginalName shouldBe Some("x")
+      closureBindingXAnon1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXAnon1.refOut.head shouldBe fooLocalX
+
+      val List(anon2Ref) =
+        fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:anonymous1").l
+      val List(closureBindingXAnon2) = anon2Ref.captureOut.l
+      closureBindingXAnon2.closureBindingId shouldBe Some("code.js::program:foo:anonymous1:x")
+      closureBindingXAnon2.closureOriginalName shouldBe Some("x")
+      closureBindingXAnon2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBindingXAnon2.refOut.head shouldBe fooLocalX
+    }
+
+    "have correct closure binding when using an external source file" in AstFixture(
+      File(getClass.getResource("/closurebinding/foobar.js").toURI)
+    ) { cpg =>
+      val List(fooMethod)      = cpg.method.nameExact("foo").l
+      val List(fooBlock)       = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBinding) = barRef.captureOut.l
+      closureBinding.closureBindingId shouldBe Some("foobar.js::program:foo:bar:x")
+      closureBinding.closureOriginalName shouldBe Some("x")
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBinding.refOut.head shouldBe fooLocalX
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
+      barLocals.closureBindingId shouldBe Some("foobar.js::program:foo:bar:x")
+
+      val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      identifierX.refOut.head shouldBe barLocals
+    }
+
+    "have correct closure binding when using an external nested source file" in AstFixture(
+      File(getClass.getResource("/closurebinding/nested/a.js").toURI)
+    ) { cpg =>
+      val List(a1Method)       = cpg.method.nameExact("a1").l
+      val List(a1Block)        = a1Method.astChildren.isBlock.l
+      val List(a1LocalX)       = a1Block.astChildren.isLocal.nameExact("x").l
+      val List(a1Ref)          = a1Block.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBinding) = a1Ref.captureOut.l
+      closureBinding.closureBindingId shouldBe Some("a.js::program:a1:a2:x")
+      closureBinding.closureOriginalName shouldBe Some("x")
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBinding.refOut.head shouldBe a1LocalX
+
+      val List(method)         = cpg.method.nameExact("a2").l
+      val List(barMethodBlock) = method.astChildren.isBlock.l
+      val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
+      barLocals.closureBindingId shouldBe Some("a.js::program:a1:a2:x")
+
+      val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      identifierX.refOut.head shouldBe barLocals
+    }
+
+    "have correct method full names for scoped anonymous functions" in AstFixture("""
+        |var anon1 = x => {
+        |  var anon2 = y => {}
+        |}
+        |var anon3 = x => {
+        |  var anon4 = y => {}
+        |}""".stripMargin) { cpg =>
+      cpg.method.lineNumber(2).head.fullName shouldBe "code.js::program:anonymous"
+      cpg.method.lineNumber(3).head.fullName shouldBe "code.js::program:anonymous:anonymous"
+      cpg.method.lineNumber(5).head.fullName shouldBe "code.js::program:anonymous1"
+      cpg.method.lineNumber(6).head.fullName shouldBe "code.js::program:anonymous1:anonymous"
+    }
+  }
+
+  "AST generation for mixed fragments" should {
+    "simple js fragment with call" in AstFixture("""
+         |function source(a) { return a; }
+         |var l = source(3)
+        """.stripMargin) { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(method)       = cpg.method.nameExact("source").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      val List(methodBlock)  = method.astChildren.isBlock.l
+      method.parameter.size shouldBe 2
+
+      val List(localSource, localL) = programBlock.astChildren.isLocal.l
+      localSource.name shouldBe "source"
+      localSource.typeFullName shouldBe "code.js::program:source"
+      localL.name shouldBe "l"
+
+      val List(callToSource) = programBlock.astChildren.isCall.codeExact("l = source(3)").l
+
+      val List(identifierL) = callToSource.astChildren.isIdentifier.l
+      identifierL.name shouldBe "l"
+
+      val List(call) = callToSource.astChildren.isCall.l
+      call.astChildren.isLiteral.codeExact("3").size shouldBe 1
+
+      val List(returnFromMethod) = methodBlock.astChildren.isReturn.l
+      returnFromMethod.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+    }
+
+    "simple js fragment with array access" in AstFixture("result = rows[0].solution;") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      val List(call)         = programBlock.astChildren.isCall.l
+      val List(rowsCall)     = call.astChildren.isCall.l
+      rowsCall.astChildren.isFieldIdentifier.canonicalNameExact("solution").size shouldBe 1
+
+      val List(rowsCallLeft) = rowsCall.astChildren.isCall.l
+      rowsCallLeft.astChildren.isLiteral.codeExact("0").size shouldBe 1
+      rowsCallLeft.astChildren.isIdentifier.nameExact("rows").size shouldBe 1
+      call.astChildren.isIdentifier.nameExact("result").size shouldBe 1
+    }
+
+  }
+
+  "AST generation for destructing assignment" should {
+    "have correct structure for object destruction assignment with declaration" in AstFixture("var {a, b} = x") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToA) =
+        destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
+      fieldAccessA.name shouldBe Operators.fieldAccess
+      fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
+
+      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0.b").l
+      assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b").l
+      fieldAccessB.name shouldBe Operators.fieldAccess
+      fieldAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      fieldAccessB.astChildren.isFieldIdentifier.canonicalNameExact("b").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment with declaration and ternary init" in AstFixture(
+      "const { a, b } = test() ? foo() : bar();"
+    ) { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = test() ? foo() : bar()").size shouldBe 1
+
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
+      fieldAccessA.name shouldBe Operators.fieldAccess
+      fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
+
+      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0.b").l
+      assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b").l
+      fieldAccessB.name shouldBe Operators.fieldAccess
+      fieldAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      fieldAccessB.astChildren.isFieldIdentifier.canonicalNameExact("b").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment without declaration" in AstFixture("({a, b} = x)") {
+      cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+        programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+        programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+        val List(destructionBlock) = programBlock.astChildren.isBlock.l
+        destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+        destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+        val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
+        assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+        val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
+        fieldAccessA.name shouldBe Operators.fieldAccess
+        fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+        fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
+
+        val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0.b").l
+        assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+        val List(fieldAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b").l
+        fieldAccessB.name shouldBe Operators.fieldAccess
+        fieldAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+        fieldAccessB.astChildren.isFieldIdentifier.canonicalNameExact("b").size shouldBe 1
+
+        val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+        tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment with defaults" in AstFixture("var {a = 1, b = 2} = x") {
+      cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+        programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+        programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+        val List(destructionBlock) = programBlock.astChildren.isBlock.l
+        destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+        destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+        val List(assignmentToA) = destructionBlock.astChildren.isCall
+          .nameExact(Operators.assignment)
+          .codeExact("a = _tmp_0.a === void 0 ? 1 : _tmp_0.a")
+          .l
+        assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+        val List(ifA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a === void 0 ? 1 : _tmp_0.a").l
+        ifA.name shouldBe Operators.conditional
+
+        val List(testA) = ifA.astChildren.isCall.codeExact("_tmp_0.a === void 0").l
+        testA.name shouldBe Operators.equals
+
+        val List(testAFieldAccess) = testA.astChildren.isCall.codeExact("_tmp_0.a").l
+        testAFieldAccess.name shouldBe Operators.fieldAccess
+
+        testA.astChildren.isCall.codeExact("void 0").size shouldBe 1
+
+        ifA.astChildren.isLiteral.codeExact("1").size shouldBe 1
+
+        val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0.a").l
+        falseBranchA.name shouldBe Operators.fieldAccess
+
+        val List(assignmentToB) =
+          destructionBlock.astChildren.isCall
+            .nameExact(Operators.assignment)
+            .codeExact("b = _tmp_0.b === void 0 ? 2 : _tmp_0.b")
+            .l
+        assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+        val List(ifB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b === void 0 ? 2 : _tmp_0.b").l
+        ifB.name shouldBe Operators.conditional
+
+        val List(testB) = ifB.astChildren.isCall.codeExact("_tmp_0.b === void 0").l
+        testB.name shouldBe Operators.equals
+
+        val List(testBFieldAccess) = testB.astChildren.isCall.codeExact("_tmp_0.b").l
+        testBFieldAccess.name shouldBe Operators.fieldAccess
+
+        testB.astChildren.isCall.codeExact("void 0").size shouldBe 1
+
+        ifB.astChildren.isLiteral.codeExact("2").size shouldBe 1
+
+        val List(falseBranchB) = ifB.astChildren.isCall.codeExact("_tmp_0.b").l
+        falseBranchB.name shouldBe Operators.fieldAccess
+
+        val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+        tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment with reassignment" in AstFixture("var {a: n, b: m} = x") {
+      cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+        programBlock.astChildren.isLocal.nameExact("n").size shouldBe 1
+        programBlock.astChildren.isLocal.nameExact("m").size shouldBe 1
+
+        val List(destructionBlock) = programBlock.astChildren.isBlock.l
+        destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+        destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+        val List(assignmentToN) = destructionBlock.astChildren.isCall.codeExact("n = _tmp_0.a").l
+        assignmentToN.astChildren.isIdentifier.size shouldBe 1
+
+        val List(fieldAccessN) = assignmentToN.astChildren.isCall.codeExact("_tmp_0.a").l
+        fieldAccessN.name shouldBe Operators.fieldAccess
+        fieldAccessN.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+        fieldAccessN.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
+
+        val List(assignmentToM) = destructionBlock.astChildren.isCall.codeExact("m = _tmp_0.b").l
+        assignmentToM.astChildren.isIdentifier.size shouldBe 1
+
+        val List(fieldAccessM) = assignmentToM.astChildren.isCall.codeExact("_tmp_0.b").l
+        fieldAccessM.name shouldBe Operators.fieldAccess
+        fieldAccessM.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+        fieldAccessM.astChildren.isFieldIdentifier.canonicalNameExact("b").size shouldBe 1
+
+        val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+        tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment with reassignment and defaults" in AstFixture(
+      "var {a: n = 1, b: m = 2} = x"
+    ) { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("n").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("m").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToN) = destructionBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact("n = _tmp_0.a === void 0 ? 1 : _tmp_0.a")
+        .l
+      assignmentToN.astChildren.isIdentifier.size shouldBe 1
+
+      val List(ifA) = assignmentToN.astChildren.isCall.codeExact("_tmp_0.a === void 0 ? 1 : _tmp_0.a").l
+      ifA.name shouldBe Operators.conditional
+
+      val List(testA) = ifA.astChildren.isCall.codeExact("_tmp_0.a === void 0").l
+      testA.name shouldBe Operators.equals
+
+      val List(testAFieldAccess) = testA.astChildren.isCall.codeExact("_tmp_0.a").l
+      testAFieldAccess.name shouldBe Operators.fieldAccess
+
+      testA.astChildren.isCall.codeExact("void 0").size shouldBe 1
+
+      ifA.astChildren.isLiteral.codeExact("1").size shouldBe 1
+
+      val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0.a").l
+      falseBranchA.name shouldBe Operators.fieldAccess
+
+      val List(assignmentToM) = destructionBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b")
+        .l
+      assignmentToN.astChildren.isIdentifier.size shouldBe 1
+
+      val List(ifB) = assignmentToM.astChildren.isCall.codeExact("_tmp_0.b === void 0 ? 2 : _tmp_0.b").l
+      ifB.name shouldBe Operators.conditional
+
+      val List(testB) = ifB.astChildren.isCall.codeExact("_tmp_0.b === void 0").l
+      testB.name shouldBe Operators.equals
+
+      val List(testBFieldAccess) = testB.astChildren.isCall.codeExact("_tmp_0.b").l
+      testBFieldAccess.name shouldBe Operators.fieldAccess
+
+      testB.astChildren.isCall.codeExact("void 0").size shouldBe 1
+
+      ifB.astChildren.isLiteral.codeExact("2").size shouldBe 1
+
+      val List(falseBranchB) = ifB.astChildren.isCall.codeExact("_tmp_0.b").l
+      falseBranchB.name shouldBe Operators.fieldAccess
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object deconstruction in function parameter" in AstFixture(
+      "function foo({ a }, b) {}"
+    ) { cpg =>
+      val List(program)   = cpg.method.nameExact(":program").l
+      val List(fooMethod) = program.astChildren.isMethod.nameExact("foo").l
+      val List(a)         = fooMethod.parameter.nameExact("param1_0").l
+      a.code shouldBe "{ a }"
+      a.index shouldBe 1
+      val List(b) = fooMethod.parameter.nameExact("b").l
+      b.code shouldBe "b"
+      b.index shouldBe 2
+    }
+
+    "have correct structure for object destruction assignment in call argument" in AstFixture("foo({a, b} = x)") {
+      cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+        programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+        programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+        val List(fooCall)          = programBlock.astChildren.isCall.l
+        val List(destructionBlock) = fooCall.astChildren.isBlock.l
+        destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+        destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+        val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
+        assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+        val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
+        fieldAccessA.name shouldBe Operators.fieldAccess
+        fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+        fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
+
+        val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0.b").l
+        assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+        val List(fieldAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b").l
+        fieldAccessB.name shouldBe Operators.fieldAccess
+        fieldAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+        fieldAccessB.astChildren.isFieldIdentifier.canonicalNameExact("b").size shouldBe 1
+
+        val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+        tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment with rest" in AstFixture("var {a, ...rest} = x") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
+      fieldAccessA.name shouldBe Operators.fieldAccess
+      fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+
+      fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
+
+      destructionBlock.astChildren.codeExact("...rest").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for object destruction assignment with computed property name" ignore AstFixture(
+      "var {[propName]: n} = x"
+    ) { _ => }
+
+    "have correct structure for nested object destruction assignment with defaults as parameter" in AstFixture("""
+       |function userId({id = {}, b} = {}) {
+       |  return id
+       |}
+       |""".stripMargin) { cpg =>
+      val List(userId) = cpg.method.nameExact("userId").l
+
+      val List(param) = userId.parameter.nameExact("param1_0").l
+      param.code shouldBe "{id = {}, b} = {}"
+
+      val List(userIdBlock) = userId.astChildren.isBlock.l
+
+      val List(destructionBlock) = userIdBlock.astChildren.isBlock.order(1).l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_1").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_1 = param1_0 === void 0 ? {} : param1_0").size shouldBe 1
+
+      val List(assignmentToId) =
+        destructionBlock.astChildren.isCall.codeExact("id = _tmp_1.id === void 0 ? {} : _tmp_1.id").l
+
+      destructionBlock.astChildren.isCall.codeExact("b = _tmp_1.b").size shouldBe 1
+
+      assignmentToId.astChildren.isIdentifier.size shouldBe 1
+
+      val List(ternaryId) = assignmentToId.astChildren.isCall.codeExact("_tmp_1.id === void 0 ? {} : _tmp_1.id").l
+
+      val List(indexAccessId) = ternaryId.astChildren.isCall.codeExact("_tmp_1.id").l
+      indexAccessId.astChildren.isIdentifier.nameExact("_tmp_1").size shouldBe 1
+      indexAccessId.astChildren.isFieldIdentifier.canonicalNameExact("id").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_1"
+    }
+
+    "have correct structure for object destruction assignment as parameter" in AstFixture("""
+      |function userId({id}) {
+      |  return id
+      |}
+      |""".stripMargin) { cpg =>
+      val List(userId)      = cpg.method.nameExact("userId").l
+      val List(userIdBlock) = userId.astChildren.isBlock.l
+      userIdBlock.astChildren.isLocal.nameExact("id").size shouldBe 1
+
+      val List(assignmentToId) = userIdBlock.astChildren.isCall.codeExact("id = param1_0.id").l
+      assignmentToId.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessId) = assignmentToId.astChildren.isCall.codeExact("param1_0.id").l
+      indexAccessId.astChildren.isIdentifier.nameExact("param1_0").size shouldBe 1
+      indexAccessId.astChildren.isFieldIdentifier.canonicalNameExact("id").size shouldBe 1
+    }
+
+    "have correct structure for array destruction assignment with declaration" in AstFixture("var [a, b] = x") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0[0]").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0]").l
+      indexAccessA.name shouldBe Operators.indexAccess
+
+      indexAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessA.astChildren.codeExact("0").size shouldBe 1
+
+      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0[1]").l
+      assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1]").l
+      indexAccessB.name shouldBe Operators.indexAccess
+      indexAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessB.astChildren.isLiteral.codeExact("1").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for array destruction assignment without declaration" in AstFixture("[a, b] = x") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0[0]").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0]").l
+      indexAccessA.name shouldBe Operators.indexAccess
+      indexAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessA.astChildren.isLiteral.codeExact("0").size shouldBe 1
+
+      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0[1]").l
+      assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1]").l
+      indexAccessB.name shouldBe Operators.indexAccess
+      indexAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessB.astChildren.isLiteral.codeExact("1").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for array destruction assignment with defaults" in AstFixture("var [a = 1, b = 2] = x") {
+      cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+        programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+        programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+        val List(destructionBlock) = programBlock.astChildren.isBlock.l
+        destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+        destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+        val List(assignmentToA) = destructionBlock.astChildren.isCall
+          .nameExact(Operators.assignment)
+          .codeExact("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]")
+          .l
+
+        assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+        val List(ifA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]").l
+        ifA.name shouldBe Operators.conditional
+
+        val List(testA) = ifA.astChildren.isCall.codeExact("_tmp_0[0] === void 0").l
+        testA.name shouldBe Operators.equals
+
+        val List(testAIndexAccess) = testA.astChildren.isCall.codeExact("_tmp_0[0]").l
+        testAIndexAccess.name shouldBe Operators.indexAccess
+
+        testA.astChildren.isCall.codeExact("void 0").size shouldBe 1
+
+        ifA.astChildren.isLiteral.codeExact("1").size shouldBe 1
+
+        val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0[0]").l
+        falseBranchA.name shouldBe Operators.indexAccess
+
+        val List(assignmentToB) = destructionBlock.astChildren.isCall
+          .nameExact(Operators.assignment)
+          .codeExact("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]")
+          .l
+        assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+        val List(ifB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]").l
+        ifB.name shouldBe Operators.conditional
+
+        val List(testB) = ifB.astChildren.isCall.codeExact("_tmp_0[1] === void 0").l
+        testB.name shouldBe Operators.equals
+
+        val List(testBIndexAccess) = testB.astChildren.isCall.codeExact("_tmp_0[1]").l
+        testBIndexAccess.name shouldBe Operators.indexAccess
+
+        testB.astChildren.isCall.codeExact("void 0").size shouldBe 1
+
+        ifB.astChildren.isLiteral.codeExact("2").size shouldBe 1
+
+        val List(falseBranchB) = ifB.astChildren.isCall.codeExact("_tmp_0[1]").l
+
+        falseBranchB.name shouldBe Operators.indexAccess
+
+        val List(returnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+        returnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for array destruction assignment with ignores" in AstFixture("var [a, , b] = x") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0[0]").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0]").l
+      indexAccessA.name shouldBe Operators.indexAccess
+      indexAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessA.astChildren.isLiteral.codeExact("0").size shouldBe 1
+
+      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("b = _tmp_0[2]").l
+      assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[2]").l
+      indexAccessB.name shouldBe Operators.indexAccess
+      indexAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessB.astChildren.isLiteral.codeExact("2").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct structure for array destruction assignment with rest" ignore AstFixture("var [a, ...rest] = x") { _ =>
+    }
+
+    "have correct structure for array destruction as parameter" in AstFixture("""
+        |function userId([id]) {
+        |  return id
+        |}
+        |""".stripMargin) { cpg =>
+      val List(userId) = cpg.method.nameExact("userId").l
+      userId.parameter.nameExact("param1_0").size shouldBe 1
+      val List(userIdBlock) = userId.astChildren.isBlock.l
+      userIdBlock.astChildren.isLocal.nameExact("id").size shouldBe 1
+      userIdBlock.astChildren.isCall.codeExact("id = param1_0.id").size shouldBe 1
+    }
+
+    "have correct structure for method spread argument" ignore AstFixture("foo(...args)") { _ => }
+  }
+
+  "AST generation for await/async" should {
+    "have correct structure for await/async" in AstFixture("async function x(foo) { await foo() }") { cpg =>
+      val List(awaitCall) = cpg.method.nameExact("x").astChildren.isBlock.astChildren.isCall.l
+      awaitCall.code shouldBe "await foo()"
+      awaitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      awaitCall.methodFullName shouldBe "<operator>.await"
+      awaitCall.astChildren.isCall.codeExact("foo()").size shouldBe 1
+    }
+  }
+
+  "AST generation for instanceof/delete" should {
+    "have correct structure for instanceof" in AstFixture("x instanceof Foo") { cpg =>
+      val List(program) = cpg.method.nameExact(":program").l
+
+      val List(instanceOf) = program.astChildren.isBlock.astChildren.isCall.codeExact("x instanceof Foo").l
+      instanceOf.name shouldBe Operators.instanceOf
+
+      val List(lhs) = instanceOf.astChildren.isIdentifier.nameExact("x").l
+      lhs.code shouldBe "x"
+      val List(lhsArg) = instanceOf.argument.isIdentifier.nameExact("x").l
+      lhsArg.code shouldBe "x"
+
+      val List(rhs) = instanceOf.astChildren.isIdentifier.nameExact("Foo").l
+      rhs.code shouldBe "Foo"
+      val List(rhsArg) = instanceOf.argument.isIdentifier.nameExact("Foo").l
+      rhsArg.code shouldBe "Foo"
+    }
+
+    "have correct structure for delete" in AstFixture("delete foo.x") { cpg =>
+      val List(program) = cpg.method.nameExact(":program").l
+
+      val List(delete) = program.astChildren.isBlock.astChildren.isCall.codeExact("delete foo.x").l
+      delete.name shouldBe Operators.delete
+
+      val List(rhs) = delete.astChildren.isCall.nameExact(Operators.fieldAccess).l
+      rhs.code shouldBe "foo.x"
+    }
+  }
+
+  "AST generation for default parameters" should {
+    "have correct structure for method parameter with default" in AstFixture("function foo(a = 1) {}") { cpg =>
+      val List(foo) = cpg.method.nameExact("foo").l
+
+      val List(paramA) = foo.parameter.nameExact("a").l
+      paramA.index shouldBe 1
+
+      val List(block)      = foo.astChildren.isBlock.l
+      val List(assignment) = block.astChildren.isCall.l
+      assignment.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+
+      val List(ternaryCall) = assignment.astChildren.isCall.nameExact(Operators.conditional).l
+      val List(testCall)    = ternaryCall.astChildren.isCall.nameExact(Operators.equals).l
+      testCall.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+      testCall.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
+      ternaryCall.astChildren.isLiteral.codeExact("1").size shouldBe 1
+      ternaryCall.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+    }
+
+    "have correct structure for multiple method parameters with default" in AstFixture(
+      "function foo(a = 1, b = 2) {}"
+    ) { cpg =>
+      val List(foo)    = cpg.method.nameExact("foo").l
+      val List(paramA) = foo.parameter.nameExact("a").l
+      paramA.index shouldBe 1
+
+      val List(paramB) = foo.parameter.nameExact("b").l
+      paramB.index shouldBe 2
+
+      val List(block) = foo.astChildren.isBlock.l
+
+      val List(assignmentA) = block.astChildren.isCall.codeExact("a = a === void 0 ? 1 : a").l
+      assignmentA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+
+      val List(ternaryCallA) = assignmentA.astChildren.isCall.nameExact(Operators.conditional).l
+      val List(testCallA) =
+        ternaryCallA.astChildren.isCall.nameExact(Operators.equals).l
+      testCallA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+      testCallA.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
+      ternaryCallA.astChildren.isLiteral.codeExact("1").size shouldBe 1
+      ternaryCallA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
+
+      val List(assignmentB) = block.astChildren.isCall.codeExact("b = b === void 0 ? 2 : b").l
+      assignmentB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+
+      val List(ternaryCallB) = assignmentB.astChildren.isCall.nameExact(Operators.conditional).l
+      val List(testCallB)    = ternaryCallB.astChildren.isCall.nameExact(Operators.equals).l
+      testCallB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+      testCallB.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
+      ternaryCallB.astChildren.isLiteral.codeExact("2").size shouldBe 1
+      ternaryCallB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+    }
+
+    "have correct structure for method mixed parameters with default" in AstFixture("function foo(a, b = 1) {}") {
+      cpg =>
+        val List(foo)    = cpg.method.nameExact("foo").l
+        val List(paramA) = foo.parameter.nameExact("a").l
+        paramA.index shouldBe 1
+        val List(paramB) = foo.parameter.nameExact("b").l
+        paramB.index shouldBe 2
+
+        val List(block) = foo.astChildren.isBlock.l
+
+        val List(assignmentB) = block.astChildren.isCall.codeExact("b = b === void 0 ? 1 : b").l
+        assignmentB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+
+        val List(ternaryCallB) = assignmentB.astChildren.isCall.nameExact(Operators.conditional).l
+        val List(testCallB)    = ternaryCallB.astChildren.isCall.nameExact(Operators.equals).l
+        testCallB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+        testCallB.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
+        ternaryCallB.astChildren.isLiteral.codeExact("1").size shouldBe 1
+        ternaryCallB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+    }
+
+    "have correct structure for multiple method mixed parameters with default" in AstFixture(
+      "function foo(a, b = 1, c = 2) {}"
+    ) { cpg =>
+      val List(foo)    = cpg.method.nameExact("foo").l
+      val List(paramA) = foo.parameter.nameExact("a").l
+      paramA.index shouldBe 1
+      val List(paramB) = foo.parameter.nameExact("b").l
+      paramB.index shouldBe 2
+      val List(paramC) = foo.parameter.nameExact("c").l
+      paramC.index shouldBe 3
+
+      val List(block) = foo.astChildren.isBlock.l
+
+      val List(assignmentB) = block.astChildren.isCall.codeExact("b = b === void 0 ? 1 : b").l
+      assignmentB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+
+      val List(ternaryCallB) = assignmentB.astChildren.isCall.nameExact(Operators.conditional).l
+      val List(testCallB)    = ternaryCallB.astChildren.isCall.nameExact(Operators.equals).l
+      testCallB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+      testCallB.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
+      ternaryCallB.astChildren.isLiteral.codeExact("1").size shouldBe 1
+      ternaryCallB.astChildren.isIdentifier.nameExact("b").size shouldBe 1
+
+      val List(assignmentC) = block.astChildren.isCall.codeExact("c = c === void 0 ? 2 : c").l
+      assignmentC.astChildren.isIdentifier.nameExact("c").size shouldBe 1
+
+      val List(ternaryCallC) = assignmentC.astChildren.isCall.nameExact(Operators.conditional).l
+      val List(testCallC)    = ternaryCallC.astChildren.isCall.nameExact(Operators.equals).l
+      testCallC.astChildren.isIdentifier.nameExact("c").size shouldBe 1
+      testCallC.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
+      ternaryCallC.astChildren.isLiteral.codeExact("2").size shouldBe 1
+      ternaryCallC.astChildren.isIdentifier.nameExact("c").size shouldBe 1
+    }
+  }
+
+}

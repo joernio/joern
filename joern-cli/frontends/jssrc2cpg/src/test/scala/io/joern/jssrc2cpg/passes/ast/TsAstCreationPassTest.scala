@@ -1,9 +1,8 @@
-package io.joern.jssrc2cpg.passes
+package io.joern.jssrc2cpg.passes.ast
 
+import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.jssrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Import
-import io.shiftleft.codepropertygraph.generated.nodes.Method
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
 
 class TsAstCreationPassTest extends AbstractPassTest {
@@ -35,7 +34,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
       modelsDep.name shouldBe "models"
       modelsDep.dependencyGroupId shouldBe Some("../models/index")
 
-      val List(fs: Import, models: Import) = cpg.staticImport.l
+      val List(fs, models) = cpg.staticImport.l
       fs.code shouldBe "import fs = require('fs')"
       fs.importedEntity shouldBe Some("fs")
       fs.importedAs shouldBe Some("fs")
@@ -50,17 +49,17 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
-      val List(func: Method) = cpg.method("foo").l
+      val List(func) = cpg.method("foo").l
       func.code shouldBe "declare function foo(arg: string): string"
       func.name shouldBe "foo"
       func.fullName shouldBe "code.ts::program:foo"
-      val List(_, arg: MethodParameterIn) = cpg.method("foo").parameter.l
+      val List(_, arg) = cpg.method("foo").parameter.l
       arg.name shouldBe "arg"
       arg.typeFullName shouldBe Defines.STRING.label
       arg.code shouldBe "arg: string"
       arg.index shouldBe 1
       val List(parentTypeDecl) = cpg.typeDecl.name(":program").l
-      parentTypeDecl.bindsOut.expandRef().l should contain(func)
+      parentTypeDecl.bindsOut.flatMap(_.refOut).l should contain(func)
     }
 
   }
