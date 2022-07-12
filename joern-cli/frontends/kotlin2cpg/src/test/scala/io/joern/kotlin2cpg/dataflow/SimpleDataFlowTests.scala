@@ -6,14 +6,14 @@ import io.shiftleft.semanticcpg.language._
 
 class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   "CPG for code with simple function" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |fun doSomething(x: Int): Int {  return x + 1 }
         |""".stripMargin)
 
     "should find a flow from method parameter to method return" in {
-      def source = cpg.method.name("doSomething").parameter
-      def sink   = cpg.method.name("doSomething").methodReturn
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.method.name("doSomething").methodReturn
       sink.reachableByFlows(source).size shouldBe 1
     }
   }
@@ -100,6 +100,42 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
 
     "should find a flow through assign-division" in {
       val sink = cpg.identifier.name("divideEq")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code using null safety operators" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun doSomething(p: Int?): Int {
+        |    val afterElvis = p ?: 42424242
+        |    val maybeCast = afterElvis as? Int
+        |    val forcedNonOptional = maybeCast!!
+        |    return forcedNonOptional
+        |}
+        |
+        |fun main() {
+        |    val out = doSomething(41414141)
+        |    println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the `elvis` operator" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("afterElvis")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through the safe cast" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("maybeCast")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+
+    "should find a flow through the not-null assert operator" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("forcedNonOptional")
       sink.reachableByFlows(source).toSeq should not be Seq()
     }
   }
@@ -309,4 +345,57 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
       sink.reachableByFlows(source).toSeq should not be Seq()
     }
   }
+
+  "CPG for code with `do-while` control structure" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun doSomething(p: Int): Int {
+        |  var someVal: Int
+        |  do {
+        |    someVal = p
+        |  } while (false)
+        |  val after = someVal
+        |  return someVal
+        |}
+        |
+        |fun main() {
+        |  val out = doSomething(41414141)
+        |  println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through body of the control structure" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("after")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
+  "CPG for code with `while` control structure" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun doSomething(p: Int): Int {
+        |  var someVal: Int
+        |  while (someVal == 0) {
+        |    someVal = p
+        |  }
+        |  val after = someVal
+        |  return someVal
+        |}
+        |
+        |fun main() {
+        |  val out = doSomething(41414141)
+        |  println(out)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through body of the control structure" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.identifier.name("after")
+      sink.reachableByFlows(source).toSeq should not be Seq()
+    }
+  }
+
 }
