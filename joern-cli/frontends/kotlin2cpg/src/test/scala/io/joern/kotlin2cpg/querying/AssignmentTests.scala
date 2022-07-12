@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class AssignmentTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple assignments" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  x += 1

@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class ParenthesizedExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple paranthesized expression " should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -27,7 +27,7 @@ class ParenthesizedExpressionTests extends KotlinCode2CpgFixture(withOssDataflow
   }
 
   "CPG for code with a paranthesized expression as part of a dot-qualified expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {

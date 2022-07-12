@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with _safe call_ operator" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |    val b: String? = null
         |    println(b?.length)
@@ -25,7 +25,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with _as_ operator" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |    val b = "PLACEHOLDER" as String
         |    println(b)
@@ -42,7 +42,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with `notNullAssert` operator" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun foo(x : Int) {
         | val p = x!!
         | println(p)
@@ -55,7 +55,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with _notNullAssert_ operator inside dot-qualified expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun foo() {
         |    val bar = " PLACEHOLDER "!!.trim()
         |    println(bar)
@@ -72,7 +72,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with _is_ expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |packge mypkg
         |
         |fun main() {
@@ -99,7 +99,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with range expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |packge mypkg
         |
         |fun main() {
@@ -124,7 +124,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with simple usage of _elvis_ operator" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -150,7 +150,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with _elvis_ operator usage and subexpression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |fun main() {
@@ -167,7 +167,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with _notIn_ operator" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -187,7 +187,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with _in_ operator" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {

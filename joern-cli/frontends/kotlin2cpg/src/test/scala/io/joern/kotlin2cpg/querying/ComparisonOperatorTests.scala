@@ -8,7 +8,7 @@ class ComparisonOperatorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
   "CPG for code with simple comparison operator usage" should {
 
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>): Int {
         | val x: Int = 1
         | val y: Int = 2

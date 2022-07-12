@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class CfgTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple structures" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun sink(p: Int): Int {

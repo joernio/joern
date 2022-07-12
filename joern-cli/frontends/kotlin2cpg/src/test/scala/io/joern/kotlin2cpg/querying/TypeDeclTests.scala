@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for simple class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import java.lang.Object
@@ -60,7 +60,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with user-defined class which has no specific superclasses" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |class AClass
@@ -78,7 +78,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "class with multiple initializers" ignore {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package baz
         |
         |import kotlin.io.println
@@ -107,7 +107,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with simple class declaration and usage" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -131,7 +131,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with usage of setter of simple user-defined class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |class Simple {
@@ -160,7 +160,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with class defined inside user-defined function" should {
-    lazy val cpg = code("""
+    val cpg = code("""
        |package mypkg
        |
        |fun doSomething(x: String): String {

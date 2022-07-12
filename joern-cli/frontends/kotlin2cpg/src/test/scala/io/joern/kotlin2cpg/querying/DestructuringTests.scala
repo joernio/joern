@@ -10,7 +10,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   implicit val resolver = NoResolve
 
   "CPG for code with destructuring declaration and a variable as RHS" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -83,7 +83,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring declaration and a variable as RHS, plus one `_`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -108,7 +108,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring expression with a ctor-invocation RHS" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -229,7 +229,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring expression with a ctor-invocation RHS and an `_`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |data class AClass(val a: String, val b: Int)
@@ -254,7 +254,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring expression with a non-ctor-call RHS" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)
@@ -364,7 +364,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring expression with a non-ctor-call RHS and an `_`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)
@@ -395,7 +395,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring expression with a DQE call RHS" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)
@@ -518,7 +518,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with destructuring expression with a DQE call RHS and an `_`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |data class AClass(val a: String, val b: Int)

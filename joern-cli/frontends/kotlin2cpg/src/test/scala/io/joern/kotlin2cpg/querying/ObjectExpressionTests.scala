@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple object expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun foo() {
         |  val bar = object {
         |    override val baz = 1
@@ -25,7 +25,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with simple object expression with apply called after it" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package main
         |
         |fun main() {

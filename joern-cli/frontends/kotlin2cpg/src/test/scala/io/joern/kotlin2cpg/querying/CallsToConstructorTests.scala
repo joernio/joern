@@ -10,7 +10,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   implicit val resolver = NoResolve
 
   "CPG for code with call to constructor of Java stdlib object inside declaration" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import java.io.File
@@ -82,7 +82,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   }
 
   "CPG for code with call to constructor of Java stdlib object inside QE" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import java.io.File
@@ -146,7 +146,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   }
 
   "CPG for code with call to simple constructor of user-defined class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class AClass(val x: String) {

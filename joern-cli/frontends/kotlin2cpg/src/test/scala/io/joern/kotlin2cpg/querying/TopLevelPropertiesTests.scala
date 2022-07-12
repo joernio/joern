@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class TopLevelPropertiesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with top-level property" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |const val CSRF_SESSION_KEY = "_csrf"

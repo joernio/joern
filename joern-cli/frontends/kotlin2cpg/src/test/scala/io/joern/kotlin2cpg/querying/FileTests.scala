@@ -9,7 +9,7 @@ import java.io.File
 class FileTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple class definition and one method" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg.bar
         |
         |class Foo {

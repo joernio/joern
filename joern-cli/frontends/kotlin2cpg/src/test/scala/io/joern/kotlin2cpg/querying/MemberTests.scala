@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class MemberTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple member" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |class Foo {
         |  val bar: Int = 1
         |}
@@ -29,7 +29,7 @@ class MemberTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with member defined in primary constructor" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |class AClass(private val x: String) {
@@ -52,7 +52,7 @@ class MemberTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with member which gets its init from constructor arg" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |class Foo(p: String) {
         |  val bar: Int = p
         |}
@@ -77,7 +77,7 @@ class MemberTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with member which gets its init from constructor arg with expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |class Foo(p: String) {
         |  val bar: Int = p + "baz"
         |}

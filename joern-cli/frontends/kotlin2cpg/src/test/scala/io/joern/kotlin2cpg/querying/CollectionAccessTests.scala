@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class CollectionAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple list access" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |import kotlin.collections.mutableListOf
         |
         |fun main(args : Array<String>) {
@@ -27,7 +27,7 @@ class CollectionAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with simple map access" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |import kotlin.collections.mutableMapOf
         |
         |fun main(args : Array<String>) {

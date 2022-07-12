@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ThisTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with calls to functions of same name, but different scope" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun bar() { println("Top-level function") }
@@ -39,7 +39,7 @@ class ThisTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with call that has _this_ as argument" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun bar(x: Any) { println(x) }

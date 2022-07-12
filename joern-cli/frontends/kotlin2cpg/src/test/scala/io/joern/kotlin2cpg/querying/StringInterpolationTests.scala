@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class StringInterpolationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with basic string interpolation" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val name = "Peter"
         |  val age = 34

@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple method defined at package-level" should {
-    lazy val cpg = code("""
+    val cpg = code("""
        |fun double(x: Int): Int {
        |  return x * 2
        |}
@@ -64,7 +64,7 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with simple class declaration" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package com.test.pkg
         |
         |class Foo {

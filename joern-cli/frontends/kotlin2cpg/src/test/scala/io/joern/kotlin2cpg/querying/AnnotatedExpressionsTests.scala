@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class AnnotatedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with two identical calls, one annotated and one not" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {

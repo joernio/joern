@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with two simple methods" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun add(x: Int, y: Int): Int {
         |  return x + y
         |}

@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with class method referencing member in a call" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class AClass(private val x: String) {

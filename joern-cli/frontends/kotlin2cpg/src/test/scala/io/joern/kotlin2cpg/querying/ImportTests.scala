@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with a stdlib import" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.io.collections.listOf
@@ -43,7 +43,7 @@ class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code without explicit imports" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args : Array<String>) {

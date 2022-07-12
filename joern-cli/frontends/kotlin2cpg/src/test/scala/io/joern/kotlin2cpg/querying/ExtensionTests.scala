@@ -8,7 +8,7 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple extension function definitions" should {
     implicit val resolver = NoResolve
 
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class Example {
@@ -38,7 +38,7 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     // TODO: add test cases after the lowering is clear:
     //   --> right now we cannot differentiate between the fn definitions at different scopes
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun String.hash() = "HASH_PLACEHOLDER_1: $this"

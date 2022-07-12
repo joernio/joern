@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class QualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with qualified expression with QE as a receiver" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -27,7 +27,7 @@ class QualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = 
   }
 
   "CPG for code with qualified expression with CALL as a receiver" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun getHashMap(): HashMap<String,String> {
@@ -60,7 +60,7 @@ class QualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = 
   }
 
   "CPG for code with qualified expression with `when` as receiver" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -84,7 +84,7 @@ class QualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = 
   }
 
   "CPG for code with qualified expression in which the receiver is a call to array access" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {

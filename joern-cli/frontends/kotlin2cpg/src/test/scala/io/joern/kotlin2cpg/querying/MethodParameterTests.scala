@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with a simple function definition" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun add1mul(x: Int, y: Int): Int {
@@ -38,7 +38,7 @@ class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false
   }
 
   "CPG for code with a simple class definition" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class Foo {

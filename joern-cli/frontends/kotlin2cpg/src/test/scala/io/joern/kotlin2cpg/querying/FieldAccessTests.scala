@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 class FieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple filed access of user-defined class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class AClass {

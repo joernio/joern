@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class DataClassTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple data class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |data class Result(val p: Int, val q: String)

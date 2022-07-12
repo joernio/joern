@@ -7,7 +7,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
 
   "CPG for code with simple callback usage" should {
 
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun isOdd(x: Int) = x % 2 != 0
         |
         |fun firstOdd(x: Int): Int {

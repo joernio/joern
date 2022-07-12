@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MetaDataTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  lazy val cpg = code("""
+  val cpg = code("""
       |class ClassFoo {}
       |""".stripMargin)
 

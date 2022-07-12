@@ -8,7 +8,7 @@ class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   implicit val resolver = NoResolve
 
   "CPG for code with simple user-defined fn using generics" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |
         |package mypkg
         |
@@ -54,7 +54,7 @@ class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with simple user-defined fn using generics and a type parameter subclassed from user-defined fn" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |
         |package mypkg
         |

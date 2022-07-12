@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class BooleanLogicTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple boolean op usage" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val w = true
         |  val x: Boolean = !w
