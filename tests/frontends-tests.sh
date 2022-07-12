@@ -7,10 +7,10 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 JOERN="$SCRIPT_ABS_DIR"/../joern
 
-frontends=(c javascript javasrc java ghidra pythonsrc)
+frontends=(c jssrc javasrc java ghidra pythonsrc)
 declare -A minMethodCount=(
   [c]=2
-  [javascript]=3
+  [jssrc]=3
   [javasrc]=7
   [java]=7
   [ghidra]=100
@@ -18,7 +18,7 @@ declare -A minMethodCount=(
 )
 declare -A expectedMethod=(
   [c]=print_number
-  [javascript]=lookForProperty
+  [jssrc]=lookForProperty
   [javasrc]=callsExternalMethod
   [java]=callsExternalMethod
   [ghidra]=reallocarray

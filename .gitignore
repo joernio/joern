@@ -10,7 +10,6 @@ tests/smoke-test-repos
 tests/**/node_modules
 tests/**/package-lock.json
 tests/**/package.json
-joern-cli/frontends/js2cpg
 joern-cli.zip
 joern-server.zip
 cpg.bin.zip

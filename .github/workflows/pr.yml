@@ -43,6 +43,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
+      - name: Install astgen for jssrc2cpg
+        run: npm install -g @joernio/astgen
       - run: ./testDistro.sh
       - run: |
           mkdir /tmp/foo

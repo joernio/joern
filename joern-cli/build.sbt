@@ -35,20 +35,12 @@ lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
 lazy val php2cpg     = project.in(file("frontends/php2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
 lazy val jssrc2cpg   = project.in(file("frontends/jssrc2cpg"))
-lazy val js2cpg = project
-  .in(file("frontends/js2cpg"))
-  .enablePlugins(JavaAppPackaging)
-  .settings(
-    libraryDependencies += "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
-    Compile / mainClass                   := Some("io.shiftleft.js2cpg.core.Js2CpgMain")
-  )
 
 Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
 Universal / mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("c2cpg", (Projects.c2cpg / stage).value)
 Universal / mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jssrc2cpg", (jssrc2cpg / stage).value)
-Universal / mappings ++= frontendMappings("js2cpg", (js2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).value)
 Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("phpcpg", (php2cpg / stage).value)
