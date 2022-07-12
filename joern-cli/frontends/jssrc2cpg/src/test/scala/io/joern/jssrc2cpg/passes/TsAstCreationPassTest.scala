@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Import
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
@@ -30,15 +29,13 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
-      def fsDep = getDependencies(cpg).filter(PropertyNames.NAME, "fs")
-      fsDep.checkNodeCount(1)
-      fsDep.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "fs")
+      val List(fsDep, modelsDep) = cpg.dependency.l
+      fsDep.name shouldBe "fs"
+      fsDep.dependencyGroupId shouldBe Some("fs")
+      modelsDep.name shouldBe "models"
+      modelsDep.dependencyGroupId shouldBe Some("../models/index")
 
-      def modelsDep = getDependencies(cpg).filter(PropertyNames.NAME, "models")
-      modelsDep.checkNodeCount(1)
-      modelsDep.checkProperty(PropertyNames.DEPENDENCY_GROUP_ID, "../models/index")
-
-      val List(fs: Import, models: Import) = getImports(cpg).l
+      val List(fs: Import, models: Import) = cpg.staticImport.l
       fs.code shouldBe "import fs = require('fs')"
       fs.importedEntity shouldBe Some("fs")
       fs.importedAs shouldBe Some("fs")

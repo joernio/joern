@@ -3,19 +3,11 @@ package io.joern.jssrc2cpg.passes
 import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal.TraversalSource
 
 class ConfigPassTest extends AnyWordSpec with Matchers {
-
-  private def configFiles(cpg: Cpg): List[ConfigFile] = {
-    val result = TraversalSource(cpg.graph).label(NodeTypes.CONFIG_FILE).cast[ConfigFile].toList
-    result.size should not be 0
-    result
-  }
 
   "ConfigPass for Vue files" should {
 
@@ -25,18 +17,15 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         val fileB = dir / "b.vue"
         fileA.write("someCodeA();")
         fileB.write("someCodeB();")
+
         val cpg       = Cpg.emptyCpg
         val filenames = Seq(fileA, fileB)
         new ConfigPass(cpg, filenames, Config(inputPath = dir.pathAsString)).createAndApply()
 
-        val allConfigFiles = configFiles(cpg)
-
-        val configFileA =
-          allConfigFiles.find(_.name == "a.vue").getOrElse(fail("ConfigFile 'a.vue' not found!"))
-        val configFileB =
-          allConfigFiles.find(_.name == "b.vue").getOrElse(fail("ConfigFile 'b.vue' not found!"))
-
+        val List(configFileA, configFileB) = cpg.configFile.l
+        configFileA.name shouldBe "a.vue"
         configFileA.content shouldBe "someCodeA();"
+        configFileB.name shouldBe "b.vue"
         configFileB.content shouldBe "someCodeB();"
       }
     }
@@ -50,7 +39,6 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         val fileA = dir / "a.conf.js"
         val fileB = dir / "b.config.js"
         val fileC = dir / "c.json"
-
         fileA.write("a")
         fileB.write("b")
         fileC.write("c")
@@ -59,21 +47,12 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         val files = Seq(fileA, fileB, fileC)
         new ConfigPass(cpg, files, Config(inputPath = dir.pathAsString)).createAndApply()
 
-        val allConfigFiles = configFiles(cpg)
-
-        val configFileA =
-          allConfigFiles
-            .find(_.name == "a.conf.js")
-            .getOrElse(fail("ConfigFile 'a.conf.js' not found!"))
-        val configFileB =
-          allConfigFiles
-            .find(_.name == "b.config.js")
-            .getOrElse(fail("ConfigFile 'b.config.js' not found!"))
-        val configFileC =
-          allConfigFiles.find(_.name == "c.json").getOrElse(fail("ConfigFile 'c.json' not found!"))
-
+        val List(configFileA, configFileB, configFileC) = cpg.configFile.l
+        configFileA.name shouldBe "a.conf.js"
         configFileA.content shouldBe "a"
+        configFileB.name shouldBe "b.config.js"
         configFileB.content shouldBe "b"
+        configFileC.name shouldBe "c.json"
         configFileC.content shouldBe "c"
       }
     }
@@ -86,7 +65,6 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val fileA = dir / "a.html"
         val fileB = dir / "b.html"
-
         fileA.write("a")
         fileB.write("b")
 
@@ -94,17 +72,10 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         val files = Seq(fileA, fileB)
         new ConfigPass(cpg, files, Config(inputPath = dir.pathAsString)).createAndApply()
 
-        val allConfigFiles = configFiles(cpg)
-        val configFileA =
-          allConfigFiles
-            .find(_.name == "a.html")
-            .getOrElse(fail("ConfigFile 'a.html' not found!"))
-        val configFileB =
-          allConfigFiles
-            .find(_.name == "b.html")
-            .getOrElse(fail("ConfigFile 'b.html' not found!"))
-
+        val List(configFileA, configFileB) = cpg.configFile.l
+        configFileA.name shouldBe "a.html"
         configFileA.content shouldBe "a"
+        configFileB.name shouldBe "b.html"
         configFileB.content shouldBe "b"
       }
     }
@@ -124,12 +95,9 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         val files = Seq(fileA, fileB)
         new PrivateKeyFilePass(cpg, files, Config(inputPath = dir.pathAsString)).createAndApply()
 
-        val allConfigFiles = configFiles(cpg)
-        val configFileA =
-          allConfigFiles.find(_.name == "a.key").getOrElse(fail("ConfigFile 'a.key' not found!"))
+        val List(configFileA) = cpg.configFile.l
+        configFileA.name shouldBe "a.key"
         configFileA.content shouldBe "Content omitted for security reasons."
-
-        allConfigFiles.find(_.name == "b.key") shouldBe empty
       }
     }
 

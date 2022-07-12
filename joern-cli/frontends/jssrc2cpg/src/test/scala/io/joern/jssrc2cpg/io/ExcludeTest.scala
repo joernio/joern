@@ -4,20 +4,16 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, PropertyNames}
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal._
 
 import java.util.regex.Pattern
 
 class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks {
 
   private val projectUnderTestPath = File(getClass.getResource("/excludes").toURI).pathAsString
-
-  private def fileNames(cpg: Cpg): List[String] =
-    TraversalSource(cpg.graph).label(NodeTypes.FILE).property(PropertyNames.NAME).toList
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     var cpg = Cpg.emptyCpg
@@ -31,7 +27,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       )
       cpg = jssrc2cpg.createCpg(finalConfig).get
     }
-    fileNames(cpg) should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
+    cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
   }
 
   "Using different excludes via program arguments" should {
