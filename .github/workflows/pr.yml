@@ -30,7 +30,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Check formatting
-        run: sbt ++2.13.7 scalafmtCheck test:scalafmtCheck
+        run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt'"
         if: ${{ failure() }}
   test-scripts:
