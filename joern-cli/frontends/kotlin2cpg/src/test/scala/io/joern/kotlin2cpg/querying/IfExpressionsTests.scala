@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `if`-expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package baz
         |
         |fun main(argc: Int): Int {
@@ -46,7 +46,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with `if`-expression with `else-if`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -85,7 +85,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with simple `if`-expression with fn calls in branches" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun some1(): Int {
@@ -135,7 +135,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with `if`-expression as receiver of a DQE" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -157,7 +157,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with simple `if`-expression with DQEs in branches" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -211,7 +211,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with simple `if`-expression with enum in branches" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -258,7 +258,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
   }
 
   "CPG for code with simple `if`-expression inside method" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random

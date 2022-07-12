@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple unnamed companion object" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class AClass {
@@ -68,7 +68,7 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
   }
 
   "CPG for code with simple named companion object" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class AClass {

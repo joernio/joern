@@ -8,7 +8,7 @@ class LabeledExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   implicit val resolver = NoResolve
 
   "CPG for code with simple call to `println` prefixed by a label" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {

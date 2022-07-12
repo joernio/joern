@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple namespace declaration" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package com.test.PackageFoo
         |
         |class ClassFoo {
@@ -51,7 +51,7 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
   }
 
   "CPG for code with imports of simple Android packages" should {
-    lazy val cpg = code("""
+    val cpg = code("""
        |package mypkg
        |
        |import android.content.Intent

@@ -8,7 +8,7 @@ class ClassLiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple class literals" should {
 
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class Bar {}

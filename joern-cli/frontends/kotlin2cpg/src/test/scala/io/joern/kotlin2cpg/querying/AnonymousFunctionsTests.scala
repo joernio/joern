@@ -10,7 +10,7 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   implicit val resolver = NoResolve
 
   "CPG for code with anonymous function as argument" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.collections.List

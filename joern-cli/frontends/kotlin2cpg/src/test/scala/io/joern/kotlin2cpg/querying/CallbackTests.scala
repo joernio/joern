@@ -9,7 +9,7 @@ class CallbackTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   implicit val resolver = NoResolve
 
   "CPG for code with callback and additional parameter" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun withCallback(p: String, callback: (String) -> Unit) {
@@ -49,7 +49,7 @@ class CallbackTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with simple callback usage" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |fun withCallback(fn: (String)->Unit) {
@@ -71,7 +71,7 @@ class CallbackTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with simple callback inside class method" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |class AClass {

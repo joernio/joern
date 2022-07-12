@@ -9,7 +9,7 @@ class LazyBlocksTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   // TODO: add test cases for lazy properties as well
 
   "CPG for code with simple lazy blocks" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import java.nio.file.Files

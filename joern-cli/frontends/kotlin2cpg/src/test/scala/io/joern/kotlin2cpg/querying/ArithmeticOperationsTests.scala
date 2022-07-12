@@ -8,7 +8,7 @@ class ArithmeticOperationsTests extends KotlinCode2CpgFixture(withOssDataflow = 
 
   "CPG for code with simple arithmetic operations" should {
 
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  println(1 + 2)
         |  println(1 - 2)

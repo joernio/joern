@@ -9,7 +9,7 @@ class CallGraphTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple function definition" should {
 
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun add(x: Int, y: Int): Int {

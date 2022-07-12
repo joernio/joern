@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with call to `takeIf`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |  package mypkg
         |
         |  import kotlin.random.Random
@@ -35,7 +35,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a single call to println and a corresponding import" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.io.println
@@ -52,7 +52,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a single call to println, a corresponding import and a locally defined println method" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun println(baz: String) {
@@ -71,7 +71,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a call to static class method of imported class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -95,7 +95,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a chained call to static class method of imported class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -110,7 +110,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a call to infix fn `to`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -134,7 +134,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "CPG for code with calls to stdlib's `split`s" should {
-      lazy val cpg = code("""
+      val cpg = code("""
           |package mypkg
           |
           |fun main() {
@@ -153,7 +153,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "CPG for code with calls to stdlib's `trim`s" should {
-      lazy val cpg = code("""
+      val cpg = code("""
           |package mypkg
           |
           |fun trimParam(p: String): String {

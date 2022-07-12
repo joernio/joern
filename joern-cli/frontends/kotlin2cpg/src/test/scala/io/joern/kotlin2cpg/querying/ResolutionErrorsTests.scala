@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with QE of receiver for which the type cannot be inferred" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -26,7 +26,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with simple stdlib fns" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.collections.HashMap
@@ -55,7 +55,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with stdlib mutable list of items of class without type info available" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import com.intellij.ide.util.projectWizard.importSources.DetectedProjectRoot
@@ -81,7 +81,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with QE expression without type info" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |object AClass {
@@ -117,7 +117,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with extension fn defined on unresolvable type " should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import com.intellij.openapi.editor.*
@@ -138,7 +138,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with extension fn defined on resolvable type with unresolvable subtypes" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import com.intellij.openapi.editor.*
@@ -160,7 +160,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with `containsKey` call on collection of elements without corresponding imported class" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import io.no.SuchPackage

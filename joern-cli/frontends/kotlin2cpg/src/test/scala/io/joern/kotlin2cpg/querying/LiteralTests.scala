@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code simple literal declarations with explicit types" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val a: Int = 1
         |  val b: Boolean = true
@@ -36,7 +36,7 @@ class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code simple literal declarations without explicit types" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val a = 1
         |  val b = true

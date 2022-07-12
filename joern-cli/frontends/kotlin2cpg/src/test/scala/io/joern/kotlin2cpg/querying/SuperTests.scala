@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class SuperTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple call using _super_" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |open class BClass {

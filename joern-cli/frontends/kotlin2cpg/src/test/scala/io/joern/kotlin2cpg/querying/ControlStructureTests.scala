@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple if-else" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo(x: Int): Int {
@@ -24,7 +24,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with `when` statement with assignment in its conditional" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -48,7 +48,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with multiple control structures" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |import kotlin.random.Random
         |
         |class ClassFoo {
@@ -113,7 +113,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with simple `for`-statements" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -134,7 +134,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with simple `if`-statement" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -158,7 +158,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with try-catch-finally statement" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |fun main() {
@@ -186,7 +186,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with try-catch statement" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |fun main() {
@@ -211,7 +211,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with `for-in` loop which has a simple variable loop parameter" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -320,7 +320,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   "CPG for code with `for-in` loop which has a destructuring declaration loop parameter" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |data class AClass(val x: String, val y: Int)

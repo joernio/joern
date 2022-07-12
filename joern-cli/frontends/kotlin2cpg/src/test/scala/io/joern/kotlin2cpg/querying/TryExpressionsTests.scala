@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class TryExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `try`-expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun doSomething(x: Int): Int {

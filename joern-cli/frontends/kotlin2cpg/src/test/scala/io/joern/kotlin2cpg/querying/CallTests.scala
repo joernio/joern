@@ -10,7 +10,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   implicit val resolver = NoResolve
 
   "CPG for code with two functions with the same name, but different params" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo(x: Int, y: Int): Int {
@@ -93,7 +93,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a class declaration " should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -150,7 +150,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a call to an implicitly imported stdlib fn " should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun doSome(x: String) {
@@ -176,7 +176,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with invocation of extension function from stdlib" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -194,7 +194,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a simple method call to decl of Java's stdlib" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |fun foo(x: String): Int {
@@ -213,7 +213,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a simple call to class from Java's stdlib imported with _as_" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import java.io.File as MyFile
@@ -233,7 +233,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with a simple call with unknown identifier imported via _as_" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import no.such.CaseClass as MyCaseClass
@@ -267,7 +267,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with call which has parenthesized expression as receiver" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |fun main() {

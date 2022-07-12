@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class LocalTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code simple local declarations" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main() {
         |  val x: Int = 1
         |  val y = 2

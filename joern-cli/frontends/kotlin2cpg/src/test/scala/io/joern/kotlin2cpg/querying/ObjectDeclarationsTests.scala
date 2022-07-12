@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ObjectDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple object declaration" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |object Foo {
@@ -57,7 +57,7 @@ class ObjectDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   }
 
   "CPG for code with complex object declaration" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import android.content.Context

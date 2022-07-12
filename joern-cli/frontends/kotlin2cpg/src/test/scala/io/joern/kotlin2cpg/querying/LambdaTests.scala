@@ -10,7 +10,7 @@ import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |// TODO: test with `fun foo(x: String, y: String): Int {`
@@ -43,7 +43,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with a simple lambda which captures a local" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.collections.List
@@ -82,7 +82,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with a list iterator lambda" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun foo(x: String): Int {
@@ -163,7 +163,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with a scope function lambda" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun throughTakeIf(x: String): String? {
@@ -229,7 +229,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with a lambda mapping values of a collection" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun mappedListWith(p: String): List<String> {
@@ -301,7 +301,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with destructuring inside lambda" should {
-    lazy val cpg = code("""
+    val cpg = code("""
        |package mypkg
        |
        |fun main(args: Array<String>) {
@@ -316,7 +316,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with a simple lambda which captures a method parameter inside method" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class AClass {
@@ -340,7 +340,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with a simple lambda which captures a method parameter, nested twice" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |package mypkg
       |
       |fun foo(x: String): Int {
@@ -374,7 +374,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with call with lambda inside method definition" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -407,7 +407,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code with nested lambdas" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun doSomething(p: String): Int {

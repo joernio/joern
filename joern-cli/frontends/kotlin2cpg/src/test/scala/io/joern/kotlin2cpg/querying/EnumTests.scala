@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class EnumTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple enum definition" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |enum class Direction {

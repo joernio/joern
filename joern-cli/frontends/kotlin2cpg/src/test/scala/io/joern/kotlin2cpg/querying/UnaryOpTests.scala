@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class UnaryOpTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with calls to unary operators" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val x: Int = 5
         |  val y: Boolean = true

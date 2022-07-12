@@ -8,7 +8,7 @@ import overflowdb.traversal.jIteratortoTraversal
 
 class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with _and_/_or_ operator and try-catch as one of the arguments" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -54,7 +54,7 @@ class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
   }
 
   "CPG for code with _and_ operator and let inside it" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class Config {

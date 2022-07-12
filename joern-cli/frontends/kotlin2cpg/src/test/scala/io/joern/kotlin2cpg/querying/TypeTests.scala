@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple class with one method and one member" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package com.test.PackageFoo
         |
         |class Foo {
@@ -66,7 +66,7 @@ class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |import javax.crypto.Cipher

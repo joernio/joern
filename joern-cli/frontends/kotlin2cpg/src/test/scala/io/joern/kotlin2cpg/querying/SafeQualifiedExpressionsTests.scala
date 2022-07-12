@@ -8,7 +8,7 @@ class SafeQualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflo
   implicit val resolver = NoResolve
 
   "CPG for code with safe qualified expression" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {

@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 class DelegatedPropertiesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple delegated properties" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |class MyClass {

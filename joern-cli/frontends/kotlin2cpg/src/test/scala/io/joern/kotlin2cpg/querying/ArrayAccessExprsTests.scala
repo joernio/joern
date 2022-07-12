@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 class ArrayAccessExprsTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
 
   "CPG for code with simple map construction and access" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -40,7 +40,7 @@ class ArrayAccessExprsTests extends KotlinCode2CpgFixture(withOssDataflow = true
   }
 
   "CPG for code with simple array construction and access" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {

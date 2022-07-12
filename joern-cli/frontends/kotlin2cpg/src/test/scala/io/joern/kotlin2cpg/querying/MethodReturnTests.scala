@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class MethodReturnTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with simple method with two parameters" should {
-    lazy val cpg = code("""
+    val cpg = code("""
       |fun foo(x: Int, y: Double): Int {
       |  return x * 2
       |}

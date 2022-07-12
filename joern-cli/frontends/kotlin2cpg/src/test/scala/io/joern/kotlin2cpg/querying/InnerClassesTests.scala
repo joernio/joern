@@ -10,7 +10,7 @@ class InnerClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   implicit val resolver = NoResolve
 
   "CPG for code with a simple inner class definition" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         | class Outer {
         |     private val bar: Int = 1
         |     inner class Inner {
