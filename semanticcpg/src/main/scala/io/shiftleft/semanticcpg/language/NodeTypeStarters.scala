@@ -70,7 +70,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
   def configFile(name: String): Traversal[ConfigFile] =
     configFile.name(name)
 
-  /** Traverse to all dependecies
+  /** Traverse to all dependencies
     */
   @Doc(info = "All dependencies")
   def dependency: Traversal[Dependency] =
