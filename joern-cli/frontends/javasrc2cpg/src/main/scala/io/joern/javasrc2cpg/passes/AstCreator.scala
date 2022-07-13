@@ -2699,8 +2699,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       logger.warn(s"Could not resolve the interface implemented by the lambda $expr. Type info may be missing.")
     }
 
-    // By definition, a functional interface will declare exactly one abstract method, so `find` is fine.
-    val maybeBoundMethod = maybeImplementedInterface.flatMap(_.getDeclaredMethods.asScala.find(_.isAbstract))
+    // While, in theory, there should only be a single abstract method defined by a functional interface, it turns
+    // out this is sort of not true for at least the java.util.Comparator interface, which re-declares the equals
+    // method which is marked `abstract` by JavaParser.
+    val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
+      val abstractMethods = interface.getDeclaredMethods.asScala.filter(_.isAbstract)
+      abstractMethods.find(_.getNumberOfParams == expr.getParameters.size())
+    }
 
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
   }
