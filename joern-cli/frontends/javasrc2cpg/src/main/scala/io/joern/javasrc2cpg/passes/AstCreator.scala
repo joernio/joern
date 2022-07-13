@@ -2701,10 +2701,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     // While, in theory, there should only be a single abstract method defined by a functional interface, it turns
     // out this is sort of not true for at least the java.util.Comparator interface, which re-declares the equals
-    // method which is marked `abstract` by JavaParser.
+    // method which is marked `abstract` by JavaParser. The added check for parameter
     val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
-      val abstractMethods = interface.getDeclaredMethods.asScala.filter(_.isAbstract)
-      abstractMethods.find(_.getNumberOfParams == expr.getParameters.size())
+      val abstractMethodsWithMatchingParamCount = interface.getDeclaredMethods.asScala
+        .filter(_.isAbstract)
+        .filter(_.getNumberOfParams == expr.getParameters.size())
+      if (abstractMethodsWithMatchingParamCount.size > 1) {
+        logger.warn(
+          s"Found multiple abstract methods matching param count for implementing lambda. Results will be unstable"
+        )
+      }
+      abstractMethodsWithMatchingParamCount.headOption
     }
 
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
