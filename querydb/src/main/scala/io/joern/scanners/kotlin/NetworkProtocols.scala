@@ -32,7 +32,7 @@ object NetworkProtocols extends QueryBundle {
       codeExamples = CodeExamples(
         List("""
           |import java.io.BufferedReader; import java.io.InputStreamReader; import java.net.URL;
-          |fun main() {
+          |fun fn1() {
           |    val url = URL("http://phrack.org") // <---- relevant line
           |    val connection = url.openConnection()
           |    BufferedReader(InputStreamReader(connection.getInputStream())).use { inp ->
@@ -45,7 +45,7 @@ object NetworkProtocols extends QueryBundle {
           |""".stripMargin),
         List("""
           |import java.io.BufferedReader; import java.io.InputStreamReader; import java.net.URL;
-          |fun main() {
+          |fun fn2() {
           |    val url = URL("https://phrack.org") // <---- relevant line
           |    val connection = url.openConnection()
           |    BufferedReader(InputStreamReader(connection.getInputStream())).use { inp ->

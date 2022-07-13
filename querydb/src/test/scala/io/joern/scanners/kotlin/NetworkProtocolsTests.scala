@@ -3,6 +3,7 @@ package io.joern.scanners.kotlin
 import io.joern.console.scan._
 import io.joern.suites.KotlinQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes.Call
+import overflowdb.traversal.iterableToTraversal
 
 class NetworkProtocolsTests extends KotlinQueryTestSuite {
 
@@ -10,6 +11,6 @@ class NetworkProtocolsTests extends KotlinQueryTestSuite {
 
   "should find calls relevant to insecure network protocol usage" in {
     val query = queryBundle.usageOfInsecureProtocol()
-    query(cpg).flatMap(_.evidence).collect { case c: Call => c }.size shouldBe 1
+    query(cpg).flatMap(_.evidence).collect { case c: Call => c.code }.l shouldBe List("URL(\"http://phrack.org\")")
   }
 }
