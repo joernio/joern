@@ -2701,7 +2701,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     // While, in theory, there should only be a single abstract method defined by a functional interface, it turns
     // out this is sort of not true for at least the java.util.Comparator interface, which re-declares the equals
-    // method which is marked `abstract` by JavaParser. The added check for parameter
+    // method which is marked `abstract` by JavaParser. The added check for parameter counts fixes this for the known
+    // example.
     val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
       val abstractMethodsWithMatchingParamCount = interface.getDeclaredMethods.asScala
         .filter(_.isAbstract)
