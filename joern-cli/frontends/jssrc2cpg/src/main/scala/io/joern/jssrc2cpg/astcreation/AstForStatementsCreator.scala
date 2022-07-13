@@ -95,7 +95,7 @@ trait AstForStatementsCreator {
       .getOrElse(Ast())
 
     val tryChildren = List(bodyAst, catchAst, finalizerAst)
-    setIndices(tryChildren)
+    setIndices(tryChildren, countEmpty = true)
     Ast(tryNode).withChildren(tryChildren)
   }
 
@@ -151,7 +151,7 @@ trait AstForStatementsCreator {
       }
       .getOrElse(Ast())
     val bodyAst = astForNode(forStmt.json("body"))
-    setIndices(List(initAst, testAst, updateAst, bodyAst))
+    setIndices(List(initAst, testAst, updateAst, bodyAst), countEmpty = true)
     Ast(forNode).withChild(initAst).withChild(testAst).withChild(updateAst).withChild(bodyAst)
   }
 

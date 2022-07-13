@@ -78,7 +78,7 @@ trait AstNodeBuilder {
       .columnNumber(column)
   }
 
-  protected def setIndices(asts: List[Ast], receiver: Option[Ast] = None): Unit = {
+  protected def setIndices(asts: List[Ast], receiver: Option[Ast] = None, countEmpty: Boolean = false): Unit = {
     var currIndex = 1
     var currOrder = 1
 
@@ -100,6 +100,7 @@ trait AstNodeBuilder {
           x.order = currOrder
           currIndex = currIndex + 1
           currOrder = currOrder + 1
+        case None if !countEmpty => // do nothing
         case _ =>
           currIndex = currIndex + 1
           currOrder = currOrder + 1

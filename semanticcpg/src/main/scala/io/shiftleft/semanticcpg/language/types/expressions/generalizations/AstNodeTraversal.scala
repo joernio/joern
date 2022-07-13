@@ -155,8 +155,8 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
 
   /** Traverse only to AST nodes that are type reference
     */
-  def isTypeRef: Traversal[MethodRef] =
-    traversal.collectAll[MethodRef]
+  def isTypeRef: Traversal[TypeRef] =
+    traversal.collectAll[TypeRef]
 
   /** Traverse only to AST nodes that are METHOD
     */
