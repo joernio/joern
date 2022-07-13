@@ -102,6 +102,16 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           NewExpressionJsonFormat.read(json)
         case "TypeNameExpression" =>
           TypeNameExpressionJsonFormat.read(json)
+        case "InlineAssemblyStatement" =>
+          InlineAssemblyStatementJsonFormat.read(json)
+        case "AssemblyBlock" =>
+          AssemblyBlockJsonFormat.read(json)
+        case "AssemblyAssignment" =>
+          AssemblyAssignmentJsonFormat.read(json)
+        case "AssemblyCall" =>
+          AssemblyCallJsonFormat.read(json)
+        case "DecimalNumber" =>
+          DecimalNumberJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
@@ -869,4 +879,91 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
+  implicit object InlineAssemblyStatementJsonFormat extends JsonFormat[InlineAssemblyStatement] with DefaultJsonProtocol {
+
+    def write(c: InlineAssemblyStatement): JsValue = JsNull
+
+    def read(json: JsValue): InlineAssemblyStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as InlineAssemblyStatement").fields
+      if (fields("type").convertTo[String] != "InlineAssemblyStatement") {
+        throw new RuntimeException("InlineAssemblyStatement object expected")
+      } else {
+        InlineAssemblyStatement(
+          fields("language") match {
+            case x: JsObject => x.convertTo[BaseASTNode]
+            case _ => null
+          },
+          fields("body").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object AssemblyBlockJsonFormat extends JsonFormat[AssemblyBlock] with DefaultJsonProtocol {
+
+    def write(c: AssemblyBlock): JsValue = JsNull
+
+    def read(json: JsValue): AssemblyBlock = {
+      val fields = json.asJsObject("Unable to decode JSON as AssemblyBlock").fields
+      if (fields("type").convertTo[String] != "AssemblyBlock") {
+        throw new RuntimeException("AssemblyBlock object expected")
+      } else {
+        AssemblyBlock(
+          fields("operations").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object AssemblyAssignmentJsonFormat extends JsonFormat[AssemblyAssignment] with DefaultJsonProtocol {
+
+    def write(c: AssemblyAssignment): JsValue = JsNull
+
+    def read(json: JsValue): AssemblyAssignment = {
+      val fields = json.asJsObject("Unable to decode JSON as AssemblyAssignment").fields
+      if (fields("type").convertTo[String] != "AssemblyAssignment") {
+        throw new RuntimeException("AssemblyAssignment object expected")
+      } else {
+        AssemblyAssignment(
+          fields("names").convertTo[List[BaseASTNode]],
+          fields("expression").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+  implicit object AssemblyCallJsonFormat extends JsonFormat[AssemblyCall] with DefaultJsonProtocol {
+
+    def write(c: AssemblyCall): JsValue = JsNull
+
+    def read(json: JsValue): AssemblyCall = {
+      val fields = json.asJsObject("Unable to decode JSON as AssemblyCall").fields
+      if (fields("type").convertTo[String] != "AssemblyCall") {
+        throw new RuntimeException("AssemblyCall object expected")
+      } else {
+        AssemblyCall(
+          fields("functionName").convertTo[String],
+          fields("arguments").convertTo[List[BaseASTNode]]
+        )
+      }
+    }
+  }
+
+  implicit object DecimalNumberJsonFormat extends JsonFormat[DecimalNumber] with DefaultJsonProtocol {
+
+    def write(c: DecimalNumber): JsValue = JsNull
+
+    def read(json: JsValue): DecimalNumber = {
+      val fields = json.asJsObject("Unable to decode JSON as DecimalNumber").fields
+      if (fields("type").convertTo[String] != "DecimalNumber") {
+        throw new RuntimeException("DecimalNumber object expected")
+      } else {
+        DecimalNumber(
+          fields("value").convertTo[String]
+        )
+      }
+    }
+  }
+
 }

@@ -1,5 +1,6 @@
 package io.joern.solidity2cpg.passes
 
+import io.joern.solidity2cpg.domain.SuryaJsonProtocol.BaseASTNodeJsonFormat
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
@@ -375,10 +376,139 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: IfStatement                  => astForIfStatement(x, order)
       case x: ReturnStatement              => astForReturn(x, order)
       case x: VariableDeclarationStatement => astForVarDeclStmt(x, order)
+      case x: InlineAssemblyStatement      => astForInlineAssemblyStatement(x.body, order)
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
     }
+  }
+
+  private def astForInlineAssemblyStatement(block: BaseASTNode, order: Int): Ast = {
+    block match {
+      case x: AssemblyBlock => astForAsmBody(x, order)
+      case _=>
+      {
+        println("InlineAssemblyStatement type not found: "+block.getType)
+        Ast()}
+    }
+
+  }
+
+  private def astForAsmBody(body: AssemblyBlock, order: Int): Ast = {
+    val blockNode = NewBlock().order(order).argumentIndex(order).code("Assembly")
+    val operations     = body.operations
+
+//    val vars = withOrder(operations) {case (x, order) =>
+//      astForLocalDeclaration(x, order)
+//    }
+
+    Ast(blockNode)
+//      .withChildren(vars)
+      .withChildren(withOrder(operations) { case (x, order) =>
+        astForAsmStatement(x, order)
+      })
+  }
+
+  private def astForAsmStatement(statement: BaseASTNode, order: Int): Ast = {
+    // TODO : Finish all of these statements
+    statement match {
+      case x: AssemblyAssignment          => astForAsmAssignment(x, order)
+      case x: AssemblyCall                => astForAsmCall(x, order)
+      case x: DecimalNumber               => astForDecimalNumber(x, order)
+      case x =>
+        logger.warn(s"Unhandled Assembly statement of type ${x.getClass}")
+        Ast() // etc
+    }
+
+  }
+
+  private def astForAsmAssignment(assignment: AssemblyAssignment, order: Int): Ast = {
+    val names = withOrder(assignment.names) { case(x, order) =>
+      x match {
+        case y: Identifier => astForIdentifier(y, order)
+        case _=> {
+          println("type in AsmAssignment: "+x.getType)
+          Ast()
+        }
+      }
+    }
+    val expr = astForAsmStatement(assignment.expression, names.size)
+    val lfteq = names.flatMap(_.root.map(_.properties(PropertyNames.CODE)).mkString(""))
+    val rhteq = expr.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val callNode = NewCall()
+      .name(Operators.assignment)
+      .methodFullName(Operators.assignment)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(lfteq.head + " " + ":=" + " " + rhteq)
+      .argumentIndex(order)
+      .order(order)
+    val children = names :+ expr
+    Ast(callNode)
+      .withChildren(children)
+      .withArgEdges(callNode, children.flatMap(_.root))
+  }
+
+  private def astForAsmCall(call: AssemblyCall, order: Int): Ast = {
+        var name           = ""
+        var code           = ""
+        var args           = ""
+        val expr           = call.functionName match {
+          case "shr" => {name = Operators.arithmeticShiftRight
+            Ast(NewIdentifier()
+              .name(name)
+              .code(call.functionName)
+              .order(order + 1)
+              .argumentIndex(order + 1))}
+          case "shl" => {name = Operators.shiftLeft
+            Ast(NewIdentifier()
+              .name(name)
+              .code(call.functionName)
+              .order(order + 1)
+              .argumentIndex(order + 1))}
+          case _=> Ast(NewIdentifier()
+            .name(call.functionName)
+            .code(call.functionName)
+            .order(order + 1)
+            .argumentIndex(order + 1))
+
+        }
+        val arguments = withOrder(call.arguments) { case (x, order) =>
+          astForAsmStatement(x, order)
+        }
+        if (name.isEmpty) {
+          name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
+        }
+        args = arguments.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
+        code = if (args.isEmpty) {
+          expr.root.map(_.properties(PropertyNames.CODE)).mkString("")
+        } else {
+          expr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "(" + args + ")"
+        }
+        val func = NewCall()
+          .name(name)
+          .code(code)
+          .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+          .order(order)
+          .argumentIndex(order)
+//          .methodFullName(methodFullName)
+//          .signature(sig)
+//          .typeFullName(typeFullName)
+        Ast(func)
+          .withChild(expr)
+          .withChildren(arguments)
+          .withArgEdges(func, expr.root.toList)
+          .withArgEdges(func, arguments.flatMap(_.root))
+
+  }
+
+  private def astForDecimalNumber(number: DecimalNumber, order: Int): Ast = {
+    Ast(
+      NewLiteral()
+        .code(number.value)
+//        .typeFullName(typeFullName)
+        .order(order)
+        .argumentIndex(order)
+    )
   }
 
   private def astForLocal(varDecl: VariableDeclaration, order: Int): Ast = {
@@ -932,7 +1062,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //      .code(name))
     Ast(fieldAccess)
       .withChild(expr)
+      .withArgEdges(fieldAccess, expr.root.toList)
 //      .withChild(fieldIdentifierNode)
+
   }
 
   private def astForBooleanLiteral(literal: BooleanLiteral, order : Int): Ast = {

@@ -260,4 +260,23 @@ object SuryaObject {
   case class TypeNameExpression(typeName: BaseASTNode) extends BaseASTNode("  TypeNameExpression") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
+
+  case class InlineAssemblyStatement(language: BaseASTNode, body: BaseASTNode) extends BaseASTNode("  InlineAssemblyStatement") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  case class AssemblyBlock(operations: List[BaseASTNode]) extends BaseASTNode("  AssemblyBlock") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  case class AssemblyAssignment(names: List[BaseASTNode], expression: BaseASTNode) extends BaseASTNode("  AssemblyAssignment") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
+  case class AssemblyCall(functionName: String, arguments: List[BaseASTNode]) extends BaseASTNode("  AssemblyCall") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+  case class DecimalNumber(value: String) extends  BaseASTNode("  DecimalNumber") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 }
