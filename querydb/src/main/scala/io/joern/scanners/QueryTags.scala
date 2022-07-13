@@ -16,10 +16,11 @@ object QueryTags {
   val uaf           = "uaf"
   val xss           = "xss"
 
-  val integers             = "integers"
-  val strings              = "strings"
-  val sqlInjection         = "sql-injection"
-  val compilerOptimization = "compiler-optimization"
-  val misconfiguration     = "misconfiguration"
+  val integers               = "integers"
+  val strings                = "strings"
+  val sqlInjection           = "sql-injection"
+  val compilerOptimization   = "compiler-optimization"
+  val misconfiguration       = "misconfiguration"
+  val insecureNetworkTraffic = "insecure-network-traffic"
 
 }
