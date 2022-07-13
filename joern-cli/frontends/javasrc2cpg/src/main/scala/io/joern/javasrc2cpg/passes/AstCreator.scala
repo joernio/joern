@@ -2709,10 +2709,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .filter(_.getNumberOfParams == expr.getParameters.size())
       if (abstractMethodsWithMatchingParamCount.size > 1) {
         logger.warn(
-          s"Found multiple abstract methods matching param count for implementing lambda. Results will be unstable"
+          s"Found multiple abstract methods matching param count for implementing lambda. Ignoring type information for stability"
         )
+        None
+      } else {
+        abstractMethodsWithMatchingParamCount.headOption
       }
-      abstractMethodsWithMatchingParamCount.headOption
     }
 
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
