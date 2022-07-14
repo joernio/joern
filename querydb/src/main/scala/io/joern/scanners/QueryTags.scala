@@ -20,4 +20,6 @@ object QueryTags {
   val sqlInjection         = "sql-injection"
   val compilerOptimization = "compiler-optimization"
 
+  val selfDestruct         = "selfdestruct-contract"
+
 }
