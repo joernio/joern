@@ -5,14 +5,14 @@ import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
 import ujson.{Arr, Value}
 
 import scala.collection.mutable
 
 trait AstForFunctionsCreator { this: AstCreator =>
-  case class MethodAst(ast: Ast, methodNode: NewMethod, methodName: Option[String])
+  case class MethodAst(ast: Ast, methodNode: NewMethod)
 
   private def handleParameters(
     parameters: Seq[Value],
@@ -275,6 +275,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
   ): MethodAst = {
+
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None
@@ -360,10 +361,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     methodRefNode match {
       case Some(ref) if callAst.nodes.isEmpty =>
-        MethodAst(Ast(ref), methodNode, None)
+        MethodAst(Ast(ref), methodNode)
       case _ =>
-        val callName = callAst.root.map(_.asInstanceOf[NewCall].name)
-        MethodAst(callAst, methodNode, callName)
+        MethodAst(callAst, methodNode)
     }
   }
 
@@ -374,5 +374,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
   ): Ast = {
     createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
   }
+
+  protected def nameForFunctionDeclaration(callAst: Ast): Option[String] =
+    callAst.root.collect { case node: NewCall =>
+      node.name
+    }
 
 }

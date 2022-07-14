@@ -10,9 +10,7 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
-trait AstNodeBuilder {
-
-  this: AstCreator =>
+trait AstNodeBuilder { this: AstCreator =>
 
   protected def newUnknown(node: BabelNodeInfo): NewUnknown =
     NewUnknown()
