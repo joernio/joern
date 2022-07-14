@@ -376,7 +376,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   protected def nameForFunctionDeclaration(callAst: Ast): Option[String] =
-    callAst.root.collect { case node: NewCall =>
+    callAst.root.collect { case node: CallBase =>
       node.name
     }
 
