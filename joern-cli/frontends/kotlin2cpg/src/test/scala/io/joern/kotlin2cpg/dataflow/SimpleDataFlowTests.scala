@@ -147,11 +147,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |    val forcedNonOptional = maybeCast!!
         |    return forcedNonOptional
         |}
-        |
-        |fun main() {
-        |    val out = doSomething(41414141)
-        |    println(out)
-        |}
         |""".stripMargin)
 
     "should find a flow through the `elvis` operator" in {
@@ -229,11 +224,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |  println(afterElse)
         |
         |  return 41
-        |}
-        |
-        |fun main() {
-        |  val dicey = Random.nextInt()
-        |  doSomething(dicey)
         |}
         |""".stripMargin)
 
@@ -359,8 +349,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
 
   "CPG for code with `try` control expressions" should {
     val cpg = code("""
-        |package mypkg
-        |
         |import kotlin.random.Random
         |
         |fun doSomething(p: Int): Int {
@@ -373,11 +361,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |  println(afterCatch)
         |
         |  return 41
-        |}
-        |
-        |fun main() {
-        |  val dicey = Random.nextInt()
-        |  doSomething(dicey)
         |}
         |""".stripMargin)
 
@@ -465,11 +448,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |
         |  return 41
         |}
-        |
-        |fun main() {
-        |  val dicey = Random.nextInt()
-        |  doSomething(dicey)
-        |}
         |""".stripMargin)
 
     "should find a flow through `then`-block of `if` control structure" in {
@@ -521,8 +499,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
 
   "CPG for code with `try` control structures" should {
     val cpg = code("""
-        |package mypkg
-        |
         |import kotlin.random.Random
         |
         |fun doSomething(p: Int): Int {
@@ -546,11 +522,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |  println(afterTryFromBody)
         |
         |  return 41
-        |}
-        |
-        |fun main() {
-        |  val dicey = Random.nextInt()
-        |  doSomething(dicey)
         |}
         |""".stripMargin)
 
@@ -589,8 +560,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
 
   "CPG for code with `do-while` control structure" should {
     val cpg = code("""
-        |package mypkg
-        |
         |fun doSomething(p: Int): Int {
         |  var someVal: Int
         |  do {
@@ -599,11 +568,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |  val after = someVal
         |  return someVal
         |}
-        |
-        |fun main() {
-        |  val out = doSomething(41414141)
-        |  println(out)
-        |}
         |""".stripMargin)
 
     "should find a flow through body of the control structure" in {
@@ -611,14 +575,12 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
       val sink   = cpg.identifier.name("after")
       val flows  = sink.reachableByFlows(source)
       flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("doSomething(p)", Some(4)), ("someVal = p", Some(7)), ("val after = someVal", Some(9))))
+        Set(List(("doSomething(p)", Some(2)), ("someVal = p", Some(5)), ("val after = someVal", Some(7))))
     }
   }
 
   "CPG for code with `while` control structure" should {
     val cpg = code("""
-        |package mypkg
-        |
         |fun doSomething(p: Int): Int {
         |  var someVal: Int
         |  while (someVal == 0) {
@@ -626,11 +588,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |  }
         |  val after = someVal
         |  return someVal
-        |}
-        |
-        |fun main() {
-        |  val out = doSomething(41414141)
-        |  println(out)
         |}
         |""".stripMargin)
 
@@ -657,11 +614,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |fun doSomething(p1: Int, p2: String): String {
         |    val interpolated = "BEGIN - $p1 - $p2 END"
         |    return "NOTHING"
-        |}
-        |
-        |fun main() {
-        |    val out = doSomething(41414141, "42424242")
-        |    println(out)
         |}
         |""".stripMargin)
 
@@ -704,11 +656,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |    val outOfList = aList[0]
         |    return aList
         |}
-        |
-        |fun main() {
-        |    val out = doSomething("AMESSAGE")
-        |    println(out)
-        |}
         |""".stripMargin)
 
     "should find a flow through index access operator" in {
@@ -735,11 +682,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |    val aMap = mapOf("one" to p, "two" to "q")
         |    val outOfMap = aMap["one"]
         |    return outOfMap
-        |}
-        |
-        |fun main() {
-        |    val out = doSomething("FIRST_VALUE")
-        |    println(out)
         |}
         |""".stripMargin)
 
@@ -774,11 +716,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |    val aVal = aClass.x
         |    return "NOTHING"
         |}
-        |
-        |fun main() {
-        |    val out = doSomething("AMESSAGE")
-        |    println(out)
-        |}
         |""".stripMargin)
 
     "should find a flow through the assignment" in {
@@ -804,11 +741,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |    val aVal = aClass.x
         |    return "NOTHING"
         |}
-        |
-        |fun main() {
-        |    val out = doSomething("AMESSAGE")
-        |    println(out)
-        |}
         |""".stripMargin)
 
     "should find a flow through an assignment call of its member" in {
@@ -831,11 +763,6 @@ class SimpleDataFlowTests extends KotlinCode2CpgFixture(withOssDataflow = true) 
         |    aClass.x = p1
         |    val aVal = aClass.x
         |    return "NOTHING"
-        |}
-        |
-        |fun main() {
-        |    val out = doSomething("AMESSAGE")
-        |    println(out)
         |}
         |""".stripMargin)
 
