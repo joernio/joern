@@ -9,7 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{CallBase, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{CallBase, IdentifierBase, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Obj
 import ujson.Value
@@ -94,8 +94,14 @@ trait AstForDeclarationsCreator {
             astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
           case _ => astForNode(d)
         }
-        val defaultName = ast.root.collect { case node: CallBase => node.name }
-        val names       = codeForExportObject(createBabelNodeInfo(Obj(d)), defaultName)
+        val defaultName = ast.root.flatMap {
+          case node: CallBase       => Option(node.name)
+          case node: IdentifierBase => Option(node.name)
+          case node =>
+            logger.warn(s"unhandled node ${node.label} - not deriving the name from it")
+            None
+        }
+        val names = codeForExportObject(createBabelNodeInfo(Obj(d)), defaultName)
         (ast, names)
       }
 
