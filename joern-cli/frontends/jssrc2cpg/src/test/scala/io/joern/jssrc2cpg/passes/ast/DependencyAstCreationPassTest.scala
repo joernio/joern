@@ -279,13 +279,19 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |var bar = 2;
         |export = foo;
         |export = bar;
+        |export = function func(param) {};
+        |export = class ClassA {};
         |""".stripMargin) { cpg =>
-      cpg.local.code.l shouldBe List("foo", "bar")
+      cpg.local.code.l shouldBe List("foo", "bar", "func")
+      cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA", "ClassA<meta>")
       cpg.call(Operators.assignment).code.l shouldBe List(
         "foo = 1",
         "bar = 2",
         "exports.foo = foo",
-        "exports.bar = bar"
+        "exports.bar = bar",
+        "function func = function func(param) {}",
+        "exports.func = func",
+        "exports.ClassA = ClassA"
       )
     }
 
