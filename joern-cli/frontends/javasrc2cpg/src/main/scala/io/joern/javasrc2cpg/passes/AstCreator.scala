@@ -108,7 +108,7 @@ import io.joern.javasrc2cpg.util.{
   Scope,
   TypeInfoCalculator
 }
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, rootCode, rootType}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -2699,22 +2699,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       logger.warn(s"Could not resolve the interface implemented by the lambda $expr. Type info may be missing.")
     }
 
-    // While, in theory, there should only be a single abstract method defined by a functional interface, it turns
-    // out this is sort of not true for at least the java.util.Comparator interface, which re-declares the equals
-    // method which is marked `abstract` by JavaParser. The added check for parameter counts fixes this for the known
-    // example.
     val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
-      val abstractMethodsWithMatchingParamCount = interface.getDeclaredMethods.asScala
+      interface.getDeclaredMethods.asScala
         .filter(_.isAbstract)
-        .filter(_.getNumberOfParams == expr.getParameters.size())
-      if (abstractMethodsWithMatchingParamCount.size > 1) {
-        logger.warn(
-          s"Found multiple abstract methods matching param count for implementing lambda. Ignoring type information for stability"
-        )
-        None
-      } else {
-        abstractMethodsWithMatchingParamCount.headOption
-      }
+        .filterNot { method =>
+          // Filter out java.lang.Object methods re-declared by the interface as these are also considered abstract.
+          // See https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for details.
+          ObjectMethodSignatures.contains(method.getSignature)
+        }
+        .headOption
     }
 
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
