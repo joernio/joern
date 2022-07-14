@@ -1,27 +1,18 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.BlockScope
-import io.joern.jssrc2cpg.parser.BabelAst
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import ujson.Arr
-import ujson.Value
+import io.joern.x2cpg.datastructures.Stack._
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.nodes._
+import ujson.{Arr, Value}
 
 import scala.collection.mutable
 
-trait AstForFunctionsCreator {
-
-  this: AstCreator =>
+trait AstForFunctionsCreator { this: AstCreator =>
+  case class MethodAst(ast: Ast, methodNode: NewMethod, methodName: Option[String])
 
   private def handleParameters(
     parameters: Seq[Value],
@@ -283,7 +274,7 @@ trait AstForFunctionsCreator {
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): (Ast, NewMethod) = {
+  ): MethodAst = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None
@@ -367,11 +358,13 @@ trait AstForFunctionsCreator {
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
 
-    val ast = methodRefNode match {
-      case Some(ref) if callAst.nodes.isEmpty => Ast(ref)
-      case _                                  => callAst
+    methodRefNode match {
+      case Some(ref) if callAst.nodes.isEmpty =>
+        MethodAst(Ast(ref), methodNode, None)
+      case _ =>
+        val callName = callAst.root.map(_.asInstanceOf[NewCall].name)
+        MethodAst(callAst, methodNode, callName)
     }
-    (ast, methodNode)
   }
 
   protected def astForFunctionDeclaration(
@@ -379,8 +372,7 @@ trait AstForFunctionsCreator {
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
   ): Ast = {
-    val (ast, _) = createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall)
-    ast
+    createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
   }
 
 }

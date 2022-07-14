@@ -96,8 +96,8 @@ trait AstForTypesCreator {
       |   "body": []
       | }
       |}""".stripMargin
-    val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))
-    methodNode.code(code)
+    createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode))).methodNode
+      .code(code)
   }
 
   private def fixMethodNames(methodNode: NewMethod, withTypeName: String): NewMethod = {
@@ -112,8 +112,7 @@ trait AstForTypesCreator {
   private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
     val methodNode = classConstructor(classExpr) match {
       case Some(classConstructor) if hasKey(classConstructor, "body") =>
-        val (_, methodNode) = createMethodAstAndNode(createBabelNodeInfo(classConstructor))
-        methodNode
+        createMethodAstAndNode(createBabelNodeInfo(classConstructor)).methodNode
       case Some(classConstructor) =>
         createMethodDefinitionNode(createBabelNodeInfo(classConstructor))
       case _ =>
@@ -254,7 +253,7 @@ trait AstForTypesCreator {
       val nodeInfo = createBabelNodeInfo(classElement)
       val memberNode = nodeInfo.node match {
         case BabelAst.ClassMethod | BabelAst.ClassPrivateMethod =>
-          val (_, function) = createMethodAstAndNode(nodeInfo)
+          val function = createMethodAstAndNode(nodeInfo).methodNode
           addModifier(function, nodeInfo.json)
           val classMethod             = fixMethodFullName(function, typeName)
           val dynamicTypeHintFullName = Some(classMethod.fullName)
