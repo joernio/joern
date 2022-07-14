@@ -9,9 +9,8 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{CallBase, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.HasName
 import ujson.Obj
 import ujson.Value
 
@@ -95,7 +94,7 @@ trait AstForDeclarationsCreator {
             astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
           case _ => astForNode(d)
         }
-        val defaultName = ast.root.collect { case r: HasName => r.name }
+        val defaultName = ast.root.collect { case node: CallBase => node.name }
         val names       = codeForExportObject(createBabelNodeInfo(Obj(d)), defaultName)
         (ast, names)
       }

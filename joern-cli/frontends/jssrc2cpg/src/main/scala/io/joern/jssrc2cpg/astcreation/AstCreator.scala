@@ -1,19 +1,16 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.Scope
-import io.joern.jssrc2cpg.parser.BabelAst
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
 import io.joern.jssrc2cpg.passes.Defines
+import io.joern.x2cpg.datastructures.Stack.{Stack, _}
+import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.datastructures.Stack.Stack
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
 import java.util.concurrent.ConcurrentHashMap
