@@ -375,9 +375,4 @@ trait AstForFunctionsCreator { this: AstCreator =>
     createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
   }
 
-  protected def nameForFunctionDeclaration(callAst: Ast): Option[String] =
-    callAst.root.collect { case node: CallBase =>
-      node.name
-    }
-
 }
