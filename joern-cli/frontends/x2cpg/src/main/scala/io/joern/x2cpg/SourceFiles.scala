@@ -1,5 +1,6 @@
 package io.joern.x2cpg
 
+import better.files.File.VisitOptions
 import better.files._
 
 object SourceFiles {
@@ -22,8 +23,9 @@ object SourceFiles {
 
     val matchingFiles = files.filter(hasSourceFileExtension).map(_.toString)
     val matchingFilesFromDirs = dirs
-      .flatMap(_.listRecursively.filter(hasSourceFileExtension))
-      .map(_.toString)
+      .flatMap(_.listRecursively(VisitOptions.follow))
+      .filter(hasSourceFileExtension)
+      .map(_.pathAsString)
 
     (matchingFiles ++ matchingFilesFromDirs).toList.sorted
   }
