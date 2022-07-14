@@ -9,9 +9,8 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{CallBase, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewNamespaceBlock, TypeRefBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import ujson.Obj
 import ujson.Value
 
 import scala.util.Try
@@ -41,6 +40,14 @@ trait AstForDeclarationsCreator {
     case BabelAst.FunctionDeclaration if hasKey(obj.json, "id") && !obj.json("id").isNull =>
       Seq(code(obj.json("id")))
     case BabelAst.FunctionDeclaration =>
+      defaultName.toSeq
+    case BabelAst.FunctionExpression if hasKey(obj.json, "id") && !obj.json("id").isNull =>
+      Seq(code(obj.json("id")))
+    case BabelAst.FunctionExpression =>
+      defaultName.toSeq
+    case BabelAst.ClassExpression if hasKey(obj.json, "id") && !obj.json("id").isNull =>
+      Seq(code(obj.json("id")))
+    case BabelAst.ClassExpression =>
       defaultName.toSeq
     case _ =>
       notHandledYet(obj, "Lowering export declaration")
@@ -94,8 +101,15 @@ trait AstForDeclarationsCreator {
             astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
           case _ => astForNode(d)
         }
-        val defaultName = ast.root.collect { case node: CallBase => node.name }
-        val names       = codeForExportObject(createBabelNodeInfo(Obj(d)), defaultName)
+        val defaultName = ast.nodes.collectFirst {
+          case id: IdentifierBase =>
+            // we will have the Identifier in the assignment call generated for a function (see above)
+            id.name
+          case clazz: TypeRefBase =>
+            // we will have a TypeRef for an exported class
+            clazz.code.stripPrefix("class ")
+        }
+        val names = codeForExportObject(nodeInfo, defaultName)
         (ast, names)
       }
 
