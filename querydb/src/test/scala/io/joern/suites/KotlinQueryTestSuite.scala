@@ -3,10 +3,11 @@ package io.joern.suites
 import io.joern.util.QueryUtil
 import io.joern.console.QueryBundle
 import io.joern.console.Query
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.utils.ProjectRoot
 
-class KotlinQueryTestSuite extends Code2CpgFixture(new Kotlin2CpgFrontend()) {
+class KotlinQueryTestSuite extends KotlinCode2CpgFixture(withOssDataflow = true) {
   var semanticsFilename = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
   val argumentProvider  = new QDBArgumentProvider(3)
 
