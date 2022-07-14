@@ -108,7 +108,7 @@ import io.joern.javasrc2cpg.util.{
   Scope,
   TypeInfoCalculator
 }
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, rootCode, rootType}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -2699,8 +2699,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       logger.warn(s"Could not resolve the interface implemented by the lambda $expr. Type info may be missing.")
     }
 
-    // By definition, a functional interface will declare exactly one abstract method, so `find` is fine.
-    val maybeBoundMethod = maybeImplementedInterface.flatMap(_.getDeclaredMethods.asScala.find(_.isAbstract))
+    val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
+      interface.getDeclaredMethods.asScala
+        .filter(_.isAbstract)
+        .filterNot { method =>
+          // Filter out java.lang.Object methods re-declared by the interface as these are also considered abstract.
+          // See https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for details.
+          ObjectMethodSignatures.contains(method.getSignature)
+        }
+        .headOption
+    }
 
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
   }

@@ -129,6 +129,24 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
         case result => fail(s"Expected identifier and arrayInitializer arguments but got $result")
       }
     }
+
+    "lambda method implementing multi-abstract-method interface should be created correctly" in {
+      val cpg = code("""
+          |import java.util.ArrayList;
+          |
+          |public class Test {
+          |    public static void main(String[] args) {
+          |        ArrayList<Integer> xs = new ArrayList<Integer>();
+          |        xs.sort((o1, o2) -> o1 - o2);
+          |    }
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("lambda$0").fullName.l match {
+        case List(fullName) => fullName shouldBe "Test.lambda$0:int(java.lang.Object,java.lang.Object)"
+
+        case res => fail(s"Expected fullName but got $res")
+      }
+    }
   }
 }
 

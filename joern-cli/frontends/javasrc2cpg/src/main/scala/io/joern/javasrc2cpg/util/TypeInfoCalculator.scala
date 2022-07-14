@@ -243,6 +243,24 @@ object TypeInfoCalculator {
     val Object: String = "Object"
   }
 
+  // The method signatures for all methods implemented by java.lang.Object, as returned by JavaParser. This is used
+  // to filter out Object methods when determining which functional interface method a lambda implements. See
+  // https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for more details.
+  val ObjectMethodSignatures: Set[String] = Set(
+    "wait(long, int)",
+    "equals(java.lang.Object)",
+    "clone()",
+    "toString()",
+    "wait()",
+    "hashCode()",
+    "getClass()",
+    "notify()",
+    "finalize()",
+    "wait(long)",
+    "notifyAll()",
+    "registerNatives()"
+  )
+
   val NumericTypes: Set[String] = Set(
     "byte",
     "short",
