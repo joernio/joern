@@ -5,9 +5,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 
-trait AstForPrimitivesCreator {
-
-  this: AstCreator =>
+trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForIdentifier(ident: BabelNodeInfo): Ast = {
     val name      = ident.json("name").str

@@ -1,17 +1,21 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.BlockScope
-import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
+import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import ujson.{Arr, Value}
 
 import scala.collection.mutable
 
 trait AstForFunctionsCreator { this: AstCreator =>
+
   case class MethodAst(ast: Ast, methodNode: NewMethod)
 
   private def handleParameters(
@@ -21,7 +25,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   ): Seq[NewMethodParameterIn] = withIndex(parameters) { case (param, index) =>
     val nodeInfo = createBabelNodeInfo(param)
     nodeInfo.node match {
-      case BabelAst.RestElement =>
+      case RestElement =>
         val paramName = nodeInfo.code.replace("...", "")
         val tpe       = typeFor(nodeInfo)
         if (createLocals) {
@@ -37,12 +41,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
           nodeInfo.columnNumber,
           Some(tpe)
         )
-      case BabelAst.AssignmentPattern =>
+      case AssignmentPattern =>
         val lhsElement  = nodeInfo.json("left")
         val rhsElement  = nodeInfo.json("right")
         val lhsNodeInfo = createBabelNodeInfo(lhsElement)
         lhsNodeInfo.node match {
-          case BabelAst.ObjectPattern =>
+          case ObjectPattern =>
             val name = generateUnusedVariableName(usedVariableNames, s"param$index")
             val param = createParameterInNode(
               name,
@@ -56,7 +60,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             Ast.storeInDiffGraph(rhsAst, diffGraph)
             additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(name)))
             param
-          case BabelAst.ArrayPattern =>
+          case ArrayPattern =>
             val name = generateUnusedVariableName(usedVariableNames, s"param$index")
             val param = createParameterInNode(
               name,
@@ -83,7 +87,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
               Some(tpe)
             )
         }
-      case BabelAst.ArrayPattern =>
+      case ArrayPattern =>
         val name = generateUnusedVariableName(usedVariableNames, s"param$index")
         val tpe  = typeFor(nodeInfo)
         val param = createParameterInNode(
@@ -99,7 +103,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case element if !element.isNull =>
             val elementNodeInfo = createBabelNodeInfo(element)
             elementNodeInfo.node match {
-              case BabelAst.Identifier =>
+              case Identifier =>
                 val paramName      = code(elementNodeInfo.json)
                 val tpe            = typeFor(elementNodeInfo)
                 val localParamNode = createIdentifierNode(paramName, elementNodeInfo)
@@ -122,7 +126,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => Ast()
         })
         param
-      case BabelAst.ObjectPattern =>
+      case ObjectPattern =>
         val name = generateUnusedVariableName(usedVariableNames, s"param$index")
         val tpe  = typeFor(nodeInfo)
         val param = createParameterInNode(
@@ -137,7 +141,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
           val elementNodeInfo = createBabelNodeInfo(element)
           elementNodeInfo.node match {
-            case BabelAst.ObjectProperty =>
+            case ObjectProperty =>
               val paramName      = code(elementNodeInfo.json("key"))
               val tpe            = typeFor(elementNodeInfo)
               val localParamNode = createIdentifierNode(paramName, elementNodeInfo)
@@ -159,7 +163,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           }
         })
         param
-      case BabelAst.Identifier =>
+      case Identifier =>
         val tpe = typeFor(nodeInfo)
         createParameterInNode(
           nodeInfo.json("name").str,
@@ -220,9 +224,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     )
   }
 
-  private def getParentTypeDecl: NewTypeDecl = {
+  private def getParentTypeDecl: NewTypeDecl =
     methodAstParentStack.collectFirst { case n: NewTypeDecl => n }.getOrElse(rootTypeDecl.head)
-  }
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
     val functionNode = createMethodDefinitionNode(func)
@@ -299,15 +302,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     methodAstParentStack.push(methodNode)
 
-    val block             = func.json("body")
-    val blockLineNumber   = line(block)
-    val blockColumnNumber = column(block)
-    val blockCode         = code(block)
-    val blockNode = NewBlock()
-      .typeFullName(Defines.ANY.label)
-      .code(blockCode)
-      .lineNumber(blockLineNumber)
-      .columnNumber(blockColumnNumber)
+    val blockJson                 = func.json("body")
+    val blockNodeInfo             = createBabelNodeInfo(blockJson)
+    val blockNode                 = createBlockNode(blockNodeInfo)
     val blockAst                  = Ast(blockNode)
     val additionalBlockStatements = mutable.ArrayBuffer.empty[Ast]
 
@@ -326,8 +323,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
 
     val bodyStmtAsts = func.node match {
-      case BabelAst.ArrowFunctionExpression => createBlockStatementAsts(Arr(block))
-      case _                                => createBlockStatementAsts(block("body"))
+      case ArrowFunctionExpression => createBlockStatementAsts(Arr(blockJson))
+      case _                       => createBlockStatementAsts(blockJson("body"))
     }
     setIndices(additionalBlockStatements.toList ++ bodyStmtAsts)
 
@@ -371,8 +368,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): Ast = {
-    createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
-  }
+  ): Ast = createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
 
 }

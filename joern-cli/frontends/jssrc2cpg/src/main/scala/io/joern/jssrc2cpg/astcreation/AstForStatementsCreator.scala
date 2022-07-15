@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
@@ -14,9 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import ujson.Obj
 import ujson.Value
 
-trait AstForStatementsCreator {
-
-  this: AstCreator =>
+trait AstForStatementsCreator { this: AstCreator =>
 
   /** Sort all block statements with the following result:
     *   - all function declarations go first
@@ -29,14 +27,14 @@ trait AstForStatementsCreator {
   private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
     blockStatements.sortBy { nodeInfo =>
       nodeInfo.node match {
-        case BabelAst.FunctionDeclaration                                  => 0
-        case BabelAst.DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 3
-        case BabelAst.TypeAlias if isPlainTypeAlias(nodeInfo)              => 3
-        case BabelAst.TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 3
-        case BabelAst.DeclareTypeAlias                                     => 2
-        case BabelAst.TypeAlias                                            => 2
-        case BabelAst.TSTypeAliasDeclaration                               => 2
-        case _                                                             => 1
+        case FunctionDeclaration                                  => 0
+        case DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 3
+        case TypeAlias if isPlainTypeAlias(nodeInfo)              => 3
+        case TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 3
+        case DeclareTypeAlias                                     => 2
+        case TypeAlias                                            => 2
+        case TSTypeAliasDeclaration                               => 2
+        case _                                                    => 1
       }
     }
 
@@ -44,7 +42,7 @@ trait AstForStatementsCreator {
     val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
     val blockAsts = blockStmts.map { nodeInfo =>
       nodeInfo.node match {
-        case BabelAst.FunctionDeclaration =>
+        case FunctionDeclaration =>
           astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
         case _ => astForNode(nodeInfo.json)
       }
@@ -74,26 +72,21 @@ trait AstForStatementsCreator {
       .getOrElse(Ast(retNode))
   }
 
-  private def astForCatchClause(catchClause: BabelNodeInfo): Ast =
-    astForNode(catchClause.json("body"))
+  private def astForCatchClause(catchClause: BabelNodeInfo): Ast = astForNode(catchClause.json("body"))
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
-
     val bodyAst = astForNode(tryStmt.json("block"))
-
     val catchAst = safeObj(tryStmt.json, "handler")
       .map { handler =>
         astForCatchClause(createBabelNodeInfo(Obj(handler)))
       }
       .getOrElse(Ast())
-
     val finalizerAst = safeObj(tryStmt.json, "finalizer")
       .map { finalizer =>
         astForNode(Obj(finalizer))
       }
       .getOrElse(Ast())
-
     val tryChildren = List(bodyAst, catchAst, finalizerAst)
     setIndices(tryChildren, countEmpty = true)
     Ast(tryNode).withChildren(tryChildren)
@@ -345,8 +338,8 @@ trait AstForStatementsCreator {
     // loop variable:
     val nodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
     val loopVariableName = nodeInfo.node match {
-      case BabelAst.VariableDeclaration => code(nodeInfo.json("declarations").arr.head)
-      case _                            => code(nodeInfo.json)
+      case VariableDeclaration => code(nodeInfo.json("declarations").arr.head)
+      case _                   => code(nodeInfo.json)
     }
 
     val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY.label)

@@ -4,15 +4,10 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewNamespaceBlock, NewType, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.passes.SimpleCpgPass
-import org.slf4j.LoggerFactory
 
 class BuiltinTypesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
   override def run(diffGraph: DiffGraphBuilder): Unit = {
-    logger.debug("Generating builtin types.")
-
     val namespaceBlock = NewNamespaceBlock()
       .name(Defines.GLOBAL_NAMESPACE)
       .fullName(Defines.GLOBAL_NAMESPACE)

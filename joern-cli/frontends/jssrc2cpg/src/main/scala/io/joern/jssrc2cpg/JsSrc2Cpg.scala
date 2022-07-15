@@ -6,7 +6,6 @@ import io.joern.jssrc2cpg.passes.ConfigPass
 import io.joern.jssrc2cpg.passes.DependenciesPass
 import io.joern.jssrc2cpg.passes.PrivateKeyFilePass
 import io.joern.jssrc2cpg.utils.AstGenRunner
-import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -27,14 +26,12 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
-        val partialResult = AstGenRunner.execute(config, tmpDir)
-        val astgenResult =
-          AstGenRunnerResult(parsedFiles = partialResult.parsedFiles, skippedFiles = partialResult.skippedFiles)
-
-        val hash = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => Path.of(file) })
+        val astgenResult = AstGenRunner.execute(config, tmpDir)
+        val hash         = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => Path.of(file) })
 
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
         astCreationPass.createAndApply()
+
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new CallLinkerPass(cpg).createAndApply()
         new JsMetaDataPass(cpg, hash, config.inputPath).createAndApply()
