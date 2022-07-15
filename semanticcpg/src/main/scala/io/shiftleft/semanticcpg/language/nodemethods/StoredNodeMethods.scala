@@ -15,16 +15,7 @@ class StoredNodeMethods(val node: StoredNode) extends AnyVal with NodeExtension 
   def file: Traversal[File] =
     Traversal.fromSingle(node).file
 
-  def tagList: Traversal[NewTag] = {
-    node._taggedByOut.asScala
-      .map { case tagNode: HasName with HasValue =>
-        (tagNode.name, Option(tagNode.value))
-      }
-      .distinct
-      .collect { case (name, Some(value)) =>
-        NewTag()
-          .name(name)
-          .value(value)
-      }
+  def tagList: Traversal[Tag] = {
+    node._taggedByOut.to(Traversal).collectAll[Tag]
   }
 }
