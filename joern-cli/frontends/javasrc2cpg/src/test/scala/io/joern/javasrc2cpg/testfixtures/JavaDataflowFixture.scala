@@ -2,14 +2,14 @@ package io.joern.javasrc2cpg.testfixtures
 
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Expression, FieldIdentifier, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import overflowdb.NodeRef
 import overflowdb.traversal.Traversal
 
 class JavaDataflowFixture extends AnyFlatSpec with Matchers {
@@ -51,4 +51,6 @@ class JavaDataflowFixture extends AnyFlatSpec with Matchers {
 
     (source, sink)
   }
+
+  protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = path.resultPairs()
 }
