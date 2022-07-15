@@ -1,13 +1,11 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import ujson.Obj
 
-trait AstForTemplateDomCreator {
-
-  this: AstCreator =>
+trait AstForTemplateDomCreator { this: AstCreator =>
 
   protected def astForJsxElement(jsxElem: BabelNodeInfo): Ast = {
     val domNode = createTemplateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
@@ -63,10 +61,8 @@ trait AstForTemplateDomCreator {
     Ast(domNode)
   }
 
-  protected def astForJsxText(jsxText: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(jsxText.node.toString, jsxText.code, jsxText.lineNumber, jsxText.columnNumber)
-    Ast(domNode)
-  }
+  protected def astForJsxText(jsxText: BabelNodeInfo): Ast =
+    Ast(createTemplateDomNode(jsxText.node.toString, jsxText.code, jsxText.lineNumber, jsxText.columnNumber))
 
   protected def astForJsxExprContainer(jsxExprContainer: BabelNodeInfo): Ast = {
     val domNode = createTemplateDomNode(
@@ -77,8 +73,8 @@ trait AstForTemplateDomCreator {
     )
     val nodeInfo = createBabelNodeInfo(jsxExprContainer.json("expression"))
     val exprAst = nodeInfo.node match {
-      case BabelAst.JSXEmptyExpression => Ast()
-      case _                           => astForNode(nodeInfo.json)
+      case JSXEmptyExpression => Ast()
+      case _                  => astForNode(nodeInfo.json)
     }
     setIndices(List(exprAst))
     Ast(domNode).withChild(exprAst)

@@ -15,20 +15,16 @@ import io.shiftleft.codepropertygraph.generated.Operators
 
 import scala.util.Try
 
-trait AstForExpressionsCreator {
-
-  this: AstCreator =>
+trait AstForExpressionsCreator { this: AstCreator =>
 
   protected def astForExpressionStatement(exprStmt: BabelNodeInfo): Ast =
     astForNode(exprStmt.json("expression"))
 
   private def createBuiltinStaticCall(callExpr: BabelNodeInfo, callee: BabelNodeInfo, methodFullName: String): Ast = {
     val methodName = callee.node match {
-      case BabelAst.MemberExpression =>
-        code(callee.json("property"))
-      case BabelAst.Identifier =>
-        callee.code
-      case _ => callee.code
+      case BabelAst.MemberExpression => code(callee.json("property"))
+      case BabelAst.Identifier       => callee.code
+      case _                         => callee.code
     }
     val callNode =
       createStaticCallNode(callExpr.code, methodName, methodFullName, callee.lineNumber, callee.columnNumber)
@@ -115,14 +111,15 @@ trait AstForExpressionsCreator {
     callNode
   }
 
-  protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = Ast(
-    createLiteralNode(
-      thisExpr.code,
-      dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY.label)),
-      thisExpr.lineNumber,
-      thisExpr.columnNumber
+  protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast =
+    Ast(
+      createLiteralNode(
+        thisExpr.code,
+        dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY.label)),
+        thisExpr.lineNumber,
+        thisExpr.columnNumber
+      )
     )
-  )
 
   protected def astForNewExpression(newExpr: BabelNodeInfo): Ast = {
     val callee    = newExpr.json("callee")

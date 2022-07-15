@@ -12,13 +12,12 @@ object Environment {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def allPathsExist(paths: Set[String]): Boolean = {
-    val invalidPaths = paths.collect { case p if !Paths.get(p).toFile.exists() => p }
-    if (invalidPaths.isEmpty) {
-      true
-    } else {
-      invalidPaths.foreach(p => logger.error(s"Input path '$p' does not exist!"))
+  def pathExists(path: String): Boolean = {
+    if (!Paths.get(path).toFile.exists()) {
+      logger.error(s"Input path '$path' does not exist!")
       false
+    } else {
+      true
     }
   }
 

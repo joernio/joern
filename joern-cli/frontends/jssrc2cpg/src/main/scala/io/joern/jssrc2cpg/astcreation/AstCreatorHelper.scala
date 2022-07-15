@@ -1,13 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.BlockScopeElement
-import io.joern.jssrc2cpg.datastructures.MethodScope
-import io.joern.jssrc2cpg.datastructures.MethodScopeElement
-import io.joern.jssrc2cpg.datastructures.ResolvedReference
-import io.joern.jssrc2cpg.datastructures.ScopeElement
-import io.joern.jssrc2cpg.datastructures.ScopeElementIterator
-import io.joern.jssrc2cpg.datastructures.ScopeType
-import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.datastructures._
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
@@ -22,9 +16,7 @@ import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Success
 import scala.util.Try
 
-trait AstCreatorHelper {
-
-  this: AstCreator =>
+trait AstCreatorHelper { this: AstCreator =>
 
   // maximum length of code fields in number of characters
   private val MAX_CODE_LENGTH: Int = 1000
@@ -65,8 +57,7 @@ trait AstCreatorHelper {
     }
   }
 
-  private def nodeType(node: Value): BabelAst.BabelNode =
-    BabelAst.fromString(node("type").str)
+  private def nodeType(node: Value): BabelNode = fromString(node("type").str)
 
   protected def generateUnusedVariableName(
     usedVariableNames: mutable.HashMap[String, Int],
@@ -125,12 +116,10 @@ trait AstCreatorHelper {
 
   protected def positionLookupTables(source: String): (SortedMap[Int, Int], SortedMap[Int, Int]) = {
     val positionToLineNumber, positionToFirstPositionInLine = mutable.TreeMap.empty[Int, Int]
-
-    val data                = source.toCharArray
-    var lineNumber          = 1
-    var firstPositionInLine = 0
-    var position            = 0
-
+    val data                                                = source.toCharArray
+    var lineNumber                                          = 1
+    var firstPositionInLine                                 = 0
+    var position                                            = 0
     while (position < data.length) {
       val isNewLine = data(position) == '\n'
       if (isNewLine) {
@@ -141,25 +130,22 @@ trait AstCreatorHelper {
       }
       position += 1
     }
-
     positionToLineNumber.put(position, lineNumber)
     positionToFirstPositionInLine.put(position, firstPositionInLine)
-
     (positionToLineNumber, positionToFirstPositionInLine)
   }
 
-  private def computeScopePath(stack: Option[ScopeElement]): String =
-    new ScopeElementIterator(stack)
-      .to(Seq)
-      .reverse
-      .collect { case methodScopeElement: MethodScopeElement =>
-        methodScopeElement.name
-      }
-      .mkString(":")
+  private def computeScopePath(stack: Option[ScopeElement]): String = new ScopeElementIterator(stack)
+    .to(Seq)
+    .reverse
+    .collect { case methodScopeElement: MethodScopeElement =>
+      methodScopeElement.name
+    }
+    .mkString(":")
 
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
-    case BabelAst.TSCallSignatureDeclaration                     => "anonymous"
-    case BabelAst.TSConstructSignatureDeclaration                => "<constructor>"
+    case TSCallSignatureDeclaration                              => "anonymous"
+    case TSConstructSignatureDeclaration                         => "<constructor>"
     case _ if safeStr(func.json, "kind").contains("method")      => func.json("key")("name").str
     case _ if safeStr(func.json, "kind").contains("constructor") => "<constructor>"
     case _ if func.json("id").isNull                             => "anonymous"
