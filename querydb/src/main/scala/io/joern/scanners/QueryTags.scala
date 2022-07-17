@@ -21,5 +21,7 @@ object QueryTags {
   val compilerOptimization = "compiler-optimization"
 
   val selfDestruct         = "selfdestruct-contract"
+  val overflow             = "overflow-contract"
+  val controlLoopIteration = "control-loop-iteration-contract"
 
 }
