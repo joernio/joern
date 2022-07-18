@@ -7,7 +7,7 @@ class SelfDestructTests extends SolidityQueryTestSuite {
   override def queryBundle: SelfDestructVulnerability.type = SelfDestructVulnerability
 
   "Self Destruct not protected" in {
-    queryBundle.isSelfDestructVulnerability()(cpg).map(_.evidence) match {
+    queryBundle.isSelfDestructVulnerability(cpg).map(_.evidence) match {
       case List(IndexedSeq(expr: nodes.Expression)) =>
         expr.method.name shouldBe "selfDestructUnsafe"
       case x =>
