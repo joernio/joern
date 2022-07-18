@@ -1,24 +1,32 @@
 package io.joern.jssrc2cpg.io
 
 import better.files.File
-import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
+import io.joern.jssrc2cpg.Config
+import io.joern.jssrc2cpg.passes.AstCreationPass
+import io.joern.jssrc2cpg.utils.AstGenRunner
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class ProjectParseTests extends AnyWordSpec with Matchers {
+class ProjectParseTests extends JsSrc2CpgSuite {
 
   private object ProjectParseTestsFixture {
-    def apply(project: String)(f: File => Unit): Unit = {
-      val projectPath = getClass.getResource(s"/$project").toURI
-      File.usingTemporaryDirectory()(tmpDir => f(File(projectPath).copyToDirectory(tmpDir)))
+    def apply(project: String)(f: Cpg => Unit): Unit = {
+      File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+        val dir          = File(getClass.getResource(s"/$project").toURI).copyToDirectory(tmpDir)
+        val cpg          = newEmptyCpg()
+        val config       = Config(inputPath = dir.toString, outputPath = dir.toString)
+        val astgenResult = AstGenRunner.execute(config, dir)
+        new AstCreationPass(cpg, astgenResult, config).createAndApply()
+        f(cpg)
+      }
     }
   }
 
   "Parsing a project" should {
 
-    "generate correct filenames" in ProjectParseTestsFixture("rec") { tmpDir =>
-      val cpg = new JsSrc2CpgFrontend().execute(tmpDir.toJava)
+    "generate correct filenames" in ProjectParseTestsFixture("rec") { cpg =>
       cpg.file.name.l should contain allElementsOf List(
         "a.js",
         "b.js",
@@ -27,8 +35,7 @@ class ProjectParseTests extends AnyWordSpec with Matchers {
       )
     }
 
-    "recover from broken input file" in ProjectParseTestsFixture("broken") { tmpDir =>
-      val cpg = new JsSrc2CpgFrontend().execute(tmpDir.toJava)
+    "recover from broken input file" in ProjectParseTestsFixture("broken") { cpg =>
       cpg.file.name.l should (contain("good.js") and not contain ("broken.js"))
     }
 
