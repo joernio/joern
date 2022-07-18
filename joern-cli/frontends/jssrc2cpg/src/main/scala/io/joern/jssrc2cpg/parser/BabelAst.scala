@@ -1,15 +1,16 @@
 package io.joern.jssrc2cpg.parser
 
 object BabelAst {
-  // extracted from:
-  // https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts
 
-  private def createBabelNodeObject(name: String): BabelNode = {
-    val clazz = Class.forName(s"${BabelAst.getClass.getName}$name$$")
+  private val QUALIFIED_CLASS_NAME: String = BabelAst.getClass.getName
+
+  def fromString(nodeName: String): BabelNode = {
+    val clazz = Class.forName(s"$QUALIFIED_CLASS_NAME$nodeName$$")
     clazz.getField("MODULE$").get(clazz).asInstanceOf[BabelNode]
   }
 
-  def fromString(nodeName: String): BabelNode = createBabelNodeObject(nodeName)
+  // extracted from:
+  // https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts
 
   sealed trait BabelNode {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
