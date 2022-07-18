@@ -26,6 +26,10 @@ Specification: https://cpg.joern.io
 - JDK 11 (newer versions _might_ work, but have not been properly tested)
 - _optional_: gcc and g++ (for auto-discovery of C/C++ system header files if included/used in your C/C++ code)
 
+## Development Requirements
+
+- mvn https://maven.apache.org/install.html
+
 ## Quick Installation
 
 ```
