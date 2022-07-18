@@ -193,7 +193,7 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
         resp.obj.keySet should contain("stderr")
         resp.obj.keySet should not contain "err"
 
-        resp("success").bool shouldBe false
+        resp("success").bool shouldBe true
         resp("uuid").str shouldBe wsMsg
         resp("stdout").str shouldBe ""
         resp("stderr").str.length should not be 0
@@ -224,7 +224,7 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
           resp.obj.keySet should contain("stderr")
           resp.obj.keySet should not contain "err"
 
-          resp("success").bool shouldBe false
+          resp("success").bool shouldBe true
           resp("uuid").str shouldBe wsMsg
           resp("stdout").str shouldBe ""
           resp("stderr").str.length should not be 0
