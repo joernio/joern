@@ -2,8 +2,9 @@ package io.joern.jssrc2cpg.io
 
 import better.files.File
 import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.JsSrc2Cpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.joern.jssrc2cpg.passes.AstCreationPass
+import io.joern.jssrc2cpg.utils.AstGenRunner
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -13,21 +14,18 @@ import java.util.regex.Pattern
 
 class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks {
 
-  private val projectUnderTestPath = File(getClass.getResource("/excludes").toURI).pathAsString
+  private val projectUnderTest = File(getClass.getResource("/excludes").toURI)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    var cpg = Cpg.emptyCpg
-    File.usingTemporaryFile("cpg", ".bin") { cpgFile =>
-      val jssrc2cpg = new JsSrc2Cpg()
-      val config    = Config(inputPath = projectUnderTestPath)
-      val finalConfig = config.copy(
-        outputPath = cpgFile.toString(),
-        ignoredFiles = exclude.map(config.createPathForIgnore),
-        ignoredFilesRegex = excludeRegex.r
-      )
-      cpg = jssrc2cpg.createCpg(finalConfig).get
+    File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+      val cpg    = newEmptyCpg()
+      val config = Config(inputPath = projectUnderTest.toString, outputPath = tmpDir.toString)
+      val finalConfig =
+        config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
+      val astgenResult = AstGenRunner.execute(finalConfig, tmpDir)
+      new AstCreationPass(cpg, astgenResult, finalConfig).createAndApply()
+      cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
     }
-    cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
   }
 
   "Using different excludes via program arguments" should {
@@ -59,25 +57,25 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       ),
       (
         "exclude a file with --exclude with absolute path",
-        Seq(s"$projectUnderTestPath/index.js"),
+        Seq(s"$projectUnderTest/index.js"),
         "",
         Set("a.js", "folder/b.js", "folder/c.js", "foo.bar/d.js")
       ),
       (
         "exclude files with --exclude with absolute paths",
-        Seq(s"$projectUnderTestPath/index.js", s"$projectUnderTestPath/folder/b.js"),
+        Seq(s"$projectUnderTest/index.js", s"$projectUnderTest/folder/b.js"),
         "",
         Set("a.js", "folder/c.js", "foo.bar/d.js")
       ),
       (
         "exclude files with --exclude with mixed paths",
-        Seq("index.js", s"$projectUnderTestPath/folder/b.js"),
+        Seq("index.js", s"$projectUnderTest/folder/b.js"),
         "",
         Set("a.js", "folder/c.js", "foo.bar/d.js")
       ),
       (
         "exclude a folder with --exclude with absolute path",
-        Seq(s"$projectUnderTestPath/folder/"),
+        Seq(s"$projectUnderTest/folder/"),
         "",
         Set("a.js", "index.js", "foo.bar/d.js")
       ),

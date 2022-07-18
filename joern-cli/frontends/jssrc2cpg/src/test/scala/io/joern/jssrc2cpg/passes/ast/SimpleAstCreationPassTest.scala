@@ -264,29 +264,26 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "have correct file name for empty file" in AstFixture("function method(x) {}") { cpg =>
-      val List(file, tps) = cpg.file.l
+      val List(file) = cpg.file.l
       file.name should endWith("code.js")
-      tps.name shouldBe "builtintypes"
     }
 
     "have correct name space block for empty file" in AstFixture("") { cpg =>
-      val List(file, tps) = cpg.file.l
+      val List(file) = cpg.file.l
       file.name should endWith("code.js")
-      tps.name shouldBe "builtintypes"
 
-      val List(ns, _) = cpg.namespaceBlock.l
+      val List(ns) = cpg.namespaceBlock.l
       ns.name shouldBe Defines.GLOBAL_NAMESPACE
       ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
       ns.order shouldBe 1
-      ns.sourceFileOut.head shouldBe file
+      ns.filename shouldBe file.name
     }
 
     "have :program method correctly attached to files namespace block" in AstFixture("") { cpg =>
-      val List(file, tps) = cpg.file.l
+      val List(file) = cpg.file.l
       file.name should endWith("code.js")
-      tps.name shouldBe "builtintypes"
 
-      val List(ns, _) = cpg.namespaceBlock.l
+      val List(ns) = cpg.namespaceBlock.l
       ns.name shouldBe Defines.GLOBAL_NAMESPACE
       ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
       ns.order shouldBe 1
