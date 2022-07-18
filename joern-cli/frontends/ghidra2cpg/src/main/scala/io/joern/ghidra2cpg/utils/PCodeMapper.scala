@@ -15,16 +15,16 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class PCodeMapper(
-  diffGraphBuilder: DiffGraphBuilder,
-  nativeInstruction: Instruction,
-  functions: List[Function],
-  decompiler: Decompiler,
-  highFunction: HighFunction,
-  address2Literal: Map[Long, String]
-) {
-  private val logger                                 = LoggerFactory.getLogger(getClass)
+                   diffGraphBuilder: DiffGraphBuilder,
+                   nativeInstruction: Instruction,
+                   functions: List[Function],
+                   decompiler: Decompiler,
+                   highFunction: HighFunction,
+                   address2Literal: Map[Long, String]
+                 ) {
+  private val logger = LoggerFactory.getLogger(getClass)
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
-  private val pcodeOps: List[PcodeOp]               = nativeInstruction.getPcode().toList//highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
+  private val pcodeOps: List[PcodeOp] = nativeInstruction.getPcode().toList //highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
@@ -46,13 +46,13 @@ class PCodeMapper(
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
-  def handleCompare(pcodeOp: PcodeOp): CfgNodeNew = {
-    val callNode = createCall("<operator>.equal", nativeInstruction.toString)
-    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
-    val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
-    _connectCallToArgument(callNode, firstOp)
-    _connectCallToArgument(callNode, secondOp)
-   callNode
+  def handleJmp(pcodeOp: PcodeOp): CfgNodeNew = {
+    val callNode = createCall("<operator>.goto", nativeInstruction.toString)
+    val firstOp = resolveVarNode(pcodeOp.getInput(0), 1)
+    //val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
+    connectCallToArgument(callNode, firstOp)
+    //connectCallToArgument(callNode, secondOp)
+    callNode
   }
 
   def getCallNode: CfgNodeNew = {
@@ -65,13 +65,8 @@ class PCodeMapper(
         nativeInstruction.toString,
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
-      //} else if (pcodeOps.length == 1) {
-      //  // we don't need to fill the hashmap for one PcodeOp
-      //  // map to node and return
-      //  mapCallNode(pcodeOps.head)
-    } else if(nativeInstruction.getMnemonicString.startsWith("CMP")){
-      //mapCallNode(pcodeOps.head)
-      handleCompare(pcodeOps.head)
+    } else if (nativeInstruction.getMnemonicString.startsWith("JMP")) {
+      handleJmp(pcodeOps.head)
     } else {
       mapCallNode(pcodeOps.last)
     }
@@ -82,9 +77,9 @@ class PCodeMapper(
   }
 
   def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName: String, operation: String): CfgNodeNew = {
-    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+    val firstOp = resolveVarNode(pcodeOp.getInput(0), 1)
     val callNode = createCall(cpgOperationName, nativeInstruction.toString) // s"$operation(${firstOp.code})")
-    _connectCallToArgument(callNode, firstOp)
+    connectCallToArgument(callNode, firstOp)
     callNode
   }
 
@@ -93,29 +88,30 @@ class PCodeMapper(
       createCall(cpgOperationName, nativeInstruction.toString)
     // we need this for MIPS
     if (pcodeOp.getOutput.isRegister) {
-      val firstOp  = resolveVarNode(pcodeOp.getOutput, 1)
+      val firstOp = resolveVarNode(pcodeOp.getOutput, 1)
       val secondOp = resolveVarNode(pcodeOp.getInput(0), 2)
-      val thirdOp  = resolveVarNode(pcodeOp.getInput(1), 3)
-      _connectCallToArgument(callNode, firstOp)
-      _connectCallToArgument(callNode, secondOp)
-      _connectCallToArgument(callNode, thirdOp)
+      val thirdOp = resolveVarNode(pcodeOp.getInput(1), 3)
+      connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, secondOp)
+      connectCallToArgument(callNode, thirdOp)
     } else {
-      val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+      val firstOp = resolveVarNode(pcodeOp.getInput(0), 1)
       val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
-      _connectCallToArgument(callNode, firstOp)
-      _connectCallToArgument(callNode, secondOp)
+      connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, secondOp)
     }
     callNode
   }
 
   def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
-    val firstop  = resolveVarNode(pcodeOp.getInput(1), 1)
+    val firstop = resolveVarNode(pcodeOp.getInput(1), 1)
     val secondOp = resolveVarNode(pcodeOp.getInput(2), 2)
     val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
-    _connectCallToArgument(callNode, firstop)
-    _connectCallToArgument(callNode, secondOp)
+    connectCallToArgument(callNode, firstop)
+    connectCallToArgument(callNode, secondOp)
     callNode
   }
+
   def resolveVarNode1(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {
       var name = input.getHigh.getName
@@ -177,13 +173,14 @@ class PCodeMapper(
       )
     }
   }
+
   def handleAssignment(pcodeOp: PcodeOp, code: String): CfgNodeNew = {
     val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 2)
     val callNode = createCall("<operator>.assignment", code = code) // s"${firstOp.code} = ${secondOp.code}")
-    _connectCallToArgument(callNode, secondOp)
+    connectCallToArgument(callNode, secondOp)
     if (pcodeOp.getOutput.isRegister) {
       val firstOp = resolveVarNode(pcodeOp.getOutput, 1)
-      _connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, firstOp)
     } else {
       val firstOp = createIdentifier(
         pcodeOp.getOutput.toString(),
@@ -192,54 +189,58 @@ class PCodeMapper(
         "TODO",
         pcodeOp.getSeqnum.getTarget.getOffsetAsBigInteger.intValue()
       )
-      _connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, firstOp)
     }
     callNode
   }
-  def handleTwoArguments1(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    pcodeOp: PcodeOp,
-    operand: String,
-    name: String
-  ): Unit = {
-    val firstOp  = resolveVarNode1(instruction, pcodeOp.getInput(0), 1)
-    val secondOp = resolveVarNode1(instruction, pcodeOp.getInput(1), 2)
-    val code     = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
-    _connectCallToArgument(opNode, firstOp)
-    _connectCallToArgument(opNode, secondOp)
-    _connectCallToArgument(callNode, opNode)
+  def handleTwoArguments1(
+                           diffGraphBuilder: DiffGraphBuilder,
+                           instruction: Instruction,
+                           callNode: CfgNodeNew,
+                           pcodeOp: PcodeOp,
+                           operand: String,
+                           name: String
+                         ): Unit = {
+    val firstOp = resolveVarNode1(instruction, pcodeOp.getInput(0), 1)
+    val secondOp = resolveVarNode1(instruction, pcodeOp.getInput(1), 2)
+    val code = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+
+    connectCallToArgument(opNode, firstOp)
+    connectCallToArgument(opNode, secondOp)
+    connectCallToArgument(callNode, opNode)
   }
+
   def handlePtrSub1(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    varNode: Varnode,
-    index: Int
-  ): Unit = {
+                     diffGraphBuilder: DiffGraphBuilder,
+                     instruction: Instruction,
+                     callNode: CfgNodeNew,
+                     varNode: Varnode,
+                     index: Int
+                   ): Unit = {
     val arg = resolveVarNode1(instruction, varNode, index)
-    _connectCallToArgument(callNode, arg)
+    connectCallToArgument(callNode, arg)
   }
+
   def handleAssignment1(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    to: Varnode,
-    index: Int
-  ): Unit = {
+                         diffGraphBuilder: DiffGraphBuilder,
+                         instruction: Instruction,
+                         callNode: CfgNodeNew,
+                         to: Varnode,
+                         index: Int
+                       ): Unit = {
     val node = resolveVarNode1(instruction, to, index)
-    _connectCallToArgument(callNode, node)
+    connectCallToArgument(callNode, node)
   }
+
   def resolveArgument(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    pcodeAst: PcodeOp,
-    index: Int
-  ): Unit = {
+                       diffGraphBuilder: DiffGraphBuilder,
+                       instruction: Instruction,
+                       callNode: CfgNodeNew,
+                       pcodeAst: PcodeOp,
+                       index: Int
+                     ): Unit = {
     pcodeAst.getOpcode match {
       case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
         logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
@@ -267,7 +268,7 @@ class PCodeMapper(
           resolveArgument(diffGraphBuilder, instruction, callNode, pcodeAst.getInput(0).getDef, index)
         }
       case PTRSUB | PTRADD => handlePtrSub1(diffGraphBuilder, instruction, callNode, pcodeAst.getOutput, index)
-      case _               => // handleDefault(pcodeAst)
+      case _ => // handleDefault(pcodeAst)
     }
   }
 
@@ -275,14 +276,15 @@ class PCodeMapper(
     // var callNode: CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
     val callNode = pcodeOp.getOpcode match {
       // TODO add more pcode ops like CALL.*
-      case BRANCH | BRANCHIND | CBRANCH =>
+      case BRANCHIND | CBRANCH => //BRANCH | BRANCHIND =>//| //CBRANCH =>
+        println("NATIVE INSTRUCTION " + nativeInstruction)
         val destination = resolveVarNode(pcodeOp.getInputs.head, 1)
         val callNode = createCallNode(
           nativeInstruction.toString,
-          "<operator>.goto",
+          "<operator>.conditionalGoto",
           nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
         )
-        _connectCallToArgument(callNode, destination)
+        connectCallToArgument(callNode, destination)
         callNode
       case RETURN =>
         createCall("TODO RET", "TODO RET")
@@ -320,7 +322,6 @@ class PCodeMapper(
         handleTwoArguments(pcodeOp, "<operator>.or", "||")
       case BOOL_XOR =>
         handleTwoArguments(pcodeOp, "<operator>.xor", "^^")
-
       case CAST =>
         handleSingleArgument(pcodeOp, "<operator>.cast", pcodeOp.getMnemonic)
       case CPOOLREF =>
@@ -449,10 +450,9 @@ class PCodeMapper(
     }
   }
 
-  def _connectCallToArgument(call: CfgNodeNew, argument: CfgNodeNew): Unit = {
+  def connectCallToArgument(call: CfgNodeNew, argument: CfgNodeNew): Unit = {
     diffGraphBuilder.addNode(argument)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }
 }
-

@@ -12,17 +12,21 @@ class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
 
   override def generateParts(): Array[Method] =
     cpg.method.toArray
+
   override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
     method.ast
       .filter(_.isInstanceOf[Call])
       .map(_.asInstanceOf[Call])
       .nameExact("<operator>.goto")
       .where(_.argument.order(1).isLiteral)
+      .dedupBy(_.code)
       .foreach { sourceCall =>
         sourceCall.argument.order(1).code.l.headOption.flatMap(parseAddress) match {
           case Some(destinationAddress) =>
-            method.ast.filter(_.isInstanceOf[Call]).lineNumber(destinationAddress).foreach { destination =>
-              diffGraph.addEdge(sourceCall, destination, EdgeTypes.CFG)
+            def destination = method.ast.filter(_.isInstanceOf[Call]).lineNumber(destinationAddress).headOption
+
+            if (destination.nonEmpty) {
+              diffGraph.addEdge(sourceCall, destination.get, EdgeTypes.CFG)
             }
           case _ => // Ignore for now
           /*
@@ -34,6 +38,6 @@ class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
   }
 
   private def parseAddress(address: String): Option[Int] = {
-    Try(Integer.parseInt(address, 16)).toOption
+    Try(Integer.decode(address).toInt).toOption
   }
 }

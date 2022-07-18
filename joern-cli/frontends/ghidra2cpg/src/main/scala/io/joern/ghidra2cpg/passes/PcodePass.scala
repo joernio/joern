@@ -1,15 +1,15 @@
 package io.joern.ghidra2cpg.passes
 
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
-import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.utils.Util._
 import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewCall, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
@@ -117,18 +117,19 @@ class PcodePass(
                    callNode: CfgNodeNew,
                    pcodeOp: PcodeOp
                  ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
+    val firstOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(2), 1)
     connectCallToArgument(diffGraphBuilder, callNode, firstOp)
     connectCallToArgument(diffGraphBuilder, callNode, secondOp)
   }
+
   def handleAssignment(
                         diffGraphBuilder: DiffGraphBuilder,
                         instruction: Instruction,
                         callNode: CfgNodeNew,
                         pcodeOp: PcodeOp
                       ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getOutput, 2)
+    val firstOp = resolveVarNode(instruction, pcodeOp.getOutput, 2)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     connectCallToArgument(diffGraphBuilder, callNode, firstOp)
     connectCallToArgument(diffGraphBuilder, callNode, secondOp)
@@ -142,10 +143,10 @@ class PcodePass(
                           operand: String,
                           name: String
                         ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
+    val firstOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val code     = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+    val code = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
 
     connectCallToArgument(diffGraphBuilder, opNode, firstOp)
     connectCallToArgument(diffGraphBuilder, opNode, secondOp)
@@ -265,10 +266,12 @@ class PcodePass(
       diffGraphBuilder.addEdge(methodNode, instructionNodes.head, EdgeTypes.CFG)
       instructionNodes.sliding(2).foreach { nodes =>
         val prevInstructionNode = nodes.head
-        val instructionNode     = nodes.last
-        diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
-        diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
-        diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
+        val instructionNode = nodes.last
+        if(prevInstructionNode.asInstanceOf[NewCall].name != "<operator>.goto"){
+          diffGraphBuilder.addEdge(blockNode, prevInstructionNode, EdgeTypes.AST)
+          diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+          diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
+        }
       }
     }
   }
@@ -276,7 +279,7 @@ class PcodePass(
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     val localDiffGraph = new DiffGraphBuilder
     // we need it just once with default settings
-    val blockNode  = nodes.NewBlock().code("").order(0)
+    val blockNode = nodes.NewBlock().code("").order(0)
     val methodNode = createMethodNode(decompiler, function, fileName, checkIfExternal(currentProgram, function.getName))
     val methodReturn = createReturnNode()
 
@@ -291,11 +294,11 @@ class PcodePass(
     handleBody(diffGraphBuilder, function, methodNode, blockNode)
     diffGraphBuilder.absorb(localDiffGraph)
   }
+
   def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
     diffGraphBuilder.addNode(argument)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }
-
   override def generateParts(): Array[Function] = functions.toArray
 }
