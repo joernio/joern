@@ -10,31 +10,21 @@ import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {
-    val cpg = code("""
-        |package mypkg
-        |
-        |// TODO: test with `fun foo(x: String, y: String): Int {`
-        |fun foo(x: String): Int {
-        |    1.let {
-        |       println(x)
-        |    }
-        |   return 0
-        |}
-        |""".stripMargin)
+    val cpg = code("fun f1(p: String) { 1.let { println(p) } }")
 
     "should contain a single METHOD_REF node with a single CAPTURE edge" in {
       cpg.methodRef.size shouldBe 1
       cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
     }
 
-    "should contain a LOCAL node for the captured `x`" in {
-      val List(l) = cpg.local.nameExact("x").l
+    "should contain a LOCAL node for the captured method parameter" in {
+      val List(l) = cpg.local.nameExact("p").l
       l.typeFullName shouldBe "java.lang.String"
     }
 
-    "should contain a CLOSURE_BINDING node for `x` with the correct props set" in {
+    "should contain a CLOSURE_BINDING node for the captured parameter with the correct props set" in {
       val List(cb) = cpg.all.collectAll[ClosureBinding].l
-      cb.closureOriginalName shouldBe Some("x")
+      cb.closureOriginalName shouldBe Some("p")
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
@@ -44,16 +34,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
   "CPG for code with a simple lambda which captures a local" should {
     val cpg = code("""
-        |package mypkg
-        |
-        |import kotlin.collections.List
-        |
-        |fun foo(x: String): Int {
-        |    val baz: String = "PLACEHOLDER"
-        |    1.let {
-        |       println(baz)
-        |    }
-        |   return 0
+        |fun foo(x: String) {
+        |    val baz: String = "BAZ"
+        |    1.let { println(baz) }
         |}
         |""".stripMargin)
 
@@ -166,14 +149,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     val cpg = code("""
         |package mypkg
         |
-        |fun throughTakeIf(x: String): String? {
-        |    val y = x.takeIf { arg -> arg.length > 1}
-        |    return y
-        |}
-        |
-        |fun main() {
-        |    val myVal = throughTakeIf("AVALUE")
-        |    println(myVal)
+        |fun throughTakeIf(x: String) {
+        |  x.takeIf { arg -> arg.length > 1}
         |}
         |""".stripMargin)
 
@@ -238,11 +215,6 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |          arg + "MAPPED"
         |      }
         |    return mappedCol
-        |}
-        |
-        |fun main() {
-        |  val x = mappedListWith("AVALUE")
-        |  println(x)
         |}
         |""".stripMargin)
 
@@ -417,10 +389,6 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |        }
         |    }
         |    return 0
-        |}
-        |
-        |fun main() {
-        |    doSomething("AMESSAGE")
         |}
         |""".stripMargin)
 
