@@ -111,25 +111,25 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain a CALL node for `Foo()` with the correct properties set" in {
-      val List(p) = cpg.call.methodFullName(".*init.*").l
-      p.methodFullName shouldBe "mypkg.Foo.<init>:void()"
-      p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      p.signature shouldBe "void()"
-      p.code shouldBe "Foo()"
-      p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(12)
+      val List(c) = cpg.call.methodFullName(".*init.*").l
+      c.methodFullName shouldBe "mypkg.Foo.<init>:void()"
+      c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      c.signature shouldBe "void()"
+      c.code shouldBe "Foo()"
+      c.columnNumber shouldBe Some(6)
+      c.lineNumber shouldBe Some(12)
     }
 
     "should contain a CALL node for `add1` with the correct props set" in {
-      val List(p) = cpg.call("add1").l
-      p.argument.size shouldBe 3
-      p.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      p.code shouldBe "x.add1(argc, \"AMESSAGE\")"
-      p.columnNumber shouldBe Some(10)
-      p.lineNumber shouldBe Some(13)
-      p.methodFullName shouldBe "mypkg.Foo.add1:int(int,java.lang.String)"
-      p.signature shouldBe "int(int,java.lang.String)"
-      p.typeFullName shouldBe "int"
+      val List(c) = cpg.call("add1").l
+      c.argument.size shouldBe 3
+      c.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      c.code shouldBe "x.add1(argc, \"AMESSAGE\")"
+      c.columnNumber shouldBe Some(10)
+      c.lineNumber shouldBe Some(13)
+      c.methodFullName shouldBe "mypkg.Foo.add1:int(int,java.lang.String)"
+      c.signature shouldBe "int(int,java.lang.String)"
+      c.typeFullName shouldBe "int"
 
       val List(firstArg, secondArg, thirdArg) = cpg.call("add1").argument.l
       firstArg.code shouldBe "x"

@@ -81,4 +81,54 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
         Set(List(("f1(p)", Some(4)), ("aClass.itsFn(p)", Some(6)), ("itsFn(q)", Some(3)), ("println(q)", Some(3))))
     }
   }
+
+  "CPG for code with call to ctor" should {
+    val cpg = code("""
+        |class AClass(val x: String)
+        |fun f1(p: String) {
+        |  val aClass = AClass(p)
+        |  println(aClass.x)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through the constructor" in {
+      val source = cpg.method.name("f1").parameter
+      val sink   = cpg.method.name("println").callIn.argument
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSet shouldBe
+        Set(
+          List(
+            ("f1(p)", Some(3)),
+            ("AClass(p)", Some(4)),
+            ("<init>(this, x)", Some(2)),
+            ("this.x = x", Some(-1)),
+            ("AClass", Some(-1)),
+            ("AClass(p)", Some(4)),
+            ("println(aClass.x)", Some(5))
+          )
+        )
+    }
+  }
+
+  "CPG for code with call to secondary ctor" should {
+    val cpg = code("""
+        |class AClass {
+        |  constructor(x: String) {
+        |    println(x)
+        |  }
+        |}
+        |
+        |fun f1(p: String) {
+        |  val aClass = AClass(p)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through " in {
+      val source = cpg.method.name("f1").parameter
+      val sink   = cpg.method.name("println").callIn.argument
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSet shouldBe
+        Set(List(("f1(p)", Some(8)), ("AClass(p)", Some(9)), ("<init>(this, x)", Some(3)), ("println(x)", Some(4))))
+    }
+  }
 }

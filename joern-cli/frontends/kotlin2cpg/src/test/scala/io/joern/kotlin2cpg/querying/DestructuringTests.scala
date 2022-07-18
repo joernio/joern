@@ -287,7 +287,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructLocal.typeFullName shouldBe "int"
 
       val List(tmpLocal) = cpg.local.name("tmp_.*").where(_.method.fullName(".*main.*")).l
-      tmpLocal.code shouldBe "tmp_2"
+      tmpLocal.code shouldBe "tmp_1"
       tmpLocal.typeFullName shouldBe "mypkg.AClass"
 
       val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
@@ -297,7 +297,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
       val List(allocAssignmentLhs: Identifier, rhsCall: Call) = tmpAssignmentToRhsCall.argument.l
       allocAssignmentLhs.argumentIndex shouldBe 1
-      allocAssignmentLhs.code shouldBe "tmp_2"
+      allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "mypkg.AClass"
       tmpLocal.referencingIdentifiers.id.l.contains(allocAssignmentLhs.id) shouldBe true
 
@@ -431,14 +431,12 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructLocal.code shouldBe "myB"
       secondDestructLocal.typeFullName shouldBe "int"
 
-      val irrelevantLocalCount = 2
       val List(tmpLocal1: Local) =
         cpg.local
           .name("tmp_.*")
-          .drop(irrelevantLocalCount)
           .where(_.method.fullName(".*main.*"))
           .l
-      tmpLocal1.code shouldBe "tmp_3"
+      tmpLocal1.code shouldBe "tmp_1"
       tmpLocal1.typeFullName shouldBe "mypkg.AClass"
 
       val List(tmpAssignmentToRhsCall) = cpg.call.code("tmp.*=.*makeA.*").l
@@ -448,7 +446,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
       val List(allocAssignmentLhs: Identifier, rhsCall: Call) = tmpAssignmentToRhsCall.argument.l
       allocAssignmentLhs.argumentIndex shouldBe 1
-      allocAssignmentLhs.code shouldBe "tmp_3"
+      allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "mypkg.AClass"
       tmpLocal1.referencingIdentifiers.id.l.contains(allocAssignmentLhs.id) shouldBe true
 
