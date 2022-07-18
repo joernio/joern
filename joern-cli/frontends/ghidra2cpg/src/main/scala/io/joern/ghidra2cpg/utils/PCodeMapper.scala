@@ -277,7 +277,6 @@ class PCodeMapper(
     val callNode = pcodeOp.getOpcode match {
       // TODO add more pcode ops like CALL.*
       case BRANCHIND | CBRANCH => //BRANCH | BRANCHIND =>//| //CBRANCH =>
-        println("NATIVE INSTRUCTION " + nativeInstruction)
         val destination = resolveVarNode(pcodeOp.getInputs.head, 1)
         val callNode = createCallNode(
           nativeInstruction.toString,
