@@ -25,6 +25,7 @@ Specification: https://cpg.joern.io
 
 - JDK 11 (newer versions _might_ work, but have not been properly tested)
 - _optional_: gcc and g++ (for auto-discovery of C/C++ system header files if included/used in your C/C++ code)
+- _optional_: [astgen](https://github.com/joernio/astgen) with Node 12+ for running the JS/TS frontend (jssrc2cpg).
 
 ## Development Requirements
 
