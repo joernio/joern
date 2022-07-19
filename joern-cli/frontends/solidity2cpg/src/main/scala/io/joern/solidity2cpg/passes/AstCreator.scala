@@ -989,7 +989,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val func = NewCall()
       .name(name)
       .code(code)
-      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .order(order)
       .argumentIndex(order)
       .methodFullName(methodFullName)
@@ -1055,15 +1055,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(name+"."+memberAccess.memberName)
       .argumentIndex(order)
       .order(order)
-//    val fieldIdentifierNode = Ast(NewFieldIdentifier()
-//      .canonicalName(name)
-//      .argumentIndex(2)
-//      .order(2)
-//      .code(name))
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+
     Ast(fieldAccess)
       .withChild(expr)
       .withArgEdges(fieldAccess, expr.root.toList)
-//      .withChild(fieldIdentifierNode)
+
+//    expr
+
 
   }
 
@@ -1140,7 +1139,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(vars.size + order)
         .argumentIndex(vars.size + order)
     } else {
-      NewCall()
+      NewCall().dispatchType(DispatchTypes.STATIC_DISPATCH)
     }
 
     if (statement.initialValue != null) {
