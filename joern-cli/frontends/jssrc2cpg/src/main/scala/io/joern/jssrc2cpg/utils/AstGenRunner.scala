@@ -4,10 +4,9 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.utils.ProjectRoot
 import org.slf4j.LoggerFactory
 
-import java.nio.file.FileSystem
-import java.nio.file.FileSystems
 import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
@@ -26,12 +25,8 @@ object AstGenRunner {
     "astgen-win.exe"
   }
 
-  private val EXECUTABLE_DIR: String = {
-    val uri = getClass.getResource("/astgen").toURI
-    Try(FileSystems.newFileSystem(uri, java.util.Map.of("create", "true")))
-      .getOrElse(FileSystems.getDefault)
-    Paths.get(uri).toString
-  }
+  private val EXECUTABLE_DIR: String =
+    Paths.get(ProjectRoot.relativise("joern-cli/src/universal/bin/astgen")).toAbsolutePath.toString
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
@@ -117,10 +112,8 @@ object AstGenRunner {
     }
   }
 
-  private def runAstGenNative(in: File, out: File): Try[Seq[String]] = {
-    val command = s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out"
-    ExternalCommand.run(command, in.toString())
-  }
+  private def runAstGenNative(in: File, out: File): Try[Seq[String]] =
+    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
 
   def execute(config: Config, out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
