@@ -6,6 +6,9 @@ import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
+import java.nio.file.FileSystem
+import java.nio.file.FileSystems
+import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
@@ -23,7 +26,12 @@ object AstGenRunner {
     "astgen-win.exe"
   }
 
-  private val EXECUTABLE_DIR = File(getClass.getResource("/astgen").toURI)
+  private val EXECUTABLE_DIR: String = {
+    val uri = getClass.getResource("/astgen").toURI
+    Try(FileSystems.newFileSystem(uri, java.util.Map.of("create", "true")))
+      .getOrElse(FileSystems.getDefault)
+    Paths.get(uri).toString
+  }
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
