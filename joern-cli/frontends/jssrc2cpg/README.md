@@ -28,12 +28,6 @@ Run the following to see a complete list of available options:
 ./jssrc2cpg.sh --help
 ```
 
-## Runtime Dependencies
-
-jssrc2cpg uses _astgen_ to generate the Babel AST from your JS/TS code.
-Make sure you have it installed. See: https://github.com/joernio/astgen.
-This requires Node 12+.
-
 ## Warning
 
 This is work in progress. Use https://github.com/ShiftLeftSecurity/js2cpg as a mature alternative.

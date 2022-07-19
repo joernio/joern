@@ -8,6 +8,10 @@ import scala.util.{Failure, Success}
 
 object Environment {
 
+  val IS_WIN: Boolean   = scala.util.Properties.isWin
+  val IS_MAC: Boolean   = scala.util.Properties.isMac
+  val IS_LINUX: Boolean = scala.util.Properties.isLinux
+
   private var isValid: Option[Boolean] = None
 
   private val logger = LoggerFactory.getLogger(getClass)

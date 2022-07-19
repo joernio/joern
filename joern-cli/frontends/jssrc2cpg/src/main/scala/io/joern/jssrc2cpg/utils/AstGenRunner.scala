@@ -9,10 +9,21 @@ import org.slf4j.LoggerFactory
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
+import scala.util.Try
 
 object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  private val EXECUTABLE_NAME = if (Environment.IS_MAC) {
+    "astgen-macos"
+  } else if (Environment.IS_LINUX) {
+    "astgen-linux"
+  } else {
+    "astgen-win.exe"
+  }
+
+  private val EXECUTABLE_DIR = File(getClass.getResource("/astgen").toURI)
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
@@ -98,10 +109,15 @@ object AstGenRunner {
     }
   }
 
+  private def runAstGenNative(in: File, out: File): Try[Seq[String]] = {
+    val command = s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out"
+    ExternalCommand.run(command, in.toString())
+  }
+
   def execute(config: Config, out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
     logger.debug(s"\t+ Running astgen in '$in' ...")
-    ExternalCommand.run(s"astgen -t ts -o $out", in.toString()) match {
+    runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), config, out)
         val skipped = skippedFiles(in, result.toList)
