@@ -13,8 +13,7 @@ class DependenciesPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val packagesJsons = SourceFiles
-      .determine(config.inputPaths, Set(".json"))
-      .toSet
+      .determine(config.inputPath, Set(".json"))
       .filter(f =>
         f.endsWith(PackageJsonParser.PACKAGE_JSON_FILENAME) || f.endsWith(PackageJsonParser.PACKAGE_JSON_LOCK_FILENAME)
       )

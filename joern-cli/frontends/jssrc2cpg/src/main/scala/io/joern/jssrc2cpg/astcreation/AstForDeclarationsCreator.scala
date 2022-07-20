@@ -3,21 +3,275 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.datastructures.ScopeType
-import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewNamespaceBlock, TypeRefBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
 
 import scala.util.Try
 
-trait AstForDeclarationsCreator {
+trait AstForDeclarationsCreator { this: AstCreator =>
 
-  this: AstCreator =>
+  private val DEFAULTS_KEY    = "default"
+  private val EXPORT_KEYWORD  = "exports"
+  private val REQUIRE_KEYWORD = "require"
+  private val IMPORT_KEYWORD  = "import"
+
+  private def hasNoName(json: Value): Boolean = !hasKey(json, "id") || json("id").isNull
+
+  private def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
+    case Identifier                                 => Seq(obj.code)
+    case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
+    case AssignmentExpression                       => Seq(code(obj.json("left")))
+    case ClassDeclaration                           => Seq(code(obj.json("id")))
+    case TSTypeAliasDeclaration                     => Seq(code(obj.json("id")))
+    case TSInterfaceDeclaration                     => Seq(code(obj.json("id")))
+    case TSEnumDeclaration                          => Seq(code(obj.json("id")))
+    case TSModuleDeclaration                        => Seq(code(obj.json("id")))
+    case TSDeclareFunction if hasNoName(obj.json)   => Seq(code(obj.json("id")))
+    case TSDeclareFunction                          => defaultName.toSeq
+    case FunctionDeclaration if hasNoName(obj.json) => Seq(code(obj.json("id")))
+    case FunctionDeclaration                        => defaultName.toSeq
+    case FunctionExpression if hasNoName(obj.json)  => Seq(code(obj.json("id")))
+    case FunctionExpression                         => defaultName.toSeq
+    case ClassExpression if hasNoName(obj.json)     => Seq(code(obj.json("id")))
+    case ClassExpression                            => defaultName.toSeq
+    case _ =>
+      notHandledYet(obj, "Lowering export declaration")
+      Seq.empty
+  }
+
+  private def createExportCallAst(name: String, exportName: String, declaration: BabelNodeInfo): Ast = {
+    val exportCallAst = if (name == DEFAULTS_KEY) {
+      createIndexAccessCallAst(
+        createIdentifierNode(exportName, declaration),
+        createLiteralNode(
+          s"\"$DEFAULTS_KEY\"",
+          Some(Defines.STRING.label),
+          declaration.lineNumber,
+          declaration.columnNumber
+        ),
+        declaration.lineNumber,
+        declaration.columnNumber
+      )
+    } else {
+      createFieldAccessCallAst(
+        createIdentifierNode(exportName, declaration),
+        createFieldIdentifierNode(name, declaration.lineNumber, declaration.columnNumber),
+        declaration.lineNumber,
+        declaration.columnNumber
+      )
+    }
+    Ast.storeInDiffGraph(exportCallAst, diffGraph)
+    exportCallAst
+  }
+
+  private def createExportAssignmentCallAst(name: String, exportCallAst: Ast, declaration: BabelNodeInfo): Ast =
+    createAssignmentCallAst(
+      exportCallAst.nodes.head,
+      createIdentifierNode(name, declaration),
+      s"${codeOf(exportCallAst.nodes.head)} = $name",
+      declaration.lineNumber,
+      declaration.columnNumber
+    )
+
+  private def extractDeclarationsFromExportDecl(declaration: BabelNodeInfo, key: String): Option[(Ast, Seq[String])] =
+    safeObj(declaration.json, key)
+      .map { d =>
+        val nodeInfo = createBabelNodeInfo(d)
+        val ast = nodeInfo.node match {
+          case FunctionDeclaration =>
+            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case FunctionExpression =>
+            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case ArrowFunctionExpression =>
+            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+          case _ => astForNode(d)
+        }
+        val defaultName = ast.nodes.collectFirst {
+          case id: IdentifierBase =>
+            // we will have the Identifier in the assignment call generated for a function (see above)
+            id.name
+          case clazz: TypeRefBase =>
+            // we will have a TypeRef for an exported class
+            clazz.code.stripPrefix("class ")
+        }
+        val names = codeForExportObject(nodeInfo, defaultName)
+        (ast, names)
+      }
+
+  private def extractExportFromNameFromExportDecl(declaration: BabelNodeInfo): String =
+    safeObj(declaration.json, "source")
+      .map { d => s"_${code(d).stripPrefix("\"").stripSuffix("\"")}" }
+      .getOrElse(EXPORT_KEYWORD)
+
+  private def cleanImportName(name: String): String = if (name.contains("/")) {
+    val stripped = name.stripSuffix("/")
+    stripped.substring(stripped.lastIndexOf("/") + 1)
+  } else name
+
+  private def createAstForFrom(fromName: String, declaration: BabelNodeInfo): Ast = {
+    if (fromName == EXPORT_KEYWORD) {
+      Ast()
+    } else {
+      val strippedCode = cleanImportName(fromName).stripPrefix("_")
+      val id           = createIdentifierNode(s"_$strippedCode", declaration)
+      val localNode    = createLocalNode(id.code, Defines.ANY.label)
+      scope.addVariable(id.code, localNode, BlockScope)
+      diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+
+      val destAst = Ast(id)
+      val sourceCallArgNode =
+        createLiteralNode(s"\"${fromName.stripPrefix("_")}\"", None, declaration.lineNumber, declaration.columnNumber)
+      val sourceCall = createCallNode(
+        s"$REQUIRE_KEYWORD(${sourceCallArgNode.code})",
+        REQUIRE_KEYWORD,
+        DispatchTypes.STATIC_DISPATCH,
+        declaration.lineNumber,
+        declaration.columnNumber
+      )
+      val sourceAst =
+        createCallAst(sourceCall, List(Ast(sourceCallArgNode)))
+      val assigmentCallAst =
+        createAssignmentCallAst(
+          destAst.nodes.head,
+          sourceAst.nodes.head,
+          s"${codeOf(destAst.nodes.head)} = ${codeOf(sourceAst.nodes.head)}",
+          declaration.lineNumber,
+          declaration.columnNumber
+        )
+      Ast.storeInDiffGraph(sourceAst, diffGraph)
+      assigmentCallAst
+    }
+  }
+
+  protected def astForExportNamedDeclaration(declaration: BabelNodeInfo): Ast = {
+    val specifiers = declaration
+      .json("specifiers")
+      .arr
+      .toSeq
+      .map { spec =>
+        if (createBabelNodeInfo(spec).node == ExportNamespaceSpecifier) {
+          val exported = createBabelNodeInfo(spec("exported"))
+          (None, Some(exported))
+        } else {
+          val exported = createBabelNodeInfo(spec("exported"))
+          val local = if (hasKey(spec, "local")) {
+            createBabelNodeInfo(spec("local"))
+          } else {
+            exported
+          }
+          (Some(local), Some(exported))
+        }
+      }
+
+    val exportName = extractExportFromNameFromExportDecl(declaration)
+
+    val blockNode = createBlockNode(declaration)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val fromAst         = createAstForFrom(exportName, declaration)
+    val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
+    val declAsts = declAstAndNames.map { case (ast, names) =>
+      ast +: names.map { name =>
+        if (exportName != EXPORT_KEYWORD)
+          diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), REQUIRE_KEYWORD))
+        val exportCallAst = createExportCallAst(name, exportName, declaration)
+        createExportAssignmentCallAst(name, exportCallAst, declaration)
+      }
+    }
+
+    val specifierAsts = specifiers.map {
+      case (Some(name), Some(alias)) =>
+        if (exportName != EXPORT_KEYWORD)
+          diffGraph.addNode(createDependencyNode(alias.code, exportName.stripPrefix("_"), REQUIRE_KEYWORD))
+        val exportCallAst = createExportCallAst(alias.code, exportName, declaration)
+        createExportAssignmentCallAst(name.code, exportCallAst, declaration)
+      case (None, Some(alias)) =>
+        diffGraph.addNode(createDependencyNode(alias.code, exportName.stripPrefix("_"), REQUIRE_KEYWORD))
+        val exportCallAst = createExportCallAst(alias.code, EXPORT_KEYWORD, declaration)
+        createExportAssignmentCallAst(exportName, exportCallAst, declaration)
+    }
+
+    val asts = fromAst +: (specifierAsts ++ declAsts.toSeq.flatten)
+    setIndices(asts.toList)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
+  }
+
+  protected def astForExportAssignment(assignment: BabelNodeInfo): Ast = {
+    val expressionAstWithNames = extractDeclarationsFromExportDecl(assignment, "expression")
+
+    val blockNode = createBlockNode(assignment)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val declAsts = expressionAstWithNames.map { case (ast, names) =>
+      ast +: names.map { name =>
+        val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, assignment)
+        createExportAssignmentCallAst(name, exportCallAst, assignment)
+      }
+    }
+
+    val asts = declAsts.toSeq.flatten
+    setIndices(asts.toList)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
+  }
+
+  protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
+    val exportName      = extractExportFromNameFromExportDecl(declaration)
+    val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
+
+    val blockNode = createBlockNode(declaration)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val declAsts = declAstAndNames.map { case (ast, names) =>
+      ast +: names.map { name =>
+        val exportCallAst = createExportCallAst(DEFAULTS_KEY, exportName, declaration)
+        createExportAssignmentCallAst(name, exportCallAst, declaration)
+      }
+    }
+
+    val asts = declAsts.toSeq.flatten
+    setIndices(asts.toList)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
+  }
+
+  protected def astForExportAllDeclaration(declaration: BabelNodeInfo): Ast = {
+    val exportName = extractExportFromNameFromExportDecl(declaration)
+    val depGroupId = code(declaration.json("source")).stripPrefix("\"").stripSuffix("\"")
+    val name       = cleanImportName(depGroupId)
+    if (exportName != EXPORT_KEYWORD) {
+      diffGraph.addNode(createDependencyNode(name, depGroupId, REQUIRE_KEYWORD))
+    }
+
+    val blockNode = createBlockNode(declaration)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val fromCallAst   = createAstForFrom(exportName, declaration)
+    val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, declaration)
+    Ast.storeInDiffGraph(exportCallAst, diffGraph)
+    val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration)
+
+    val asts = List(fromCallAst, exportCallAst, assignmentCallAst)
+    setIndices(asts)
+    localAstParentStack.pop()
+    scope.popScope()
+    Ast(blockNode).withChildren(asts)
+  }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
     val scopeType = if (declaration.json("kind").str == "let") {
@@ -31,16 +285,15 @@ trait AstForDeclarationsCreator {
   }
 
   private def handleRequireCallForDependencies(lhs: Value, rhs: Value): Unit = {
-    val rhsCode = code(rhs)
-    val groupId = rhsCode.substring(rhsCode.indexOf("require(") + 9, rhsCode.indexOf(")") - 1)
-    val names = createBabelNodeInfo(lhs) match {
-      case arrayPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-        arrayPattern.json("elements").arr.toList.map(code)
-      case objectPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
-        objectPattern.json("properties").arr.toList.map(code)
-      case _ => List(code(lhs))
+    val rhsCode  = code(rhs)
+    val groupId  = rhsCode.substring(rhsCode.indexOf(s"$REQUIRE_KEYWORD(") + 9, rhsCode.indexOf(")") - 1)
+    val nodeInfo = createBabelNodeInfo(lhs)
+    val names = nodeInfo.node match {
+      case ArrayPattern  => nodeInfo.json("elements").arr.toList.map(code)
+      case ObjectPattern => nodeInfo.json("properties").arr.toList.map(code)
+      case _             => List(code(lhs))
     }
-    names.foreach(name => diffGraph.addNode(createDependencyNode(name, groupId, "require")))
+    names.foreach(name => diffGraph.addNode(createDependencyNode(name, groupId, REQUIRE_KEYWORD)))
   }
 
   private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType): Ast = {
@@ -48,16 +301,16 @@ trait AstForDeclarationsCreator {
     val init = Try(createBabelNodeInfo(declarator("init"))).toOption
 
     val typeFullName = init match {
-      case Some(f @ BabelNodeInfo(BabelAst.FunctionExpression)) =>
+      case Some(f: BabelNodeInfo) if f.node == FunctionExpression =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
-      case Some(f @ BabelNodeInfo(BabelAst.FunctionDeclaration)) =>
+      case Some(f: BabelNodeInfo) if f.node == FunctionDeclaration =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
-      case Some(f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression)) =>
+      case Some(f: BabelNodeInfo) if f.node == ArrowFunctionExpression =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
-      case _ => Defines.ANY.label
+      case _ => init.map(typeFor).getOrElse(Defines.ANY.label)
     }
 
     val localNode = createLocalNode(id.code, typeFullName)
@@ -67,36 +320,21 @@ trait AstForDeclarationsCreator {
     if (init.isEmpty) {
       Ast()
     } else {
-      createBabelNodeInfo(id.json) match {
-        case objPattern @ BabelNodeInfo(BabelAst.ObjectPattern) =>
-          val sourceAst = init.get match {
-            case requireCall if requireCall.code.startsWith("require(") =>
-              handleRequireCallForDependencies(id.json, init.get.json)
-              astForNodeWithFunctionReference(requireCall.json)
-            case initExpr =>
-              astForNodeWithFunctionReference(initExpr.json)
-          }
-          Ast.storeInDiffGraph(sourceAst, diffGraph)
-          astForDeconstruction(objPattern, sourceAst)
-        case arrPattern @ BabelNodeInfo(BabelAst.ArrayPattern) =>
-          val sourceAst = init.get match {
-            case requireCall if requireCall.code.startsWith("require(") =>
-              handleRequireCallForDependencies(id.json, init.get.json)
-              astForNodeWithFunctionReference(requireCall.json)
-            case initExpr =>
-              astForNodeWithFunctionReference(initExpr.json)
-          }
-          Ast.storeInDiffGraph(sourceAst, diffGraph)
-          astForDeconstruction(arrPattern, sourceAst)
+      val sourceAst = init.get match {
+        case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
+          handleRequireCallForDependencies(id.json, init.get.json)
+          astForNodeWithFunctionReference(requireCall.json)
+        case initExpr =>
+          astForNodeWithFunctionReference(initExpr.json)
+      }
+      val nodeInfo = createBabelNodeInfo(id.json)
+      nodeInfo.node match {
+        case ObjectPattern =>
+          astForDeconstruction(nodeInfo, sourceAst)
+        case ArrayPattern =>
+          astForDeconstruction(nodeInfo, sourceAst)
         case _ =>
           val destAst = astForNode(id.json)
-          val sourceAst = init.get match {
-            case requireCall if requireCall.code.startsWith("require(") =>
-              handleRequireCallForDependencies(id.json, init.get.json)
-              astForNodeWithFunctionReference(requireCall.json)
-            case initExpr =>
-              astForNodeWithFunctionReference(initExpr.json)
-          }
           val assigmentCallAst =
             createAssignmentCallAst(
               destAst.nodes.head,
@@ -112,19 +350,31 @@ trait AstForDeclarationsCreator {
     }
   }
 
+  protected def astForTSImportEqualsDeclaration(impDecl: BabelNodeInfo): Ast = {
+    val name          = impDecl.json("id")("name").str
+    val referenceNode = createBabelNodeInfo(impDecl.json("moduleReference"))
+    val referenceName = referenceNode.node match {
+      case TSExternalModuleReference => referenceNode.json("expression")("value").str
+      case _                         => referenceNode.code
+    }
+    diffGraph.addNode(createDependencyNode(name, referenceName, IMPORT_KEYWORD))
+    createImportNodeAndAttachToAst(impDecl, referenceName, name)
+    Ast()
+  }
+
   protected def astForImportDeclaration(impDecl: BabelNodeInfo): Ast = {
     val source     = impDecl.json("source")("value").str
     val specifiers = impDecl.json("specifiers").arr
 
     if (specifiers.isEmpty) {
-      diffGraph.addNode(createDependencyNode(source, source, "import"))
+      diffGraph.addNode(createDependencyNode(source, source, IMPORT_KEYWORD))
       createImportNodeAndAttachToAst(impDecl, source, source)
       Ast()
     } else {
       val depNodes = impDecl.json("specifiers").arr.map { importSpecifier =>
         val importedName = importSpecifier("local")("name").str
         createImportNodeAndAttachToAst(impDecl, source, importedName)
-        createDependencyNode(importedName, source, "import")
+        createDependencyNode(importedName, source, IMPORT_KEYWORD)
       }
       depNodes.foreach(diffGraph.addNode)
       Ast()
@@ -180,12 +430,23 @@ trait AstForDeclarationsCreator {
     index: Int,
     localTmpName: String
   ): Ast = {
-    val lhsElement = element.json("left")
     val rhsElement = element.json("right")
-    val lhsAst     = astForNode(lhsElement)
-    Ast.storeInDiffGraph(lhsAst, diffGraph)
-    val rhsAst = astForNodeWithFunctionReference(rhsElement)
+    val rhsAst     = astForNodeWithFunctionReference(rhsElement)
     Ast.storeInDiffGraph(rhsAst, diffGraph)
+
+    val lhsElement = element.json("left")
+    val nodeInfo   = createBabelNodeInfo(lhsElement)
+    val lhsAst = nodeInfo.node match {
+      case ObjectPattern =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        astForDeconstruction(nodeInfo, sourceAst)
+      case ArrayPattern =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        astForDeconstruction(nodeInfo, sourceAst)
+      case _ => astForNode(lhsElement)
+    }
+    Ast.storeInDiffGraph(lhsAst, diffGraph)
+
     val testAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
       val keyNode =
@@ -193,13 +454,7 @@ trait AstForDeclarationsCreator {
       val accessAst =
         createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       Ast.storeInDiffGraph(accessAst, diffGraph)
-      val voidCallNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        element.lineNumber,
-        element.columnNumber
-      )
+      val voidCallNode = createVoidCallNode(element.lineNumber, element.columnNumber)
       createEqualsCallAst(accessAst.nodes.head, voidCallNode, element.lineNumber, element.columnNumber)
     }
     Ast.storeInDiffGraph(testAst, diffGraph)
@@ -233,25 +488,30 @@ trait AstForDeclarationsCreator {
     key: BabelNodeInfo,
     localTmpName: String
   ): Ast = {
-    val lhsElement = element.json("left")
     val rhsElement = element.json("right")
-    val lhsAst     = astForNode(lhsElement)
-    Ast.storeInDiffGraph(lhsAst, diffGraph)
-    val rhsAst = astForNodeWithFunctionReference(rhsElement)
+    val rhsAst     = astForNodeWithFunctionReference(rhsElement)
     Ast.storeInDiffGraph(rhsAst, diffGraph)
+
+    val lhsElement = element.json("left")
+    val nodeInfo   = createBabelNodeInfo(lhsElement)
+    val lhsAst = nodeInfo.node match {
+      case ObjectPattern =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        astForDeconstruction(nodeInfo, sourceAst)
+      case ArrayPattern =>
+        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
+        astForDeconstruction(nodeInfo, sourceAst)
+      case _ => astForNode(lhsElement)
+    }
+    Ast.storeInDiffGraph(lhsAst, diffGraph)
+
     val testAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
       val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)
       val accessAst =
         createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       Ast.storeInDiffGraph(accessAst, diffGraph)
-      val voidCallNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        element.lineNumber,
-        element.columnNumber
-      )
+      val voidCallNode = createVoidCallNode(element.lineNumber, element.columnNumber)
       createEqualsCallAst(accessAst.nodes.head, voidCallNode, element.lineNumber, element.columnNumber)
     }
     Ast.storeInDiffGraph(testAst, diffGraph)
@@ -303,9 +563,9 @@ trait AstForDeclarationsCreator {
   }
 
   protected def astForDeconstruction(pattern: BabelNodeInfo, sourceAst: Ast, paramName: Option[String] = None): Ast = {
-    val localTmpName = generateUnusedVariableName(usedVariableNames, Set.empty, "_tmp")
+    val localTmpName = generateUnusedVariableName(usedVariableNames, "_tmp")
 
-    val blockNode = createBlockNode(pattern.code, pattern.lineNumber, pattern.columnNumber)
+    val blockNode = createBlockNode(pattern)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -325,39 +585,42 @@ trait AstForDeclarationsCreator {
         pattern.columnNumber
       )
 
-    val subTreeAsts = pattern match {
-      case BabelNodeInfo(BabelAst.ObjectPattern) =>
+    val subTreeAsts = pattern.node match {
+      case ObjectPattern =>
         pattern.json("properties").arr.toList.map { element =>
-          createBabelNodeInfo(element) match {
-            case rest @ BabelNodeInfo(BabelAst.RestElement) => astForNode(rest.json)
+          val nodeInfo = createBabelNodeInfo(element)
+          nodeInfo.node match {
+            case RestElement => astForNode(nodeInfo.json)
             case _ =>
-              createBabelNodeInfo(element("value")) match {
-                case ident @ BabelNodeInfo(BabelAst.Identifier) =>
-                  convertDestructingObjectElement(ident, createBabelNodeInfo(element("key")), localTmpName)
-                case assignment @ BabelNodeInfo(BabelAst.AssignmentPattern) =>
+              val nodeInfo = createBabelNodeInfo(element("value"))
+              nodeInfo.node match {
+                case Identifier =>
+                  convertDestructingObjectElement(nodeInfo, createBabelNodeInfo(element("key")), localTmpName)
+                case AssignmentPattern =>
                   convertDestructingObjectElementWithDefault(
-                    assignment,
+                    nodeInfo,
                     createBabelNodeInfo(element("key")),
                     localTmpName
                   )
-                case other => astForNode(other.json)
+                case _ => astForNode(nodeInfo.json)
               }
           }
         }
-      case BabelNodeInfo(BabelAst.ArrayPattern) =>
+      case ArrayPattern =>
         pattern.json("elements").arr.toList.zipWithIndex.map {
           case (element, index) if !element.isNull =>
-            createBabelNodeInfo(element) match {
-              case ident @ BabelNodeInfo(BabelAst.Identifier) =>
-                convertDestructingArrayElement(ident, index, localTmpName)
-              case assignment @ BabelNodeInfo(BabelAst.AssignmentPattern) =>
-                convertDestructingArrayElementWithDefault(assignment, index, localTmpName)
-              case other => astForNode(other.json)
+            val nodeInfo = createBabelNodeInfo(element)
+            nodeInfo.node match {
+              case Identifier =>
+                convertDestructingArrayElement(nodeInfo, index, localTmpName)
+              case AssignmentPattern =>
+                convertDestructingArrayElementWithDefault(nodeInfo, index, localTmpName)
+              case _ => astForNode(nodeInfo.json)
             }
           case _ => Ast()
         }
-      case other =>
-        List(convertDestructingObjectElement(other, other, localTmpName))
+      case _ =>
+        List(convertDestructingObjectElement(pattern, pattern, localTmpName))
     }
 
     val returnTmpNode = createIdentifierNode(localTmpName, pattern)

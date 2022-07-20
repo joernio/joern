@@ -21,7 +21,6 @@ fi
 
 declare -A repos=(
   [cpg]=https://repo1.maven.org/maven2/io/shiftleft/codepropertygraph-schema_3
-  [js2cpg]=https://repo1.maven.org/maven2/io/shiftleft/js2cpg_2.13
 )
 
 function latest_version {
@@ -72,7 +71,6 @@ function update {
 
 if [ "$DEPENDENCY" == "" ]; then
   update cpg
-  update js2cpg
 else
   DEPENDENCY="${DEPENDENCY#--only=}"
   update $DEPENDENCY

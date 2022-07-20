@@ -1,14 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-
-class TypeAliasTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple typealias to Int" - {
-    lazy val cpg = TestContext.buildCpg("""
+class TypeAliasTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
+  "CPG for code with simple typealias to Int" should {
+    val cpg = code("""
         |package mypkg
         |
         |typealias MyInt = Int
@@ -34,8 +31,8 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
 
   // _seemingly_ because adding the springframework jar to the classpath will give the
   // compiler enough information to detect that there is no recursion in the typealias definition
-  "CPG for code with seemingly-recursive type alias" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with seemingly-recursive type alias" should {
+    val cpg = code("""
         |package mypkg
         |import org.springframework.data.annotation.Id
         |actual typealias Id = Id
@@ -52,8 +49,8 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with typealias containing other type alias in its RHS" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with typealias containing other type alias in its RHS" should {
+    val cpg = code("""
         |package mypkg
         |
         |
@@ -84,8 +81,8 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple typealias to ListInt" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple typealias to ListInt" should {
+    val cpg = code("""
         |package mypkg
         |
         |typealias Foo = List<Int>
@@ -109,8 +106,8 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with typealias of type from external library" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with typealias of type from external library" should {
+    val cpg = code("""
         |package org.http4k.core.body
         |
         |import org.http4k.core.Parameters
@@ -125,8 +122,8 @@ class TypeAliasTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call to ctor of typealiased user-defined class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to ctor of typealiased user-defined class" should {
+    val cpg = code("""
         |package mypkg
         |
         |class AClass(val x: String)

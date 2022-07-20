@@ -1,15 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class EnumTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class EnumTests extends AnyFreeSpec with Matchers {
-
-  "CPG for code with simple ENUM definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple enum definition" should {
+    val cpg = code("""
         |package mypkg
         |
         |enum class Direction {
@@ -28,35 +25,25 @@ class EnumTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain correct number of calls" in {
-      cpg.call.size should not be 0
+    "should contain a TYPE_DECL node for the `Direction` enum with the correct props set" in {
+      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Direction").l
+      td.name shouldBe "Direction"
+      td.isExternal shouldBe false
+      td.aliasTypeFullName shouldBe None
+
+      td.member.size shouldBe 4
+      td.member.map(_.name).toSet shouldBe Set("NORTH", "SOUTH", "WEST", "EAST")
     }
 
-    "should contain type decl for `Direction` enum" in {
-      val List(x) = cpg.typeDecl.fullNameExact("mypkg.Direction").l
-      x.name shouldBe "Direction"
-      x.isExternal shouldBe false
-      x.aliasTypeFullName shouldBe None
-    }
+    "should contain type decl for `Color` enum with the correct props set" in {
+      val List(td) = cpg.typeDecl.fullNameExact("mypkg.Color").l
+      td.name shouldBe "Color"
+      td.fullName shouldBe "mypkg.Color"
+      td.isExternal shouldBe false
+      td.aliasTypeFullName shouldBe None
 
-    "`Direction` enum should contain the correct members" in {
-      val members = cpg.typeDecl.fullNameExact("mypkg.Direction").member.l
-      members.size shouldBe 4
-      members.map(_.name).toSet shouldBe Set("NORTH", "SOUTH", "WEST", "EAST")
-    }
-
-    "should contain type decl for `Color` enum" in {
-      val List(x) = cpg.typeDecl.fullNameExact("mypkg.Color").l
-      x.name shouldBe "Color"
-      x.fullName shouldBe "mypkg.Color"
-      x.isExternal shouldBe false
-      x.aliasTypeFullName shouldBe None
-    }
-
-    "`Color` enum should contain the correct members" in {
-      val members = cpg.typeDecl.fullNameExact("mypkg.Color").member.l
-      members.size shouldBe 4
-      members.map(_.name).toSet shouldBe Set("RED", "GREEN", "BLUE", "rgb")
+      td.member.size shouldBe 4
+      td.member.map(_.name).toSet shouldBe Set("RED", "GREEN", "BLUE", "rgb")
     }
   }
 }

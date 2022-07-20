@@ -9,11 +9,10 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
   // We place symbols that can't be associated in a file into the namespace "<global>", and
   // those which can in `filename:<global>`
 
-  override val code: String =
-    """
+  private val cpg = code("""
       |int foo() {}
       |struct my_struct{};
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain two namespace blocks in total" in {
     cpg.namespaceBlock.size shouldBe 2

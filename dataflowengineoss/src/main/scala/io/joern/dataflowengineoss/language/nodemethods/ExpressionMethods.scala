@@ -11,7 +11,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     */
   def isUsed(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg
-    s.isEmpty || s.exists(_.mappings.exists { case (srcIndex, _) => srcIndex == node.order })
+    s.isEmpty || s.exists(_.mappings.exists { case (srcIndex, _) => srcIndex == node.argumentIndex })
   }
 
   /** Determine whether evaluation of the call this argument is a part of results in definition of this argument.
@@ -20,7 +20,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists { case (_, dstIndex) =>
-        dstIndex == node.order
+        dstIndex == node.argumentIndex
       }
     }
   }

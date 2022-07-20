@@ -1,33 +1,7 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AbstractNode,
-  Annotation,
-  AnnotationParameterAssign,
-  AstNode,
-  Call,
-  CfgNode,
-  ControlStructure,
-  Expression,
-  File,
-  Identifier,
-  Literal,
-  Local,
-  Member,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodRef,
-  MethodReturn,
-  Namespace,
-  NamespaceBlock,
-  NewNode,
-  StoredNode,
-  Tag,
-  Type,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
 import io.shiftleft.semanticcpg.language.bindingextension.{
   MethodTraversal => BindingMethodTraversal,
@@ -45,6 +19,7 @@ import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => Ori
 import io.shiftleft.semanticcpg.language.types.propertyaccessors._
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
 import overflowdb.traversal._
+import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
   *
@@ -56,7 +31,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   // to generated node types.
 
   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
-  implicit def toExtendedNode(node: AbstractNode): NodeMethods                = new NodeMethods(node)
+  implicit def toExtendedNode(node: NodeOrDetachedNode): NodeMethods          = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
@@ -149,6 +124,12 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def iterOnceToFileTrav[A <: File](a: IterableOnce[A]): FileTraversal =
     new FileTraversal(iterableToTraversal(a))
 
+  implicit def singleToImportTrav[A <: Import](a: A): ImportTraversal =
+    new ImportTraversal(Traversal.fromSingle(a))
+
+  implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
+    new ImportTraversal(iterableToTraversal(a))
+
   // Call graph extension
   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
     new MethodTraversal(Traversal.fromSingle(a))
@@ -184,7 +165,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def graphToInterproceduralDot(cpg: Cpg): InterproceduralNodeDot =
     new InterproceduralNodeDot(cpg)
 
-  implicit def toTraversal[NodeType <: AbstractNode](node: NodeType): Traversal[NodeType] =
+  implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Traversal[NodeType] =
     Traversal.fromSingle(node)
 
   implicit def toSteps[A](trav: Traversal[A]): Steps[A] = new Steps(trav)

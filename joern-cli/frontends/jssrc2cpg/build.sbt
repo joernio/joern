@@ -1,6 +1,6 @@
 name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.1")
+crossScalaVersions := Seq("2.13.8", "3.1.3")
 
 dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
@@ -64,6 +64,17 @@ compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
+
+lazy val astGenCopyTask = taskKey[Unit](s"Copy astgen binaries")
+
+astGenCopyTask := {
+  val to = target.value / "universal" / "stage" / "bin" / "astgen"
+  to.mkdirs()
+  val from = baseDirectory.value / "bin" / "astgen"
+  IO.copyDirectory(from, to)
+}
+
+stage := (stage dependsOn astGenCopyTask).value
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

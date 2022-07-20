@@ -1,17 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.semanticcpg.language._
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class ComparisonOperatorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class ComparisonOperatorTests extends AnyFreeSpec with Matchers {
+  "CPG for code with simple comparison operator usage" should {
 
-  "CPG for code with simple comparison operator usage" - {
-
-    lazy val cpg = TestContext.buildCpg("""
+    val cpg = code("""
         |fun main(args : Array<String>): Int {
         | val x: Int = 1
         | val y: Int = 2

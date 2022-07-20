@@ -4,7 +4,8 @@ object QueryTags {
 
   val default = "default"
 
-  val posix = "posix"
+  val posix   = "posix"
+  val android = "android"
 
   val raceCondition = "race-condition"
   val alloc         = "alloc"
@@ -15,10 +16,12 @@ object QueryTags {
   val uaf           = "uaf"
   val xss           = "xss"
 
-  val integers             = "integers"
-  val strings              = "strings"
-  val sqlInjection         = "sql-injection"
-  val compilerOptimization = "compiler-optimization"
+  val integers               = "integers"
+  val strings                = "strings"
+  val sqlInjection           = "sql-injection"
+  val compilerOptimization   = "compiler-optimization"
+  val misconfiguration       = "misconfiguration"
+  val insecureNetworkTraffic = "insecure-network-traffic"
 
   val selfDestruct         = "selfdestruct-contract"
   val overflow             = "overflow-contract"

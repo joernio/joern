@@ -1,26 +1,19 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class StringInterpolationTests extends AnyFreeSpec with Matchers {
+class StringInterpolationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with basic string interpolation" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with basic string interpolation" should {
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val name = "Peter"
         |  val age = 34
         |  println("$name is $age years old. The string length is ${name.length}")
         |}
         |""".stripMargin)
-
-    "should contain correct number of calls" in {
-      cpg.call.size should not be 0
-    }
 
     "should contain a call node for the `formatString` operator" in {
       cpg.call(Operators.formatString).size should not be 0

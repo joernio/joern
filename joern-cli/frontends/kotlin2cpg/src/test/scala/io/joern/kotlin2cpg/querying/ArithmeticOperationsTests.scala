@@ -1,17 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
+class ArithmeticOperationsTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
 
-  "CPG for code with simple arithmetic operations" - {
+  "CPG for code with simple arithmetic operations" should {
 
-    lazy val cpg = TestContext.buildCpg("""
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  println(1 + 2)
         |  println(1 - 2)
@@ -20,7 +17,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should contain a call node for addition op with correct fields" in {
+    "should contain a CALL node for the addition op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.addition).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(3)
@@ -28,7 +25,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
-    "should contain a call node for subtraction op with correct fields" in {
+    "should contain a CALL node for the subtraction op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.subtraction).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(4)
@@ -36,7 +33,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
-    "should contain a call node for multiplication op with correct fields" in {
+    "should contain a CALL node for the multiplication op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.multiplication).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(5)
@@ -44,7 +41,7 @@ class ArithmeticOperationsTests extends AnyFreeSpec with Matchers {
       p.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
-    "should contain a call node for division op with correct fields" in {
+    "should contain a CALL node for the division op with correct props set" in {
       val List(p) = cpg.call.methodFullName(Operators.division).l
       p.argument.size shouldBe 2
       p.lineNumber shouldBe Some(6)

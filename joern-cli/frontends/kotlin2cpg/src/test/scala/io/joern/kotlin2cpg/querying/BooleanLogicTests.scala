@@ -1,15 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class BooleanLogicTests extends AnyFreeSpec with Matchers {
+class BooleanLogicTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple boolean op usage" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple boolean op usage" should {
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val w = true
         |  val x: Boolean = !w
@@ -30,7 +28,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.logicalNot).size should not be 0
     }
 
-    "should contain a call node for `logicalNot` with correct fields" in {
+    "should contain a call node for `logicalNot` with correct props set" in {
       cpg.call(Operators.logicalNot).size shouldBe 1
 
       val List(p) = cpg.call(Operators.logicalNot).l
@@ -43,7 +41,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.logicalOr).size should not be 0
     }
 
-    "should contain a call node for `logicalOr` op with correct fields" in {
+    "should contain a call node for `logicalOr` op with correct props set" in {
       cpg.call(Operators.logicalOr).size shouldBe 1
 
       val List(p) = cpg.call(Operators.logicalOr).l
@@ -56,7 +54,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.logicalAnd).size should not be 0
     }
 
-    "should contain a call node for `logicalAnd` op with correct fields" in {
+    "should contain a call node for `logicalAnd` op with correct props set" in {
       cpg.call(Operators.logicalAnd).size shouldBe 1
 
       val List(p) = cpg.call(Operators.logicalAnd).l
@@ -69,7 +67,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.and).size should not be 0
     }
 
-    "should contain a call node for `and` op with correct fields" in {
+    "should contain a call node for `and` op with correct props set" in {
       cpg.call(Operators.and).size shouldBe 1
 
       val List(p) = cpg.call(Operators.and).l
@@ -82,7 +80,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.xor).size should not be 0
     }
 
-    "should contain a call node for `xor` op with correct fields" in {
+    "should contain a call node for `xor` op with correct props set" in {
       cpg.call(Operators.xor).size shouldBe 1
 
       val List(p) = cpg.call(Operators.xor).l
@@ -95,7 +93,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.or).size should not be 0
     }
 
-    "should contain a call node for `or` op with correct fields" in {
+    "should contain a call node for `or` op with correct props set" in {
       cpg.call(Operators.or).size shouldBe 1
 
       val List(p) = cpg.call(Operators.or).l
@@ -108,7 +106,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.shiftLeft).size should not be 0
     }
 
-    "should contain two call nodes for `shiftLeft` op with correct fields" in {
+    "should contain two call nodes for `shiftLeft` op with correct props set" in {
       cpg.call(Operators.shiftLeft).size shouldBe 2
 
       val List(p) = cpg.call(Operators.shiftLeft).order(1).l
@@ -126,7 +124,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.logicalShiftRight).size should not be 0
     }
 
-    "should contain a call node for `logicalShiftRight` op with correct fields" in {
+    "should contain a call node for `logicalShiftRight` op with correct props set" in {
       cpg.call(Operators.logicalShiftRight).size shouldBe 1
 
       val List(p) = cpg.call(Operators.logicalShiftRight).l
@@ -139,7 +137,7 @@ class BooleanLogicTests extends AnyFreeSpec with Matchers {
       cpg.call(Operators.arithmeticShiftRight).size should not be 0
     }
 
-    "should contain a call node for `aritmeticShiftRight` op with correct fields" in {
+    "should contain a call node for `aritmeticShiftRight` op with correct props set" in {
       cpg.call(Operators.arithmeticShiftRight).size shouldBe 1
 
       val List(p) = cpg.call(Operators.arithmeticShiftRight).l

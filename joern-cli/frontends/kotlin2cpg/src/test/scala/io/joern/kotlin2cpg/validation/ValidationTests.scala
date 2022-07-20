@@ -1,18 +1,16 @@
 package io.joern.kotlin2cpg.validation
 
-import io.joern.kotlin2cpg.TestContext
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Declaration, FieldIdentifier, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
-class ValidationTests extends AnyFreeSpec with Matchers {
-  "CPG for code with lambdas with no params and one param" - {
-    lazy val cpg = TestContext.buildCpg("""
+class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with lambdas with no params and one param" should {
+    lazy val cpg = code("""
         |package com.example
         |
         |fun parseParams(name: String, msg: String): Map<String, String?> {
@@ -40,9 +38,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with usage of `Gson` external library" - {
-    lazy val cpg = TestContext.buildCpg(
-      """
+  "CPG for code with usage of `Gson` external library" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import com.google.gson.Gson
@@ -54,9 +51,7 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         |   val j = Gson().toJson(l)
         |   println("json: " + j)
         |}
-        |""".stripMargin,
-      withTestResourceClassPath = false
-    )
+        |""".stripMargin)
 
     "should contain CALL node for the ctor-call with a METHOD_FULL_NAME starting with the package name" in {
       val List(c) = cpg.call.codeExact("Gson()").l
@@ -64,8 +59,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple method containing if-expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple method containing if-expression" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main(argc: Int): Int {
@@ -89,8 +84,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple method containing simple class declaration" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple method containing simple class declaration" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |class AClass {
@@ -115,8 +110,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq()
     }
   }
-  "CPG for code with simple lazy blocks" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple lazy blocks" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |import java.nio.file.Files
@@ -136,8 +131,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code call to DSL-like fn" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code call to DSL-like fn" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |import org.http4k.core.HttpHandler
@@ -168,8 +163,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with qualified expression inside qualified expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with qualified expression inside qualified expression" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -182,8 +177,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple lambda which captures a method parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple lambda which captures a method parameter" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun foo(x: String): Int {
@@ -202,8 +197,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple lambda which captures a method parameter inside method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple lambda which captures a method parameter inside method" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |class AClass {
@@ -224,8 +219,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple lambda which captures a method parameter, nested twice" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple lambda which captures a method parameter, nested twice" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun foo(x: String): Int {
@@ -246,8 +241,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple if-statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple if-statement" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -266,8 +261,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `if`-statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `if`-statement" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun main() {
@@ -287,8 +282,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with _safe call_ operator" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with _safe call_ operator" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |class AClass {
@@ -314,8 +309,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call with lambda param inside try-statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call with lambda param inside try-statement" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |fun main() {
@@ -341,8 +336,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call with lambda param inside if-else-statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call with lambda param inside if-else-statement" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -373,8 +368,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call with lambda inside method definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call with lambda inside method definition" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -413,8 +408,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with anonymous function as argument" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with anonymous function as argument" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |import kotlin.collections.List
@@ -435,8 +430,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with function defined inside another function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with function defined inside another function" should {
+    lazy val cpg = code("""
         |package mypkg
         |
         |fun withInline(): Int {
@@ -460,8 +455,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with lambda inside while-statement" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with lambda inside while-statement" should {
+    lazy val cpg = code("""
         |
         |package main
         |fun main() {
@@ -482,8 +477,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with with function which takes a lambda as an argument" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with with function which takes a lambda as an argument" should {
+    lazy val cpg = code("""
         |package main
         |
         |fun withCallback(callback: (String) -> Unit) {
@@ -517,8 +512,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with class with method which takes a lambda as an argument" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with class with method which takes a lambda as an argument" should {
+    lazy val cpg = code("""
         |package main
         |
         |class AClass {
@@ -554,8 +549,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple object expression with apply called after it" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple object expression with apply called after it" should {
+    lazy val cpg = code("""
         |package main
         |
         |fun main() {
@@ -573,8 +568,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with method with two callbacks with two generic types" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with method with two callbacks with two generic types" should {
+    lazy val cpg = code("""
         |package main
         |
         |class AClass<T>(private val x: T) {
@@ -628,58 +623,33 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with dynamic dispatch call inside lambda with class name in the receiver" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package main
-        |
-        |class BClass {
-        |    val msg = "Hello from B!"
-        |}
-        |
-        |internal object AnObject {
-        |    private var m: BClass? = null
-        |
-        |    fun bClass(): BClass {
-        |        return checkNotNull(m) {
-        |            "You can't access `m` if you don't initialize it!"
-        |        }
-        |    }
-        |
-        |    fun initialize() {
-        |        m = BClass()
-        |    }
+  "CPG for code with call to `checkNotNull`" should {
+    lazy val cpg = code("""
+        |fun f1(x: String?) {
+        |    val notNullX = checkNotNull(x) { println("SOMETHING") }
+        |    println(notNullX)
         |}
         |
         |fun main() {
-        |    AnObject.initialize()
-        |    1.let {
-        |        val b = AnObject.bClass()
-        |        print(b.msg)
-        |    }
+        |    f1("SOMETHING")
         |}
-        |
-        |
         |""".stripMargin)
 
     "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
-      val allClosureBindingIds =
-        cpg.all
-          .collect { case c: ClosureBinding => c }
-          .closureBindingId
-          .l
+      val allClosureBindingIds = cpg.all.collect { case c: ClosureBinding => c }.closureBindingId.l
 
       cpg.local
         .where(_.closureBindingId)
-        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId) }
-        .map { cb => (cb.code, cb.closureBindingId) }
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId, cb.getClass.toString) }
         .l shouldBe List()
     }
   }
 
   // TODO: re-enable test
   /*
-  "CPG for code with local declaration with RHS a call with lambda argument capturing the parameter of its containing method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with local declaration with RHS a call with lambda argument capturing the parameter of its containing method" should {
+    lazy val cpg = code("""
         |package main
         |
         |fun getValidPredefs(startingWith: String): List<String> {
@@ -707,8 +677,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
   }
    */
 
-  "CPG for code with lambda inside method with captured constructor parameter and method parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with lambda inside method with captured constructor parameter and method parameter" should {
+    lazy val cpg = code("""
         |package main
         |
         |class AClass constructor(val prefix: String = "default_prefix") {
@@ -735,8 +705,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with method that has a suspend lambda parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with method that has a suspend lambda parameter" should {
+    lazy val cpg = code("""
         |
         |package main
         |
@@ -795,8 +765,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call to qualified expression with parenthesized elvis expression as receiver" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to qualified expression with parenthesized elvis expression as receiver" should {
+    lazy val cpg = code("""
       |package mypkg
       |
       |import java.time.Duration
@@ -818,8 +788,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call to qualified expression with parenthesized if-else-expression as receiver" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to qualified expression with parenthesized if-else-expression as receiver" should {
+    lazy val cpg = code("""
        |package mypkg
        |
        |import kotlin.random.Random
@@ -847,8 +817,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with variants of user-defined constructors" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with variants of user-defined constructors" should {
+    lazy val cpg = code("""
        |package mypkg
        |
        |class AClass
@@ -888,8 +858,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `fieldAccess` call on Java stdlib type" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `fieldAccess` call on Java stdlib type" should {
+    lazy val cpg = code("""
         |package main
         |
         |import java.io.File
@@ -909,8 +879,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `fieldAccess` call" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `fieldAccess` call" should {
+    lazy val cpg = code("""
         |package main
         |
         |class AClass {
@@ -938,8 +908,8 @@ class ValidationTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `fieldAccess` call on implicit _this_" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `fieldAccess` call on implicit _this_" should {
+    lazy val cpg = code("""
         |package main
         |
         |class AClass {

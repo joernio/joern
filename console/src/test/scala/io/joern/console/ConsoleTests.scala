@@ -28,11 +28,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode.toString.contains("| C") shouldBe true
     }
 
-    "allow importing code with specific module (fuzzyc2cpg)" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode.oldc(codeDir.toString)
-      console.workspace.numberOfProjects shouldBe 1
-    }
-
     "allow importing code with specific module (c2cpg)" in ConsoleFixture() { (console, codeDir) =>
       console.importCode.c(codeDir.toString)
       console.workspace.numberOfProjects shouldBe 1

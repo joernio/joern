@@ -27,9 +27,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 
 object Nodes {
 
-  def bindingNode(name: String, signature: String): NewBinding = {
+  def bindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
     NewBinding()
       .name(name)
+      .methodFullName(methodFullName)
       .signature(signature)
   }
 
@@ -133,6 +134,17 @@ object Nodes {
       .columnNumber(column)
   }
 
+  def thisParameterNode(typeFullName: String, line: Int = -1, column: Int = -1): NewMethodParameterIn = {
+    NewMethodParameterIn()
+      .name("this")
+      .code("this")
+      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .dynamicTypeHintFullName(Seq(typeFullName))
+      .typeFullName(typeFullName)
+      .lineNumber(line)
+      .columnNumber(column)
+  }
+
   def methodParameterNode(
     name: String,
     typeFullName: String,
@@ -176,21 +188,6 @@ object Nodes {
       .name(name)
       .code(name)
       .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def methodReturnNode(
-    typeFullName: String,
-    dynamicTypeHintFullName: Option[String],
-    line: Int = -1,
-    column: Int = -1
-  ): NewMethodReturn = {
-    NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(typeFullName)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName.toList)
       .lineNumber(line)
       .columnNumber(column)
   }

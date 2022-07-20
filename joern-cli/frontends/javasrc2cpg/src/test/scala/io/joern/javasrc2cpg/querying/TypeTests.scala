@@ -1,10 +1,11 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
 
 class NewTypeTests extends JavaSrcCode2CpgFixture {
   "processing wildcard types should not crash (smoke test)" when {
@@ -56,6 +57,97 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
       cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
     }
   }
+
+  "methods with varargs" should {
+    val cpg = code("""
+        |class Foo {
+        |  public static String[] foo(boolean b, String... items) {
+        |    return b ? items : new String[1];
+        |  }
+        |
+        |  public void test(boolean b, String item1, String item2) {
+        |    String[] items = foo(b, item1, item2);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "use an array type to represent varargs in the method signature" in {
+      cpg.method.name("foo").l match {
+        case fooMethod :: Nil =>
+          fooMethod.fullName shouldBe "Foo.foo:java.lang.String[](boolean,java.lang.String[])"
+          fooMethod.signature shouldBe "java.lang.String[](boolean,java.lang.String[])"
+
+        case result => fail(s"Expected single foo method but got $result")
+      }
+    }
+
+    "create an array parameter node to represent varargs" in {
+      def fooMethods = cpg.method.name("foo").l
+      fooMethods.size shouldBe 1
+      fooMethods.parameter.l match {
+        case bParam :: itemsParam :: Nil =>
+          bParam.typeFullName shouldBe "boolean"
+          bParam.name shouldBe "b"
+          bParam.code shouldBe "boolean b"
+
+          itemsParam.typeFullName shouldBe "java.lang.String[]"
+          itemsParam.name shouldBe "items"
+          itemsParam.code shouldBe "String... items"
+
+        case result => fail(s"Expected 2 parameters for foo method but got $result")
+      }
+    }
+
+    "use an array type to represent varargs in the call signature" in {
+      cpg.call.name("foo").l match {
+        case fooCall :: Nil =>
+          fooCall.methodFullName shouldBe "Foo.foo:java.lang.String[](boolean,java.lang.String[])"
+          fooCall.signature shouldBe "java.lang.String[](boolean,java.lang.String[])"
+
+        case result => fail(s"Expected single foo call but got $result")
+      }
+    }
+
+    "use an arrayInitializer call node to represent varargs in the call AST" in {
+      def call = cpg.call.name("foo")
+      call.size shouldBe 1
+      call.argument.l match {
+        case List(_: Identifier, varargs: Call) =>
+          varargs.methodFullName shouldBe Operators.arrayInitializer
+          varargs.typeFullName shouldBe "java.lang.String[]"
+          varargs.argument.l match {
+            case List(item1: Identifier, item2: Identifier) =>
+              item1.name shouldBe "item1"
+              item1.typeFullName shouldBe "java.lang.String"
+
+              item2.name shouldBe "item2"
+              item2.typeFullName shouldBe "java.lang.String"
+
+            case result => fail(s"Expected array initializer args matching 2 items but got $result")
+          }
+
+        case result => fail(s"Expected identifier and arrayInitializer arguments but got $result")
+      }
+    }
+
+    "lambda method implementing multi-abstract-method interface should be created correctly" in {
+      val cpg = code("""
+          |import java.util.ArrayList;
+          |
+          |public class Test {
+          |    public static void main(String[] args) {
+          |        ArrayList<Integer> xs = new ArrayList<Integer>();
+          |        xs.sort((o1, o2) -> o1 - o2);
+          |    }
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("lambda$0").fullName.l match {
+        case List(fullName) => fullName shouldBe "Test.lambda$0:int(java.lang.Object,java.lang.Object)"
+
+        case res => fail(s"Expected fullName but got $res")
+      }
+    }
+  }
 }
 
 class TypeTests extends JavaSrcCodeToCpgFixture {
@@ -83,8 +175,6 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |   static void bar(int[] xs) {}
       |
       |   static void baz(Foo[] fs) {}
-      |
-      |   static void bak(Foo... fs) {}
       | }
       |
       | class Bar extends A<B<C>> {
@@ -154,10 +244,10 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
     x.name shouldBe "y"
   }
 
-  "should default to ANY with a matching type node for unresolved types" in {
-    val List(x)    = cpg.typ("ANY").l
+  "should default to <unresolvedType> with a matching type node for unresolved types" in {
+    val List(x)    = cpg.typ(TypeConstants.UnresolvedType).l
     val List(node) = cpg.identifier.name("UnknownType").l
-    node.typeFullName shouldBe "ANY"
+    node.typeFullName shouldBe TypeConstants.UnresolvedType
     node.typ.headOption shouldBe Some(x)
   }
 
@@ -193,7 +283,7 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       case identifier :: Nil =>
         identifier.name shouldBe "this"
         identifier.typeFullName shouldBe "java.lang.Object"
-        identifier.order shouldBe 0
+        identifier.order shouldBe 1
         identifier.argumentIndex shouldBe 0
 
       case _ => fail("No receiver for super call found")

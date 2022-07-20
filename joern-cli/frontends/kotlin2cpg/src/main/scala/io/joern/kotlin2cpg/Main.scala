@@ -7,8 +7,9 @@ import scopt.OParser
 case class DefaultContentRootJarPath(path: String, isResource: Boolean)
 
 final case class Config(
-  inputPaths: Set[String] = Set.empty,
+  inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
+  ignorePaths: Set[String] = Set.empty,
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
   downloadDependencies: Boolean = false,
@@ -16,8 +17,8 @@ final case class Config(
   gradleConfigurationName: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
-  override def withAdditionalInputPath(inputPath: String): Config =
-    copy(inputPaths = inputPaths + inputPath)
+  override def withInputPath(inputPath: String): Config =
+    copy(inputPath = inputPath)
 
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
@@ -35,6 +36,10 @@ private object Frontend {
         .unbounded()
         .text("Add entry to classpath")
         .action((incl, c) => c.copy(classpath = c.classpath + incl)),
+      opt[String]("ignore-path")
+        .unbounded()
+        .text("Add entry to list of directories to be ignored")
+        .action((incl, c) => c.copy(ignorePaths = c.ignorePaths + incl)),
       opt[Unit]("no-stdlib-jars")
         .text("Do not add local versions of Kotlin stdlib jars to classpath")
         .action((_, c) => c.copy(withStdlibJarsInClassPath = false)),

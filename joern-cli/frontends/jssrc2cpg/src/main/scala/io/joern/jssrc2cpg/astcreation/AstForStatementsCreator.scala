@@ -1,35 +1,58 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.x2cpg.datastructures.Stack._
-import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import ujson.Obj
 import ujson.Value
 
-trait AstForStatementsCreator {
+trait AstForStatementsCreator { this: AstCreator =>
 
-  this: AstCreator =>
+  /** Sort all block statements with the following result:
+    *   - all function declarations go first
+    *   - all type aliases that are not plain type references go last
+    *   - all remaining type aliases go before that
+    *   - all remaining statements go second
+    *
+    * We do this to get TypeDecls created at the right spot so we can make use of them for the type aliases.
+    */
+  private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
+    blockStatements.sortBy { nodeInfo =>
+      nodeInfo.node match {
+        case FunctionDeclaration                                  => 0
+        case DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 3
+        case TypeAlias if isPlainTypeAlias(nodeInfo)              => 3
+        case TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 3
+        case DeclareTypeAlias                                     => 2
+        case TypeAlias                                            => 2
+        case TSTypeAliasDeclaration                               => 2
+        case _                                                    => 1
+      }
+    }
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
-    val blockStmts = json.arr.map(createBabelNodeInfo).sortBy(_.node != BabelAst.FunctionDeclaration).toList
-    val blockAsts = blockStmts.map {
-      case func @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-        astForFunctionDeclaration(func, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-      case other =>
-        astForNode(other.json)
+    val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
+    val blockAsts = blockStmts.map { nodeInfo =>
+      nodeInfo.node match {
+        case FunctionDeclaration =>
+          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case _ => astForNode(nodeInfo.json)
+      }
     }
     setIndices(blockAsts)
     blockAsts
   }
 
   protected def astForBlockStatement(block: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(block.code, block.lineNumber, block.columnNumber)
+    val blockNode = createBlockNode(block)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
@@ -49,28 +72,23 @@ trait AstForStatementsCreator {
       .getOrElse(Ast(retNode))
   }
 
-  private def astForCatchClause(catchClause: BabelNodeInfo): Ast =
-    astForNode(catchClause.json("body"))
+  private def astForCatchClause(catchClause: BabelNodeInfo): Ast = astForNode(catchClause.json("body"))
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
-
     val bodyAst = astForNode(tryStmt.json("block"))
-
     val catchAst = safeObj(tryStmt.json, "handler")
       .map { handler =>
         astForCatchClause(createBabelNodeInfo(Obj(handler)))
       }
       .getOrElse(Ast())
-
     val finalizerAst = safeObj(tryStmt.json, "finalizer")
       .map { finalizer =>
         astForNode(Obj(finalizer))
       }
       .getOrElse(Ast())
-
     val tryChildren = List(bodyAst, catchAst, finalizerAst)
-    setIndices(tryChildren)
+    setIndices(tryChildren, countEmpty = true)
     Ast(tryNode).withChildren(tryChildren)
   }
 
@@ -126,15 +144,68 @@ trait AstForStatementsCreator {
       }
       .getOrElse(Ast())
     val bodyAst = astForNode(forStmt.json("body"))
-    setIndices(List(initAst, testAst, updateAst, bodyAst))
+    setIndices(List(initAst, testAst, updateAst, bodyAst), countEmpty = true)
     Ast(forNode).withChild(initAst).withChild(testAst).withChild(updateAst).withChild(bodyAst)
   }
 
-  protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast =
-    Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK))
+  protected def astForLabeledStatement(labelStmt: BabelNodeInfo): Ast = {
+    val labelName = code(labelStmt.json("label"))
+    val labeledNode = NewJumpTarget()
+      .parserTypeName(labelStmt.node.toString)
+      .name(labelName)
+      .code(s"$labelName:")
+      .lineNumber(labelStmt.lineNumber)
+      .columnNumber(labelStmt.columnNumber)
 
-  protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast =
-    Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE))
+    val blockNode = createBlockNode(labelStmt)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+    val bodyAst = astForNodeWithFunctionReference(labelStmt.json("body"))
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val labelAsts = List(Ast(labeledNode), bodyAst)
+    setIndices(labelAsts)
+    Ast(blockNode).withChildren(labelAsts)
+  }
+
+  protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
+    val labelAst = safeObj(breakStmt.json, "label")
+      .map { label =>
+        val labelNode = Obj(label)
+        val labelCode = code(labelNode)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(breakStmt.node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(breakStmt.lineNumber)
+            .columnNumber(breakStmt.columnNumber)
+            .order(1)
+        )
+      }
+      .getOrElse(Ast())
+    Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK)).withChild(labelAst)
+  }
+
+  protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
+    val labelAst = safeObj(continueStmt.json, "label")
+      .map { label =>
+        val labelNode = Obj(label)
+        val labelCode = code(labelNode)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(continueStmt.node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(continueStmt.lineNumber)
+            .columnNumber(continueStmt.columnNumber)
+            .order(1)
+        )
+      }
+      .getOrElse(Ast())
+    Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE)).withChild(labelAst)
+  }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
     val argumentAst = astForNode(throwStmt.json("argument"))
@@ -162,7 +233,7 @@ trait AstForStatementsCreator {
 
     val switchExpressionAst = astForNode(switchStmt.json("discriminant"))
 
-    val blockNode = createBlockNode(switchNode.code, switchStmt.lineNumber, switchNode.columnNumber)
+    val blockNode = createBlockNode(switchStmt)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -190,7 +261,7 @@ trait AstForStatementsCreator {
     */
   protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
     // surrounding block:
-    val blockNode = createBlockNode(forInOfStmt.code, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val blockNode = createBlockNode(forInOfStmt)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -198,7 +269,7 @@ trait AstForStatementsCreator {
     val collectionName = code(collection)
 
     // _iterator assignment:
-    val iteratorName      = generateUnusedVariableName(usedVariableNames, Set.empty, "_iterator")
+    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
     val iteratorLocalNode = createLocalNode(iteratorName, Defines.ANY.label)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
 
@@ -259,15 +330,16 @@ trait AstForStatementsCreator {
     val iteratorAssignmentAst  = createCallAst(iteratorAssignmentNode, iteratorAssignmentArgs)
 
     // _result:
-    val resultName      = generateUnusedVariableName(usedVariableNames, Set.empty, "_result")
+    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
     val resultLocalNode = createLocalNode(resultName, Defines.ANY.label)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     val resultNode = createIdentifierNode(resultName, forInOfStmt)
 
     // loop variable:
-    val loopVariableName = createBabelNodeInfo(forInOfStmt.json("left")) match {
-      case v @ BabelNodeInfo(BabelAst.VariableDeclaration) => code(v.json("declarations").arr.head)
-      case other                                           => code(other.json)
+    val nodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
+    val loopVariableName = nodeInfo.node match {
+      case VariableDeclaration => code(nodeInfo.json("declarations").arr.head)
+      case _                   => code(nodeInfo.json)
     }
 
     val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY.label)
@@ -351,7 +423,7 @@ trait AstForStatementsCreator {
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), accessAst)
     val loopVariableAssignmentAst  = createCallAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
 
-    val whileLoopBlockNode = createBlockNode(forInOfStmt.code, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val whileLoopBlockNode = createBlockNode(forInOfStmt)
     scope.pushNewBlockScope(whileLoopBlockNode)
     localAstParentStack.push(whileLoopBlockNode)
 

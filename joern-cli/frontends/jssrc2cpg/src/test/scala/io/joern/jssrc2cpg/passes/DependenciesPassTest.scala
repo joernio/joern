@@ -1,19 +1,18 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.semanticcpg.language._
 import better.files.File
 import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import overflowdb.traversal._
 
 class DependenciesPassTest extends AbstractPassTest {
 
   "DependenciesPass" should {
 
     "ignore empty package.json" in {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
         json.write("")
         PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
@@ -21,7 +20,7 @@ class DependenciesPassTest extends AbstractPassTest {
     }
 
     "ignore package.json without any useful content" in {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
         json.write("""
             |{
@@ -37,7 +36,7 @@ class DependenciesPassTest extends AbstractPassTest {
     }
 
     "ignore package.json without dependencies" in {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
         json.write("{}")
         PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
@@ -45,7 +44,7 @@ class DependenciesPassTest extends AbstractPassTest {
     }
 
     "generate dependency nodes correctly (no dependencies at all)" in DependencyFixture("", "{}") { cpg =>
-      getDependencies(cpg).size shouldBe 0
+      cpg.dependency.size shouldBe 0
     }
 
     "generate dependency nodes correctly (empty dependency)" in DependencyFixture(
@@ -57,7 +56,7 @@ class DependenciesPassTest extends AbstractPassTest {
         |}
         |""".stripMargin
     ) { cpg =>
-      getDependencies(cpg).size shouldBe 0
+      cpg.dependency.size shouldBe 0
     }
 
     "generate dependency nodes correctly (simple lock dependencies)" in DependencyFixture(
@@ -76,10 +75,11 @@ class DependenciesPassTest extends AbstractPassTest {
           |""".stripMargin,
       packageJsonName = PackageJsonParser.PACKAGE_JSON_LOCK_FILENAME
     ) { cpg =>
-      def deps = getDependencies(cpg)
-      deps.size shouldBe 2
-      deps.has(PropertyNames.NAME, "dep1").has(PropertyNames.VERSION, "0.1").size shouldBe 1
-      deps.has(PropertyNames.NAME, "dep2").has(PropertyNames.VERSION, "0.2").size shouldBe 1
+      val List(depA, depB) = cpg.dependency.l
+      depA.name shouldBe "dep1"
+      depA.version shouldBe "0.1"
+      depB.name shouldBe "dep2"
+      depB.version shouldBe "0.2"
     }
 
     "generate dependency nodes correctly (simple dependency)" in DependencyFixture(
@@ -92,9 +92,9 @@ class DependenciesPassTest extends AbstractPassTest {
                              |}
                              |""".stripMargin
     ) { cpg =>
-      def deps = getDependencies(cpg)
-      deps.size shouldBe 1
-      deps.has(PropertyNames.NAME, "dep1").has(PropertyNames.VERSION, "0.1").size shouldBe 1
+      val List(depA) = cpg.dependency.l
+      depA.name shouldBe "dep1"
+      depA.version shouldBe "0.1"
     }
 
     "generate dependency nodes correctly (different types of dependencies)" in DependencyFixture(
@@ -116,12 +116,15 @@ class DependenciesPassTest extends AbstractPassTest {
         }
         """.stripMargin
     ) { cpg =>
-      def deps = getDependencies(cpg)
-      deps.size shouldBe 4
-      deps.has(PropertyNames.NAME, "dep1").has(PropertyNames.VERSION, "0.1").size shouldBe 1
-      deps.has(PropertyNames.NAME, "dep2").has(PropertyNames.VERSION, "0.2").size shouldBe 1
-      deps.has(PropertyNames.NAME, "dep3").has(PropertyNames.VERSION, "0.3").size shouldBe 1
-      deps.has(PropertyNames.NAME, "dep4").has(PropertyNames.VERSION, "0.4").size shouldBe 1
+      val List(depA, depB, depC, depD) = cpg.dependency.l
+      depA.name shouldBe "dep1"
+      depA.version shouldBe "0.1"
+      depB.name shouldBe "dep2"
+      depB.version shouldBe "0.2"
+      depC.name shouldBe "dep3"
+      depC.version shouldBe "0.3"
+      depD.name shouldBe "dep4"
+      depD.version shouldBe "0.4"
     }
 
   }
@@ -132,13 +135,13 @@ class DependenciesPassTest extends AbstractPassTest {
       packageJsonContent: String,
       packageJsonName: String = PackageJsonParser.PACKAGE_JSON_FILENAME
     )(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("js2cpgTest") { dir =>
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val file = dir / "file.js"
         val json = dir / packageJsonName
         file.write(code)
         json.write(packageJsonContent)
         val cpg    = newEmptyCpg()
-        val config = Config(inputPaths = Set(dir.toString()))
+        val config = Config(inputPath = dir.toString())
         new DependenciesPass(cpg, config).createAndApply()
         f(cpg)
       }

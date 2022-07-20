@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class LocalsTests extends CCodeToCpgSuite {
 
-  override val code: String = """
+  private val cpg = code("""
     | struct node {
     |   int value;
     |   struct node *next;
@@ -36,7 +36,7 @@ class LocalsTests extends CCodeToCpgSuite {
     |   wchar_t *foo;
     |   int d[10], e = 1;
     | }
-    | """.stripMargin
+    | """.stripMargin)
 
   "should allow to query for all locals" in {
     cpg.local.name.toSetMutable shouldBe Set("a", "b", "c", "e", "d", "z", "x", "q", "p", "foo")

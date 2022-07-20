@@ -13,8 +13,9 @@ class CommitOptions(var diffGraphBuilder: DiffGraph.Builder) extends LayerCreato
 
 class Commit(opts: CommitOptions) extends LayerCreator {
 
-  override val overlayName: String = Commit.overlayName
-  override val description: String = Commit.description
+  override val overlayName: String       = Commit.overlayName
+  override val description: String       = Commit.description
+  override val storeOverlayName: Boolean = false
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val pass: CpgPass = new CpgPass(context.cpg) {

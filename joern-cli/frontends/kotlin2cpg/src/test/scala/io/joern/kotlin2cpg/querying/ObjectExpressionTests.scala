@@ -1,16 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.nodes.Unknown
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Unknown
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ObjectExpressionTests extends AnyFreeSpec with Matchers {
+class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple object expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple object expression" should {
+    val cpg = code("""
         |fun foo() {
         |  val bar = object {
         |    override val baz = 1
@@ -26,8 +24,8 @@ class ObjectExpressionTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple object expression with apply called after it" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple object expression with apply called after it" should {
+    val cpg = code("""
         |package main
         |
         |fun main() {

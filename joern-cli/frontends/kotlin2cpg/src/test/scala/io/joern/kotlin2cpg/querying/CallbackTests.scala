@@ -1,18 +1,15 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class CallbackTests extends AnyFreeSpec with Matchers {
+class CallbackTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with callback and additional parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with callback and additional parameter" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun withCallback(p: String, callback: (String) -> Unit) {
@@ -51,8 +48,8 @@ class CallbackTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple callback usage" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple callback usage" should {
+    val cpg = code("""
       |package mypkg
       |
       |fun withCallback(fn: (String)->Unit) {
@@ -73,8 +70,8 @@ class CallbackTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple callback inside class method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple callback inside class method" should {
+    val cpg = code("""
       |package mypkg
       |
       |class AClass {

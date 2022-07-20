@@ -1,15 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class IfExpressionsTests extends AnyFreeSpec with Matchers {
-  "CPG for code with simple `if`-expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with simple `if`-expression" should {
+    val cpg = code("""
         |package baz
         |
         |fun main(argc: Int): Int {
@@ -47,8 +45,8 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `if`-expression with `else-if`" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `if`-expression with `else-if`" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -86,8 +84,8 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `if`-expression with fn calls in branches" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `if`-expression with fn calls in branches" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun some1(): Int {
@@ -136,8 +134,8 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `if`-expression as receiver of a DQE" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `if`-expression as receiver of a DQE" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -158,8 +156,8 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `if`-expression with DQEs in branches" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `if`-expression with DQEs in branches" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -212,8 +210,8 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `if`-expression with enum in branches" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `if`-expression with enum in branches" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -259,8 +257,8 @@ class IfExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `if`-expression inside method" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `if`-expression inside method" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random

@@ -1,33 +1,42 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.x2cpg.datastructures.Stack._
-import io.joern.jssrc2cpg.parser.BabelAst
-import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.Scope
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.jssrc2cpg.passes.Defines
+import io.joern.x2cpg.datastructures.Stack.{Stack, _}
+import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.datastructures.Stack.Stack
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val parserResult: ParseResult, val global: Global)
-    extends AstCreatorBase(parserResult.filename)
+class AstCreator(
+  val config: Config,
+  val parserResult: ParseResult,
+  val usedTypes: ConcurrentHashMap[(String, String), Boolean]
+) extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForDeclarationsCreator
     with AstForStatementsCreator
+    with AstForTemplateDomCreator
     with AstNodeBuilder
+    with TypeHelper
     with AstCreatorHelper {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
@@ -41,11 +50,12 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
   protected val metaTypeRefIdStack            = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
+  protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
   protected val typeFullNameToPostfix         = mutable.HashMap.empty[String, Int]
-  protected val typeToNameAndFullName         = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
-  protected val functionFullNames             = mutable.HashSet.empty[String]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
+  protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
+  protected val functionFullNames             = mutable.HashSet.empty[String]
 
   // we track line and column numbers manually because astgen / @babel-parser sometimes
   // fails to deliver them at all -  strange, but this even happens with its latest version
@@ -88,6 +98,11 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
         .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullName)
 
+    val functionTypeAndTypeDeclAst =
+      createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
+    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
+    rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
+
     methodAstParentStack.push(programMethod)
 
     val blockNode = NewBlock().typeFullName("ANY")
@@ -110,75 +125,107 @@ class AstCreator(val config: Config, val parserResult: ParseResult, val global: 
     scope.popScope()
     methodAstParentStack.pop()
 
-    val functionTypeAndTypeDeclAst =
-      createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
-    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
-
     methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
   }
 
-  protected def astForNode(json: Value): Ast = createBabelNodeInfo(json) match {
-    case classDecl @ BabelNodeInfo(BabelAst.ClassDeclaration)            => astForClass(classDecl)
-    case classExpr @ BabelNodeInfo(BabelAst.ClassExpression)             => astForClass(classExpr)
-    case tsInterface @ BabelNodeInfo(BabelAst.TSInterfaceDeclaration)    => astForInterface(tsInterface)
-    case tsModuleDecl @ BabelNodeInfo(BabelAst.TSModuleDeclaration)      => astForModule(tsModuleDecl)
-    case impDecl @ BabelNodeInfo(BabelAst.ImportDeclaration)             => astForImportDeclaration(impDecl)
-    case func @ BabelNodeInfo(BabelAst.FunctionDeclaration)              => astForFunctionDeclaration(func)
-    case decl @ BabelNodeInfo(BabelAst.VariableDeclaration)              => astForVariableDeclaration(decl)
-    case arrowExpr @ BabelNodeInfo(BabelAst.ArrowFunctionExpression)     => astForFunctionDeclaration(arrowExpr)
-    case funcExpr @ BabelNodeInfo(BabelAst.FunctionExpression)           => astForFunctionDeclaration(funcExpr)
-    case newExpr @ BabelNodeInfo(BabelAst.NewExpression)                 => astForNewExpression(newExpr)
-    case thisExpr @ BabelNodeInfo(BabelAst.ThisExpression)               => astForThisExpression(thisExpr)
-    case memberExpr @ BabelNodeInfo(BabelAst.MemberExpression)           => astForMemberExpression(memberExpr)
-    case callExpr @ BabelNodeInfo(BabelAst.CallExpression)               => astForCallExpression(callExpr)
-    case seq @ BabelNodeInfo(BabelAst.SequenceExpression)                => astForSequenceExpression(seq)
-    case assignment @ BabelNodeInfo(BabelAst.AssignmentExpression)       => astForAssignmentExpression(assignment)
-    case binExpr @ BabelNodeInfo(BabelAst.BinaryExpression)              => astForBinaryExpression(binExpr)
-    case updateExpr @ BabelNodeInfo(BabelAst.UpdateExpression)           => astForUpdateExpression(updateExpr)
-    case unaryExpr @ BabelNodeInfo(BabelAst.UnaryExpression)             => astForUnaryExpression(unaryExpr)
-    case arrExpr @ BabelNodeInfo(BabelAst.ArrayExpression)               => astForArrayExpression(arrExpr)
-    case awaitExpr @ BabelNodeInfo(BabelAst.AwaitExpression)             => astForAwaitExpression(awaitExpr)
-    case ternary @ BabelNodeInfo(BabelAst.ConditionalExpression)         => astForConditionalExpression(ternary)
-    case templateExpr @ BabelNodeInfo(BabelAst.TaggedTemplateExpression) => astForTemplateExpression(templateExpr)
-    case objExpr @ BabelNodeInfo(BabelAst.ObjectExpression)              => astForObjectExpression(objExpr)
-    case exprStmt @ BabelNodeInfo(BabelAst.ExpressionStatement)          => astForExpressionStatement(exprStmt)
-    case ifStmt @ BabelNodeInfo(BabelAst.IfStatement)                    => astForIfStatement(ifStmt)
-    case block @ BabelNodeInfo(BabelAst.BlockStatement)                  => astForBlockStatement(block)
-    case ret @ BabelNodeInfo(BabelAst.ReturnStatement)                   => astForReturnStatement(ret)
-    case tryStmt @ BabelNodeInfo(BabelAst.TryStatement)                  => astForTryStatement(tryStmt)
-    case forStmt @ BabelNodeInfo(BabelAst.ForStatement)                  => astForForStatement(forStmt)
-    case whileStmt @ BabelNodeInfo(BabelAst.WhileStatement)              => astForWhileStatement(whileStmt)
-    case doWhileStmt @ BabelNodeInfo(BabelAst.DoWhileStatement)          => astForDoWhileStatement(doWhileStmt)
-    case switchStmt @ BabelNodeInfo(BabelAst.SwitchStatement)            => astForSwitchStatement(switchStmt)
-    case breakStmt @ BabelNodeInfo(BabelAst.BreakStatement)              => astForBreakStatement(breakStmt)
-    case continueStmt @ BabelNodeInfo(BabelAst.ContinueStatement)        => astForContinueStatement(continueStmt)
-    case throwStmt @ BabelNodeInfo(BabelAst.ThrowStatement)              => astForThrowStatement(throwStmt)
-    case forInStmt @ BabelNodeInfo(BabelAst.ForInStatement)              => astForInOfStatement(forInStmt)
-    case forOfStmt @ BabelNodeInfo(BabelAst.ForOfStatement)              => astForInOfStatement(forOfStmt)
-    case BabelNodeInfo(BabelAst.EmptyStatement)                          => Ast()
-    case ident @ BabelNodeInfo(BabelAst.Identifier)                      => astForIdentifier(ident)
-    case stringLiteral @ BabelNodeInfo(BabelAst.StringLiteral)           => astForStringLiteral(stringLiteral)
-    case numLiteral @ BabelNodeInfo(BabelAst.NumericLiteral)             => astForNumericLiteral(numLiteral)
-    case numberLiteral @ BabelNodeInfo(BabelAst.NumberLiteral)           => astForNumberLiteral(numberLiteral)
-    case decLiteral @ BabelNodeInfo(BabelAst.DecimalLiteral)             => astForDecimalLiteral(decLiteral)
-    case nullLiteral @ BabelNodeInfo(BabelAst.NullLiteral)               => astForNullLiteral(nullLiteral)
-    case booleanLiteral @ BabelNodeInfo(BabelAst.BooleanLiteral)         => astForBooleanLiteral(booleanLiteral)
-    case regExpLiteral @ BabelNodeInfo(BabelAst.RegExpLiteral)           => astForRegExpLiteral(regExpLiteral)
-    case regLiteral @ BabelNodeInfo(BabelAst.RegexLiteral)               => astForRegexLiteral(regLiteral)
-    case bigIntLiteral @ BabelNodeInfo(BabelAst.BigIntLiteral)           => astForBigIntLiteral(bigIntLiteral)
-    case templateLiteral @ BabelNodeInfo(BabelAst.TemplateLiteral)       => astForTemplateLiteral(templateLiteral)
-    case templateElement @ BabelNodeInfo(BabelAst.TemplateElement)       => astForTemplateElement(templateElement)
-    case other                                                           => notHandledYet(other)
+  protected def astForNode(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case ClassDeclaration          => astForClass(nodeInfo)
+      case DeclareClass              => astForClass(nodeInfo)
+      case ClassExpression           => astForClass(nodeInfo)
+      case TSInterfaceDeclaration    => astForInterface(nodeInfo)
+      case TSModuleDeclaration       => astForModule(nodeInfo)
+      case TSExportAssignment        => astForExportAssignment(nodeInfo)
+      case ExportNamedDeclaration    => astForExportNamedDeclaration(nodeInfo)
+      case ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)
+      case ExportAllDeclaration      => astForExportAllDeclaration(nodeInfo)
+      case ImportDeclaration         => astForImportDeclaration(nodeInfo)
+      case FunctionDeclaration       => astForFunctionDeclaration(nodeInfo)
+      case TSDeclareFunction         => astForTSDeclareFunction(nodeInfo)
+      case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
+      case ArrowFunctionExpression   => astForFunctionDeclaration(nodeInfo)
+      case FunctionExpression        => astForFunctionDeclaration(nodeInfo)
+      case TSEnumDeclaration         => astForEnum(nodeInfo)
+      case DeclareTypeAlias          => astForTypeAlias(nodeInfo)
+      case TypeAlias                 => astForTypeAlias(nodeInfo)
+      case TSTypeAliasDeclaration    => astForTypeAlias(nodeInfo)
+      case NewExpression             => astForNewExpression(nodeInfo)
+      case ThisExpression            => astForThisExpression(nodeInfo)
+      case MemberExpression          => astForMemberExpression(nodeInfo)
+      case OptionalMemberExpression  => astForMemberExpression(nodeInfo)
+      case CallExpression            => astForCallExpression(nodeInfo)
+      case OptionalCallExpression    => astForCallExpression(nodeInfo)
+      case SequenceExpression        => astForSequenceExpression(nodeInfo)
+      case AssignmentExpression      => astForAssignmentExpression(nodeInfo)
+      case BinaryExpression          => astForBinaryExpression(nodeInfo)
+      case LogicalExpression         => astForLogicalExpression(nodeInfo)
+      case TSAsExpression            => astForCastExpression(nodeInfo)
+      case UpdateExpression          => astForUpdateExpression(nodeInfo)
+      case UnaryExpression           => astForUnaryExpression(nodeInfo)
+      case ArrayExpression           => astForArrayExpression(nodeInfo)
+      case AwaitExpression           => astForAwaitExpression(nodeInfo)
+      case ConditionalExpression     => astForConditionalExpression(nodeInfo)
+      case TaggedTemplateExpression  => astForTemplateExpression(nodeInfo)
+      case ObjectExpression          => astForObjectExpression(nodeInfo)
+      case YieldExpression           => astForReturnStatement(nodeInfo)
+      case ExpressionStatement       => astForExpressionStatement(nodeInfo)
+      case IfStatement               => astForIfStatement(nodeInfo)
+      case BlockStatement            => astForBlockStatement(nodeInfo)
+      case ReturnStatement           => astForReturnStatement(nodeInfo)
+      case TryStatement              => astForTryStatement(nodeInfo)
+      case ForStatement              => astForForStatement(nodeInfo)
+      case WhileStatement            => astForWhileStatement(nodeInfo)
+      case DoWhileStatement          => astForDoWhileStatement(nodeInfo)
+      case SwitchStatement           => astForSwitchStatement(nodeInfo)
+      case BreakStatement            => astForBreakStatement(nodeInfo)
+      case ContinueStatement         => astForContinueStatement(nodeInfo)
+      case LabeledStatement          => astForLabeledStatement(nodeInfo)
+      case ThrowStatement            => astForThrowStatement(nodeInfo)
+      case ForInStatement            => astForInOfStatement(nodeInfo)
+      case ForOfStatement            => astForInOfStatement(nodeInfo)
+      case ObjectPattern             => astForObjectExpression(nodeInfo)
+      case ArrayPattern              => astForArrayExpression(nodeInfo)
+      case Identifier                => astForIdentifier(nodeInfo)
+      case Super                     => astForSuperKeyword(nodeInfo)
+      case Import                    => astForImportKeyword(nodeInfo)
+      case TSImportEqualsDeclaration => astForTSImportEqualsDeclaration(nodeInfo)
+      case StringLiteral             => astForStringLiteral(nodeInfo)
+      case NumericLiteral            => astForNumericLiteral(nodeInfo)
+      case NumberLiteral             => astForNumberLiteral(nodeInfo)
+      case DecimalLiteral            => astForDecimalLiteral(nodeInfo)
+      case NullLiteral               => astForNullLiteral(nodeInfo)
+      case BooleanLiteral            => astForBooleanLiteral(nodeInfo)
+      case RegExpLiteral             => astForRegExpLiteral(nodeInfo)
+      case RegexLiteral              => astForRegexLiteral(nodeInfo)
+      case BigIntLiteral             => astForBigIntLiteral(nodeInfo)
+      case TemplateLiteral           => astForTemplateLiteral(nodeInfo)
+      case TemplateElement           => astForTemplateElement(nodeInfo)
+      case JSXElement                => astForJsxElement(nodeInfo)
+      case JSXOpeningElement         => astForJsxOpeningElement(nodeInfo)
+      case JSXClosingElement         => astForJsxClosingElement(nodeInfo)
+      case JSXText                   => astForJsxText(nodeInfo)
+      case JSXExpressionContainer    => astForJsxExprContainer(nodeInfo)
+      case JSXSpreadChild            => astForJsxExprContainer(nodeInfo)
+      case JSXSpreadAttribute        => astForJsxSpreadAttribute(nodeInfo)
+      case JSXFragment               => astForJsxFragment(nodeInfo)
+      case JSXAttribute              => astForJsxAttribute(nodeInfo)
+      case EmptyStatement            => Ast()
+      case _                         => notHandledYet(nodeInfo)
+    }
   }
 
-  protected def astForNodeWithFunctionReference(json: Value): Ast = createBabelNodeInfo(json) match {
-    case f @ BabelNodeInfo(BabelAst.FunctionDeclaration) =>
-      astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
-    case f @ BabelNodeInfo(BabelAst.FunctionExpression) =>
-      astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
-    case f @ BabelNodeInfo(BabelAst.ArrowFunctionExpression) =>
-      astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
-    case _ => astForNode(json)
+  protected def astForNodeWithFunctionReference(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case FunctionDeclaration =>
+        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case FunctionExpression =>
+        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case ArrowFunctionExpression =>
+        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case _ => astForNode(json)
+    }
   }
 
   protected def astForNodes(jsons: List[Value]): List[Ast] = jsons.map(astForNodeWithFunctionReference)

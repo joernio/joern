@@ -53,7 +53,7 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
         val subdir = mkdir(tmpDir / "subdir")
         touch(subdir / "package.json")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASCRIPT)
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JSSRC)
       }
     }
 
@@ -74,7 +74,7 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
         touch(subdir / "source.js")
         touch(subdir / "package.json") // also counts towards javascript
         touch(subdir / "source.py")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASCRIPT)
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JSSRC)
       }
     }
 

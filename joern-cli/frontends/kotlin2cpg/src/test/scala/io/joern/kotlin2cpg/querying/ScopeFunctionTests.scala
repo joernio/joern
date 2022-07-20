@@ -1,50 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-
-class ScopeFunctionTests extends AnyFreeSpec with Matchers {
-  "CPG for code call to `also` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun foo() {
-        |  1.also { it }
-        |}
-        |""".stripMargin)
-
-    "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
-      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
-      p.name shouldBe "it"
-    }
-  }
-
-  "CPG for code call to `apply` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun foo() {
-        |  1.apply { this }
-        |}
-        |""".stripMargin)
-
-    "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
-      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
-      p.name shouldBe "this"
-    }
-  }
-
-  "CPG for code call to `let` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun foo() {
-        |  1.let { it }
-        |}
-        |""".stripMargin)
+class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code call to `also` scope function without an explicitly-defined parameter" should {
+    val cpg = code("fun f1(p: String) { p.also { println(it) } }")
 
     "should contain a METHOD_PARAMETER_IN node for the implicit parameter _it_" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
@@ -52,14 +13,26 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code call to `run` scope function without an explicitly-defined parameter" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun foo() {
-        |  1.run { this }
-        |}
-        |""".stripMargin)
+  "CPG for code with call to `apply` scope function without an explicitly-defined parameter" should {
+    val cpg = code("fun f1(p: String) { p.apply { println(this) } }")
+
+    "should contain a METHOD_PARAMETER_IN node for the implicit parameter" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.name shouldBe "this"
+    }
+  }
+
+  "CPG for code call to `let` scope function without an explicitly-defined parameter" should {
+    val cpg = code("fun f1(p: String) { p.let { println(it) } }")
+
+    "should contain a METHOD_PARAMETER_IN node for the implicit parameter" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.name shouldBe "it"
+    }
+  }
+
+  "CPG for code call to `run` scope function without an explicitly-defined parameter" should {
+    val cpg = code("fun f1(p: String) { p.run { println(this) } }")
 
     "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
@@ -67,8 +40,8 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `let` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `let` scope function" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -94,15 +67,14 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _it_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
-  "CPG for code with simple `run` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `run` scope function" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -129,15 +101,14 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
-  "CPG for code with simple `also` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `also` scope function" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -164,15 +135,14 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       cpg.method.fullName(".*mypkg.*lambda.*").size shouldBe 1
     }
 
-    // TODO: add the implicit _this_ param to the signature
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
-  "CPG for code with `with` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `with` scope function" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun foo(x: String): Int {
@@ -192,8 +162,8 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple `apply` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `apply` scope function" should {
+    val cpg = code("""
         |package mypkg
         |
         |class Bar(p: String)
@@ -208,8 +178,8 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
     // TODO: add test for lowering
   }
 
-  "CPG for code with simple `takeIf` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple `takeIf` scope function" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun foo() {
@@ -224,20 +194,4 @@ class ScopeFunctionTests extends AnyFreeSpec with Matchers {
       c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
     }
   }
-
-  "CPG for code with simple `takeUnless` scope function" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |fun foo() {
-        |  val x: Int = 3
-        |  val y = x.takeUnless { it -> it % 2 == 0 }
-        |  println(y)
-        |}
-        |""".stripMargin)
-
-    // TODO: add test case for CALLs inside the scope function
-    // at the moment, they don't end up in the CPG correctly
-  }
-
 }

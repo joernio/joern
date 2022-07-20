@@ -1,15 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class TypeTests extends AnyFreeSpec with Matchers {
-
-  "CPG for code with simple class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple class with one method and one member" should {
+    val cpg = code("""
         |package com.test.PackageFoo
         |
         |class Foo {
@@ -22,33 +19,34 @@ class TypeTests extends AnyFreeSpec with Matchers {
         |}
         |""".stripMargin)
 
-    "should create TYPE node with correct fields for return type" in {
-      val List(x) = cpg.typ.name("int").l
-      x.fullName shouldBe "int"
-      x.typeDeclFullName shouldBe "int"
+    "should contain a TYPE node for the return type of the method with the correct props set" in {
+      val List(t) = cpg.typ.name("int").l
+      t.fullName shouldBe "int"
+      t.typeDeclFullName shouldBe "int"
     }
 
-    "should create TYPE node with correct fields for class member" in {
-      val List(x) = cpg.typ.name("long").l
-      x.fullName shouldBe "long"
-      x.typeDeclFullName shouldBe "long"
+    "should contain a TYPE node for the member with the correct props set" in {
+      val List(t) = cpg.typ.name("long").l
+      t.fullName shouldBe "long"
+      t.typeDeclFullName shouldBe "long"
     }
 
-    "should create TYPE node with correct fields for parameter type" in {
-      val List(x) = cpg.typ.name("Object").l
-      x.fullName shouldBe "java.lang.Object"
-      x.typeDeclFullName shouldBe "java.lang.Object"
+    "should contain a TYPE node for the parameter type of the method with the correct props set" in {
+      val List(t) = cpg.typ.name("Object").l
+      t.fullName shouldBe "java.lang.Object"
+      t.typeDeclFullName shouldBe "java.lang.Object"
     }
 
-    "should create TYPE node with correct fields for local type" in {
-      val List(x) = cpg.typ.name("double").l
-      x.fullName shouldBe "double"
-      x.typeDeclFullName shouldBe "double"
+    "should contain a TYPE node for the type of the local inside the method with the correct props set" in {
+      val List(t) = cpg.typ.name("double").l
+      t.fullName shouldBe "double"
+      t.typeDeclFullName shouldBe "double"
     }
 
     "should allow traversing from member's TYPE to member" in {
-      val List(x) = cpg.typ("long").memberOfType.l
-      x.name shouldBe "bar"
+      val List(m) = cpg.typ("long").memberOfType.l
+      m.name shouldBe "bar"
+      m.typeFullName shouldBe "long"
     }
 
     "should allow traversing from return params TYPE to return param" in {
@@ -67,8 +65,8 @@ class TypeTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " should {
+    val cpg = code("""
         |package mypkg
         |
         |import javax.crypto.Cipher

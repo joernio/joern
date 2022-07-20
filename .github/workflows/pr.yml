@@ -5,7 +5,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15, macos-11]
+        os: [ubuntu-20.04, windows-2019, macos-11]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -14,8 +14,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
-      - name: Install astgen for jssrc2cpg
-        run: npm install -g @joernio/astgen
       - name: Compile and run tests
         run: joern-cli/frontends/php2cpg/installdeps.sh
       - run: sbt clean +test
@@ -30,7 +28,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Check formatting
-        run: sbt ++2.13.7 scalafmtCheck test:scalafmtCheck
+        run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt'"
         if: ${{ failure() }}
   test-scripts:

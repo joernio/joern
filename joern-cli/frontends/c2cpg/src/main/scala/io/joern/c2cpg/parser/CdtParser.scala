@@ -32,7 +32,7 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
 
   import CdtParser._
 
-  private val headerFileFinder = new HeaderFileFinder(config.inputPaths)
+  private val headerFileFinder = new HeaderFileFinder(config.inputPath)
   private val parserConfig     = ParserConfig.fromConfig(config)
   private val definedSymbols   = parserConfig.definedSymbols.asJava
   private val includePaths     = parserConfig.userIncludePaths

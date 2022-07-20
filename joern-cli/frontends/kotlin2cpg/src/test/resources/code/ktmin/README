@@ -1,0 +1,13 @@
+## ktmin
+
+### setup
+
+```
+gradle wrapper
+```
+
+### running
+
+```
+./gradlew run
+```

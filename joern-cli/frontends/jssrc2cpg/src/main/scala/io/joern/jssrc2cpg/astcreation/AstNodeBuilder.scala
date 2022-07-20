@@ -7,11 +7,10 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
-trait AstNodeBuilder {
-
-  this: AstCreator =>
+trait AstNodeBuilder { this: AstCreator =>
 
   protected def newUnknown(node: BabelNodeInfo): NewUnknown =
     NewUnknown()
@@ -68,28 +67,38 @@ trait AstNodeBuilder {
     val line   = func.lineNumber
     val column = func.columnNumber
     val code   = "RET"
+    val tpe    = typeFor(func)
     NewMethodReturn()
       .code(code)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(tpe)
       .lineNumber(line)
       .columnNumber(column)
   }
 
-  protected def setIndices(asts: List[Ast], receiver: Option[Ast] = None): Unit = {
+  protected def setIndices(asts: List[Ast], receiver: Option[Ast] = None, countEmpty: Boolean = false): Unit = {
     var currIndex = 1
     var currOrder = 1
-    asts.foreach { a =>
+
+    val remainingAsts = asts match {
+      case head :: rest
+          if head.root.exists(x => x.isInstanceOf[NewIdentifier] && x.asInstanceOf[NewIdentifier].code == "this") =>
+        val x = head.root.get.asInstanceOf[NewIdentifier]
+        x.argumentIndex = 0
+        x.order = 1
+        currOrder = currOrder + 1
+        rest
+      case others => others
+    }
+
+    remainingAsts.foreach { a =>
       a.root match {
-        case Some(x: ExpressionNew) if x.code != "this" =>
+        case Some(x: ExpressionNew) =>
           x.argumentIndex = currIndex
           x.order = currOrder
           currIndex = currIndex + 1
           currOrder = currOrder + 1
-        case Some(x: ExpressionNew) =>
-          x.argumentIndex = 0
-          x.order = 1
-          currOrder = currOrder + 1
+        case None if !countEmpty => // do nothing
         case _ =>
           currIndex = currIndex + 1
           currOrder = currOrder + 1
@@ -286,6 +295,9 @@ trait AstNodeBuilder {
     .columnNumber(column)
     .typeFullName(Defines.ANY.label)
 
+  protected def createVoidCallNode(line: Option[Integer], column: Option[Integer]): NewCall =
+    createCallNode("void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH, line, column)
+
   protected def createFieldIdentifierNode(
     name: String,
     line: Option[Integer],
@@ -308,6 +320,33 @@ trait AstNodeBuilder {
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
+
+  protected def createAstForFakeStaticInitMethod(
+    name: String,
+    filename: String,
+    lineNumber: Option[Integer],
+    childrenAsts: Seq[Ast]
+  ): Ast = {
+    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
+    val fakeStaticInitMethod =
+      NewMethod()
+        .name("<sinit>")
+        .fullName(s"$name:<sinit>")
+        .code(code)
+        .filename(filename)
+        .lineNumber(lineNumber)
+        .astParentType(NodeTypes.TYPE_DECL)
+        .astParentFullName(name)
+
+    val blockNode = NewBlock().typeFullName("ANY")
+
+    val methodReturn = NewMethodReturn()
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName("ANY")
+
+    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
+  }
 
   protected def createEqualsCallAst(
     destId: NewNode,
@@ -385,17 +424,26 @@ trait AstNodeBuilder {
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
       .closureOriginalName(Some(closureOriginalName))
 
-  protected def createTypeNode(name: String, fullName: String): NewType =
-    NewType().name(name).fullName(fullName).typeDeclFullName(fullName)
-
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
-  protected def createBlockNode(code: String, line: Option[Integer], column: Option[Integer]): NewBlock =
-    NewBlock()
-      .typeFullName(Defines.ANY.label)
+  protected def createTemplateDomNode(
+    name: String,
+    code: String,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): NewTemplateDom =
+    NewTemplateDom()
+      .name(name)
       .code(code)
       .lineNumber(line)
       .columnNumber(column)
+
+  protected def createBlockNode(node: BabelNodeInfo): NewBlock =
+    NewBlock()
+      .typeFullName(Defines.ANY.label)
+      .code(node.code)
+      .lineNumber(node.lineNumber)
+      .columnNumber(node.columnNumber)
 
   protected def createFunctionTypeAndTypeDeclAst(
     methodNode: NewMethod,
@@ -404,8 +452,7 @@ trait AstNodeBuilder {
     methodFullName: String,
     filename: String
   ): Ast = {
-    val typeNode = createTypeNode(methodName, methodFullName)
-    Ast.storeInDiffGraph(Ast(typeNode), diffGraph)
+    registerType(methodName, methodFullName)
 
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString

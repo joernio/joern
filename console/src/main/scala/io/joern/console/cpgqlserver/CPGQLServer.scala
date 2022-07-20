@@ -148,11 +148,11 @@ abstract class WebServiceWithWebSocket[T <: HasUUID](
   }
 
   def returnResult(result: T): Unit = {
-    resultMap.put(result.uuid, (result, false))
+    resultMap.put(result.uuid, (result, true))
     openConnections.foreach { connection =>
       connection.send(cask.Ws.Text(result.uuid.toString))
     }
-    Response(ujson.Obj("success" -> false, "uuid" -> result.uuid.toString), 200)
+    Response(ujson.Obj("success" -> true, "uuid" -> result.uuid.toString), 200)
   }
 
   def resultToJson(result: T, b: Boolean): Obj

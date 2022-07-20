@@ -6,6 +6,7 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.console.scan._
 
 class CopyLoopTests extends CQueryTestSuite {
+
   override def queryBundle = CopyLoops
 
   "find indexed buffer assignment targets in loops where index is incremented" in {

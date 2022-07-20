@@ -3,10 +3,11 @@ package io.joern.c2cpg.dotgenerator
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class DotCfgGeneratorTest1 extends CCodeToCpgSuite {
+class DotCfgGeneratorTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  "DotCfgGeneratorTest1" should {
+
+    val cpg = code("""
       |int main(int argc, char **argv) {
       |   int i = 0;
       |   while(i < 10) {
@@ -15,9 +16,7 @@ class DotCfgGeneratorTest1 extends CCodeToCpgSuite {
       |   }
       |   return 0;
       |}
-      |""".stripMargin
-
-  "A CfgDotGenerator" should {
+      |""".stripMargin)
 
     "create a dot graph" in {
       inside(cpg.method.name("main").dotCfg.l) { case List(dotStr) =>
@@ -49,20 +48,14 @@ class DotCfgGeneratorTest1 extends CCodeToCpgSuite {
 
   }
 
-}
-
-class DotCfgGeneratorTest2 extends CCodeToCpgSuite {
-
-  override val code: String =
-    """
+  "DotCfgGeneratorTest2" should {
+    val cpg = code("""
       |bool a;
       |bool b;
       |
       |bool test() {
       |  return a ? a : b;
-      |}""".stripMargin
-
-  "A CfgDotGenerator" should {
+      |}""".stripMargin)
 
     "not contain the same edge more than once" in {
       inside(cpg.method.name("test").dotCfg.l) { case List(dotStr) =>

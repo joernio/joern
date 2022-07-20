@@ -4,9 +4,11 @@ import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration,
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents}
+import io.shiftleft.codepropertygraph.generated.nodes.{Binding, NewBinding, NewTypeDecl, TypeDecl}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
 
 case class BindingTableEntry(name: String, signature: String, implementingMethodFullName: String)
@@ -64,6 +66,39 @@ class BindingTableAdapterForJavaparser(
         )
       }
       .toBuffer
+  }
+}
+
+case class LambdaBindingInfo(
+  fullName: String,
+  implementedType: Option[ResolvedReferenceType],
+  directBinding: Option[NewBinding]
+)
+
+class BindingTableAdapterForLambdas(
+) extends BindingTableAdapter[LambdaBindingInfo] {
+
+  override def directParents(lambdaBindingInfo: LambdaBindingInfo): collection.Seq[ResolvedReferenceTypeDeclaration] = {
+    lambdaBindingInfo.implementedType.flatMap(_.getTypeDeclaration.toScala).toList
+  }
+
+  override def allParentsWithTypeMap(
+    lambdaBindingInfo: LambdaBindingInfo
+  ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
+    val nonDirectParents =
+      lambdaBindingInfo.implementedType.flatMap(_.getTypeDeclaration.toScala).toList.flatMap(getAllParents)
+    (lambdaBindingInfo.implementedType.toList ++ nonDirectParents).map { typ =>
+      (typ.getTypeDeclaration.get, typ.typeParametersMap())
+    }
+  }
+
+  override def directBindingTableEntries(
+    typeDeclFullName: String,
+    lambdaBindingInfo: LambdaBindingInfo
+  ): collection.Seq[BindingTableEntry] = {
+    lambdaBindingInfo.directBinding.map { binding =>
+      BindingTableEntry(binding.name, binding.signature, binding.methodFullName)
+    }.toList
   }
 }
 

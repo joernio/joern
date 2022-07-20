@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.types
 
-import io.joern.kotlin2cpg.types.ErrorLoggingMessageCollector
+import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.Ignore
@@ -15,7 +16,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
 
       val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
-      nameGenerator.hasEmptyBindingContext shouldBe true
+      nameGenerator.bindingContext shouldBe BindingContext.EMPTY
     }
 
     "should not return an empty binding context" in {
@@ -27,7 +28,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
 
       val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
-      nameGenerator.hasEmptyBindingContext shouldBe false
+      nameGenerator.bindingContext should not be BindingContext.EMPTY
     }
   }
 }

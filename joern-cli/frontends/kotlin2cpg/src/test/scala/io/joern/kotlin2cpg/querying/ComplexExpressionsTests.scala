@@ -1,16 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Argument
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 import overflowdb.traversal.jIteratortoTraversal
 
-class ComplexExpressionsTests extends AnyFreeSpec with Matchers {
-  "CPG for code with _and_/_or_ operator and try-catch as one of the arguments" - {
-    lazy val cpg = TestContext.buildCpg("""
+class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with _and_/_or_ operator and try-catch as one of the arguments" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.random.Random
@@ -55,8 +53,8 @@ class ComplexExpressionsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with _and_ operator and let inside it" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with _and_ operator and let inside it" should {
+    val cpg = code("""
         |package mypkg
         |
         |class Config {

@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class DotAstGeneratorTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """| // A comment
+  private val cpg = code("""| // A comment
        |int my_func(int x)
        |{
        |  int y = x * 2;
@@ -25,7 +24,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
        |void lemon(){
        |  goog("\"yes\"");
        |}
-       |""".stripMargin
+       |""".stripMargin)
 
   "An AstDotGenerator" should {
 

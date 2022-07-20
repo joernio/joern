@@ -1,16 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
+class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
 
-  "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun add1mul(x: Int, y: Int): Int {
@@ -31,33 +28,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a simple class definition" - {
-    lazy val cpg = TestContext.buildCpg("""
-        |package mypkg
-        |
-        |class Foo {
-        |  fun bar(x: Int, y: Int): Int {
-        |    return x * 2
-        |  }
-        |}
-        |""".stripMargin)
-
-    "should contain two METHOD_PARAMETER nodes with the correct type fullnames" in {
-      def params = cpg.parameter.filter(_.method.name == "bar")
-      params.name.toSet shouldBe Set("x", "y")
-
-      val List(x) = params.name("x").l
-      x.code shouldBe "x"
-      x.typeFullName shouldBe "int"
-
-      val List(y) = params.name("y").l
-      y.code shouldBe "y"
-      y.typeFullName shouldBe "int"
-    }
-  }
-
-  "CPG for code with type alias of a stdlib type" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with type alias of a stdlib type" should {
+    val cpg = code("""
         |typealias FooList = List<Int>
         |
         |fun foo() {
@@ -72,8 +44,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with array access" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with array access" should {
+    val cpg = code("""
         |fun foo(): Int {
         |  val x = listOf(1, 2, 3)
         |  return x[0]
@@ -86,8 +58,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with `this` expression" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with `this` expression" should {
+    val cpg = code("""
         |package mypkg
         |
         |class Foo {
@@ -104,8 +76,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with a class definition" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a class definition" should {
+    val cpg = code("""
         |package mypkg
         |
         |class Foo: Object {
@@ -123,8 +95,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with Java stdlib" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with Java stdlib" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun foo(cmd: String) {
@@ -149,8 +121,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code using the Javalin web framework" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code using the Javalin web framework" should {
+    val cpg = code("""
         |package mypkg
         |
         |import io.javalin.Javalin
@@ -220,8 +192,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code using the http4k framework" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code using the http4k framework" should {
+    val cpg = code("""
         |package com.example
         |
         |import org.http4k.core.HttpHandler
@@ -283,8 +255,8 @@ class DefaultContentRootsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with addition of aliased type and its original" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with addition of aliased type and its original" should {
+    val cpg = code("""
         |package mypkg
         |
         |typealias MyInt = Int

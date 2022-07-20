@@ -62,7 +62,7 @@ trait AstForExpressionsCreator {
       .typeFullName(registerType(Defines.voidTypeName))
       .lineNumber(line(exprList))
       .columnNumber(column(exprList))
-    Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression(_)))
+    Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression))
   }
 
   private def astForCallExpression(call: IASTFunctionCallExpression): Ast = {

@@ -1,17 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-
-class LabeledExpressionsTests extends AnyFreeSpec with Matchers {
+class LabeledExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with simple call to `println` prefixed by a label" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple call to `println` prefixed by a label" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun main() {

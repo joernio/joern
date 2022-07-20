@@ -1,6 +1,6 @@
 name := "benchmarks"
 
-crossScalaVersions := Seq("2.13.8", "3.1.2")
+crossScalaVersions := Seq("2.13.8", "3.1.3")
 
 dependsOn(Projects.dataflowengineoss)
 dependsOn(Projects.semanticcpg)
@@ -25,3 +25,6 @@ scalacOptions ++= Seq() ++ (
     case _            => Seq("-target:jvm-1.8")
   }
 )
+
+trapExit    := false
+Test / fork := true

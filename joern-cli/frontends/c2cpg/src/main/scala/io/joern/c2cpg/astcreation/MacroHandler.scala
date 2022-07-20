@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode
 }
 import io.joern.x2cpg.Ast
+import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
@@ -113,8 +114,8 @@ trait MacroHandler {
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
     val callNode = NewCall()
-      .name(name)
-      .methodFullName(fullName(macroDef, argAsts))
+      .name(StringUtils.normalizeSpace(name))
+      .methodFullName(StringUtils.normalizeSpace(fullName(macroDef, argAsts)))
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))

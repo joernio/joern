@@ -22,15 +22,18 @@ import com.github.javaparser.resolution.types.{
   ResolvedWildcard
 }
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserClassDeclaration
+import com.github.javaparser.symbolsolver.logic.InferenceVariableType
 import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, NullType}
 import com.github.javaparser.symbolsolver.reflectionmodel.{ReflectionClassDeclaration, ReflectionTypeParameter}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
+import org.checkerframework.checker.signature.qual.FullyQualifiedName
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.util.Try
+import scala.jdk.OptionConverters.RichOptional
+import scala.util.{Failure, Success, Try}
 
 class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
   private val logger               = LoggerFactory.getLogger(this.getClass)
@@ -50,6 +53,19 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
 
   def fullName(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
     registerType(nameOrFullName(typ, typeParamValues, true))
+  }
+
+  private def typesSubstituted(
+    trySubstitutedType: Try[ResolvedType],
+    typeParamDecl: ResolvedTypeParameterDeclaration
+  ): Boolean = {
+    trySubstitutedType
+      .map { substitutedType =>
+        // substitutedType.isTypeVariable can crash with an UnsolvedSymbolException if it is an instance of LazyType,
+        // in which case the type hasn't been successfully substituted.
+        !(substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl)
+      }
+      .getOrElse(false)
   }
 
   private def nameOrFullName(
@@ -83,16 +99,15 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         nullType.describe()
       case typeVariable: ResolvedTypeVariable =>
         val typeParamDecl   = typeVariable.asTypeParameter()
-        val substitutedType = typeParamValues.getValue(typeParamDecl)
+        val substitutedType = Try(typeParamValues.getValue(typeParamDecl))
 
-        // This is the way the library tells us there is no substitution happened.
-        if (substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl) {
-          val extendsBoundOption = typeParamDecl.getBounds.asScala.find(_.isExtends)
+        if (typesSubstituted(substitutedType, typeParamDecl)) {
+          nameOrFullName(substitutedType.get, typeParamValues, fullyQualified)
+        } else {
+          val extendsBoundOption = Try(typeParamDecl.getBounds.asScala.find(_.isExtends)).toOption.flatten
           extendsBoundOption
             .map(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
             .getOrElse(objectType(fullyQualified))
-        } else {
-          nameOrFullName(substitutedType, typeParamValues, fullyQualified)
         }
       case lambdaConstraintType: ResolvedLambdaConstraintType =>
         nameOrFullName(lambdaConstraintType.getBound, typeParamValues, fullyQualified)
@@ -106,12 +121,13 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         // The individual elements of the type union cannot be accessed in ResolvedUnionType.
         // For whatever reason there is no accessor and the field is private.
         // So for now we settle with the ancestor type. Maybe we use reflection later.
-        val ancestorOption = unionType.getCommonAncestor
-        if (ancestorOption.isPresent) {
-          nameOrFullName(ancestorOption.get, typeParamValues, fullyQualified)
-        } else {
-          objectType(fullyQualified)
-        }
+        Try(unionType.getCommonAncestor.toScala).toOption.flatten
+          .map(nameOrFullName(_, typeParamValues, fullyQualified))
+          .getOrElse(objectType(fullyQualified))
+      case _: InferenceVariableType =>
+        // From the JavaParser docs, the InferenceVariableType is: An element using during type inference.
+        // At this point JavaParser has failed to resolve the type.
+        TypeConstants.UnresolvedType
     }
   }
 
@@ -216,21 +232,47 @@ object TypeInfoCalculator {
   }
 
   object TypeConstants {
-    val Byte: String    = "byte"
-    val Short: String   = "short"
-    val Int: String     = "int"
-    val Long: String    = "long"
-    val Float: String   = "float"
-    val Double: String  = "double"
-    val Char: String    = "char"
-    val Boolean: String = "boolean"
-    val Object: String  = "java.lang.Object"
-    val Class: String   = "java.lang.Class"
+    val Byte: String                = "byte"
+    val Short: String               = "short"
+    val Int: String                 = "int"
+    val Long: String                = "long"
+    val Float: String               = "float"
+    val Double: String              = "double"
+    val Char: String                = "char"
+    val Boolean: String             = "boolean"
+    val Object: String              = "java.lang.Object"
+    val Class: String               = "java.lang.Class"
+    val Iterator: String            = "java.util.Iterator"
+    val Void: String                = "void"
+    val UnresolvedType: String      = "<unresolvedType>"
+    val UnresolvedSignature: String = "<unresolvedSignature>"
+    val UnresolvedReceiver: String  = "<unresolvedReceiverType>"
   }
+
+  val unresolvedConstants =
+    List(TypeConstants.UnresolvedType, TypeConstants.UnresolvedSignature, TypeConstants.UnresolvedReceiver)
 
   object TypeNameConstants {
     val Object: String = "Object"
   }
+
+  // The method signatures for all methods implemented by java.lang.Object, as returned by JavaParser. This is used
+  // to filter out Object methods when determining which functional interface method a lambda implements. See
+  // https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for more details.
+  val ObjectMethodSignatures: Set[String] = Set(
+    "wait(long, int)",
+    "equals(java.lang.Object)",
+    "clone()",
+    "toString()",
+    "wait()",
+    "hashCode()",
+    "getClass()",
+    "notify()",
+    "finalize()",
+    "wait(long)",
+    "notifyAll()",
+    "registerNatives()"
+  )
 
   val NumericTypes: Set[String] = Set(
     "byte",
@@ -251,5 +293,9 @@ object TypeInfoCalculator {
     "java.lang.Boolean"
   )
 
-  val UnresolvedTypeDefault = "ANY"
+  def apply(global: Global, symbolResolver: SymbolResolver): TypeInfoCalculator = {
+    val typeInfoCalculator = new TypeInfoCalculator(global, symbolResolver)
+    unresolvedConstants.foreach(typeInfoCalculator.registerType)
+    typeInfoCalculator
+  }
 }

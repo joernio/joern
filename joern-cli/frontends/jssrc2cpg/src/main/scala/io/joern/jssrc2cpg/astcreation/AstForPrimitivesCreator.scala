@@ -5,16 +5,22 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 
-trait AstForPrimitivesCreator {
-
-  this: AstCreator =>
+trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForIdentifier(ident: BabelNodeInfo): Ast = {
     val name      = ident.json("name").str
     val identNode = createIdentifierNode(name, ident)
+    val tpe       = typeFor(ident)
+    identNode.typeFullName = tpe
     scope.addVariableReference(name, identNode)
     Ast(identNode)
   }
+
+  protected def astForSuperKeyword(superKeyword: BabelNodeInfo): Ast =
+    Ast(createIdentifierNode("super", superKeyword))
+
+  protected def astForImportKeyword(importKeyword: BabelNodeInfo): Ast =
+    Ast(createIdentifierNode("import", importKeyword))
 
   protected def astForNullLiteral(nullLiteral: BabelNodeInfo): Ast =
     Ast(createLiteralNode(nullLiteral.code, Some(Defines.NULL.label), nullLiteral.lineNumber, nullLiteral.columnNumber))

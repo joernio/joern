@@ -1,6 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes._
+import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
@@ -36,9 +37,9 @@ trait AstNodeBuilder {
     argIndex: Int = -1
   ): NewCall = {
     NewCall()
-      .name(name)
+      .name(StringUtils.normalizeSpace(name))
       .dispatchType(dispatchType)
-      .methodFullName(fullname)
+      .methodFullName(StringUtils.normalizeSpace(fullname))
       .code(nodeSignature(node))
       .argumentIndex(argIndex)
       .lineNumber(line(node))

@@ -11,12 +11,12 @@ import overflowdb.traversal._
   */
 class NodeTypeStartersTests extends CCodeToCpgSuite {
 
-  override val code = """
-       /* A C comment */
-       // A C++ comment
-       int main(int argc, char **argv) { int mylocal; libfunc(1, argc); }
-       struct foo { int x; };
-    """
+  private val cpg = code("""
+      |/* A C comment */
+      |// A C++ comment
+      |int main(int argc, char **argv) { int mylocal; libfunc(1, argc); }
+      |struct foo { int x; };
+    """.stripMargin)
 
   "should allow retrieving files" in {
     atLeast(1, cpg.file.name.l) should endWith(".c")

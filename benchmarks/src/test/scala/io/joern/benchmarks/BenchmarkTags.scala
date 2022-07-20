@@ -2,7 +2,7 @@ package io.joern.benchmarks
 
 import org.scalatest.Tag
 
-import java.io.{File, PrintStream, PrintWriter}
+import java.io.{File, PrintStream}
 import scala.collection.mutable
 
 object BenchmarkTags {
@@ -28,8 +28,20 @@ object BenchmarkTags {
   object Sanitizers     extends Tag("Sanitizers")
   object Session        extends Tag("Session")
   object StrongUpdates  extends Tag("Strong Updates")
+  // Additional tags for IFSPEC
+  object Casting          extends Tag("Casting")
+  object ClassInitializer extends Tag("Class Initializer")
+  object HighConditional  extends Tag("High Conditional")
+  object ImplicitFlows    extends Tag("Implicit Flows")
+  object Exceptions       extends Tag("Exceptions")
+  object ExplicitFlows    extends Tag("Explicit Flows")
+  object Library          extends Tag("Library")
+  object Simple           extends Tag("Simple")
+  // Additional tags for JInfoFlow
+  object Context extends Tag("Context")
+  object Events  extends Tag("Event")
 
-  def TAGS = Seq(
+  def TAGS: Seq[String] = Seq(
     Aliasing.name,
     Arrays.name,
     Basic.name,
@@ -41,7 +53,17 @@ object BenchmarkTags {
     Refl.name,
     Sanitizers.name,
     Session.name,
-    StrongUpdates.name
+    StrongUpdates.name,
+    Casting.name,
+    ClassInitializer.name,
+    HighConditional.name,
+    ImplicitFlows.name,
+    Exceptions.name,
+    ExplicitFlows.name,
+    Library.name,
+    Simple.name,
+    Context.name,
+    Events.name
   )
 
   val confusionMatrix = mutable.Map.empty[String, Array[Int]]
@@ -66,14 +88,27 @@ object BenchmarkTags {
       resultsOut.println(s"| $tag ${(for (_ <- 0 until (catWhiteSpaceCount - tag.length))
           yield ' ').mkString} | ${m.sum} | ${m(FP)} | ${m(TP)} | ${m(TN)} | ${m(FN)} |")
     }
-    val FNs        = confusionMatrix.map(_._2(FN)).sum
-    val TNs        = confusionMatrix.map(_._2(TN)).sum
-    val FPs        = confusionMatrix.map(_._2(FP)).sum
-    val TPs        = confusionMatrix.map(_._2(TP)).sum
-    val totalTests = confusionMatrix.map(_._2.sum).sum
+    val (totalTests, fps, tps, tns, fns) = getTotalTests
     resultsOut.println(s"| *Total* ${(for (_ <- 0 until (catWhiteSpaceCount - "*Total*".length))
-        yield ' ').mkString} | *$totalTests* | *$FPs* | *$TPs* | *$TNs* | *$FNs* |\n")
-    resultsOut.println(s"Total accuracy: ${String.format("%.3f", (TNs + TPs + 0.0) / totalTests * 100.0)}%")
+        yield ' ').mkString} | *$totalTests* | *$fps* | *$tps* | *$tns* | *$fns* |\n")
+    resultsOut.println(s"Total accuracy: ${String.format("%.3f", (tns + tps + 0.0) / totalTests * 100.0)}%")
+  }
+
+  private def getTotalTests: (Int, Int, Int, Int, Int) = {
+    val impl = confusionMatrix.getOrElse(ImplicitFlows.name, Array.ofDim(4))
+    val expl = confusionMatrix.getOrElse(ExplicitFlows.name, Array.ofDim(4))
+    if (impl.sum > 0 || expl.sum > 0) {
+      // running IFSpec so this means there is a 1-many relationship with tests-categories
+      (impl.sum + expl.sum, impl(FP) + expl(FP), impl(TP) + expl(TP), impl(TN) + expl(TN), impl(FN) + expl(FN))
+    } else {
+      (
+        confusionMatrix.map(_._2.sum).sum,
+        confusionMatrix.map(_._2(FP)).sum,
+        confusionMatrix.map(_._2(TP)).sum,
+        confusionMatrix.map(_._2(TN)).sum,
+        confusionMatrix.map(_._2(FN)).sum
+      )
+    }
   }
 
   sys.addShutdownHook(finalResults())

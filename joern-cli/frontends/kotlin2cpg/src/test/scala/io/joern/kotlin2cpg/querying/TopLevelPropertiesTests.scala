@@ -1,14 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-
-class TopLevelPropertiesTests extends AnyFreeSpec with Matchers {
-  "CPG for code with top-level property" - {
-    lazy val cpg = TestContext.buildCpg("""
+class TopLevelPropertiesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with top-level property" should {
+    val cpg = code("""
       |package mypkg
       |
       |const val CSRF_SESSION_KEY = "_csrf"

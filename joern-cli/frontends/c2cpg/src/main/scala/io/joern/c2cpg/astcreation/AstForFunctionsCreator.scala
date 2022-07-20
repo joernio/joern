@@ -10,6 +10,7 @@ import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTP
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack._
+import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 
@@ -23,18 +24,28 @@ trait AstForFunctionsCreator {
     methodFullName: String,
     signature: String
   ): Ast = {
+    val normalizedName     = StringUtils.normalizeSpace(methodName)
+    val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
+
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
       val newTypeDeclNode =
-        newTypeDecl(methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
+        newTypeDecl(
+          normalizedName,
+          normalizedFullName,
+          method.filename,
+          normalizedName,
+          astParentType,
+          astParentFullName
+        )
       Ast.storeInDiffGraph(Ast(newTypeDeclNode), diffGraph)
       newTypeDeclNode
     }
 
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
+    val functionBinding = NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
@@ -88,16 +99,16 @@ trait AstForFunctionsCreator {
     val signature =
       returnType + " " + fullname + " " + parameterListSignature(lambdaExpression, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(lambdaExpression, includeParamNames = true)
-    val methodNode: NewMethod = NewMethod()
-      .name(name)
+    val methodNode = NewMethod()
+      .name(StringUtils.normalizeSpace(name))
       .code(code)
       .isExternal(false)
-      .fullName(fullname)
+      .fullName(StringUtils.normalizeSpace(fullname))
       .lineNumber(linenumber)
       .lineNumberEnd(lineEnd(lambdaExpression))
       .columnNumber(columnnumber)
       .columnNumberEnd(columnEnd(lambdaExpression))
-      .signature(signature)
+      .signature(StringUtils.normalizeSpace(signature))
       .filename(filename)
 
     scope.pushNewScope(methodNode)
@@ -135,15 +146,15 @@ trait AstForFunctionsCreator {
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDecl, includeParamNames = true)
     val methodNode = NewMethod()
-      .name(name)
+      .name(StringUtils.normalizeSpace(name))
       .code(code)
       .isExternal(false)
-      .fullName(fullname)
+      .fullName(StringUtils.normalizeSpace(fullname))
       .lineNumber(linenumber)
       .lineNumberEnd(lineEnd(funcDecl))
       .columnNumber(columnnumber)
       .columnNumberEnd(columnEnd(funcDecl))
-      .signature(signature)
+      .signature(StringUtils.normalizeSpace(signature))
       .filename(filename)
 
     scope.pushNewScope(methodNode)
@@ -181,15 +192,15 @@ trait AstForFunctionsCreator {
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDef, includeParamNames = true)
     val methodNode = NewMethod()
-      .name(name)
+      .name(StringUtils.normalizeSpace(name))
       .code(code)
       .isExternal(false)
-      .fullName(fullname)
+      .fullName(StringUtils.normalizeSpace(fullname))
       .lineNumber(linenumber)
       .lineNumberEnd(lineEnd(funcDef))
       .columnNumber(columnnumber)
       .columnNumberEnd(columnEnd(funcDef))
-      .signature(signature)
+      .signature(StringUtils.normalizeSpace(signature))
       .filename(filename)
 
     methodAstParentStack.push(methodNode)
@@ -274,6 +285,6 @@ trait AstForFunctionsCreator {
   }
 
   private def methodReturnNode(func: IASTNode, tpe: String): NewMethodReturn =
-    methodReturnNode(line(func), column(func), registerType(tpe))
+    methodReturnNode(registerType(tpe), None, line(func), column(func))
 
 }

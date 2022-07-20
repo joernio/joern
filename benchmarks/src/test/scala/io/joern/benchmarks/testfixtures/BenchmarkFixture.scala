@@ -21,7 +21,7 @@ import overflowdb.traversal.Traversal
 
 import scala.util.Failure
 
-class BenchmarkFixture(
+abstract class BenchmarkFixture(
   val pkg: String = "",
   val category: String = "",
   val benchmarkNo: String = "1",
@@ -30,9 +30,9 @@ class BenchmarkFixture(
     with Matchers
     with BeforeAndAfterAll {
 
-  val semanticsFile: String = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
-  lazy val defaultSemantics: Semantics           = Semantics.fromList(new Parser().parseFile(semanticsFile))
-  implicit val resolver: ICallResolver           = NoResolve
+  val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
+  lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
+  implicit val resolver: ICallResolver = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
   private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
@@ -42,10 +42,10 @@ class BenchmarkFixture(
   def constructTargetFilePath: String =
     s"benchmarks/src/test/resources/$pkg/${category.toLowerCase}"
 
-  private def getListOfFiles(dir: String): List[java.io.File] = {
+  protected def getListOfFiles(dir: String): List[java.io.File] = {
     val d = new java.io.File(dir)
     // Regex is useful for class files containing subclasses
-    val regex = s".*$category$benchmarkNo.*$fileExt"
+    val regex = s".*$category$benchmarkNo(?:\\$$[A-Za-z]*)?$fileExt"
     if (d.exists && d.isDirectory) {
       d.listFiles.filter(f => f.isFile && f.getAbsolutePath.matches(regex)).toList
     } else {
@@ -133,24 +133,22 @@ object BenchmarkCpgContext {
 }
 
 class BenchmarkCpgContext {
-  private var inputPaths: String = ""
+  private var inputPath: String = ""
 
   def buildCpg(): Cpg = {
     val cpgPath = java.io.File.createTempFile("benchmark", ".odb").getAbsolutePath
-    val cpg = (guessLanguage(inputPaths) match {
+    val cpg = guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(Set(inputPaths), cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(Set(inputPaths), cpgPath))
-          case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPaths'"))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(inputPath, cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(inputPath, cpgPath))
+          case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>
         Failure(
-          new RuntimeException(
-            s"Unable to guess which language frontend to use to parse the benchmark at '$inputPaths'"
-          )
+          new RuntimeException(s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'")
         )
-    })
+    }
     applyDefaultOverlays(cpg.get)
     val context = new LayerCreatorContext(cpg.get)
     val options = new OssDataFlowOptions()
@@ -159,7 +157,7 @@ class BenchmarkCpgContext {
   }
 
   private def withSource(codePath: String): BenchmarkCpgContext = {
-    this.inputPaths = codePath
+    this.inputPath = codePath
     this
   }
 }

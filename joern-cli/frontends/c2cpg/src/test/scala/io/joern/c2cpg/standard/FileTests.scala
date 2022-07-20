@@ -8,12 +8,11 @@ import java.io.File
 
 class FileTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       | int foo() {}
       | int bar() {}
       | struct my_struct { int x; };
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain two file nodes in total, both with order=0" in {
     cpg.file.order.l shouldBe List(0, 0)

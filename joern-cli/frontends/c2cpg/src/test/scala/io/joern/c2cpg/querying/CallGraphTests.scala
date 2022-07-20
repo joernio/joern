@@ -7,14 +7,15 @@ class CallGraphTests extends CCodeToCpgSuite {
 
   implicit val resolver: NoResolve.type = NoResolve
 
-  override val code = """
-       int add(int x, int y) {
-         return x + y;
-       }
-       int main(int argc, char **argv) {
-         printf("%d\n", add((1+2), 3));
-       }
-    """
+  private val cpg = code("""
+     |int add(int x, int y) {
+     |  return x + y;
+     |}
+     |
+     |int main(int argc, char **argv) {
+     |  printf("%d\n", add((1+2), 3));
+     |}
+    """.stripMargin)
 
   "should find that add is called by main" in {
     cpg.method.name("add").caller.name.toSetMutable shouldBe Set("main")

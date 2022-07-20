@@ -1,17 +1,15 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-import overflowdb.traversal.jIteratortoTraversal
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import org.scalatest.Ignore
 
-class LazyBlocksTests extends AnyFreeSpec with Matchers {
+@Ignore
+class LazyBlocksTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   // TODO: add test cases for lazy properties as well
 
-  "CPG for code with simple lazy blocks" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple lazy blocks" should {
+    val cpg = code("""
         |package mypkg
         |
         |import java.nio.file.Files

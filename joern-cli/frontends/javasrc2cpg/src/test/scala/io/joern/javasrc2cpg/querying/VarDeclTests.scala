@@ -26,7 +26,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     local.name shouldBe "x"
     local.order shouldBe 1
 
-    assig.code shouldBe "x = 1"
+    assig.code shouldBe "int x = 1"
     assig.order shouldBe 2
   }
 
@@ -111,7 +111,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     localZ.name shouldBe "z"
     localZ.order shouldBe 3
 
-    assigY.code shouldBe "y = 4"
+    assigY.code shouldBe "int y = 4"
     assigY.order shouldBe 4
     assigX.code shouldBe "x = 1"
     assigX.order shouldBe 5
@@ -143,13 +143,13 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     localY.name shouldBe "y"
     localY.order shouldBe 2
 
-    assigY.code shouldBe "y = 2"
+    assigY.code shouldBe "int y = 2"
     assigY.order shouldBe 3
 
     localZ.name shouldBe "z"
     localZ.order shouldBe 4
 
-    assigZ.code shouldBe "z = 3"
+    assigZ.code shouldBe "int z = 3"
     assigZ.order shouldBe 5
 
     assigX.code shouldBe "x = 1"

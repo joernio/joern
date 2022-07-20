@@ -1,15 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.nodes.Import
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ImportTests extends AnyFreeSpec with Matchers {
+class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with a stdlib import" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with a stdlib import" should {
+    val cpg = code("""
         |package mypkg
         |
         |import kotlin.io.collections.listOf
@@ -21,11 +18,11 @@ class ImportTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should contain the correct number of IMPORT nodes" in {
-      cpg.all.collect { case n: Import => n }.size should not be 0
+      cpg.staticImport.size should not be 0
     }
 
     "should contain IMPORT node for `listOf` entry with the correct properties set" in {
-      val List(imp) = cpg.all.collect { case n: Import => n }.code(".*listOf.*").l
+      val List(imp) = cpg.staticImport.code(".*listOf.*").l
       imp.code shouldBe "import kotlin.io.collections.listOf"
       imp.importedEntity shouldBe Some("kotlin.io.collections.listOf")
       imp.lineNumber shouldBe Some(4)
@@ -35,7 +32,7 @@ class ImportTests extends AnyFreeSpec with Matchers {
     }
 
     "should contain IMPORT node for wildcard `comparisons` entry with the correct properties set" in {
-      val List(imp) = cpg.all.collect { case n: Import => n }.code(".*comparisons.*").l
+      val List(imp) = cpg.staticImport.code(".*comparisons.*").l
       imp.code shouldBe "import kotlin.comparisons.*"
       imp.importedEntity shouldBe Some("kotlin.comparisons.*")
       imp.lineNumber shouldBe Some(5)
@@ -45,8 +42,8 @@ class ImportTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code without explicit imports" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code without explicit imports" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args : Array<String>) {
@@ -55,7 +52,7 @@ class ImportTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should not contain any IMPORT nodes" in {
-      cpg.all.collect { case n: Import => n }.size shouldBe 0
+      cpg.staticImport.size shouldBe 0
     }
   }
 }

@@ -10,7 +10,6 @@ class NullTerminationTests extends CQueryTestSuite {
   override def queryBundle = NullTermination
 
   "should find the bad code and not report the good" in {
-
     val query = queryBundle.strncpyNoNullTerm()
     val results = query(cpg)
       .flatMap(_.evidence)
@@ -18,7 +17,6 @@ class NullTerminationTests extends CQueryTestSuite {
       .method
       .name
       .toSetImmutable
-
     results shouldBe Set("bad")
   }
 

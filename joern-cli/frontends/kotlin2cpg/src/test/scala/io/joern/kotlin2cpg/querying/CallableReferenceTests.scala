@@ -1,15 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class CallableReferenceTests extends AnyFreeSpec with Matchers {
+class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple callback usage" - {
+  "CPG for code with simple callback usage" should {
 
-    lazy val cpg = TestContext.buildCpg("""
+    val cpg = code("""
         |fun isOdd(x: Int) = x % 2 != 0
         |
         |fun firstOdd(x: Int): Int {

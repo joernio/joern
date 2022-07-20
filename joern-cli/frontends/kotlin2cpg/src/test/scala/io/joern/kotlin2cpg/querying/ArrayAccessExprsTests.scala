@@ -1,17 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
+class ArrayAccessExprsTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
 
-  "CPG for code with simple map construction and access" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple map construction and access" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {
@@ -42,8 +39,8 @@ class ArrayAccessExprsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple array construction and access" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple array construction and access" should {
+    val cpg = code("""
         |package mypkg
         |
         |fun main(args: Array<String>) {

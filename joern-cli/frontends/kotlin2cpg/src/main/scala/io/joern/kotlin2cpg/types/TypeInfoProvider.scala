@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.psi.{
 }
 
 trait TypeInfoProvider {
+  def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
+
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String
@@ -74,7 +76,7 @@ trait TypeInfoProvider {
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
 
-  def erasedSignature(args: Seq[Any]): String
+  def anySignature(args: Seq[Any]): String
 
   def returnTypeFullName(expr: KtLambdaExpression): String
 

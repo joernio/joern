@@ -16,7 +16,7 @@ class JavaSrc2CpgTestContext {
     if (buildResult.isEmpty) {
       val javaSrc2Cpg = JavaSrc2Cpg()
       val config = Config(
-        inputPaths = Set(writeCodeToFile(code, "javasrc2cpgTest", ".java").getAbsolutePath),
+        inputPath = writeCodeToFile(code, "javasrc2cpgTest", ".java").getAbsolutePath,
         outputPath = "",
         inferenceJarPaths = inferenceJarPaths
       )

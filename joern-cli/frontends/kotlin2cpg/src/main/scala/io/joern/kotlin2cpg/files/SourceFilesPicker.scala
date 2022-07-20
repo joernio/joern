@@ -70,7 +70,7 @@ object SourceFilesPicker {
 
   def configFiles(forDir: String): Seq[String] = {
     val sourceFileExtensions = Set(".xml", ".gradle", ".properties", ".kts")
-    val sourceFileNames      = SourceFiles.determine(Set(forDir), sourceFileExtensions)
+    val sourceFileNames      = SourceFiles.determine(forDir, sourceFileExtensions)
     sourceFileNames
       .filter(isConfigFile)
       .filterNot { fileName =>

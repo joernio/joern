@@ -1,20 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class GenericsTests extends AnyFreeSpec with Matchers {
+class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with simple user-defined fn using generics" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple user-defined fn using generics" should {
+    val cpg = code("""
         |
         |package mypkg
         |
@@ -59,8 +53,8 @@ class GenericsTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code with simple user-defined fn using generics and a type parameter subclassed from user-defined fn" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple user-defined fn using generics and a type parameter subclassed from user-defined fn" should {
+    val cpg = code("""
         |
         |package mypkg
         |

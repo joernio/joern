@@ -30,7 +30,7 @@ object LocationCreator {
   }
 
   def apply(
-    node: AbstractNode,
+    node: StoredNode,
     symbol: String,
     label: String,
     lineNumber: Option[Integer],
@@ -76,6 +76,6 @@ object LocationCreator {
       case None                              => None
     }
 
-  def emptyLocation(label: String, node: Option[AbstractNode]): NewLocation =
+  def emptyLocation(label: String, node: Option[StoredNode]): NewLocation =
     NewLocation().nodeLabel(label).node(node)
 }

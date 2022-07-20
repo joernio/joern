@@ -5,10 +5,9 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodParameterTests extends CCodeToCpgSuite {
 
-  override val code: String =
-    """
+  private val cpg = code("""
       |  int main(int argc, char **argv) {
-      | }""".stripMargin
+      | }""".stripMargin)
 
   "should return exactly two parameters with correct fields" in {
     cpg.parameter.name.toSetMutable shouldBe Set("argc", "argv")

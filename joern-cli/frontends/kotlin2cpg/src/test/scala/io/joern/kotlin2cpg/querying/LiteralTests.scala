@@ -1,16 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class LiteralTests extends AnyFreeSpec with Matchers {
-
-  "CPG for code simple literal declarations with explicit types" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code simple literal declarations with explicit types" should {
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val a: Int = 1
         |  val b: Boolean = true
@@ -39,8 +35,8 @@ class LiteralTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "CPG for code simple literal declarations without explicit types" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code simple literal declarations without explicit types" should {
+    val cpg = code("""
         |fun main(args : Array<String>) {
         |  val a = 1
         |  val b = true

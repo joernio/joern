@@ -1,17 +1,14 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifier}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
 
-class FieldAccessTests extends AnyFreeSpec with Matchers {
+class FieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple filed access of user-defined class" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple filed access of user-defined class" should {
+    val cpg = code("""
         |package mypkg
         |
         |class AClass {

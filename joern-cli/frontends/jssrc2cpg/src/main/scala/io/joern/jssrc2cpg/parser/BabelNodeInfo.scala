@@ -12,7 +12,3 @@ case class BabelNodeInfo(
   lineNumberEnd: Option[Integer],
   columnNumberEnd: Option[Integer]
 )
-
-object BabelNodeInfo {
-  def unapply(other: BabelNodeInfo): Some[BabelNode] = Some(other.node)
-}

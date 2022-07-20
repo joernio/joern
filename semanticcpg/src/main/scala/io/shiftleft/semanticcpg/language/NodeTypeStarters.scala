@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import overflowdb._
 import overflowdb.traversal.help
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.{Traversal, TraversalSource, jIteratortoTraversal, toElementTraversal}
+import overflowdb.traversal.{Traversal, TraversalSource, jIteratortoTraversal, toElementTraversal, InitialTraversal}
 
 @help.TraversalSource
 class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
@@ -20,7 +20,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
   /** Traverse to all annotations
     */
   def annotation: Traversal[Annotation] =
-    cpg.graph.nodes(NodeTypes.ANNOTATION).cast[Annotation]
+    InitialTraversal.from[Annotation](cpg.graph, NodeTypes.ANNOTATION)
 
   /** Traverse to all arguments passed to methods
     */
@@ -41,7 +41,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All call sites")
   def call: Traversal[Call] =
-    cpg.graph.nodes(NodeTypes.CALL).cast[Call]
+    InitialTraversal.from[Call](cpg.graph, NodeTypes.CALL)
 
   /** Shorthand for `cpg.call.name(name)`
     */
@@ -52,16 +52,38 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All comments in source-based CPGs")
   def comment: Traversal[Comment] =
-    cpg.graph.nodes(NodeTypes.COMMENT).cast[Comment]
+    InitialTraversal.from[Comment](cpg.graph, NodeTypes.COMMENT)
 
   /** Shorthand for `cpg.comment.code(code)`
     */
   def comment(code: String): Traversal[Comment] =
     comment.has(Properties.CODE -> code)
 
+  /** Traverse to all config files
+    */
+  @Doc(info = "All config files")
+  def configFile: Traversal[ConfigFile] =
+    InitialTraversal.from[ConfigFile](cpg.graph, NodeTypes.CONFIG_FILE)
+
+  /** Shorthand for `cpg.configFile.name(name)`
+    */
+  def configFile(name: String): Traversal[ConfigFile] =
+    configFile.name(name)
+
+  /** Traverse to all dependencies
+    */
+  @Doc(info = "All dependencies")
+  def dependency: Traversal[Dependency] =
+    InitialTraversal.from[Dependency](cpg.graph, NodeTypes.DEPENDENCY)
+
+  /** Shorthand for `cpg.dependency.name(name)`
+    */
+  def dependency(name: String): Traversal[Dependency] =
+    dependency.name(name)
+
   @Doc(info = "All control structures (source-based frontends)")
   def controlStructure: Traversal[ControlStructure] =
-    cpg.graph.nodes(NodeTypes.CONTROL_STRUCTURE).cast[ControlStructure]
+    InitialTraversal.from[ControlStructure](cpg.graph, NodeTypes.CONTROL_STRUCTURE)
 
   @Doc(info = "All continues (`ControlStructure` nodes)")
   def continue: Traversal[ControlStructure] =
@@ -83,7 +105,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All source files")
   def file: Traversal[File] =
-    cpg.graph.nodes(NodeTypes.FILE).cast[File]
+    InitialTraversal.from[File](cpg.graph, NodeTypes.FILE)
 
   /** Shorthand for `cpg.file.name(name)`
     */
@@ -102,7 +124,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All identifier usages")
   def identifier: Traversal[Identifier] =
-    cpg.graph.nodes(NodeTypes.IDENTIFIER).cast[Identifier]
+    InitialTraversal.from[Identifier](cpg.graph, NodeTypes.IDENTIFIER)
 
   /** Shorthand for `cpg.identifier.name(name)`
     */
@@ -117,13 +139,13 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All jump targets, i.e., labels")
   def jumpTarget: Traversal[JumpTarget] =
-    cpg.graph.nodes(NodeTypes.JUMP_TARGET).cast[JumpTarget]
+    InitialTraversal.from[JumpTarget](cpg.graph, NodeTypes.JUMP_TARGET)
 
   /** Traverse to all local variable declarations
     */
   @Doc(info = "All local variables")
   def local: Traversal[Local] =
-    cpg.graph.nodes(NodeTypes.LOCAL).cast[Local]
+    InitialTraversal.from[Local](cpg.graph, NodeTypes.LOCAL)
 
   /** Shorthand for `cpg.local.name`
     */
@@ -134,7 +156,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All literals, e.g., numbers or strings")
   def literal: Traversal[Literal] =
-    cpg.graph.nodes(NodeTypes.LITERAL).cast[Literal]
+    InitialTraversal.from[Literal](cpg.graph, NodeTypes.LITERAL)
 
   /** Shorthand for `cpg.literal.code(code)`
     */
@@ -145,25 +167,25 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All methods")
   def method: Traversal[Method] =
-    cpg.graph.nodes(NodeTypes.METHOD).cast[Method]
+    InitialTraversal.from[Method](cpg.graph, NodeTypes.METHOD)
 
-  /** Shorthand for `cpg.method.name(fullName)`
+  /** Shorthand for `cpg.method.name(name)`
     */
-  @Doc(info = "All methods with given name")
-  def method(name: String): Traversal[Method] =
-    method.name(name)
+  @Doc(info = "All methods with a name that matches the given pattern")
+  def method(namePattern: String): Traversal[Method] =
+    method.name(namePattern)
 
   /** Traverse to all formal return parameters
     */
   @Doc(info = "All formal return parameters")
   def methodReturn: Traversal[MethodReturn] =
-    cpg.graph.nodes(NodeTypes.METHOD_RETURN).cast[MethodReturn]
+    InitialTraversal.from[MethodReturn](cpg.graph, NodeTypes.METHOD_RETURN)
 
   /** Traverse to all class members
     */
   @Doc(info = "All members of complex types (e.g., classes/structures)")
   def member: Traversal[Member] =
-    cpg.graph.nodes(NodeTypes.MEMBER).cast[Member]
+    InitialTraversal.from[Member](cpg.graph, NodeTypes.MEMBER)
 
   /** Shorthand for `cpg.member.name(name)`
     */
@@ -174,13 +196,13 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "Meta data blocks for graph")
   def metaData: Traversal[MetaData] =
-    cpg.graph.nodes(NodeTypes.META_DATA).cast[MetaData]
+    InitialTraversal.from[MetaData](cpg.graph, NodeTypes.META_DATA)
 
   /** Traverse to all method references
     */
   @Doc(info = "All method references")
   def methodRef: Traversal[MethodRef] =
-    cpg.graph.nodes(NodeTypes.METHOD_REF).cast[MethodRef]
+    InitialTraversal.from[MethodRef](cpg.graph, NodeTypes.METHOD_REF)
 
   /** Shorthand for `cpg.methodRef.filter(_.referencedMethod.name(name))`
     */
@@ -191,7 +213,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All namespaces")
   def namespace: Traversal[Namespace] =
-    cpg.graph.nodes(NodeTypes.NAMESPACE).cast[Namespace]
+    InitialTraversal.from[Namespace](cpg.graph, NodeTypes.NAMESPACE)
 
   /** Shorthand for `cpg.namespace.name(name)`
     */
@@ -201,7 +223,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
   /** Traverse to all namespace blocks, e.g., packages in Java.
     */
   def namespaceBlock: Traversal[NamespaceBlock] =
-    cpg.graph.nodes(NodeTypes.NAMESPACE_BLOCK).cast[NamespaceBlock]
+    InitialTraversal.from[NamespaceBlock](cpg.graph, NodeTypes.NAMESPACE_BLOCK)
 
   /** Shorthand for `cpg.namespaceBlock.name(name)`
     */
@@ -212,7 +234,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All parameters")
   def parameter: Traversal[MethodParameterIn] =
-    cpg.graph.nodes(NodeTypes.METHOD_PARAMETER_IN).cast[MethodParameterIn]
+    InitialTraversal.from[MethodParameterIn](cpg.graph, NodeTypes.METHOD_PARAMETER_IN)
 
   /** Shorthand for `cpg.parameter.name(name)`
     */
@@ -223,12 +245,16 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All actual return parameters")
   def ret: Traversal[Return] =
-    cpg.graph.nodes(NodeTypes.RETURN).cast[Return]
+    InitialTraversal.from[Return](cpg.graph, NodeTypes.RETURN)
 
   /** Shorthand for `returns.code(code)`
     */
   def ret(code: String): Traversal[Return] =
     ret.code(code)
+
+  @Doc(info = "All static imports")
+  def staticImport: Traversal[Import] =
+    InitialTraversal.from[Import](cpg.graph, NodeTypes.IMPORT)
 
   @Doc(info = "All switch blocks (`ControlStructure` nodes)")
   def switchBlock: Traversal[ControlStructure] =
@@ -242,7 +268,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All used types")
   def typ: Traversal[Type] =
-    cpg.graph.nodes(NodeTypes.TYPE).cast[Type]
+    InitialTraversal.from[Type](cpg.graph, NodeTypes.TYPE)
 
   /** Shorthand for `cpg.typ.name(name)`
     */
@@ -254,7 +280,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All declarations of types")
   def typeDecl: Traversal[TypeDecl] =
-    cpg.graph.nodes(NodeTypes.TYPE_DECL).cast[TypeDecl]
+    InitialTraversal.from[TypeDecl](cpg.graph, NodeTypes.TYPE_DECL)
 
   /** Shorthand for cpg.typeDecl.name(name)
     */
@@ -265,7 +291,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All tags")
   def tag: Traversal[Tag] =
-    cpg.graph.nodes(NodeTypes.TAG).cast[Tag]
+    InitialTraversal.from[Tag](cpg.graph, NodeTypes.TAG)
 
   @Doc(info = "All tags with given name")
   def tag(name: String): Traversal[Tag] =
@@ -275,7 +301,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All type references")
   def typeRef: Traversal[TypeRef] =
-    cpg.graph.nodes(NodeTypes.TYPE_REF).cast[TypeRef]
+    InitialTraversal.from[TypeRef](cpg.graph, NodeTypes.TYPE_REF)
 
   @Doc(info = "All while blocks (`ControlStructure` nodes)")
   def whileBlock: Traversal[ControlStructure] =

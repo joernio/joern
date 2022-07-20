@@ -16,6 +16,22 @@ the following prerequisites:
 Additional build-time dependencies are automatically downloaded as part
 of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
+## JS/TS AST Generation
+
+jssrc2cpg uses a modified version of [@joern/astgen](https://github.com/joernio/astgen) under the hood.
+That version is available [here](https://github.com/max-leuthaeuser/astgen).
+Native binaries for Linux, MacOS, and Windows are generated as described [here](https://github.com/max-leuthaeuser/astgen#building).
+To build your own native binaries run the following commands:
+
+```shell script
+git clone https://github.com/max-leuthaeuser/astgen.git
+cd astgen
+yarn install
+```
+(requires `yarn`).
+
+Copy the resulting `astgen-linux`, `astgen-macos`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+
 ## Running
 
 To produce a code property graph  issue the command:
@@ -28,14 +44,6 @@ Run the following to see a complete list of available options:
 ./jssrc2cpg.sh --help
 ```
 
-## Runtime Dependencies
-
-jssrc2cpg uses _astgen_ to generate the Babel AST from your JS/TS code.
-Make sure you have it installed. See: https://github.com/joernio/astgen
-
 ## Warning
 
-This is work in progress. Types from TS code and TSX/JSX constructs are currently missing.
-
-Use https://github.com/ShiftLeftSecurity/js2cpg for CPG generation for JS/TS code
-with transpilation of such constructs.
+This is work in progress. Use https://github.com/ShiftLeftSecurity/js2cpg as a mature alternative.

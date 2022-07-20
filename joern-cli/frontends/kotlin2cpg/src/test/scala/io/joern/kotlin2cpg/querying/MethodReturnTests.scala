@@ -1,26 +1,23 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.TestContext
+import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies}
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+class MethodReturnTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-class MethodReturnTests extends AnyFreeSpec with Matchers {
-
-  "CPG for code with simple method with two parameters" - {
-    lazy val cpg = TestContext.buildCpg("""
+  "CPG for code with simple method with two parameters" should {
+    val cpg = code("""
       |fun foo(x: Int, y: Double): Int {
       |  return x * 2
       |}
       |""".stripMargin)
 
-    "should have METHOD_RETURN node with correct fields" in {
+    "should have a METHOD_RETURN node with correct props set" in {
       val List(x) = cpg.method.name("foo").methodReturn.l
-      x.code shouldBe "RET"
+      x.code shouldBe "int"
       x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      x.order shouldBe 5
+      x.order shouldBe 4
       x.lineNumber shouldBe Some(2)
       x.columnNumber shouldBe Some(4)
     }
