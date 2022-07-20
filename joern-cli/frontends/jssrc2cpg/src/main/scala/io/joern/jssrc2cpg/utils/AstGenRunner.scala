@@ -4,7 +4,6 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
-import io.shiftleft.utils.ProjectRoot
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -25,8 +24,11 @@ object AstGenRunner {
     "astgen-win.exe"
   }
 
-  private val EXECUTABLE_DIR: String =
-    Paths.get(ProjectRoot.relativise("joern-cli/frontends/jssrc2cpg/bin/astgen")).toAbsolutePath.toString
+  private val EXECUTABLE_DIR: String = {
+    val dir      = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
+    val fixedDir = new java.io.File(dir.substring("file:".length, dir.indexOf("jssrc2cpg"))).toString
+    Paths.get(fixedDir, "jssrc2cpg/bin/astgen").toAbsolutePath.toString
+  }
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
