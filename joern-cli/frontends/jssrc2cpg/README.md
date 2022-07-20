@@ -16,6 +16,22 @@ the following prerequisites:
 Additional build-time dependencies are automatically downloaded as part
 of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
+## JS/TS AST Generation
+
+jssrc2cpg uses a modified version of [@joern/astgen](https://github.com/joernio/astgen) under the hood.
+That version is available [here](https://github.com/max-leuthaeuser/astgen).
+Native binaries for Linux, MacOS, and Windows are generated as described [here](https://github.com/max-leuthaeuser/astgen#building).
+To build your own native binaries run the following commands:
+
+```shell script
+git clone https://github.com/max-leuthaeuser/astgen.git
+cd astgen
+yarn install
+```
+(requires `yarn`).
+
+Copy the resulting `astgen-linux`, `astgen-macos`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+
 ## Running
 
 To produce a code property graph  issue the command:

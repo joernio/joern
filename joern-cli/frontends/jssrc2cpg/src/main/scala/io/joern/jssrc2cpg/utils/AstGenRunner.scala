@@ -26,7 +26,7 @@ object AstGenRunner {
   }
 
   private val EXECUTABLE_DIR: String =
-    Paths.get(ProjectRoot.relativise("joern-cli/src/universal/bin/astgen")).toAbsolutePath.toString
+    Paths.get(ProjectRoot.relativise("joern-cli/frontends/jssrc2cpg/bin/astgen")).toAbsolutePath.toString
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
