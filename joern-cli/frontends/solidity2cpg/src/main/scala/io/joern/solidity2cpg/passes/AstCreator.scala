@@ -539,6 +539,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ArrayTypeName =>
         x.baseTypeName match {
           case x: ElementaryTypeName => typefullName = registerType(x.name)
+//          case x: ArrayTypeName      => typefullName = registerType(x.baseTypeName match {
+//            case x: ElementaryTypeName => x.name
+//            case _=> "something went wrong"
+//          })
+          case _ => println(x.baseTypeName)
         }
       case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
       case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
