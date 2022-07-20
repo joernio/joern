@@ -106,4 +106,12 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.method.name("bar").block.l should not be empty
     }
   }
+
+  "CPG for code with method without a body-block" should {
+    val cpg = code("fun printX(x: String) = println(x)")
+
+    "should contain a METHOD node with one expression in its corresponding BLOCK" in {
+      cpg.method.nameExact("printX").block.expressionDown.size shouldBe 1
+    }
+  }
 }

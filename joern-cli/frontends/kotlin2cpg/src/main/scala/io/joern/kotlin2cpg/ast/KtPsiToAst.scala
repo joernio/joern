@@ -314,9 +314,14 @@ trait KtPsiToAst {
     val parameters = withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) =>
       astForParameter(p, idx)
     }.flatMap(_.root.collectAll[NewMethodParameterIn])
-    val bodyAst = ktFn.getBodyBlockExpression match {
-      case blockExpr if blockExpr != null => astForBlock(blockExpr, None)
-      case _                              => Ast(NewBlock())
+
+    val bodyAst = Option(ktFn.getBodyBlockExpression) match {
+      case Some(bodyBlockExpression) => astForBlock(bodyBlockExpression, None)
+      case None =>
+        val bodyBlock = blockNode("", "")
+        Option(ktFn.getBodyExpression)
+          .map { expr => blockAst(bodyBlock, astsForExpression(expr, None).toList) }
+          .getOrElse(blockAst(bodyBlock, List()))
     }
     scope.popScope()
 
