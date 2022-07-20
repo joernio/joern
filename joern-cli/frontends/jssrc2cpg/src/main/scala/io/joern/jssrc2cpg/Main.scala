@@ -52,7 +52,7 @@ private object Frontend {
 object Main extends X2CpgMain(cmdLineParser, new JsSrc2Cpg()) {
 
   def run(config: Config, jssrc2cpg: JsSrc2Cpg): Unit = {
-    if (Environment.pathExists(config.inputPath) && Environment.valid()) {
+    if (Environment.pathExists(config.inputPath)) {
       jssrc2cpg.run(config)
     } else {
       System.exit(1)
