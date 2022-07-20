@@ -2,11 +2,134 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Binding
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Call,
+  FieldIdentifier,
+  Identifier,
+  Method,
+  MethodParameterIn
+}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with class declaration with one member" should {
+    val cpg = code("""
+        |package mypkg
+        |class AClass(var x: String)
+        | """.stripMargin)
+
+    "should contain a METHOD node for the constructor of the class" in {
+      val List(ctor: Method) = cpg.method.name(".init.*").l
+      ctor.fullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
+      ctor.parameter.size shouldBe 2
+
+      val List(firstCtorParam: MethodParameterIn, secondCtorParam: MethodParameterIn) = ctor.parameter.l
+      firstCtorParam.name shouldBe "this"
+      firstCtorParam.typeFullName shouldBe "mypkg.AClass"
+      secondCtorParam.name shouldBe "x"
+      secondCtorParam.typeFullName shouldBe "java.lang.String"
+
+      val List(memberSetCall: Call) = ctor.block.expressionDown.l
+      memberSetCall.methodFullName shouldBe Operators.assignment
+
+      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l
+      memberSetCallLhs.code shouldBe "this.x"
+      memberSetCallLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      memberSetCallRhs.code shouldBe "x"
+      memberSetCallRhs.typeFullName shouldBe "java.lang.String"
+
+      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l
+      _this.code shouldBe "this"
+      _this.typeFullName shouldBe "mypkg.AClass"
+      _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
+      _this.refsTo.size shouldBe 1
+      x.code shouldBe "x"
+      x.canonicalName shouldBe "x"
+    }
+  }
+
+  "CPG for code with data class declaration with one member" should {
+    val cpg = code("""
+        |package mypkg
+        |data class AClass(var x: String)
+        | """.stripMargin)
+
+    "should contain a METHOD node for the constructor of the class" in {
+      val List(ctor: Method) = cpg.method.name(".init.*").l
+      ctor.fullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
+      ctor.parameter.size shouldBe 2
+
+      val List(firstCtorParam: MethodParameterIn, secondCtorParam: MethodParameterIn) = ctor.parameter.l
+      firstCtorParam.name shouldBe "this"
+      firstCtorParam.typeFullName shouldBe "mypkg.AClass"
+      secondCtorParam.name shouldBe "x"
+      secondCtorParam.typeFullName shouldBe "java.lang.String"
+
+      val List(memberSetCall: Call) = ctor.block.expressionDown.l
+      memberSetCall.methodFullName shouldBe Operators.assignment
+
+      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l
+      memberSetCallLhs.code shouldBe "this.x"
+      memberSetCallLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      memberSetCallRhs.code shouldBe "x"
+      memberSetCallRhs.typeFullName shouldBe "java.lang.String"
+
+      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l
+      _this.code shouldBe "this"
+      _this.typeFullName shouldBe "mypkg.AClass"
+      _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
+      _this.refsTo.size shouldBe 1
+      x.code shouldBe "x"
+      x.canonicalName shouldBe "x"
+    }
+
+    "should contain a METHOD node for `component1`" in {
+      val List(componentN: Method) = cpg.method.name(".*component.*").l
+      componentN.fullName shouldBe "mypkg.AClass.component1:java.lang.String()"
+      componentN.parameter.size shouldBe 1
+
+      val List(p: MethodParameterIn) = componentN.parameter.l
+      p.name shouldBe "this"
+      p.typeFullName shouldBe "mypkg.AClass"
+
+      val List(returnCall: Call) = componentN.block.expressionDown.isReturn.astChildren.l
+      returnCall.methodFullName shouldBe Operators.fieldAccess
+      returnCall.code shouldBe "this.x"
+      returnCall.typeFullName shouldBe "java.lang.String"
+
+      val List(_this: Identifier, x: FieldIdentifier) = returnCall.argument.l
+      _this.code shouldBe "this"
+      _this.typeFullName shouldBe "mypkg.AClass"
+      _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
+      _this.refsTo.size shouldBe 1
+      x.code shouldBe "x"
+      x.canonicalName shouldBe "x"
+    }
+  }
+
+  "CPG for class declaration with single method" should {
+    val cpg = code("""
+        |package mypkg
+        |class AClass {
+        |   fun printThis() {
+        |     println(this)
+        |   }
+        |}
+        | """.stripMargin)
+
+    "should contain a TYPE_DECL node for its method with an implicit _this_ parameter" in {
+      val List(m) = cpg.typeDecl.name("AClass").method.name("printThis").l
+      m.parameter.size shouldBe 1
+    }
+
+    "should contain an identifier for the usage of _this_ inside the call with one reference" in {
+      val List(i) = cpg.identifier.name("this").l
+      i.refsTo.size shouldBe 1
+    }
+  }
 
   "CPG for simple class" should {
     val cpg = code("""
@@ -124,7 +247,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain a BINDING node for X with the correct props set" in {
-      val List(b) = cpg.all.collect { case b: Binding => b }.l
+      val List(b) = cpg.all.collect { case b: Binding => b }.filter { b => b.name == "add1" }.l
       b.name shouldBe "add1"
       b.signature shouldBe "int(int)"
     }

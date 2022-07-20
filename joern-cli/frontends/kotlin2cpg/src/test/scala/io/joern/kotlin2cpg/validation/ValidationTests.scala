@@ -623,50 +623,25 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "CPG for code with dynamic dispatch call inside lambda with class name in the receiver" should {
+  "CPG for code with call to `checkNotNull`" should {
     lazy val cpg = code("""
-        |package main
-        |
-        |class BClass {
-        |    val msg = "Hello from B!"
-        |}
-        |
-        |internal object AnObject {
-        |    private var m: BClass? = null
-        |
-        |    fun bClass(): BClass {
-        |        return checkNotNull(m) {
-        |            "You can't access `m` if you don't initialize it!"
-        |        }
-        |    }
-        |
-        |    fun initialize() {
-        |        m = BClass()
-        |    }
+        |fun f1(x: String?) {
+        |    val notNullX = checkNotNull(x) { println("SOMETHING") }
+        |    println(notNullX)
         |}
         |
         |fun main() {
-        |    AnObject.initialize()
-        |    1.let {
-        |        val b = AnObject.bClass()
-        |        print(b.msg)
-        |    }
+        |    f1("SOMETHING")
         |}
-        |
-        |
         |""".stripMargin)
 
     "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
-      val allClosureBindingIds =
-        cpg.all
-          .collect { case c: ClosureBinding => c }
-          .closureBindingId
-          .l
+      val allClosureBindingIds = cpg.all.collect { case c: ClosureBinding => c }.closureBindingId.l
 
       cpg.local
         .where(_.closureBindingId)
-        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId) }
-        .map { cb => (cb.code, cb.closureBindingId) }
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId, cb.getClass.toString) }
         .l shouldBe List()
     }
   }

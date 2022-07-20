@@ -54,12 +54,26 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
       |}
       |""".stripMargin)
 
-    "should find a flow through the method" in {
+    "should find a flow through the explicit parameter of the method" in {
       val source = cpg.method.name("f1").parameter
       val sink   = cpg.method.name("println").callIn.argument
       val flows  = sink.reachableByFlows(source)
       flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("f1(p)", Some(3)), ("aClass.itsFn(p)", Some(5)), ("itsFn(q)", Some(2)), ("println(q)", Some(2))))
+        Set(
+          List(("f1(p)", Some(3)), ("aClass.itsFn(p)", Some(5)), ("itsFn(this, q)", Some(2)), ("println(q)", Some(2)))
+        )
+    }
+  }
+
+  "CPG for code with user-defined class with one method without paramters" should {
+    val cpg = code("class AClass { fun printThis() { println(this) } }")
+
+    "should find a flow from the method's implicit _this_ to the call using _this_" in {
+      val source = cpg.method.name("printThis").parameter
+      val sink   = cpg.method.name("println").callIn.argument
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSet shouldBe
+        Set(List(("printThis(this)", Some(1)), ("println(this)", Some(1))))
     }
   }
 
