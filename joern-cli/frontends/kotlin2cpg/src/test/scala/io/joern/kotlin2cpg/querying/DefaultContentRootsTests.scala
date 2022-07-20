@@ -28,31 +28,6 @@ class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = f
     }
   }
 
-  "CPG for code with a simple class definition" should {
-    val cpg = code("""
-        |package mypkg
-        |
-        |class Foo {
-        |  fun bar(x: Int, y: Int): Int {
-        |    return x * 2
-        |  }
-        |}
-        |""".stripMargin)
-
-    "should contain two METHOD_PARAMETER nodes with the correct type fullnames" in {
-      def params = cpg.parameter.filter(_.method.name == "bar")
-      params.name.toSet shouldBe Set("x", "y")
-
-      val List(x) = params.name("x").l
-      x.code shouldBe "x"
-      x.typeFullName shouldBe "int"
-
-      val List(y) = params.name("y").l
-      y.code shouldBe "y"
-      y.typeFullName shouldBe "int"
-    }
-  }
-
   "CPG for code with type alias of a stdlib type" should {
     val cpg = code("""
         |typealias FooList = List<Int>

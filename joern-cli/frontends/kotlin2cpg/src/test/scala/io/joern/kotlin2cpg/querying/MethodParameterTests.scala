@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
 
 class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
@@ -48,23 +49,25 @@ class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false
         |}
         |""".stripMargin)
 
-    "should return exactly two parameters with correct fields" in {
-      def params = cpg.parameter.filter(_.method.name == "bar")
-      params.name.toSet shouldBe Set("x", "y")
+    "should contain two METHOD_PARAMETER_IN nodes with the correct props set" in {
+      val List(firstParam: MethodParameterIn, secondParam: MethodParameterIn, thirdParam: MethodParameterIn) =
+        cpg.method.name("bar").parameter.l
 
-      val List(x) = params.name("x").l
-      x.code shouldBe "x"
-      x.typeFullName shouldBe "int"
-      x.lineNumber shouldBe Some(5)
-      x.columnNumber shouldBe Some(10)
-      x.order shouldBe 1
+      firstParam.code shouldBe "this"
+      firstParam.typeFullName shouldBe "mypkg.Foo"
+      firstParam.order shouldBe 0
 
-      val List(y) = params.name("y").l
-      y.code shouldBe "y"
-      y.typeFullName shouldBe "double"
-      y.lineNumber shouldBe Some(5)
-      y.columnNumber shouldBe Some(18)
-      y.order shouldBe 2
+      secondParam.code shouldBe "x"
+      secondParam.typeFullName shouldBe "int"
+      secondParam.lineNumber shouldBe Some(5)
+      secondParam.columnNumber shouldBe Some(10)
+      secondParam.order shouldBe 1
+
+      thirdParam.code shouldBe "y"
+      thirdParam.typeFullName shouldBe "double"
+      thirdParam.lineNumber shouldBe Some(5)
+      thirdParam.columnNumber shouldBe Some(18)
+      thirdParam.order shouldBe 2
     }
 
     "should allow traversing from parameter to method" in {

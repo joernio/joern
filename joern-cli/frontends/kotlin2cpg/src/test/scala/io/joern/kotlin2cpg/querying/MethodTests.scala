@@ -91,7 +91,7 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should allow traversing to parameters" in {
-      cpg.method.name("bar").parameter.name.toSet shouldBe Set("x")
+      cpg.method.name("bar").parameter.name.toSet shouldBe Set("this", "x")
     }
 
     "should allow traversing to methodReturn" in {
