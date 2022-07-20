@@ -270,9 +270,6 @@ trait KtPsiToAst {
       .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
 
-    /** curently unused val blockInitializers = if (ktClass.getBody != null) { ktClass.getBody.getAnonymousInitializers
-      * } else { List().asJava }
-      */
     val classFunctions = Option(ktClass.getBody)
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
       .getOrElse(List())
