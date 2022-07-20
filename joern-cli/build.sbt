@@ -121,11 +121,5 @@ generateScaladocs := {
 }
 
 Universal / packageBin / mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
-Universal / packageBin / mappings ++= {
-  val astgenDir = new File("joern-cli/frontends/jssrc2cpg/bin/astgen/")
-  astgenDir.listFiles.toSeq.map { f =>
-    f -> ("frontends/jssrc2cpg/bin/astgen/" + f.getName)
-  }
-}
 
 maintainer := "fabs@shiftleft.io"
