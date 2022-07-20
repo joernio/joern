@@ -159,6 +159,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 case class ClosureBindingEntry(nodeTypeInfo: NodeTypeInfo, binding: NewClosureBinding)
@@ -274,6 +275,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         throw t
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
+        logger.error(s"Caused by ${t.getCause}")
         throw t
     }
   }
@@ -293,6 +295,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         globalNamespaceBlock()
     }
     Ast(namespaceBlock.filename(absolutePath(filename)))
+  }
+
+  private def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {
+    try {
+      Try(expr)
+    } catch {
+      // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
+      // unterminated recursion in some cases where types cannot be resolved.
+      case e: StackOverflowError =>
+        logger.warn(s"Caught StackOverflowError in $filename")
+        Failure(e)
+    }
   }
 
   private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
@@ -796,8 +810,24 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case literalExpr: LiteralExpr =>
         Some(astForAnnotationLiteralExpr(literalExpr))
 
+      case _: ClassExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _: FieldAccessExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _: BinaryExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _: NameExpr =>
+        // TODO: Implement for known case
+        None
+
       case _ =>
-        logger.info(s"convertAnnotationValueExpr not yet implemented for ${expr.getClass}")
+        logger.info(s"convertAnnotationValueExpr not yet implemented for unknown case ${expr.getClass}")
         None
     }
   }
@@ -834,28 +864,29 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChildren(rhs.toSeq)
   }
 
-  private def expressionReturnTypeFullName(expr: Expression): Option[String] = {
-    Try(expr.calculateResolvedType()) match {
-      case Success(resolveType) =>
-        Some(typeInfoCalc.fullName(resolveType))
-      case Failure(_) =>
-        expr match {
-          case namedExpr: NodeWithName[_] => scopeStack.lookupVariableType(namedExpr.getNameAsString)
+  private def exprNameFromStack(expr: Expression): Option[String] = {
+    expr match {
+      case namedExpr: NodeWithName[_] => scopeStack.lookupVariableType(namedExpr.getNameAsString)
 
-          case namedExpr: NodeWithSimpleName[_] => scopeStack.lookupVariableType(namedExpr.getNameAsString)
+      case namedExpr: NodeWithSimpleName[_] => scopeStack.lookupVariableType(namedExpr.getNameAsString)
 
-          // JavaParser doesn't handle literals well for some reason
-          case _: BooleanLiteralExpr   => Some("boolean")
-          case _: CharLiteralExpr      => Some("char")
-          case _: DoubleLiteralExpr    => Some("double")
-          case _: IntegerLiteralExpr   => Some("int")
-          case _: LongLiteralExpr      => Some("long")
-          case _: NullLiteralExpr      => Some("null")
-          case _: StringLiteralExpr    => Some("java.lang.String")
-          case _: TextBlockLiteralExpr => Some("java.lang.String")
-          case _                       => None
-        }
+      // JavaParser doesn't handle literals well for some reason
+      case _: BooleanLiteralExpr   => Some("boolean")
+      case _: CharLiteralExpr      => Some("char")
+      case _: DoubleLiteralExpr    => Some("double")
+      case _: IntegerLiteralExpr   => Some("int")
+      case _: LongLiteralExpr      => Some("long")
+      case _: NullLiteralExpr      => Some("null")
+      case _: StringLiteralExpr    => Some("java.lang.String")
+      case _: TextBlockLiteralExpr => Some("java.lang.String")
+      case _                       => None
     }
+  }
+
+  private def expressionReturnTypeFullName(expr: Expression): Option[String] = {
+    tryWithSafeStackOverflow(expr.calculateResolvedType()).toOption
+      .map(typeInfoCalc.fullName)
+      .orElse(exprNameFromStack(expr))
   }
 
   private def createAnnotationNode(annotationExpr: AnnotationExpr): NewAnnotation = {
@@ -2402,7 +2433,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def codePrefixForMethodCall(call: MethodCallExpr): String = {
-    Try(call.resolve()) match {
+    tryWithSafeStackOverflow(call.resolve()) match {
       case Success(resolvedCall) =>
         call.getScope.toScala
           .flatMap(codeForScopeExpr(_, resolvedCall.isStatic))
@@ -2455,14 +2486,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val resolvedParameters = (0 until resolvedMethod.getNumberOfParams).map(resolvedMethod.getParam)
 
         // Substitute generic typeParam with the expected type if it can be found; leave unchanged otherwise.
-        val paramsWithSubstitutedTypes = resolvedParameters.map(_.getType).map {
-          case resolvedType: ResolvedTypeVariable =>
-            expectedTypeParamTypes.getValue(resolvedType.asTypeParameter)
+        resolvedParameters.map(param => Try(param.getType)).map {
+          case Success(resolvedType: ResolvedTypeVariable) =>
+            val typ = expectedTypeParamTypes.getValue(resolvedType.asTypeParameter)
+            typeInfoCalc.fullName(typ)
 
-          case resolvedType => resolvedType
+          case Success(resolvedType) => typeInfoCalc.fullName(resolvedType)
+
+          case Failure(_) => TypeConstants.UnresolvedType
         }
-
-        paramsWithSubstitutedTypes.map(typeInfoCalc.fullName)
 
       case None =>
         // Unless types are explicitly specified in the lambda definition,
@@ -2505,13 +2537,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     maybeBoundMethod: Option[ResolvedMethodDeclaration],
     expectedTypeParamTypes: ResolvedTypeParametersMap
   ): String = {
-    val maybeBoundMethodReturnType = maybeBoundMethod.map { boundMethod =>
-      boundMethod.getReturnType match {
+    val maybeBoundMethodReturnType = maybeBoundMethod.flatMap { boundMethod =>
+      Try(boundMethod.getReturnType).collect {
         case returnType: ResolvedTypeVariable =>
           expectedTypeParamTypes.getValue(returnType.asTypeParameter)
 
         case returnType => returnType
-      }
+      }.toOption
     }
 
     val returnType = maybeBoundMethodReturnType.orElse(maybeResolvedLambdaType)
@@ -2696,7 +2728,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val maybeImplementedInterface = maybeImplementedType.flatMap(_.getTypeDeclaration.toScala)
 
     if (maybeImplementedInterface.isEmpty) {
-      logger.warn(s"Could not resolve the interface implemented by the lambda $expr. Type info may be missing.")
+      val location = s"$filename:${line(expr)}:${column(expr)}"
+      logger.warn(
+        s"Could not resolve the interface implemented by a lambda. Type info may be missing: $location. Type info may be missing."
+      )
     }
 
     val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
@@ -2705,7 +2740,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .filterNot { method =>
           // Filter out java.lang.Object methods re-declared by the interface as these are also considered abstract.
           // See https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for details.
-          ObjectMethodSignatures.contains(method.getSignature)
+          Try(method.getSignature) match {
+            case Success(signature) => ObjectMethodSignatures.contains(signature)
+            case Failure(_) =>
+              false // If the signature could not be calculated, it's probably not a standard object method.
+          }
         }
         .headOption
     }
@@ -2809,7 +2848,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Some(scope) => expressionReturnTypeFullName(scope)
 
       case None =>
-        Try(callExpr.resolve()).toOption
+        tryWithSafeStackOverflow(callExpr.resolve()).toOption
           .flatMap { methodDeclOption =>
             if (methodDeclOption.isStatic) Some(typeInfoCalc.fullName(methodDeclOption.declaringType()))
             else scopeStack.getEnclosingTypeDecl.map(_.fullName)
@@ -2879,7 +2918,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astForMethodCall(call: MethodCallExpr, expectedReturnType: Option[ExpectedType]): Ast = {
-    val maybeResolvedCall = Try(call.resolve())
+    val maybeResolvedCall = tryWithSafeStackOverflow(call.resolve())
     val argumentAsts      = argAstsForCall(call, maybeResolvedCall, call.getArguments)
 
     val expressionTypeFullName = expressionReturnTypeFullName(call)
