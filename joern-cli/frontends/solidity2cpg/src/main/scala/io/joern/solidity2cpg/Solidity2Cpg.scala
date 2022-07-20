@@ -2,7 +2,7 @@ package io.joern.solidity2cpg
 
 import better.files.File
 import io.joern.solidity2cpg.passes.AstCreationPass
-import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.{File => JFile}
 import java.io.PrintWriter
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.{Failure, Success, Using}
+import scala.util.{Failure, Success, Try, Using}
 
 object Solidity2Cpg {
   // TODO: Add to io.shiftleft.codepropertygraph.generated.Languages
@@ -84,5 +84,6 @@ class Solidity2Cpg {
     val outFileNames = SourceFiles.determine(Set(dir.pathAsString), suryaOutputFileExtensions)
     (dir.pathAsString, outFileNames)
   }
+
 
 }

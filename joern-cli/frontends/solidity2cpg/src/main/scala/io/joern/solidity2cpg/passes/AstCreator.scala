@@ -1059,9 +1059,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     Ast(fieldAccess)
       .withChild(expr)
+      .withReceiverEdge(fieldAccess, expr.root.get)
       .withArgEdges(fieldAccess, expr.root.toList)
 
-//    expr
+//    expr1
 
 
   }
