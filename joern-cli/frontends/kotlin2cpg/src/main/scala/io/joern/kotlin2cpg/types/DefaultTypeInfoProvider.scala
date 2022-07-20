@@ -92,6 +92,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
+  def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
+    val mapForEntity = bindingsForEntity(bindingContext, ktFn)
+    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
+      .map { fnDesc => TypeRenderer.renderFqName(fnDesc.getContainingDeclaration) }
+      .getOrElse(defaultValue)
+  }
+
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean = {
     resolvedCallDescriptor(expr)
       .map(_.getSource)

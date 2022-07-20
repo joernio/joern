@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.psi.{
 }
 
 trait TypeInfoProvider {
+  def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
+
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String

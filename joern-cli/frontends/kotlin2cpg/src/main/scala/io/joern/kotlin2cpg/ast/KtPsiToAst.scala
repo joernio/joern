@@ -105,12 +105,15 @@ trait KtPsiToAst {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
 
-      val thisParam       = methodParameterNode(Constants.this_, typeDecl.fullName).order(0)
-      val thisIdentifier  = identifierNode(Constants.this_, typeDecl.fullName)
+      val thisParam = methodParameterNode(Constants.this_, typeDecl.fullName).order(0)
+      val thisIdentifier =
+        identifierNode(Constants.this_, typeDecl.fullName).dynamicTypeHintFullName(Seq(typeDecl.fullName))
+      val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
+
       val fieldIdentifier = fieldIdentifierNode(valueParam.getName, line(valueParam), column(valueParam))
       val fieldAccessCall =
         operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.${valueParam.getName}", Some(typeFullName))
-      val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
+      val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
       val methodBlockAst = blockAst(
         blockNode(fieldAccessCall.code, typeFullName),
         List(returnAst(returnNode(Constants.ret), List(fieldAccessCallAst)))
@@ -162,11 +165,13 @@ trait KtPsiToAst {
     val paramName          = param.getName
     val paramIdentifier    = identifierNode(paramName, typeFullName)
     val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
-    val thisIdentifier     = identifierNode(Constants.this_, classFullName)
-    val fieldIdentifier    = fieldIdentifierNode(paramName)
+    val thisIdentifier     = identifierNode(Constants.this_, classFullName).dynamicTypeHintFullName(Set(classFullName))
+    val thisAst            = astWithRefEdgeMaybe(Constants.this_, thisIdentifier)
+
+    val fieldIdentifier = fieldIdentifierNode(paramName)
     val fieldAccessCall =
       operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.$paramName", Some(typeFullName))
-    val fieldAccessCallAst = callAst(fieldAccessCall, List(thisIdentifier, fieldIdentifier).map(Ast(_)))
+    val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
 
     val assignmentNode =
       operatorCallNode(Operators.assignment, s"${fieldAccessCall.code} = ${paramIdentifier.code}")
@@ -199,21 +204,6 @@ trait KtPsiToAst {
     )
     scope.pushNewScope(typeDecl)
 
-    val classFunctions = Option(ktClass.getBody)
-      .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
-      .getOrElse(List())
-    val classDeclarations = Option(ktClass.getBody)
-      .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
-      .getOrElse(List())
-
-    /** curently unused val blockInitializers = if (ktClass.getBody != null) { ktClass.getBody.getAnonymousInitializers
-      * } else { List().asJava }
-      */
-    val methodAsts = classFunctions.toSeq.map(astForMethod)
-    val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
-      val node = bindingNode(_methodNode.name, _methodNode.signature)
-      BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
-    }
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
     val defaultSignature = Option(ktClass.getPrimaryConstructor)
       .map { _ => typeInfoProvider.anySignature(constructorParams) }
@@ -254,6 +244,9 @@ trait KtPsiToAst {
       blockAst(blockNode("", TypeConstants.void), memberSetCalls),
       constructorMethodReturn
     )
+    val node = bindingNode(primaryCtorMethodNode.name, primaryCtorMethodNode.signature, primaryCtorMethodNode.fullName)
+    val ctorBindingInfo =
+      BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, primaryCtorMethodNode, EdgeTypes.REF)))
 
     val membersFromPrimaryCtorAsts = ktClass.getPrimaryConstructorParameters.asScala.toList.collect {
       case param if param.hasValOrVar =>
@@ -268,16 +261,29 @@ trait KtPsiToAst {
       case _ => Seq()
     }
     val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.collectAll[NewMethod]).map { methodNode =>
-      val node = bindingNode(methodNode.name, methodNode.signature)
+      val node = bindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
     }
 
+    val classDeclarations = Option(ktClass.getBody)
+      .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
+      .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
+
+    val classFunctions = Option(ktClass.getBody)
+      .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
+      .getOrElse(List())
+    val methodAsts = classFunctions.toSeq.map(astForMethod(_, needsThisParameter = true))
+    val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
+      val node = bindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
+      BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
+    }
+
     val children = methodAsts ++ List(constructorAst) ++ membersFromPrimaryCtorAsts ++ secondaryConstructorAsts ++
       _componentNMethodAsts.toList ++ memberAsts
     val ast = Ast(typeDecl).withChildren(children)
 
-    (bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
+    (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
 
     val finalAst = if (typeInfoProvider.isCompanionObject(ktClass)) {
       val companionMemberTypeFullName = ktClass.getParent.getParent match {
@@ -297,7 +303,10 @@ trait KtPsiToAst {
     Seq(finalAst) ++ companionObjectAsts
   }
 
-  def astForMethod(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
+
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
     val _methodNode = methodNode(
       ktFn.getName,
@@ -311,10 +320,16 @@ trait KtPsiToAst {
     )
     scope.pushNewScope(_methodNode)
 
-    val parameters = withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) =>
-      astForParameter(p, idx)
-    }.flatMap(_.root.collectAll[NewMethodParameterIn])
+    val thisParameterMaybe = if (needsThisParameter) {
+      val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
+      val node             = methodParameterNode(Constants.this_, typeDeclFullName, line(ktFn), column(ktFn)).order(0)
+      scope.addToScope(Constants.this_, node)
+      Some(node)
+    } else None
 
+    val parameters = thisParameterMaybe.map(List(_)).getOrElse(List()) ++
+      withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) => astForParameter(p, idx) }
+        .flatMap(_.root.collectAll[NewMethodParameterIn])
     val bodyAst = Option(ktFn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) => astForBlock(bodyBlockExpression, None)
       case None =>
@@ -474,7 +489,7 @@ trait KtPsiToAst {
       Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${expr.getValueParameters.size}"))
     )
 
-    val lambdaBinding = bindingNode(Constants.lambdaBindingName, signature)
+    val lambdaBinding = bindingNode(Constants.lambdaBindingName, signature, lambdaMethodNode.fullName)
     val bindingInfo = BindingInfo(
       lambdaBinding,
       Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaMethodNode, EdgeTypes.REF))
