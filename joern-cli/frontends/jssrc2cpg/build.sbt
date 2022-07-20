@@ -65,5 +65,16 @@ Test / fork := true
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
+lazy val astGenCopyTask = taskKey[Unit](s"Copy astgen binaries")
+
+astGenCopyTask := {
+  val to = target.value / "universal" / "stage" / "bin" / "astgen"
+  to.mkdirs()
+  val from = baseDirectory.value / "bin" / "astgen"
+  IO.copyDirectory(from, to)
+}
+
+stage := (stage dependsOn astGenCopyTask).value
+
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
