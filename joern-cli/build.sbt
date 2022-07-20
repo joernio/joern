@@ -36,13 +36,7 @@ lazy val php2cpg   = project.in(file("frontends/php2cpg"))
 lazy val jimple2cpg   = project.in(file("frontends/jimple2cpg"))
 lazy val fuzzyc2cpg   = project.in(file("frontends/fuzzyc2cpg"))
 lazy val solidity2cpg = project.in(file("frontends/solidity2cpg"))
-lazy val js2cpg = project
-  .in(file("frontends/js2cpg"))
-  .enablePlugins(JavaAppPackaging)
-  .settings(
-    libraryDependencies += "io.shiftleft" %% "js2cpg" % Versions.js2cpg,
-    Compile / mainClass                   := Some("io.shiftleft.js2cpg.core.Js2CpgMain")
-  )
+lazy val jssrc2cpg   = project.in(file("frontends/jssrc2cpg"))
 
 Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
 Universal / mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg / stage).value)
