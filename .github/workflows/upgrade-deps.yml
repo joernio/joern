@@ -18,8 +18,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
-      - name: Install astgen for jssrc2cpg
-        run: npm install -g @joernio/astgen
       - name: Install php deps for php2cpg
         run: joern-cli/frontends/php2cpg/installdeps.sh
       - name: Upgrade all (internal) dependencies

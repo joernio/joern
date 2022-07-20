@@ -14,8 +14,6 @@ jobs:
       - uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
-      - name: Install astgen for jssrc2cpg
-        run: npm install -g @joernio/astgen
       - run: sudo apt update && sudo apt install -y gnupg
       - run: echo $PGP_SECRET | base64 --decode | gpg --batch --import
         env:

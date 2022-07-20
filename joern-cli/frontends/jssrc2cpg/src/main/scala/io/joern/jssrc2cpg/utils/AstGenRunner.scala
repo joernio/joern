@@ -4,15 +4,29 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.utils.ProjectRoot
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
+import scala.util.Try
 
 object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  private val EXECUTABLE_NAME = if (Environment.IS_MAC) {
+    "astgen-macos"
+  } else if (Environment.IS_LINUX) {
+    "astgen-linux"
+  } else {
+    "astgen-win.exe"
+  }
+
+  private val EXECUTABLE_DIR: String =
+    Paths.get(ProjectRoot.relativise("joern-cli/frontends/jssrc2cpg/bin/astgen")).toAbsolutePath.toString
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
@@ -98,10 +112,13 @@ object AstGenRunner {
     }
   }
 
+  private def runAstGenNative(in: File, out: File): Try[Seq[String]] =
+    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
+
   def execute(config: Config, out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
     logger.debug(s"\t+ Running astgen in '$in' ...")
-    ExternalCommand.run(s"astgen -t ts -o $out", in.toString()) match {
+    runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), config, out)
         val skipped = skippedFiles(in, result.toList)
