@@ -22,6 +22,7 @@ package object scan {
     /** Obtain list of findings by running query on CPG
       */
     def apply(cpg: Cpg): List[NewFinding] = {
+//      println("HERE: "+q.name)
       try {
         q.traversal(cpg)
           .map(evidence =>
