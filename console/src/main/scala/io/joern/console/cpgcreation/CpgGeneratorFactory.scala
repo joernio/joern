@@ -5,6 +5,7 @@ import better.files.File
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.ConsoleConfig
+import io.shiftleft.codepropertygraph.generated
 import overflowdb.Config
 
 import java.nio.file.Path
@@ -25,7 +26,8 @@ object CpgGeneratorFactory {
     Languages.PHP,
     Languages.KOTLIN,
     Languages.NEWC,
-    Languages.JAVASRC
+    Languages.JAVASRC,
+    Languages.SOLIDITY
   )
 }
 

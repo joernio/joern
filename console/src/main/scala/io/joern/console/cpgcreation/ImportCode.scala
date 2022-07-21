@@ -58,6 +58,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
 
   def llvm: Frontend = new Frontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: Frontend  = new Frontend("php", Languages.PHP, "PHP bytecode frontend")
+  def solidity: Frontend = new Frontend("solidity", Languages.SOLIDITY, "Solidity Source Frontend")
 
   class Frontend(val name: String, val language: String, val description: String = "") {
     def cpgGeneratorForLanguage(

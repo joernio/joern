@@ -247,10 +247,7 @@ trait ScriptExecution {
       case Res.Success(r) =>
         System.err.println(s"script finished successfully")
         System.err.println(r)
-      case Res.Failure(msg) => {
-        println("here: "+scriptFile)
-        throw new AssertionError(s"script failed: $msg")
-      }
+      case Res.Failure(msg) => throw new AssertionError(s"script failed: $msg")
       case Res.Exception(e, msg) =>
         throw new AssertionError(s"script errored: $msg", e)
       case _ => ???
@@ -376,7 +373,6 @@ trait PluginHandling {
     File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
       val file = dir / "script.sc"
       file.write(code)
-      println(code)
       f(file)
     }
   }
