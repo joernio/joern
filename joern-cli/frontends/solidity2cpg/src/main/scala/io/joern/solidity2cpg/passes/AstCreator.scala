@@ -1019,6 +1019,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .code(identifier.name)
         .methodFullName(Operators.fieldAccess)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(typeFullName)
         .order(order)
         .argumentIndex(order)
       val thisID = Ast(NewIdentifier()
