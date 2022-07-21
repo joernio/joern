@@ -4,12 +4,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import overflowdb.traversal.Traversal
 
-case class CodeSnippet(content: String, filename: Option[String])
-object CodeSnippet {
-  def make(content: String, filename: String) = {
-    CodeSnippet(content, Some(filename))
-  }
-}
+case class CodeSnippet(content: String, filename: String)
 case class MultiFileCodeExamples(positive: List[List[CodeSnippet]], negative: List[List[CodeSnippet]])
 case class CodeExamples(positive: List[String], negative: List[String])
 
